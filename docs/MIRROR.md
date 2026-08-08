@@ -143,17 +143,20 @@ provenance/      이미지별 증거 (BIN 포함)
 
 ```sh
 cd provenance/FI101_RUNNER_V1_MEASURE_SEQ
-shasum -a 256 -c SHA256SUMS        # 23/23 OK
+shasum -a 256 -c SHA256SUMS        # 33/33 OK (2026-08-08 확인)
 ```
 
 `verify_manifest.py`는 서버·컨테이너 경로를 참조하므로 **서버에서 실행해야 한다**
 (`gihwan:/home/gihwan/mps4/FI101_RUNNER_V1_MEASURE_SEQ/`).
 
-현재 상태: **74/75 — `host_tooling.runner_proto_py_sha256` 드리프트**. 작업 사본
-`runner_proto.py`가 manifest 갱신 이후 두 차례 더 수정됐다. 동결 qualification 증거
-사본(`host/protocol_client/runner_proto.py`)은 선언값과 일치하며 미러 `SHA256SUMS`도
-23/23이므로 **인수 증거 자체는 유효**하다. 계속 변하는 작업 파일과 논문의 qualification
-evidence를 같은 immutability 계약에 넣은 것이 설계 문제이며, 분리가 필요하다.
+현재 상태 (2026-08-08 서버 재실행 확인): **QUALIFICATION 68/68 passed ·
+WORKING SNAPSHOT 10/10 intact**. 이전에 기록했던 74/75 드리프트는 manifest를
+2-class(동결 qualification / working tooling snapshot)로 분리해 해소됐다 — 계속 변하는
+작업 파일은 snapshot class로 옮겨 정보성으로만 비교한다.
+
+**주의**: working snapshot의 `10/10 intact`는 동결 시점 호스트 도구 사본의 무결성
+수치다. `FI101_MEASURE_TESTHOOKS`의 "10/10" (보드 실험 결과 주장)과는 다른 것을
+센다 — 후자는 raw artifact 부재로 재현 증거가 불완전하다 (아래 이미지 자격 표 참조).
 
 ## 이미지 자격 (중요)
 
