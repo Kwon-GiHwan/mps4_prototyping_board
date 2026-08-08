@@ -1,0 +1,48 @@
+2Selftest> 1
+
+Test : U85_PWRINDMAX_TEST
+
+Reset Success
+Always ask for CLK and PWR on Q interfaces
+Updating POWER_CTRL register with MAC_RAMP_VAR=2 
+Got IRQ, History_mask is ffff status_register is ffff0022
+Expected History_mask is set in CMD0_NPU_OP_STOP of the corresponding cmd stream include file
+Read match at address: NPU_REG_QREAD, Expected Read Value: 0x144 
+Testing CPM signals
+Test case:5,TEST PASSED.
+Test case:5,Test complete
+
+U85_PWRINDMAX_TEST : test result : PASS
+
+
+
+MPS4 SSE320 Selftest v1.0.8
+
+-help	displays help information
+Summary of results
+====================================
+ 0 : COUNTER              : Not Run  : Total Pass :    0 : Total Fail :    0
+ 1 : FPGA_I/O_BOARD_TEST  : Not Run  : Total Pass :    0 : Total Fail :    0
+ 2 : UART_TEST            : Not Run  : Total Pass :    0 : Total Fail :    0
+ 3 : BOARD_QSPI_TEST      : Not Run  : Total Pass :    0 : Total Fail :    0
+ 4 : BOARD_QSPI_FULL_TEST : Not Run  : Total Pass :    0 : Total Fail :    0
+ 5 : TIMER TEST           : Not Run  : Total Pass :    0 : Total Fail :    0
+ 6 : CSI_DDR_HDMI_TEST    : Not Run  : Total Pass :    0 : Total Fail :    0
+ 7 : MEMORY_TEST          : Not Run  : Total Pass :    0 : Total Fail :    0
+ 8 : LCM_TEST             : Not Run  : Total Pass :    0 : Total Fail :    0
+ 9 : KMU_TEST             : Not Run  : Total Pass :    0 : Total Fail :    0
+10 : OTP_TEST             : Not Run  : Total Pass :    0 : Total Fail :    0
+11 : DCU_TEST             : Not Run  : Total Pass :    0 : Total Fail :    0
+12 : DMA_REG_TEST         : Not Run  : Total Pass :    0 : Total Fail :    0
+13 : DMA_CONFIG_TEST      : Not Run  : Total Pass :    0 : Total Fail :    0
+14 : DMA_SRAM_XFER_TEST   : Not Run  : Total Pass :    0 : Total Fail :    0
+15 : DMA_TCM_XFER_TEST    : Not Run  : Total Pass :    0 : Total Fail :    0
+16 : U85_REGCONF_TEST     : PASS     : Total Pass :    1 : Total Fail :    0
+17 : U85_MAXPOOLING_TEST  : PASS     : Total Pass :    1 : Total Fail :    0
+18 : U85_AXIBUS_TEST      : PASS     : Total Pass :    1 : Total Fail :    0
+19 : U85_CONV_TEST        : PASS     : Total Pass :    1 : Total Fail :    0
+20 : U85_PWRIND_TEST      : PASS     : Total Pass :    1 : Total Fail :    0
+21 : U85_PWRINDMAX_TEST   : PASS     : Total Pass :    1 : Total Fail :    0
+
+Select the test you wish to run.
+

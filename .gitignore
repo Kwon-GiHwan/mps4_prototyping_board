@@ -1,0 +1,45 @@
+# --- tooling state -----------------------------------------------------------
+.omc/
+__pycache__/
+.DS_Store
+
+# --- Arm vendor artifacts: NOT committed --------------------------------------
+#
+# Redistribution terms for the Arm MPS4 / Corstone SSE-320 FI101 distribution
+# have not been established. Everything below is either Arm source or compiled
+# from it, so it is excluded until the licence is checked.
+#
+# Excluding is cheap to undo -- delete the line and commit. Publishing first is
+# not: removing a blob from a public repo needs history rewriting, and by then
+# it may already be cloned, forked or cached.
+#
+# The artifacts still exist locally and are hash-recorded in
+# build-env/BUILD_ENVIRONMENT.yaml, so provenance survives their absence here.
+
+# Arm Selftest source distribution and the working tree derived from it
+build-env/fi101-selftest-src.tgz
+build-env/selftest-worktree.tgz
+
+# Firmware images: compiled from Arm Selftest sources -> derivative works
+*.BIN
+
+# Arm-authored linker script and region headers (my overlay IS committed)
+firmware/LinkScripts/lnk.ld.S
+firmware/LinkScripts/lnk.sct
+firmware/LinkScripts/region_defs.h
+firmware/LinkScripts/region_limits.h
+
+# Board platform binaries live in a separate archive and are never committed:
+#   ~/Documents/Projects/personal/mps4_board_recovery/   (113 MB)
+
+# --- internal handoff artifacts: NOT committed --------------------------------
+#
+# Both of these record that a sudo password was exposed during the work session
+# and has NOT been rotated. Publishing that names an unrotated credential on a
+# known host — it makes the situation worse, not more transparent. They are
+# session/handoff material, not project deliverables.
+#
+# Source of truth for the handoff document is Obsidian:
+#   ~/Documents/Obsidian/wiki/projects/npu-benchmark.md
+HANDOFF-snapshot.md
+session-memory/

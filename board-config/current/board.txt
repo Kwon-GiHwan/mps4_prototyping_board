@@ -1,0 +1,8 @@
+; source: \MB\HBI0376B\board.txt
+BOARD: HBI0376B
+TITLE: Motherboard configuration file
+[MCCS]
+MBBIOS: mbb_v213.ebf          ;MB BIOS IMAGE
+CPLD: pld_v100.dat            ;CPLD slim vme data file, .alg file should accompany this
+[APPLICATION NOTE]            ;Please select the required processor
+APPFILE: FI101\fi101.txt      ;Corstone 320 FI101

@@ -1,0 +1,33 @@
+FI101 image set: RUNNER_V1_MEASURE   [FROZEN 2026-08-05]
+Two profiles: clean (MEASUREMENT_BUILD, stdio not linked) / wrapped (linker --wrap)
+
+Static verification (independently re-run, final tree state):
+  shared LinkScripts/lnk.ld.S UNCHANGED (ccc14041...), 0 __runner_ refs
+  symbols supplied by LinkScripts/lnk.measure.overlay.ld
+  clean-tree build x2 -> six hashes identical
+  denylist checker: PASS normal / FAIL on INJECT_VIOLATION=1 (make exit=2)
+  frozen build_runner reproduces ed06b1dc / 81d37a21 / 1ece5ddb
+
+KNOWN LIMITS
+  ISR-entry timestamp NOT available: u85.c:329 reinstalls the NPU vector as the
+  first statement of test_u85(). Coarse submit->return boundary only.
+  Valid metric name: submit_to_return_cycles / coarse_inference_window_cycles.
+  MUST NOT be called npu_execution_cycles or interpreted as isr_latency.
+  result region = whole .sec_noinit (3984 B); tight output bounds not achievable.
+  TX drain = 348 us (4 char times), a conservative time bound, NOT a detected state.
+  CMD_RUN protocol CHANGED: ACK precedes the window; unsolicited RUN_COMPLETE 0x31.
+  PMU disabled (#error guarded).
+0f3639d657f545be98da7d2551726b195ca0fb73b808f3cddab3a496da6cd055  clean/APP.BIN
+81d37a219a6b4141d0b433796711ab8af2ee2c3c668a28143a3ffe6a574ade98  clean/DDR.BIN
+a92041545c02223980a53d4e23480b6e825673f7f0590fcecd256844455ee599  clean/VECTORS.BIN
+5f3d98cf8c2e21235e99d5a3e89efe594344f44628435763987f09f66bd93030  wrapped/APP.BIN
+81d37a219a6b4141d0b433796711ab8af2ee2c3c668a28143a3ffe6a574ade98  wrapped/DDR.BIN
+cd473608a2584d229ab53091af620cabd4c4e77972a3c6d52de9adc1a475ff44  wrapped/VECTORS.BIN
+
+--- RECLASSIFIED 2026-08-05 ---
+STATUS: PRE_ABI CANDIDATE. NOT FOR BOARD DEPLOYMENT.
+Reason: RUN_COMPLETE payload has no magic/version/size header (40 raw put32
+fields, host must assume field order), and RUN does not poison the NPU output
+region, so a silently-failed RUN could let GET_RESULT return the PREVIOUS
+run's CRC (0x27084C4C) and look successful.
+Superseded by the ABI+poison rebuild.

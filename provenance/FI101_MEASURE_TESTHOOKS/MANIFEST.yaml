@@ -1,0 +1,39 @@
+# Same lineage as FI101_RUNNER_V1_MEASURE_SEQ, DIFFERENT qualification.
+# Kept separate so it can never be mistaken for a measurement image.
+
+image_id: FI101_MEASURE_TESTHOOKS
+lineage: FI101_RUNNER_V1_MEASURE_SEQ
+build_difference: "TEST_HOOKS=1 only (adds CMD_TEST_SKIP_NEXT_NPU = 0x7E)"
+
+qualification: stale-path-verification-artifact
+performance_data_eligible: false
+eligible_for_abc_contamination_gate: false
+
+prohibition: >-
+  NEVER use for performance data, and never as configuration A, B or C. It
+  contains a test-only command that can suppress NPU execution, so any timing
+  or cycle number taken from it is meaningless.
+
+artifacts:
+  app_sha256:     3946066302126ac8a09547d48ba8a9fdbeabcfbdd89130faa4d45a049de65a99
+  ddr_sha256:     81d37a219a6b4141d0b433796711ab8af2ee2c3c668a28143a3ffe6a574ade98
+  vectors_sha256: 9290311030e64ee3ffcd60f4a9dff15b29822c87b7938bcbf1e7fcfbcfe0308b
+
+# DDR.BIN is byte-identical to MEASURE_SEQ. APP/VECTORS differ -- the hook lives
+# in APP. Identifying an image by DDR.BIN alone cannot distinguish the two.
+
+evidence_produced:
+  date: 2026-08-06
+  scope: "one boot session, no reboot between the good and the skipped run"
+  result: "10/10 checks passed"
+  detail:
+    - "seq=1 normal RUN -> golden CRC 0x27084C4C"
+    - "CMD_TEST_SKIP_NEXT_NPU accepted (ACK 0xFE)"
+    - "seq=2 skipped RUN -> rc=0x534E5850, valid_flags=0x09 (RC_OK/OUTPUT_CHANGED clear)"
+    - "GET_RESULT(seq=2) -> ERR_RESULT_NOT_VALID 0x000B, no payload, region never read"
+    - "GET_RESULT(seq=1) -> ERR_RESULT_NOT_VALID 0x000B (superseded)"
+    - "8-byte GET_RESULT -> ERR_LENGTH 0x0003"
+  proves: >-
+    RESULT_READY + invalid result yields exactly 0x000B. This is a DIFFERENT
+    path from IDLE + GET_RESULT, which yields exactly 0x0005 via the dispatcher
+    state gate. The two must never be treated as interchangeable.

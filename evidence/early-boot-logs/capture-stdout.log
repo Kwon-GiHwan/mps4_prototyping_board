@@ -1,0 +1,4 @@
+Listening on /dev/serial/by-id/usb-FTDI_USB__-__Serial_Converter_00FT46259002B-if00-port0 for 60s ...
+Perform PBON operation NOW.
+
+Done. 0 bytes captured -> /home/gihwan/mps4/logs/mcc-power-cycle.bin

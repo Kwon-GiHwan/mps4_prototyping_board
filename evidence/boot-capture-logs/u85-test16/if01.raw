@@ -1,0 +1,44 @@
+1Selftest> 6
+
+Test : U85_REGCONF_TEST
+
+Reset Success
+Always ask for CLK and PWR on Q interfaces
+PORPL is connected to: 1, PORSL is connected to: 0
+Test case:0,TEST PASSED.
+Test case:0,Test complete
+
+U85_REGCONF_TEST : test result : PASS
+
+
+
+MPS4 SSE320 Selftest v1.0.8
+
+-help	displays help information
+Summary of results
+====================================
+ 0 : COUNTER              : Not Run  : Total Pass :    0 : Total Fail :    0
+ 1 : FPGA_I/O_BOARD_TEST  : Not Run  : Total Pass :    0 : Total Fail :    0
+ 2 : UART_TEST            : Not Run  : Total Pass :    0 : Total Fail :    0
+ 3 : BOARD_QSPI_TEST      : Not Run  : Total Pass :    0 : Total Fail :    0
+ 4 : BOARD_QSPI_FULL_TEST : Not Run  : Total Pass :    0 : Total Fail :    0
+ 5 : TIMER TEST           : Not Run  : Total Pass :    0 : Total Fail :    0
+ 6 : CSI_DDR_HDMI_TEST    : Not Run  : Total Pass :    0 : Total Fail :    0
+ 7 : MEMORY_TEST          : Not Run  : Total Pass :    0 : Total Fail :    0
+ 8 : LCM_TEST             : Not Run  : Total Pass :    0 : Total Fail :    0
+ 9 : KMU_TEST             : Not Run  : Total Pass :    0 : Total Fail :    0
+10 : OTP_TEST             : Not Run  : Total Pass :    0 : Total Fail :    0
+11 : DCU_TEST             : Not Run  : Total Pass :    0 : Total Fail :    0
+12 : DMA_REG_TEST         : Not Run  : Total Pass :    0 : Total Fail :    0
+13 : DMA_CONFIG_TEST      : Not Run  : Total Pass :    0 : Total Fail :    0
+14 : DMA_SRAM_XFER_TEST   : Not Run  : Total Pass :    0 : Total Fail :    0
+15 : DMA_TCM_XFER_TEST    : Not Run  : Total Pass :    0 : Total Fail :    0
+16 : U85_REGCONF_TEST     : PASS     : Total Pass :    1 : Total Fail :    0
+17 : U85_MAXPOOLING_TEST  : Not Run  : Total Pass :    0 : Total Fail :    0
+18 : U85_AXIBUS_TEST      : Not Run  : Total Pass :    0 : Total Fail :    0
+19 : U85_CONV_TEST        : Not Run  : Total Pass :    0 : Total Fail :    0
+20 : U85_PWRIND_TEST      : Not Run  : Total Pass :    0 : Total Fail :    0
+21 : U85_PWRINDMAX_TEST   : Not Run  : Total Pass :    0 : Total Fail :    0
+
+Select the test you wish to run.
+

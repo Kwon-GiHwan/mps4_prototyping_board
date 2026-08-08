@@ -1,0 +1,49 @@
+FI101 image set: RUNNER_V1_MEASURE_ABI   [2026-08-05]
+Supersedes RUNNER_V1_MEASURE_PRE_ABI. NOT YET BOARD-VERIFIED.
+
+Adds: RUN_COMPLETE ABI header, output-region poison, GET_RESULT validity gate,
+      INJECT_SKIP_NPU negative control, .sec_noinit allowlist gate.
+
+INDEPENDENTLY VERIFIED (re-run by the orchestrator, final on-disk tree):
+  shared LinkScripts/lnk.ld.S UNCHANGED  ccc14041...
+  clean-tree build x2 -> six hashes identical
+  frozen build_runner reproduces ed06b1dc / 81d37a21 / 1ece5ddb
+  injection gate: PASS normal / exit 1 FAIL on INJECT_SKIP_NPU=1
+                  / PASS again with --expect-injected-skip
+  .sec_noinit allowlist gate demonstrated FAILING on a non-u85 probe object
+
+WIRE FORMAT (RUN_COMPLETE, cmd 0x31): 220 bytes / 55 words, little-endian
+  w0 magic 0x524D4531 RME1 | w1 abi_version 1 | w2 total_payload_words 55
+  w3 header_words 8 | w4 run_sequence | w5 valid_flags | w6 run_rc
+  w7 payload_crc32 | w8..w54 = 47 measurement fields
+  CRC RANGE IS NON-CONTIGUOUS (w7 excluded):
+      zlib.crc32(p[16:28] + p[32:220]) == payload_crc32
+  Host MUST read total_payload_words/header_words, never hardcode 55.
+
+  RUN_VALID_RUN_COMPLETED 0x01 | RUN_RC_OK 0x02 | OUTPUT_CHANGED 0x04
+  COARSE_WINDOW 0x08 | EXPECTED_CRC_MATCH 0x10
+  GET_RESULT required mask = 0x0F (EXPECTED_CRC_MATCH reported, NOT required)
+  Rejection: NACK cmd 0xFF, ERR_RESULT_NOT_VALID = 0x000B.
+             All gate checks run BEFORE region_base/len are read -> no stale
+             bytes can reach the host.
+
+KNOWN LIMITS / JUDGEMENT CALLS
+  ISR-entry timestamp still unavailable (u85.c:329 reinstalls the NPU vector).
+  Coarse submit->return boundary only. Name it submit_to_return_cycles;
+  NEVER npu_execution_cycles, NEVER interpret as isr_latency.
+  EXPECTED_CRC_MATCH is computed over the WHOLE .sec_noinit; if the host queries
+  a narrower region its basis differs. Firmware reports, host judges.
+  GET_RESULT sequence check is OPT-IN (12-byte request form only).
+  allowlist gate bounds the section, not the output subregion.
+  Cache maintenance present but INERT (D-cache never enabled, MPU unconfigured).
+  Stale-scenario steps 3-5 are REASONED from a host-side model, not measured.
+  One unexplained transient 'bins rc=2' did not reproduce in 3 later builds.
+
+NOT VERIFIED: anything requiring the board -- real 0x27084C4C, on-wire framing,
+the 18 functional gates, whether the NPU writes the whole 1680-byte region.
+2a1cd6033eef5358147ad0445a685ae1089f08a6aa9ecedc744d47ddc295589e  clean/APP.BIN
+81d37a219a6b4141d0b433796711ab8af2ee2c3c668a28143a3ffe6a574ade98  clean/DDR.BIN
+609096484f19887265b340dffe8e46d97bcbb1d6b96c069bcf36d594c75bd401  clean/VECTORS.BIN
+747e3c091ae402b076940dea555a17897494a3a55c27eb3def74ea21aeccff70  wrapped/APP.BIN
+81d37a219a6b4141d0b433796711ab8af2ee2c3c668a28143a3ffe6a574ade98  wrapped/DDR.BIN
+98fad0ca901f478243bfaac04900afcea9d0a1c3a70c2285380b063cc7b4ecdd  wrapped/VECTORS.BIN

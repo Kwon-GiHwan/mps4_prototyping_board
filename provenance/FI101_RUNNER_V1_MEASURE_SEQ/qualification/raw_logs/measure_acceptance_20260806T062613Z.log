@@ -1,0 +1,48 @@
+=== gate 1: GET_RESULT from IDLE -> exactly STATE(0x0005) ===
+       ok   frame is a NACK, not a result                cmd=0xFF
+       ok   code is exactly STATE(0x0005)                code=0x0005
+       ok   body is the 4-byte NACK form                 payload=4B (result would be 16B)
+       ok   NACK reserved bytes are zero                 b'\x00\x00'
+       ok   NACK echoes GET_RESULT as the request        orig=0x40
+       ok   NACK reports state IDLE                      state=1
+       ok   state stayed IDLE across the rejection       1 -> 1
+       ok   PING still answers afterwards                state=1
+  PASS IDLE GET_RESULT refused with STATE(0x0005)       8/8 sub-conditions
+
+=== gates 2-3: the test-only hook is absent at runtime ===
+  PASS 0x7E rejected with an explicit NACK              code=0x0002 (NACK BAD_COMMAND (cmd 0x7E, state IDLE))
+  PASS PING still works after the rejection             state=1
+
+=== gates 4-9: single-RUN ABI smoke ===
+  PASS RUN rc == 0                                      rc=0
+  PASS measurement magic is RME1                        0x524D4531
+  PASS required valid_flags satisfied                   flags=0x0F
+  PASS host knows all 47 fields, no unparsed tail       trailing=0
+  PASS golden CRC                                       0x27084C4C at 0x90020CC0+0x100
+  PASS no late frames                                   late=0
+
+--- gates: 9/9 ---
+
+=== ten consecutive RUNs, each checked independently ===
+    run  1: seq=2   rc=0 flags=0x0F crc=0x27084C4C d[ovr=0 crc=0 rsy=0 seq=0] OK
+    run  2: seq=3   rc=0 flags=0x0F crc=0x27084C4C d[ovr=0 crc=0 rsy=0 seq=0] OK
+    run  3: seq=4   rc=0 flags=0x0F crc=0x27084C4C d[ovr=0 crc=0 rsy=0 seq=0] OK
+    run  4: seq=5   rc=0 flags=0x0F crc=0x27084C4C d[ovr=0 crc=0 rsy=0 seq=0] OK
+    run  5: seq=6   rc=0 flags=0x0F crc=0x27084C4C d[ovr=0 crc=0 rsy=0 seq=0] OK
+    run  6: seq=7   rc=0 flags=0x0F crc=0x27084C4C d[ovr=0 crc=0 rsy=0 seq=0] OK
+    run  7: seq=8   rc=0 flags=0x0F crc=0x27084C4C d[ovr=0 crc=0 rsy=0 seq=0] OK
+    run  8: seq=9   rc=0 flags=0x0F crc=0x27084C4C d[ovr=0 crc=0 rsy=0 seq=0] OK
+    run  9: seq=10  rc=0 flags=0x0F crc=0x27084C4C d[ovr=0 crc=0 rsy=0 seq=0] OK
+    run 10: seq=11  rc=0 flags=0x0F crc=0x27084C4C d[ovr=0 crc=0 rsy=0 seq=0] OK
+  PASS 10/10 runs clean                                 0 problem run(s)
+  PASS sequences strictly +1                            2..11
+  PASS golden CRC on every run                          distinct=1
+  PASS late_frames == 0 overall                         late=0
+
+=== reuse after RESET_RUNNER ===
+  PASS RESET_RUNNER returns to IDLE                     state=1
+  PASS RUN after reset succeeds                         rc=0 flags=0x0F seq=12
+  PASS GET_RESULT after reset is golden                 0x27084C4C
+
+=== SUMMARY ===
+passed: 16   failed: 0

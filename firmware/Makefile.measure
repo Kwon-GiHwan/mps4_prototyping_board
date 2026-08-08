@@ -1,0 +1,232 @@
+# Makefile.measure -- RUNNER_V1_MEASURE, measurement-clean firmware profiles.
+#
+# Usage (from the selftest/ root):
+#   make -f Makefile.measure PROFILE=wrapped
+#   make -f Makefile.measure PROFILE=clean
+#   make -f Makefile.measure PROFILE=clean check
+#
+# Negative controls / test-only builds (each lands in its OWN build dir):
+#   make -f Makefile.measure PROFILE=clean INJECT_VIOLATION=1 check  -> FAIL
+#   make -f Makefile.measure PROFILE=clean INJECT_INDIRECT=1  check  -> INCOMPLETE
+#   make -f Makefile.measure PROFILE=clean INJECT_SKIP_NPU=1  check  -> PASS in
+#                                              --expect-injected-skip mode only
+#   make -f Makefile.measure PROFILE=clean TEST_HOOKS=1       check  -> PASS in
+#                                              --expect-test-hooks mode only
+#
+# Branched from the FROZEN Makefile.runner. Deliberate differences only:
+#   1. BUILD is per-profile: build_measure_wrapped / build_measure_clean.
+#      Never writes into build_gcc/, build_rawrx/ or build_runner/.
+#   2. Selftest/runner_v1_main.c is filtered out as well as main.c and
+#      raw_rx_main.c -- runner_measure_main.c supplies main().
+#   3. Linker --wrap set for the logging denylist (BOTH profiles).
+#   4. A denylist call-graph check that FAILS THE BUILD on violation.
+# Flags, include dirs, link script, sort order and the three per-load-region
+# objcopy invocations are otherwise byte-for-byte the baseline.
+
+TOOLCHAIN := /opt/arm/gcc-arm-none-eabi/bin/arm-none-eabi-
+CC        := $(TOOLCHAIN)gcc
+OBJCOPY   := $(TOOLCHAIN)objcopy
+OBJDUMP   := $(TOOLCHAIN)objdump
+SIZE      := $(TOOLCHAIN)size
+NM        := $(TOOLCHAIN)nm
+
+CMSIS_INC := /opt/arm/ml-embedded-evaluation-kit/dependencies/cmsis-6/CMSIS/Core/Include
+
+# --- profile selection -------------------------------------------------------
+PROFILE ?= clean
+
+ifeq ($(PROFILE),wrapped)
+  BUILD          := build_measure_wrapped
+  PROFILE_CFLAGS := -DMEASUREMENT_WRAPPED_BUILD
+  # Advisory, not enforcing. See the banner the checker prints: a profile whose
+  # wrappers forward to __real_* necessarily retains the static call edge, so
+  # only the CLEAN profile can be gated on static reachability.
+  CHECK_MODE     := --advisory
+  # ASCII "MEAW" -- stable across rebuilds, no timestamp, so two clean
+  # rebuilds are bit-identical.
+  BUILD_ID       := 0x4D454157
+else ifeq ($(PROFILE),clean)
+  BUILD          := build_measure_clean
+  PROFILE_CFLAGS := -DMEASUREMENT_BUILD
+  # ASCII "MEAC"
+  BUILD_ID       := 0x4D454143
+else
+  $(error PROFILE must be 'wrapped' or 'clean', got '$(PROFILE)')
+endif
+
+# Negative control for the denylist checker. INJECT_VIOLATION=1 compiles a
+# direct __real_printf call into the measured path; `check` must then FAIL.
+ifeq ($(INJECT_VIOLATION),1)
+  PROFILE_CFLAGS += -DRUNNER_INJECT_DENYLIST_VIOLATION
+  CONTROL_TAG    := $(CONTROL_TAG)_inj
+endif
+
+# Third negative control: an INDIRECT transmit via the Driver_USART0 function
+# -pointer struct. The static checker cannot see through it and must report
+# INCOMPLETE; the runtime UART counter is what catches this class.
+ifeq ($(INJECT_INDIRECT),1)
+  PROFILE_CFLAGS += -DRUNNER_INJECT_INDIRECT_VIOLATION
+  CONTROL_TAG    := $(CONTROL_TAG)_ind
+endif
+
+# Fourth negative control: SKIP THE NPU ENTIRELY. This is the stale-output
+# hazard itself -- the run "fails" but the previous run's output is still
+# resident in NOLOAD .sec_noinit. With poisoning in place the output region
+# must instead still hold the poison, so output_crc == poison_crc,
+# RUN_VALID_OUTPUT_CHANGED stays clear and GET_RESULT must refuse.
+# `check` FAILS on any artifact built this way (marker symbol + missing
+# apU85Conv_TEST edge), so it can never reach a shipped BIN.
+ifeq ($(INJECT_SKIP_NPU),1)
+  PROFILE_CFLAGS += -DINJECT_SKIP_NPU_EXECUTION
+  CHECK_EXPECT   += --expect-injected-skip
+  CONTROL_TAG    := $(CONTROL_TAG)_skip
+endif
+
+# TEST-ONLY COMMAND HOOKS -- CMD_TEST_SKIP_NEXT_NPU (0x7E).
+#
+# Why this exists and INJECT_SKIP_NPU does not suffice: INJECT_SKIP_NPU is
+# compile-time and skips EVERY run, so it cannot produce the one sequence that
+# actually proves the stale-output defence works -- a SUCCESSFUL run followed
+# by a FAILED run in the SAME boot session. TEST_HOOKS=1 adds a host command
+# that arms a ONE-SHOT skip, so a single image can do:
+#     RUN (real, succeeds) -> TEST_SKIP_NEXT_NPU -> RUN (skipped, fails)
+# and the second RUN must NOT be able to return the first's CRC.
+#
+# CONTAINMENT -- this must never reach a normal MEASURE artifact:
+#   1. the handler exists only under -DRUNNER_TEST_ONLY_HOOKS;
+#   2. `check` FAILS a normal build in which handle_test_skip_next_npu is
+#      present OR reachable from dispatch() -- the same treatment
+#      INJECT_SKIP_NPU already gets;
+#   3. the marker symbol is named runner_inject_*, so the pre-existing marker
+#      gate fails a normal build carrying it as well. Two independent gates.
+#   4. it builds into its OWN directory (see CONTROL_TAG below), so a test-hooks
+#      ELF can never be mistaken for -- or silently reused as -- a normal one.
+ifeq ($(TEST_HOOKS),1)
+  PROFILE_CFLAGS += -DRUNNER_TEST_ONLY_HOOKS
+  CHECK_EXPECT   += --expect-test-hooks
+  CONTROL_TAG    := $(CONTROL_TAG)_hooks
+endif
+
+# --- negative-control build isolation ---------------------------------------
+# Every control gets its own BUILD directory. This is NOT tidiness: nothing in
+# this Makefile depends on CFLAGS, so building a control and then a normal
+# artifact into the SAME directory hands you stale objects compiled with the
+# control's -D still in them, and the gate would be inspecting an ELF that is
+# half one thing and half the other. Separate directories make that impossible.
+BUILD := $(BUILD)$(CONTROL_TAG)
+
+TARGET := $(BUILD)/runner_measure
+
+# Selftest_measure/ holds runner_measure_main.c. It is a NEW directory and is
+# deliberately NOT inside Selftest/: the frozen Makefile.gcc globs Selftest/*.c
+# with only retarget.c filtered out, so a new main() dropped into Selftest/
+# would break the frozen build_gcc link. See the report for details.
+SRCDIRS := Device_SSE-320 Drivers Selftest Selftest_cli Selftest_measure \
+           Serial Sleep Tests
+SRCS    := $(shell find $(SRCDIRS) -name '*.c' -not -name '._*')
+
+# retarget.c is armclang-only; main.c / raw_rx_main.c / runner_v1_main.c each
+# define main(). runner_measure_main.c replaces all of them.
+SRCS := $(filter-out Selftest/retarget.c Selftest/main.c Selftest/raw_rx_main.c \
+                     Selftest/runner_v1_main.c,$(SRCS))
+
+SRCS := $(sort $(SRCS))
+OBJS := $(patsubst %.c,$(BUILD)/%.o,$(SRCS))
+DEPS := $(OBJS:.o=.d)
+
+INCDIRS := $(sort $(dir $(shell find $(SRCDIRS) LinkScripts -name '*.h' -not -name '._*')))
+INCS    := $(addprefix -I,$(INCDIRS)) -I$(CMSIS_INC)
+
+ARCHFLAGS := -mcpu=cortex-m85+nomve+nofp -mthumb -mfloat-abi=soft
+
+LEGACY_C := -Wno-error=int-conversion \
+            -Wno-error=incompatible-pointer-types \
+            -Wno-error=implicit-function-declaration \
+            -Wno-error=implicit-int \
+            -Wno-error=return-mismatch \
+            -Wno-error=discarded-qualifiers
+
+# -fno-builtin-printf stops GCC folding printf into puts/putchar behind the
+# wrap set's back. puts and putchar are wrapped anyway, belt and braces.
+CFLAGS := $(ARCHFLAGS) -std=gnu11 -O1 -g3 \
+          -ffunction-sections -fdata-sections \
+          -fno-builtin-printf \
+          -Wno-unused-variable -Wno-unused-function -Wno-missing-braces \
+          $(LEGACY_C) \
+          $(PROFILE_CFLAGS) -DRUNNER_FIRMWARE_BUILD_ID=$(BUILD_ID) \
+          $(INCS) -MMD -MP
+
+# --- Contract 3: the wrap set -----------------------------------------------
+# Applied to BOTH profiles. In the wrapped profile the wrappers forward to
+# __real_* when not measuring. In the clean profile they are unconditionally
+# inert and never reference __real_*, so newlib stdio is never pulled into the
+# measured path at all.
+WRAP_SYMS := printf vprintf fprintf vfprintf puts putchar fwrite \
+             _write _write_r fputc serial_print
+WRAPFLAGS := $(foreach s,$(WRAP_SYMS),-Wl,--wrap=$(s))
+
+# CONTRACT C: the shared LinkScripts/lnk.ld.S is NOT edited. MEASURE-only
+# address-contract symbols come from an overlay applied on top of it.
+LDSCRIPT := $(BUILD)/lnk.ld
+LDOVERLAY := LinkScripts/lnk.measure.overlay.ld
+LDFLAGS  := $(ARCHFLAGS) --specs=nano.specs --specs=nosys.specs \
+            -T $(LDSCRIPT) -T $(LDOVERLAY) \
+            -Wl,-Map=$(TARGET).map,--cref \
+            -Wl,--gc-sections \
+            -Wl,--print-memory-usage \
+            $(WRAPFLAGS)
+LDLIBS   := -lm
+
+VECTOR_SECTIONS := --only-section=.vectors_rom
+APP_SECTIONS    := --only-section=.text --only-section=.ARM.extab \
+                   --only-section=.ARM.exidx \
+                   --only-section=.preinit_array --only-section=.init_array \
+                   --only-section=.fini_array \
+                   --only-section=.copy.table --only-section=.zero.table \
+                   --only-section=.vectors_ram --only-section=.data
+DDR_SECTIONS    := --only-section=.ddr
+
+DENYLIST_CHECK := Selftest_measure/check_measure_symbols.py
+
+.PHONY: all clean bins report check hashes
+all: bins check
+
+$(LDSCRIPT): LinkScripts/lnk.ld.S LinkScripts/region_defs.h LinkScripts/region_limits.h
+	@mkdir -p $(dir $@)
+	$(CC) -E -P -x c -ILinkScripts $< -o $@
+
+$(BUILD)/%.o: %.c
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(TARGET).elf: $(OBJS) $(LDSCRIPT) $(LDOVERLAY)
+	$(CC) $(OBJS) $(LDFLAGS) -o $@ $(LDLIBS)
+	$(SIZE) $@
+
+bins: $(TARGET).elf
+	$(OBJCOPY) -O binary $(VECTOR_SECTIONS) $(TARGET).elf $(BUILD)/VECTORS.BIN
+	$(OBJCOPY) -O binary $(APP_SECTIONS)    $(TARGET).elf $(BUILD)/APP.BIN
+	$(OBJCOPY) -O binary $(DDR_SECTIONS)    $(TARGET).elf $(BUILD)/DDR.BIN
+	@ls -l $(BUILD)/VECTORS.BIN $(BUILD)/APP.BIN $(BUILD)/DDR.BIN
+
+# Contract 3: non-zero exit on any denylist symbol reachable from the measured
+# path. Runs over the LINKED ELF, so it sees what actually got linked, not what
+# the sources appear to call.
+check: $(TARGET).elf
+	python3 $(DENYLIST_CHECK) \
+	    --elf $(TARGET).elf \
+	    --map $(TARGET).map \
+	    --objdump $(OBJDUMP) \
+	    --nm $(NM) \
+	    --profile $(PROFILE) $(CHECK_MODE) $(CHECK_EXPECT)
+
+hashes: bins
+	@sha256sum $(BUILD)/APP.BIN $(BUILD)/DDR.BIN $(BUILD)/VECTORS.BIN
+
+report: $(TARGET).elf
+	$(OBJDUMP) -h $(TARGET).elf
+
+clean:
+	rm -rf $(BUILD)
+
+-include $(DEPS)

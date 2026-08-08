@@ -1,0 +1,46 @@
+; source: \MB\HBI0376B\FI101\fi101.txt
+BOARD: HBI0376
+TITLE: Arm MPS4 Corstone 320 FI101 FPGA configuration file
+[FPGAS]
+TOTALFPGAS: 1               ;Total Number of FPGAs
+; Top bit file
+F0FILE: fi101_00.bit        ;FPGA0 Filename
+F0MODE: FPGA                ;FPGA0 Programming Mode
+[OSCCLKS]
+TOTALOSCCLKS: 7
+; Clock generators OSC[5:0] connect to FPGA top level signals OSCCLKA[5:0]
+; respectively. OSCCLKA[3:0] have a second identical output OSCCLKB[3:0]
+; which connect to a different FPGA BANK to improve routing.
+; FPGA top level signal REFCLK24 is driven by a fixed 24MHz reference.
+; Clockgen OSC6 drives the DDR reference clock c0_sys_clk_p/n.
+OSC0:   200.0   ; OSCCLK[0]      - CSI dphy_clk_200M_int video clocks
+OSC1:    25.0   ; OSCCLK[1]      - FPGA mainclk
+OSC2:    24.0   ; OSCCLK[2]      - Not used in this design
+OSC3:    24.576 ; OSCCLK[3]      - Audio MCLK
+OSC4:    40.0   ; OSCCLK[4]      - QSPI CLK (Generated from this as OSCCLK4 divide by 2)
+OSC5:    25.175 ; OSCCLK[5]      - HDMI Pixel clock (VGA default)
+OSC6:   100.0   ; c0_sys_clk_p/n - DDR ref clock (100MHz x9, 900MHz default)
+[HARDWARE CONTROL]
+ASSERTNPOR: FALSE           ;External resets assert nPOR
+LEGACYRST: FALSE            ;
+CPUWAITREG: 0x80000000      ;CPUWAIT SCC register (0x00000xxx=SMB access/0x80000xxx=SCC access)
+CPUWAIT: 0x00000000         ;CPUWAIT value, set to 0xFFFFFFFF when using CB_nRST
+[PERIPHERAL SUPPORT]
+SMB_LAR: TRUE               ;SMB LAR interface is supported (MCC_SMC<>FPGA_SMB)
+FPGA_SMB: TRUE
+FPGA_SCC: TRUE
+SCCREG:  0x59300000         ;SCC registers base address
+FPGA_DDR: TRUE              ;DDR interface is supported
+DDRBASE: 0x010059208000     ;DDR I2C register address
+DDRTEST: 0x70000000         ;DDR Memory address for system boot test
+FPGA_SYSREG: FALSE
+FPGA_HDMI: TRUE             ;HDMI interface is supported
+HDMIBASE: 0x010059309000    ;HDMI I2C register address
+FPGA_QSPI: TRUE             ;QSPI interface is supported
+;QSPITEST: TRUE             ;QSPI RW and XIP test
+QSPIBASE: 0x51800000        ;QSPI RW controller base address
+XIPBASE:  0x010038000000    ;QSPI XIP data base address
+QSPISCC:  0x80000008        ;QSPI SCC register (0x00000xxx=SMB access/0x80000xxx=SCC access)
+[SCC REGISTERS]
+TOTALSYSCONS: 1             ;Total Number of SYSCON registers defined
+SYSCON: 0xFF8 0x01000000    ;Rev B board

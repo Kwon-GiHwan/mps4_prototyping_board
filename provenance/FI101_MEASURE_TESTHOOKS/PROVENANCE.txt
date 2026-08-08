@@ -1,0 +1,19 @@
+FI101 image set: MEASURE_TESTHOOKS   [2026-08-06]
+PURPOSE: evidence artifact for the same-boot stale-output demonstration ONLY.
+Built from the identical source/linker/options as RUNNER_V1_MEASURE_SEQ,
+differing only by TEST_HOOKS=1 (adds CMD_TEST_SKIP_NEXT_NPU = 0x7E).
+
+*** NEVER USE FOR PERFORMANCE DATA. ***
+It contains a test-only command that can suppress NPU execution.
+
+Demonstrated on hardware 2026-08-06, one boot session, no reboot between runs:
+  seq=1 normal RUN  -> golden CRC 0x27084C4C
+  CMD_TEST_SKIP_NEXT_NPU accepted (ACK 0xFE)
+  seq=2 skipped RUN -> rc=0x534E5850, valid_flags=0x09 (RC_OK/OUTPUT_CHANGED clear)
+  GET_RESULT(seq=2) -> ERR_RESULT_NOT_VALID 0x000B, no payload
+  GET_RESULT(seq=1) -> ERR_RESULT_NOT_VALID 0x000B (superseded)
+  8-byte GET_RESULT -> ERR_LENGTH 0x0003
+  10/10 checks passed.
+3946066302126ac8a09547d48ba8a9fdbeabcfbdd89130faa4d45a049de65a99  FI101_MEASURE_TESTHOOKS/APP.BIN
+81d37a219a6b4141d0b433796711ab8af2ee2c3c668a28143a3ffe6a574ade98  FI101_MEASURE_TESTHOOKS/DDR.BIN
+9290311030e64ee3ffcd60f4a9dff15b29822c87b7938bcbf1e7fcfbcfe0308b  FI101_MEASURE_TESTHOOKS/VECTORS.BIN

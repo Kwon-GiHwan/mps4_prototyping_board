@@ -1,0 +1,113 @@
+# Makefile.gcc -- arm-none-eabi-gcc port of the armclang/DS-5 Selftest build.
+# Usage:  make -f Makefile.gcc            (from the selftest/ root)
+
+TOOLCHAIN := /opt/arm/gcc-arm-none-eabi/bin/arm-none-eabi-
+CC        := $(TOOLCHAIN)gcc
+OBJCOPY   := $(TOOLCHAIN)objcopy
+OBJDUMP   := $(TOOLCHAIN)objdump
+SIZE      := $(TOOLCHAIN)size
+NM        := $(TOOLCHAIN)nm
+
+# cmsis_gcc.h is not shipped with the project (only cmsis_armclang.h is);
+# take it from the read-only CMSIS-6 tree in the image.
+CMSIS_INC := /opt/arm/ml-embedded-evaluation-kit/dependencies/cmsis-6/CMSIS/Core/Include
+
+BUILD  := build_rawrx
+TARGET := $(BUILD)/selftest
+
+SRCDIRS := Device_SSE-320 Drivers Selftest Selftest_cli Serial Sleep Tests
+# '._*' are macOS AppleDouble resource forks that travelled with the sources;
+# they are binary junk, not C.
+SRCS    := $(shell find $(SRCDIRS) -name '*.c' -not -name '._*')
+
+# Selftest/retarget.c is armclang-only. Its whole useful body sits inside
+# "#if defined(__ARMCC_VERSION)"; the #else branch is a dead GCC retarget that
+# defines a SECOND _write() (clashing with Serial/serial.c) and calls
+# UartPutc(), a function that does not exist anywhere in this project.
+# Under GCC newlib supplies everything that branch was standing in for.
+SRCS    := $(filter-out Selftest/retarget.c Selftest/main.c,$(SRCS))
+
+# $(sort) is load-bearing, not cosmetic: it makes the link order deterministic
+# AND alphabetical, which is the order armlink used. Within sec_command_stream /
+# sec_input_data / sec_weight_data the per-test objects are then emitted as
+# u85_AXIBus, u85_Convolution, u85_MaxPooling, u85_PowerIndicative,
+# u85_PowerIndicativeMax, u85_RegConfig -- matching the official DDR.BIN layout.
+SRCS    := $(sort $(SRCS))
+OBJS    := $(patsubst %.c,$(BUILD)/%.o,$(SRCS))
+DEPS    := $(OBJS:.o=.d)
+
+INCDIRS := $(sort $(dir $(shell find $(SRCDIRS) LinkScripts -name '*.h' -not -name '._*')))
+INCS    := $(addprefix -I,$(INCDIRS)) -I$(CMSIS_INC)
+
+# .cproject: Cortex-M85.NoFPU / cortex-m85+nomve+nofp / thumb / soft float
+ARCHFLAGS := -mcpu=cortex-m85+nomve+nofp -mthumb -mfloat-abi=soft
+
+# GCC 14+ promotes these to hard errors by default. The Selftest sources
+# contain pre-existing sloppiness that armclang accepted (NULL assigned to
+# integer fields, int vs int32_t function pointers, implicit decls). Demote
+# them to warnings so the sources stay untouched.
+LEGACY_C := -Wno-error=int-conversion \
+            -Wno-error=incompatible-pointer-types \
+            -Wno-error=implicit-function-declaration \
+            -Wno-error=implicit-int \
+            -Wno-error=return-mismatch \
+            -Wno-error=discarded-qualifiers
+
+CFLAGS  := $(ARCHFLAGS) -std=gnu11 -O1 -g3 \
+           -ffunction-sections -fdata-sections \
+           -fno-builtin-printf \
+           -Wno-unused-variable -Wno-unused-function -Wno-missing-braces \
+           $(LEGACY_C) \
+           $(INCS) -MMD -MP
+
+# nano.specs -> newlib-nano; nosys.specs -> syscall stubs (_sbrk, _close, ...).
+# serial.c already provides _write(), which overrides the libnosys weak stub,
+# so NO second retarget layer is added.
+LDSCRIPT := $(BUILD)/lnk.ld
+LDFLAGS  := $(ARCHFLAGS) --specs=nano.specs --specs=nosys.specs \
+            -T $(LDSCRIPT) \
+            -Wl,-Map=$(TARGET).map,--cref \
+            -Wl,--gc-sections \
+            -Wl,--print-memory-usage
+# newlib crt0 (_start) IS required: CMSIS defines __PROGRAM_START == __cmsis_start,
+# which tail-calls _start. So no -nostartfiles.
+LDLIBS   := -lm
+
+# --- objcopy section groups, one per armlink load region --------------------
+VECTOR_SECTIONS := --only-section=.vectors_rom
+APP_SECTIONS    := --only-section=.text --only-section=.ARM.extab \
+                   --only-section=.ARM.exidx \
+                   --only-section=.preinit_array --only-section=.init_array \
+                   --only-section=.fini_array \
+                   --only-section=.copy.table --only-section=.zero.table \
+                   --only-section=.vectors_ram --only-section=.data
+DDR_SECTIONS    := --only-section=.ddr
+
+.PHONY: all clean bins report
+all: bins
+
+$(LDSCRIPT): LinkScripts/lnk.ld.S LinkScripts/region_defs.h LinkScripts/region_limits.h
+	@mkdir -p $(dir $@)
+	$(CC) -E -P -x c -ILinkScripts $< -o $@
+
+$(BUILD)/%.o: %.c
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(TARGET).elf: $(OBJS) $(LDSCRIPT)
+	$(CC) $(OBJS) $(LDFLAGS) -o $@ $(LDLIBS)
+	$(SIZE) $@
+
+bins: $(TARGET).elf
+	$(OBJCOPY) -O binary $(VECTOR_SECTIONS) $(TARGET).elf $(BUILD)/VECTORS.BIN
+	$(OBJCOPY) -O binary $(APP_SECTIONS)    $(TARGET).elf $(BUILD)/APP.BIN
+	$(OBJCOPY) -O binary $(DDR_SECTIONS)    $(TARGET).elf $(BUILD)/DDR.BIN
+	@ls -l $(BUILD)/VECTORS.BIN $(BUILD)/APP.BIN $(BUILD)/DDR.BIN
+
+report: $(TARGET).elf
+	$(OBJDUMP) -h $(TARGET).elf
+
+clean:
+	rm -rf $(BUILD)
+
+-include $(DEPS)

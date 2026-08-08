@@ -1,0 +1,25 @@
+# Board recovery archive — pointer only.
+#
+# The vendor platform binaries are NOT in this mirror. 113 MB of vendor
+# binary does not belong in a source tree, and redistribution terms for the
+# Arm FI101 distribution are unverified. They are preserved as artifacts at:
+#
+#   ~/Documents/Projects/personal/mps4_board_recovery/
+#
+# A hash tells you whether a file you already have is the right one. It does
+# not give you the file. That is why the artifacts are archived, not just
+# hashed — see FI101_BOARD_RECOVERY_MANIFEST.yaml there.
+
+342e8b643c29f7431b719ff9da71e5cdd82937661904f0e9d49ce2b9919e8dea  FI101_BOARD_RECOVERY_MANIFEST.yaml
+ffa3e5bd0363f791d61f9673074c625865f1e6a8f24e53ee303372c64ef3597d  application/APP.BIN
+81d37a219a6b4141d0b433796711ab8af2ee2c3c668a28143a3ffe6a574ade98  application/DDR.BIN
+45e943c577e3744104d53cf57c7d0afb369ff68a99e5e6906971d71503f06c92  application/VECTORS.BIN
+512041aea2d6666dccc2a78d3896755260507aaabd3ceaa0d291312b80a62104  config/board.txt
+5f374ff3c4a5f38f77fe1782c54c4f81b703ba4bb91635a3ba167abe83f70fee  config/config.txt
+7c4d06b944ad25043e92b198292db528b90fb84760cbe55598fd7e1f0c5d40b4  config/ee0376b.txt
+220d8c76e60b0f93f486f35e9487d3b1c173e8a32ac84b2f303455d156aed3f3  config/fi101.txt
+f63dd2c40fa89df9076d50747af1d90f37bd381d9bd0b9005a771a8d683776a7  config/images.txt
+35455ba982aaf6fe46ec8407bb759bf2336f6ec111e4f5b95582c09f085f0919  platform/fi101_00.bit
+90d84f1556fabefab4fde7574e962d19682b7f1670f09998654c31dc5b8b5c39  platform/mbb_v213.ebf
+b85547ea4821eb5a3368e9a7cf81f4948978c9837782af51adc5f5d85ba75e72  platform/pld_v100.alg
+c9dbf02b3f9ca66f4591cb68d4cb9425318910df9a36fa75e57b72605e5bd07f  platform/pld_v100.dat

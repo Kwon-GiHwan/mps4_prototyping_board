@@ -1,0 +1,71 @@
+FI101 image set: RUNNER_V1_MEASURE_SEQ   [2026-08-06]
+Supersedes MEASURE_ABI. Adds mandatory sequence + test-only skip-next hook.
+STATUS: static verification complete. NOT YET BOARD-VERIFIED. Do not deploy as
+final until the same-boot stale demonstration passes on hardware.
+
+INDEPENDENTLY RE-RUN by the orchestrator, final on-disk tree:
+  lnk.ld.S            ccc14041...  UNCHANGED (frozen)
+  runner_v1_main.c    1aa96fd0...  UNCHANGED (FUNCTIONAL untouched)
+  clean build x2 -> six hashes identical
+  frozen build_runner reproduces ed06b1dc / 81d37a21 / 1ece5ddb
+  skip-next hook symbols in NORMAL artifact: 0
+  checker on normal artifact: exit 0 (PASS)
+  normal artifact judged WITH --expect-test-hooks: exit 1 (FAIL)  <- vacuous-pass guard
+
+CHANGES
+  GET_RESULT in measure-v2: 12-byte form ONLY (base,len,run_sequence).
+    8-byte request -> ERR_LENGTH 0x0003.
+    Gate (all required): requested_sequence == last_completed_sequence,
+    last_run_completed, run_rc == 0, valid_flags mask 0x0F, output_crc != poison_crc.
+    Any failure -> ERR_RESULT_NOT_VALID 0x000B, no payload, region never read.
+    New last_completed_sequence/last_run_completed are written together only at
+    the END of handle_run (the old last_run_sequence was stamped at the top and
+    would have matched a run that never finished).
+  RUN_VALID_FULL_OUTPUT_EXPECTED_CRC_MATCH (0x10, renamed): reported, NOT required.
+    It is a CRC over all 3984 B of .sec_noinit. The golden judgement is the HOST
+    comparing GET_RESULT(0x90020cc0, 0x100) == 0x27084C4C -- 256 B, different
+    evidence. Never use this flag for that judgement.
+  CMD_TEST_SKIP_NEXT_NPU = 0x7E, only under -DRUNNER_TEST_ONLY_HOOKS
+    (make TEST_HOOKS=1). 0x7E is the highest usable id: ACK is cmd|0x80 so ids
+    must be <= 0x7F, and 0x7F|0x80 == 0xFF == NACK.
+
+RESIDUAL LIMITATION (agent-flagged, accepted)
+  A hook inlined into dispatch would evade both gate arms. What catches that is
+  --expect-test-hooks asserting the symbol IS present in the hooks build: if
+  noinline were dropped, the hooks build fails rather than the normal build
+  passing vacuously.
+
+NOT EXECUTED: firmware never run. The success-then-failure sequence that the
+skip-next hook exists to produce has NOT been demonstrated on hardware. No host
+has observed ERR_LENGTH or a wrong-sequence rejection. OUTPUT_CHANGED staying
+clear on a skipped run is argued from the poison logic, not measured.
+96b3715aa031de74eb3775c9d21d6b701f1d8d2ce2496b7aa1bfc845c4463388  clean/APP.BIN
+81d37a219a6b4141d0b433796711ab8af2ee2c3c668a28143a3ffe6a574ade98  clean/DDR.BIN
+f4e20c093ba7d05ec46380977f07d0102e817488e333ecc46502b1cf794f98b3  clean/VECTORS.BIN
+a5fa6253073a918754fefbdeca7b7c65edfebe9f76ddd0258348e4b4e4b52835  wrapped/APP.BIN
+81d37a219a6b4141d0b433796711ab8af2ee2c3c668a28143a3ffe6a574ade98  wrapped/DDR.BIN
+f9a268d9bb894b126663512375161837ad8d1f4000c77310c2a52bf11753bef8  wrapped/VECTORS.BIN
+
+--- AMENDMENT 2026-08-06 -------------------------------------------------------
+The header above says "NOT YET BOARD-VERIFIED". That is now SUPERSEDED, not
+deleted, so the original build-time claim stays auditable.
+
+BOARD-VERIFIED 2026-08-06 from a fresh MCC REBOOT (DDR self-test PASSED, SCC
+CPUWAIT cleared), clean variant deployed:
+  MEASURE acceptance   16/16   (9 gates + 10 consecutive RUNs + RESET reuse)
+  runner gate suite    15/15   (ALL GATES PASSED, PROTO=measure-v2)
+  run_sequence 2..11 strictly +1, then 12 after RESET_RUNNER
+  golden CRC 0x27084C4C on every run, distinct values = 1, late_frames = 0
+  per-RUN deltas 0: rx_overrun, bad_crc, parser_resync, sequence_error
+
+Two corrections were made to the ACCEPTANCE SPEC, not to the firmware:
+  1. IDLE + GET_RESULT expects exactly STATE 0x0005, not RESULT_NOT_VALID
+     0x000B. The dispatcher state gate (runner_measure_main.c:2236) runs before
+     the handler. 0x000B belongs to the freshness gate (:1984-2014), reachable
+     only from an allowed state -- see FI101_MEASURE_TESTHOOKS.
+  2. The NACK body is 4 bytes, not 2. send_nack() (:938) emits a fixed
+     {request_command, runner_state, 0, 0} for every error code.
+
+QUALIFICATION: functional-qualified / measurement candidate.
+NOT measurement-golden. Not yet eligible for performance data -- that requires
+the A/B/C contamination gates. See MANIFEST.yaml in this directory.

@@ -1,0 +1,9 @@
+; source: \config.txt
+TITLE: Arm MPS4 FPGA prototyping board configuration file
+[CONFIGURATION]
+AUTORUN: FALSE              ;Auto Run from power on
+AUTORUNDELAY: 3             ;Delay in seconds to wait for key press to stop boot up
+UARTMODE: 0                 ;0-MCC:FPGA0, 1-MCC:FPGA1, 2-MCC/FPGA0:FPGA1
+FMC_FORCE: 1V8              ;Force FMC power ON
+DVIMODE: VGA                ;VGA/SVGA/XGA/SXGA/UXGA or HD1080 (MCC sets OSCCLK5)
+FARM_MODE: FALSE            ;Enables Farm support for nPBON

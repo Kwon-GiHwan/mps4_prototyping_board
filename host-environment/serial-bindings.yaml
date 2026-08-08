@@ -1,0 +1,45 @@
+# FTDI serial hardcoding inventory — generated 2026-08-08T07:47Z
+#
+# This board's FTDI serial number is baked into every script below. Nothing
+# is refactored here: the scripts are frozen working-snapshot artifacts and
+# editing them would break that freeze. This file exists so a future move to
+# a different MPS4 knows exactly what to change.
+#
+current_board_ftdi_serial: 00FT46259002B
+port_map:
+  if00-port0: MCC console (CR line ending)
+  if01-port0: FPGA UART0 / runner protocol (LF)
+  if02-port0: FPGA UART1
+  if03-port0: FPGA UART2
+baud: 115200 8N1   # also literal in the scripts
+
+hardcoded_locations:
+  - host/capture_all_uart.py:3
+  - host/mcc_harness.py:24
+  - host/tests/test_measure_accept.py:37
+  - host/tests/test_runner_gate.py:28
+  - host/tests/test_stale_demo.py:29
+  - host/tests/test_rawrx.py:14
+  - host/tests/test_pmu_board.py:19
+  - host/bringup/reset-test.py:3
+  - host/bringup/state-probe.py:2
+  - host/bringup/verbose-test.py:14
+  - host/bringup/expA-test.py:14
+  - host/bringup/expC-test.py:14
+  - host/bringup/mcc-help.py:2
+  - host/bringup/expB-test.py:14
+  - host/bringup/reseat-test.py:14
+  - host/bringup/scc-read.py:12
+  - host/bringup/boot-capture.py:6
+  - host/bringup/memtest.py:14
+  - host/bringup/mcc-usboff.py:3
+  - host/bringup/reboot-test.py:14
+  - host/bringup/gcc-boot.py:14
+  - host/bringup/mcc-usbon.py:3
+  - host/bringup/u85test.py:17
+  - host/bringup/final-test.py:14
+  - host/bringup/recovery-test.py:14
+  - host/bringup/axi-probe.py:12
+  - host/bringup/mcc-probe.py:3
+  - host/bringup/reset-boot-test.py:3
+  - host/bringup/mcc-shutdown.py:2

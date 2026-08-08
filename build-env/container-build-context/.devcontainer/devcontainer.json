@@ -1,0 +1,9 @@
+{
+  "name": "Arm NPU Lab",
+  "build": { "dockerfile": "Dockerfile" },
+  "features": { ... },
+  "customizations": { ... },
+
+  // 컨테이너가 생성된 직후에 실행될 명령어들을 정의
+  "postCreateCommand": "pip3 install ethos-u-vela && if [ ! -d 'ml-embedded-evaluation-kit' ]; then git clone https://gitlab.arm.com/artificial-intelligence/ethos-u/ml-embedded-evaluation-kit.git; fi"
+}

@@ -1,0 +1,175 @@
+-Selftest> 
+No tests chosen to run
+
+Select the test you wish to run.
+
+7Selftest> 
+
+Test : MEMORY_TEST
+
+Testing 8GB DIMM...
+
+
+DDR Memory Test Start 0x60000000 (Bank:0 Non-Secure)...
+Data bus test start...
+
+Data bus test: 
+Pass
+
+Address bus test start...
+
+Address bus test: 
+Pass
+
+Memory integrity test start...
+
+Memory integrity test: 
+Pass
+
+DDR Memory Test: Pass
+
+
+
+DDR Memory Test Start 0x70000000 (Bank:1 Secure)...
+Data bus test start...
+
+Data bus test: 
+Pass
+
+Address bus test start...
+
+Address bus test: 
+Pass
+
+Memory integrity test start...
+
+Memory integrity test: 
+Pass
+
+DDR Memory Test: Pass
+
+
+
+DDR Memory Test Start 0x80000000 (Bank:2 Non-Secure)...
+Data bus test start...
+
+Data bus test: 
+Pass
+
+Address bus test start...
+
+Address bus test: 
+Pass
+
+Memory integrity test start...
+
+Memory integrity test: 
+Pass
+
+DDR Memory Test: Pass
+
+
+
+DDR Memory Test Start 0x90000000 (Bank:3 Secure)...
+Data bus test start...
+
+Data bus test: 
+Pass
+
+Address bus test start...
+
+Address bus test: 
+Pass
+
+Memory integrity test start...
+
+Memory integrity test: 
+Pass
+
+DDR Memory Test: Pass
+
+
+
+DDR Memory Test Start 0xA0000000 (Bank:4 Non-Secure)...
+Data bus test start...
+
+Data bus test: 
+Pass
+
+Address bus test start...
+
+Address bus test: 
+Pass
+
+Memory integrity test start...
+
+Memory integrity test: 
+Pass
+
+DDR Memory Test: Pass
+
+
+
+DDR Memory Test Start 0xB0000000 (Bank:5 Secure)...
+Data bus test start...
+
+Data bus test: 
+Pass
+
+Address bus test start...
+
+Address bus test: 
+Pass
+
+Memory integrity test start...
+
+Memory integrity test: 
+Pass
+
+DDR Memory Test: Pass
+
+
+
+DDR Memory Test Start 0xC0000000 (Bank:6 Non-Secure)...
+Data bus test start...
+
+Data bus test: 
+Pass
+
+Address bus test start...
+
+Address bus test: 
+Pass
+
+Memory integrity test start...
+
+Memory integrity test: 
+Pass
+
+DDR Memory Test: Pass
+
+
+
+DDR Memory Test Start 0xD0000000 (Bank:7 Secure)...
+Data bus test start...
+
+Data bus test: 
+Pass
+
+Address bus test start...
+
+Address bus test: 
+Pass
+
+Memory integrity test start...
+
+Memory integrity test: 
+Pass
+
+DDR Memory Test: Pass
+
+
+Memory mirror test...
+
+Memory test: PASSED
+Please reboot the board.

@@ -1,0 +1,13 @@
+FI101 image set: RUNNER_V1_FUNCTIONAL   [FROZEN 2026-08-04]
+Status: functional gate PASSED (18/18) on hardware. Do not modify.
+Known limitation: legacy printf from u85_Convolution.c executes inside the
+measured window, so latency / PMU / stall values from this build are NOT
+usable as performance data.
+ed06b1dc89fd3f277441c9b28d0b421061521e583770475d33ce09c089b742bc  FI101_RUNNER_V1/APP.BIN
+81d37a219a6b4141d0b433796711ab8af2ee2c3c668a28143a3ffe6a574ade98  FI101_RUNNER_V1/DDR.BIN
+1ece5ddb12e724c3bf13340386a1614a1d34c7544a2d22bd558b1dd3c8056926  FI101_RUNNER_V1/VECTORS.BIN
+ccc1404126abe2112142242b44f003b27b5e6d52c2b27a909283e78f2b59789c  LinkScripts/lnk.ld.S
+e269d32423e76b7d7ae1d8a854f44c8c1f7b46bef5bbe4685ec9caad88b0c00c  Makefile.runner
+1aa96fd0445e5b7d8838a1eec075e73565de36c065fa42fd71db6e6e8995df93  Selftest/runner_v1_main.c
+7e383dc342c5e106154ed2bdfed0b3c01a32dff1bc06f0c0c1f3d657ad49788d  build_runner/lnk.ld
+arm-none-eabi-gcc (Arm GNU Toolchain 15.2.Rel1 (Build arm-15.86)) 15.2.1 20251203

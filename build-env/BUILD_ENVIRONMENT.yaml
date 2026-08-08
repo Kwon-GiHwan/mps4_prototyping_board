@@ -1,0 +1,147 @@
+# Build environment provenance.
+#
+# The restore drill (2026-08-08) showed the mirror verified cleanly but could
+# NOT rebuild: every vendor directory (Device_SSE-320, Drivers, Tests, Serial,
+# Sleep, Selftest_cli) was absent. Source hashes prove WHAT was built; this file
+# plus the tarball below provide WHAT IT WAS BUILT AGAINST and WITH.
+#
+# This project has already been bitten by toolchain sensitivity -- armclang
+# scatter to GNU ld porting, linker ordering, object ordering, 0xFF padding --
+# so a version string alone is not enough. The container digest is the anchor.
+
+schema_version: 1
+recorded: "2026-08-08"
+
+# RESTORE DRILL, 2026-08-08 -- read this before trusting either archive.
+#
+# fi101-selftest-src.tgz is the ORIGINAL vendor distribution and does NOT
+# rebuild: 67 compile errors, CMSIS __ISB/__DSB macro conflicts. It also carries
+# 315 macOS AppleDouble files the working tree does not have, and deleting those
+# does not fix it. The working tree has diverged from the distribution in ways
+# the distribution alone cannot reconstruct.
+#
+# selftest-worktree.tgz is the ACTUAL build tree and DOES rebuild, bit-exactly,
+# for both images, from a clean extraction into an empty directory. Use it.
+# The vendor tarball is kept only as the upstream reference.
+restore_drill:
+  date: "2026-08-08"
+  from_vendor_tarball: FAILS (67 compile errors)
+  from_worktree_archive: PASSES (both images bit-identical)
+  worktree_archive: selftest-worktree.tgz
+  worktree_archive_sha256: b85a53aa868f3ef473f68a016242acc6c95da4bdba9a4dcff4106dbf1fce66ff
+  procedure: >-
+    tar xzf build-env/selftest-worktree.tgz -C <empty>; cd <empty>/selftest;
+    make -f Makefile.measure PROFILE=clean bins;
+    make -f Makefile.pmu PROFILE=clean bins; compare against expected_output.
+
+vendor_source:
+  file: fi101-selftest-src.tgz
+  status: UPSTREAM REFERENCE ONLY -- does not rebuild, see restore_drill
+  sha256: 0811b0b7e5a34f12b87a9db5919bd0bc710b70d798ed14a43621c2d781d55518
+  note: >-
+    FI101 Selftest distribution. Extract, then overlay ../firmware/ on top
+    (Selftest_measure/, Selftest_pmu/, Selftest/runner_v1_main.c,
+    Selftest/raw_rx_main.c, LinkScripts/, Makefile.*).
+
+container:
+  image_tag: "fpga-simulator:latest"
+  repo_digest: "fpga-simulator@sha256:85731c8b4754eb57919e735009f9d1d2938d86348424206fe26feb44d9ecd4a1"
+  running_name: benchmark-runner
+  note: >-
+    Locally built image, not pulled from a registry. The digest identifies it on
+    this host; if the host is lost the image must be rebuilt and the toolchain
+    versions below re-checked before any hash comparison is trusted.
+
+# --- vendor golden image, for later A/B comparison ---------------------------
+# Configuration A of the contamination gate is the untouched vendor image. Its
+# hashes were recorded nowhere, so a future run could not prove it was comparing
+# against the same baseline.
+vendor_official_image:
+  image_id: FI101_OFFICIAL
+  app_sha256:     8e57888ac18c3d580e4d91b149591e49fe8270852e97a122216eefc3b4f0e972
+  ddr_sha256:     81d37a219a6b4141d0b433796711ab8af2ee2c3c668a28143a3ffe6a574ade98
+  vectors_sha256: 067209e58a8986968de6e6e46fe6ceef0c9525ab6e0b29aad56d6c899974fd22
+  location: /home/gihwan/mps4/FI101_OFFICIAL/ (BINs not mirrored; vendor artifact)
+
+# --- CONTAINER REPRODUCTION: CORRECTED 2026-08-08 ----------------------------
+# An earlier note in this file implied the archived Dockerfile closes the
+# container gap. IT DOES NOT. Three layers diverge:
+#
+#   Dockerfile          installs FVP Corstone-300 (SSE-300) only
+#   image               additionally has fvp_installed_320   <- SSE-320
+#   running container   additionally has fvp_avh, fvp_installed_310
+#
+# The image is a `docker commit` snapshot, not a Dockerfile build. Rebuilding
+# from the archived Dockerfile produces a DIFFERENT image that lacks the SSE-320
+# FVP. And fvp_avh exists only inside the running container -- discard it and
+# that install is gone, reproducible from nothing.
+#
+# The toolchain that actually builds the firmware (arm-none-eabi-gcc,
+# ml-embedded-evaluation-kit) IS in the image, so firmware rebuild is unaffected.
+# What is unreproducible is the FVP simulation environment.
+container_reproduction:
+  dockerfile_reproduces_image: false
+  image_origin: "docker commit snapshot"
+  missing_from_dockerfile: ["FVP SSE-320", "FVP SSE-310", "fvp_avh"]
+  fvp_avh_location: "running container only -- not in the image"
+  mlek_commit: b2c0bb2884698b7328f65c41b7c8c51ca9bec386   # 2026-04-21
+  mlek_pin_gap: >-
+    The Dockerfile does `git clone --recursive` with no commit pinned. The hash
+    anchor for ethosu85_interface.h below depends on THIS tree; without the
+    commit the anchor has no reproducible path. Pinned here.
+
+# --- gaps found 2026-08-08 while auditing "can another machine reproduce this" -
+host_environment:
+  container_build_context: container-build-context/
+  container_build_context_note: >-
+    Backed up from /home/gihwan/fpga_simulator/ -- OUTSIDE the mps4 working
+    directory, which is why every earlier sweep missed it. Contains the
+    Dockerfile, .devcontainer, config.json, .env.example and scripts/. Without
+    it the container digest below identifies an image nobody can rebuild.
+  host_python_packages:
+    pyserial: "3.5"
+    recorded_as: prose only
+    gap: >-
+      There is no requirements.txt. pyserial 3.5 is named in RESULTS.yaml and
+      MANIFEST.yaml as text, not as an installable spec, and the host venv's
+      contents are not captured. Reproducing the HOST side on another machine
+      is currently a guess.
+  hardcoded_serial_port:
+    value: "usb-FTDI_USB__-__Serial_Converter_00FT46259002B-if01-port0"
+    appears_in: 7 files (mcc_harness.py, capture_all_uart.py, and 5 board tests)
+    gap: >-
+      The FTDI serial number of THIS board is baked into every script. On any
+      other board or host all seven need editing. Nothing documents this as a
+      porting step.
+
+toolchain:
+  distribution: "Arm GNU Toolchain 15.2.Rel1 (Build arm-15.86)"
+  gcc:     "arm-none-eabi-gcc 15.2.1 20251203"
+  ld:      "GNU ld 2.45.1.20251203"
+  objcopy: "GNU objcopy 2.45.1.20251203"
+  python:  "3.10.12"        # container; runs the generator and checkers
+
+external_headers:
+  ethosu85_interface_h_sha256_prefix: "8a5cbe762158db15651d65b278d71495"
+  path: /opt/arm/ml-embedded-evaluation-kit/dependencies/core-driver/src/ethosu85_interface.h
+  note: >-
+    The register generator extracts from this file. If it changes,
+    gen_npu_pmu_regs.py --check fails by design -- that is the intended
+    behaviour, not a build break.
+  cmsis: "cmsis-6 (ml-embedded-evaluation-kit/dependencies/cmsis-6)"
+
+build:
+  command: "make -f Makefile.measure PROFILE=clean bins"     # MEASURE_SEQ
+  command_pmu: "make -f Makefile.pmu PROFILE=clean bins"     # PMU candidate
+  workdir: /work/selftest
+  environment: "no special variables; CFLAGS are fixed in the Makefile"
+
+expected_output:
+  measure_seq:
+    app_sha256:     96b3715aa031de74eb3775c9d21d6b701f1d8d2ce2496b7aa1bfc845c4463388
+    ddr_sha256:     81d37a219a6b4141d0b433796711ab8af2ee2c3c668a28143a3ffe6a574ade98
+    vectors_sha256: f4e20c093ba7d05ec46380977f07d0102e817488e333ecc46502b1cf794f98b3
+  pmu_candidate:
+    app_sha256:     ffa3e5bd0363f791d61f9673074c625865f1e6a8f24e53ee303372c64ef3597d
+    ddr_sha256:     81d37a219a6b4141d0b433796711ab8af2ee2c3c668a28143a3ffe6a574ade98
+    vectors_sha256: 45e943c577e3744104d53cf57c7d0afb369ff68a99e5e6906971d71503f06c92

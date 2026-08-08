@@ -1,0 +1,202 @@
+# Frozen provenance manifest. Written 2026-08-06 after functional acceptance.
+#
+# Two-layer verification, deliberately separated:
+#   SHA256SUMS         -- byte integrity of every archived file (sha256sum -c)
+#   verify_manifest.py -- required fields, disallowed nulls, cross-consistency
+# The verifier is itself listed in SHA256SUMS so a modified verifier cannot
+# quietly certify itself.
+#
+# Run BOTH at the start of every experiment session. A failure of either means
+# data must not be recorded under this image_id.
+
+image_id: FI101_RUNNER_V1_MEASURE_SEQ
+qualification: functional-qualified      # NOT measurement-golden
+protocol: measure-v2
+deployed_variant: clean                  # "wrapped" also built, not deployed
+performance_data_eligible: false         # pending A/B/C contamination gates
+
+# --- image identity ---------------------------------------------------------
+# An image is identified by ALL THREE binaries, never by one.
+# FI101_MEASURE_TESTHOOKS has a BYTE-IDENTICAL DDR.BIN to this image; the two
+# differ only in APP/VECTORS. Judging performance eligibility from the DDR hash
+# alone would accept the test-hooks image. That path is forbidden.
+image_identity:
+  vectors_sha256: f4e20c093ba7d05ec46380977f07d0102e817488e333ecc46502b1cf794f98b3
+  app_sha256:     96b3715aa031de74eb3775c9d21d6b701f1d8d2ce2496b7aa1bfc845c4463388
+  ddr_sha256:     81d37a219a6b4141d0b433796711ab8af2ee2c3c668a28143a3ffe6a574ade98
+  # SHA256(VECTORS.BIN || APP.BIN || DDR.BIN), in that order
+  image_fingerprint: 5fcd2ca372157133b7eabfe995367e08062243cefb385bda0b3ff67c37fe2cd5
+
+# Recorded so they can never be confused with the deployed set above.
+sibling_fingerprints:
+  measure_seq_wrapped: 51b45cd48a753301eb3d4bee2cb78d72d22d0e97e87b3a76070565dd9029c053
+  test_hooks:          66fca175a2ef4cf7d120952ce28325c65ade0986b66631027169fb3f9229eb23
+
+artifacts:
+  app_sha256:     96b3715aa031de74eb3775c9d21d6b701f1d8d2ce2496b7aa1bfc845c4463388
+  ddr_sha256:     81d37a219a6b4141d0b433796711ab8af2ee2c3c668a28143a3ffe6a574ade98
+  vectors_sha256: f4e20c093ba7d05ec46380977f07d0102e817488e333ecc46502b1cf794f98b3
+  wrapped_app_sha256:     a5fa6253073a918754fefbdeca7b7c65edfebe9f76ddd0258348e4b4e4b52835
+  wrapped_vectors_sha256: f9a268d9bb894b126663512375161837ad8d1f4000c77310c2a52bf11753bef8
+
+source:
+  # NOT a git repository -- there is no commit to record. File hashes plus the
+  # build_closure section below are the substitute. Never fabricate a commit.
+  source_commit: null
+  source_commit_unavailable_reason: "/work/selftest is not under version control"
+  runner_measure_main_c_sha256:    7d9dc7adb8d5cec17281352632be03c514ae3baf9166a86987c374a4c9330e55
+  check_measure_symbols_py_sha256: 7fa2fd3e7324662349665b96c1a39044420d7acdd7d52b7405a60c7aff5d0f9b
+
+linker:
+  lnk_ld_S_sha256:               ccc1404126abe2112142242b44f003b27b5e6d52c2b27a909283e78f2b59789c
+  lnk_measure_overlay_ld_sha256: 22f8274710b8eefd8b5a83b4da7c1a5455b841b6837809a06657633df1ea2bb6
+
+build:
+  build_script_sha256: e13eca90140057094325640f8fd8dc1abdc66b02d19da9dcddeab35e8f65f011
+  container: benchmark-runner
+  profile: clean
+  command: "make -f Makefile.measure PROFILE=clean bins"
+  reproduced_2026_08_06: true
+  reproduction_note: >-
+    The build directory that originally produced the deployed image had been
+    removed. Rebuilding PROFILE=clean from the current tree reproduced all
+    three BIN hashes bit-exactly, so the deployed image and this source tree
+    are the same build. Build IDs are fixed ASCII constants (MEAC), never
+    timestamps.
+
+# Transitive build inputs, since there is no commit to pin them.
+build_closure:
+  cflags_txt_sha256:        07388c7c7b64581cd2127e3cfa1648d04d6ed981d0e9dd1f387ca096e9790da0
+  link_objects_txt_sha256:  cc85a34041709346a3c7f9716dc110c46ef6f25735bac09a4dd4368bcef54d8c
+  all_deps_d_sha256:        b97fc5f542a6816638b2331a6f054566b0511487962c3c01a5e741f31823db8d
+  dep_files_tar_gz_sha256:  f4fee9151a610944c6b773adbbd71023b054b91760dc43c9ebb8366e9c35208f
+  runner_measure_map_sha256: 69e19d9da207bfe3789be2df68ec0ddb4d8204c2d7a29b704647b1984587edc1
+  object_count: 55
+  dep_file_count: 55
+  unique_headers: 806
+
+toolchain:
+  distribution:     "Arm GNU Toolchain 15.2.Rel1 (Build arm-15.86)"
+  gcc_version:      "arm-none-eabi-gcc 15.2.1 20251203"
+  ld_version:       "GNU ld 2.45.1.20251203"
+  objcopy_version:  "GNU objcopy 2.45.1.20251203"
+
+abi:
+  measurement_magic:     "0x524D4531"   # RME1
+  decoded_fields:        47
+  total_words:           55
+  total_bytes:           220
+  result_request_size:   12
+  nack_payload_size:     4
+  required_valid_flags:  "0x0F"
+  reported_not_required_flag: "0x10"
+  crc_range: "non-contiguous: payload[16:28] + payload[32:total]"
+
+error_codes:
+  # State-specific. Never accept one in place of the other.
+  idle_get_result:             "0x0005"
+  result_ready_invalid_result: "0x000B"
+  eight_byte_get_result:       "0x0003"
+
+golden:
+  test19_output_crc32:  "0x27084C4C"
+  result_region_base:   "0x90020cc0"
+  result_region_length: "0x100"
+
+qualification_evidence:
+  date: 2026-08-06
+  conditions: "fresh MCC REBOOT per suite; DDR self-test PASSED; SCC CPUWAIT cleared"
+  results_file: qualification/RESULTS.yaml
+
+  runner_gate_script:
+    path: qualification/test_runner_gate.py
+    sha256: 49fc67cad930fcd6946358ca7dfba17525e2f9903ecaf7da98c8281a9a9c4ded
+    result: "15/15 ALL GATES PASSED"
+
+  measure_acceptance_script:
+    path: qualification/measure_acceptance.py
+    sha256: 2a42234dc0cae5a3b8f4b32fea19137eaa7b1fa9803041da98dede66ce6e1be2
+    result: "16 pass / 0 fail"
+
+  stale_demo_script:
+    path: qualification/stale_demo.py
+    sha256: 57c74d050e83dc90d22c086a6675b6d12bec386ddc35d1860828c676264160f6
+    result: "10/10 -- produced under FI101_MEASURE_TESTHOOKS, not this image"
+
+  protocol_client:
+    path: host/protocol_client/runner_proto.py
+    sha256: 91c06578ab2f67aa1e5e7a34942ea2d5842d30d725ed8075de485b6b307b9709
+    provides: "frame encoder/decoder, CRC32 (zlib), serial transport wrapper,
+               measurement ABI parser, error-code and state constants"
+
+  python:
+    version: "3.12.3"
+    implementation: CPython
+    pyserial: "3.5"
+
+  invocation:
+    runner_gate: "PROTO=measure-v2 PYTHONPATH=host/protocol_client python3 qualification/test_runner_gate.py"
+    measure_acceptance: "PYTHONPATH=host/protocol_client python3 qualification/measure_acceptance.py"
+    rng_seed: "random.Random(0xF1101) in the gate suite -- deterministic"
+
+  normal_run_counter_deltas: all_zero
+  gate_suite_absolute_counters_note: >-
+    rx_overrun=2, bad_magic=22, resync=22 after the gate suite come from
+    deliberate fault injection. Record per-RUN deltas in experiments, never
+    absolute values.
+
+# --- TWO CLASSES, DELIBERATELY SEPARATED ------------------------------------
+# Everything above (artifacts, source, linker, build, build_closure,
+# qualification_evidence) is QUALIFICATION evidence: immutable, and any drift is
+# a qualification failure.
+#
+# The section below is a SNAPSHOT of the host tooling as it stood when this
+# image was qualified. Two different facts live here and must not be merged:
+#   - the archived copies under working_snapshot/ are IMMUTABLE and must match;
+#   - the live working copies under /home/gihwan/mps4/ are EXPECTED to change,
+#     which is development, not drift, and is reported as informational only.
+#
+# Merging them is what turned an ordinary host-script edit into a 74/75
+# "failure" that looked like archive corruption. A snapshot, once taken, is
+# frozen -- but the worktree it was taken from is free to move on.
+working_tooling_snapshot:
+  schema_version: 1
+  snapshot_id: "2026-08-08"
+  archived_under: working_snapshot/
+  immutable_snapshot: true
+  current_worktree_may_differ: true
+  worktree_root: /home/gihwan/mps4
+  files:
+    do_reboot_py_sha256:             e41eb611d595dd929a228f8c62993704049e9331e3ef77e262de89b0b3a266e2
+    mcc_harness_py_sha256:           c43aead943ac29a28c92fc4bfa758d774181e60b440a103e3db09c8321431b25
+    runner_proto_py_sha256:          f8eab3bbb45bba46c5e3c0b87d3d39c94b87bc8457a9014d75e82700639531b9
+    test_abi_unit_py_sha256:         8ca8a142c3e9f00ebf301c5d63a44228d438e34cb5096c90ae1ae0d262834ad8
+    test_measure_accept_py_sha256:   2a42234dc0cae5a3b8f4b32fea19137eaa7b1fa9803041da98dede66ce6e1be2
+    test_pmu_abi_unit_py_sha256:     c97b15b7dcaed11052a0f51af5d430a12c7853f6030329bc22f5a13a70d1624d
+    test_pmu_board_py_sha256:        03f8f436af4b456be0e3f8620c9afa0eea089d25581c1c2de74aae96a50f256c
+    test_proto_unit_py_sha256:       0919b77c8446a47b62392b284cef6a285b612dfbacba83bbbec4b6054f95ba86
+    test_runner_gate_py_sha256:      49fc67cad930fcd6946358ca7dfba17525e2f9903ecaf7da98c8281a9a9c4ded
+    test_stale_demo_py_sha256:       57c74d050e83dc90d22c086a6675b6d12bec386ddc35d1860828c676264160f6
+
+promotion_path:
+  next_gate: "A/B/C contamination"
+  on_pass: "qualification -> measurement-golden"
+  measurement_scripts_freeze_required_before_first_run:
+    - measurement/run_abc_gate.py
+    - measurement/parse_abc_results.py
+    - measurement/abc_config.yaml
+  rule: >-
+    If a measurement script changes after the first data is produced, results
+    from before and after the change must not be combined into one set.
+  a_gcc_golden_baseline: "no runner, no PMU; compare CRC, PASS, addresses, wall-clock only"
+  b_measure_instrumentation_off: "runner present, PMU disabled"
+  c_measure_end_only_pmu: "same image/path as B, PMU programming+snapshot only"
+  comparisons:
+    a_vs_b: "runner presence -- system-level contamination"
+    b_vs_c: "PMU instrumentation contamination"
+  prohibited: >-
+    Do NOT compare NPU PMU cycles between A and B. A has no PMU interface, and
+    adding one to A would stop it being the golden baseline.
+  session_rule: >-
+    The gate suite injects malformed frames and leaves parser/UART counters
+    behind. Never run it in the same boot session as A/B/C measurement.

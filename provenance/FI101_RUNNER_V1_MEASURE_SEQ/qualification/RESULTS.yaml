@@ -1,0 +1,75 @@
+# Qualification results for FI101_RUNNER_V1_MEASURE_SEQ.
+# Produced by the scripts archived alongside this file, from their archived
+# copies (not the working copies), each from a fresh MCC REBOOT.
+
+image_id: FI101_RUNNER_V1_MEASURE_SEQ
+image_fingerprint: 5fcd2ca372157133b7eabfe995367e08062243cefb385bda0b3ff67c37fe2cd5
+qualification: functional-qualified
+date: 2026-08-06
+
+environment:
+  python_version: "3.12.3"
+  python_implementation: CPython
+  python_build: "main, Jun 19 2026, 12:46:00 [GCC 13.3.0]"
+  pyserial_version: "3.5"
+  pyyaml_version: "6.0.1"
+  host_os: "Linux (build/test host)"
+  serial_port: "/dev/serial/by-id/usb-FTDI_USB__-__Serial_Converter_00FT46259002B-if01-port0"
+  baud: 115200
+
+determinism:
+  gate_suite_rng: "random.Random(0xF1101) -- explicitly seeded, no time/urandom"
+  note: >-
+    Re-running the gate suite from a fresh reboot reproduced the firmware
+    counters exactly (rx_bytes=7218, tx_bytes=7836, rx_overrun=2, bad_magic=22,
+    bad_version=1, bad_crc=1, length_err=1, seq_err=0, resync=22). Identical
+    counters across independent boots is evidence the suite is deterministic.
+
+runs:
+  - name: measure_acceptance
+    script: qualification/measure_acceptance.py
+    script_sha256: 2a42234dc0cae5a3b8f4b32fea19137eaa7b1fa9803041da98dede66ce6e1be2
+    invocation: "PYTHONPATH=host/protocol_client python3 qualification/measure_acceptance.py"
+    protocol: measure-v2
+    preconditions: "fresh MCC REBOOT; DDR self-test PASSED; SCC CPUWAIT cleared"
+    result: "16 pass / 0 fail"
+    exit_code: 0
+    raw_log: qualification/raw_logs/measure_acceptance_20260806T062613Z.log
+    raw_log_sha256: f419708781750071653491a1ab0eefbf66d448be1c2af3b109c6699d94e22b0d
+    reboot_log: qualification/raw_logs/reboot_20260806T062613Z_acceptance.log
+    detail:
+      gates: "9/9"
+      consecutive_runs: "10/10"
+      reset_reuse: "3/3"
+      run_sequence: "2..11 strictly +1, then 12 after RESET_RUNNER"
+      output_crc_distinct_values: 1
+      late_frames: 0
+      per_run_counter_deltas: all_zero
+
+  - name: runner_gate_suite
+    script: qualification/test_runner_gate.py
+    script_sha256: 49fc67cad930fcd6946358ca7dfba17525e2f9903ecaf7da98c8281a9a9c4ded
+    invocation: "PROTO=measure-v2 PYTHONPATH=host/protocol_client python3 qualification/test_runner_gate.py"
+    protocol: measure-v2
+    preconditions: "fresh MCC REBOOT; DDR self-test PASSED; SCC CPUWAIT cleared"
+    result: "15/15 ALL GATES PASSED"
+    exit_code: 0
+    raw_log: qualification/raw_logs/runner_gate_20260806T062737Z.log
+    raw_log_sha256: 9582b16fae80bd9aa2c6ac21ca745f6349e8eea82cd26787997c1c62ced91763
+    reboot_log: qualification/raw_logs/reboot_20260806T062737Z_gate.log
+    naming_correction: >-
+      This suite has been referred to as "18 gates". Its section headings run
+      1-17 with gate 7 absent and there is no gate 18; it emits 15 numbered
+      checks. Record it as 15/15, never as 18/18.
+    counters_after: >-
+      rx_overrun=2, bad_magic=22, bad_version=1, bad_crc=1, length_err=1,
+      seq_err=0, resync=22. These are ABSOLUTE values left by the DELIBERATE
+      malformed-frame injection in gates 3-6. Experiments must record per-RUN
+      deltas, never absolute values, and must not run this suite in the same
+      boot session as A/B/C measurement.
+
+not_executed:
+  - "stale_demo.py in this session -- it requires FI101_MEASURE_TESTHOOKS, a
+     different image. Its 10/10 record is held under that image's manifest."
+  - "A/B/C contamination gates -- not yet run."
+  - "PMU programming or measurement -- not implemented in this image."

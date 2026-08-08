@@ -1,0 +1,27 @@
+;TITLE: Arm MPS4 FPGA prototyping board Images Configuration File
+;
+;NONE      - No action
+;AUTO      - Auto  legacy QSPI (if CS0 and REMAP==2) or RAM update
+;FORCE     - Force legacy QSPI (if CS0 and REMAP==2) or RAM update
+;RAM       - RAM update
+;AUTOQSPI  - Auto  QSPI update
+;FORCEQSPI - Force QSPI update
+
+[IMAGES]
+;Selftest booting from SRAM
+TOTALIMAGES: 2                     ;Number of Images (Max: 32)
+
+IMAGE0ADDRESS: 0x11000000          ;Please select the required executable program
+IMAGE0PORT: 2
+IMAGE0UPDATE: RAM                  ;Image Update:NONE/AUTO/FORCE/RAM/AUTOQSPI/FORCEQSPI
+IMAGE0FILE: \SOFTWARE\VECTORS.BIN
+
+IMAGE1ADDRESS: 0x31000000          ;Please select the required executable program
+IMAGE1PORT: 1
+IMAGE1UPDATE: RAM                  ;Image Update:NONE/AUTO/FORCE/RAM/AUTOQSPI/FORCEQSPI
+IMAGE1FILE: \SOFTWARE\APP.BIN
+
+IMAGE2ADDRESS: 0x90000000          ;Please select the required executable program
+IMAGE2PORT: 1
+IMAGE2UPDATE: RAM                  ;Image Update:NONE/AUTO/FORCE/RAM/AUTOQSPI/FORCEQSPI
+IMAGE2FILE: \SOFTWARE\DDR.BIN

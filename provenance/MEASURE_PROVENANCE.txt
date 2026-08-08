@@ -1,0 +1,224 @@
+RUNNER_V1_MEASURE -- MEASURE_PROVENANCE.txt
+Milestone 1: measurement boundary + capabilities. PMU NOT IMPLEMENTED.
+All values below were regenerated from the final on-disk tree state.
+
+Toolchain: arm-none-eabi-gcc (Arm GNU Toolchain 15.2.Rel1) 15.2.1 20251203
+Build host: docker exec benchmark-runner, sources at /work/selftest
+
+
+================================================================================
+1. SOURCE PROVENANCE (SHA-256, final tree)
+================================================================================
+ccc1404126abe2112142242b44f003b27b5e6d52c2b27a909283e78f2b59789c  LinkScripts/lnk.ld.S            <-- FROZEN, UNMODIFIED
+22f8274710b8eefd8b5a83b4da7c1a5455b841b6837809a06657633df1ea2bb6  LinkScripts/lnk.measure.overlay.ld
+e5cc68d843a54fdd38562bd9a8f9c6330726cef575ed221daad2d52f5d0b5579  Makefile.measure
+a857562b7960287efa6632ba50a95f11841c18a0d1de29b423988a361824c251  Selftest_measure/runner_measure_main.c
+d86086c433c10a1307981070d3da074af4a2e75dc510430545383e0b4a6cbb2c  Selftest_measure/check_measure_symbols.py
+
+lnk.ld.S SHA ccc140... is the frozen pre-edit value. The shared linker script
+was NOT edited. Contract C satisfied via overlay.
+
+
+================================================================================
+2. ARTIFACTS (final tree, sizes in bytes)
+================================================================================
+MEASURE_CLEAN    (build_measure_clean/)
+  APP.BIN      13936  0f3639d657f545be98da7d2551726b195ca0fb73b808f3cddab3a496da6cd055
+  DDR.BIN      47344  81d37a219a6b4141d0b433796711ab8af2ee2c3c668a28143a3ffe6a574ade98
+  VECTORS.BIN    592  a92041545c02223980a53d4e23480b6e825673f7f0590fcecd256844455ee599
+
+MEASURE_WRAPPED  (build_measure_wrapped/)
+  APP.BIN      17612  5f3d98cf8c2e21235e99d5a3e89efe594344f44628435763987f09f66bd93030
+  DDR.BIN      47344  81d37a219a6b4141d0b433796711ab8af2ee2c3c668a28143a3ffe6a574ade98
+  VECTORS.BIN    592  cd473608a2584d229ab53091af620cabd4c4e77972a3c6d52de9adc1a475ff44
+
+CLEAN APP.BIN is 3676 bytes smaller than WRAPPED: newlib stdio is not linked
+at all in the clean profile (nm count for printf/iprintf/viprintf/_printf_i/
+__real_printf is 0).
+
+DDR.BIN is byte-identical to the frozen builds -- the NPU streams are untouched.
+
+
+================================================================================
+3. REPRODUCIBILITY (two clean builds, final tree)
+================================================================================
+  make -f Makefile.measure PROFILE=<p> clean && make -f Makefile.measure PROFILE=<p>
+
+  run1 clean   exit=0     run2 clean   exit=0
+  run1 wrapped exit=0     run2 wrapped exit=0
+
+All six BIN hashes identical across run1 and run2. Build IDs are fixed ASCII
+constants (MEAC/MEAW), never timestamps, so bit-reproducibility holds.
+
+
+================================================================================
+4. FROZEN BUILD GATES (final tree, with the overlay in place)
+================================================================================
+GCC_GOLDEN
+  APP     4366d2fd3373c5f1bc4e3cbf57a07ea79fae355a2a0a5428207b99ca35762bdd  MATCH
+  DDR     81d37a219a6b4141d0b433796711ab8af2ee2c3c668a28143a3ffe6a574ade98  MATCH
+  VECTORS f796bc8644e9551378f1d4cff7d94f55e51f21aae498f66c034d9e43237e6866  MATCH
+
+RUNNER_V1_FUNCTIONAL
+  APP     ed06b1dc89fd3f277441c9b28d0b421061521e583770475d33ce09c089b742bc  MATCH
+  DDR     81d37a219a6b4141d0b433796711ab8af2ee2c3c668a28143a3ffe6a574ade98  MATCH
+  VECTORS 1ece5ddb12e724c3bf13340386a1614a1d34c7544a2d22bd558b1dd3c8056926  MATCH
+
+Since lnk.ld.S is byte-identical to its frozen state, "before edit" and "after
+edit" are the same file; the gate is satisfied trivially AND was re-verified by
+actually rebuilding both targets in the final tree.
+
+CAVEAT ON GCC_GOLDEN -- PRE-EXISTING BREAKAGE, NOT CAUSED HERE:
+`make -f Makefile.gcc` cannot link as-is. Makefile.gcc:21 globs Selftest/*.c and
+:28 filters out only retarget.c, so it compiles main.c AND raw_rx_main.c AND
+runner_v1_main.c -- three definitions of main(). Those two extra files were
+added to Selftest/ by the earlier RAWRX and RUNNER_V1 deliverables. Reproduced
+identically with the original untouched lnk.ld.S, so it predates this work.
+The hashes above were produced by supplying the correct source set via a
+command-line SRCS override; no Makefile was modified.
+
+
+================================================================================
+5. ADDRESS CONTRACT (from linker symbols; nm on the final clean ELF)
+================================================================================
+  90120000  A  __runner_staging_start__
+  91120000  A  __runner_staging_end__      staging size 0x01000000 (16 MiB)
+  90020000  B  __runner_result_start__     == ADDR(.sec_noinit)
+  90020f90  B  __runner_result_end__       result size  0x00000F90 (3984 B)
+  90020000  B  __sec_noinit_start          (pre-existing, frozen script)
+  90020f90  B  __sec_noinit_end            (pre-existing, frozen script)
+
+VERIFIED: ADDR(.sec_noinit) and SIZEOF(.sec_noinit) DO resolve correctly from
+an overlay script passed as a second -T. GNU ld accepts
+  -T <base>.ld -T <overlay>.ld
+and the overlay's assignments are evaluated against the base script's output
+sections.
+
+NOT PROVIDED -- tight bounds around .bss.sec_output_data:
+  Cannot be expressed from an overlay. ADDR()/SIZEOF() operate on whole OUTPUT
+  sections; bounding one INPUT section requires assignments inside the
+  .sec_noinit body, i.e. editing the frozen lnk.ld.S. The C object is no help
+  either -- test3_out_data_0 (Tests/u85_test/test3/test3_include.h:125) is
+  declared `static` and has no external linkage. Providing this would require
+  editing the frozen linker script or a frozen test header; neither was done.
+  Result region is therefore the whole .sec_noinit, exactly as RUNNER_V1 used.
+
+
+================================================================================
+6. DENYLIST CHECKER -- CORRECT INVOCATION
+================================================================================
+The checker takes NAMED arguments. A bare positional path does NOT work.
+
+  python3 Selftest_measure/check_measure_symbols.py \
+      --elf     build_measure_clean/runner_measure.elf \
+      --objdump /opt/arm/gcc-arm-none-eabi/bin/arm-none-eabi-objdump \
+      --nm      /opt/arm/gcc-arm-none-eabi/bin/arm-none-eabi-nm \
+      --profile clean [--advisory]
+
+Or via the Makefile, which supplies all of the above:
+  make -f Makefile.measure PROFILE=clean check
+
+--advisory is applied automatically to the WRAPPED profile only.
+
+THREE MODES, ALL EXERCISED ON THE FINAL TREE:
+  MODE 1  normal MEASURE_CLEAN                     -> PASS        exit 0
+  MODE 2  make ... INJECT_VIOLATION=1  (direct)    -> FAIL        exit 1
+          reports: iprintf via run_fixed_inference -> iprintf
+  MODE 3  make ... INJECT_INDIRECT=1   (indirect)  -> INCOMPLETE  exit 0
+          reports: unexpected indirect calls in run_fixed_inference
+
+MODE 3 is the important honest case: Driver_USART0.Send goes through a
+function-pointer struct, references no denylisted symbol, and is INVISIBLE to
+any symbol or call-graph check. The checker says so rather than passing.
+
+Known-indirect allowlist: runner_u85_irq_wrapper only. Its indirect call is the
+handler chain to the captured original vector, which is required for chaining
+and is verified at runtime by npu_vector_hijack_survived. Any indirect call
+site outside this allowlist downgrades the verdict to INCOMPLETE.
+
+
+================================================================================
+7. FOUR-PART COMPLETION GATE -- STATUS
+================================================================================
+  1. MAP/nm denylist PASS ......................... DONE (clean profile)
+  2. objdump call-site inspection PASS ............ DONE (clean profile)
+  3. target-side UART TX counter == 0 ............. NOT DONE -- needs hardware
+  4. host-observed window bytes == 0 .............. NOT DONE -- needs hardware
+
+Only 1 and 2 are achievable without a board. 3 and 4 are UNVERIFIED.
+The counter for (3) is implemented at put_raw(), the single function that
+writes the CMSDK UART DATA register -- the lowest possible point, so it catches
+every route including indirect Driver_USART0.Send calls that (1) and (2) miss.
+
+
+================================================================================
+8. MEASUREMENT CONFIGURATION
+================================================================================
+completion_wait_mode = BUSY_POLL (1)
+  u85.c #defines BUSY_SLEEP, so wait_for_irq() spins instead of __WFI().
+  Consequences that must be carried into any comparison: the CPU stays fully
+  active during NPU execution; CPU and NPU contend for DDR and interconnect;
+  system power differs from an idle-wait implementation; submit->IRQ is a
+  polling path, not a sleep latency.
+  wait_for_irq() was NOT modified. A WFI variant would be a separate
+  experiment configuration, never part of the golden comparison.
+
+TX drain: transmit-empty is not observable on this peripheral, so a fixed drain
+delay based on blocking-write completion and assumed hardware residual depth is
+applied -- a conservative time bound, not a detected condition.
+  cmsdk_apb_uart.h defines the entire STATE register as four bits: RXOR[3],
+  TXOR[2], RXBF[1], TXBF[0]. No FIFO level, no FIFO depth, no transmit-idle
+  bit, and no CMSDK UART TRM is present in the image. The transmit path depth
+  therefore CANNOT be established as at most holding+shift, so 4 resident
+  characters are assumed: 4 x 87 us = 348 us. TXBF is NOT used as a drain
+  check anywhere.
+
+PMU: NOT IMPLEMENTED THIS MILESTONE. All PMU capability fields return 0 and a
+pmu_supported flag of 0. The PMU registers are not read at all. A zero here
+means "not implemented" and must never be read as "measured zero".
+
+
+================================================================================
+9. UNVERIFIED -- NO BOARD ACCESS
+================================================================================
+Everything runtime is unverified. Specifically:
+
+a) ISR-ENTRY INSTRUMENTATION DOES NOT RUN IN THIS BUILD.
+   u85.c:329 calls NVIC_SetVector(NPU0_IRQn, &u85_irq_handler) as the FIRST
+   statement of test_u85(), and apU85Conv_TEST() calls test_u85(). A wrapper
+   installed before the window is overwritten before the NPU is reset or
+   submitted to. There is no reachable seam outside u85.c.
+   runner_u85_irq_wrapper is implemented exactly to contract (snapshot ->
+   chain -> exit timestamp, with a self-capture install guard) and is
+   installed, but on this build it will not be reached.
+   Expected reported values: npu_vector_hijack_survived = 0, isr_ts_valid = 0,
+   isr_entry_ts / isr_exit_ts / npu_qread_at_irq / npu_irq_status_at_irq = 0.
+   These are REPORTED as evidence rather than assumed. A measure-private
+   u85.c is required to fix this and was deliberately not created.
+
+b) All register-sourced capabilities unread: CPUID, SCB_CCR, MSCR, MPU_CTRL,
+   MPU_TYPE, NPU_ID, NPU_CONFIG, SystemCoreClock.
+
+c) rx_bytes_during_measurement is 0-or-1 only: the CMSDK UART has a one-byte
+   receive buffer, so the true count of bytes the host sent cannot be
+   recovered. rx_overrun_during_measurement is the meaningful signal.
+
+d) unexpected_irq_count is a pending-bit delta, not a true count. An interrupt
+   that fired and was serviced inside the window leaves no pending bit.
+
+e) The 348 us drain bound is an assumption about hardware depth, not a
+   measurement.
+
+f) The 18 RUNNER_V1_FUNCTIONAL hardware gates have NOT been re-run. The parser,
+   CRC range, state table and all pre-existing command handlers are carried
+   over unchanged in source, but "unchanged source" is not "re-passed gates".
+   CMD_RUN is the one deliberate behavioural change: its ACK is now sent BEFORE
+   the measured window and a new unsolicited RUN_COMPLETE (0x31) frame carries
+   the result and telemetry afterwards. Any host implementing gate
+   coverage for RUN must be updated.
+
+g) FILE LOCATION DEVIATION: runner_measure_main.c lives in Selftest_measure/,
+   not Selftest/. Makefile.runner:40 filters out only retarget.c, main.c and
+   raw_rx_main.c, so a new main() placed in Selftest/ is compiled into
+   RUNNER_V1_FUNCTIONAL and breaks its link -- which would fail the frozen
+   gate in section 4. The directory move is what keeps that gate green.
