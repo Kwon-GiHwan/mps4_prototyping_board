@@ -1,0 +1,323 @@
+# Makefile.pmu_diag -- RUNNER_V1_PMU_DIAG, the A/B/C diagnostic images.
+#
+# Usage (from the selftest/ root):
+#   make -f Makefile.pmu_diag DIAG_CASE=A bins check
+#   make -f Makefile.pmu_diag DIAG_CASE=B bins check
+#   make -f Makefile.pmu_diag DIAG_CASE=C bins check
+#
+# Firmware negative controls (case B only; each lands in its OWN build dir):
+#   make -f Makefile.pmu_diag DIAG_CASE=B NC=skipcfg  bins check
+#   make -f Makefile.pmu_diag DIAG_CASE=B NC=noevent  bins check
+#   make -f Makefile.pmu_diag DIAG_CASE=B NC=skiparm  bins check
+#   make -f Makefile.pmu_diag DIAG_CASE=B NC=forceovf bins check
+#
+# Branched from Makefile.pmu, clean profile ONLY -- a diagnostic image has no
+# wrapped variant and is NEVER a performance candidate. Deliberate differences:
+#   1. Selftest_pmu_diag/runner_pmu_diag_main.c supplies main();
+#      Selftest_pmu/runner_pmu_main.c is filtered out and NOT modified.
+#   2. DIAG_CASE selects the compile-time A/B/C identity. Every case and
+#      every negative control gets its own build directory and its own
+#      RUNNER_FIRMWARE_BUILD_ID, so no artifact can be mistaken for another.
+#   3. `check` additionally preprocesses the diag translation unit and runs
+#      Selftest_pmu_diag/check_diag_case.py over it: case A must contain
+#      ZERO PMCCNTR_CFG write calls, B/C exactly the expected ones, and the
+#      negative-control write pattern must match the requested NC.
+#   4. Selftest_pmu_diag/u85_diag.c replaces Drivers/u85_driver/u85.c. Its
+#      sole source difference is TEST_CPM=0, deferring the terminal CMD=0xC
+#      power-release write until runner_pmu_diag_main.c has taken POST.
+# Flags, include dirs, wrap set, link script handling and the three objcopy
+# invocations are byte-for-byte Makefile.pmu PROFILE=clean.
+
+TOOLCHAIN := /opt/arm/gcc-arm-none-eabi/bin/arm-none-eabi-
+CC        := $(TOOLCHAIN)gcc
+OBJCOPY   := $(TOOLCHAIN)objcopy
+OBJDUMP   := $(TOOLCHAIN)objdump
+SIZE      := $(TOOLCHAIN)size
+NM        := $(TOOLCHAIN)nm
+
+CMSIS_INC := /opt/arm/ml-embedded-evaluation-kit/dependencies/cmsis-6/CMSIS/Core/Include
+
+# --- v7 power-seam selection -------------------------------------------------
+# SEAM builds the minimum-seam experiment. All three carry the SAME case-B
+# cycle configuration, so PMCCNTR_CFG is held constant and power_seam_id is
+# the only variable. Negative controls are not combinable with SEAM: they
+# exist to exercise the CFG/arm/overflow classes, not the power seam.
+#
+#   S1  reference vendor u85.c (TEST_CPM=1), pre-hold only, no re-hold
+#   S2  reference vendor u85.c, CMD=0 re-hold as the first post-return action
+#   S3  diag-private u85_diag.c (TEST_CPM=0) + terminal release -- the v6
+#       configuration, re-measured under v7 instrumentation as the control
+#
+# Leaving SEAM unset keeps the legacy DIAG_CASE=A/B/C (+NC) builds exactly as
+# they were; they are the S3 seam by construction and report seam id 3.
+SEAM ?= none
+
+ifeq ($(SEAM),none)
+  SEAM_TAG      :=
+  SEAM_CFLAGS   := -DPMU_DIAG_SEAM_S3
+  USE_REF_DRIVER := 0
+else ifeq ($(SEAM),S1)
+  SEAM_TAG      := s1
+  SEAM_CFLAGS   := -DPMU_DIAG_SEAM_S1
+  USE_REF_DRIVER := 1
+  # ASCII "PDS1"
+  SEAM_BUILD_ID := 0x31534450
+else ifeq ($(SEAM),S2)
+  SEAM_TAG      := s2
+  SEAM_CFLAGS   := -DPMU_DIAG_SEAM_S2
+  USE_REF_DRIVER := 1
+  # ASCII "PDS2"
+  SEAM_BUILD_ID := 0x32534450
+else ifeq ($(SEAM),S3)
+  SEAM_TAG      := s3
+  SEAM_CFLAGS   := -DPMU_DIAG_SEAM_S3
+  USE_REF_DRIVER := 0
+  # ASCII "PDS3"
+  SEAM_BUILD_ID := 0x33534450
+else
+  $(error SEAM must be none, S1, S2 or S3)
+endif
+
+# A seam build fixes the CFG variable at case B and forbids the NC controls.
+ifneq ($(SEAM),none)
+  ifneq ($(filter-out B,$(DIAG_CASE)),)
+    $(error SEAM=$(SEAM) fixes DIAG_CASE=B; do not pass another case)
+  endif
+  ifneq ($(filter-out none,$(NC)),)
+    $(error SEAM=$(SEAM) cannot be combined with NC=$(NC))
+  endif
+  DIAG_CASE := B
+endif
+
+# Legacy (SEAM unset) builds ARE the S3 seam by construction, so the gates
+# hold them to the same contract rather than skipping it.
+ifeq ($(SEAM),none)
+  SEAM_GATE := S3
+else
+  SEAM_GATE := $(SEAM)
+endif
+
+# --- diagnostic case selection ----------------------------------------------
+DIAG_CASE ?=
+
+ifeq ($(DIAG_CASE),A)
+  CASE_TAG    := a
+  CASE_CFLAGS := -DPMU_DIAG_CASE_A
+  # ASCII "PDGA" -- stable across rebuilds, no timestamp.
+  BUILD_ID    := 0x41474450
+else ifeq ($(DIAG_CASE),B)
+  CASE_TAG    := b
+  CASE_CFLAGS := -DPMU_DIAG_CASE_B
+  # ASCII "PDGB"
+  BUILD_ID    := 0x42474450
+else ifeq ($(DIAG_CASE),C)
+  CASE_TAG    := c
+  CASE_CFLAGS := -DPMU_DIAG_CASE_C
+  # ASCII "PDGC"
+  BUILD_ID    := 0x43474450
+else
+  $(error DIAG_CASE must be A, B or C)
+endif
+
+# --- negative controls (firmware gate builds) --------------------------------
+# Each control OVERRIDES the case build id ("PDN1".."PDN4") so a control
+# artifact can never share provenance identity with a deployable case image;
+# the record additionally reports nc_control_id.
+NC ?= none
+
+ifeq ($(NC),none)
+  NC_TAG    :=
+  NC_CFLAGS :=
+else ifeq ($(NC),skipcfg)
+  NC_TAG    := _ncskipcfg
+  NC_CFLAGS := -DPMU_DIAG_NC_SKIP_CFG_WRITE
+  # ASCII "PDN1"
+  BUILD_ID  := 0x314E4450
+else ifeq ($(NC),noevent)
+  NC_TAG    := _ncnoevent
+  NC_CFLAGS := -DPMU_DIAG_NC_START_NO_EVENT
+  # ASCII "PDN2"
+  BUILD_ID  := 0x324E4450
+else ifeq ($(NC),skiparm)
+  NC_TAG    := _ncskiparm
+  NC_CFLAGS := -DPMU_DIAG_NC_SKIP_ARM
+  # ASCII "PDN3"
+  BUILD_ID  := 0x334E4450
+else ifeq ($(NC),forceovf)
+  NC_TAG    := _ncforceovf
+  NC_CFLAGS := -DPMU_DIAG_NC_FORCE_OVERFLOW
+  # ASCII "PDN4"
+  BUILD_ID  := 0x344E4450
+else
+  $(error NC must be none, skipcfg, noevent, skiparm or forceovf)
+endif
+
+# The source's #error enforces this too; failing here is just faster.
+ifneq ($(NC),none)
+ifneq ($(DIAG_CASE),B)
+  $(error NC=$(NC) requires DIAG_CASE=B)
+endif
+endif
+
+# Every case and every control builds into its own directory -- the same
+# stale-object argument as Makefile.pmu's CONTROL_TAG isolation.
+ifeq ($(SEAM),none)
+  BUILD := build_pmu_diag_$(CASE_TAG)$(NC_TAG)
+else
+  BUILD    := build_pmu_diag_$(SEAM_TAG)
+  BUILD_ID := $(SEAM_BUILD_ID)
+endif
+TARGET := $(BUILD)/runner_pmu_diag
+
+# The private-driver marker is what the source-level #error uses to refuse an
+# S1/S2 build that was wired to the diag driver copy.
+ifeq ($(USE_REF_DRIVER),1)
+  DRIVER_CFLAGS :=
+else
+  DRIVER_CFLAGS := -DPMU_DIAG_USES_PRIVATE_DRIVER
+endif
+
+PROFILE_CFLAGS := -DMEASUREMENT_BUILD -DPMU_DIAG_BUILD $(CASE_CFLAGS) \
+                  $(NC_CFLAGS) $(SEAM_CFLAGS) $(DRIVER_CFLAGS)
+
+# Selftest_pmu stays in SRCDIRS for gen_npu_pmu_regs.py's generated header and
+# include-path discovery; its main() translation unit is filtered out below.
+SRCDIRS := Device_SSE-320 Drivers Selftest Selftest_cli Selftest_pmu \
+           Selftest_pmu_diag Serial Sleep Tests
+SRCS    := $(shell find $(SRCDIRS) -name '*.c' -not -name '._*')
+
+# retarget.c is armclang-only; main.c / raw_rx_main.c / runner_v1_main.c /
+# runner_pmu_main.c each define main(). runner_pmu_diag_main.c replaces them.
+SRCS := $(filter-out Selftest/retarget.c Selftest/main.c Selftest/raw_rx_main.c \
+                     Selftest/runner_v1_main.c \
+                     Selftest_pmu/runner_pmu_main.c,$(SRCS))
+
+# Exactly one u85 driver is linked. S1/S2 take the reference vendor file
+# byte-for-byte -- no private copy is compiled at all, which is why their
+# terminal CMD=0xC comes from the driver itself.
+ifeq ($(USE_REF_DRIVER),1)
+  SRCS := $(filter-out Selftest_pmu_diag/u85_diag.c,$(SRCS))
+else
+  SRCS := $(filter-out Drivers/u85_driver/u85.c,$(SRCS))
+endif
+
+SRCS := $(sort $(SRCS))
+OBJS := $(patsubst %.c,$(BUILD)/%.o,$(SRCS))
+DEPS := $(OBJS:.o=.d)
+
+INCDIRS := $(sort $(dir $(shell find $(SRCDIRS) LinkScripts -name '*.h' -not -name '._*')))
+INCS    := $(addprefix -I,$(INCDIRS)) -I$(CMSIS_INC)
+
+ARCHFLAGS := -mcpu=cortex-m85+nomve+nofp -mthumb -mfloat-abi=soft
+
+LEGACY_C := -Wno-error=int-conversion \
+            -Wno-error=incompatible-pointer-types \
+            -Wno-error=implicit-function-declaration \
+            -Wno-error=implicit-int \
+            -Wno-error=return-mismatch \
+            -Wno-error=discarded-qualifiers
+
+CFLAGS := $(ARCHFLAGS) -std=gnu11 -O1 -g3 \
+          -ffunction-sections -fdata-sections \
+          -fno-builtin-printf \
+          -Wno-unused-variable -Wno-unused-function -Wno-missing-braces \
+          $(LEGACY_C) \
+          $(PROFILE_CFLAGS) -DRUNNER_FIRMWARE_BUILD_ID=$(BUILD_ID) \
+          $(INCS) -MMD -MP
+
+# The same wrap set as Makefile.pmu: the clean-profile wrappers are
+# unconditionally inert and never reference __real_*.
+WRAP_SYMS := printf vprintf fprintf vfprintf puts putchar fwrite \
+             _write _write_r fputc serial_print
+WRAPFLAGS := $(foreach s,$(WRAP_SYMS),-Wl,--wrap=$(s))
+
+LDSCRIPT  := $(BUILD)/lnk.ld
+LDOVERLAY := LinkScripts/lnk.measure.overlay.ld
+# DIAG-only: the golden-window contract symbols. The frozen measure overlay
+# is NOT edited; this second overlay only adds the two absolute symbols.
+LDOVERLAY_DIAG := LinkScripts/lnk.pmu_diag.overlay.ld
+LDFLAGS   := $(ARCHFLAGS) --specs=nano.specs --specs=nosys.specs \
+             -T $(LDSCRIPT) -T $(LDOVERLAY) -T $(LDOVERLAY_DIAG) \
+             -Wl,-Map=$(TARGET).map,--cref \
+             -Wl,--gc-sections \
+             -Wl,--print-memory-usage \
+             $(WRAPFLAGS)
+LDLIBS    := -lm
+
+VECTOR_SECTIONS := --only-section=.vectors_rom
+APP_SECTIONS    := --only-section=.text --only-section=.ARM.extab \
+                   --only-section=.ARM.exidx \
+                   --only-section=.preinit_array --only-section=.init_array \
+                   --only-section=.fini_array \
+                   --only-section=.copy.table --only-section=.zero.table \
+                   --only-section=.vectors_ram --only-section=.data
+DDR_SECTIONS    := --only-section=.ddr
+
+DENYLIST_CHECK := Selftest_measure/check_measure_symbols.py
+DIAG_MAIN      := Selftest_pmu_diag/runner_pmu_diag_main.c
+DIAG_CASE_GATE := Selftest_pmu_diag/check_diag_case.py
+
+.PHONY: all clean bins report check checkcase hashes
+all: bins check
+
+$(LDSCRIPT): LinkScripts/lnk.ld.S LinkScripts/region_defs.h LinkScripts/region_limits.h
+	@mkdir -p $(dir $@)
+	$(CC) -E -P -x c -ILinkScripts $< -o $@
+
+$(BUILD)/%.o: %.c
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(TARGET).elf: $(OBJS) $(LDSCRIPT) $(LDOVERLAY) $(LDOVERLAY_DIAG)
+	$(CC) $(OBJS) $(LDFLAGS) -o $@ $(LDLIBS)
+	$(SIZE) $@
+
+bins: $(TARGET).elf
+	$(OBJCOPY) -O binary $(VECTOR_SECTIONS) $(TARGET).elf $(BUILD)/VECTORS.BIN
+	$(OBJCOPY) -O binary $(APP_SECTIONS)    $(TARGET).elf $(BUILD)/APP.BIN
+	$(OBJCOPY) -O binary $(DDR_SECTIONS)    $(TARGET).elf $(BUILD)/DDR.BIN
+	@ls -l $(BUILD)/VECTORS.BIN $(BUILD)/APP.BIN $(BUILD)/DDR.BIN
+
+# Case identity gate: preprocess the diag TU with the EXACT build flags, then
+# count the PMU write calls per register offset. Case A must contain zero
+# PMCCNTR_CFG writes -- a source-level fact, checked after #if resolution.
+checkcase:
+	@mkdir -p $(BUILD)
+	$(CC) $(CFLAGS) -E $(DIAG_MAIN) -o $(BUILD)/runner_pmu_diag_main.i
+	python3 $(DIAG_CASE_GATE) \
+	    --preprocessed $(BUILD)/runner_pmu_diag_main.i \
+	    --regs-header Selftest_pmu/npu_pmu_regs.h \
+	    --case $(DIAG_CASE) --nc $(NC) --seam $(SEAM_GATE)
+ifeq ($(USE_REF_DRIVER),0)
+	python3 $(DIAG_CASE_GATE) \
+	    --driver-source Selftest_pmu_diag/u85_diag.c \
+	    --reference-driver Drivers/u85_driver/u85.c \
+	    --driver-only
+else
+	@echo "  PASS $(SEAM) uses the reference vendor driver; no private copy compiled"
+endif
+
+# The denylist call-graph gate runs over the LINKED ELF, exactly as it does
+# for the PMU candidate's clean profile. The map gate then re-verifies the
+# golden-window contract symbols landed at exactly the contract values.
+check: checkcase $(TARGET).elf
+	python3 $(DENYLIST_CHECK) \
+	    --elf $(TARGET).elf \
+	    --map $(TARGET).map \
+	    --objdump $(OBJDUMP) \
+	    --nm $(NM) \
+	    --profile clean
+	python3 $(DIAG_CASE_GATE) --map $(TARGET).map --map-only
+	python3 $(DIAG_CASE_GATE) --seam-artifacts --seam $(SEAM_GATE) \
+	    --map $(TARGET).map --elf $(TARGET).elf --objdump $(OBJDUMP)
+
+hashes: bins
+	@sha256sum $(BUILD)/APP.BIN $(BUILD)/DDR.BIN $(BUILD)/VECTORS.BIN
+
+report: $(TARGET).elf
+	$(OBJDUMP) -h $(TARGET).elf
+
+clean:
+	rm -rf $(BUILD)
+
+-include $(DEPS)

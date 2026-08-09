@@ -1,0 +1,125 @@
+# PMU QUAL — FROZEN BASELINE (SHA-256)
+#
+# Immutable capture of the frozen PMU qualification inputs, taken BEFORE any
+# PMU-diag implementation work touches the tree. Any later divergence from a
+# digest recorded here invalidates the qualification run that depends on it.
+#
+# This file is a record, not a checksum manifest: it is NOT consumable by
+# `sha256sum -c` as a whole, because it mixes single-file digests, a
+# tree-rollup digest, and remote digests read over ssh. Per-file lines are
+# reproduced verbatim in `sha256sum` output format so they can be extracted
+# and checked individually.
+#
+# DO NOT EDIT. Regenerate only by creating a new, separately named baseline.
+
+captured_at_utc:  2026-08-09T08:29:41Z
+captured_at_kst:  2026-08-09T17:29:41+0900
+capture_host:     darwin (macOS), /sbin/sha256sum — "sha256sum (Darwin) 1.0"
+repo:             /Users/kwongihwan/Documents/Projects/personal/mps4_testing
+git_branch:       main
+git_head:         7827e5caa39d2802e461e698e44480268f61e71d
+git_head_subject: docs: plan PMU H-PRINTF schema v8 implementation
+scope:            Task 0 — baseline capture only. No build, no flash, no board,
+                  no SD, no reboot, no commit, no push performed.
+
+
+# =============================================================================
+# 1. LOCAL FROZEN FIRMWARE SOURCES  (read-only; not modified by this capture)
+# =============================================================================
+#
+# Command semantics — run from the repo root, one invocation, paths relative:
+#
+#   sha256sum firmware/Selftest_pmu/runner_pmu_main.c \
+#             firmware/Makefile.pmu \
+#             firmware/LinkScripts/lnk.ld.S \
+#             firmware/LinkScripts/lnk.measure.overlay.ld
+#
+# Output is reproduced verbatim below ("<digest>  <relative path>", two spaces).
+# These four lines ARE valid `sha256sum -c` input when run from the repo root.
+
+b95b11b0cbddceefa8940515b8965be0d1132ea209ba32e12dbf4fefa95e41a2  firmware/Selftest_pmu/runner_pmu_main.c
+fd12d2adb79152a79a93f5c0324c15c5ebe40f959d28975af4536f4cb1f01921  firmware/Makefile.pmu
+ccc1404126abe2112142242b44f003b27b5e6d52c2b27a909283e78f2b59789c  firmware/LinkScripts/lnk.ld.S
+22f8274710b8eefd8b5a83b4da7c1a5455b841b6837809a06657633df1ea2bb6  firmware/LinkScripts/lnk.measure.overlay.ld
+
+
+# =============================================================================
+# 2. PROVENANCE TREE ROOT  (rollup digest over the whole `provenance/` tree)
+# =============================================================================
+#
+# Command semantics — run from the repo root:
+#
+#   find provenance -type f -print0 | sort -z | xargs -0 sha256sum | sha256sum
+#
+# Semantics, precisely:
+#   - `find provenance -type f`  — regular files only; directories and symlinks
+#     are NOT hashed, so an empty directory does not affect the root digest.
+#   - `-print0` / `sort -z` / `xargs -0` — NUL-delimited throughout, so the
+#     ordering is a byte-wise sort of the NUL-terminated relative pathnames and
+#     is independent of `find` traversal order and of locale-sensitive
+#     whitespace/filename handling.
+#   - inner `sha256sum` — emits one "<digest>  <relative path>" line per file,
+#     in the sorted order above.
+#   - outer `sha256sum` — hashes that entire concatenated listing read from
+#     stdin. The root digest therefore covers BOTH file contents AND file
+#     paths: a pure rename with identical content changes the root.
+#   - Output path field is `-` because the outer hash reads stdin.
+#
+# Any change to content, path, addition, or deletion under provenance/ changes
+# this single value.
+
+provenance_tree_files: 70
+5e1e5a9867d31d71d8f17cf3ac16a775bbbb4ecd59f7295ce9a31e82ac74f849  -
+
+
+# =============================================================================
+# 3. REMOTE u85.c DRIVER SOURCE  (read over ssh; nothing written remotely)
+# =============================================================================
+#
+# Command semantics — a single ssh invocation from the capture host:
+#
+#   ssh -o BatchMode=yes gihwan \
+#     'sha256sum /home/gihwan/mps4/runner/selftest/Drivers/u85_driver/u85.c;
+#      docker exec benchmark-runner \
+#        sha256sum /work/selftest/Drivers/u85_driver/u85.c'
+#
+#   - `gihwan` resolves via ~/.ssh/config to ssh.gihwan.uk through a
+#     `cloudflared access ssh` ProxyCommand.
+#   - The second digest is read INSIDE the running `benchmark-runner` container
+#     on that same host (the firmware build container, sources at
+#     /work/selftest), not on the container host filesystem.
+#   - Both are read-only `sha256sum` calls. No build, no container mutation.
+#
+# Expected digest for BOTH paths (pre-declared by the task, i.e. the value the
+# capture was required to confirm rather than discover):
+#
+#   expected: bcd877bbd42a35d83c8696d02b64d2ae4985a46fcce91b98102e08661b356bcf
+#
+# Observed:
+
+bcd877bbd42a35d83c8696d02b64d2ae4985a46fcce91b98102e08661b356bcf  gihwan:/home/gihwan/mps4/runner/selftest/Drivers/u85_driver/u85.c
+bcd877bbd42a35d83c8696d02b64d2ae4985a46fcce91b98102e08661b356bcf  gihwan:docker://benchmark-runner/work/selftest/Drivers/u85_driver/u85.c
+
+# Match result:
+#   host      == expected : PASS
+#   container == expected : PASS
+#   host      == container: PASS
+#
+# All three comparisons hold; the host and the build container agree on the
+# u85 driver source, and both agree with the pre-declared frozen value.
+
+
+# =============================================================================
+# SUMMARY
+# =============================================================================
+#
+#   runner_pmu_main.c        b95b11b0…5e41a2   local
+#   Makefile.pmu             fd12d2ad…f01921   local
+#   lnk.ld.S                 ccc14041…59789c   local
+#   lnk.measure.overlay.ld   22f82747…1ea2bb6  local
+#   provenance/ tree root    5e1e5a98…c74f849  local rollup, 70 files
+#   u85.c (host)             bcd877bb…356bcf   remote, matches expected
+#   u85.c (container)        bcd877bb…356bcf   remote, matches expected
+#
+# No frozen, vendor, or provenance file was modified by this capture; every
+# command above is a read.

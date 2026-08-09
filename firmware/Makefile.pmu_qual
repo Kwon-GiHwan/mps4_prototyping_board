@@ -1,0 +1,240 @@
+# Makefile.pmu_qual -- RUNNER_V1_PMU_QUAL, the schema-v8 H-PRINTF Q0/Q1 images.
+#
+# Usage (from the selftest/ root):
+#   make -f Makefile.pmu_qual QUAL=Q0 clean bins check manifest hashes
+#   make -f Makefile.pmu_qual QUAL=Q1 clean bins check manifest hashes
+#
+# Branched from Makefile.pmu_diag. It is a SEPARATE build graph on purpose:
+# the v7 diagnostic matrix keeps its own directories, build ids and gates, and
+# nothing here can move or invalidate a v7 artifact.
+#
+#   Q0  H-PRINTF hook DISABLED baseline. Detects the target callsite and
+#       records the observed LR, but performs no PMU snapshot and no disable.
+#       hook_fired_count stays 0, so Q0 is invalid as a performance sample BY
+#       DESIGN and exists only for functional/NPU-path equivalence.
+#   Q1  H-PRINTF hook ENABLED qualification candidate. Same detection path,
+#       and only this image executes the pre-release side effect.
+#
+# Both link the SAME reference vendor Drivers/u85_driver/u85.c with TEST_CPM=1,
+# so the vendor object is byte-identical between the two modes and the terminal
+# CMD=0xC release comes from the vendor driver itself, unmodified.
+#
+# Deliberate differences from Makefile.pmu_diag:
+#   1. PMU_QUAL_SCHEMA_V8 + exactly one of PMU_QUAL_MODE_Q0/Q1 select the
+#      compile-time-isolated schema-v8 record and hook. Without
+#      PMU_QUAL_SCHEMA_V8 the shared runner source compiles as v7, unchanged.
+#   2. Case A is forced: schema v8 writes NO PMCCNTR_CFG of any kind, and the
+#      gate proves that against the preprocessed translation unit.
+#   3. Seam S1 is forced. It is the only v7 seam that links the reference
+#      driver AND issues no runner-side release, which is the shape v8 needs;
+#      the source refuses S2/S3, the private driver and every negative control
+#      under PMU_QUAL_SCHEMA_V8.
+#   4. `check` additionally runs Selftest_pmu_diag/check_pmu_qual.py over the
+#      FINAL ELF, the linked vendor object and the vendor source, and emits the
+#      machine-readable callsite manifest the host collector requires.
+#
+# Flags, include dirs, wrap set, link scripts and the three objcopy invocations
+# are Makefile.pmu_diag's, unchanged. In particular -fno-builtin-printf is
+# present and no -flto is added anywhere: both are gate terms, not preferences.
+
+TOOLCHAIN := /opt/arm/gcc-arm-none-eabi/bin/arm-none-eabi-
+CC        := $(TOOLCHAIN)gcc
+OBJCOPY   := $(TOOLCHAIN)objcopy
+OBJDUMP   := $(TOOLCHAIN)objdump
+SIZE      := $(TOOLCHAIN)size
+NM        := $(TOOLCHAIN)nm
+READELF   := $(TOOLCHAIN)readelf
+
+CMSIS_INC := /opt/arm/ml-embedded-evaluation-kit/dependencies/cmsis-6/CMSIS/Core/Include
+
+# --- qualification mode selection --------------------------------------------
+QUAL ?=
+
+ifeq ($(QUAL),Q0)
+  QUAL_TAG    := q0
+  QUAL_CFLAGS := -DPMU_QUAL_MODE_Q0
+  # ASCII "PQB0" little-endian -- baseline. Must match
+  # runner_proto.PMU_QUAL_BUILD_IDS.
+  BUILD_ID    := 0x30425150
+else ifeq ($(QUAL),Q1)
+  QUAL_TAG    := q1
+  QUAL_CFLAGS := -DPMU_QUAL_MODE_Q1
+  # ASCII "PQH1" little-endian -- H-PRINTF candidate.
+  BUILD_ID    := 0x31485150
+else
+  $(error QUAL must be Q0 or Q1)
+endif
+
+BUILD  := build_pmu_qual_$(QUAL_TAG)
+TARGET := $(BUILD)/runner_pmu_qual
+
+# Schema v8 is case A (no CFG write) and seam S1 (reference driver, no
+# runner-issued release) by construction. These are not knobs: the source
+# #errors on any other combination once PMU_QUAL_SCHEMA_V8 is defined.
+PROFILE_CFLAGS := -DMEASUREMENT_BUILD -DPMU_DIAG_BUILD \
+                  -DPMU_QUAL_SCHEMA_V8 $(QUAL_CFLAGS) \
+                  -DPMU_DIAG_CASE_A -DPMU_DIAG_SEAM_S1
+
+SRCDIRS := Device_SSE-320 Drivers Selftest Selftest_cli Selftest_pmu \
+           Selftest_pmu_diag Serial Sleep Tests
+SRCS    := $(shell find $(SRCDIRS) -name '*.c' -not -name '._*')
+
+SRCS := $(filter-out Selftest/retarget.c Selftest/main.c Selftest/raw_rx_main.c \
+                     Selftest/runner_v1_main.c \
+                     Selftest_pmu/runner_pmu_main.c,$(SRCS))
+
+# The reference vendor driver is linked byte-for-byte; the diag-private copy is
+# never compiled into a qualification image. This is what makes the Q0/Q1
+# u85.o hashes comparable to each other and to the v7 S1/S2 baseline.
+SRCS := $(filter-out Selftest_pmu_diag/u85_diag.c,$(SRCS))
+
+SRCS := $(sort $(SRCS))
+OBJS := $(patsubst %.c,$(BUILD)/%.o,$(SRCS))
+DEPS := $(OBJS:.o=.d)
+
+INCDIRS := $(sort $(dir $(shell find $(SRCDIRS) LinkScripts -name '*.h' -not -name '._*')))
+INCS    := $(addprefix -I,$(INCDIRS)) -I$(CMSIS_INC)
+
+ARCHFLAGS := -mcpu=cortex-m85+nomve+nofp -mthumb -mfloat-abi=soft
+
+LEGACY_C := -Wno-error=int-conversion \
+            -Wno-error=incompatible-pointer-types \
+            -Wno-error=implicit-function-declaration \
+            -Wno-error=implicit-int \
+            -Wno-error=return-mismatch \
+            -Wno-error=discarded-qualifiers
+
+# -fno-builtin-printf is load-bearing: without it the compiler may lower
+# printf("...\n") to puts(), which erases the target callsite the whole
+# qualification depends on. No -flto for the same reason, one level up.
+CFLAGS := $(ARCHFLAGS) -std=gnu11 -O1 -g3 \
+          -ffunction-sections -fdata-sections \
+          -fno-builtin-printf \
+          -Wno-unused-variable -Wno-unused-function -Wno-missing-braces \
+          $(LEGACY_C) \
+          $(PROFILE_CFLAGS) -DRUNNER_FIRMWARE_BUILD_ID=$(BUILD_ID) \
+          $(INCS) -MMD -MP
+
+WRAP_SYMS := printf vprintf fprintf vfprintf puts putchar fwrite \
+             _write _write_r fputc serial_print
+WRAPFLAGS := $(foreach s,$(WRAP_SYMS),-Wl,--wrap=$(s))
+
+LDSCRIPT  := $(BUILD)/lnk.ld
+LDOVERLAY := LinkScripts/lnk.measure.overlay.ld
+LDOVERLAY_DIAG := LinkScripts/lnk.pmu_diag.overlay.ld
+LDFLAGS   := $(ARCHFLAGS) --specs=nano.specs --specs=nosys.specs \
+             -T $(LDSCRIPT) -T $(LDOVERLAY) -T $(LDOVERLAY_DIAG) \
+             -Wl,-Map=$(TARGET).map,--cref \
+             -Wl,--gc-sections \
+             -Wl,--print-memory-usage \
+             $(WRAPFLAGS)
+LDLIBS    := -lm
+
+VECTOR_SECTIONS := --only-section=.vectors_rom
+APP_SECTIONS    := --only-section=.text --only-section=.ARM.extab \
+                   --only-section=.ARM.exidx \
+                   --only-section=.preinit_array --only-section=.init_array \
+                   --only-section=.fini_array \
+                   --only-section=.copy.table --only-section=.zero.table \
+                   --only-section=.vectors_ram --only-section=.data
+DDR_SECTIONS    := --only-section=.ddr
+
+DENYLIST_CHECK := Selftest_measure/check_measure_symbols.py
+QUAL_MAIN      := Selftest_pmu_diag/runner_pmu_diag_main.c
+QUAL_GATE      := Selftest_pmu_diag/check_pmu_qual.py
+DIAG_CASE_GATE := Selftest_pmu_diag/check_diag_case.py
+REGS_HEADER    := Selftest_pmu/npu_pmu_regs.h
+VENDOR_SRC     := Drivers/u85_driver/u85.c
+VENDOR_HDR     := Drivers/u85_driver/interface.h
+VENDOR_OBJ     := $(BUILD)/Drivers/u85_driver/u85.o
+PREPROCESSED   := $(BUILD)/runner_pmu_qual_main.i
+MANIFEST       := $(BUILD)/pmu_qual_manifest.json
+
+.PHONY: all clean bins report check manifest hashes preprocess
+all: bins check manifest
+
+$(LDSCRIPT): LinkScripts/lnk.ld.S LinkScripts/region_defs.h LinkScripts/region_limits.h
+	@mkdir -p $(dir $@)
+	$(CC) -E -P -x c -ILinkScripts $< -o $@
+
+$(BUILD)/%.o: %.c
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+# The vendor object must be BYTE-IDENTICAL between Q0 and Q1: that identity is
+# what lets the two images be compared as the same NPU path with and without
+# the hook, and it is a reported gate, not a nicety.
+#
+# -g3 records the command-line -D set in .debug_macro, so the mode macro and
+# the build id -- neither of which u85.c references -- would otherwise make the
+# two objects differ in DEBUG INFO ALONE while their code was identical. That
+# would leave the gate reporting a difference that means nothing, or (worse)
+# tempt a future reader to weaken the comparison to "same .text". Dropping the
+# two defines for this one translation unit makes the byte-identity real.
+$(BUILD)/Drivers/u85_driver/u85.o: CFLAGS := \
+    $(filter-out $(QUAL_CFLAGS) -DRUNNER_FIRMWARE_BUILD_ID=$(BUILD_ID),$(CFLAGS))
+
+$(TARGET).elf: $(OBJS) $(LDSCRIPT) $(LDOVERLAY) $(LDOVERLAY_DIAG)
+	$(CC) $(OBJS) $(LDFLAGS) -o $@ $(LDLIBS)
+	$(SIZE) $@
+
+bins: $(TARGET).elf
+	$(OBJCOPY) -O binary $(VECTOR_SECTIONS) $(TARGET).elf $(BUILD)/VECTORS.BIN
+	$(OBJCOPY) -O binary $(APP_SECTIONS)    $(TARGET).elf $(BUILD)/APP.BIN
+	$(OBJCOPY) -O binary $(DDR_SECTIONS)    $(TARGET).elf $(BUILD)/DDR.BIN
+	@ls -l $(BUILD)/VECTORS.BIN $(BUILD)/APP.BIN $(BUILD)/DDR.BIN
+
+# The preprocessed translation unit is the source-level evidence for the
+# no-CFG-write and hook-side-effect counts, taken with the EXACT build flags so
+# what is counted is what the compiler saw for THIS mode.
+preprocess: $(PREPROCESSED)
+
+$(PREPROCESSED): $(QUAL_MAIN)
+	@mkdir -p $(BUILD)
+	$(CC) $(CFLAGS) -E $(QUAL_MAIN) -o $@
+
+# Final-ELF attestation. This is the load-bearing gate: it proves the vendor
+# callsite the hook depends on still exists, still resolves to __wrap_printf,
+# and still sits between the vendor STOP and the vendor terminal release with
+# nothing in between -- and it writes the addresses the host compares against
+# the runtime LR. Firmware never imports them.
+manifest: $(TARGET).elf $(PREPROCESSED) bins
+	python3 $(QUAL_GATE) \
+	    --mode $(QUAL) \
+	    --build-id $(BUILD_ID) \
+	    --vendor-source $(VENDOR_SRC) \
+	    --interface-header $(VENDOR_HDR) \
+	    --vendor-object $(VENDOR_OBJ) \
+	    --regs-header $(REGS_HEADER) \
+	    --preprocessed $(PREPROCESSED) \
+	    --elf $(TARGET).elf \
+	    --map $(TARGET).map \
+	    --app-bin $(BUILD)/APP.BIN \
+	    --vectors-bin $(BUILD)/VECTORS.BIN \
+	    --ddr-bin $(BUILD)/DDR.BIN \
+	    --objdump $(OBJDUMP) \
+	    --nm $(NM) \
+	    --readelf $(READELF) \
+	    --cflags "$(CFLAGS)" \
+	    --manifest-out $(MANIFEST)
+
+check: $(TARGET).elf manifest
+	python3 $(DENYLIST_CHECK) \
+	    --elf $(TARGET).elf \
+	    --map $(TARGET).map \
+	    --objdump $(OBJDUMP) \
+	    --nm $(NM) \
+	    --profile clean
+	python3 $(DIAG_CASE_GATE) --map $(TARGET).map --map-only
+
+hashes: bins
+	@sha256sum $(BUILD)/APP.BIN $(BUILD)/DDR.BIN $(BUILD)/VECTORS.BIN \
+	           $(TARGET).elf $(TARGET).map $(VENDOR_OBJ) $(MANIFEST)
+
+report: $(TARGET).elf
+	$(OBJDUMP) -h $(TARGET).elf
+
+clean:
+	rm -rf $(BUILD)
+
+-include $(DEPS)

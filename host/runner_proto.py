@@ -33,6 +33,9 @@ CMD_RUN_COMPLETE = 0x31  # unsolicited, measure-v2 only
 CMD_GET_RESULT = 0x40
 CMD_RESET_RUNNER = 0x50
 CMD_SET_INSTRUMENTATION_MODE = 0x05
+CMD_RUN_PMU_DIAG = 0x60         # RUNNER_V1_PMU_DIAG image only
+CMD_GET_PMU_DIAG_RESULT = 0x61  # RUNNER_V1_PMU_DIAG image only
+CMD_PMU_DIAG_COMPLETE = 0x62    # unsolicited, diag analogue of 0x31
 
 NACK = 0xFF
 
@@ -526,3 +529,1025 @@ class RunnerLink:
 
     def reset_runner(self) -> None:
         self.request(CMD_RESET_RUNNER)
+
+    def run_pmu_diag(self, timeout: float = 60.0) -> "PmuDiagResult":
+        """RUNNER_V1_PMU_DIAG image only: execute the fixed inference under
+        the diag PMU sequence.
+
+        The ACK arrives BEFORE the window opens, then an unsolicited
+        CMD_PMU_DIAG_COMPLETE (0x62) closes it -- the same discipline run()
+        enforces for measure-v2, checked rather than assumed.
+        """
+        # A failed run must not leave the PREVIOUS run's bytes lying around as
+        # presentable evidence -- cleared before anything is sent.
+        self.last_pmu_diag_raw = None
+        self.last_pmu_diag_reread_raw = None
+
+        self._seq = (self._seq + 1) & 0xFFFFFFFF
+        seq = self._seq
+        self.send_raw(build_frame(CMD_RUN_PMU_DIAG, seq))
+
+        acked = False
+        result = None
+        deadline = time.time() + timeout
+
+        while time.time() < deadline:
+            try:
+                frame = self.read_frame(min(5.0, max(0.5, deadline - time.time())))
+            except ProtocolError:
+                break
+
+            # The DIAG firmware sends CMD_PMU_DIAG_COMPLETE with the REQUEST
+            # sequence, so a mismatched completion is a straggler from an
+            # earlier exchange -- counted and dropped, never adopted. This is
+            # deliberately stricter than run()'s RUN_COMPLETE handling.
+            if frame.sequence != seq:
+                self.late_frames += 1
+                continue
+
+            if frame.command == NACK:
+                raise Nack(frame.flags, frame.payload[0], frame.payload[1])
+
+            if frame.command == (CMD_RUN_PMU_DIAG | 0x80):
+                if acked:
+                    raise RunSequenceError(
+                        "duplicate ACK for CMD_RUN_PMU_DIAG seq=%d" % seq)
+                acked = True
+                continue
+
+            if frame.command == CMD_PMU_DIAG_COMPLETE:
+                if not acked:
+                    raise RunSequenceError("PMU_DIAG_COMPLETE arrived before the ACK")
+                if result is not None:
+                    raise RunSequenceError("duplicate PMU_DIAG_COMPLETE")
+                # The EXACT bytes are evidence: the collector archives them so
+                # any later analysis can re-verify the payload CRC itself
+                # instead of trusting parsed fields.
+                self.last_pmu_diag_raw = bytes(frame.payload)
+                result = parse_pmu_diag_payload(frame.payload)
+                break
+
+            if not acked:
+                raise RunSequenceError(
+                    "frame 0x%02X arrived before the ACK" % frame.command)
+            self.late_frames += 1
+
+        if not acked:
+            raise RunSequenceError("no ACK for CMD_RUN_PMU_DIAG within %.1fs" % timeout)
+        if result is None:
+            raise RunSequenceError(
+                "no PMU_DIAG_COMPLETE within %.1fs (ACK was seen)" % timeout)
+        return result
+
+    def get_pmu_diag_result(self) -> "PmuDiagResult":
+        f = self.request(CMD_GET_PMU_DIAG_RESULT, timeout=10.0)
+        self.last_pmu_diag_reread_raw = bytes(f.payload)
+        return parse_pmu_diag_payload(f.payload)
+
+
+# ---------------------------------------------------------------------------
+# PMU_DIAG (RUNNER_V1_PMU_DIAG diagnostic image)
+#
+# A SEPARATE ABI from the measurement payload, on purpose: the production
+# schema gains no fields for a temporary diagnostic. Same 8-word header shape
+# and the same two-slice CRC rule as RUN_COMPLETE, so measurement_payload_crc
+# is reused unchanged.
+# ---------------------------------------------------------------------------
+
+PMU_DIAG_MAGIC = 0x31474450  # "PDG1"
+# v7 splits the three interventions v6 bundled. All seam images carry the same
+# case-B cycle config, so power_seam_id is the only variable. v1-v6 payloads
+# are invalid evidence for this experiment and are refused outright.
+PMU_DIAG_SCHEMA_VERSION = 7
+PMU_DIAG_HEADER_WORDS = 8
+PMU_DIAG_SNAPSHOT_WORDS = 8
+PMU_DIAG_KNOWN_FIELDS_V7 = 40 + 3 * PMU_DIAG_SNAPSHOT_WORDS  # 64
+PMU_DIAG_TOTAL_WORDS_V7 = PMU_DIAG_HEADER_WORDS + PMU_DIAG_KNOWN_FIELDS_V7
+PMU_DIAG_START_SEQUENCE_POWER_GUARD_PROGRAM = 4
+PMU_DIAG_POWER_GUARD_CYCLES = 65536
+PMU_DIAG_RESET_GUARD_CYCLES = 65536
+PMU_DIAG_REHOLD_GUARD_CYCLES = 65536
+PMU_DIAG_STABILITY_SAMPLES = 8
+
+# Power-seam identity. S1/S2 link the reference vendor driver (its terminal
+# CMD=0xC lands inside test_u85()); S3 is the v6 configuration re-measured
+# under v7 instrumentation and is the known-good control.
+PMU_DIAG_SEAM_IDS = {"S1": 1, "S2": 2, "S3": 3}
+# ASCII "PDS1".."PDS3" little-endian; must match Makefile.pmu_diag.
+PMU_DIAG_SEAM_BUILD_IDS = {"S1": 0x31534450, "S2": 0x32534450,
+                           "S3": 0x33534450}
+
+PMU_CYCLE_MASK48 = (1 << 48) - 1
+
+# Known-position pins, the same status as the firmware's _Static_assert on
+# 0x11: cross-checks against the machine-extracted vendor header, never the
+# source of truth. The firmware refuses to build if these move.
+PMU_PMCNTEN_CYCLE_BIT = 31
+PMU_PMOVS_CYCLE_OVF_BIT = 31
+PMU_PMCR_CNT_EN_BIT = 0
+
+# The semantic golden judgement: CRC32 over EXACTLY the 256-byte test-19
+# output window, the same computation the production host makes via
+# GET_RESULT(0x90020CC0, 0x100). Board-verified boot-invariant on
+# 2026-08-08 (recovered window CRC == 0x27084C4C while the whole-region CRC
+# varied with residual scratch). The whole-region result_region_crc is
+# CORROBORATION ONLY and is never a validity condition.
+GOLDEN_WINDOW_CRC = 0x27084C4C
+PMU_DIAG_GOLDEN_WINDOW_BASE = 0x90020CC0
+PMU_DIAG_GOLDEN_WINDOW_LEN = 0x100
+
+# Target build identity -- ONE mapping for every host-side check. ASCII
+# "PDGA"/"PDGB"/"PDGC" as little-endian words; must match Makefile.pmu_diag.
+# The NC control builds carry "PDN1".."PDN4" ids and nc_control_id 1..4 and
+# are rejected from the A/B/C dataset by the nc gates, not listed here.
+PMU_DIAG_BUILD_IDS = {"A": 0x41474450, "B": 0x42474450, "C": 0x43474450}
+
+
+@dataclass(frozen=True)
+class PmuDiagSnapshot:
+    pmcr: int
+    pmcntenset: int
+    pmccntr_cfg: int
+    cycle_lo: int
+    cycle_hi: int
+    cycle_read_stable: int
+    cycle_read_retries: int
+    pmovsset: int
+
+    @property
+    def cycle48(self) -> int:
+        return (self.cycle_lo | ((self.cycle_hi & 0xFFFF) << 32)) & PMU_CYCLE_MASK48
+
+    @property
+    def cycle_overflow(self) -> bool:
+        return bool((self.pmovsset >> PMU_PMOVS_CYCLE_OVF_BIT) & 1)
+
+    @property
+    def armed(self) -> bool:
+        return bool((self.pmcntenset >> PMU_PMCNTEN_CYCLE_BIT) & 1)
+
+    @property
+    def global_enable(self) -> bool:
+        return bool((self.pmcr >> PMU_PMCR_CNT_EN_BIT) & 1)
+
+
+@dataclass(frozen=True)
+class PmuDiagResult:
+    schema_version: int
+    build_id: int
+    diag_case: int      # 1=A 2=B 3=C
+    nc_control_id: int  # 0=normal, 1..4 negative control
+    run_sequence: int
+    cfg_write_performed: int
+    cfg_write_value: int
+    cfg_readback_after_write: int
+    run_rc: int
+    valid_flags: int
+    poison_crc: int
+    output_crc: int
+    result_region_crc: int
+    ts_source_valid: int
+    t_call_enter: int
+    t_call_return: int
+    t_pmu_disable: int
+    pmcr_readback_after_disable: int
+    pmu_mmio_read_count_delta: int
+    pmu_mmio_write_count_delta: int
+    start_sequence_id: int
+    power_guard_cycles: int
+    npu_cmd_before_power_request: int
+    npu_cmd_after_power_request: int
+    npu_status_after_power_request: int
+    reset_guard_cycles: int
+    pmcr_after_reset_guard: int
+    pmcr_after_program: int
+    armed_after_program: int
+    program_stability_reads: int
+    program_stable: int
+    npu_cmd_after_power_release: int
+    power_seam_id: int          # 1=S1 2=S2 3=S3
+    power_rehold_performed: int
+    rehold_guard_cycles: int
+    npu_cmd_after_seam: int
+    npu_status_after_seam: int
+    golden_window_base: int
+    golden_window_len: int
+    golden_window_crc: int
+    pre: PmuDiagSnapshot
+    post: PmuDiagSnapshot
+    post_disable: PmuDiagSnapshot
+    trailing_words: int  # present but not understood by this host version
+
+
+def pmu_diag_delta48(pre_cycles: int, post_cycles: int) -> int:
+    """48-bit modular progress. NEVER post > pre: a wrap would then read as
+    no progress. Overflow handling is the caller's job -- see classify."""
+    return (post_cycles - pre_cycles) & PMU_CYCLE_MASK48
+
+
+def parse_pmu_diag_payload(payload: bytes) -> PmuDiagResult:
+    if len(payload) < PMU_DIAG_HEADER_WORDS * 4:
+        raise ProtocolError("diag payload too short for the ABI header")
+    magic, version, total_words, header_words, seq, flags, rc, crc = struct.unpack_from(
+        "<8I", payload
+    )
+    if magic != PMU_DIAG_MAGIC:
+        raise ProtocolError("bad PMU_DIAG magic 0x%08X" % magic)
+    if version != PMU_DIAG_SCHEMA_VERSION:
+        raise ProtocolError(
+            "unsupported PMU_DIAG schema version %d (v1-v6 are invalid "
+            "evidence for the seam experiment and must not be re-fed)"
+            % version)
+    if header_words != PMU_DIAG_HEADER_WORDS:
+        raise ProtocolError("unexpected PMU_DIAG header_words %d" % header_words)
+    if total_words < PMU_DIAG_TOTAL_WORDS_V7:
+        raise ProtocolError(
+            "total_payload_words %d below the v7 minimum %d"
+            % (total_words, PMU_DIAG_TOTAL_WORDS_V7))
+    if total_words * 4 != len(payload):
+        raise ProtocolError(
+            "declared %d bytes, frame carried %d" % (total_words * 4, len(payload)))
+    if measurement_payload_crc(payload, total_words) != crc:
+        raise ProtocolError("PMU_DIAG payload CRC mismatch")
+
+    body = struct.unpack_from("<%dI" % (total_words - header_words),
+                              payload, header_words * 4)
+    snaps = []
+    for base in (40, 48, 56):
+        snaps.append(PmuDiagSnapshot(*body[base:base + PMU_DIAG_SNAPSHOT_WORDS]))
+    res = PmuDiagResult(
+        *body[:40],
+        pre=snaps[0], post=snaps[1], post_disable=snaps[2],
+        trailing_words=len(body) - PMU_DIAG_KNOWN_FIELDS_V7,
+    )
+    # The header duplicates three body fields; a disagreement means the
+    # payload was assembled wrong, not that one of them wins.
+    if (seq, flags, rc) != (res.run_sequence, res.valid_flags, res.run_rc):
+        raise ProtocolError("PMU_DIAG header/body disagree on seq/flags/rc")
+    if res.schema_version != version:
+        raise ProtocolError("PMU_DIAG body schema_version %d != header %d"
+                            % (res.schema_version, version))
+    if res.diag_case not in (1, 2, 3):
+        raise ProtocolError("PMU_DIAG diag_case %d out of range" % res.diag_case)
+    if res.nc_control_id not in (0, 1, 2, 3, 4):
+        raise ProtocolError("PMU_DIAG nc_control_id %d out of range"
+                            % res.nc_control_id)
+    if res.power_seam_id not in (1, 2, 3):
+        raise ProtocolError("PMU_DIAG power_seam_id %d out of range"
+                            % res.power_seam_id)
+    # Only S2 re-holds. A record claiming otherwise describes an image whose
+    # seam identity and behaviour disagree, which is never interpretable.
+    expect_rehold = 1 if res.power_seam_id == 2 else 0
+    if res.power_rehold_performed != expect_rehold:
+        raise ProtocolError(
+            "PMU_DIAG seam %d reports power_rehold_performed=%d (expected %d)"
+            % (res.power_seam_id, res.power_rehold_performed, expect_rehold))
+    return res
+
+
+def classify_pmu_diag(res: PmuDiagResult) -> dict:
+    """Derive the contract's validity flags from OBSERVED registers only.
+
+    NO_EVENT == 0 (firmware _Static_assert), so a zero PMCCNTR_CFG means
+    "configured never to start" whether or not a write ever happened -- that
+    is exactly how the CFG-write-omitted and START=NO_EVENT defect classes
+    both land on cfg_programmed=0.
+    """
+    pre, post = res.pre, res.post
+    overflow = pre.cycle_overflow or post.cycle_overflow
+    stable = bool(pre.cycle_read_stable and post.cycle_read_stable)
+    armed = pre.armed and post.armed
+    global_enable = pre.global_enable and post.global_enable
+    raw_delta = pmu_diag_delta48(pre.cycle48, post.cycle48)
+    # A modulo-positive delta is not progress if the PMU state disappeared.
+    # When power/reset clears the counter, (0 - pre) mod 2^48 looks huge even
+    # though the post snapshot proves the counter was reset, not advanced.
+    progress_observed = bool(armed and global_enable and stable
+                             and not overflow and raw_delta > 0)
+    cfg_programmed = bool(pre.pmccntr_cfg != 0
+                          and post.pmccntr_cfg == pre.pmccntr_cfg)
+    cycle_read_valid = bool(armed and global_enable and stable and not overflow)
+    return {
+        "cfg_programmed": cfg_programmed,
+        # A DIFFERENT fact from cfg_programmed: the write/readback PATH
+        # worked. Case C is the positive control for exactly this -- it
+        # writes a (zero) config and must read it back, so its
+        # cfg_write_path_ok is True while cfg_programmed stays False.
+        "cfg_write_path_ok": bool(
+            res.cfg_write_performed == 1
+            and res.cfg_readback_after_write == res.cfg_write_value),
+        "cycle_counter_armed": armed,
+        "cycle_global_enable": global_enable,
+        "cycle_read_stable": stable,
+        "cycle_overflow": overflow,
+        "raw_delta_diagnostic": raw_delta,
+        # Collection-stage enforcement of the analysis rule: a DIAG delta is
+        # never a performance metric (extra MMIO reads sit inside it), and a
+        # delta without observed progress is not even usable diagnostically.
+        "usable_diagnostic_delta": raw_delta if progress_observed else None,
+        "progress_observed": progress_observed,
+        "cycle_read_valid": cycle_read_valid,
+        # v6 sequence boundary evidence. Boot6 showed the v5 programming was
+        # attempted while the NPU requested clock/power shutdown. Hold power,
+        # guard, reset/guard/program, prove persistence, then release power.
+        "start_sequence_ok": (
+            res.start_sequence_id == PMU_DIAG_START_SEQUENCE_POWER_GUARD_PROGRAM),
+        "power_hold_ok": bool(
+            res.power_guard_cycles == PMU_DIAG_POWER_GUARD_CYCLES
+            and (res.npu_cmd_after_power_request & 0xC) == 0
+            and (res.npu_status_after_power_request & 0x8) == 0),
+        # Every seam leaves the board in the same terminal state. S2 and S3
+        # restore it with a runner write (S2 cancelled the driver's release
+        # with its re-hold, S3's private driver never issued one); S1 only
+        # reads back what the reference driver already did. The readback is
+        # therefore uniform, and WHO wrote it is a static-gate question.
+        "power_release_restored": (
+            (res.npu_cmd_after_power_release & 0xC) == 0xC),
+        # Seam identity and its re-hold shape, as observed.
+        "seam_rehold_consistent": (
+            res.power_rehold_performed == (1 if res.power_seam_id == 2 else 0)),
+        # RUNTIME proof that the seam did what its identity claims, read at
+        # the one moment that distinguishes the three images. S1 never
+        # re-holds, so by this point the reference driver's terminal release
+        # must already be visible; S2 and S3 must still be holding power,
+        # S2 because it just re-held and S3 because its private driver never
+        # released. Without this the record could claim a seam it did not
+        # actually perform.
+        "seam_runtime_cmd_ok": (
+            (res.npu_cmd_after_seam & 0xC) == 0xC if res.power_seam_id == 1
+            else (res.npu_cmd_after_seam & 0xC) == 0),
+        # S1 is sampled while the shutdown transition is in flight, so its
+        # status bit has no settled meaning and is deliberately NOT gated.
+        "seam_runtime_status_ok": (
+            True if res.power_seam_id == 1
+            else (res.npu_status_after_seam & 0x8) == 0),
+        "rehold_guard_ok": (
+            res.rehold_guard_cycles == PMU_DIAG_REHOLD_GUARD_CYCLES
+            if res.power_seam_id == 2 else res.rehold_guard_cycles == 0),
+        "reset_guard_complete": (
+            res.reset_guard_cycles == PMU_DIAG_RESET_GUARD_CYCLES),
+        "global_after_program": bool(
+            (res.pmcr_after_program >> PMU_PMCR_CNT_EN_BIT) & 1),
+        "armed_after_program": res.armed_after_program == 1,
+        "program_stable": bool(
+            res.program_stable == 1
+            and res.program_stability_reads == PMU_DIAG_STABILITY_SAMPLES),
+        "measurement_usable": bool(cycle_read_valid and progress_observed
+                                   and cfg_programmed
+                                   and res.start_sequence_id
+                                       == PMU_DIAG_START_SEQUENCE_POWER_GUARD_PROGRAM
+                                   and res.power_guard_cycles
+                                       == PMU_DIAG_POWER_GUARD_CYCLES
+                                   and (res.npu_cmd_after_power_request & 0xC) == 0
+                                   and (res.npu_status_after_power_request & 0x8) == 0
+                                   and (res.npu_cmd_after_power_release & 0xC) == 0xC
+                                   and res.power_rehold_performed
+                                       == (1 if res.power_seam_id == 2 else 0)
+                                   and res.reset_guard_cycles
+                                       == PMU_DIAG_RESET_GUARD_CYCLES
+                                   and res.armed_after_program == 1
+                                   and res.program_stable == 1
+                                   and res.program_stability_reads
+                                       == PMU_DIAG_STABILITY_SAMPLES
+                                   and ((res.pmcr_after_program
+                                         >> PMU_PMCR_CNT_EN_BIT) & 1)),
+        # THE semantic golden gate: the exact 256-byte window, with the
+        # base/len contract re-checked. result_region_crc is corroboration
+        # display only and is deliberately absent from every validity term.
+        "golden_window_ok": bool(
+            res.golden_window_base == PMU_DIAG_GOLDEN_WINDOW_BASE
+            and res.golden_window_len == PMU_DIAG_GOLDEN_WINDOW_LEN
+            and res.golden_window_crc == GOLDEN_WINDOW_CRC),
+        "run_rc_ok": res.run_rc == 0,
+        "required_flags_ok": (res.valid_flags & RUN_VALID_REQUIRED_MASK)
+                             == RUN_VALID_REQUIRED_MASK,
+    }
+
+
+def pmu_diag_b_proof(res: PmuDiagResult) -> tuple[bool, dict]:
+    """Case B's pass evidence -- every condition must hold SIMULTANEOUSLY.
+
+    delta > 0 alone proves nothing: the claim is that counter progress
+    changed while the individual enable and the global enable were HELD and
+    only the start-event configuration differed. The golden check is the
+    EXACT 256-byte window CRC (golden_window_crc == 0x27084C4C with the
+    base/len contract intact); the whole-region result_region_crc is
+    corroboration display only and gates nothing here.
+    """
+    cls = classify_pmu_diag(res)
+    checks = {
+        "is_case_b": res.diag_case == 2,
+        "is_normal_build": res.nc_control_id == 0,
+        # Artifact-level identity, not just the record's own claim: the B
+        # image the contract describes is the one Makefile.pmu_diag stamps
+        # as "PDGB".
+        "build_id_is_pdgb": res.build_id == PMU_DIAG_BUILD_IDS["B"],
+        "cfg_write_performed": res.cfg_write_performed == 1,
+        "cfg_written_nonzero": res.cfg_write_value != 0,
+        "cfg_readback_matches_write": cls["cfg_write_path_ok"],
+        "cfg_pre_equals_written": res.pre.pmccntr_cfg == res.cfg_write_value,
+        "cfg_post_unchanged": res.post.pmccntr_cfg == res.pre.pmccntr_cfg,
+        "armed_pre_and_post": cls["cycle_counter_armed"],
+        "global_enable_pre_and_post": cls["cycle_global_enable"],
+        "cycle_read_stable": cls["cycle_read_stable"],
+        "no_overflow": not cls["cycle_overflow"],
+        "delta_positive": cls["progress_observed"],
+        "start_sequence_ok": cls["start_sequence_ok"],
+        "power_hold_ok": cls["power_hold_ok"],
+        "power_release_restored": cls["power_release_restored"],
+        "reset_guard_complete": cls["reset_guard_complete"],
+        "global_after_program": cls["global_after_program"],
+        "armed_after_program": cls["armed_after_program"],
+        "program_stable": cls["program_stable"],
+        "run_rc_ok": cls["run_rc_ok"],
+        "inference_valid_flags": cls["required_flags_ok"],
+        "golden_window_crc": cls["golden_window_ok"],
+    }
+    return all(checks.values()), checks
+
+
+def pmu_diag_verdict(res_a: PmuDiagResult, res_b: PmuDiagResult,
+                     res_c: PmuDiagResult) -> tuple[str, dict]:
+    """Apply the root-cause table to OBSERVED results.
+
+    Nothing is assumed: A and C are judged from their own snapshots, never
+    coded as zero. An unstable or overflowed sample invalidates the row
+    rather than feeding the table.
+    """
+    ca = classify_pmu_diag(res_a)
+    cb = classify_pmu_diag(res_b)
+    cc = classify_pmu_diag(res_c)
+    detail = {"A": ca, "B": cb, "C": cc}
+
+    # Identity and validity gates FIRST: every case must be the expected
+    # normal build, its inference must have succeeded and reproduced the
+    # exact golden window CRC, and its sample must be readable. A row that fails
+    # any of these feeds nothing -- it gets re-run, not interpreted.
+    for name, res, cls, want_case in (("A", res_a, ca, 1), ("B", res_b, cb, 2),
+                                      ("C", res_c, cc, 3)):
+        if res.diag_case != want_case or res.nc_control_id != 0:
+            return ("invalid-sample: case %s carries diag_case=%d "
+                    "nc_control_id=%d -- wrong image, re-run"
+                    % (name, res.diag_case, res.nc_control_id)), detail
+        if not (cls["start_sequence_ok"] and cls["power_hold_ok"]
+                and cls["reset_guard_complete"] and cls["program_stable"]
+                and cls["power_release_restored"]):
+            return ("invalid-sample: case %s did not report the required "
+                    "power-hold/guard/program/stable/release PMU sequence -- "
+                    "wrong image or invalid power boundary, re-run"
+                    % name), detail
+        if not (cls["run_rc_ok"] and cls["required_flags_ok"]
+                and cls["golden_window_ok"]):
+            return ("invalid-sample: case %s inference is not clean "
+                    "(rc/flags/exact golden window CRC) -- re-run before "
+                    "judging" % name), detail
+        if not cls["cycle_read_stable"] or cls["cycle_overflow"]:
+            return ("invalid-sample: case %s is unstable or overflowed -- "
+                    "re-run before judging" % name), detail
+
+    # The single-variable claim needs the COMMON enables held in the CONTEXT
+    # rows: an A or C that lost arm or global enable is not a clean "CFG
+    # differs, everything else equal" comparison partner. B is deliberately
+    # NOT gated here -- losing arm/global in the call is one of the outcomes
+    # the table exists to diagnose, and it is separated below.
+    for name, cls in (("A", ca), ("C", cc)):
+        if not (cls["global_after_program"]
+                and cls["armed_after_program"]
+                and cls["cycle_counter_armed"]
+                and cls["cycle_global_enable"]):
+            return ("invalid-sample: case %s did not hold the cycle arm and "
+                    "global enable after programming and across pre/post "
+                    "snapshots -- not a valid comparison row, re-run"
+                    % name), detail
+    # Case-contract identity: A must never have written CFG; C must have
+    # written a zero config through a WORKING write/readback path.
+    if res_a.cfg_write_performed != 0:
+        return ("invalid-sample: case A reports cfg_write_performed=1 -- "
+                "violates the A contract, wrong image or build"), detail
+    if not (res_c.cfg_write_performed == 1 and res_c.cfg_write_value == 0
+            and cc["cfg_write_path_ok"]):
+        return ("invalid-sample: case C is not a valid explicit-zero write "
+                "control (write/readback path or value wrong)"), detail
+    # Cross-case drift corroboration: the SAME fixed inference must leave the
+    # SAME output bytes in every case. This supplements the exact golden
+    # window (which each case already passed above) -- it never replaces it,
+    # and the whole-region CRC is deliberately NOT compared here: it varies
+    # with residual scratch and proved it on the 2026-08-08 boot1/2 runs.
+    if not (res_a.output_crc == res_b.output_crc == res_c.output_crc):
+        return ("invalid-sample: output_crc disagrees across A/B/C "
+                "(A=0x%08X B=0x%08X C=0x%08X) -- inference outputs differ, "
+                "re-run" % (res_a.output_crc, res_b.output_crc,
+                            res_c.output_crc)), detail
+
+    a_zero = ca["raw_delta_diagnostic"] == 0
+    c_zero = cc["raw_delta_diagnostic"] == 0
+    b_full_proof, _ = pmu_diag_b_proof(res_b)
+    b_pos = cb["progress_observed"]
+
+    if a_zero != c_zero:
+        return ("A-and-C-differ: explicit zero write has a distinct effect -- "
+                "investigate further"), detail
+    if a_zero and c_zero and b_full_proof:
+        return "cfg-missing-root-cause: PMCCNTR_CFG programming was the missing wiring", detail
+    if a_zero and c_zero and b_pos:
+        # Progress alone is NOT the B proof: some held-state or CRC condition
+        # failed, so the comparison is not the clean single-variable one.
+        return ("inconclusive: B shows progress but fails the full B proof -- "
+                "inspect pmu_diag_b_proof(res_b) before claiming a root cause"), detail
+    if not a_zero and not c_zero and b_full_proof:
+        return ("cfg-not-required: A/B/C all show cycle progress while power "
+                "is held; PMCCNTR_CFG programming was not the missing wiring"), detail
+    if not b_pos:
+        # FIRST: were the preconditions ever established? A pre-call state
+        # that never held CFG/arm/global is a programming failure, not an
+        # in-call loss, and "all held" would be a false statement about it.
+        missing = []
+        if not (res_b.cfg_write_value != 0
+                and res_b.pre.pmccntr_cfg == res_b.cfg_write_value):
+            missing.append("cfg")
+        if not res_b.pre.armed:
+            missing.append("arm")
+        if not res_b.pre.global_enable:
+            missing.append("global")
+        if missing:
+            return ("b-precondition-not-established: pre-call %s never held "
+                    "-- fix the programming path before interpreting the "
+                    "no-progress result" % "+".join(missing)), detail
+        # Established pre-call, so a change IS an in-call loss.
+        if res_b.post.pmccntr_cfg != res_b.pre.pmccntr_cfg:
+            return "cfg-lost-in-call: in-call reset clears PMCCNTR_CFG", detail
+        if not res_b.post.armed:
+            return "arm-lost-in-call: in-call reset clears the PMCNTEN cycle bit", detail
+        if not res_b.post.global_enable:
+            return "global-enable-lost: reset/power path clears PMCR.cnt_en", detail
+        return ("b-no-progress-all-held: CFG, arm and global enable held pre "
+                "AND post -- re-examine PMU clock / CYCLE event semantics / "
+                "reset order"), detail
+    return "inconclusive: pattern matches no table row -- record and escalate", detail
+
+
+# ---------------------------------------------------------------------------
+# v7 power-seam experiment (S1/S2/S3)
+#
+# Every seam image carries the SAME case-B cycle configuration, so PMCCNTR_CFG
+# is held constant and only the power seam varies. The question is narrow and
+# so are the answers: which of v6's three bundled interventions the production
+# END_ONLY candidate actually needs.
+# ---------------------------------------------------------------------------
+
+def pmu_diag_seam_post_held(res: PmuDiagResult) -> bool:
+    """Did the programmed state survive the inference AND did the counter
+    move? This is the single predicate the seam rows are compared on."""
+    cls = classify_pmu_diag(res)
+    return bool(res.post.armed and res.post.global_enable
+                and res.post.pmccntr_cfg == res.pre.pmccntr_cfg
+                and res.pre.pmccntr_cfg != 0
+                and cls["progress_observed"])
+
+
+def pmu_diag_seam_row_ok(res: PmuDiagResult, seam: str) -> tuple[bool, dict]:
+    """Identity and validity gates every seam row must clear before its post
+    state means anything. Deliberately excludes the post-state predicate --
+    a row can be perfectly valid and still show the loss we are measuring."""
+    cls = classify_pmu_diag(res)
+    checks = {
+        "seam_id": res.power_seam_id == PMU_DIAG_SEAM_IDS[seam],
+        "build_id": res.build_id == PMU_DIAG_SEAM_BUILD_IDS[seam],
+        "case_is_b": res.diag_case == 2,
+        "is_normal_build": res.nc_control_id == 0,
+        "seam_rehold_consistent": cls["seam_rehold_consistent"],
+        "rehold_guard_ok": cls["rehold_guard_ok"],
+        "seam_runtime_cmd_ok": cls["seam_runtime_cmd_ok"],
+        "seam_runtime_status_ok": cls["seam_runtime_status_ok"],
+        "start_sequence_ok": cls["start_sequence_ok"],
+        "power_hold_ok": cls["power_hold_ok"],
+        "power_release_restored": cls["power_release_restored"],
+        "reset_guard_complete": cls["reset_guard_complete"],
+        "global_after_program": cls["global_after_program"],
+        "armed_after_program": cls["armed_after_program"],
+        "program_stable": cls["program_stable"],
+        # The ACTUAL pre-inference state, read from the pre snapshot. The
+        # *_after_program fields above are a different fact: they describe
+        # the moment programming finished, and the stability loop runs
+        # before the snapshot. If the state decayed between them, only these
+        # three catch it -- and without them a loss that happened BEFORE the
+        # inference would be misread as the terminal release's fault.
+        "pre_armed": res.pre.armed,
+        "pre_global_enable": res.pre.global_enable,
+        "cfg_programmed_pre": res.pre.pmccntr_cfg == res.cfg_write_value,
+        "cfg_write_path_ok": cls["cfg_write_path_ok"],
+        "cycle_read_stable": cls["cycle_read_stable"],
+        "no_overflow": not cls["cycle_overflow"],
+        "run_rc_ok": cls["run_rc_ok"],
+        "inference_valid_flags": cls["required_flags_ok"],
+        "golden_window_crc": cls["golden_window_ok"],
+    }
+    return all(checks.values()), checks
+
+
+def pmu_diag_seam_verdict(res_s1: PmuDiagResult, res_s2: PmuDiagResult,
+                          res_s3: PmuDiagResult) -> tuple[str, dict]:
+    """Apply the seam table to OBSERVED rows, conservatively.
+
+    The one thing this function must never do is turn a single passing S2 run
+    into a production decision. S2 matching S3 shows the re-hold is worth
+    repeating, not that it is qualified: n=1 establishes nothing about
+    stability, and the production candidate is a different image again.
+    """
+    rows = {"S1": (res_s1, "S1"), "S2": (res_s2, "S2"), "S3": (res_s3, "S3")}
+    detail = {}
+    for name, (res, seam) in rows.items():
+        ok, checks = pmu_diag_seam_row_ok(res, seam)
+        detail[name] = {
+            "row_ok": ok,
+            "checks": checks,
+            "post_held": pmu_diag_seam_post_held(res),
+            "classify": classify_pmu_diag(res),
+        }
+
+    for name in ("S1", "S2", "S3"):
+        if not detail[name]["row_ok"]:
+            failed = [k for k, v in detail[name]["checks"].items() if not v]
+            return ("invalid-sample: %s failed %s -- re-run before judging"
+                    % (name, ", ".join(failed))), detail
+
+    # Cross-seam drift corroboration. Each row already passed the exact
+    # 256-byte golden window on its own; this ADDS the requirement that the
+    # same fixed inference left the same output bytes in all three, which is
+    # what makes them comparable. The whole-region CRC is deliberately not
+    # compared -- it varies with residual scratch and proved it on boot1/2.
+    if not (res_s1.output_crc == res_s2.output_crc == res_s3.output_crc):
+        return ("invalid-sample: output_crc disagrees across the seams "
+                "(S1=0x%08X S2=0x%08X S3=0x%08X) -- the rows are not "
+                "comparable, re-run"
+                % (res_s1.output_crc, res_s2.output_crc,
+                   res_s3.output_crc)), detail
+
+    # The control anchors the whole comparison. Without it, S1/S2 outcomes
+    # cannot be attributed to their seams at all.
+    if not detail["S3"]["post_held"]:
+        return ("control-failed: S3 (the v6 known-good configuration) did not "
+                "hold its post state -- re-establish the control before "
+                "interpreting S1 or S2"), detail
+
+    s1_held = detail["S1"]["post_held"]
+    s2_held = detail["S2"]["post_held"]
+
+    if s1_held and s2_held:
+        return ("terminal-release-harmless: S1 held its post state without any "
+                "re-hold, so the reference driver's terminal release did not "
+                "cost us the evidence in this run -- the pre-hold alone is the "
+                "candidate minimal seam, pending repetition"), detail
+    if not s1_held and s2_held:
+        return ("rehold workaround viable-for-repeat: S1 lost its post state "
+                "and S2 recovered it with a post-return re-hold on the "
+                "reference driver. This is NOT a production GO -- one passing "
+                "run is not stability evidence and the END_ONLY candidate is a "
+                "different image; repeat across independent boots first"), detail
+    if not s1_held and not s2_held:
+        return ("internal-pre-release-seam-required: neither S1 nor S2 held "
+                "the post state, so a re-hold after the driver returns is too "
+                "late -- the seam must sit inside the inference path before "
+                "the driver's terminal release"), detail
+    return ("inconclusive: S1 held but S2 did not, which no seam hypothesis "
+            "predicts -- record and escalate"), detail
+
+
+# ---------------------------------------------------------------------------
+# PMU_QUAL (schema v8, H-PRINTF qualification images Q0/Q1)
+#
+# A SEPARATE parser and classifier from v7, not an extension of it. v7 answered
+# "where is the counter state lost"; v8 asks "is this one sample a publishable
+# performance value". Those need different, stricter rules, so nothing above is
+# modified and nothing above is called for a validity decision: v7's
+# (pre, post) pair, cfg_programmed, cfg_write_path_ok, progress_observed and
+# seam_post_held are all deliberately absent from everything below.
+#
+# The wire record keeps the diag magic and the 8-word header; the SCHEMA
+# VERSION is what separates the two ABIs, which is why parse_pmu_diag_payload
+# refuses a v8 payload and parse_pmu_qual_payload refuses a v7 one.
+# ---------------------------------------------------------------------------
+
+PMU_QUAL_MAGIC = PMU_DIAG_MAGIC
+PMU_QUAL_SCHEMA_VERSION = 8
+PMU_QUAL_HEADER_WORDS = 8
+PMU_QUAL_BASE_FIELDS = 40       # the v7 prefix, retained slot-for-slot
+PMU_QUAL_HOOK_FIELDS = 13       # appended by v8
+PMU_QUAL_SNAPSHOT_WORDS = 8
+PMU_QUAL_SNAPSHOT_COUNT = 4     # pre, internal_pre_release, internal_post_disable, after_return
+PMU_QUAL_KNOWN_FIELDS = (PMU_QUAL_BASE_FIELDS + PMU_QUAL_HOOK_FIELDS
+                         + PMU_QUAL_SNAPSHOT_COUNT * PMU_QUAL_SNAPSHOT_WORDS)  # 85
+PMU_QUAL_TOTAL_WORDS = PMU_QUAL_HEADER_WORDS + PMU_QUAL_KNOWN_FIELDS           # 93
+PMU_QUAL_PAYLOAD_SIZE = PMU_QUAL_TOTAL_WORDS * 4                              # 372
+
+PMU_QUAL_MODES = {"Q0": 0, "Q1": 1}
+# ASCII "PQB0"/"PQH1" little-endian; must match Makefile.pmu_qual. Q0 is the
+# hook-disabled baseline and is invalid as a performance sample BY DESIGN.
+PMU_QUAL_BUILD_IDS = {"Q0": 0x30425150, "Q1": 0x31485150}
+# v8 runs no seam experiment. The three seam slots are retained for layout
+# compatibility and pinned, so a seam image can never be read as a v8 record.
+PMU_QUAL_POWER_SEAM_ID = 4
+
+# Vendor CMD bits 3:2. Held == 0 at the hook (the release has not happened
+# yet); restored == 0xC after test_u85() returns.
+PMU_QUAL_NPU_CMD_RELEASE_MASK = 0xC
+
+
+@dataclass(frozen=True)
+class PmuQualResult:
+    """One schema-v8 record.
+
+    The first 40 fields keep the v7 prefix slots. Two of them change MEANING
+    in v8 and are named for what they now carry:
+      - npu_cmd_after_return reuses the v7 npu_cmd_after_power_release slot;
+      - npu_cmd_after_seam / npu_status_after_seam are after-return
+        corroboration, not seam telemetry.
+    """
+    schema_version: int
+    build_id: int
+    diag_case: int
+    nc_control_id: int
+    run_sequence: int
+    cfg_write_performed: int
+    cfg_write_value: int
+    cfg_readback_after_write: int
+    run_rc: int
+    valid_flags: int
+    poison_crc: int
+    output_crc: int
+    result_region_crc: int
+    ts_source_valid: int
+    t_call_enter: int
+    t_call_return: int
+    t_pmu_disable: int
+    pmcr_readback_after_disable: int
+    pmu_mmio_read_count_delta: int
+    pmu_mmio_write_count_delta: int
+    start_sequence_id: int
+    power_guard_cycles: int
+    npu_cmd_before_power_request: int
+    npu_cmd_after_power_request: int
+    npu_status_after_power_request: int
+    reset_guard_cycles: int
+    pmcr_after_reset_guard: int
+    pmcr_after_program: int
+    armed_after_program: int
+    program_stability_reads: int
+    program_stable: int
+    npu_cmd_after_return: int
+    power_seam_id: int
+    power_rehold_performed: int
+    rehold_guard_cycles: int
+    npu_cmd_after_seam: int
+    npu_status_after_seam: int
+    golden_window_base: int
+    golden_window_len: int
+    golden_window_crc: int
+    # --- the 13 appended hook words, in wire order ---
+    qualification_mode: int
+    hook_armed: int
+    hook_arm_consumed: int
+    hook_detected_count: int
+    hook_fired_count: int
+    hook_snapshot_valid: int
+    hook_callsite_lr_observed: int
+    hook_entry_timestamp: int
+    hook_exit_timestamp: int
+    npu_cmd_at_hook: int
+    pmcr_disable_readback_at_hook: int
+    hook_pmu_mmio_read_count: int
+    hook_pmu_mmio_write_count: int
+    # --- four snapshots; only the first two are authoritative ---
+    pre: PmuDiagSnapshot
+    internal_pre_release: PmuDiagSnapshot
+    internal_post_disable: PmuDiagSnapshot
+    after_return: PmuDiagSnapshot
+    trailing_words: int  # present but not understood by this host version
+
+
+def parse_pmu_qual_payload(payload: bytes) -> PmuQualResult:
+    """Validate and decode a schema-v8 qualification payload.
+
+    Schema v1-v7 are refused outright: they were collected to localize a
+    fault, not to publish a number, and re-feeding one here would launder
+    diagnostic evidence into a performance claim.
+    """
+    if len(payload) < PMU_QUAL_HEADER_WORDS * 4:
+        raise ProtocolError("qual payload too short for the ABI header")
+    magic, version, total_words, header_words, seq, flags, rc, crc = struct.unpack_from(
+        "<8I", payload
+    )
+    if magic != PMU_QUAL_MAGIC:
+        raise ProtocolError("bad PMU_QUAL magic 0x%08X" % magic)
+    if version != PMU_QUAL_SCHEMA_VERSION:
+        raise ProtocolError(
+            "unsupported PMU_QUAL schema version %d (only v8 records are "
+            "qualification evidence)" % version)
+    if header_words != PMU_QUAL_HEADER_WORDS:
+        raise ProtocolError("unexpected PMU_QUAL header_words %d" % header_words)
+    if total_words < PMU_QUAL_TOTAL_WORDS:
+        raise ProtocolError(
+            "total_payload_words %d below the v8 minimum %d"
+            % (total_words, PMU_QUAL_TOTAL_WORDS))
+    if total_words * 4 != len(payload):
+        raise ProtocolError(
+            "declared %d bytes, frame carried %d" % (total_words * 4, len(payload)))
+    if measurement_payload_crc(payload, total_words) != crc:
+        raise ProtocolError("PMU_QUAL payload CRC mismatch")
+
+    body = struct.unpack_from("<%dI" % (total_words - header_words),
+                              payload, header_words * 4)
+    scalars = PMU_QUAL_BASE_FIELDS + PMU_QUAL_HOOK_FIELDS
+    snaps = []
+    for n in range(PMU_QUAL_SNAPSHOT_COUNT):
+        base = scalars + n * PMU_QUAL_SNAPSHOT_WORDS
+        snaps.append(PmuDiagSnapshot(*body[base:base + PMU_QUAL_SNAPSHOT_WORDS]))
+    res = PmuQualResult(
+        *body[:scalars],
+        pre=snaps[0], internal_pre_release=snaps[1],
+        internal_post_disable=snaps[2], after_return=snaps[3],
+        trailing_words=len(body) - PMU_QUAL_KNOWN_FIELDS,
+    )
+    if (seq, flags, rc) != (res.run_sequence, res.valid_flags, res.run_rc):
+        raise ProtocolError("PMU_QUAL header/body disagree on seq/flags/rc")
+    if res.schema_version != version:
+        raise ProtocolError("PMU_QUAL body schema_version %d != header %d"
+                            % (res.schema_version, version))
+    if res.qualification_mode not in PMU_QUAL_MODES.values():
+        raise ProtocolError("PMU_QUAL qualification_mode %d out of range"
+                            % res.qualification_mode)
+    if res.diag_case not in (1, 2, 3):
+        raise ProtocolError("PMU_QUAL diag_case %d out of range" % res.diag_case)
+    if res.nc_control_id not in (0, 1, 2, 3, 4):
+        raise ProtocolError("PMU_QUAL nc_control_id %d out of range"
+                            % res.nc_control_id)
+    # The retained seam slots must describe the v8 shape exactly. A record that
+    # still claims a seam identity or a re-hold is a v7 image mislabelled, and
+    # its power boundary means something else entirely.
+    if (res.power_seam_id, res.power_rehold_performed, res.rehold_guard_cycles) \
+            != (PMU_QUAL_POWER_SEAM_ID, 0, 0):
+        raise ProtocolError(
+            "PMU_QUAL retained seam slots are seam_id=%d rehold=%d guard=%d "
+            "(expected %d/0/0)"
+            % (res.power_seam_id, res.power_rehold_performed,
+               res.rehold_guard_cycles, PMU_QUAL_POWER_SEAM_ID))
+    return res
+
+
+def _qual_manifest_build_id(expected_manifest: dict) -> int | None:
+    """The manifest is JSON, so build_id arrives as a hex string. Anything
+    unparseable yields None, which can never equal an observed build id."""
+    value = expected_manifest.get("build_id")
+    if isinstance(value, int):
+        return value
+    try:
+        return int(str(value), 16)
+    except (TypeError, ValueError):
+        return None
+
+
+def classify_pmu_qual(res: PmuQualResult, expected_manifest: dict) -> dict:
+    """Fail-closed v8 validity. Every term must hold for a value to exist.
+
+    Three rules this function exists to enforce:
+
+      - the authoritative state pair is (pre, internal_pre_release) ONLY. The
+        vendor release wipes the PMU bank, so after_return is expected to read
+        as zeros and is excluded from every term below; internal_post_disable
+        is corroboration for the single in-hook disable write.
+      - the no-CFG contract is positive evidence, not an absence: v8 writes no
+        PMCCNTR_CFG, so cfg_write_performed and BOTH authoritative CFG reads
+        must be zero. A record that programmed a config is a different image.
+      - the expected callsite address comes from the build manifest, never
+        from firmware and never from a default. The manifest is a required
+        argument so a caller cannot accidentally self-approve a sample.
+
+    The only performance field is npu_pmu_window_cycles. It is a counter
+    window, not T_npu and not a latency, and it is None whenever anything
+    failed.
+    """
+    pre, internal = res.pre, res.internal_pre_release
+    raw_delta = pmu_diag_delta48(pre.cycle48, internal.cycle48)
+    # A counter cleared by the power/reset path reads as (0 - pre) mod 2^48,
+    # which is enormous and positive. Only the pair can tell that apart from
+    # real progress, and only by the shape.
+    reset_to_zero = bool(pre.cycle48 != 0 and internal.cycle48 == 0)
+
+    expected_mode = PMU_QUAL_MODES.get(expected_manifest.get("qualification_mode"))
+    expected_build_id = _qual_manifest_build_id(expected_manifest)
+    expected_lr = expected_manifest.get("expected_return_address")
+
+    terms = {
+        # Identity: the record, the image and the manifest must agree, and the
+        # image must be the H-PRINTF candidate rather than the baseline.
+        "manifest_schema_matches": (
+            expected_manifest.get("schema_version") == PMU_QUAL_SCHEMA_VERSION),
+        "manifest_mode_matches": (
+            expected_mode is not None and res.qualification_mode == expected_mode),
+        "manifest_build_id_matches": (
+            expected_build_id is not None and res.build_id == expected_build_id),
+        "mode_is_hprintf": res.qualification_mode == PMU_QUAL_MODES["Q1"],
+        "build_id_is_hprintf": res.build_id == PMU_QUAL_BUILD_IDS["Q1"],
+        "is_normal_build": res.nc_control_id == 0,
+        # Q0 and Q1 are contractually case-A images: they write no PMCCNTR_CFG
+        # at all. A record claiming case B or C describes a DIFFERENT image
+        # whose cycle configuration was programmed, so the no-CFG terms below
+        # would be judging the wrong contract. Kept as a validity term rather
+        # than a parser refusal so a mislabelled record still archives.
+        "is_case_a": res.diag_case == 1,
+
+        # The hook fired exactly once, at the attested callsite, while the NPU
+        # power request was still held. Zero times and twice both fail.
+        "hook_armed": res.hook_armed == 1,
+        "hook_arm_consumed": res.hook_arm_consumed == 1,
+        "hook_detected_once": res.hook_detected_count == 1,
+        "hook_fired_once": res.hook_fired_count == 1,
+        "hook_snapshot_valid": res.hook_snapshot_valid == 1,
+        "hook_callsite_lr_matches_manifest": (
+            isinstance(expected_lr, int)
+            and res.hook_callsite_lr_observed == expected_lr),
+        # EXACTLY zero, not merely free of the release bits. At the hook the
+        # vendor driver has not yet issued its terminal CMD, so any set bit --
+        # release or otherwise -- means the register was in a state this
+        # sample cannot account for. The masked form is correct only for the
+        # after-return term below, where 0xC is the value being looked for.
+        "npu_power_held_at_hook": res.npu_cmd_at_hook == 0,
+
+        # The hook's PMU accesses happen INSIDE the measurement window, so the
+        # hook-local counts are a SUBSET of the whole-window deltas and
+        # equality is the legitimate boundary (a window whose only PMU traffic
+        # was the hook's own). A window total below its own subset means the
+        # two counters were not counting the same accesses, which makes the
+        # contamination evidence meaningless in either direction. Exact
+        # cross-run count invariance is the later analyzer's job, not a
+        # single-sample term.
+        "hook_mmio_reads_within_window": (
+            res.pmu_mmio_read_count_delta >= res.hook_pmu_mmio_read_count),
+        "hook_mmio_writes_within_window": (
+            res.pmu_mmio_write_count_delta >= res.hook_pmu_mmio_write_count),
+
+        # Start boundary, unchanged in meaning from v6/v7 and re-derived here
+        # rather than borrowed, so a v7 classifier change can never silently
+        # move a v8 validity line.
+        "start_sequence_ok": (
+            res.start_sequence_id == PMU_DIAG_START_SEQUENCE_POWER_GUARD_PROGRAM),
+        "power_hold_ok": bool(
+            res.power_guard_cycles == PMU_DIAG_POWER_GUARD_CYCLES
+            and (res.npu_cmd_after_power_request & 0xC) == 0
+            and (res.npu_status_after_power_request & 0x8) == 0),
+        "reset_guard_complete": (
+            res.reset_guard_cycles == PMU_DIAG_RESET_GUARD_CYCLES),
+        "armed_after_program": res.armed_after_program == 1,
+        "global_after_program": bool(
+            (res.pmcr_after_program >> PMU_PMCR_CNT_EN_BIT) & 1),
+        "program_stable": bool(
+            res.program_stable == 1
+            and res.program_stability_reads == PMU_DIAG_STABILITY_SAMPLES),
+
+        # The no-CFG contract, on both authoritative reads.
+        "cfg_no_write": res.cfg_write_performed == 0,
+        "cfg_pre_zero": pre.pmccntr_cfg == 0,
+        "cfg_internal_zero": internal.pmccntr_cfg == 0,
+
+        # Both authoritative snapshots, judged separately so the failure names
+        # which end of the window lost the state.
+        "pre_armed": pre.armed,
+        "pre_global_enable": pre.global_enable,
+        "pre_read_stable": bool(pre.cycle_read_stable),
+        "internal_armed": internal.armed,
+        "internal_global_enable": internal.global_enable,
+        "internal_read_stable": bool(internal.cycle_read_stable),
+        "no_overflow": not (pre.cycle_overflow or internal.cycle_overflow),
+
+        "positive_delta": bool(raw_delta > 0 and not reset_to_zero),
+
+        # The single in-hook disable write was acknowledged: PMCR.cnt_en reads
+        # back clear. After the return the runner only reads, so this is the
+        # one place the disable can be proven.
+        "pmu_disable_acknowledged": not (
+            (res.pmcr_disable_readback_at_hook >> PMU_PMCR_CNT_EN_BIT) & 1),
+        # The vendor driver reached its own terminal release after the hook, so
+        # the hook did not displace or skip it.
+        "vendor_release_after_return": (
+            (res.npu_cmd_after_return & PMU_QUAL_NPU_CMD_RELEASE_MASK)
+            == PMU_QUAL_NPU_CMD_RELEASE_MASK),
+
+        # The inference itself. result_region_crc is corroboration display only
+        # and is deliberately absent from every term here, as in v7.
+        "golden_window_ok": bool(
+            res.golden_window_base == PMU_DIAG_GOLDEN_WINDOW_BASE
+            and res.golden_window_len == PMU_DIAG_GOLDEN_WINDOW_LEN
+            and res.golden_window_crc == GOLDEN_WINDOW_CRC),
+        "run_rc_ok": res.run_rc == 0,
+        "required_flags_ok": (res.valid_flags & RUN_VALID_REQUIRED_MASK)
+                             == RUN_VALID_REQUIRED_MASK,
+    }
+    valid = all(terms.values())
+    return {
+        "terms": terms,
+        "invalid_reasons": sorted(k for k, v in terms.items() if not v),
+        "raw_delta_diagnostic": raw_delta,
+        "reset_to_zero": reset_to_zero,
+        "npu_pmu_window_cycles": raw_delta if valid else None,
+        "valid": valid,
+    }
