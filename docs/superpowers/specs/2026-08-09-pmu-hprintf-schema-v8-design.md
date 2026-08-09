@@ -131,7 +131,9 @@ Build gate는 최종 ELF와 link에 사용된 vendor object에서 아래를 모�
 
 1. `TEST_CPM`은 1이다.
 2. vendor source의 terminal `CMD=0xC` write는 정확히 1개다.
-3. target 전체 문자열을 사용하는 printf callsite는 최종 ELF의 measured path에 정확히 1개다.
+3. Final ELF에서 literal-pool load를 따라 첫 번째 인자를 복원했을 때 target 전체 문자열을
+   전달하는 printf callsite는 measured path에 정확히 1개다. Raw string byte sequence의
+   출현 횟수를 세는 게이트가 아니다.
 4. vendor object에서 target call은 `printf` relocation이며 `puts`/builtin으로 변환되지 않았다.
 5. 최종 ELF에서 해당 call은 `__wrap_printf`로 resolve된다.
 6. Caller는 vendor `test_u85`의 inlined `test_commands` release tail이다.
@@ -149,7 +151,8 @@ address, relevant disassembly digest를 machine-readable build manifest에 기�
 
 H-PRINTF hook은 문자열 일치만으로 유효해지지 않는다. Target format은 익명 rodata라
 주소가 build마다 달라질 수 있으므로 pointer identity가 아니라 **전체 문자열 내용**으로
-매칭한다. Wrapper는 최소한 다음 상태에서만 qualification hook을 실행한다.
+매칭한다. Runner matcher는 target 전체 문자열 literal의 두 번째 사본을 만들지 않고 개별
+byte/character 비교를 사용한다. Wrapper는 최소한 다음 상태에서만 qualification hook을 실행한다.
 
 ```text
 qualification build identity is H-PRINTF
@@ -264,7 +267,13 @@ release 효과를 보여주는 corroboration이며, 값이 wipe되는 것이 정
 
 ## 9. Schema v8 raw evidence
 
-최소 신규 필드:
+Schema v8 raw evidence field mapping:
+
+기존 40-word prefix의 `npu_cmd_after_power_release` 슬롯은 schema v8에서
+`npu_cmd_after_return` 의미로 사용한다. 따라서 아래 hook append 영역은 정확히 13 words다.
+기존 seam 필드는 layout 호환을 위해 유지하며 `power_seam_id=4`,
+`power_rehold_performed=0`, `rehold_guard_cycles=0`, `npu_cmd_after_seam`과
+`npu_status_after_seam`은 after-return corroboration으로 정의한다.
 
 ```text
 qualification_mode                 baseline | hprintf
@@ -283,7 +292,7 @@ hook_pmu_mmio_write_count
 internal_pre_release snapshot
 internal_post_disable snapshot
 after_return snapshot
-npu_cmd_after_return
+npu_cmd_after_return                existing prefix slot mapping
 ```
 
 기존 identity, start-boundary, exact golden window, output/result-region CRC, run status,
@@ -340,7 +349,8 @@ Raw evidence 자체는 원인 분석을 위해 그대로 archive한다.
 - NPU register programming/submission path가 target hook side effect 외 동일.
 - Q0/Q1 모두 run success, exact golden window CRC, output CRC 동일.
 - Q1 final ELF만 target wrapper hook side effect를 갖는다.
-- Q0/Q1 모두 target detection을 정확히 1회 수행하고 동일한 callsite LR을 기록한다.
+- Q0/Q1 모두 같은 logical vendor callsite를 정확히 1회 검출한다. 두 ELF의 numeric address는
+  달라도 되며, 각 observed LR은 **자기 mode manifest의** expected LR과만 비교한다.
 - Q0는 `hook_detected_count=1`, `hook_fired_count=0`; Q1은 둘 다 1이다.
 - Q0/Q1 disassembly diff는 declared runner/wrapper/ABI paths로 제한한다.
 - 다른 printf callsites의 wrapper behavior는 동일하다.
@@ -362,6 +372,8 @@ Q0의 after-return wipe는 예상되지만 performance zero로 해석하지 않�
 9. Measurement-path logging/UART denylist gate.
 10. Production/frozen/provenance diff 0.
 11. Clean deterministic rebuild and complete hashes.
+12. Shared source의 compile-time 격리를 증명하기 위해 schema-v7 S1/S2/S3 기록 해시를
+    재현하고 A/B/C+NC4 build/check를 다시 통과한다.
 
 Negative tests must prove rejection of:
 
