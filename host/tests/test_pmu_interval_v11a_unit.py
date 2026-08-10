@@ -265,8 +265,10 @@ check("D23 is split into A0+A1+A2 with delta32 consistency",
 check("J0 and V11-A scope labels present",
       cls["j0_label"] == "first_veneer_probe"
       and cls["v11a_perturbed_window_cycles"] is not None
+      and "v10_perturbed_window_cycles" not in cls
       and cls["not_comparable_to_v10_window"] is True
       and cls["not_comparable_to_v9_window"] is True
+      and sorted(k for k in cls if "perturbed_window" in k) == ["v11a_perturbed_window_cycles"]
       and "npu_pmu_window_cycles" not in cls
       and "t_npu_label" not in cls)
 check("diagnostic-only scope is retained without performance claims",
@@ -284,6 +286,62 @@ try:
     check("empty artifact provenance rejected", False)
 except SystemExit:
     check("empty artifact provenance rejected", True)
+
+cls = v11a.classify_pmu_interval_diag_v11a(
+    v11a.parse_pmu_interval_diag_v11a_payload(build(t_submit_after_cmd=430)),
+    manifest(),
+)
+check("non-monotonic checkpoints fail closed",
+      (not cls["valid"]) and "a0_nonzero_u32" in cls["invalid_reasons"])
+
+cls = v11a.classify_pmu_interval_diag_v11a(
+    v11a.parse_pmu_interval_diag_v11a_payload(build(t_irq_status_seen=0)),
+    manifest(),
+)
+check("zero checkpoint fails closed",
+      (not cls["valid"]) and "t3_nonzero" in cls["invalid_reasons"])
+
+for label, override, reason in (
+    ("I0 multiple hits", {"i0_hit_count": 2}, "i0_hit_once"),
+    ("T3 multiple hits", {"t3_hit_count": 2}, "t3_hit_once"),
+    ("I0 missing", {"t_isr_entry": 0}, "i0_nonzero"),
+):
+    cls = v11a.classify_pmu_interval_diag_v11a(
+        v11a.parse_pmu_interval_diag_v11a_payload(build(**override)), manifest())
+    check(label + " fails closed",
+          (not cls["valid"]) and reason in cls["invalid_reasons"])
+
+for label, override, reason in (
+    ("timestamp source invalid", {"ts_source_valid": 0}, "timestamp_source_valid"),
+    ("window MMIO count drift", {"pmu_mmio_read_count_delta": 59},
+     "window_mmio_reads_exact"),
+    ("hook MMIO count drift", {"hook_pmu_mmio_read_count": 17},
+     "hook_mmio_reads_exact"),
+):
+    cls = v11a.classify_pmu_interval_diag_v11a(
+        v11a.parse_pmu_interval_diag_v11a_payload(build(**override)), manifest())
+    check(label + " fails closed",
+          (not cls["valid"]) and reason in cls["invalid_reasons"])
+
+try:
+    v11a.parse_pmu_interval_diag_v11a_payload(build(power_rehold_performed=1))
+    check("retained rehold slot rejected by parser", False)
+except v8.ProtocolError:
+    check("retained rehold slot rejected by parser", True)
+
+cls = v11a.classify_pmu_interval_diag_v11a(
+    v11a.parse_pmu_interval_diag_v11a_payload(build(hook_callsite_lr_observed=LR + 4)),
+    manifest(),
+)
+check("wrong callsite fails closed",
+      (not cls["valid"]) and "hook_callsite_lr_matches_manifest" in cls["invalid_reasons"])
+
+cls = v11a.classify_pmu_interval_diag_v11a(
+    v11a.parse_pmu_interval_diag_v11a_payload(build(golden_window_crc=0xDEAD)),
+    manifest(),
+)
+check("golden failure fails closed",
+      (not cls["valid"]) and "golden_window_ok" in cls["invalid_reasons"])
 
 print("=== collector ===")
 try:
