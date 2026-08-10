@@ -2,6 +2,9 @@
 
 `PMU_INTERVAL_ENTRY_DIAG_V11A` is a diagnostic-only schema-11 variant. It extends the V10 interval split with one additional `J0` timestamp from a standalone Thumb veneer.
 
+Contract freeze:
+- `PMU_INTERVAL_ENTRY_DIAG_V11A` / schema 11 is frozen to build ID `0x41314950`.
+
 Checkpoints:
 - `T0`: existing `t_call_enter`
 - `T1`: immediately before the vendor submit `NPU_REG_CMD` write
