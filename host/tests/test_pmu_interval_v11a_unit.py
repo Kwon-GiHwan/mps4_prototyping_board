@@ -7,8 +7,19 @@ import tempfile
 import zlib
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
+sys.path.insert(
+    0,
+    os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        "..",
+        "..",
+        "firmware",
+        "Selftest_pmu_diag",
+    ),
+)
 
 import analyze_pmu_interval_v11a as az
+import check_pmu_interval_v11a as fw_gate_v11a
 import run_pmu_interval_v11a as rv11a
 import runner_proto as v8
 import runner_proto_pmu_interval_v10 as v10
@@ -60,6 +71,41 @@ def manifest(**over):
         "artifact_sha256": dict(v11a.PMU_INTERVAL_V11A_FROZEN_ARTIFACT_SHA256),
         "build_evidence_sha256": dict(v11a.PMU_INTERVAL_V11A_FROZEN_BUILD_EVIDENCE_SHA256),
     }
+    doc.update(over)
+    return doc
+
+
+def producer_manifest(**over):
+    doc = fw_gate_v11a.manifest_document(
+        base_doc={
+            "qualification_mode": "Q1",
+            "expected_return_address": LR,
+            "build_evidence_sha256": dict(
+                v11a.PMU_INTERVAL_V11A_FROZEN_BUILD_EVIDENCE_SHA256
+            ),
+        },
+        artifacts=dict(v11a.PMU_INTERVAL_V11A_FROZEN_ARTIFACT_SHA256),
+        runner_sha=v11a.PMU_INTERVAL_V11A_FROZEN_BUILD_EVIDENCE_SHA256[
+            "generated_runner.c"
+        ],
+        vendor_sha=v11a.PMU_INTERVAL_V11A_FROZEN_BUILD_EVIDENCE_SHA256[
+            "generated_vendor_u85.c"
+        ],
+        patch_counts={
+            "PMU_INTERVAL_V10_I0": 1,
+            "PMU_INTERVAL_V10_T1": 1,
+            "PMU_INTERVAL_V10_T2": 1,
+            "PMU_INTERVAL_V10_T3": 1,
+            "d.i0_hit_count": 1,
+            "d.t3_hit_count": 1,
+            "d.t_irq_handler_entry": 1,
+            "d.t_irq_status_seen": 1,
+            "d.t_submit_after_cmd": 1,
+            "d.t_submit_before_cmd": 1,
+            "d.t_vector_probe": 1,
+            "runtime_vector_install": 1,
+        },
+    )
     doc.update(over)
     return doc
 
@@ -518,6 +564,25 @@ with tempfile.TemporaryDirectory() as td:
     path = write_doc(td, "sample.json", doc)
     loaded_res, loaded_doc = az.load(path, TEST_MANIFEST_SHA256)
     check("analyzer reload preserves target", loaded_doc["target"] == v11a.target_fields(loaded_res))
+
+producer_doc = producer_manifest()
+producer_manifest_sha256 = hashlib.sha256(
+    json.dumps(producer_doc, sort_keys=True).encode()
+).hexdigest()
+v11a.verify_manifest_identity(producer_doc, "producer")
+check(
+    "firmware producer manifest is accepted by host verifier",
+    producer_doc["first_veneer_probe_only"] is True
+    and producer_doc["perturbed_window_only"] is True
+)
+with tempfile.TemporaryDirectory() as td:
+    path = write_doc(td, "producer.json", archive_doc(build(), man=producer_doc))
+    loaded_res, loaded_doc = az.load(path, producer_manifest_sha256)
+    check(
+        "firmware producer manifest round-trips through analyzer load",
+        loaded_doc["manifest"] == producer_doc
+        and loaded_doc["target"] == v11a.target_fields(loaded_res),
+    )
 
     try:
         az.load(path)
