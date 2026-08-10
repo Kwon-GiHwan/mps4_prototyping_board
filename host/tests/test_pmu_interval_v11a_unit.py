@@ -238,7 +238,7 @@ for parser_name, parser in (
     try:
         parser(p)
         check(parser_name, False)
-    except Exception:
+    except v8.ProtocolError:
         check(parser_name, True)
 
 bad = bytearray(p)
@@ -276,6 +276,29 @@ check("diagnostic-only scope is retained without performance claims",
       and cls["post_t3_handoff_out_of_scope"] and cls["not_a_latency_measurement"]
       and cls["not_a_performance_baseline"]
       and cls["generated_private_driver_diagnostic_only"])
+wrap_cls = v11a.classify_pmu_interval_diag_v11a(
+    v11a.parse_pmu_interval_diag_v11a_payload(build(
+        t_call_enter=0xFFFFFFE0,
+        t_submit_before_cmd=0xFFFFFFF0,
+        t_submit_after_cmd=0xFFFFFFFA,
+        t_vector_probe=0x00000014,
+        t_isr_entry=0x00000020,
+        t_irq_status_seen=0x00000028,
+        hook_entry_timestamp=0x00000050,
+        t_call_return=0x00000082,
+    )),
+    manifest(),
+)
+check("A0/A1/A2/D23 stay modulo-consistent across u32 wraparound",
+      wrap_cls["deltas_u32"]["D23"] == 46
+      and wrap_cls["deltas_u32"]["A0"] == 26
+      and wrap_cls["deltas_u32"]["A1"] == 12
+      and wrap_cls["deltas_u32"]["A2"] == 8
+      and wrap_cls["terms"]["d23_split_consistent_u32"]
+      and wrap_cls["positive_half_range"]["D23"]
+      and wrap_cls["positive_half_range"]["A0"]
+      and wrap_cls["positive_half_range"]["A1"]
+      and wrap_cls["positive_half_range"]["A2"])
 try:
     v11a.verify_manifest_identity(manifest(v11a_perturbed_window_only=False), "test")
     check("manifest scope regression rejected", False)
@@ -343,7 +366,91 @@ cls = v11a.classify_pmu_interval_diag_v11a(
 check("golden failure fails closed",
       (not cls["valid"]) and "golden_window_ok" in cls["invalid_reasons"])
 
+print("=== transport ===")
+
+
+def frame_command(blob):
+    return struct.unpack_from(v8.HEADER, blob)[2:5:2]
+
+
+class FakeLink:
+    def __init__(self, run_frames, get_frames):
+        self._seq = 40
+        self.run_frames = run_frames
+        self.get_frames = get_frames
+        self.queue = []
+        self.late_frames = 0
+
+    def next_sequence(self):
+        self._seq = (self._seq + 1) & 0xFFFFFFFF
+        return self._seq
+
+    def send_raw(self, blob):
+        cmd, seq = frame_command(blob)
+        frames = self.run_frames(seq) if cmd == v8.CMD_RUN_PMU_DIAG else self.get_frames(seq)
+        self.queue.extend(frames)
+
+    def read_frame(self, _timeout):
+        if not self.queue:
+            raise v8.ProtocolError("scripted timeout")
+        return self.queue.pop(0)
+
+
+def ack(seq):
+    return v8.Frame(1, v8.CMD_RUN_PMU_DIAG | 0x80, 0, seq, b"")
+
+
+def complete(seq, payload):
+    return v8.Frame(1, v8.CMD_PMU_DIAG_COMPLETE, 0, seq, payload)
+
+
+def reread(seq, payload):
+    return v8.Frame(1, v8.CMD_GET_PMU_DIAG_RESULT | 0x80, 0, seq, payload)
+
+
+def fake_link(payload, run=None, get=None):
+    return FakeLink(
+        run or (lambda seq: [ack(seq), complete(seq, payload)]),
+        get or (lambda seq: [reread(seq, payload)]),
+    )
+
+
+res, raw, reread_raw = rv11a.collect_pmu_interval_v11a(fake_link(p), timeout=0.01, get_timeout=0.01)
+check("ACK/COMPLETE/GET exchange accepts byte-identical v11a", raw == reread_raw == p)
+
+for label, link in (
+    ("no ACK rejected", fake_link(p, run=lambda seq: [])),
+    ("ACK without COMPLETE rejected", fake_link(p, run=lambda seq: [ack(seq)])),
+    ("COMPLETE-before-ACK rejected",
+     fake_link(p, run=lambda seq: [complete(seq, p)])),
+    ("duplicate ACK rejected",
+     fake_link(p, run=lambda seq: [ack(seq), ack(seq)])),
+    ("duplicate COMPLETE rejected",
+     fake_link(p, run=lambda seq: [ack(seq), complete(seq, p), complete(seq, p)])),
+    ("reread mismatch rejected",
+     fake_link(p, get=lambda seq: [reread(seq, build(t_irq_status_seen=501))])),
+):
+    try:
+        rv11a.collect_pmu_interval_v11a(link, timeout=0.01, get_timeout=0.01)
+        check(label, False)
+    except (v8.ProtocolError, v8.RunSequenceError):
+        check(label, True)
+
+stale = v8.Frame(1, v8.CMD_PMU_DIAG_COMPLETE, 0, 3, b"stale")
+link = fake_link(p, run=lambda seq: [stale, ack(seq), complete(seq, p)])
+_, raw, _ = rv11a.collect_pmu_interval_v11a(link, timeout=0.01, get_timeout=0.01)
+check("stale prior-sequence frame skipped", raw == p and link.late_frames == 1)
+
 print("=== collector ===")
+try:
+    rv11a.verify_record_identity(
+        v11a.parse_pmu_interval_diag_v11a_payload(build(diag_case=2)),
+        manifest(),
+    )
+    check("wrong V11-A case identity rejected before archive", False)
+except SystemExit:
+    check("wrong V11-A case identity rejected before archive", True)
+
 try:
     rv11a.verify_record_identity(
         v11a.parse_pmu_interval_diag_v11a_payload(build(build_id=0x12345678)),
@@ -354,19 +461,54 @@ except SystemExit:
     check("collector rejects wrong build id", True)
 
 print("=== analyzer ===")
+TEST_MANIFEST_SHA256 = hashlib.sha256(
+    json.dumps(manifest(), sort_keys=True).encode()).hexdigest()
 with tempfile.TemporaryDirectory() as td:
     raw = build()
     doc = archive_doc(raw)
     path = write_doc(td, "sample.json", doc)
-    loaded_res, loaded_doc = az.load(path)
+    loaded_res, loaded_doc = az.load(path, TEST_MANIFEST_SHA256)
     check("analyzer reload preserves target", loaded_doc["target"] == v11a.target_fields(loaded_res))
-    paths = campaign_paths(td)
-    summary = az.summarize_campaign(paths)
+
+    try:
+        az.load(path)
+        check("analyzer rejects a self-consistent but non-frozen manifest", False)
+    except SystemExit:
+        check("analyzer rejects a self-consistent but non-frozen manifest", True)
+
+    malformed = json.loads(json.dumps(doc))
+    malformed["raw"]["payload_hex"] = "not-hex"
+    malformed_path = write_doc(td, "malformed.json", malformed)
+    try:
+        az.load(malformed_path, TEST_MANIFEST_SHA256)
+        check("analyzer rejects malformed raw hex without traceback", False)
+    except SystemExit:
+        check("analyzer rejects malformed raw hex without traceback", True)
+
+    doc["derived"]["deltas_u32"]["D23"] = 999
+    write_doc(td, "sample.json", doc)
+    try:
+        az.load(path, TEST_MANIFEST_SHA256)
+        check("analyzer rejects derived delta mismatch", False)
+    except SystemExit:
+        check("analyzer rejects derived delta mismatch", True)
+
+print("=== campaign analyzer ===")
+with tempfile.TemporaryDirectory() as td:
+    summary = az.summarize_campaign(campaign_paths(td), TEST_MANIFEST_SHA256)
+    check("campaign has exactly 30 samples", summary["sample_count"] == 30)
+    check("campaign has 3 boots", summary["boot_count"] == 3)
+    check("per-boot run_sequence is 1..10",
+          summary["per_boot_run_sequences"] == {
+              "1": list(range(1, 11)),
+              "2": list(range(1, 11)),
+              "3": list(range(1, 11)),
+          })
     check("3x10 localization resolves to A0 first",
-          summary["sample_count"] == 30
-          and summary["floor_excursion"]["status"] == "resolved"
+          summary["floor_excursion"]["status"] == "resolved"
           and summary["floor_excursion"]["earliest_interval_counts"] == {"A0": 10})
 
+with tempfile.TemporaryDirectory() as td:
     broken = campaign_paths(
         td,
         mutate=lambda doc, boot, repeat: (
@@ -375,10 +517,79 @@ with tempfile.TemporaryDirectory() as td:
         ),
     )
     try:
-        az.summarize_campaign(broken)
+        az.summarize_campaign(broken, TEST_MANIFEST_SHA256)
         check("analyzer rejects reread identity loss", False)
     except SystemExit:
         check("analyzer rejects reread identity loss", True)
+
+with tempfile.TemporaryDirectory() as td:
+    try:
+        az.summarize_campaign(campaign_paths(td)[:-1], TEST_MANIFEST_SHA256)
+        check("29-sample campaign rejected", False)
+    except SystemExit:
+        check("29-sample campaign rejected", True)
+
+with tempfile.TemporaryDirectory() as td:
+    def mutate_boot_reuse(doc, boot, repeat):
+        if boot == 3:
+            doc["host"]["host_boot_index"] = 2
+        return doc
+
+    try:
+        az.summarize_campaign(campaign_paths(td, mutate=mutate_boot_reuse), TEST_MANIFEST_SHA256)
+        check("boot reuse rejected", False)
+    except SystemExit:
+        check("boot reuse rejected", True)
+
+with tempfile.TemporaryDirectory() as td:
+    def mutate_gap(doc, boot, repeat):
+        if boot == 2 and repeat == 7:
+            return archive_doc(build(run_sequence=9), host_boot_index=boot)
+        return doc
+
+    try:
+        az.summarize_campaign(campaign_paths(td, mutate=mutate_gap), TEST_MANIFEST_SHA256)
+        check("sequence gap rejected", False)
+    except SystemExit:
+        check("sequence gap rejected", True)
+
+with tempfile.TemporaryDirectory() as td:
+    def mutate_invalid(doc, boot, repeat):
+        if boot == 1 and repeat == 3:
+            return archive_doc(build(run_sequence=repeat, golden_window_crc=0xDEAD),
+                               host_boot_index=boot)
+        return doc
+
+    try:
+        az.summarize_campaign(campaign_paths(td, mutate=mutate_invalid), TEST_MANIFEST_SHA256)
+        check("invalid sample rejected", False)
+    except SystemExit:
+        check("invalid sample rejected", True)
+
+with tempfile.TemporaryDirectory() as td:
+    def mutate_manifest(doc, boot, repeat):
+        if boot == 3 and repeat == 10:
+            return archive_doc(campaign_payload(boot, repeat, 170),
+                               man=manifest(expected_return_address=LR + 4),
+                               host_boot_index=boot)
+        return doc
+
+    try:
+        az.summarize_campaign(campaign_paths(td, mutate=mutate_manifest), TEST_MANIFEST_SHA256)
+        check("manifest mismatch rejected", False)
+    except SystemExit:
+        check("manifest mismatch rejected", True)
+
+with tempfile.TemporaryDirectory() as td:
+    report = az.summarize_campaign(
+        campaign_paths(td, per_boot_primary={
+            1: [110] * 10,
+            2: [110] * 10,
+            3: [110] * 10,
+        }), TEST_MANIFEST_SHA256
+    )
+    check("no-excursion campaign stays unresolved",
+          report["floor_excursion"]["status"] == "unresolved_no_excursion")
 
 print()
 print("passed=%d failed=%d" % (passed, failed))
