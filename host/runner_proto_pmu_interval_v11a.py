@@ -35,18 +35,20 @@ PMU_INTERVAL_V11A_EXPECTED_PMU_MMIO_WRITES = 8
 PMU_INTERVAL_V11A_EXPECTED_HOOK_PMU_MMIO_READS = 16
 PMU_INTERVAL_V11A_EXPECTED_HOOK_PMU_MMIO_WRITES = 1
 PMU_INTERVAL_V11A_FROZEN_MANIFEST_SHA256 = (
-    "713c1f50cd30e3397db4f715895ec9f4b74f88f6f4e5bd1040a43f7d4f0e5f67"
+    "5211b8f0d32f5de34051bf7d7355d013a86ccef2162442bd6c8031b8f73202ba"
 )
 PMU_INTERVAL_V11A_FROZEN_ARTIFACT_SHA256 = {
-    "APP.BIN": "92e81e5ac51ed56c89eb3cc447ef421334142ec9a2a941990995025d546b00b9",
-    "VECTORS.BIN": "1b86143c1bf9ba06263ffe1744b41f57b79f5d50f9db67bd9fc0eac33b67c81f",
+    "APP.BIN": "9fc3632b44d50a038296fe98220cab76426f5532dfa44b9994829e958222c781",
+    "VECTORS.BIN": "79a1cb9c1ca058ecedd3aa04dd9b65452d8f8e642f2f5701ce867d483b5ad992",
     "DDR.BIN": "81d37a219a6b4141d0b433796711ab8af2ee2c3c668a28143a3ffe6a574ade98",
 }
 PMU_INTERVAL_V11A_FROZEN_BUILD_EVIDENCE_SHA256 = {
-    "runner_pmu_interval_v11a.elf": "28d93dfe113cff6fb86595411d4c5d4a1dbb1d0f77c4f5b8159777084ff57c93",
-    "runner_pmu_interval_v11a.map": "c112826b4d1fa8ba6b7a04df98ba99b1b7e1d65d70d0cdb0f36f442c70fe95f4",
-    "generated_runner.c": "f426b6e5c1a7ae5b1d6a78efdf39c02dbebfe0fef6effc5b314b6f3503314d55",
-    "generated_vendor_u85.c": "bcd877bbd42a35d83c8696d02b64d2ae4985a46fcce91b98102e08661b356bcf",
+    "runner_pmu_interval_v11a.elf": "9e5143dc5c2114130ad33c65f537d778411dd22afe5fc7a779d6133a61d5723f",
+    "runner_pmu_interval_v11a.map": "86115990c85231a36db446ad7bb55ec776d4513c8607bf0c2c8923c470239413",
+    "generated_runner.c": "7d82534dd75af86936bff29e59a95f23161686de7fb62f917392c678d91deb56",
+    "generated_vendor_u85.c": "a9763c64436c60808110fdab89f27e3e57e4d26e82bfa1c07641b19f82453ecb",
+    "generated_vendor_u85.o": "637c89aa4d16965d74d71da53d69fd7c0dcd78a8084f56714fe0d6cf63888f22",
+    "preprocessed_runner.i": "f3f238b75b1cfbea8f41f0451cc63142dd32380e1fd88ba6995d1781198908f0",
 }
 PMU_INTERVAL_REQUIRED_MANIFEST_KEYS = (
     "variant",
@@ -64,8 +66,8 @@ PMU_INTERVAL_REQUIRED_MANIFEST_KEYS = (
     "generated_private_driver_diagnostic_only",
     "production_end_only_frozen",
     "mlek_performance_not_started",
-    "j0_first_veneer_probe_only",
-    "v11a_perturbed_window_only",
+    "first_veneer_probe_only",
+    "perturbed_window_only",
     "artifact_sha256",
     "build_evidence_sha256",
 )
@@ -264,8 +266,8 @@ def verify_manifest_identity(doc: dict, where: str) -> None:
         "generated_private_driver_diagnostic_only",
         "production_end_only_frozen",
         "mlek_performance_not_started",
-        "j0_first_veneer_probe_only",
-        "v11a_perturbed_window_only",
+        "first_veneer_probe_only",
+        "perturbed_window_only",
     ):
         if doc.get(key) is not True:
             raise SystemExit(
@@ -418,7 +420,7 @@ def classify_pmu_interval_diag_v11a(
         "not_a_latency_measurement": True,
         "not_a_performance_baseline": True,
         "generated_private_driver_diagnostic_only": True,
-        "j0_first_veneer_probe_only": True,
+        "first_veneer_probe_only": True,
         "j0_label": "first_veneer_probe",
         "a0_label": "submit_after_cmd_to_first_veneer_probe",
         "a1_label": "first_veneer_probe_to_isr_entry",

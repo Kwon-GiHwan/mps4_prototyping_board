@@ -55,8 +55,8 @@ def manifest(**over):
         "generated_private_driver_diagnostic_only": True,
         "production_end_only_frozen": True,
         "mlek_performance_not_started": True,
-        "j0_first_veneer_probe_only": True,
-        "v11a_perturbed_window_only": True,
+        "first_veneer_probe_only": True,
+        "perturbed_window_only": True,
         "artifact_sha256": dict(v11a.PMU_INTERVAL_V11A_FROZEN_ARTIFACT_SHA256),
         "build_evidence_sha256": dict(v11a.PMU_INTERVAL_V11A_FROZEN_BUILD_EVIDENCE_SHA256),
     }
@@ -300,7 +300,7 @@ check("A0/A1/A2/D23 stay modulo-consistent across u32 wraparound",
       and wrap_cls["positive_half_range"]["A1"]
       and wrap_cls["positive_half_range"]["A2"])
 try:
-    v11a.verify_manifest_identity(manifest(v11a_perturbed_window_only=False), "test")
+    v11a.verify_manifest_identity(manifest(perturbed_window_only=False), "test")
     check("manifest scope regression rejected", False)
 except SystemExit:
     check("manifest scope regression rejected", True)
