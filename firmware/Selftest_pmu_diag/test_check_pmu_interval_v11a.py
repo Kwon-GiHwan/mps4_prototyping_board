@@ -43,6 +43,9 @@ static pmu_diag_snapshot_t pmu_qual_internal_post_disable;
 #define PMU_DIAG_FIELD_COUNT (40U + (3U * PMU_DIAG_SNAPSHOT_WORDS))
 #endif
 #if defined(PMU_QUAL_SCHEMA_V8)
+/* The wire shape, asserted at compile time rather than trusted. The host
+ * refuses anything that is not exactly 93 words / 372 bytes, so a mismatch
+ * here would otherwise surface as an unparseable board run. */
 _Static_assert(sizeof(pmu_diag_snapshot_t) == PMU_DIAG_SNAPSHOT_WORDS * 4U,
                "PMU_QUAL: a snapshot must be exactly 8 words on the wire");
 _Static_assert(PMU_DIAG_FIELD_COUNT == 85U,
@@ -55,6 +58,9 @@ _Static_assert(PMU_DIAG_SCHEMA_VERSION == 8U,
                "PMU_QUAL: the v8 record must declare schema version 8");
 #endif
 #if defined(PMU_QUAL_SCHEMA_V8)
+    /* Same freshness rule as the two result gates above, and for the same
+     * reason: a hook count or an LR left over from the previous run would be
+     * indistinguishable from this run's evidence. */
     pmu_qual_reset_hook_state();
 #endif
     put_diag_snapshot(&c, &d->internal_post_disable);
@@ -75,7 +81,6 @@ VENDOR = """#define BUSY_SLEEP
 #define VERIFY_OUTPUT 1
 #define TEST_CPM 1
 #define BUSY_SLEEP_TIMEOUT 10000
-extern void v11a_u85_irq_entry_veneer(void);
 static inline void wait_for_irq(void) {}
 void u85_irq_handler(void)
 {
@@ -176,10 +181,21 @@ print("=== patcher ===")
 runner_out, runner_counts = patcher.patch_runner(RUNNER)
 vendor_out, vendor_counts = patcher.patch_vendor(VENDOR)
 check("runner patch adds v11a schema branch", "PMU_INTERVAL_ENTRY_DIAG_V11A" in runner_out)
+check("runner patch declares schema-11 J0 field",
+      "uint32_t t_vector_probe;" in runner_out and "d.t_vector_probe" in runner_out)
+check("runner patch serializes J0 field",
+      "put32(&c, d->t_vector_probe);" in runner_out)
+check("vendor patch declares J0 storage symbol",
+      "volatile uint32_t pmu_interval_v11a_t_vector_probe;" in vendor_out)
 check("vendor patch installs veneer vector", "&v11a_u85_irq_entry_veneer" in vendor_out)
 check("vendor patch preserves stock handler body",
       "void u85_irq_handler(void)" in vendor_out and "write_reg(NPU_REG_CMD, 2);" in vendor_out)
-check("patch counts recorded", runner_counts["serialize_append"] == 1 and vendor_counts["runtime_vector_install"] == 1)
+check("patch counts recorded",
+      runner_counts["serialize_append"] == 1
+      and runner_counts["record_append_fields"] == 1
+      and vendor_counts["runtime_vector_install"] == 1
+      and vendor_counts["veneer_extern_decl"] == 1
+      and vendor_counts["j0_global_defs"] == 1)
 
 print("=== source gate ===")
 counts = gate.verify_generated_sources(runner_out, vendor_out)
@@ -189,7 +205,12 @@ for name, broken in (
     ("stock vector target rejected",
      vendor_out.replace("&v11a_u85_irq_entry_veneer", "&u85_irq_handler", 1)),
     ("later-overwritten vector target rejected",
-     vendor_out + "\nNVIC_SetVector(NPU0_IRQn, (uint32_t)&u85_irq_handler);\n"),
+     vendor_out.replace(
+         "    NVIC_SetVector(NPU0_IRQn, (uint32_t)&v11a_u85_irq_entry_veneer);\n",
+         "    NVIC_SetVector(NPU0_IRQn, (uint32_t)&v11a_u85_irq_entry_veneer);\n"
+         "    NVIC_SetVector(NPU0_IRQn, (uint32_t)&u85_irq_handler);\n",
+         1,
+     )),
 ):
     try:
         gate.verify_generated_sources(runner_out, broken)
