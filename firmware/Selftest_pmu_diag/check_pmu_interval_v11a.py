@@ -115,11 +115,33 @@ def _load_address(fn, index, pool):
     hit = q._MEMOP.search(ins.operands)
     if hit is None:
         return None
-    base = q.resolve_register(fn, index, hit.group(1), pool)
+    base = _resolve_register_value(fn, index, hit.group(1), pool)
     if base is None:
         return None
     offset = q._int(hit.group(2)) if hit.group(2) else 0
     return base + offset
+
+
+def _resolve_register_value(fn, index, reg, pool):
+    value = q.resolve_register(fn, index, reg, pool)
+    if value is not None:
+        return value
+    found = q.defining_insn(fn, index, reg)
+    if found is None:
+        return None
+    pos, ins = found
+    mnemonic = ins.mnemonic.split(".")[0]
+    if mnemonic.startswith("ldr") and q._MEMOP.search(ins.operands):
+        return _load_address(fn, pos, pool)
+    if mnemonic == "movt":
+        low = _resolve_register_value(fn, pos, reg, pool)
+        if low is None:
+            return None
+        imm = q._IMM.search(ins.operands)
+        if imm is None:
+            return None
+        return (low & 0xFFFF) | (q._int(imm.group(1)) << 16)
+    return None
 
 
 def _find_function(funcs, name):
@@ -130,10 +152,16 @@ def _find_function(funcs, name):
 
 
 def _literal_value(fn, index, pool, reg):
-    value = q.resolve_register(fn, index, reg, pool)
+    value = _resolve_register_value(fn, index, reg, pool)
     if value is None:
         raise fail("%s at 0x%x is not backed by a proven literal/immediate" % (reg, fn.insns[index].addr))
     return value
+
+
+def _vector_slot_store_address(fn, index, pool):
+    ins = fn.insns[index]
+    base = _resolve_register_value(fn, index, ins.base, pool)
+    return None if base is None else base + ins.offset
 
 
 def verify_final_elf(disassembly_text: str, nm_text: str) -> dict:
@@ -170,8 +198,18 @@ def verify_final_elf(disassembly_text: str, nm_text: str) -> dict:
         raise fail("final ELF has no <v11a_u85_irq_entry_veneer> symbol")
     if (vector_value & ~1) != veneer_addr:
         raise fail("runtime vector target does not resolve to the veneer")
-    if any(ins.kind == "store" and ins.offset == VECTOR_SLOT_OFFSET
-           for ins in test_u85.insns[vector_store_index + 1:]):
+    submit_store_addr = None
+    for idx, ins in enumerate(test_u85.insns):
+        if (ins.kind == "store"
+                and _vector_slot_store_address(test_u85, idx, pool) == NPU_CMD):
+            submit_store_addr = ins.addr
+            break
+    if submit_store_addr is None:
+        raise fail("test_u85 has no submit-path NPU CMD store")
+    if any(ins.kind == "store"
+           and _vector_slot_store_address(test_u85, idx, pool) == SCB_VTOR + VECTOR_SLOT_OFFSET
+           for idx, ins in enumerate(test_u85.insns[vector_store_index + 1:], start=vector_store_index + 1)
+           if ins.addr < submit_store_addr):
         raise fail("runtime vector target is later overwritten")
 
     exec_insns = [ins for ins in veneer.insns if ins.mnemonic not in q.DATA_DIRECTIVES]
@@ -184,7 +222,7 @@ def verify_final_elf(disassembly_text: str, nm_text: str) -> dict:
         raise fail("veneer second instruction is not a DWT CYCCNT read")
     if third.kind != "ldr_lit" or pool.get(third.literal_addr) != j0_symbol:
         raise fail("veneer third instruction does not materialize the J0 slot")
-    if fourth.kind != "store" or q.store_address(veneer, veneer.insns.index(fourth), pool) != j0_symbol:
+    if fourth.kind != "store" or _vector_slot_store_address(veneer, veneer.insns.index(fourth), pool) != j0_symbol:
         raise fail("veneer does not store J0 exactly once to the J0 slot")
     branch_target = q._CALL_TARGET.search(fifth.operands)
     if fifth.mnemonic.split(".")[0] != "b" or branch_target is None:
@@ -223,14 +261,14 @@ def verify_final_elf(disassembly_text: str, nm_text: str) -> dict:
     cmd2_store = None
     for idx, ins in enumerate(irq.insns):
         if ins.kind == "store":
-            address = q.store_address(irq, idx, pool)
+            address = _vector_slot_store_address(irq, idx, pool)
             if address == i0_symbol:
                 i0_store = ins.addr
             elif address == t3_symbol:
                 t3_store = ins.addr
             elif address == flag_symbol:
                 flag_store = ins.addr
-            elif address == NPU_CMD and q.resolve_register(irq, idx, ins.src, pool) == 2:
+            elif address == NPU_CMD and _resolve_register_value(irq, idx, ins.src, pool) == 2:
                 cmd2_store = ins.addr
         if _load_address(irq, idx, pool) == NPU_STATUS:
             status_read = ins.addr
@@ -263,6 +301,23 @@ def verify(paths: argparse.Namespace) -> dict:
         disassembly = handle.read()
     with open(paths.final_nm) as handle:
         nm_text = handle.read()
+    try:
+        q.evaluate(
+            mode="Q1",
+            disassembly_text=disassembly,
+            nm_text=nm_text,
+            strings_text=disassembly,
+            relocation_text="",
+            object_disassembly_text="Disassembly of section .text:\n",
+            object_sections_text="Contents of section .rodata:\n",
+            vendor_source_text=vendor_text,
+            interface_header_text="",
+            compiler_flags="",
+            preprocessed_text="",
+            cfg_header_text="",
+        )
+    except q.GateError as exc:
+        raise fail("base H-PRINTF gate: %s" % exc)
     elf = verify_final_elf(disassembly, nm_text)
     return {
         "variant": VARIANT,

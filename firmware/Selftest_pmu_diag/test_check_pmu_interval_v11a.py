@@ -1,5 +1,6 @@
 import os
 import sys
+import tempfile
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
@@ -177,6 +178,88 @@ NM = """00001100 T v11a_u85_irq_entry_veneer
 2000101c B pmu_interval_v10_t3_hit_count
 """
 
+MOVW_MOVT_DISASSEMBLY = """Disassembly of section .text:
+
+00001000 <test_u85>:
+    1000:\t4b0c      \tldr\tr3, [pc, #48] @ (1034 <test_u85+0x34>)
+    1002:\t689b      \tldr\tr3, [r3, #8]
+    1004:\tf241 1201 \tmovw\tr2, #4353
+    1008:\tf2c0 0200 \tmovt\tr2, #0
+    100c:\tf8c3 2080 \tstr.w\tr2, [r3, #128]
+    1010:\tf3bf 8f4f \tdsb\tsy
+    1014:\t4c0a      \tldr\tr4, [pc, #40] @ (103c <test_u85+0x3c>)
+    1016:\t6863      \tldr\tr3, [r4, #4]
+    1018:\t9368      \tstr\tr3, [sp, #104]
+    101a:\t4d09      \tldr\tr5, [pc, #36] @ (1040 <test_u85+0x40>)
+    101c:\t68ae      \tldr\tr6, [r5, #8]
+    101e:\tf046 0601 \torr.w\tr6, r6, #1
+    1022:\t60ae      \tstr\tr6, [r5, #8]
+    1024:\t6863      \tldr\tr3, [r4, #4]
+    1026:\t936c      \tstr\tr3, [sp, #108]
+    1034:\te000ed00 \t.word\t0xe000ed00
+    1038:\t00001101 \t.word\t0x00001101
+    103c:\te0001000 \t.word\t0xe0001000
+    1040:\t50004000 \t.word\t0x50004000
+
+00001100 <v11a_u85_irq_entry_veneer>:
+    1100:\t4804      \tldr\tr0, [pc, #16] @ (1114 <v11a_u85_irq_entry_veneer+0x14>)
+    1102:\t6801      \tldr\tr1, [r0, #0]
+    1104:\t4804      \tldr\tr0, [pc, #16] @ (1118 <v11a_u85_irq_entry_veneer+0x18>)
+    1106:\t6001      \tstr\tr1, [r0, #0]
+    1108:\tf000 b80a \tb.w\t1120 <u85_irq_handler>
+    1114:\te0001004 \t.word\t0xe0001004
+    1118:\t20001000 \t.word\t0x20001000
+
+00001120 <u85_irq_handler>:
+    1120:\tb510      \tpush\t{r4, lr}
+    1122:\t4a0e      \tldr\tr2, [pc, #56] @ (115c <u85_irq_handler+0x3c>)
+    1124:\t6851      \tldr\tr1, [r2, #4]
+    1126:\t4b0e      \tldr\tr3, [pc, #56] @ (1160 <u85_irq_handler+0x40>)
+    1128:\t6019      \tstr\tr1, [r3, #0]
+    112a:\t4e0e      \tldr\tr6, [pc, #56] @ (1164 <u85_irq_handler+0x44>)
+    112c:\t6871      \tldr\tr1, [r6, #4]
+    112e:\tf011 0f02 \ttst.w\tr1, #2
+    1132:\t6851      \tldr\tr1, [r2, #4]
+    1134:\t4b0c      \tldr\tr3, [pc, #48] @ (1168 <u85_irq_handler+0x48>)
+    1136:\t6019      \tstr\tr1, [r3, #0]
+    1138:\t4d0c      \tldr\tr5, [pc, #48] @ (116c <u85_irq_handler+0x4c>)
+    113a:\t702d      \tstrb\tr5, [r5, #0]
+    113c:\t2202      \tmovs\tr2, #2
+    113e:\t60b2      \tstr\tr2, [r6, #8]
+    1140:\t4c0b      \tldr\tr4, [pc, #44] @ (1170 <u85_irq_handler+0x50>)
+    1142:\t6821      \tldr\tr1, [r4, #0]
+    1144:\t3101      \tadds\tr1, #1
+    1146:\t6021      \tstr\tr1, [r4, #0]
+    1148:\t4c0a      \tldr\tr4, [pc, #40] @ (1174 <u85_irq_handler+0x54>)
+    114a:\t6821      \tldr\tr1, [r4, #0]
+    114c:\t3101      \tadds\tr1, #1
+    114e:\t6021      \tstr\tr1, [r4, #0]
+    1150:\tbd10      \tpop\t{r4, pc}
+    115c:\te0001000 \t.word\t0xe0001000
+    1160:\t20001004 \t.word\t0x20001004
+    1164:\t50004000 \t.word\t0x50004000
+    1168:\t20001008 \t.word\t0x20001008
+    116c:\t20001014 \t.word\t0x20001014
+    1170:\t20001018 \t.word\t0x20001018
+    1174:\t2000101c \t.word\t0x2000101c
+"""
+
+POST_SUBMIT_VECTOR_RESTORE = DISASSEMBLY.replace(
+    "1020:\t936c      \tstr\tr3, [sp, #108]",
+    "1020:\t936c      \tstr\tr3, [sp, #108]\n"
+    "    1022:\tf64e 5d88 \tmovw\tr3, #60808\n"
+    "    1026:\tf2ce 0300 \tmovt\tr3, #57344\n"
+    "    102a:\t601a      \tstr\tr2, [r3, #0]",
+    1,
+)
+
+PRE_SUBMIT_VECTOR_OVERWRITE = DISASSEMBLY.replace(
+    "100a:\tf3bf 8f4f \tdsb\tsy",
+    "100a:\tf8c3 2080 \tstr.w\tr2, [r3, #128]\n"
+    "    100e:\tf3bf 8f4f \tdsb\tsy",
+    1,
+)
+
 print("=== patcher ===")
 runner_out, runner_counts = patcher.patch_runner(RUNNER)
 vendor_out, vendor_counts = patcher.patch_vendor(VENDOR)
@@ -225,6 +308,16 @@ check("ELF gate proves vector -> veneer -> stock path",
       and elf["vector_value"] == 0x1101
       and elf["veneer_address"] == 0x1100
       and elf["stock_handler_address"] == 0x1120)
+check("ELF gate composes movw/movt vector materialization",
+      gate.verify_final_elf(MOVW_MOVT_DISASSEMBLY, NM)["vector_value"] == 0x1101)
+check("post-submit vector restore does not violate overwrite gate",
+      gate.verify_final_elf(POST_SUBMIT_VECTOR_RESTORE, NM)["vector_value"] == 0x1101)
+
+try:
+    gate.verify_final_elf(PRE_SUBMIT_VECTOR_OVERWRITE, NM)
+    check("pre-submit vector overwrite rejected", False)
+except SystemExit:
+    check("pre-submit vector overwrite rejected", True)
 
 NEGATIVE_DISASSEMBLIES = (
     ("even vector target rejected",
@@ -282,6 +375,68 @@ for name, broken in NEGATIVE_DISASSEMBLIES:
         check(name, False)
     except SystemExit:
         check(name, True)
+
+print("=== verify wrapper ===")
+with tempfile.TemporaryDirectory() as tmpdir:
+    runner_path = os.path.join(tmpdir, "runner.c")
+    vendor_path = os.path.join(tmpdir, "vendor.c")
+    dis_path = os.path.join(tmpdir, "final.S")
+    nm_path = os.path.join(tmpdir, "final.nm")
+    vendor_src_path = os.path.join(tmpdir, "vendor_src.c")
+    for path, text in (
+        (runner_path, runner_out),
+        (vendor_path, vendor_out),
+        (dis_path, DISASSEMBLY),
+        (nm_path, NM),
+        (vendor_src_path, ""),
+    ):
+        with open(path, "w") as handle:
+            handle.write(text)
+    args = type("Args", (), {
+        "vendor_src": vendor_src_path,
+        "runner_generated": runner_path,
+        "vendor_generated": vendor_path,
+        "final_disassembly": dis_path,
+        "final_nm": nm_path,
+    })()
+    orig_sha256 = gate._sha256
+    orig_evaluate = gate.q.evaluate
+    calls = []
+
+    def fake_sha256(path):
+        if path == vendor_src_path:
+            return gate.FROZEN_VENDOR_SHA256
+        return orig_sha256(path)
+
+    def fake_evaluate(**kwargs):
+        calls.append(kwargs)
+        return {"ok": True}
+
+    gate._sha256 = fake_sha256
+    gate.q.evaluate = fake_evaluate
+    try:
+        gate.verify(args)
+        check("verify() invokes base H-PRINTF gate",
+              len(calls) == 1 and calls[0]["mode"] == "Q1"
+              and calls[0]["vendor_source_text"] == vendor_out)
+    finally:
+        gate._sha256 = orig_sha256
+        gate.q.evaluate = orig_evaluate
+
+    def raising_evaluate(**kwargs):
+        raise gate.q.GateError("synthetic base failure")
+
+    gate._sha256 = fake_sha256
+    gate.q.evaluate = raising_evaluate
+    try:
+        gate.verify(args)
+        check("verify() propagates base gate failure", False)
+    except SystemExit as exc:
+        check("verify() propagates base gate failure",
+              "base H-PRINTF gate: synthetic base failure" in str(exc))
+    finally:
+        gate._sha256 = orig_sha256
+        gate.q.evaluate = orig_evaluate
 
 print()
 print("passed=%d failed=%d" % (passed, failed))
