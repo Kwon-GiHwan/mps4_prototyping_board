@@ -381,6 +381,12 @@ class FakeLink:
         self.queue = []
         self.late_frames = 0
 
+    def ping(self):
+        return None
+
+    def close(self):
+        return None
+
     def next_sequence(self):
         self._seq = (self._seq + 1) & 0xFFFFFFFF
         return self._seq
@@ -459,6 +465,49 @@ try:
     check("collector rejects wrong build id", False)
 except SystemExit:
     check("collector rejects wrong build id", True)
+
+with tempfile.TemporaryDirectory() as td:
+    out_path = os.path.join(td, "invalid.json")
+    manifest_path = os.path.join(td, "manifest.json")
+    bins_dir = os.path.join(td, "bins")
+    os.mkdir(bins_dir)
+    manifest_blob = json.dumps(manifest(), sort_keys=True).encode()
+    with open(manifest_path, "wb") as handle:
+        handle.write(manifest_blob)
+    for name, digest in manifest()["artifact_sha256"].items():
+        with open(os.path.join(bins_dir, name), "wb") as handle:
+            handle.write(bytes.fromhex(digest))
+
+    original_read_manifest = rv11a.read_manifest
+    original_verify_local_bins = rv11a.rq.verify_local_bins
+    original_link = rv11a.rq.PmuQualLink
+    original_prime = rv11a.rq.prime
+    try:
+        rv11a.read_manifest = lambda path: (manifest(), manifest_blob)
+        rv11a.rq.verify_local_bins = lambda _manifest, _bins_dir: dict(manifest()["artifact_sha256"])
+        rv11a.rq.PmuQualLink = lambda _port: fake_link(build(golden_window_crc=0xDEAD))
+        rv11a.rq.prime = lambda _link: None
+        saved_argv = sys.argv[:]
+        sys.argv = [
+            "run_pmu_interval_v11a.py",
+            "--manifest", manifest_path,
+            "--bins-dir", bins_dir,
+            "--out", out_path,
+            "--host-boot-index", "1",
+            "--port", "FAKE",
+        ]
+        try:
+            rv11a.main()
+            check("invalid sample is rejected before archive write", False)
+        except SystemExit:
+            check("invalid sample is rejected before archive write", not os.path.exists(out_path))
+        finally:
+            sys.argv = saved_argv
+    finally:
+        rv11a.read_manifest = original_read_manifest
+        rv11a.rq.verify_local_bins = original_verify_local_bins
+        rv11a.rq.PmuQualLink = original_link
+        rv11a.rq.prime = original_prime
 
 print("=== analyzer ===")
 TEST_MANIFEST_SHA256 = hashlib.sha256(

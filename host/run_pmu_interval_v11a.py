@@ -228,11 +228,11 @@ def main() -> None:
         host_boot_index=args.host_boot_index,
         manifest_path=args.manifest,
     )
+    if not doc["derived"]["valid"]:
+        raise SystemExit("FAIL invalid V11-A sample archived without a V11-A window value")
     with open(args.out, "x") as handle:
         json.dump(doc, handle, indent=2, sort_keys=True)
         handle.write("\n")
-    if not doc["derived"]["valid"]:
-        raise SystemExit("FAIL invalid V11-A sample archived without a V11-A window value")
 
 
 if __name__ == "__main__":
