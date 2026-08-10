@@ -106,7 +106,7 @@ python3 -m py_compile firmware/patches/patch_pmu_interval_v11a.py \
 - [ ] Mark the Makefile before writing.
 - [ ] Clone only the V10 graph; use `build_pmu_interval_v11a/`, generated V11-A sources, and a dedicated assembly object.
 - [ ] Compile the `.S` file for Cortex-M85 Thumb, link it only into V11-A, and invoke only the V11-A checker.
-- [ ] Run `make -n -f firmware/Makefile.pmu_interval_v11a all` and verify no frozen target is touched.
+- [ ] Do not run the graph from the local repo snapshot: it intentionally lacks `Device_SSE-320`, `Drivers`, `Tests`, and the other full FI101 sources. Locally, inspect the Makefile target/dependency text and rely on the patcher/checker unit tests. Run every actual or dry-run make command only in the pinned remote container build root `/work/selftest` as specified in Task 7.
 - [ ] Commit with `build: add PMU interval V11-A image`.
 
 ### Task 5: Establish failing host tests
@@ -147,8 +147,17 @@ python3 -m py_compile firmware/patches/patch_pmu_interval_v11a.py \
 **Files:**
 - Modify only V11-A frozen hash constants after observing real outputs.
 
-- [ ] Stage only V11-A files; verify frozen runner/vendor inputs before copying.
-- [ ] Run `make -f Makefile.pmu_interval_v11a clean all manifest` without any SD, USB, reboot, or UART action.
+- [ ] Create a host staging directory below `/home/gihwan/mps4/`, copy only V11-A files into it, and then `docker cp` those files into the existing `benchmark-runner` container. Verify the frozen runner/vendor inputs in `/work/selftest` before copying.
+- [ ] Use exactly this build context and command form for dry-run and real builds:
+
+```bash
+ssh gihwan 'docker exec -w /work/selftest benchmark-runner \
+  make -f Makefile.pmu_interval_v11a -n all'
+ssh gihwan 'docker exec -w /work/selftest benchmark-runner \
+  make -f Makefile.pmu_interval_v11a clean all manifest'
+```
+
+Do not run make from the local partial repo or the host staging directory. Do not perform any SD, USB, reboot, or UART action.
 - [ ] Fix only evidence-driven assembler/compiler/gate mismatches; never relax active-vector, no-thunk, or exact-effect contracts.
 - [ ] Freeze APP/VECTORS/DDR/ELF/map/generated/preprocessed/manifest hashes, expected LR, VTOR slot/value, veneer/J0, and stock handler addresses.
 - [ ] Run a second clean build and prove byte identity for every frozen artifact.
@@ -160,10 +169,26 @@ python3 -m py_compile firmware/patches/patch_pmu_interval_v11a.py \
 **Files:**
 - No planned changes unless review finds a concrete defect.
 
-- [ ] Run V11-A firmware/host tests plus V10, V9, V8 qual, CFG, and DIAG suites.
+- [ ] Run the exact local regression commands:
+
+```bash
+python3 firmware/Selftest_pmu_diag/test_check_pmu_interval_v11a.py
+python3 host/tests/test_pmu_interval_v11a_unit.py
+python3 firmware/Selftest_pmu_diag/test_check_pmu_interval_v10.py
+python3 host/tests/test_pmu_interval_v10_unit.py
+python3 firmware/Selftest_pmu_diag/test_check_pmu_interval_v9.py
+python3 host/tests/test_pmu_interval_v9_unit.py
+python3 host/tests/test_pmu_qual_unit.py
+python3 host/tests/test_pmu_cfg_unit.py
+python3 host/tests/test_pmu_diag_unit.py
+git diff --check
+```
+
+Pass criterion: every suite exits zero with its printed failed count equal to zero, and `git diff --check` has no output.
 - [ ] Run `git diff --check` and prove frozen V10/V9/Production files unchanged.
-- [ ] Request independent code and security reviews of runtime vector proof, Thumb bit, veneer grammar, LR/stack safety, thunk rejection, host fail-closed path, and secrets.
-- [ ] Fix concrete findings and rerun affected checks until blocker-free.
+- [ ] Use `collaboration.spawn_agent` with a `code-reviewer` agent for the V11-A file set. Require explicit review of runtime VTOR/vector proof, Thumb bit, veneer grammar, LR/stack safety, thunk rejection, host fail-closed path, and missing tests. Pass criterion: no unresolved correctness blocker; fix every blocker and redispatch the same review.
+- [ ] Use `collaboration.spawn_agent` with a `security-reviewer` agent for the same file set. Require secret scanning plus unsafe command/path, manifest trust, parser input, and firmware interrupt-state review. Pass criterion: no unresolved critical/high/medium finding; fix and redispatch until met.
+- [ ] After fixes, rerun the exact regression block above and the real remote manifest gate. Do not accept a reviewer summary without independently reading changed files and observing the commands.
 - [ ] Create local tag `pmu-interval-v11a-preboard`; keep branch unmerged and unpushed.
 
 ### Task 9: Record the pre-board handoff
