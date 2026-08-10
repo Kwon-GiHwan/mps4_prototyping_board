@@ -380,54 +380,155 @@ print("=== verify wrapper ===")
 with tempfile.TemporaryDirectory() as tmpdir:
     runner_path = os.path.join(tmpdir, "runner.c")
     vendor_path = os.path.join(tmpdir, "vendor.c")
-    dis_path = os.path.join(tmpdir, "final.S")
-    nm_path = os.path.join(tmpdir, "final.nm")
     vendor_src_path = os.path.join(tmpdir, "vendor_src.c")
+    interface_header_path = os.path.join(tmpdir, "interface.h")
+    regs_header_path = os.path.join(tmpdir, "regs.h")
+    preprocessed_path = os.path.join(tmpdir, "runner.i")
+    elf_path = os.path.join(tmpdir, "runner.elf")
+    map_path = os.path.join(tmpdir, "runner.map")
+    app_bin_path = os.path.join(tmpdir, "APP.BIN")
+    vectors_bin_path = os.path.join(tmpdir, "VECTORS.BIN")
+    ddr_bin_path = os.path.join(tmpdir, "DDR.BIN")
+    vendor_object_path = os.path.join(tmpdir, "vendor.o")
+    interface_text = "INTERFACE_HEADER_TEXT\n"
+    regs_text = "REGS_HEADER_TEXT\n"
+    preprocessed_text = "PREPROCESSED_TEXT\n"
+    vendor_src_text = "FROZEN_VENDOR_SOURCE\n"
     for path, text in (
         (runner_path, runner_out),
         (vendor_path, vendor_out),
-        (dis_path, DISASSEMBLY),
-        (nm_path, NM),
-        (vendor_src_path, ""),
+        (vendor_src_path, vendor_src_text),
+        (interface_header_path, interface_text),
+        (regs_header_path, regs_text),
+        (preprocessed_path, preprocessed_text),
+        (elf_path, "ELF_BYTES"),
+        (map_path, "MAP_BYTES"),
+        (app_bin_path, "APP_BIN_BYTES"),
+        (vectors_bin_path, "VECTORS_BIN_BYTES"),
+        (ddr_bin_path, "DDR_BIN_BYTES"),
+        (vendor_object_path, "OBJ_BYTES"),
     ):
         with open(path, "w") as handle:
             handle.write(text)
+    tool_outputs = {
+        ("fake-readelf", "-h", elf_path): "ELF Header\nType: EXEC (Executable file)\n",
+        ("fake-objdump", "-d", elf_path): DISASSEMBLY,
+        ("fake-nm", elf_path): NM,
+        ("fake-objdump", "-s", elf_path): "ELF_STRINGS_TEXT\n",
+        ("fake-objdump", "-r", vendor_object_path): "OBJECT_RELOCATION_TEXT\n",
+        ("fake-objdump", "-drz", "--section=" + gate.q.OBJECT_TEXT_SECTION, vendor_object_path): "OBJECT_DISASSEMBLY_TEXT\n",
+        ("fake-objdump", "-s", vendor_object_path): "OBJECT_SECTION_TEXT\n",
+    }
     args = type("Args", (), {
+        "build_id": "0x%08X" % gate.BUILD_ID,
         "vendor_src": vendor_src_path,
+        "interface_header": interface_header_path,
+        "vendor_object": vendor_object_path,
+        "regs_header": regs_header_path,
+        "preprocessed": preprocessed_path,
         "runner_generated": runner_path,
         "vendor_generated": vendor_path,
-        "final_disassembly": dis_path,
-        "final_nm": nm_path,
+        "elf": elf_path,
+        "map": map_path,
+        "app_bin": app_bin_path,
+        "vectors_bin": vectors_bin_path,
+        "ddr_bin": ddr_bin_path,
+        "objdump": "fake-objdump",
+        "nm": "fake-nm",
+        "readelf": "fake-readelf",
+        "cflags": "-O2 -DTEST",
     })()
     orig_sha256 = gate._sha256
     orig_evaluate = gate.q.evaluate
+    orig_manifest_document = gate.q.manifest_document
+    orig_verify_final_elf = gate.verify_final_elf
+    orig_subprocess_run = gate.subprocess.run
     calls = []
+    elf_calls = []
+    runs = []
+
+    class Completed:
+        def __init__(self, stdout):
+            self.stdout = stdout
 
     def fake_sha256(path):
         if path == vendor_src_path:
             return gate.FROZEN_VENDOR_SHA256
         return orig_sha256(path)
 
+    def fake_run(argv, check, capture_output, text):
+        runs.append(tuple(argv))
+        return Completed(tool_outputs[tuple(argv)])
+
     def fake_evaluate(**kwargs):
         calls.append(kwargs)
         return {"ok": True}
 
+    def fake_manifest_document(**kwargs):
+        return {
+            "base_result": kwargs["result"],
+            "base_artifacts": kwargs["artifacts"],
+            "base_compiler_flags": kwargs["compiler_flags"],
+        }
+
+    def fake_verify_final_elf(disassembly_text, nm_text):
+        elf_calls.append((disassembly_text, nm_text))
+        return {"vector_slot_store": 0x1006}
+
     gate._sha256 = fake_sha256
     gate.q.evaluate = fake_evaluate
+    gate.q.manifest_document = fake_manifest_document
+    gate.verify_final_elf = fake_verify_final_elf
+    gate.subprocess.run = fake_run
     try:
-        gate.verify(args)
+        result = gate.verify(args)
         check("verify() invokes base H-PRINTF gate",
-              len(calls) == 1 and calls[0]["mode"] == "Q1"
-              and calls[0]["vendor_source_text"] == vendor_out)
+              len(calls) == 1 and calls[0] == {
+                  "mode": "Q1",
+                  "disassembly_text": DISASSEMBLY,
+                  "nm_text": NM,
+                  "strings_text": "ELF_STRINGS_TEXT\n",
+                  "relocation_text": "OBJECT_RELOCATION_TEXT\n",
+                  "object_disassembly_text": "OBJECT_DISASSEMBLY_TEXT\n",
+                  "object_sections_text": "OBJECT_SECTION_TEXT\n",
+                  "vendor_source_text": vendor_out,
+                  "interface_header_text": interface_text,
+                  "compiler_flags": "-O2 -DTEST",
+                  "preprocessed_text": preprocessed_text,
+                  "cfg_header_text": regs_text,
+              })
+        check("verify() consumes evidence from tool/file boundaries",
+              runs == [
+                  ("fake-readelf", "-h", elf_path),
+                  ("fake-objdump", "-d", elf_path),
+                  ("fake-nm", elf_path),
+                  ("fake-objdump", "-s", elf_path),
+                  ("fake-objdump", "-r", vendor_object_path),
+                  ("fake-objdump", "-drz", "--section=" + gate.q.OBJECT_TEXT_SECTION, vendor_object_path),
+                  ("fake-objdump", "-s", vendor_object_path),
+              ] and elf_calls == [(DISASSEMBLY, NM)])
+        check("verify() returns fail-closed manifest evidence",
+              result["base_result"] == {"ok": True}
+              and result["base_compiler_flags"] == "-O2 -DTEST"
+              and result["elf"] == {"vector_slot_store": 0x1006}
+              and result["source_counts"]["runtime_vector_install"] == 1
+              and result["build_evidence_sha256"]["generated_vendor_u85.c"]
+              == gate.hashlib.sha256(vendor_out.encode()).hexdigest())
     finally:
         gate._sha256 = orig_sha256
         gate.q.evaluate = orig_evaluate
+        gate.q.manifest_document = orig_manifest_document
+        gate.verify_final_elf = orig_verify_final_elf
+        gate.subprocess.run = orig_subprocess_run
 
     def raising_evaluate(**kwargs):
         raise gate.q.GateError("synthetic base failure")
 
     gate._sha256 = fake_sha256
     gate.q.evaluate = raising_evaluate
+    gate.q.manifest_document = fake_manifest_document
+    gate.verify_final_elf = fake_verify_final_elf
+    gate.subprocess.run = fake_run
     try:
         gate.verify(args)
         check("verify() propagates base gate failure", False)
@@ -437,6 +538,9 @@ with tempfile.TemporaryDirectory() as tmpdir:
     finally:
         gate._sha256 = orig_sha256
         gate.q.evaluate = orig_evaluate
+        gate.q.manifest_document = orig_manifest_document
+        gate.verify_final_elf = orig_verify_final_elf
+        gate.subprocess.run = orig_subprocess_run
 
 print()
 print("passed=%d failed=%d" % (passed, failed))

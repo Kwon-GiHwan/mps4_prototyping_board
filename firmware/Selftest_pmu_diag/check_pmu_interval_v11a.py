@@ -164,6 +164,27 @@ def _vector_slot_store_address(fn, index, pool):
     return None if base is None else base + ins.offset
 
 
+def _run(argv):
+    return subprocess.run(argv, check=True, capture_output=True, text=True).stdout
+
+
+def manifest_document(base_doc: dict, artifacts: dict, runner_sha: str, vendor_sha: str,
+                      patch_counts: dict) -> dict:
+    doc = dict(base_doc)
+    doc.update(
+        {
+            "schema_version": SCHEMA_VERSION,
+            "build_id": "0x%08X" % BUILD_ID,
+            "variant": VARIANT,
+            "generated_runner_sha256": runner_sha,
+            "generated_vendor_sha256": vendor_sha,
+            "generated_patch_counts": patch_counts,
+            "artifact_sha256": dict(artifacts),
+        }
+    )
+    return doc
+
+
 def verify_final_elf(disassembly_text: str, nm_text: str) -> dict:
     funcs = q.parse_disassembly(disassembly_text).functions
     pool = q.literal_pool(funcs)
@@ -290,6 +311,8 @@ def verify_final_elf(disassembly_text: str, nm_text: str) -> dict:
 
 
 def verify(paths: argparse.Namespace) -> dict:
+    if int(paths.build_id, 16) != BUILD_ID:
+        raise fail("build_id %s is not 0x%08X" % (paths.build_id, BUILD_ID))
     if _sha256(paths.vendor_src) != FROZEN_VENDOR_SHA256:
         raise fail("vendor hash mismatch")
     with open(paths.runner_generated) as handle:
@@ -297,44 +320,90 @@ def verify(paths: argparse.Namespace) -> dict:
     with open(paths.vendor_generated) as handle:
         vendor_text = handle.read()
     source_counts = verify_generated_sources(runner_text, vendor_text)
-    with open(paths.final_disassembly) as handle:
-        disassembly = handle.read()
-    with open(paths.final_nm) as handle:
-        nm_text = handle.read()
+    header = _run([paths.readelf, "-h", paths.elf])
+    if "Executable" not in header and "EXEC" not in header:
+        raise fail("%s is not an executable ELF" % paths.elf)
+    disassembly = _run([paths.objdump, "-d", paths.elf])
+    nm_text = _run([paths.nm, paths.elf])
     try:
-        q.evaluate(
+        result = q.evaluate(
             mode="Q1",
             disassembly_text=disassembly,
             nm_text=nm_text,
-            strings_text=disassembly,
-            relocation_text="",
-            object_disassembly_text="Disassembly of section .text:\n",
-            object_sections_text="Contents of section .rodata:\n",
+            strings_text=_run([paths.objdump, "-s", paths.elf]),
+            relocation_text=_run([paths.objdump, "-r", paths.vendor_object]),
+            object_disassembly_text=_run([
+                paths.objdump, "-drz", "--section=" + q.OBJECT_TEXT_SECTION,
+                paths.vendor_object,
+            ]),
+            object_sections_text=_run([paths.objdump, "-s", paths.vendor_object]),
             vendor_source_text=vendor_text,
-            interface_header_text="",
-            compiler_flags="",
-            preprocessed_text="",
-            cfg_header_text="",
+            interface_header_text=open(paths.interface_header, newline=None).read(),
+            compiler_flags=paths.cflags,
+            preprocessed_text=open(paths.preprocessed, newline=None).read(),
+            cfg_header_text=open(paths.regs_header, newline=None).read(),
         )
     except q.GateError as exc:
         raise fail("base H-PRINTF gate: %s" % exc)
     elf = verify_final_elf(disassembly, nm_text)
-    return {
-        "variant": VARIANT,
-        "schema_version": SCHEMA_VERSION,
-        "build_id": BUILD_ID,
-        "source_counts": source_counts,
-        "elf": elf,
+    base_doc = q.manifest_document(
+        result=result,
+        build_id=BUILD_ID,
+        vendor_source_sha256=hashlib.sha256(vendor_text.encode()).hexdigest(),
+        vendor_object_sha256=_sha256(paths.vendor_object),
+        compiler_flags=paths.cflags,
+        artifacts={
+            "APP.BIN": _sha256(paths.app_bin),
+            "VECTORS.BIN": _sha256(paths.vectors_bin),
+            "DDR.BIN": _sha256(paths.ddr_bin),
+            "elf": _sha256(paths.elf),
+            "map": _sha256(paths.map),
+        },
+    )
+    base_doc["source_counts"] = source_counts
+    base_doc["elf"] = elf
+    doc = manifest_document(
+        base_doc=base_doc,
+        artifacts={
+            "APP.BIN": _sha256(paths.app_bin),
+            "VECTORS.BIN": _sha256(paths.vectors_bin),
+            "DDR.BIN": _sha256(paths.ddr_bin),
+        },
+        runner_sha=hashlib.sha256(runner_text.encode()).hexdigest(),
+        vendor_sha=hashlib.sha256(vendor_text.encode()).hexdigest(),
+        patch_counts=source_counts,
+    )
+    doc["frozen_vendor_source_sha256"] = FROZEN_VENDOR_SHA256
+    doc["build_evidence_sha256"] = {
+        "runner_pmu_interval_v11a.elf": _sha256(paths.elf),
+        "runner_pmu_interval_v11a.map": _sha256(paths.map),
+        "generated_runner.c": hashlib.sha256(runner_text.encode()).hexdigest(),
+        "generated_vendor_u85.c": hashlib.sha256(vendor_text.encode()).hexdigest(),
+        "generated_vendor_u85.o": _sha256(paths.vendor_object),
+        "preprocessed_runner.i": _sha256(paths.preprocessed),
     }
+    return doc
 
 
 def main() -> None:
     ap = argparse.ArgumentParser()
+    ap.add_argument("--build-id", required=True)
     ap.add_argument("--vendor-src", required=True)
+    ap.add_argument("--interface-header", required=True)
+    ap.add_argument("--vendor-object", required=True)
+    ap.add_argument("--regs-header", required=True)
+    ap.add_argument("--preprocessed", required=True)
     ap.add_argument("--runner-generated", required=True)
     ap.add_argument("--vendor-generated", required=True)
-    ap.add_argument("--final-disassembly", required=True)
-    ap.add_argument("--final-nm", required=True)
+    ap.add_argument("--elf", required=True)
+    ap.add_argument("--map", required=True)
+    ap.add_argument("--app-bin", required=True)
+    ap.add_argument("--vectors-bin", required=True)
+    ap.add_argument("--ddr-bin", required=True)
+    ap.add_argument("--objdump", required=True)
+    ap.add_argument("--nm", required=True)
+    ap.add_argument("--readelf", required=True)
+    ap.add_argument("--cflags", required=True)
     ap.add_argument("--manifest-out")
     args = ap.parse_args()
     result = verify(args)
