@@ -168,6 +168,10 @@ def _vector_slot_store_address(fn, index, pool):
     return None if base is None else base + ins.offset
 
 
+def _local_literal_pool(fn):
+    return {ins.addr: ins.value for ins in fn.insns if ins.kind == "word"}
+
+
 def _prove_dwt_load_for_store(fn, store_index, pool, label):
     store = fn.insns[store_index]
     found = q.defining_insn(fn, store_index, store.src)
@@ -180,6 +184,33 @@ def _prove_dwt_load_for_store(fn, store_index, pool, label):
     if any(ins.kind == "call" for ins in fn.insns[load_index + 1:store_index]):
         raise fail("%s calls a helper between timestamp load and store" % label)
     return fn.insns[load_index].addr
+
+
+def _materialize_address(fn, start_index, pool, expected, label):
+    ins = fn.insns[start_index]
+    if ins.kind == "ldr_lit":
+        local_pool = _local_literal_pool(fn)
+        if ins.literal_addr not in local_pool:
+            raise fail("%s literal materialization is not from the veneer-local pool" % label)
+        if local_pool[ins.literal_addr] != expected:
+            raise fail("%s literal materialization resolves to the wrong address" % label)
+        return start_index + 1, ins.dest
+    if ins.kind == "mov_imm":
+        reg = ins.dest
+        next_index = start_index + 1
+        if next_index < len(fn.insns):
+            next_ins = fn.insns[next_index]
+            if next_ins.dest == reg and next_ins.mnemonic.split(".")[0] == "movt":
+                next_index += 1
+        value = _resolve_register_value(fn, next_index, reg, pool)
+        if value != expected:
+            raise fail("%s immediate materialization resolves to the wrong address" % label)
+        return next_index, reg
+    raise fail("%s does not start with a permitted address materialization" % label)
+
+
+def _regs_used(ins):
+    return set(re.findall(r"\b(?:r1[0-5]|r[0-9]|sp|lr|pc)\b", ins.operands))
 
 
 def _run(argv):
@@ -268,24 +299,9 @@ def verify_final_elf(disassembly_text: str, nm_text: str) -> dict:
             raise fail("runtime vector target is later overwritten")
 
     exec_insns = [ins for ins in veneer.insns if ins.mnemonic not in q.DATA_DIRECTIVES]
-    if len(exec_insns) != 5:
-        raise fail("veneer has %d executable instructions, expected 5" % len(exec_insns))
-    first, second, third, fourth, fifth = exec_insns
-    if first.kind != "ldr_lit" or pool.get(first.literal_addr) != DWT_CYCCNT:
-        raise fail("veneer first instruction is not a DWT literal load")
-    if _load_address(veneer, 1, pool) != DWT_CYCCNT:
-        raise fail("veneer second instruction is not a DWT CYCCNT read")
-    if third.kind != "ldr_lit" or pool.get(third.literal_addr) != j0_symbol:
-        raise fail("veneer third instruction does not materialize the J0 slot")
-    fourth_index = veneer.insns.index(fourth)
-    if fourth.kind != "store" or _vector_slot_store_address(veneer, fourth_index, pool) != j0_symbol:
-        raise fail("veneer does not store J0 exactly once to the J0 slot")
-    j0_load = _prove_dwt_load_for_store(veneer, fourth_index, pool, "J0")
-    branch_target = q._CALL_TARGET.search(fifth.operands)
-    if fifth.mnemonic.split(".")[0] != "b" or branch_target is None:
-        raise fail("veneer tail transfer is not an unconditional branch")
-    if branch_target.group(1) != "u85_irq_handler":
-        raise fail("veneer does not branch directly to the stock handler")
+    if not (5 <= len(exec_insns) <= 7):
+        raise fail("veneer has %d executable instructions, expected 5-7" % len(exec_insns))
+    allowed_regs = {"r0", "r1", "pc"}
     forbidden_prefixes = ("push", "pop", "bl", "blx", "cps", "dsb", "isb", "mrs", "msr")
     for ins in exec_insns:
         mnemonic = ins.mnemonic.split(".")[0]
@@ -293,15 +309,53 @@ def verify_final_elf(disassembly_text: str, nm_text: str) -> dict:
             raise fail("veneer uses forbidden instruction %s" % ins.mnemonic)
         if ins.dest == "lr" or ins.base == "sp" or ins.dest == "sp":
             raise fail("veneer touches LR/SP")
+        used = _regs_used(ins)
+        if not used.issubset(allowed_regs | {"sp", "lr"}):
+            raise fail("veneer uses disallowed scratch registers")
+        if "sp" in used or "lr" in used:
+            raise fail("veneer touches LR/SP")
+        if ins.kind == "call":
+            raise fail("veneer contains a call")
+
+    exec_indexes = [veneer.insns.index(ins) for ins in exec_insns]
+    cursor, dwt_reg = _materialize_address(veneer, exec_indexes[0], pool, DWT_CYCCNT, "veneer DWT address")
+    if cursor >= len(veneer.insns):
+        raise fail("veneer ends before the DWT CYCCNT read")
+    dwt_load_ins = veneer.insns[cursor]
+    memop = q._MEMOP.search(dwt_load_ins.operands)
+    if (_load_address(veneer, cursor, pool) != DWT_CYCCNT
+            or dwt_load_ins.dest != "r1"
+            or memop is None
+            or memop.group(1) != dwt_reg):
+        raise fail("veneer does not perform the required DWT CYCCNT read into r1")
+    cursor += 1
+    cursor, j0_reg = _materialize_address(veneer, cursor, pool, j0_symbol, "veneer J0 slot")
+    if cursor >= len(veneer.insns):
+        raise fail("veneer ends before the J0 store")
+    fourth_index = cursor
+    fourth = veneer.insns[fourth_index]
+    if fourth.kind != "store" or fourth.src != "r1" or fourth.base != j0_reg or _vector_slot_store_address(veneer, fourth_index, pool) != j0_symbol:
+        raise fail("veneer does not store J0 exactly once to the J0 slot")
+    j0_load = _prove_dwt_load_for_store(veneer, fourth_index, pool, "J0")
+    cursor += 1
+    if cursor >= len(veneer.insns):
+        raise fail("veneer ends before the stock-handler branch")
+    fifth = veneer.insns[cursor]
+    branch_target = q._CALL_TARGET.search(fifth.operands)
+    if fifth.mnemonic.split(".")[0] != "b" or branch_target is None:
+        raise fail("veneer tail transfer is not an unconditional branch")
+    if branch_target.group(1) != "u85_irq_handler":
+        raise fail("veneer does not branch directly to the stock handler")
+    cursor += 1
+    if cursor != exec_indexes[-1] + 1:
+        raise fail("veneer contains extra executable effects")
+    for ins in exec_insns:
+        mnemonic = ins.mnemonic.split(".")[0]
         if mnemonic.startswith("b") and ins is not fifth:
             raise fail("veneer contains an extra branch")
         if ins.kind == "store" and ins.addr != fourth.addr:
             raise fail("veneer has an extra store")
-        if ins.kind == "call":
-            raise fail("veneer contains a call")
-    if sum(1 for ins in exec_insns if ins.kind == "ldr_lit") != 2:
-        raise fail("veneer has more than two literal materializations")
-    if sum(1 for idx, ins in enumerate(veneer.insns) if _load_address(veneer, idx, pool) == DWT_CYCCNT) != 1:
+    if sum(1 for idx, _ in enumerate(veneer.insns) if _load_address(veneer, idx, pool) == DWT_CYCCNT) != 1:
         raise fail("veneer does not have exactly one DWT CYCCNT load")
 
     i0_symbol = symbols.get("pmu_interval_v10_t_irq_handler_entry")

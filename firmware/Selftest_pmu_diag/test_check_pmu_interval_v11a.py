@@ -244,6 +244,71 @@ MOVW_MOVT_DISASSEMBLY = """Disassembly of section .text:
     1174:\t2000101c \t.word\t0x2000101c
 """
 
+VENEER_MOVW_MOVT_DISASSEMBLY = """Disassembly of section .text:
+
+00001000 <test_u85>:
+    1000:\t4b0b      \tldr\tr3, [pc, #44] @ (1030 <test_u85+0x30>)
+    1002:\t689b      \tldr\tr3, [r3, #8]
+    1004:\t4a0b      \tldr\tr2, [pc, #44] @ (1034 <test_u85+0x34>)
+    1006:\tf8c3 2080 \tstr.w\tr2, [r3, #128]
+    100a:\tf3bf 8f4f \tdsb\tsy
+    100e:\t4c0a      \tldr\tr4, [pc, #40] @ (1038 <test_u85+0x38>)
+    1010:\t6863      \tldr\tr3, [r4, #4]
+    1012:\t9368      \tstr\tr3, [sp, #104]
+    1014:\t4d09      \tldr\tr5, [pc, #36] @ (103c <test_u85+0x3c>)
+    1016:\t68ae      \tldr\tr6, [r5, #8]
+    1018:\tf046 0601 \torr.w\tr6, r6, #1
+    101c:\t60ae      \tstr\tr6, [r5, #8]
+    101e:\t6863      \tldr\tr3, [r4, #4]
+    1020:\t936c      \tstr\tr3, [sp, #108]
+    1030:\te000ed00 \t.word\t0xe000ed00
+    1034:\t00001101 \t.word\t0x00001101
+    1038:\te0001000 \t.word\t0xe0001000
+    103c:\t50004000 \t.word\t0x50004000
+
+00001100 <v11a_u85_irq_entry_veneer>:
+    1100:\tf241 0004 \tmovw\tr0, #4100
+    1104:\tf2ce 0000 \tmovt\tr0, #57344
+    1108:\t6801      \tldr\tr1, [r0, #0]
+    110a:\tf241 0000 \tmovw\tr0, #4096
+    110e:\tf2c2 0000 \tmovt\tr0, #8192
+    1112:\t6001      \tstr\tr1, [r0, #0]
+    1114:\tf000 b804 \tb.w\t1120 <u85_irq_handler>
+
+00001120 <u85_irq_handler>:
+    1120:\tb510      \tpush\t{r4, lr}
+    1122:\t4a0e      \tldr\tr2, [pc, #56] @ (115c <u85_irq_handler+0x3c>)
+    1124:\t6851      \tldr\tr1, [r2, #4]
+    1126:\t4b0e      \tldr\tr3, [pc, #56] @ (1160 <u85_irq_handler+0x40>)
+    1128:\t6019      \tstr\tr1, [r3, #0]
+    112a:\t4e0e      \tldr\tr6, [pc, #56] @ (1164 <u85_irq_handler+0x44>)
+    112c:\t6871      \tldr\tr1, [r6, #4]
+    112e:\tf011 0f02 \ttst.w\tr1, #2
+    1132:\t6851      \tldr\tr1, [r2, #4]
+    1134:\t4b0c      \tldr\tr3, [pc, #48] @ (1168 <u85_irq_handler+0x48>)
+    1136:\t6019      \tstr\tr1, [r3, #0]
+    1138:\t4d0c      \tldr\tr5, [pc, #48] @ (116c <u85_irq_handler+0x4c>)
+    113a:\t702d      \tstrb\tr5, [r5, #0]
+    113c:\t2202      \tmovs\tr2, #2
+    113e:\t60b2      \tstr\tr2, [r6, #8]
+    1140:\t4c0b      \tldr\tr4, [pc, #44] @ (1170 <u85_irq_handler+0x50>)
+    1142:\t6821      \tldr\tr1, [r4, #0]
+    1144:\t3101      \tadds\tr1, #1
+    1146:\t6021      \tstr\tr1, [r4, #0]
+    1148:\t4c0a      \tldr\tr4, [pc, #40] @ (1174 <u85_irq_handler+0x54>)
+    114a:\t6821      \tldr\tr1, [r4, #0]
+    114c:\t3101      \tadds\tr1, #1
+    114e:\t6021      \tstr\tr1, [r4, #0]
+    1150:\tbd10      \tpop\t{r4, pc}
+    115c:\te0001000 \t.word\t0xe0001000
+    1160:\t20001004 \t.word\t0x20001004
+    1164:\t50004000 \t.word\t0x50004000
+    1168:\t20001008 \t.word\t0x20001008
+    116c:\t20001014 \t.word\t0x20001014
+    1170:\t20001018 \t.word\t0x20001018
+    1174:\t2000101c \t.word\t0x2000101c
+"""
+
 POST_SUBMIT_VECTOR_RESTORE = DISASSEMBLY.replace(
     "1020:\t936c      \tstr\tr3, [sp, #108]",
     "1020:\t936c      \tstr\tr3, [sp, #108]\n"
@@ -321,6 +386,8 @@ check("ELF gate proves vector -> veneer -> stock path",
       and elf["t3_dwt_load_address"] == 0x1132)
 check("ELF gate composes movw/movt vector materialization",
       gate.verify_final_elf(MOVW_MOVT_DISASSEMBLY, NM)["vector_value"] == 0x1101)
+check("ELF gate accepts veneer movw/movt materialization",
+      gate.verify_final_elf(VENEER_MOVW_MOVT_DISASSEMBLY, NM)["j0_store_address"] == 0x1112)
 check("post-submit vector restore does not violate overwrite gate",
       gate.verify_final_elf(POST_SUBMIT_VECTOR_RESTORE, NM)["vector_value"] == 0x1101)
 
@@ -387,6 +454,16 @@ NEGATIVE_DISASSEMBLIES = (
     ("wrong J0 store source rejected",
      DISASSEMBLY.replace("1106:\t6001      \tstr\tr1, [r0, #0]",
                          "1106:\t9000      \tstr\tr0, [sp, #0]\n    1108:\t9800      \tldr\tr0, [sp, #0]\n    110a:\t6001      \tstr\tr0, [r0, #0]", 1)),
+    ("non-local literal rejected",
+     DISASSEMBLY.replace("1118:\t20001000 \t.word\t0x20001000",
+                         "1118:\t20001000 \t.word\t0x20001000\n\n00001200 <foreign_pool>:\n    1200:\t20001000 \t.word\t0x20001000", 1)
+     .replace("1104:\t4804      \tldr\tr0, [pc, #16] @ (1118 <v11a_u85_irq_entry_veneer+0x18>)",
+              "1104:\t47fe      \tldr\tr0, [pc, #1016] @ (1200 <foreign_pool>)", 1)),
+    ("disallowed scratch rejected",
+     DISASSEMBLY.replace("1100:\t4804      \tldr\tr0, [pc, #16] @ (1114 <v11a_u85_irq_entry_veneer+0x14>)",
+                         "1100:\t4a04      \tldr\tr2, [pc, #16] @ (1114 <v11a_u85_irq_entry_veneer+0x14>)", 1)
+     .replace("1102:\t6801      \tldr\tr1, [r0, #0]",
+              "1102:\t6811      \tldr\tr1, [r2, #0]", 1)),
     ("wrong I0 store source rejected",
      DISASSEMBLY.replace("1128:\t6019      \tstr\tr1, [r3, #0]",
                          "1128:\t2100      \tmovs\tr1, #0\n    112a:\t6019      \tstr\tr1, [r3, #0]", 1)),
