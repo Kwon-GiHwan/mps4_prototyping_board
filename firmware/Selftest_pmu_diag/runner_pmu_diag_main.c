@@ -968,7 +968,7 @@ static measurement_record_t last_measurement;
 /* Case A only. v8's validity contract is that NO PMCCNTR_CFG write exists;
  * under case B or C the classifier's cfg terms would be judging a programmed
  * configuration and the no-CFG evidence would be vacuous. */
-#if !defined(PMU_DIAG_CASE_A)
+#if !defined(PMU_DIAG_CASE_A) && !defined(PMU_QUAL_CFG_EXPERIMENT)
 #error "PMU_QUAL: schema v8 writes no PMCCNTR_CFG; build PMU_DIAG_CASE_A"
 #endif
 

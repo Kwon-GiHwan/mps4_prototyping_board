@@ -1,0 +1,277 @@
+# Makefile.pmu_cfg -- schema-v8 wire-layout CFG A/B/C characterization images.
+#
+# Usage (from the selftest/ root):
+#   make -f Makefile.pmu_cfg CFG=A clean bins check manifest hashes
+#   make -f Makefile.pmu_cfg CFG=B clean bins check manifest hashes
+#   make -f Makefile.pmu_cfg CFG=C clean bins check manifest hashes
+#
+# SCOPE: characterization only. These images are NOT qualification images, NOT
+# a latency or T_npu measurement, NOT a performance baseline, NOT a Production
+# GO, NOT Gate 7, and NOT MLEK data. The +514 offset observed in the Gate 1
+# fixed-image campaign is NOT generalized to these builds. Production
+# END_ONLY is untouched and stays frozen.
+#
+# WHAT IS HELD FIXED (this is the whole point -- a SINGLE variable):
+#   - the anchored runner_pmu_diag_main.c, byte-exact except for the one-line
+#     guard condition at line 971 that admits PMU_QUAL_CFG_EXPERIMENT;
+#   - Q1 H-PRINTF behavior (PMU_QUAL_MODE_Q1): same callsite, same hook, same
+#     internal pre-release snapshot, same disable/DSB/readback order;
+#   - the vendor reference driver Drivers/u85_driver/u85.c with TEST_CPM=1 and
+#     its own terminal CMD=0xC release;
+#   - seam S1, clean profile, the golden window, and every compiler and linker
+#     flag below, which are copied from Makefile.pmu_qual unchanged.
+#
+# WHAT VARIES: exactly one source action, the PMCCNTR_CFG case block that the
+# anchored source already carries at runner_pmu_diag_main.c:3088-3113.
+#
+#   A  no PMCCNTR_CFG write of any kind
+#   B  generated START=CYCLE / STOP=NO_EVENT  (NPU_PMU_CYCLE_CFG_VALUE)
+#   C  generated explicit zero               (NPU_PMU_DIAG_CFG_NO_EVENT)
+#
+# Neither B nor C uses a magic literal: both values are COMPOSED in
+# Selftest_pmu/npu_pmu_regs.h and runner_pmu_diag_main.c from the generated
+# event numbers and the generated shift/mask macros. The _Static_assert that
+# NPU_PMU_CYCLE_CFG_VALUE == 0x11 is a cross-check, never the semantic source.
+#
+# A vs C is the load-bearing pair: BOTH leave the final PMCCNTR_CFG value at
+# zero, yet the write COUNTS differ 0 vs 1. That separates "never programmed"
+# from "programmed to zero", which a value comparison alone cannot do.
+#
+# DECLARED IDENTITY-ONLY DIFFERENCES (not the causal variable):
+#   - RUNNER_FIRMWARE_BUILD_ID differs per case so a record can never be
+#     mistaken for another case or for Q0/Q1;
+#   - PMU_DIAG_CASE_{A,B,C} differs, which -g3 records in .debug_macro;
+#   - the record's self-reported diag_case field differs (1/2/3).
+# These are metadata. They are reported separately from the single causal CFG
+# operation and must never be presented as part of it.
+
+TOOLCHAIN := /opt/arm/gcc-arm-none-eabi/bin/arm-none-eabi-
+CC        := $(TOOLCHAIN)gcc
+OBJCOPY   := $(TOOLCHAIN)objcopy
+OBJDUMP   := $(TOOLCHAIN)objdump
+SIZE      := $(TOOLCHAIN)size
+NM        := $(TOOLCHAIN)nm
+READELF   := $(TOOLCHAIN)readelf
+
+CMSIS_INC := /opt/arm/ml-embedded-evaluation-kit/dependencies/cmsis-6/CMSIS/Core/Include
+
+# --- CFG case selection ------------------------------------------------------
+CFG ?=
+
+ifeq ($(CFG),A)
+  CFG_TAG    := a
+  CASE_CFLAGS := -DPMU_DIAG_CASE_A
+  # ASCII "PCA1" little-endian. Distinct from Q0 "PQB0" and Q1 "PQH1" so the
+  # host can never decode a characterization record as a qualification one.
+  BUILD_ID   := 0x31414350
+else ifeq ($(CFG),B)
+  CFG_TAG    := b
+  CASE_CFLAGS := -DPMU_DIAG_CASE_B
+  BUILD_ID   := 0x31424350
+else ifeq ($(CFG),C)
+  CFG_TAG    := c
+  CASE_CFLAGS := -DPMU_DIAG_CASE_C
+  BUILD_ID   := 0x31434350
+else
+  # No case selected. That is legal ONLY when the goals are entirely
+  # case-independent (today: `matrix`, which re-invokes this Makefile once per
+  # case with an explicit CFG). Any other goal must fail closed: an omitted
+  # CFG must never silently mean case A, because that would quietly produce a
+  # no-CFG-write image while the operator believed they had selected B or C.
+  CASE_GOALS := $(filter-out matrix,$(MAKECMDGOALS))
+  ifneq ($(strip $(CASE_GOALS)),)
+    $(error CFG must be A, B or C -- or run: make -f Makefile.pmu_cfg matrix)
+  endif
+  # Placeholder values so parsing completes for the matrix goal. No rule that
+  # uses them is ever reached, because `matrix` only recurses with a real CFG.
+  CFG_TAG    := unset
+  CASE_CFLAGS :=
+  BUILD_ID   := 0x00000000
+endif
+
+BUILD  := build_pmu_cfg_$(CFG_TAG)
+TARGET := $(BUILD)/runner_pmu_cfg
+
+# Q1 H-PRINTF behavior + schema-v8 payload shape + seam S1, with the CFG case
+# as the only varying term. PMU_QUAL_CFG_EXPERIMENT is what admits non-A under
+# schema v8; without it the anchored source still refuses B and C.
+MODE_CFLAGS    := -DPMU_QUAL_MODE_Q1
+EXPERIMENT_CFLAGS := -DPMU_QUAL_CFG_EXPERIMENT
+PROFILE_CFLAGS := -DMEASUREMENT_BUILD -DPMU_DIAG_BUILD \
+                  -DPMU_QUAL_SCHEMA_V8 $(MODE_CFLAGS) $(EXPERIMENT_CFLAGS) \
+                  $(CASE_CFLAGS) -DPMU_DIAG_SEAM_S1
+
+SRCDIRS := Device_SSE-320 Drivers Selftest Selftest_cli Selftest_pmu \
+           Selftest_pmu_diag Serial Sleep Tests
+SRCS    := $(shell find $(SRCDIRS) -name '*.c' -not -name '._*')
+SRCS := $(filter-out Selftest/retarget.c Selftest/main.c Selftest/raw_rx_main.c \
+                     Selftest/runner_v1_main.c Selftest_pmu/runner_pmu_main.c \
+                     Selftest_measure/runner_measure_main.c,$(SRCS))
+SRCS := $(filter-out Selftest_pmu_diag/u85_diag.c,$(SRCS))
+SRCS := $(sort $(SRCS))
+
+OBJS := $(patsubst %.c,$(BUILD)/%.o,$(SRCS))
+DEPS := $(OBJS:.o=.d)
+
+INCDIRS := $(sort $(dir $(shell find $(SRCDIRS) LinkScripts -name '*.h' -not -name '._*')))
+INCS    := $(addprefix -I,$(INCDIRS)) -I$(CMSIS_INC)
+
+ARCHFLAGS := -mcpu=cortex-m85+nomve+nofp -mthumb -mfloat-abi=soft
+
+LEGACY_C := -Wno-error=int-conversion \
+            -Wno-error=incompatible-pointer-types \
+            -Wno-error=implicit-function-declaration \
+            -Wno-error=implicit-int \
+            -Wno-error=return-mismatch \
+            -Wno-error=discarded-qualifiers
+
+# Identical to Makefile.pmu_qual. -fno-builtin-printf is load-bearing (it keeps
+# the target callsite from being lowered to puts) and there is no -flto. These
+# are gate terms, not preferences, and they are NOT part of the CFG variable.
+CFLAGS := $(ARCHFLAGS) -std=gnu11 -O1 -g3 \
+          -ffunction-sections -fdata-sections \
+          -fno-builtin-printf \
+          -Wno-unused-variable -Wno-unused-function -Wno-missing-braces \
+          $(LEGACY_C) \
+          $(PROFILE_CFLAGS) -DRUNNER_FIRMWARE_BUILD_ID=$(BUILD_ID) \
+          $(INCS) -MMD -MP
+
+WRAP_SYMS := printf vprintf fprintf vfprintf puts putchar fwrite \
+             _write _write_r fputc serial_print
+WRAPFLAGS := $(foreach s,$(WRAP_SYMS),-Wl,--wrap=$(s))
+
+LDSCRIPT  := $(BUILD)/lnk.ld
+LDOVERLAY := LinkScripts/lnk.measure.overlay.ld
+LDOVERLAY_DIAG := LinkScripts/lnk.pmu_diag.overlay.ld
+LDFLAGS   := $(ARCHFLAGS) --specs=nano.specs --specs=nosys.specs \
+             -T $(LDSCRIPT) -T $(LDOVERLAY) -T $(LDOVERLAY_DIAG) \
+             -Wl,-Map=$(TARGET).map,--cref \
+             -Wl,--gc-sections \
+             -Wl,--print-memory-usage \
+             $(WRAPFLAGS)
+LDLIBS    := -lm
+
+VECTOR_SECTIONS := --only-section=.vectors_rom
+APP_SECTIONS    := --only-section=.text --only-section=.ARM.extab \
+                   --only-section=.ARM.exidx \
+                   --only-section=.preinit_array --only-section=.init_array \
+                   --only-section=.fini_array \
+                   --only-section=.copy.table --only-section=.zero.table \
+                   --only-section=.vectors_ram --only-section=.data
+DDR_SECTIONS    := --only-section=.ddr
+
+DENYLIST_CHECK := Selftest_measure/check_measure_symbols.py
+QUAL_MAIN      := Selftest_pmu_diag/runner_pmu_diag_main.c
+CFG_GATE       := Selftest_pmu_diag/check_pmu_cfg.py
+DIAG_CASE_GATE := Selftest_pmu_diag/check_diag_case.py
+REGS_HEADER    := Selftest_pmu/npu_pmu_regs.h
+VENDOR_SRC     := Drivers/u85_driver/u85.c
+VENDOR_HDR     := Drivers/u85_driver/interface.h
+VENDOR_OBJ     := $(BUILD)/Drivers/u85_driver/u85.o
+PREPROCESSED   := $(BUILD)/runner_pmu_cfg_main.i
+MANIFEST       := $(BUILD)/pmu_cfg_manifest.json
+
+.PHONY: all clean bins report check manifest hashes preprocess matrix
+all: bins check manifest
+
+$(LDSCRIPT): LinkScripts/lnk.ld.S LinkScripts/region_defs.h LinkScripts/region_limits.h
+	@mkdir -p $(dir $@)
+	$(CC) -E -P -x c -ILinkScripts $< -o $@
+
+$(BUILD)/%.o: %.c
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+# The vendor object must be BYTE-IDENTICAL ACROSS A, B and C: that identity is
+# what makes "same NPU path, one CFG action changed" a fact rather than a hope.
+#
+# -g3 records the command-line -D set in .debug_macro, so the case macro, the
+# experiment macro, the mode macro and the build id -- none of which u85.c
+# references -- would otherwise make the three objects differ in DEBUG INFO
+# ALONE while their code was identical. Dropping them for this one translation
+# unit makes the cross-case byte-identity real.
+#
+# NOTE, declared deliberately: the Q0/Q1 qualification builds drop only the
+# mode macro and the build id, so their vendor object still carries
+# -DPMU_DIAG_CASE_A in .debug_macro. This object therefore need NOT be
+# byte-identical to the Q0/Q1 vendor object cf0e816e...; check_pmu_cfg.py
+# compares the CODE sections against it instead and reports any debug-info-only
+# delta separately. That is an identity-only difference, not the CFG variable.
+$(BUILD)/Drivers/u85_driver/u85.o: CFLAGS := \
+    $(filter-out $(MODE_CFLAGS) $(EXPERIMENT_CFLAGS) $(CASE_CFLAGS) \
+                 -DRUNNER_FIRMWARE_BUILD_ID=$(BUILD_ID),$(CFLAGS))
+
+$(TARGET).elf: $(OBJS) $(LDSCRIPT) $(LDOVERLAY) $(LDOVERLAY_DIAG)
+	$(CC) $(OBJS) $(LDFLAGS) -o $@ $(LDLIBS)
+	$(SIZE) $@
+
+bins: $(TARGET).elf
+	$(OBJCOPY) -O binary $(VECTOR_SECTIONS) $(TARGET).elf $(BUILD)/VECTORS.BIN
+	$(OBJCOPY) -O binary $(APP_SECTIONS)    $(TARGET).elf $(BUILD)/APP.BIN
+	$(OBJCOPY) -O binary $(DDR_SECTIONS)    $(TARGET).elf $(BUILD)/DDR.BIN
+	@ls -l $(BUILD)/VECTORS.BIN $(BUILD)/APP.BIN $(BUILD)/DDR.BIN
+
+# Source-level evidence for the per-case CFG write counts, taken with the EXACT
+# build flags so what is counted is what the compiler saw for THIS case.
+preprocess: $(PREPROCESSED)
+
+$(PREPROCESSED): $(QUAL_MAIN)
+	@mkdir -p $(BUILD)
+	$(CC) $(CFLAGS) -E $(QUAL_MAIN) -o $@
+
+manifest: $(TARGET).elf $(PREPROCESSED) bins
+	python3 $(CFG_GATE) \
+	    --case $(CFG) \
+	    --build-id $(BUILD_ID) \
+	    --vendor-source $(VENDOR_SRC) \
+	    --interface-header $(VENDOR_HDR) \
+	    --vendor-object $(VENDOR_OBJ) \
+	    --regs-header $(REGS_HEADER) \
+	    --preprocessed $(PREPROCESSED) \
+	    --elf $(TARGET).elf \
+	    --map $(TARGET).map \
+	    --app-bin $(BUILD)/APP.BIN \
+	    --vectors-bin $(BUILD)/VECTORS.BIN \
+	    --ddr-bin $(BUILD)/DDR.BIN \
+	    --objdump $(OBJDUMP) \
+	    --nm $(NM) \
+	    --readelf $(READELF) \
+	    --cflags "$(CFLAGS)" \
+	    --manifest-out $(MANIFEST)
+
+check: $(TARGET).elf manifest
+	python3 $(DENYLIST_CHECK) \
+	    --elf $(TARGET).elf \
+	    --map $(TARGET).map \
+	    --objdump $(OBJDUMP) \
+	    --nm $(NM) \
+	    --profile clean
+	python3 $(DIAG_CASE_GATE) --map $(TARGET).map --map-only
+	python3 $(DIAG_CASE_GATE) \
+	    --preprocessed $(PREPROCESSED) \
+	    --regs-header $(REGS_HEADER) \
+	    --case $(CFG) --nc none --seam S1
+
+hashes: bins
+	@sha256sum $(BUILD)/APP.BIN $(BUILD)/DDR.BIN $(BUILD)/VECTORS.BIN \
+	           $(TARGET).elf $(TARGET).map $(VENDOR_OBJ) $(MANIFEST)
+
+report: $(TARGET).elf
+	$(OBJDUMP) -h $(TARGET).elf
+
+clean:
+	rm -rf $(BUILD)
+
+# Build and gate all three cases, then prove the cross-case identities.
+# Each sub-make selects an explicit CFG, so the fail-closed rule above is
+# never bypassed. Any single case failing stops the whole target.
+matrix:
+	@$(MAKE) --no-print-directory -f $(firstword $(MAKEFILE_LIST)) CFG=A clean bins check manifest
+	@$(MAKE) --no-print-directory -f $(firstword $(MAKEFILE_LIST)) CFG=B clean bins check manifest
+	@$(MAKE) --no-print-directory -f $(firstword $(MAKEFILE_LIST)) CFG=C clean bins check manifest
+	python3 $(CFG_GATE) --matrix \
+	    --manifest-a build_pmu_cfg_a/pmu_cfg_manifest.json \
+	    --manifest-b build_pmu_cfg_b/pmu_cfg_manifest.json \
+	    --manifest-c build_pmu_cfg_c/pmu_cfg_manifest.json
+
+-include $(DEPS)

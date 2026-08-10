@@ -1551,3 +1551,216 @@ def classify_pmu_qual(res: PmuQualResult, expected_manifest: dict) -> dict:
         "npu_pmu_window_cycles": raw_delta if valid else None,
         "valid": valid,
     }
+
+
+# ---------------------------------------------------------------------------
+# PMU_CFG (schema-v8 wire layout, CFG A/B/C characterization images)
+# ---------------------------------------------------------------------------
+#
+# CHARACTERIZATION ONLY. Not latency, not T_npu, not a performance baseline,
+# not a Production GO, not Gate 7, not MLEK data. The +514 identity observed in
+# the Gate 1 fixed-image Q1 campaign is NOT generalized to these images.
+#
+# These images reuse the schema-v8 payload and the Q1 H-PRINTF seam unchanged;
+# only the PMCCNTR_CFG action varies. They therefore carry their OWN build ids
+# and are never accepted by the Q0/Q1 qualification verdict.
+
+PMU_CFG_CASES = ("A", "B", "C")
+PMU_CFG_CASE_IDS = {"A": 1, "B": 2, "C": 3}          # matches PMU_DIAG_CASE_ID
+PMU_CFG_BUILD_IDS = {                                 # matches Makefile.pmu_cfg
+    "A": 0x31414350,   # ASCII "PCA1"
+    "B": 0x31424350,   # ASCII "PCB1"
+    "C": 0x31434350,   # ASCII "PCC1"
+}
+
+# The EXACT term names classify_pmu_cfg removes from, and adds to, the common
+# Q1 rule set. A unit test asserts this symmetric difference mechanically, so a
+# future edit to classify_pmu_qual cannot silently diverge the two classifiers.
+PMU_CFG_SUBSTITUTED_OUT = frozenset({
+    "build_id_is_hprintf",   # the CFG images are not the Q1 fixed build
+    "is_case_a",             # the case is the variable, not a constant
+    "cfg_no_write",          # replaced by a per-case write-count contract
+    "cfg_pre_zero",          # replaced by a per-case expected final value
+    "cfg_internal_zero",     # replaced by a per-case expected final value
+})
+PMU_CFG_SUBSTITUTED_IN = frozenset({
+    "substitution_contract_intact",
+    "cfg_manifest_case_coherent",
+    "build_id_matches_case",
+    "diag_case_matches_case",
+    "cfg_write_count_ok",
+    "cfg_write_value_ok",
+    "cfg_readback_ok",
+    "cfg_pre_matches_case",
+    "cfg_internal_matches_case",
+})
+
+# What each case IS, held here and not taken from any manifest. The manifest
+# declares the same numbers, but a manifest is evidence ABOUT a build, never a
+# licence to redefine what A/B/C mean: an "A" that declares one write, a "B"
+# that declares a zero value or a "C" that declares a non-zero one describe a
+# case that does not exist, and the record they would otherwise accept is not
+# interpretable. The declared numbers are therefore compared with these, and
+# these -- never the declared ones -- are what the record is judged against.
+PMU_CFG_INTRINSIC_WRITE_COUNT = {"A": 0, "B": 1, "C": 1}
+
+
+def pmu_cfg_manifest_case(expected_manifest: dict) -> str | None:
+    case = expected_manifest.get("cfg_case")
+    return case if case in PMU_CFG_CASES else None
+
+
+def _pmu_cfg_hex(raw) -> int | None:
+    """Manifest values are JSON hex strings. Unparseable yields None, which can
+    never equal an observed register value."""
+    if isinstance(raw, int) and not isinstance(raw, bool):
+        return raw
+    try:
+        return int(str(raw), 16)
+    except (TypeError, ValueError):
+        return None
+
+
+def pmu_cfg_case_contract(expected_manifest: dict) -> dict:
+    """The intrinsic contract of the manifest's case, and whether the manifest
+    agrees with it.
+
+    ``manifest_coherent`` is False for any manifest that is not a possible
+    description of its own case, so a semantically impossible document can
+    never make a record valid -- not even one whose registers happen to match
+    what that document asked for.
+
+    The one thing that legitimately comes FROM the manifest is case B's
+    generated value: its exact encoding is a property of the build and is
+    attested by the ELF gate. The host can only require that it exists, parses
+    and is non-zero -- a zero there would be case C wearing case B's name.
+    """
+    case = pmu_cfg_manifest_case(expected_manifest)
+    contract = {
+        "case": case,
+        "write_count": None,
+        "written_value": None,
+        "final_value": None,
+        "declared_write_count": expected_manifest.get("cfg_expected_write_count"),
+        "manifest_coherent": False,
+    }
+    if case is None:
+        return contract
+
+    want_count = PMU_CFG_INTRINSIC_WRITE_COUNT[case]
+    contract["write_count"] = want_count
+    raw = expected_manifest.get("cfg_expected_value")
+    parsed = None if raw is None else _pmu_cfg_hex(raw)
+
+    if case == "A":
+        # Nothing is written, so there is no value to declare. A declared one
+        # describes a write this case does not perform.
+        value_ok = raw is None
+        contract["final_value"] = 0
+    elif case == "B":
+        value_ok = parsed is not None and parsed != 0
+        contract["written_value"] = parsed if value_ok else None
+        contract["final_value"] = contract["written_value"]
+    else:  # C: an explicit zero is the whole point of the case
+        value_ok = parsed == 0
+        contract["written_value"] = 0 if value_ok else None
+        contract["final_value"] = 0 if value_ok else None
+
+    contract["manifest_coherent"] = bool(
+        value_ok
+        and contract["declared_write_count"] == want_count
+        and expected_manifest.get("cfg_case_id") == PMU_CFG_CASE_IDS[case])
+    return contract
+
+
+def pmu_cfg_expected_final_value(expected_manifest: dict) -> int | None:
+    """The PMCCNTR_CFG value the register must END at for this case.
+
+    Case A never writes and case C writes an explicit zero, so both end at 0.
+    Case B ends at its own attested generated value. None whenever the
+    manifest is not a coherent description of its case.
+    """
+    contract = pmu_cfg_case_contract(expected_manifest)
+    return contract["final_value"] if contract["manifest_coherent"] else None
+
+
+def classify_pmu_cfg(res: PmuQualResult, expected_manifest: dict) -> dict:
+    """Case-aware verdict for a CFG A/B/C characterization record.
+
+    The COMMON validity rules are not restated here: classify_pmu_qual() is
+    called to compute them, and only the five terms in
+    PMU_CFG_SUBSTITUTED_OUT are removed and replaced by the nine in
+    PMU_CFG_SUBSTITUTED_IN. Everything else -- hook contract, LR against this
+    case's own manifest, power-held, MMIO subset, start boundary, snapshot
+    state, overflow, positive delta, disable acknowledgement, vendor release,
+    golden window, run rc and required flags -- is inherited from the same
+    code the qualification gate uses.
+
+    npu_pmu_window_cycles is published only when EVERY term holds, and keeps
+    exactly that name. after_return remains corroboration only.
+    """
+    base = classify_pmu_qual(res, expected_manifest)
+    terms = dict(base["terms"])
+    # A base term that is not there was not removed, and its replacement would
+    # then be judging a rule nobody stated. Absence is a substitution this
+    # classifier no longer describes, so it fails the sample rather than
+    # silently narrowing the contract -- which is what pop(name, None) did.
+    missing_base_terms = sorted(PMU_CFG_SUBSTITUTED_OUT - set(terms))
+    for name in PMU_CFG_SUBSTITUTED_OUT & set(terms):
+        del terms[name]
+
+    contract = pmu_cfg_case_contract(expected_manifest)
+    case = contract["case"]
+    want_count = contract["write_count"]
+    want_final = contract["final_value"]
+    # Case A writes nothing, so the recorded value must stay zero; B and C must
+    # have written exactly the value their own case requires.
+    want_written = 0 if case == "A" else contract["written_value"]
+
+    terms["substitution_contract_intact"] = not missing_base_terms
+    # An impossible manifest cannot be repaired by a matching record.
+    terms["cfg_manifest_case_coherent"] = contract["manifest_coherent"]
+    terms["build_id_matches_case"] = (
+        case is not None and res.build_id == PMU_CFG_BUILD_IDS[case])
+    terms["diag_case_matches_case"] = (
+        case is not None and res.diag_case == PMU_CFG_CASE_IDS[case])
+    # Judged against the INTRINSIC count for the case, never the declared one.
+    terms["cfg_write_count_ok"] = (
+        want_count is not None and res.cfg_write_performed == want_count)
+    terms["cfg_write_value_ok"] = (
+        want_written is not None and res.cfg_write_value == want_written)
+    terms["cfg_readback_ok"] = (
+        want_written is not None
+        and res.cfg_readback_after_write == want_written)
+    terms["cfg_pre_matches_case"] = (
+        want_final is not None and res.pre.pmccntr_cfg == want_final)
+    terms["cfg_internal_matches_case"] = (
+        want_final is not None
+        and res.internal_pre_release.pmccntr_cfg == want_final)
+
+    valid = all(terms.values())
+    return {
+        "characterization_only": True,
+        "not_a_performance_baseline": True,
+        "cfg_case": case,
+        "cfg_expected_write_count": want_count,
+        "cfg_manifest_declared_write_count": contract["declared_write_count"],
+        "cfg_expected_write_value": contract["written_value"],
+        "cfg_expected_final_value": want_final,
+        "substitution_missing_base_terms": missing_base_terms,
+        "terms": terms,
+        "invalid_reasons": sorted(k for k, v in terms.items() if not v),
+        "raw_delta_diagnostic": base["raw_delta_diagnostic"],
+        "reset_to_zero": base["reset_to_zero"],
+        "npu_pmu_window_cycles": base["raw_delta_diagnostic"] if valid else None,
+        "valid": valid,
+        # STATUS at the hook instant is NOT recorded by this image. The two
+        # surrounding observations are archived instead and this limitation is
+        # declared rather than papered over.
+        "status_bracket": {
+            "npu_status_after_power_request": res.npu_status_after_power_request,
+            "npu_status_after_seam": res.npu_status_after_seam,
+            "limitation": "no npu_status_at_hook field exists in schema v8; "
+                          "hook-instant STATUS is bracketed, not observed",
+        },
+    }

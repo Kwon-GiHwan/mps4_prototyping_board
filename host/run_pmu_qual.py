@@ -160,7 +160,17 @@ def verify_manifest_identity(doc: dict, mode: str, where: str) -> None:
         raise SystemExit(
             "FAIL %s: manifest build_id %r does not decode to the %s identity "
             "0x%08X" % (where, doc.get("build_id"), mode, want_build))
+    verify_manifest_callsite(doc, mode, where)
 
+
+def verify_manifest_callsite(doc: dict, mode: str, where: str) -> None:
+    """The callsite and hook attestation half of verify_manifest_identity().
+
+    Split out unchanged so a manifest that carries a DIFFERENT build identity
+    -- the CFG characterization images do -- is still held to exactly these
+    rules, by this code, rather than by a restatement of it that could drift.
+    `mode` selects the hook rules only.
+    """
     for key in MANIFEST_REQUIRED:
         if doc.get(key) is None:
             raise SystemExit(
@@ -224,13 +234,11 @@ def verify_manifest_identity(doc: dict, mode: str, where: str) -> None:
             "have no hook at all" % (where, ", ".join(hook_keys)))
 
 
-def read_manifest(path: str, mode: str) -> tuple[dict, bytes]:
-    """Read the manifest ONCE and return both the parsed document and the
-    exact bytes it was parsed from.
+def read_manifest_document(path: str) -> tuple[dict, bytes]:
+    """The read half of read_manifest(): parsed document plus the exact bytes.
 
-    One read, not two: re-opening the file at archive time would leave a
-    window in which the reference the sample was collected against is not the
-    reference the sample gets archived with.
+    Split out so a collector with a different identity rule reads the file the
+    same way -- once -- instead of reimplementing the read.
     """
     try:
         with open(path, "rb") as f:
@@ -242,6 +250,18 @@ def read_manifest(path: str, mode: str) -> tuple[dict, bytes]:
     except (UnicodeDecodeError, ValueError) as exc:
         raise SystemExit("FAIL manifest %s is not valid JSON text: %s"
                          % (path, exc))
+    return doc, blob
+
+
+def read_manifest(path: str, mode: str) -> tuple[dict, bytes]:
+    """Read the manifest ONCE and return both the parsed document and the
+    exact bytes it was parsed from.
+
+    One read, not two: re-opening the file at archive time would leave a
+    window in which the reference the sample was collected against is not the
+    reference the sample gets archived with.
+    """
+    doc, blob = read_manifest_document(path)
     verify_manifest_identity(doc, mode, path)
     return doc, blob
 
@@ -437,6 +457,78 @@ def verify_record_identity(res, doc: dict, mode: str) -> None:
             % (mode, res.hook_callsite_lr_observed, expected_lr))
 
 
+def target_fields(res) -> dict:
+    """Every schema-v8 field the target reported, as archived.
+
+    Split out of build_record() unchanged so a second collector archives the
+    SAME field set -- a record that omits a field the analyzer expects is
+    indistinguishable from a target that never reported it.
+    """
+    return {
+        "schema_version": res.schema_version,
+        "build_id": "0x%08X" % res.build_id,
+        "qualification_mode": res.qualification_mode,
+        "diag_case": res.diag_case,
+        "nc_control_id": res.nc_control_id,
+        "run_sequence": res.run_sequence,
+        "cfg_write_performed": res.cfg_write_performed,
+        "cfg_write_value": "0x%08X" % res.cfg_write_value,
+        "cfg_readback_after_write": "0x%08X" % res.cfg_readback_after_write,
+        "run_rc": res.run_rc,
+        "valid_flags": "0x%02X" % res.valid_flags,
+        "poison_crc": "0x%08X" % res.poison_crc,
+        "output_crc": "0x%08X" % res.output_crc,
+        "result_region_crc": "0x%08X" % res.result_region_crc,
+        "ts_source_valid": res.ts_source_valid,
+        "t_call_enter": res.t_call_enter,
+        "t_call_return": res.t_call_return,
+        "t_pmu_disable": res.t_pmu_disable,
+        "pmcr_readback_after_disable": "0x%08X" % res.pmcr_readback_after_disable,
+        "pmu_mmio_read_count_delta": res.pmu_mmio_read_count_delta,
+        "pmu_mmio_write_count_delta": res.pmu_mmio_write_count_delta,
+        "start_sequence_id": res.start_sequence_id,
+        "power_guard_cycles": res.power_guard_cycles,
+        "npu_cmd_before_power_request": "0x%08X" % res.npu_cmd_before_power_request,
+        "npu_cmd_after_power_request": "0x%08X" % res.npu_cmd_after_power_request,
+        "npu_status_after_power_request": "0x%08X" % res.npu_status_after_power_request,
+        "reset_guard_cycles": res.reset_guard_cycles,
+        "pmcr_after_reset_guard": "0x%08X" % res.pmcr_after_reset_guard,
+        "pmcr_after_program": "0x%08X" % res.pmcr_after_program,
+        "armed_after_program": res.armed_after_program,
+        "program_stability_reads": res.program_stability_reads,
+        "program_stable": res.program_stable,
+        "npu_cmd_after_return": "0x%08X" % res.npu_cmd_after_return,
+        "power_seam_id": res.power_seam_id,
+        "power_rehold_performed": res.power_rehold_performed,
+        "rehold_guard_cycles": res.rehold_guard_cycles,
+        "npu_cmd_after_seam": "0x%08X" % res.npu_cmd_after_seam,
+        "npu_status_after_seam": "0x%08X" % res.npu_status_after_seam,
+        "golden_window_base": "0x%08X" % res.golden_window_base,
+        "golden_window_len": "0x%X" % res.golden_window_len,
+        "golden_window_crc": "0x%08X" % res.golden_window_crc,
+        "hook_armed": res.hook_armed,
+        "hook_arm_consumed": res.hook_arm_consumed,
+        "hook_detected_count": res.hook_detected_count,
+        "hook_fired_count": res.hook_fired_count,
+        "hook_snapshot_valid": res.hook_snapshot_valid,
+        "hook_callsite_lr_observed": "0x%08X" % res.hook_callsite_lr_observed,
+        "hook_entry_timestamp": res.hook_entry_timestamp,
+        "hook_exit_timestamp": res.hook_exit_timestamp,
+        "npu_cmd_at_hook": "0x%08X" % res.npu_cmd_at_hook,
+        "pmcr_disable_readback_at_hook": "0x%08X" % res.pmcr_disable_readback_at_hook,
+        "hook_pmu_mmio_read_count": res.hook_pmu_mmio_read_count,
+        "hook_pmu_mmio_write_count": res.hook_pmu_mmio_write_count,
+        "trailing_words": res.trailing_words,
+        "snapshots": {
+            name: dict(vars(snap)) for name, snap in
+            (("pre", res.pre),
+             ("internal_pre_release", res.internal_pre_release),
+             ("internal_post_disable", res.internal_post_disable),
+             ("after_return", res.after_return))
+        },
+    }
+
+
 def build_record(mode: str, host_boot_index: int, bins_dir: str, doc: dict,
                  manifest_path: str, manifest_blob: bytes,
                  artifact_sha256: dict, res, raw: bytes,
@@ -461,69 +553,7 @@ def build_record(mode: str, host_boot_index: int, bins_dir: str, doc: dict,
             "manifest_text": manifest_blob.decode("utf-8"),
         },
         "manifest": doc,
-        "target": {
-            "schema_version": res.schema_version,
-            "build_id": "0x%08X" % res.build_id,
-            "qualification_mode": res.qualification_mode,
-            "diag_case": res.diag_case,
-            "nc_control_id": res.nc_control_id,
-            "run_sequence": res.run_sequence,
-            "cfg_write_performed": res.cfg_write_performed,
-            "cfg_write_value": "0x%08X" % res.cfg_write_value,
-            "cfg_readback_after_write": "0x%08X" % res.cfg_readback_after_write,
-            "run_rc": res.run_rc,
-            "valid_flags": "0x%02X" % res.valid_flags,
-            "poison_crc": "0x%08X" % res.poison_crc,
-            "output_crc": "0x%08X" % res.output_crc,
-            "result_region_crc": "0x%08X" % res.result_region_crc,
-            "ts_source_valid": res.ts_source_valid,
-            "t_call_enter": res.t_call_enter,
-            "t_call_return": res.t_call_return,
-            "t_pmu_disable": res.t_pmu_disable,
-            "pmcr_readback_after_disable": "0x%08X" % res.pmcr_readback_after_disable,
-            "pmu_mmio_read_count_delta": res.pmu_mmio_read_count_delta,
-            "pmu_mmio_write_count_delta": res.pmu_mmio_write_count_delta,
-            "start_sequence_id": res.start_sequence_id,
-            "power_guard_cycles": res.power_guard_cycles,
-            "npu_cmd_before_power_request": "0x%08X" % res.npu_cmd_before_power_request,
-            "npu_cmd_after_power_request": "0x%08X" % res.npu_cmd_after_power_request,
-            "npu_status_after_power_request": "0x%08X" % res.npu_status_after_power_request,
-            "reset_guard_cycles": res.reset_guard_cycles,
-            "pmcr_after_reset_guard": "0x%08X" % res.pmcr_after_reset_guard,
-            "pmcr_after_program": "0x%08X" % res.pmcr_after_program,
-            "armed_after_program": res.armed_after_program,
-            "program_stability_reads": res.program_stability_reads,
-            "program_stable": res.program_stable,
-            "npu_cmd_after_return": "0x%08X" % res.npu_cmd_after_return,
-            "power_seam_id": res.power_seam_id,
-            "power_rehold_performed": res.power_rehold_performed,
-            "rehold_guard_cycles": res.rehold_guard_cycles,
-            "npu_cmd_after_seam": "0x%08X" % res.npu_cmd_after_seam,
-            "npu_status_after_seam": "0x%08X" % res.npu_status_after_seam,
-            "golden_window_base": "0x%08X" % res.golden_window_base,
-            "golden_window_len": "0x%X" % res.golden_window_len,
-            "golden_window_crc": "0x%08X" % res.golden_window_crc,
-            "hook_armed": res.hook_armed,
-            "hook_arm_consumed": res.hook_arm_consumed,
-            "hook_detected_count": res.hook_detected_count,
-            "hook_fired_count": res.hook_fired_count,
-            "hook_snapshot_valid": res.hook_snapshot_valid,
-            "hook_callsite_lr_observed": "0x%08X" % res.hook_callsite_lr_observed,
-            "hook_entry_timestamp": res.hook_entry_timestamp,
-            "hook_exit_timestamp": res.hook_exit_timestamp,
-            "npu_cmd_at_hook": "0x%08X" % res.npu_cmd_at_hook,
-            "pmcr_disable_readback_at_hook": "0x%08X" % res.pmcr_disable_readback_at_hook,
-            "hook_pmu_mmio_read_count": res.hook_pmu_mmio_read_count,
-            "hook_pmu_mmio_write_count": res.hook_pmu_mmio_write_count,
-            "trailing_words": res.trailing_words,
-            "snapshots": {
-                name: dict(vars(snap)) for name, snap in
-                (("pre", res.pre),
-                 ("internal_pre_release", res.internal_pre_release),
-                 ("internal_post_disable", res.internal_post_disable),
-                 ("after_return", res.after_return))
-            },
-        },
+        "target": target_fields(res),
         "derived": classify_pmu_qual(res, doc),
         # The canonical evidence: BOTH exact wire payloads, each with its own
         # digest. Everything above is derivable from them, and the analyzer
