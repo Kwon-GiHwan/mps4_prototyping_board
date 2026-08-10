@@ -104,7 +104,7 @@ $(BUILD)/%.o: %.S
 	@mkdir -p $(dir $@)
 	$(CC) $(ASFLAGS) -c $< -o $@
 
-$(TARGET).elf: $(OBJS) $(BUILD)/lnk.ld
+$(TARGET).elf: $(OBJS) $(BUILD)/lnk.ld LinkScripts/lnk.measure.overlay.ld LinkScripts/lnk.pmu_diag.overlay.ld
 	$(CC) $(OBJS) $(LDFLAGS) -o $@ -lm
 	$(SIZE) $@
 
@@ -121,7 +121,7 @@ preprocess: $(PREPROCESSED)
 $(PREPROCESSED): $(GEN_RUNNER)
 	$(CC) $(CFLAGS) -E $(GEN_RUNNER) -o $@
 
-manifest: $(TARGET).elf $(GEN_RUNNER) $(GEN_VENDOR) $(PREPROCESSED) $(GATE) bins
+manifest: $(TARGET).elf $(GEN_RUNNER) $(GEN_VENDOR) $(PREPROCESSED) $(GATE) Selftest_pmu_diag/check_pmu_qual.py bins
 	python3 $(GATE) \
 	    --build-id $(BUILD_ID) \
 	    --vendor-src $(VENDOR_SRC) \
