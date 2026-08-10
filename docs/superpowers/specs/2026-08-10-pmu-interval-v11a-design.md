@@ -57,6 +57,12 @@ to:
 NVIC_SetVector(NPU0_IRQn, (uint32_t)&v11a_u85_irq_entry_veneer);
 ```
 
+For Cortex-M Thumb execution, the value installed in the vector slot must be
+the veneer Thumb entry value, `v11a_u85_irq_entry_veneer | 1`. Clearing bit 0
+from that installed value must resolve to the exact even ELF symbol address.
+The source expression above is accepted only if the compiled function pointer
+and relocation produce that Thumb entry value.
+
 The active runtime path must be:
 
 ```text
@@ -109,6 +115,14 @@ Forbidden effects:
 - any additional memory load or store beyond address materialization, the one
   CYCCNT load, and the one J0 store.
 
+If the assembler implements either address materialization with a PC-relative
+literal-pool load, that read is allowed only as a constant-address
+materialization effect. The gate must resolve its literal value to either
+`0xE0001004` or the exact J0 symbol and prove the literal address lies in the
+veneer's own read-only literal pool. At most two such literal-pool reads are
+allowed. They do not count as data/MMIO reads; every other non-instruction
+memory read remains forbidden. A `movw`/`movt` encoding is also valid.
+
 The tail transfer preserves the live EXC_RETURN value in LR. `r0` and `r1` are
 permitted because Cortex-M exception entry hardware-stacks the interrupted
 values and the stock handler takes no arguments.
@@ -143,6 +157,16 @@ Final-ELF gates fail closed unless they prove:
 6. the existing path order remains `T2 < J0 < I0 < STATUS read < T3 < flag
    store < CMD=2 < H-PRINTF seam < CMD=0xC release` in execution semantics;
 7. I0 and T3 are still exactly-once, and the vector-to-veneer path is unique.
+
+For item 1, "exact veneer address" means the installed vector value is the
+Thumb entry value (`symbol | 1`) and masking bit 0 produces the exact veneer
+symbol. The gate must inspect the compiled `NVIC_SetVector` effect, not merely
+the C argument: it must prove the write targets the active
+`SCB->VTOR + NPU0 vector-slot offset`, stores the veneer Thumb entry value, and
+is not followed by another NPU0 vector write that restores the stock handler
+before the command can run. The active VTOR/vector-RAM setup is therefore a
+build precondition recorded in the manifest. If this write cannot be resolved
+from the final ELF, the build fails closed.
 
 At runtime, a nonzero J0 plus exactly-one I0 and T3 is sufficient to establish
 one J0 hit because every statically admitted veneer path unconditionally enters
