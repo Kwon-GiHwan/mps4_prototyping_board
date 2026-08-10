@@ -63,3 +63,39 @@ Campaign and restoration contract:
 - Deployment and restoration follow the fail-clean mount/backup boundaries in
   `PMU_QUAL_PROCEDURE.md` section 8. The existing verified backup is reused;
   no credential is placed in a command, log, archive, or document.
+
+Board characterization result (2026-08-10):
+
+```
+evidence root       /home/gihwan/mps4/PMU_INTERVAL_V9_20260810T051157Z/
+fresh boots         32, 33, 34
+samples             30/30 valid; each boot run_sequence 1..10
+V9 observed floor   3231, 13/30 samples
+V9 excursions       17/30 samples
+first divergence    D23 for 17/17 excursions; unresolved 0
+
+D01                 1002..1002
+D12                   64..64
+D23                  803..5856
+D34                  824..854
+D45                 8644..8697
+```
+
+The result localizes the first observed floor/excursion divergence to the
+contended post-submit to completion-first-observed interval. It does not
+attribute a mechanism and does not turn D23 into NPU execution time.
+
+Evidence digests:
+
+| item | SHA-256 |
+|---|---|
+| `CAMPAIGN_REPORT.json` | `e80a9119fcec91d247601dfb64f4f171ccc4180da2213d2e82139aefe7ae1bb0` |
+| `CAMPAIGN_REPORT.txt` | `1e134c0a32367b8ec7d7997671eafe310ad6df1d087d556214ef0ef9be973b02` |
+| `SAMPLES.sha256` | `dcf0a95a9ccb1204dc0db84046080bb9929ce79ac71ea580e341816a9c1c9e70` |
+| `RESTORE_DESTINATION.sha256` | `683490142dc058030525fbc1305cd1a0f654f4404fd0c8bcf40b581701baf122` |
+
+The original APP/VECTORS/DDR backup was restored byte-for-byte. Restore boot
+35 passed DDR/CPUWAIT, PING returned IDLE with all seven error counters zero,
+and final state was unmounted, USB_OFF, `/dev/sdb` absent, and all four UARTs
+free. The next diagnostic may refine D23 only; Production END_ONLY and MLEK
+remain frozen.
