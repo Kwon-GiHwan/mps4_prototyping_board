@@ -131,6 +131,10 @@ def _resolve_register_value(fn, index, reg, pool):
         return None
     pos, ins = found
     mnemonic = ins.mnemonic.split(".")[0]
+    if mnemonic in ("mov", "movs"):
+        ops = [part.strip() for part in ins.operands.split(",")]
+        if len(ops) >= 2 and q._REG.fullmatch(ops[1]):
+            return _resolve_register_value(fn, pos, ops[1], pool)
     if mnemonic.startswith("ldr") and q._MEMOP.search(ins.operands):
         return _load_address(fn, pos, pool)
     if mnemonic == "movt":
@@ -164,6 +168,20 @@ def _vector_slot_store_address(fn, index, pool):
     return None if base is None else base + ins.offset
 
 
+def _prove_dwt_load_for_store(fn, store_index, pool, label):
+    store = fn.insns[store_index]
+    found = q.defining_insn(fn, store_index, store.src)
+    if found is None:
+        raise fail("%s store source has no reaching definition" % label)
+    load_index, _ = found
+    address = _load_address(fn, load_index, pool)
+    if address != DWT_CYCCNT:
+        raise fail("%s source is not one direct DWT->CYCCNT load" % label)
+    if any(ins.kind == "call" for ins in fn.insns[load_index + 1:store_index]):
+        raise fail("%s calls a helper between timestamp load and store" % label)
+    return fn.insns[load_index].addr
+
+
 def _run(argv):
     return subprocess.run(argv, check=True, capture_output=True, text=True).stdout
 
@@ -176,6 +194,19 @@ def manifest_document(base_doc: dict, artifacts: dict, runner_sha: str, vendor_s
             "schema_version": SCHEMA_VERSION,
             "build_id": "0x%08X" % BUILD_ID,
             "variant": VARIANT,
+            "characterization_only": True,
+            "not_a_performance_baseline": True,
+            "not_a_latency_measurement": True,
+            "busy_poll_interval_only": True,
+            "d23_split_only": True,
+            "post_t3_handoff_out_of_scope": True,
+            "verify_output_stays_enabled": True,
+            "generated_private_driver_diagnostic_only": True,
+            "production_end_only_frozen": True,
+            "mlek_performance_not_started": True,
+            "first_veneer_probe_only": True,
+            "perturbed_window_only": True,
+            "non_comparable_to_production_or_latency": True,
             "generated_runner_sha256": runner_sha,
             "generated_vendor_sha256": vendor_sha,
             "generated_patch_counts": patch_counts,
@@ -227,11 +258,14 @@ def verify_final_elf(disassembly_text: str, nm_text: str) -> dict:
             break
     if submit_store_addr is None:
         raise fail("test_u85 has no submit-path NPU CMD store")
-    if any(ins.kind == "store"
-           and _vector_slot_store_address(test_u85, idx, pool) == SCB_VTOR + VECTOR_SLOT_OFFSET
-           for idx, ins in enumerate(test_u85.insns[vector_store_index + 1:], start=vector_store_index + 1)
-           if ins.addr < submit_store_addr):
-        raise fail("runtime vector target is later overwritten")
+    for idx, ins in enumerate(test_u85.insns[vector_store_index + 1:], start=vector_store_index + 1):
+        if ins.addr >= submit_store_addr or ins.kind != "store" or ins.offset != VECTOR_SLOT_OFFSET:
+            continue
+        address = _vector_slot_store_address(test_u85, idx, pool)
+        if address is None:
+            raise fail("runtime vector overwrite candidate base is unresolved")
+        if address == SCB_VTOR + VECTOR_SLOT_OFFSET:
+            raise fail("runtime vector target is later overwritten")
 
     exec_insns = [ins for ins in veneer.insns if ins.mnemonic not in q.DATA_DIRECTIVES]
     if len(exec_insns) != 5:
@@ -243,8 +277,10 @@ def verify_final_elf(disassembly_text: str, nm_text: str) -> dict:
         raise fail("veneer second instruction is not a DWT CYCCNT read")
     if third.kind != "ldr_lit" or pool.get(third.literal_addr) != j0_symbol:
         raise fail("veneer third instruction does not materialize the J0 slot")
-    if fourth.kind != "store" or _vector_slot_store_address(veneer, veneer.insns.index(fourth), pool) != j0_symbol:
+    fourth_index = veneer.insns.index(fourth)
+    if fourth.kind != "store" or _vector_slot_store_address(veneer, fourth_index, pool) != j0_symbol:
         raise fail("veneer does not store J0 exactly once to the J0 slot")
+    j0_load = _prove_dwt_load_for_store(veneer, fourth_index, pool, "J0")
     branch_target = q._CALL_TARGET.search(fifth.operands)
     if fifth.mnemonic.split(".")[0] != "b" or branch_target is None:
         raise fail("veneer tail transfer is not an unconditional branch")
@@ -297,13 +333,20 @@ def verify_final_elf(disassembly_text: str, nm_text: str) -> dict:
         raise fail("stock handler ordering evidence is incomplete")
     if [i0_store, status_read, t3_store, flag_store, cmd2_store] != sorted([i0_store, status_read, t3_store, flag_store, cmd2_store]):
         raise fail("stock handler I0→STATUS→T3→flag→CMD2 order violated")
+    i0_store_index = next(n for n, ins in enumerate(irq.insns) if ins.addr == i0_store)
+    t3_store_index = next(n for n, ins in enumerate(irq.insns) if ins.addr == t3_store)
+    i0_load = _prove_dwt_load_for_store(irq, i0_store_index, pool, "I0")
+    t3_load = _prove_dwt_load_for_store(irq, t3_store_index, pool, "T3")
     return {
         "vector_slot_store": vector_store.addr,
         "vector_value": vector_value,
         "veneer_address": veneer_addr,
         "stock_handler_address": symbols["u85_irq_handler"],
+        "j0_dwt_load_address": j0_load,
         "j0_store_address": fourth.addr,
+        "i0_dwt_load_address": i0_load,
         "i0_store_address": i0_store,
+        "t3_dwt_load_address": t3_load,
         "t3_store_address": t3_store,
         "npu_status_read_address": status_read,
         "npu_cmd_irq_clear_store_address": cmd2_store,

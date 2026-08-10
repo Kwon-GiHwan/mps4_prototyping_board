@@ -260,6 +260,14 @@ PRE_SUBMIT_VECTOR_OVERWRITE = DISASSEMBLY.replace(
     1,
 )
 
+PRE_SUBMIT_ALIAS_VECTOR_OVERWRITE = DISASSEMBLY.replace(
+    "100a:\tf3bf 8f4f \tdsb\tsy",
+    "100a:\t461f      \tmov\tr7, r3\n"
+    "    100c:\tf8c7 2080 \tstr.w\tr2, [r7, #128]\n"
+    "    1010:\tf3bf 8f4f \tdsb\tsy",
+    1,
+)
+
 print("=== patcher ===")
 runner_out, runner_counts = patcher.patch_runner(RUNNER)
 vendor_out, vendor_counts = patcher.patch_vendor(VENDOR)
@@ -307,7 +315,10 @@ check("ELF gate proves vector -> veneer -> stock path",
       elf["vector_slot_store"] == 0x1006
       and elf["vector_value"] == 0x1101
       and elf["veneer_address"] == 0x1100
-      and elf["stock_handler_address"] == 0x1120)
+      and elf["stock_handler_address"] == 0x1120
+      and elf["j0_dwt_load_address"] == 0x1102
+      and elf["i0_dwt_load_address"] == 0x1124
+      and elf["t3_dwt_load_address"] == 0x1132)
 check("ELF gate composes movw/movt vector materialization",
       gate.verify_final_elf(MOVW_MOVT_DISASSEMBLY, NM)["vector_value"] == 0x1101)
 check("post-submit vector restore does not violate overwrite gate",
@@ -318,6 +329,12 @@ try:
     check("pre-submit vector overwrite rejected", False)
 except SystemExit:
     check("pre-submit vector overwrite rejected", True)
+
+try:
+    gate.verify_final_elf(PRE_SUBMIT_ALIAS_VECTOR_OVERWRITE, NM)
+    check("pre-submit alias vector overwrite rejected", False)
+except SystemExit:
+    check("pre-submit alias vector overwrite rejected", True)
 
 NEGATIVE_DISASSEMBLIES = (
     ("even vector target rejected",
@@ -367,6 +384,15 @@ NEGATIVE_DISASSEMBLIES = (
          "1106:\t6001      \tstr\tr1, [r0, #0]",
          "1106:\t6001      \tstr\tr1, [r0, #0]\n    1108:\t6041      \tstr\tr1, [r0, #4]",
          1)),
+    ("wrong J0 store source rejected",
+     DISASSEMBLY.replace("1106:\t6001      \tstr\tr1, [r0, #0]",
+                         "1106:\t9000      \tstr\tr0, [sp, #0]\n    1108:\t9800      \tldr\tr0, [sp, #0]\n    110a:\t6001      \tstr\tr0, [r0, #0]", 1)),
+    ("wrong I0 store source rejected",
+     DISASSEMBLY.replace("1128:\t6019      \tstr\tr1, [r3, #0]",
+                         "1128:\t2100      \tmovs\tr1, #0\n    112a:\t6019      \tstr\tr1, [r3, #0]", 1)),
+    ("wrong T3 store source rejected",
+     DISASSEMBLY.replace("1136:\t6019      \tstr\tr1, [r3, #0]",
+                         "1136:\t2100      \tmovs\tr1, #0\n    1138:\t6019      \tstr\tr1, [r3, #0]", 1)),
 )
 
 for name, broken in NEGATIVE_DISASSEMBLIES:
@@ -512,6 +538,19 @@ with tempfile.TemporaryDirectory() as tmpdir:
               and result["base_compiler_flags"] == "-O2 -DTEST"
               and result["elf"] == {"vector_slot_store": 0x1006}
               and result["source_counts"]["runtime_vector_install"] == 1
+              and result["characterization_only"] is True
+              and result["not_a_performance_baseline"] is True
+              and result["not_a_latency_measurement"] is True
+              and result["busy_poll_interval_only"] is True
+              and result["d23_split_only"] is True
+              and result["post_t3_handoff_out_of_scope"] is True
+              and result["verify_output_stays_enabled"] is True
+              and result["generated_private_driver_diagnostic_only"] is True
+              and result["production_end_only_frozen"] is True
+              and result["mlek_performance_not_started"] is True
+              and result["first_veneer_probe_only"] is True
+              and result["perturbed_window_only"] is True
+              and result["non_comparable_to_production_or_latency"] is True
               and result["build_evidence_sha256"]["generated_vendor_u85.c"]
               == gate.hashlib.sha256(vendor_out.encode()).hexdigest())
     finally:
