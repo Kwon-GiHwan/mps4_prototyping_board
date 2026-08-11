@@ -888,10 +888,19 @@ Do not claim board qualification or a performance result.
 ```bash
 qmd update
 qmd embed
-git -C /Users/kwongihwan/Documents/Obsidian diff --check
+if rg -n '[[:blank:]]+$' \
+  /Users/kwongihwan/Documents/Obsidian/wiki/projects/npu-benchmark.md \
+  "/Users/kwongihwan/Documents/Obsidian/npu-benchmark/hardware/Supervise Note.md" \
+  /Users/kwongihwan/Documents/Obsidian/index.md \
+  /Users/kwongihwan/Documents/Obsidian/log.md; then exit 1; fi
+rg -n "PMU_COMPLETION_POLL_DIAG_V12|V12" \
+  /Users/kwongihwan/Documents/Obsidian/wiki/projects/npu-benchmark.md \
+  "/Users/kwongihwan/Documents/Obsidian/npu-benchmark/hardware/Supervise Note.md"
 ```
 
-Expected: indexing succeeds and note diff has no whitespace errors.
+Expected: indexing succeeds, trailing-whitespace search has no output, and the
+final command finds the new V12 state in both authoritative notes. The
+Obsidian vault is not a Git repository, so do not claim a Git diff check.
 
 - [ ] **Step 5: Report the pre-board handoff**
 
