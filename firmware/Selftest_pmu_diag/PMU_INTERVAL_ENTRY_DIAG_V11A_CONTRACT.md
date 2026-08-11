@@ -46,3 +46,8 @@ Real-build evidence:
   - `generated_vendor_u85.o`: `637c89aa4d16965d74d71da53d69fd7c0dcd78a8084f56714fe0d6cf63888f22`
   - `preprocessed_runner.i`: `f3f238b75b1cfbea8f41f0451cc63142dd32380e1fd88ba6995d1781198908f0`
   - `pmu_interval_v11a_manifest.json`: `5211b8f0d32f5de34051bf7d7355d013a86ccef2162442bd6c8031b8f73202ba`
+
+Board qualification is complete. The frozen post-board result and claim
+boundary are recorded in `PMU_INTERVAL_ENTRY_DIAG_V11A_BOARD_RESULT.md`.
+The firmware, schema, manifest, and frozen artifact identity above were not
+changed by the board campaign.
