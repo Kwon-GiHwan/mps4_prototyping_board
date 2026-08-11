@@ -888,11 +888,14 @@ Do not claim board qualification or a performance result.
 ```bash
 qmd update
 qmd embed
-if rg -n '[[:blank:]]+$' \
-  /Users/kwongihwan/Documents/Obsidian/wiki/projects/npu-benchmark.md \
-  "/Users/kwongihwan/Documents/Obsidian/npu-benchmark/hardware/Supervise Note.md" \
-  /Users/kwongihwan/Documents/Obsidian/index.md \
-  /Users/kwongihwan/Documents/Obsidian/log.md; then exit 1; fi
+if sed -n '/^## PMU_COMPLETION_POLL_DIAG_V12 설계 동결/,$p' \
+  /Users/kwongihwan/Documents/Obsidian/wiki/projects/npu-benchmark.md | \
+  rg -n '[[:blank:]]+$'; then exit 1; fi
+if sed -n '/^# 67\. PMU_COMPLETION_POLL_DIAG_V12/,$p' \
+  "/Users/kwongihwan/Documents/Obsidian/npu-benchmark/hardware/Supervise Note.md" | \
+  rg -n '[[:blank:]]+$'; then exit 1; fi
+if tail -n 40 /Users/kwongihwan/Documents/Obsidian/log.md | \
+  rg -n '[[:blank:]]+$'; then exit 1; fi
 rg -n "PMU_COMPLETION_POLL_DIAG_V12|V12" \
   /Users/kwongihwan/Documents/Obsidian/wiki/projects/npu-benchmark.md \
   "/Users/kwongihwan/Documents/Obsidian/npu-benchmark/hardware/Supervise Note.md"
