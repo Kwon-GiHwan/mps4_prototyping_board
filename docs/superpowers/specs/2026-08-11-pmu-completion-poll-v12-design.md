@@ -493,8 +493,8 @@ The gate proves:
 
 The helper gate rejects PMU/CMD/NVIC MMIO, printf, barriers, nested calls,
 per-iteration memory stores, or any loop-body MMIO beyond the exact STATUS
-load. Compiler inlining is permitted only if all semantic gates remain
-provable on the inlined region; otherwise the build fails closed.
+load. Helper inlining, cloning, outlining, tail-call substitution, or loss of
+the one named-symbol/one-direct-callsite boundary always fails closed.
 
 ## Required negative tests
 
