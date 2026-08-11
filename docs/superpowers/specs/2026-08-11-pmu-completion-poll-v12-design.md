@@ -89,10 +89,18 @@ deliberately not reproducing the transient `irq_triggered=true` side effect.
 
 ## Selected architecture
 
-Use a generated C polling helper and replace only the stock
-`wait_for_irq()` callsite in the V12 generated vendor copy. Do not edit the
-stock `wait_for_irq()` body, do not use an assembly poll loop, and do not
-inherit the V11-A entry veneer.
+Use a generated C polling helper and preserve the stock `wait_for_irq()` body
+unchanged but unreachable on the V12 measured path. V12 makes exactly two
+completion-mechanism interventions in the generated vendor control flow:
+
+1. replace the stock `NVIC_EnableIRQ(NPU0_IRQn)` site with the V12
+   Disable/Clear/verify start-precondition block; and
+2. replace the single stock `wait_for_irq()` callsite with the generated V12
+   poll-helper call and explicit success/timeout branch.
+
+The generator necessarily adds V12 storage, serialization, and helper code,
+but no other reference completion-control site may change. Do not use an
+assembly poll loop and do not inherit the V11-A entry veneer.
 
 The runtime vector is explicitly installed to the exact stock handler:
 
@@ -100,9 +108,11 @@ The runtime vector is explicitly installed to the exact stock handler:
 NVIC_SetVector(NPU0_IRQn, (uint32_t)&u85_irq_handler);
 ```
 
-The NPU0 interrupt stays disabled for the complete measured run. Source and
-final-ELF gates jointly prove that neither `NVIC_EnableIRQ()` nor an inlined
-write to the NPU0 bit in NVIC ISER occurs on the active measured path.
+The frozen vendor's original `NVIC_EnableIRQ(NPU0_IRQn)` call is therefore not
+allowed to survive on the V12 active path. The NPU0 interrupt stays disabled
+for the complete measured run. Source and final-ELF gates jointly prove that
+neither `NVIC_EnableIRQ()` nor an inlined write to the NPU0 bit in NVIC ISER
+occurs on the active measured path.
 
 The start precondition is performed idempotently on every run:
 
@@ -168,6 +178,12 @@ NPU execution time or latency.
 
 ## Poll helper contract
 
+The helper is an explicit named, non-inlined function. The generated source
+must apply a compiler-supported `noinline` contract, and the final ELF must
+retain one separate helper symbol and one direct callsite. If optimization
+inlines, clones, outlines, or otherwise obscures that boundary, the build
+fails closed.
+
 The helper has one static STATUS-load loop site and a register-local bounded
 iteration count:
 
@@ -220,6 +236,33 @@ Exactly-once P0/P1/P2 behavior is established without extra hit counters:
 - no edge after P1 or P2 returns to the polling loop;
 - runtime timestamps are nonzero and satisfy the two modular identities.
 
+### Proof-friendly caller CFG
+
+V12 deliberately constrains the generated caller shape so the final-ELF gate
+does not require an unrestricted CFG engine. `test_commands()` contains one
+direct conditional branch on the explicit poll result, distinct success and
+timeout basic-block regions, and one common merge only after the respective
+QREAD verification has completed:
+
+```text
+direct call v12_poll_completion
+direct conditional branch on poll_result
+  success block:
+    history-mask store -> CMD=2 #1 -> QREAD -> CMD=2 #2 -> QREAD verify
+    direct branch to common cleanup
+  timeout block:
+    timeout bookkeeping/report -> QREAD -> CMD=2 -> QREAD verify
+    direct branch to common cleanup
+common final NVIC/peripheral cleanup
+```
+
+The final ELF must preserve this separable shape. Indirect branches,
+tail-called helper substitution, IT-predicated CMD stores, an early merge
+before either QREAD verification, and compiler tail-merging that prevents
+path-specific CMD counting all fail closed. This bounded shape permits direct
+basic-block and edge enumeration rather than relying on the existing linear
+instruction-order scans alone.
+
 ## Success state machine
 
 The V12 success path preserves both stock `CMD=2` writes and their ordering:
@@ -256,6 +299,10 @@ The history-mask store uses the same successful STATUS value returned by the
 helper. No additional STATUS read is permitted. `irq_triggered=true` is not
 reproduced: it is an ISR-to-wait handoff side effect removed by the hard
 bypass, and the stock caller-visible state is false after `wait_for_irq()`.
+On the reachable measured path the only permitted store to `irq_triggered` is
+the start-of-run clear to false. The retained stock handler may still contain
+its unreachable `true` store, but no reachable generated block may execute or
+duplicate it.
 
 The final NVIC pending cleanup occurs only after both stock-equivalent CMD
 writes and QREAD verification. This avoids inserting diagnostic NVIC behavior
@@ -356,6 +403,8 @@ A sample is valid only when all of the following hold:
   submit, and `irq_triggered` is false;
 - source plus final ELF prove no NPU0 NVIC enable operation on the measured
   path;
+- the only reachable measured-path store to `irq_triggered` is the
+  start-of-run false clear; no transient true store is permitted;
 - polling succeeds, the exact successful STATUS value has bit `0x02` set, and
   timeout is false;
 - P0, P1, and P2 are nonzero, correctly ordered, and satisfy both modular
@@ -377,17 +426,24 @@ authoritative over source spelling.
 
 The gate proves:
 
-1. exactly one helper callsite;
-2. exactly one P0, P1, and P2 store site;
-3. one static loop STATUS-load instruction resolved to exact
+1. one separate, non-inlined helper symbol and exactly one direct helper
+   callsite;
+2. one direct poll-result conditional branch, two distinct path regions, and
+   no merge before each path completes QREAD verification;
+3. exactly one P0, P1, and P2 store site;
+4. one static loop STATUS-load instruction resolved to exact
    `U85_BASE_ADDRESS + NPU_REG_STATUS` (`0x50004004` for the frozen source);
-4. completion mask exactly `0x02` and an identified success edge;
-5. the same STATUS load value drives both the bit test and returned
+5. completion mask exactly `0x02` and an identified success edge;
+6. the same STATUS load value drives both the bit test and returned
    `status_at_success` dataflow;
-6. P1 and P2 are reachable only from success, in the order
+7. that returned value, without another STATUS read or unrelated overwrite,
+   drives both the serialized `status_at_success` and the shifted
+   `irq_history_mask` store;
+8. P1 and P2 are reachable only from success, in the order
    `STATUS load -> test -> P1 -> P2 -> return`;
-7. no loop-back edge after P1 or P2;
-8. no success-path STATUS reread.
+9. no loop-back edge after P1 or P2;
+10. no success-path STATUS reread, indirect branch, IT-predicated CMD store,
+    helper tail-call, clone, or early path merge.
 
 ### Path-specific CMD semantics
 
@@ -418,12 +474,18 @@ The gate proves:
 
 - runtime vector installation writes the exact stock handler Thumb entry to
   the active NPU0 vector slot;
+- the frozen vendor `NVIC_EnableIRQ(NPU0_IRQn)` site has been replaced by the
+  one V12 Disable/Clear/verify precondition block, not merely supplemented by
+  a later disable;
 - the V11-A veneer is not installed and is not reachable on the active path;
 - J0, I0, and T3 V11 instrumentation is not active/reachable;
 - no `NVIC_EnableIRQ()` call and no inlined/direct write sets the NPU0 bit in
   NVIC ISER on the measured path;
 - expected DisableIRQ, initial ClearPending, and final ClearPending accesses
   resolve to the correct NPU0 bit/register and are recorded in the manifest;
+- the only reachable measured-path store to `irq_triggered` writes false at
+  run start; the stock handler's retained true store is unreachable and there
+  is no transient true store in success, timeout, or common cleanup blocks;
 - the stock handler body remains source/object-proven unchanged even though it
   is not executed during valid samples.
 
@@ -460,6 +522,18 @@ Deliberate mutations must prove that gates reject at least:
 19. per-iteration SRAM counter/log/timestamp;
 20. broken modular interval identity;
 21. cross-schema/parser acceptance or manifest/artifact drift.
+22. the frozen `NVIC_EnableIRQ(NPU0_IRQn)` call retained before a later
+    DisableIRQ, rather than replaced;
+23. transient reachable `irq_triggered = true` followed by a later false
+    clear;
+24. `irq_history_mask` sourced from a constant, stale value, timeout STATUS,
+    or any value other than the branch-driving `status_at_success`;
+25. helper inlining, cloning, tail-call substitution, or an indirect helper
+    call;
+26. success and timeout blocks merged before their respective QREAD
+    verification;
+27. an indirect branch or IT-predicated CMD store used to obscure
+    path-specific CMD counting.
 
 All retained V11-A, V10, V9, V8, CFG, and DIAG tests must still pass.
 
