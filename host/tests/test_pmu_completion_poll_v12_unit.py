@@ -370,8 +370,8 @@ def build_payload(
         build_words,
         HEADER_WORDS,
         run_sequence,
-        1,
-        0,
+        prefix["valid_flags"],
+        run_rc,
         0,
     ]
 
