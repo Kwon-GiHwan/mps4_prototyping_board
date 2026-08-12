@@ -2,8 +2,13 @@
 
 from __future__ import annotations
 
+import argparse
+import hashlib
 import json
+import os
 import re
+import subprocess
+import tempfile
 from dataclasses import dataclass
 
 BUILD_ID = 0x32314950
@@ -1039,3 +1044,164 @@ def validate_artifact_contract(manifest_json: str, evidence: dict | None = None)
             if key in evidence and actual != expected and not _same_hex32(actual, expected):
                 raise fail("%s mismatch" % key)
     return doc
+
+
+def _sha256_path(path: str) -> str:
+    with open(path, "rb") as handle:
+        return hashlib.sha256(handle.read()).hexdigest()
+
+
+def _sha256_text(text: str) -> str:
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+def _read_text(path: str) -> str:
+    with open(path, encoding="utf-8") as handle:
+        return handle.read()
+
+
+def _artifact_bundle_sha256(artifact_hashes: dict[str, str]) -> str:
+    payload = "".join(f"{name}:{artifact_hashes[name]}\n" for name in sorted(artifact_hashes))
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+def _parser_sha256() -> str:
+    return _sha256_path(__file__)
+
+
+def build_manifest_document(evidence: dict, artifact_hashes: dict[str, str]) -> dict:
+    doc = dict(evidence)
+    doc["runner_source_sha256"] = EXPECTED_MANIFEST_EXACT["runner_source_sha256"]
+    doc["vendor_source_sha256"] = EXPECTED_MANIFEST_EXACT["vendor_source_sha256"]
+    doc["artifact_sha256"] = _artifact_bundle_sha256(artifact_hashes)
+    doc["parser_sha256"] = _parser_sha256()
+    manifest_seed = dict(doc)
+    manifest_seed["manifest_sha256"] = "0" * 64
+    manifest_json = json.dumps(manifest_seed, indent=2, sort_keys=True)
+    doc["manifest_sha256"] = hashlib.sha256(manifest_json.encode("utf-8")).hexdigest()
+    return doc
+
+
+def _load_trace_inputs(paths: argparse.Namespace) -> tuple[str, str, dict[str, str]]:
+    synthetic_requested = any(
+        getattr(paths, name) is not None for name in ("disassembly_text", "nm_text")
+    )
+    real_requested = any(
+        getattr(paths, name) is not None for name in ("elf", "objdump", "nm", "readelf")
+    )
+    if synthetic_requested and real_requested:
+        raise fail("synthetic evidence inputs and real ELF tool inputs are mutually exclusive")
+    if not synthetic_requested and not real_requested:
+        raise fail("either synthetic evidence inputs or real ELF tool inputs are required")
+
+    common_artifacts = {
+        "APP.BIN": paths.app_bin,
+        "VECTORS.BIN": paths.vectors_bin,
+        "DDR.BIN": paths.ddr_bin,
+        "map": paths.map,
+    }
+
+    if synthetic_requested:
+        missing = [
+            name
+            for name in ("disassembly_text", "nm_text", "map", "app_bin", "vectors_bin", "ddr_bin")
+            if getattr(paths, name) is None
+        ]
+        if missing:
+            raise fail("missing synthetic evidence input(s): %s" % ", ".join(missing))
+        disassembly_text = _read_text(paths.disassembly_text)
+        nm_text = _read_text(paths.nm_text)
+        artifact_hashes = {label: _sha256_path(path) for label, path in common_artifacts.items()}
+        artifact_hashes["disassembly"] = _sha256_path(paths.disassembly_text)
+        artifact_hashes["nm"] = _sha256_path(paths.nm_text)
+        return disassembly_text, nm_text, artifact_hashes
+
+    missing = [
+        name
+        for name in ("elf", "objdump", "nm", "readelf", "map", "app_bin", "vectors_bin", "ddr_bin")
+        if getattr(paths, name) is None
+    ]
+    if missing:
+        raise fail("missing real ELF input(s): %s" % ", ".join(missing))
+    readelf_header = subprocess.run(
+        [paths.readelf, "-h", paths.elf],
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout
+    if "Executable" not in readelf_header and "EXEC" not in readelf_header:
+        raise fail("%s is not an executable ELF" % paths.elf)
+    disassembly_text = subprocess.run(
+        [paths.objdump, "-d", paths.elf],
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout
+    nm_text = subprocess.run(
+        [paths.nm, paths.elf],
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout
+    artifact_hashes = {label: _sha256_path(path) for label, path in common_artifacts.items()}
+    artifact_hashes["elf"] = _sha256_path(paths.elf)
+    return disassembly_text, nm_text, artifact_hashes
+
+
+def verify(paths: argparse.Namespace) -> dict:
+    if paths.manifest_out is None:
+        raise fail("--manifest-out is required")
+    if int(paths.build_id, 16) != BUILD_ID:
+        raise fail("build_id %s is not 0x%08X" % (paths.build_id, BUILD_ID))
+    runner_text = _read_text(paths.runner_generated)
+    vendor_text = _read_text(paths.vendor_generated)
+    verify_generated_sources(runner_text, vendor_text)
+    disassembly_text, nm_text, artifact_hashes = _load_trace_inputs(paths)
+    evidence = verify_callsite_trace(runner_text, vendor_text, disassembly_text, nm_text)
+    doc = build_manifest_document(evidence, artifact_hashes)
+    validate_artifact_against_evidence(json.dumps(doc, sort_keys=True), evidence)
+    return doc
+
+
+def _write_manifest_atomic(path: str, doc: dict) -> None:
+    directory = os.path.dirname(path) or "."
+    os.makedirs(directory, exist_ok=True)
+    payload = json.dumps(doc, indent=2, sort_keys=True) + "\n"
+    with tempfile.NamedTemporaryFile(
+        "w",
+        encoding="utf-8",
+        dir=directory,
+        prefix=".pmu_completion_poll_v12.",
+        suffix=".tmp",
+        delete=False,
+    ) as handle:
+        handle.write(payload)
+        temp_path = handle.name
+    os.replace(temp_path, path)
+
+
+def main(argv: list[str] | None = None) -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--build-id", required=True)
+    ap.add_argument("--runner-generated", required=True)
+    ap.add_argument("--vendor-generated", required=True)
+    ap.add_argument("--manifest-out", required=True)
+    ap.add_argument("--disassembly-text")
+    ap.add_argument("--nm-text")
+    ap.add_argument("--elf")
+    ap.add_argument("--map")
+    ap.add_argument("--app-bin")
+    ap.add_argument("--vectors-bin")
+    ap.add_argument("--ddr-bin")
+    ap.add_argument("--objdump")
+    ap.add_argument("--nm")
+    ap.add_argument("--readelf")
+    args = ap.parse_args(argv)
+    doc = verify(args)
+    _write_manifest_atomic(args.manifest_out, doc)
+    print(json.dumps(doc, indent=2, sort_keys=True))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

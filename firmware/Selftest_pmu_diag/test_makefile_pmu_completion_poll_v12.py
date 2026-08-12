@@ -1,4 +1,5 @@
 import pathlib
+import subprocess
 import sys
 
 
@@ -28,12 +29,28 @@ def main() -> int:
     require(text, "--manifest-out $(MANIFEST)")
     require(text, "--runner-generated $(GEN_RUNNER)")
     require(text, "--vendor-generated $(GEN_VENDOR)")
+    require(text, "--runner-in $(RUNNER_SRC)")
+    require(text, "--vendor-in $(VENDOR_SRC)")
+    require(text, "--runner-out $(GEN_RUNNER)")
+    require(text, "--vendor-out $(GEN_VENDOR)")
 
     forbid(text, "v11a")
     forbid(text, "pmu_interval")
     forbid(text, "entry.S")
     forbid(text, "ENTRY_SRC")
     forbid(text, "ENTRY_OBJ")
+
+    help_text = subprocess.run(
+        ["python3", "patches/patch_pmu_completion_poll_v12.py", "--help"],
+        check=True,
+        capture_output=True,
+        text=True,
+        cwd=str(MAKEFILE.parent),
+    ).stdout
+    require(help_text, "--runner-in")
+    require(help_text, "--vendor-in")
+    require(help_text, "--runner-out")
+    require(help_text, "--vendor-out")
 
     print("PASS makefile graph semantics")
     return 0

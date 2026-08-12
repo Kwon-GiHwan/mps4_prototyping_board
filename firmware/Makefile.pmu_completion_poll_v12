@@ -80,10 +80,10 @@ $(BUILD)/lnk.ld: LinkScripts/lnk.ld.S LinkScripts/region_defs.h LinkScripts/regi
 $(GEN_STAMP): $(RUNNER_SRC) $(VENDOR_SRC) $(PATCHER)
 	@mkdir -p $(GEN)
 	python3 $(PATCHER) \
-	    --runner-src $(RUNNER_SRC) \
-	    --vendor-src $(VENDOR_SRC) \
-	    --out-runner $(GEN_RUNNER) \
-	    --out-vendor $(GEN_VENDOR)
+	    --runner-in $(RUNNER_SRC) \
+	    --vendor-in $(VENDOR_SRC) \
+	    --runner-out $(GEN_RUNNER) \
+	    --vendor-out $(GEN_VENDOR)
 	@touch $@
 
 $(GEN_RUNNER) $(GEN_VENDOR): $(GEN_STAMP)

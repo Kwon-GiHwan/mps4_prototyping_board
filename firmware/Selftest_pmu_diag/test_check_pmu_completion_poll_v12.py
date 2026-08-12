@@ -3,6 +3,7 @@ import sys
 import json
 import re
 import hashlib
+import subprocess
 import tempfile
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -1575,6 +1576,82 @@ int test_u85( const u85_eTest eTest,
             check(name, False, "unexpected pass")
         except Exception as exc:
             check(name, expected in str(exc), str(exc))
+
+    with tempfile.TemporaryDirectory() as tmp:
+        runner_path = os.path.join(tmp, "runner_generated.c")
+        vendor_path = os.path.join(tmp, "vendor_generated.c")
+        disassembly_path = os.path.join(tmp, "runner.dis")
+        nm_path = os.path.join(tmp, "runner.nm")
+        map_path = os.path.join(tmp, "runner.map")
+        app_bin = os.path.join(tmp, "APP.BIN")
+        vectors_bin = os.path.join(tmp, "VECTORS.BIN")
+        ddr_bin = os.path.join(tmp, "DDR.BIN")
+        manifest_path = os.path.join(tmp, "pmu_completion_poll_v12_manifest.json")
+        for path, content in (
+            (runner_path, RUNNER_V12_OK),
+            (vendor_path, VENDOR_V12_OK),
+            (disassembly_path, DISASSEMBLY),
+            (nm_path, NM),
+            (map_path, "MEMORY MAP\n"),
+        ):
+            with open(path, "w", encoding="utf-8") as handle:
+                handle.write(content)
+        for path, payload in (
+            (app_bin, b"app"),
+            (vectors_bin, b"vectors"),
+            (ddr_bin, b"ddr"),
+        ):
+            with open(path, "wb") as handle:
+                handle.write(payload)
+        cli_ok = subprocess.run(
+            [
+                sys.executable,
+                os.path.join(os.path.dirname(__file__), "check_pmu_completion_poll_v12.py"),
+                "--build-id", BUILD_ID,
+                "--runner-generated", runner_path,
+                "--vendor-generated", vendor_path,
+                "--disassembly-text", disassembly_path,
+                "--nm-text", nm_path,
+                "--map", map_path,
+                "--app-bin", app_bin,
+                "--vectors-bin", vectors_bin,
+                "--ddr-bin", ddr_bin,
+                "--manifest-out", manifest_path,
+            ],
+            capture_output=True,
+            text=True,
+        )
+        check("checker CLI accepts synthetic evidence fixture", cli_ok.returncode == 0, cli_ok.stderr or cli_ok.stdout)
+        check("checker CLI writes manifest on success", os.path.exists(manifest_path) and os.path.getsize(manifest_path) > 0)
+        if os.path.exists(manifest_path):
+            with open(manifest_path, "r", encoding="utf-8") as handle:
+                cli_manifest = json.load(handle)
+            try:
+                gate.validate_artifact_contract(json.dumps(cli_manifest))
+                check("checker CLI manifest validates", True)
+            except Exception as exc:
+                check("checker CLI manifest validates", False, str(exc))
+
+        missing_manifest = os.path.join(tmp, "missing_manifest.json")
+        cli_fail = subprocess.run(
+            [
+                sys.executable,
+                os.path.join(os.path.dirname(__file__), "check_pmu_completion_poll_v12.py"),
+                "--build-id", BUILD_ID,
+                "--runner-generated", runner_path,
+                "--vendor-generated", vendor_path,
+                "--nm-text", nm_path,
+                "--map", map_path,
+                "--app-bin", app_bin,
+                "--vectors-bin", vectors_bin,
+                "--ddr-bin", ddr_bin,
+                "--manifest-out", missing_manifest,
+            ],
+            capture_output=True,
+            text=True,
+        )
+        check("checker CLI rejects missing evidence inputs", cli_fail.returncode != 0, cli_fail.stderr or cli_fail.stdout)
+        check("checker CLI does not write manifest on failure", not os.path.exists(missing_manifest))
 
     for name, fix in MUTATION_FIXTURES.items():
         synthetic_runner = RUNNER_V12_OK
