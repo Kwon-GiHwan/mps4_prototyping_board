@@ -84,11 +84,12 @@ EXPECTED_MANIFEST_EXACT = {
     "build_id": "0x32314950",
     "qualification_mode": "Q1",
     "evidence_source": "arm_elf",
-    "characterization_only": True,
-    "not_a_performance_baseline": True,
-    "not_a_latency_measurement": True,
-    "generated_private_driver_diagnostic_only": True,
-    "production_end_only_frozen": True,
+    "diagnostic_only": True,
+    "not_numerically_comparable_to_v11a": True,
+    "not_latency": True,
+    "not_t_npu": True,
+    "not_production": True,
+    "not_mlek": True,
     "runner_source_sha256": "69cab8c48a2248d0cc0b883a2bc651efa8eb8867c86369051ebc99cc5ee5a88b",
     "vendor_source_sha256": "bcd877bbd42a35d83c8696d02b64d2ae4985a46fcce91b98102e08661b356bcf",
     "helper_symbol": "v12_poll_completion",
@@ -1059,7 +1060,7 @@ def validate_artifact_contract(
             raise fail("%s malformed" % key)
     if not isinstance(doc.get("expected_return_address"), int) or doc["expected_return_address"] <= 0:
         raise fail("expected_return_address malformed")
-    if doc["expected_return_address"] != int(doc["terminal_cmd0c_store_address"], 16):
+    if doc["expected_return_address"] != int(doc["hprintf_callsite_address"], 16) + 4:
         raise fail("expected_return_address mismatch")
     artifacts = doc.get("artifact_sha256")
     if not isinstance(artifacts, dict):
@@ -1143,12 +1144,13 @@ def manifest_document(
             "schema_version": SCHEMA_VERSION,
             "build_id": "0x%08X" % BUILD_ID,
             "qualification_mode": "Q1",
-            "expected_return_address": int(evidence["terminal_cmd0c_store_address"], 16),
-            "characterization_only": True,
-            "not_a_performance_baseline": True,
-            "not_a_latency_measurement": True,
-            "generated_private_driver_diagnostic_only": True,
-            "production_end_only_frozen": True,
+            "expected_return_address": int(evidence["hprintf_callsite_address"], 16) + 4,
+            "diagnostic_only": True,
+            "not_numerically_comparable_to_v11a": True,
+            "not_latency": True,
+            "not_t_npu": True,
+            "not_production": True,
+            "not_mlek": True,
             "evidence_source": evidence_source,
             "runner_source_sha256": runner_sha,
             "vendor_source_sha256": vendor_sha,

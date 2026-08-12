@@ -1046,11 +1046,12 @@ MANIFEST_OK = {
     "qualification_mode": "Q1",
     "evidence_source": "arm_elf",
     "expected_return_address": 0x1274,
-    "characterization_only": True,
-    "not_a_performance_baseline": True,
-    "not_a_latency_measurement": True,
-    "generated_private_driver_diagnostic_only": True,
-    "production_end_only_frozen": True,
+    "diagnostic_only": True,
+    "not_numerically_comparable_to_v11a": True,
+    "not_latency": True,
+    "not_t_npu": True,
+    "not_production": True,
+    "not_mlek": True,
     "runner_source_sha256": RUNNER_SHA256,
     "vendor_source_sha256": VENDOR_SHA256,
     "manifest_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
@@ -1125,6 +1126,21 @@ def relocate_nm(nm_text: str, delta: int) -> str:
         else:
             lines.append(line)
     return "\n".join(lines) + ("\n" if nm_text.endswith("\n") else "")
+
+
+def move_cmd0c_after_return(disassembly_text: str) -> str:
+    return disassembly_text.replace(
+        "   1270:\t; V12_HPRINTF_SEAM\n"
+        "   1270:\tf7ff f810\tbl\t1900 <printf>\n"
+        "   1274:\t; V12_CMD0C\n"
+        "   1274:\tf887 000c\tstrb.w\tr0, [r7, #12]\n",
+        "   1270:\t; V12_HPRINTF_SEAM\n"
+        "   1270:\tf7ff f810\tbl\t1900 <printf>\n"
+        "   1274:\t46c0\tnop\n"
+        "   1278:\t; V12_CMD0C\n"
+        "   1278:\tf887 000c\tstrb.w\tr0, [r7, #12]\n",
+        1,
+    )
 
 
 MUTATION_FIXTURES = {
@@ -1621,6 +1637,7 @@ int test_u85( const u85_eTest eTest,
     for key in gate.MANIFEST_MARKER_KEYS.values():
         relocated_manifest[key] = relocated_evidence[key]
     relocated_manifest["expected_return_address"] = int(relocated_evidence["terminal_cmd0c_store_address"], 16)
+    relocated_manifest["expected_return_address"] = int(relocated_evidence["hprintf_callsite_address"], 16) + 4
     gate.validate_artifact_contract(json.dumps(relocated_manifest), relocated_evidence)
     gate.validate_artifact_against_evidence(json.dumps(relocated_manifest), relocated_evidence)
     broken_relocated = copy.deepcopy(relocated_manifest)
@@ -1660,6 +1677,17 @@ int test_u85( const u85_eTest eTest,
         check("gate ignores unreachable dead-function NVIC enable", True)
     except Exception as exc:
         check("gate ignores unreachable dead-function NVIC enable", False, str(exc))
+    shifted_cmd0c = move_cmd0c_after_return(DISASSEMBLY)
+    shifted_evidence = gate.verify_callsite_trace(runner_out, vendor_out, shifted_cmd0c, NM)
+    shifted_manifest = copy.deepcopy(MANIFEST_OK)
+    shifted_manifest["terminal_cmd0c_store_address"] = shifted_evidence["terminal_cmd0c_store_address"]
+    shifted_manifest["expected_return_address"] = int(shifted_evidence["hprintf_callsite_address"], 16) + 4
+    gate.validate_artifact_contract(json.dumps(shifted_manifest), shifted_evidence)
+    check(
+        "expected return address binds H-PRINTF return not CMD0xC",
+        shifted_manifest["expected_return_address"] == int(shifted_evidence["hprintf_callsite_address"], 16) + 4
+        and shifted_manifest["expected_return_address"] != int(shifted_evidence["terminal_cmd0c_store_address"], 16),
+    )
     for name, key, value, expected in (
         ("manifest rejects wrong runner hash", "runner_source_sha256", "0" * 64, "runner_source_sha256 mismatch"),
         ("manifest rejects wrong vector symbol", "runtime_vector_target_symbol", "wrong_helper", "runtime_vector_target_symbol mismatch"),
@@ -1913,7 +1941,7 @@ int test_u85( const u85_eTest eTest,
                     real_manifest.get("evidence_source") == "arm_elf"
                     and real_manifest.get("variant") == "PMU_COMPLETION_POLL_DIAG_V12"
                     and real_manifest.get("qualification_mode") == "Q1"
-                    and real_manifest.get("expected_return_address") == int(real_manifest["terminal_cmd0c_store_address"], 16)
+                    and real_manifest.get("expected_return_address") == int(real_manifest["hprintf_callsite_address"], 16) + 4
                     and set(real_manifest.get("artifact_sha256", {}).keys()) == {"APP.BIN", "VECTORS.BIN", "DDR.BIN"}
                     and "runner_pmu_completion_poll_v12.elf" in real_manifest.get("build_evidence_sha256", {}),
                 )
