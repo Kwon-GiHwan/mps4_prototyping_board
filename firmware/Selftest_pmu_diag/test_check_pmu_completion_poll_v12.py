@@ -304,10 +304,11 @@ DISASSEMBLY = """Disassembly of section .text:
    101c:\tf8c3 20c0\tstr.w\tr2, [r3, #192]     ; pmu_completion_poll_v12_t_status_completion_seen
    1020:\t; V12_P2
    1020:\tf8c3 21c0\tstr.w\tr2, [r3, #256]     ; pmu_completion_poll_v12_t_poll_exit
+   1024:\t; V12_HELPER_IRQ_HISTORY_STORE
    1024:\tbx\tlr
 
 00001100 <test_u85>:
-   1100:\t... \tbl\t__asm_nvic_set_vector
+   1100:\t... \tbl\t__asm_nvic_set_vector\t; V12_RUNTIME_VECTOR_INSTALL
    1104:\t; V12_RUNTIME_NVIC_PREPARE
    1104:\t... \tstr\tr0, [r1]
    1108:\t; V12_RUNTIME_DISABLE
@@ -322,7 +323,6 @@ DISASSEMBLY = """Disassembly of section .text:
    111c:\t...
    1120:\t; V12_RUNTIME_IRQ_TRIGGERED_READ
    1120:\t... \t; irq_triggered
-   1124:\t; V12_RUNTIME_VECTOR_INSTALL
    1124:\t... \t; vector install site
 
 00001200 <test_commands>:
@@ -406,15 +406,7 @@ NM = """00001000 T v12_poll_completion
 20002040 B pmu_completion_poll_v12_t_irq_triggered_after_cleanup
 """
 
-MANIFEST_OK = {
-    "schema_version": SCHEMA_VERSION,
-    "build_id": BUILD_ID,
-    "runner_source_sha256": RUNNER_SHA256,
-    "vendor_source_sha256": VENDOR_SHA256,
-    "manifest_sha256": "OKMANIFESTSHA",
-    "artifact_sha256": "OKBINHASH",
-    "parser_sha256": "OKPARSE",
-}
+# NOTE: MANIFEST_OK is defined after marker tables so it can carry concrete site-address keys.
 
 
 # --- deliberate mutations for the 27 required rejection cases ----------------
@@ -703,7 +695,29 @@ def _count_success_path_cmd2(wtext):
     return wtext[start:end].count("write_reg(NPU_REG_CMD, 0x00000002);")
 
 
+def _extract_disassembly_marker_address(disassembly, marker):
+    needle = "; %s" % marker
+    for line in disassembly.splitlines():
+        if needle in line:
+            match = re.match(r"\s*([0-9a-fA-F]+):", line)
+            if match:
+                return "0x%s" % match.group(1)
+    return None
+
+
+def _collect_disassembly_marker_addresses(disassembly, markers):
+    return {
+        marker: _extract_disassembly_marker_address(disassembly, marker)
+        for marker in markers
+    }
+
+
 def _validate_required_site_markers():
+    disassembly_marker_addresses = _collect_disassembly_marker_addresses(
+        DISASSEMBLY,
+        REQUIRED_SITE_MARKERS.keys()
+    )
+
     for marker, key in REQUIRED_SITE_MARKERS.items():
         assert marker in VENDOR_V12_OK, "source marker missing: %s" % marker
     for marker, key in REQUIRED_DISASSEMBLY_MARKERS.items():
@@ -711,19 +725,23 @@ def _validate_required_site_markers():
     for manifest_key in EXPECTED_MANIFEST_KEYS:
         assert manifest_key in set(REQUIRED_SITE_MARKERS.values()) or manifest_key in set(REQUIRED_DISASSEMBLY_MARKERS.values()), \
             "expected manifest key never mapped: %s" % manifest_key
+        assert manifest_key in MANIFEST_OK, "manifest key missing: %s" % manifest_key
+        assert str(MANIFEST_OK[manifest_key]).startswith("0x"), "manifest key not address-like: %s" % manifest_key
 
     for marker in REQUIRED_SITE_MARKERS:
         assert _count_exact_marker(VENDOR_V12_OK, "/* " + marker + " */") == 1, "source marker count mismatch: %s" % marker
+        manifest_key = REQUIRED_SITE_MARKERS[marker]
+        assert manifest_key in MANIFEST_OK, "manifest missing tracking key: %s" % manifest_key
+        assert MANIFEST_OK.get(manifest_key) is not None, "manifest tracking key %s has no value" % manifest_key
         if marker in REQUIRED_DISASSEMBLY_MARKERS:
             assert _count_exact_marker(DISASSEMBLY, marker) == 1, "disassembly marker count mismatch: %s" % marker
+            assert marker in disassembly_marker_addresses, "disassembly marker missing during collection: %s" % marker
+            assert disassembly_marker_addresses[marker] is not None, "disassembly marker address missing: %s" % marker
+            assert MANIFEST_OK[manifest_key] == disassembly_marker_addresses[marker], \
+                "manifest address mismatch for %s" % marker
 
     for marker in REQUIRED_DISASSEMBLY_MARKERS:
         assert DISASSEMBLY.count(" ; " + marker) == 1 or DISASSEMBLY.count(marker) >= 1, "disassembly marker missing/duplicate: %s" % marker
-
-    for marker in REQUIRED_DISASSEMBLY_MARKERS:
-        if marker in REQUIRED_SITE_MARKERS:
-            assert DISASSEMBLY.count(marker) >= 1
-        assert marker in DISASSEMBLY
 
     for symbol in (
         "v12_poll_completion",
@@ -819,6 +837,7 @@ REQUIRED_DISASSEMBLY_MARKERS = {
     "V12_P0": "poll_helper_p0_address",
     "V12_HELPER_STATUS_READ": "helper_status_read_address",
     "V12_HELPER_STATUS_TEST": "helper_status_test_address",
+    "V12_HELPER_IRQ_HISTORY_STORE": "helper_history_mask_store_address",
     "V12_P1": "poll_helper_p1_address",
     "V12_P2": "poll_helper_p2_address",
     "V12_RUNTIME_DISABLE": "runtime_disable_site_address",
@@ -891,6 +910,21 @@ EXPECTED_MANIFEST_KEYS = {
     "irq_history_mask_store_address": "ISR history-mask store",
     "irq_cmd2_store_address": "ISR CMD2 write",
 }
+
+
+_DISASSEMBLY_SITE_ADDRESSES = _collect_disassembly_marker_addresses(DISASSEMBLY, REQUIRED_SITE_MARKERS.keys())
+
+MANIFEST_OK = {
+    "schema_version": SCHEMA_VERSION,
+    "build_id": BUILD_ID,
+    "runner_source_sha256": RUNNER_SHA256,
+    "vendor_source_sha256": VENDOR_SHA256,
+    "manifest_sha256": "OKMANIFESTSHA",
+    "artifact_sha256": "OKBINHASH",
+    "parser_sha256": "OKPARSE",
+}
+for _marker, _manifest_key in REQUIRED_SITE_MARKERS.items():
+    MANIFEST_OK[_manifest_key] = _DISASSEMBLY_SITE_ADDRESSES.get(_marker)
 
 
 MUTATION_FIXTURES = {
