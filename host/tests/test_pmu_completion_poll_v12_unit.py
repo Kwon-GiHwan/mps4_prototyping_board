@@ -1,12 +1,6 @@
-"""PMU completion poll V12 host-contract unit fixture (RED).
-
-The file is intentionally expected to be RED until the parser/collector/analyzer
-modules are implemented.  It now defines explicit API contracts and uses those
-APIs for assertions rather than re-implementing host behavior inline.
-"""
+"""PMU completion-poll V12 host-contract unit fixture."""
 
 import hashlib
-import importlib
 import json
 import os
 import struct
@@ -14,329 +8,162 @@ import sys
 import tempfile
 import zlib
 
-# -----------------------------------------------------------------------------
-# Shared import path setup (host package style like existing V11-A tests)
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 REPO_ROOT = os.path.abspath(os.path.join(CURRENT_DIR, "..", ".."))
 FIRMWARE_ROOT = os.path.join(REPO_ROOT, "firmware", "Selftest_pmu_diag")
+HOST_ROOT = os.path.join(REPO_ROOT, "host")
 
 if REPO_ROOT not in sys.path:
     sys.path.insert(0, REPO_ROOT)
+if HOST_ROOT not in sys.path:
+    sys.path.insert(0, HOST_ROOT)
 if FIRMWARE_ROOT not in sys.path:
     sys.path.insert(0, FIRMWARE_ROOT)
 
-
-# -----------------------------------------------------------------------------
-# Concrete future API contracts for Task 6
-RUNNER_MODULE = "host.runner_proto_pmu_completion_poll_v12"
-COLLECT_MODULE = "host.run_pmu_completion_poll_v12"
-ANALYZE_MODULE = "host.analyze_pmu_completion_poll_v12"
-
-_run_mod = importlib.import_module(RUNNER_MODULE)
-_collect_mod = importlib.import_module(COLLECT_MODULE)
-_analyze_mod = importlib.import_module(ANALYZE_MODULE)
-
-
-def _require_attribute(mod, attr):
-    if not hasattr(mod, attr):
-        raise AttributeError("missing required API %r in %r" % (attr, mod.__name__))
-    return getattr(mod, attr)
-
-
-parse_payload = _require_attribute(_run_mod, "parse_pmu_completion_poll_v12_payload")
-classify_payload = _require_attribute(_run_mod, "classify_pmu_completion_poll_v12_payload")
-u32 = _require_attribute(_run_mod, "u32")
-collect_one = _require_attribute(_collect_mod, "collect_one")
-analyze_3x10 = _require_attribute(_analyze_mod, "analyze_3x10")
-
-RUNNER_BUILD_ID = _require_attribute(_run_mod, "PMU_COMPLETION_POLL_V12_BUILD_ID")
-RUNNER_SCHEMA = _require_attribute(_run_mod, "PMU_COMPLETION_POLL_V12_SCHEMA_VERSION")
-RUNNER_BODY_WORDS = _require_attribute(_run_mod, "PMU_COMPLETION_POLL_V12_BODY_WORDS")
-RUNNER_HEADER_WORDS = _require_attribute(_run_mod, "PMU_COMPLETION_POLL_V12_HEADER_WORDS")
-RUNNER_MAGIC = _require_attribute(_run_mod, "PMU_COMPLETION_POLL_V12_MAGIC")
-RunError = getattr(_run_mod, "ProtocolError", RuntimeError)
-
-# Preserve exact constants and avoid depending on implementation names.
-SCHEMA_VERSION = RUNNER_SCHEMA
-BUILD_ID = RUNNER_BUILD_ID
-EXPECTED_BODY_WORDS = RUNNER_BODY_WORDS
-HEADER_WORDS = RUNNER_HEADER_WORDS
-MAGIC = RUNNER_MAGIC
-
-STOCK_VECTOR_NAME = "u85_irq_handler"
-STOCK_VECTOR_ADDR = 0x20001000
-HALF_RANGE = 1 << 31
-POLL_SUCCESS = 1
-POLL_TIMEOUT = 2
-
-V12_FIELDS = [
-    "t_submit_after_cmd",
-    "t_poll_entry",
-    "t_status_completion_seen",
-    "t_poll_exit",
-    "poll_result",
-    "status_at_success",
-    "installed_vector",
-    "nvic_enabled_before_submit",
-    "nvic_pending_after_initial_clear",
-    "nvic_active_before_submit",
-    "irq_triggered_before_submit",
-    "nvic_pending_before_final_clear",
-    "nvic_pending_after_final_clear",
-    "nvic_active_after_cleanup",
-    "irq_triggered_after_cleanup",
-]
-assert len(V12_FIELDS) == 15, V12_FIELDS
-
-PMU_PREFIX_FIELDS = [
-    "schema_version",
-    "build_id",
-    "diag_case",
-    "nc_control_id",
-    "run_sequence",
-    "cfg_write_performed",
-    "cfg_write_value",
-    "cfg_readback_after_write",
-    "run_rc",
-    "valid_flags",
-    "poison_crc",
-    "output_crc",
-    "result_region_crc",
-    "ts_source_valid",
-    "t_call_enter",
-    "t_call_return",
-    "t_pmu_disable",
-    "pmcr_readback_after_disable",
-    "pmu_mmio_read_count_delta",
-    "pmu_mmio_write_count_delta",
-    "start_sequence_id",
-    "power_guard_cycles",
-    "npu_cmd_before_power_request",
-    "npu_cmd_after_power_request",
-    "npu_status_after_power_request",
-    "reset_guard_cycles",
-    "pmcr_after_reset_guard",
-    "pmcr_after_program",
-    "armed_after_program",
-    "program_stability_reads",
-    "program_stable",
-    "npu_cmd_after_return",
-    "power_seam_id",
-    "power_rehold_performed",
-    "rehold_guard_cycles",
-    "npu_cmd_after_seam",
-    "npu_status_after_seam",
-    "golden_window_base",
-    "golden_window_len",
-    "golden_window_crc",
-]
-assert len(PMU_PREFIX_FIELDS) == 40, len(PMU_PREFIX_FIELDS)
-
-BASE_VALUES = {
-    "schema_version": SCHEMA_VERSION,
-    "build_id": BUILD_ID,
-    "diag_case": 1,
-    "nc_control_id": 0,
-    "run_sequence": 1,
-    "cfg_write_performed": 0,
-    "cfg_write_value": 0,
-    "cfg_readback_after_write": 0,
-    "run_rc": 0,
-    "valid_flags": 0x1F,
-    "poison_crc": 0x1111,
-    "output_crc": 0x2222,
-    "result_region_crc": 0xA5A50001,
-    "ts_source_valid": 1,
-    "t_call_enter": 100,
-    "t_call_return": 200,
-    "t_pmu_disable": 300,
-    "pmcr_readback_after_disable": 0,
-    "pmu_mmio_read_count_delta": 20,
-    "pmu_mmio_write_count_delta": 8,
-    "start_sequence_id": 4,
-    "power_guard_cycles": 65536,
-    "npu_cmd_before_power_request": 0xC,
-    "npu_cmd_after_power_request": 0,
-    "npu_status_after_power_request": 0,
-    "reset_guard_cycles": 65536,
-    "pmcr_after_reset_guard": 0x4000,
-    "pmcr_after_program": 0x4001,
-    "armed_after_program": 1,
-    "program_stability_reads": 8,
-    "program_stable": 1,
-    "npu_cmd_after_return": 0xC,
-    "power_seam_id": 4,
-    "power_rehold_performed": 0,
-    "rehold_guard_cycles": 0,
-    "npu_cmd_after_seam": 0xC,
-    "npu_status_after_seam": 0,
-    "golden_window_base": 0x90020CC0,
-    "golden_window_len": 0x100,
-    "golden_window_crc": 0x27084C4C,
-}
-
-HOOK_FIELDS = [
-    "mode",
-    "nvic_armed",
-    "hook_detected_count",
-    "hook_fired_count",
-    "hook_snapshot_valid",
-    "hook_callsite_lr",
-    "hook_entry_timestamp",
-    "hook_exit_timestamp",
-    "npu_cmd_at_hook",
-    "pmcr_disable_readback_at_hook",
-    "hook_pmu_mmio_read_count",
-    "hook_pmu_mmio_write_count",
-    "hook_reserved_12",
-]
-
-SNAPSHOT_NAMES = ["pre", "internal_pre_release", "internal_post_disable", "after_return"]
-SNAPSHOT_FIELDS = [
-    "pmcr",
-    "pmcntenset",
-    "cfg",
-    "cycle_low",
-    "cycle_high",
-    "stable",
-    "retries",
-    "overflow",
-]
-RETAINED_SNAPSHOT_FIELDS = [
-    f"{snap}_{fld}" for snap in SNAPSHOT_NAMES for fld in SNAPSHOT_FIELDS
-]
-
-TOTAL_WORDS = HEADER_WORDS + EXPECTED_BODY_WORDS
+import host.analyze_pmu_completion_poll_v12 as az
+import host.run_pmu_completion_poll_v12 as rv12
+import host.runner_proto as v8
+import host.runner_proto_pmu_completion_poll_v12 as v12
 
 passed = 0
 failed = 0
 
 
-class _FieldMissing(KeyError):
-    pass
-
-
-def _as_dict(obj):
-    if isinstance(obj, dict):
-        return obj
-    if hasattr(obj, "_asdict"):
-        return obj._asdict()
-    if hasattr(obj, "__dict__"):
-        return dict(obj.__dict__)
-    out = {}
-    for field in dir(obj):
-        if field.startswith("_"):
-            continue
-        out[field] = getattr(obj, field)
-    return out
-
-
-def _coerce_u32(v: int) -> int:
-    return u32(int(v) & 0xFFFFFFFF)
-
-
-def check(name: str, ok: bool, detail: str = ""):
+def check(name, ok, detail=""):
     global passed, failed
-    print("  %-4s %-78s %s" % ("PASS" if ok else "FAIL", name, detail))
+    print("  %-4s %-68s %s" % ("PASS" if ok else "FAIL", name, detail))
     if ok:
         passed += 1
     else:
         failed += 1
 
 
-def snapshot(
-    *,
-    cyc=0,
-    pmcr=1,
-    cfg=0,
-    stable=1,
-    retries=0,
-    overflow=0,
-):
+def rejects(name, fn):
+    try:
+        fn()
+        check(name, False, "accepted")
+    except BaseException as exc:
+        check(name, True, str(exc)[:80])
+
+
+def snap(cfg=0, cyc=0, armed=True, glob=True, stable=1, ovs=0):
+    global_en = 1 << v8.PMU_PMCR_CNT_EN_BIT
+    armed_bit = 1 << v8.PMU_PMCNTEN_CYCLE_BIT
     return (
-        pmcr,
-        1 << 31,
+        global_en if glob else 0,
+        armed_bit if armed else 0,
         cfg,
         cyc & 0xFFFFFFFF,
         (cyc >> 32) & 0xFFFF,
         stable,
-        retries,
-        overflow,
+        0,
+        ovs,
     )
+
+
+def hex64(ch):
+    return ch * 64
+
+
+def manifest(**over):
+    doc = {
+        "variant": "PMU_COMPLETION_POLL_DIAG_V12",
+        "schema_version": 12,
+        "build_id": "0x%08X" % v12.PMU_COMPLETION_POLL_V12_BUILD_ID,
+        "qualification_mode": "Q1",
+        "expected_return_address": 0x3100078C,
+        "evidence_source": "arm_elf",
+        "characterization_only": True,
+        "not_a_performance_baseline": True,
+        "not_a_latency_measurement": True,
+        "generated_private_driver_diagnostic_only": True,
+        "production_end_only_frozen": True,
+        "not_numerically_comparable_to_v11a": True,
+        "not_latency": True,
+        "not_t_npu": True,
+        "not_production": True,
+        "not_mlek": True,
+        "artifact_sha256": {
+            "APP.BIN": hex64("a"),
+            "VECTORS.BIN": hex64("b"),
+            "DDR.BIN": hex64("c"),
+        },
+        "build_evidence_sha256": {
+            "runner_pmu_completion_poll_v12.elf": hex64("d"),
+            "runner_pmu_completion_poll_v12.map": hex64("e"),
+            "generated_runner.c": hex64("f"),
+            "generated_vendor_u85.c": hex64("0"),
+            "checker_disassembly.txt": hex64("1"),
+            "checker_nm.txt": hex64("2"),
+        },
+        "helper_symbol": "v12_poll_completion",
+        "runtime_vector_target_symbol": "u85_irq_handler",
+        "wait_call_address": "0x00001200",
+        "hprintf_callsite_address": "0x31000788",
+        "helper_status_read_address": "0x0000100c",
+        "helper_status_test_address": "0x00001010",
+        "poll_helper_p0_address": "0x00001004",
+        "poll_helper_p1_address": "0x00001014",
+        "poll_helper_p2_address": "0x00001018",
+        "success_cmd2_1_store_address": "0x00001234",
+        "success_qread_load_address": "0x00001238",
+        "success_cmd2_2_store_address": "0x0000123c",
+        "timeout_qread_load_address": "0x00001274",
+        "timeout_cmd2_store_address": "0x00001278",
+        "cmd0_store_address": "0x00001290",
+        "terminal_cmd0c_store_address": "0x000012a0",
+    }
+    doc.update(over)
+    return doc
 
 
 def build_payload(
     *,
-    schema: int = SCHEMA_VERSION,
-    build_id: int = BUILD_ID,
-    run_sequence: int = 1,
-    run_rc: int = 0,
-    build_words: int | None = None,
-    command_tail: list[int] | None = None,
-    appendix_overrides: dict[str, int] | None = None,
+    run_sequence=1,
+    poll_result=v12.PMU_COMPLETION_POLL_V12_POLL_SUCCESS,
+    appendix_overrides=None,
+    build_id=v12.PMU_COMPLETION_POLL_V12_BUILD_ID,
+    schema=12,
 ):
-    if build_words is None:
-        build_words = TOTAL_WORDS
-
-    prefix = dict(BASE_VALUES)
-    prefix.update({
-        "schema_version": schema,
-        "build_id": build_id,
-        "run_sequence": run_sequence,
-        "run_rc": run_rc,
-    })
-
-    hook = [
-        1,
-        1,
-        1,
-        1,
-        1,
-        1,
-        0x20002000,
-        0x1000,
-        0x1090,
-        0,
-        0x4000,
-        3,
-        1,
+    pre = snap(cyc=1000)
+    internal = snap(cyc=1160)
+    post_disable = snap(cyc=1160, glob=False)
+    after_return = snap(cyc=0, armed=False, glob=False)
+    prefix = [
+        schema,
+        build_id,
+        1, 0, run_sequence,
+        0, 0, 0,
+        0, v8.RUN_VALID_REQUIRED_MASK,
+        0x1111, 0x2222, 0x3333,
+        1, 100, 300, 240,
+        0, 58, 8,
+        v8.PMU_DIAG_START_SEQUENCE_POWER_GUARD_PROGRAM,
+        v8.PMU_DIAG_POWER_GUARD_CYCLES, 0xC, 0, 0,
+        v8.PMU_DIAG_RESET_GUARD_CYCLES, 0x4000, 0x4001, 1,
+        v8.PMU_DIAG_STABILITY_SAMPLES, 1,
+        0xC, v8.PMU_QUAL_POWER_SEAM_ID, 0, 0, 0xC, 0,
+        v8.PMU_DIAG_GOLDEN_WINDOW_BASE, v8.PMU_DIAG_GOLDEN_WINDOW_LEN,
+        v8.GOLDEN_WINDOW_CRC,
     ]
-
-    pre = snapshot(cyc=100)
-    pre2 = snapshot(cyc=1000)
-    pre3 = snapshot(cyc=1000, pmcr=0)
-    pre4 = snapshot(cyc=0, pmcr=0)
-
-    body = []
-    for field in PMU_PREFIX_FIELDS:
-        body.append(int(prefix[field]))
-    body.extend(hook)
-    body.extend(pre)
-    body.extend(pre2)
-    body.extend(pre3)
-    body.extend(pre4)
-
-    appendix = command_tail or [
+    hook = [1, 1, 1, 1, 1, 1, 0x3100078C, 0x1000, 0x1090, 0, 0, 3, 1]
+    appendix = [
         0x1000,
-        0x1040,
-        0x10A0,
-        0x10D0,
-        POLL_SUCCESS,
-        0x00020002,
-        STOCK_VECTOR_ADDR,
+        0x1080,
+        0x10A0 if poll_result == v12.PMU_COMPLETION_POLL_V12_POLL_SUCCESS else 0,
+        0x10D0 if poll_result == v12.PMU_COMPLETION_POLL_V12_POLL_SUCCESS else 0,
+        poll_result,
+        0x00020002 if poll_result == v12.PMU_COMPLETION_POLL_V12_POLL_SUCCESS else 0,
+        v12.PMU_COMPLETION_POLL_V12_STOCK_VECTOR_ADDR,
         0,
         0,
         0,
         0,
-        0,
+        1 if poll_result == v12.PMU_COMPLETION_POLL_V12_POLL_TIMEOUT else 0,
         0,
         0,
         0,
     ]
-
-    if len(appendix) != 15:
-        raise ValueError("V12 appendix must be exactly 15 words")
-
     if appendix_overrides:
         appendix_fields = [
             "t_submit_after_cmd",
@@ -355,548 +182,310 @@ def build_payload(
             "nvic_active_after_cleanup",
             "irq_triggered_after_cleanup",
         ]
-        for field, value in appendix_overrides.items():
-            if field in appendix_fields:
-                appendix[appendix_fields.index(field)] = value
-
-    body.extend(appendix)
-
-    if len(body) != EXPECTED_BODY_WORDS:
-        raise ValueError("body words mismatch: expected %d got %d" % (EXPECTED_BODY_WORDS, len(body)))
-
-    header = [
-        MAGIC,
-        schema,
-        build_words,
-        HEADER_WORDS,
-        run_sequence,
-        prefix["valid_flags"],
-        run_rc,
-        0,
-    ]
-
+        for key, value in appendix_overrides.items():
+            appendix[appendix_fields.index(key)] = value
+    body = prefix + hook + list(pre) + list(internal) + list(post_disable) + list(after_return) + appendix
+    total = v12.PMU_COMPLETION_POLL_V12_TOTAL_WORDS
+    assert len(body) == v12.PMU_COMPLETION_POLL_V12_BODY_WORDS, len(body)
     payload = bytearray(
-        struct.pack("<8I", *header) + b"".join(struct.pack("<I", word) for word in body)
+        struct.pack(
+            "<8I",
+            v12.PMU_COMPLETION_POLL_V12_MAGIC,
+            schema,
+            total,
+            v12.PMU_COMPLETION_POLL_V12_HEADER_WORDS,
+            run_sequence,
+            prefix[9],
+            prefix[8],
+            0,
+        )
+        + b"".join(struct.pack("<I", word) for word in body)
     )
-    if len(payload) != build_words * 4:
-        raise ValueError("payload size mismatch")
-
-    crc = zlib.crc32(payload[16:28] + payload[32:]) & 0xFFFFFFFF
+    crc = zlib.crc32(bytes(payload[16:28]) + bytes(payload[32:])) & 0xFFFFFFFF
     struct.pack_into("<I", payload, 28, crc)
     return bytes(payload)
 
 
-def mutate_byte(payload: bytes, index: int, xor: int) -> bytes:
-    data = bytearray(payload)
-    if index < len(data):
-        data[index] ^= xor
-    return bytes(data)
-
-
-def make_manifest(
-    *,
-    build_id: int = BUILD_ID,
-    evidence_source: str = "arm_elf",
-    runner_sha: str = "".join(["a" for _ in range(64)]),
-    vendor_sha: str = "".join(["b" for _ in range(64)]),
-) -> dict:
-    return {
-        "variant": "PMU_COMPLETION_POLL_DIAG_V12",
-        "schema_version": SCHEMA_VERSION,
-        "build_id": "0x%08X" % build_id,
-        "qualification_mode": "Q1",
-        "expected_return_address": 0x20002000,
-        "characterization_only": True,
-        "not_a_performance_baseline": True,
-        "not_a_latency_measurement": True,
-        "generated_private_driver_diagnostic_only": True,
-        "production_end_only_frozen": True,
-        "not_a_performance_baseline": True,
-        "evidence_source": evidence_source,
-        "artifact_sha256": {
-            "generated_runner.c": runner_sha,
-            "generated_vendor_u85.c": vendor_sha,
-        },
-        "build_evidence_sha256": {
-            "generated_runner.c": runner_sha,
-            "generated_vendor_u85.c": vendor_sha,
-            "manifest": "",
-        },
-    }
-
-
-def build_record(
-    *,
-    boot: int,
-    run: int,
-    scenario: str,
-    archive_path: str,
-    manifest: dict,
-):
-    payload = build_payload(run_sequence=run)
-
-    if scenario == "timeout":
-        payload = build_payload(
-            run_sequence=run,
-            appendix_overrides={
-                "t_submit_after_cmd": 0x0800,
-                "t_poll_entry": 0x0808,
-                "t_status_completion_seen": 0,
-                "t_poll_exit": 0,
-                "poll_result": POLL_TIMEOUT,
-                "status_at_success": 0,
-                "nvic_pending_before_final_clear": 0,
-                "nvic_pending_after_final_clear": 0,
-                "nvic_active_after_cleanup": 0,
-                "irq_triggered_after_cleanup": 0,
-                "installed_vector": STOCK_VECTOR_ADDR,
-            },
-        )
-    elif scenario == "success":
-        payload = build_payload(
-            run_sequence=run,
-            appendix_overrides={
-                "t_submit_after_cmd": 0x1000,
-                "t_poll_entry": 0x1080,
-                "t_status_completion_seen": 0x10A0,
-                "t_poll_exit": 0x10D0,
-                "poll_result": POLL_SUCCESS,
-                "status_at_success": 0x00020002,
-                "installed_vector": STOCK_VECTOR_ADDR,
-            },
-        )
-
-    raw = {
-        "payload_hex": payload.hex(),
-        "payload_sha256": hashlib.sha256(payload).hexdigest(),
-        "reread_payload_hex": payload.hex(),
-        "reread_payload_sha256": hashlib.sha256(payload).hexdigest(),
-        "reread_matches_run_payload": True,
-    }
-
+def archive_doc(raw, *, man=None, host_boot_index=1):
+    man = manifest() if man is None else man
+    parsed = v12.parse_pmu_completion_poll_v12_payload(raw)
+    blob = (json.dumps(man, sort_keys=True) + "\n").encode("utf-8")
+    derived = v12.classify_pmu_completion_poll_v12_payload(parsed, man)
     return {
         "variant": "PMU_COMPLETION_POLL_DIAG_V12",
         "host": {
-            "host_boot_index": boot,
-            "manifest_text": json.dumps(manifest, sort_keys=True),
-            "manifest_sha256": hashlib.sha256(json.dumps(manifest, sort_keys=True).encode()).hexdigest(),
-            "artifact_sha256": dict(manifest["artifact_sha256"]),
-            "manifest_path": archive_path,
-            "campaign_path": archive_path,
+            "host_boot_index": host_boot_index,
+            "manifest_path": "manifest.json",
+            "manifest_text": blob.decode("utf-8"),
+            "manifest_sha256": hashlib.sha256(blob).hexdigest(),
+            "artifact_sha256": dict(man["artifact_sha256"]),
         },
-        "manifest": manifest,
-        "manifest_path": archive_path,
-        "raw": raw,
+        "manifest": json.loads(blob.decode("utf-8")),
+        "target": v12.target_fields(parsed),
+        "derived": derived if derived["valid"] else None,
+        "raw": {
+            "payload_hex": raw.hex(),
+            "payload_sha256": hashlib.sha256(raw).hexdigest(),
+            "reread_payload_hex": raw.hex(),
+            "reread_payload_sha256": hashlib.sha256(raw).hexdigest(),
+            "reread_matches_run_payload": True,
+        },
     }
 
 
-def _is_valid_response(value) -> bool:
-    d = _as_dict(value)
-    return bool(d.get("valid", d.get("ok", False)))
+class Frame:
+    def __init__(self, command, sequence, payload=b"", flags=0):
+        self.version = 1
+        self.command = command
+        self.flags = flags
+        self.sequence = sequence
+        self.payload = payload
 
 
-def _reject(fn) -> bool:
-    try:
-        fn()
-        return False
-    except Exception:
-        return True
+def ack(seq):
+    return Frame(v8.CMD_RUN_PMU_DIAG | 0x80, seq, b"\x00\x00\x00\x00")
 
 
-def _fixture_smoke_suite() -> bool:
-    """Build/parse fixture smoke checks without hidden name/key errors.\n\n    Executed before API assertions when APIs are importable.\n    """
-    try:
-        payload_success = build_payload()
-        timeout_payload = build_payload(
-            appendix_overrides={
-                "poll_result": POLL_TIMEOUT,
-                "status_at_success": 0,
-                "t_poll_entry": 0x0808,
-                "t_status_completion_seen": 0,
-                "t_poll_exit": 0,
-            }
-        )
-        wrap_payload = build_payload(
-            appendix_overrides={
-                "t_submit_after_cmd": 0xFFFFFF90,
-                "t_poll_entry": 0xFFFFFFC0,
-                "t_status_completion_seen": 0,
-                "t_poll_exit": 0x30,
-            }
-        )
-        campaign_records = [
-            build_record(
-                boot=boot,
-                run=run,
-                scenario="timeout" if (boot == 2 and run == 4) else "success",
-                archive_path=f"boot{boot}_run{run:02d}.json",
-                manifest=make_manifest(),
-            )
-            for boot in (1, 2, 3)
-            for run in range(1, 11)
-        ]
-        records = [
-            build_record(boot=1, run=1, scenario="success", archive_path="boot1_run01.json", manifest=make_manifest()),
-            build_record(boot=2, run=4, scenario="timeout", archive_path="boot2_run04.json", manifest=make_manifest()),
-        ]
-        parse_payload(payload_success)
-        parse_payload(timeout_payload)
-        parse_payload(wrap_payload)
-        for path in records + campaign_records:
-            json.dumps(path)
-        return True
-    except Exception:
-        return False
+def complete(payload, seq):
+    return Frame(v8.CMD_PMU_DIAG_COMPLETE, seq, payload)
 
 
-def validate_payload_contracts():
-    manifest = make_manifest()
-    base_payload = build_payload()
-    parsed = parse_payload(base_payload)
-    parsed_dict = _as_dict(parsed)
+def reread_reply(payload, seq):
+    return Frame(v8.CMD_GET_PMU_DIAG_RESULT | 0x80, seq, payload)
 
-    check("schema exact", parsed_dict.get("schema_version") == SCHEMA_VERSION)
-    check("body-word exact", EXPECTED_BODY_WORDS + HEADER_WORDS == TOTAL_WORDS)
-    check("payload-byte exact", len(base_payload) == TOTAL_WORDS * 4)
-    check("build id exact", parsed_dict.get("build_id") == BUILD_ID)
 
-    for field in [
-        "golden_window_base",
-        "golden_window_len",
-        "golden_window_crc",
-    ]:
-        check("retained field present %s" % field, field in _as_dict(parsed))
+class FakeLink:
+    def __init__(self, run_frames, get_frames):
+        self._seq = 40
+        self._run_frames = run_frames
+        self._get_frames = get_frames
+        self.queue = []
+        self.sent = []
+        self.late_frames = 0
+        self.last_pmu_diag_raw = None
+        self.last_pmu_diag_reread_raw = None
 
-    for name in V12_FIELDS:
-        check("has V12 field %s" % name, name in _as_dict(parsed))
+    def next_sequence(self):
+        self._seq = (self._seq + 1) & 0xFFFFFFFF
+        return self._seq
 
+    def send_raw(self, blob):
+        _, _, cmd, _, seq, _ = struct.unpack(v8.HEADER, blob[: struct.calcsize(v8.HEADER)])
+        self.sent.append((cmd, seq))
+        frames = self._run_frames(seq) if cmd == v8.CMD_RUN_PMU_DIAG else self._get_frames(seq)
+        self.queue.extend(frames)
+
+    def read_frame(self, timeout=5.0):
+        if not self.queue:
+            raise v8.ProtocolError("timed out waiting for a frame")
+        return self.queue.pop(0)
+
+
+def write_doc(root, name, doc):
+    path = os.path.join(root, name)
+    with open(path, "w", encoding="utf-8") as handle:
+        json.dump(doc, handle, sort_keys=True)
+    return path
+
+
+def campaign_paths(root, *, mutate=None):
+    paths = []
+    for boot in (1, 2, 3):
+        for run in range(1, 11):
+            raw = build_payload(run_sequence=run)
+            doc = archive_doc(raw, host_boot_index=boot)
+            if mutate is not None:
+                doc = mutate(doc, boot, run)
+            paths.append(write_doc(root, "boot%d_run%02d.json" % (boot, run), doc))
+    return paths
+
+
+def test_schema_and_manifest():
+    raw = build_payload()
+    parsed = v12.parse_pmu_completion_poll_v12_payload(raw)
+    check("schema exact", parsed.schema_version == 12)
+    check("body words exact", v12.PMU_COMPLETION_POLL_V12_BODY_WORDS == 100)
+    check("payload size exact", len(raw) == v12.PMU_COMPLETION_POLL_V12_PAYLOAD_SIZE)
     for schema in (8, 9, 10, 11):
-        bad_schema_payload = bytearray(base_payload)
-        struct.pack_into("<I", bad_schema_payload, 4, schema)
-        check(
-            "schema %d rejected" % schema,
-            _reject(lambda: parse_payload(bytes(bad_schema_payload))),
-        )
-
-    parse_bad_build = build_payload(build_id=BUILD_ID ^ 0x1)
-    bad_build = parse_payload(parse_bad_build)
-    bad_dict = _as_dict(bad_build)
-    classified_bad = classify_payload(bad_build, manifest)
-    bad_terms = _as_dict(classified_bad)
-    check("exact bad build-id rejected", not bad_terms.get("valid", bad_terms.get("ok", True)))
-    check(
-        "bad build-id includes rejection reason",
-        bool(bad_terms.get("invalid_reasons") or bad_terms.get("reasons", bad_terms.get("errors", []))),
+        bad = bytearray(raw)
+        struct.pack_into("<I", bad, 4, schema)
+        rejects("schema %d rejected" % schema, lambda payload=bytes(bad): v12.parse_pmu_completion_poll_v12_payload(payload))
+    rejects("collect_one requires attested manifest", lambda: rv12.collect_one(raw=raw))
+    rejects(
+        "manifest runtime vector target key required",
+        lambda: v12.verify_manifest_identity(
+            dict(manifest(), runtime_vector_target_symbol=None), "fixture"
+        ),
+    )
+    rejects(
+        "manifest artifact dict exact APP/VECTORS/DDR",
+        lambda: v12.verify_manifest_identity(
+            dict(manifest(), artifact_sha256={"APP.BIN": hex64("a")}), "fixture"
+        ),
     )
 
-    timeout_payload = build_payload(
-        appendix_overrides={
-            "poll_result": POLL_TIMEOUT,
-            "status_at_success": 0,
-            "t_submit_after_cmd": 0x0800,
-            "t_poll_entry": 0x0808,
-            "t_status_completion_seen": 0,
-            "t_poll_exit": 0,
-            "nvic_pending_before_final_clear": 1,
-            "nvic_pending_after_final_clear": 0,
-            "nvic_active_after_cleanup": 0,
-            "irq_triggered_after_cleanup": 0,
-        }
-    )
-    timeout_parsed = parse_payload(timeout_payload)
-    t2 = timeout_parsed.t_submit_after_cmd if hasattr(timeout_parsed, "t_submit_after_cmd") else _as_dict(timeout_parsed)["t_submit_after_cmd"]
-    p0 = timeout_parsed.t_poll_entry if hasattr(timeout_parsed, "t_poll_entry") else _as_dict(timeout_parsed)["t_poll_entry"]
-    p1 = timeout_parsed.t_status_completion_seen if hasattr(timeout_parsed, "t_status_completion_seen") else _as_dict(timeout_parsed)["t_status_completion_seen"]
-    p2 = timeout_parsed.t_poll_exit if hasattr(timeout_parsed, "t_poll_exit") else _as_dict(timeout_parsed)["t_poll_exit"]
-    classified_timeout = classify_payload(timeout_parsed, manifest)
-    timeout_terms = _as_dict(classified_timeout)
-    check("timeout outcome invalid", not _is_valid_response(timeout_terms))
-    check("timeout has P0, but no success P1/P2", p0 != 0 and p1 == 0 and p2 == 0)
-    timeout_derived = timeout_terms.get("derived")
-    check(
-        "timeout has no derived field",
-        (timeout_derived is None)
-        or ("submit_to_status_completion_observed_cycles" not in timeout_derived),
-    )
 
-    # Half-range math check, including wrap.
-    wrap_payload = build_payload(
-        appendix_overrides={
-            "t_submit_after_cmd": 0xFFFFFF90,
-            "t_poll_entry": 0xFFFFFFC0,
-            "t_status_completion_seen": 0,
-            "t_poll_exit": 0x30,
-            "status_at_success": 0x80000002,
-        }
-    )
-    wrap_parsed = parse_payload(wrap_payload)
-    vals = _as_dict(wrap_parsed)
-    d0 = _coerce_u32(vals["t_poll_entry"] - vals["t_submit_after_cmd"])
-    d1 = _coerce_u32(vals["t_status_completion_seen"] - vals["t_poll_entry"])
-    d2 = _coerce_u32(vals["t_poll_exit"] - vals["t_status_completion_seen"])
-    check("half-range d0", d0 < HALF_RANGE)
-    check("half-range d1", d1 < HALF_RANGE)
-    check("half-range d2", d2 < HALF_RANGE)
-    check("half-range sum identity", _coerce_u32(d0 + d1) == _coerce_u32(vals["t_status_completion_seen"] - vals["t_submit_after_cmd"]))
-    check("full-range sum identity", _coerce_u32(d0 + d1 + d2) == _coerce_u32(vals["t_poll_exit"] - vals["t_submit_after_cmd"]))
-
-
-def validate_transport_contracts():
-    base_payload = build_payload()
-
-    check("truncation rejected", _reject(lambda: parse_payload(base_payload[:12])))
-    check("extra bytes rejected", _reject(lambda: parse_payload(base_payload + b"\x00\x00\x00\x00")))
-    check("raw reread mismatch caught externally", True)
-
-    bad_crc = bytearray(base_payload)
-    bad_crc[40] ^= 0x01
-    check("bad CRC rejected", _reject(lambda: parse_payload(bytes(bad_crc))))
-
-    header_schema = bytearray(base_payload)
-    header_schema[4:8] = struct.pack("<I", 11)
-    check(
-        "header/body schema mismatch rejected",
-        _reject(lambda: parse_payload(bytes(header_schema))),
-    )
-
-    mismatched = build_payload()
-    mismatched_words = bytearray(mismatched)
-    struct.pack_into("<I", mismatched_words, 8, TOTAL_WORDS + 1)
-    check("declared length mismatch rejected", _reject(lambda: parse_payload(bytes(mismatched_words))))
-
-
-def validate_campaign_shape_and_stop():
-    manifest = make_manifest()
-    records = []
-    for boot in (1, 2, 3):
-        for run in range(1, 11):
-            rec = build_record(
-                boot=boot,
-                run=run,
-                scenario="success",
-                archive_path=f"boot{boot}_run{run:02d}.json",
-                manifest=manifest,
-            )
-            records.append(rec)
-
+def test_collect_raw_and_timeout():
+    man = manifest()
+    raw = build_payload()
     with tempfile.TemporaryDirectory() as tempdir:
-        paths = []
-        for idx, rec in enumerate(records):
-            path = os.path.join(tempdir, "record_%03d.json" % idx)
-            with open(path, "w", encoding="utf-8") as handle:
-                json.dump(rec, handle, sort_keys=True)
-            paths.append(path)
+        out = os.path.join(tempdir, "ok.json")
+        res = rv12.collect_one(raw=raw, manifest=man, out_path=out, host_boot_index=1)
+        check("collect_one valid success", res["valid"] is True and res["archive_write"] is True)
+        check("collect_one wrote archive", os.path.exists(out))
 
-        analysis = analyze_3x10(paths)
-        analysis_dict = _as_dict(analysis)
-        check("analyze_3x10 accepts payloads", bool(analysis_dict))
-        check("analyze_3x10 marks success campaign valid", bool(analysis_dict.get("campaign_valid")))
-        for key, expected in {
-            "total_samples": 30,
-            "sample_count": 30,
-            "count": 30,
-        }.items():
-            if key in analysis_dict:
-                check("analyze_3x10 total count key %s" % key, analysis_dict[key] == expected)
-        check("analyze_3x10 exact boot count", analysis_dict.get("boot_count") == 3)
-        check("analyze_3x10 exact boots", analysis_dict.get("boots") == [1, 2, 3])
-        check(
-            "analyze_3x10 exact per-boot cardinality",
-            analysis_dict.get("per_boot_run_count") == {"1": 10, "2": 10, "3": 10},
-        )
-        check(
-            "analyze_3x10 emits within-boot CV",
-            sorted((analysis_dict.get("within_boot_cv") or {}).keys()) == ["1", "2", "3"],
-        )
-        check(
-            "analyze_3x10 emits between-boot spread",
-            analysis_dict.get("between_boot_spread") == 0.0,
-        )
-        check(
-            "analyze_3x10 emits exact mode frequencies",
-            analysis_dict.get("mode_frequencies") == {"160": 30},
-        )
-        check(
-            "analyze_3x10 emits exact modes",
-            analysis_dict.get("modes") == [{"value": 160, "count": 30}],
-        )
-        check("analyze_3x10 no excursion on flat fixture", analysis_dict.get("excursion_count") == 0)
-        check("analyze_3x10 hard-floor count on flat fixture", analysis_dict.get("hard_floor_count") == 30)
-
-        check("analyze_3x10 rejects non-30 cardinality", _reject(lambda: analyze_3x10(paths[:-1])))
-
-        boot_reuse_records = json.loads(json.dumps(records))
-        for rec in boot_reuse_records:
-            if rec["host"]["host_boot_index"] == 3:
-                rec["host"]["host_boot_index"] = 2
-        boot_reuse_paths = []
-        for idx, rec in enumerate(boot_reuse_records):
-            path = os.path.join(tempdir, "boot_reuse_%03d.json" % idx)
-            with open(path, "w", encoding="utf-8") as handle:
-                json.dump(rec, handle, sort_keys=True)
-            boot_reuse_paths.append(path)
-        check("analyze_3x10 rejects boot reuse", _reject(lambda: analyze_3x10(boot_reuse_paths)))
-
-        seq_gap_records = json.loads(json.dumps(records))
-        seq_gap_records[-1] = build_record(
-            boot=3,
-            run=9,
-            scenario="success",
-            archive_path="boot3_run10.json",
-            manifest=manifest,
-        )
-        seq_gap_paths = []
-        for idx, rec in enumerate(seq_gap_records):
-            path = os.path.join(tempdir, "seq_gap_%03d.json" % idx)
-            with open(path, "w", encoding="utf-8") as handle:
-                json.dump(rec, handle, sort_keys=True)
-            seq_gap_paths.append(path)
-        check("analyze_3x10 rejects sequence gap", _reject(lambda: analyze_3x10(seq_gap_paths)))
-
-        drift_path = os.path.join(tempdir, "record_manifest_drift.json")
-        drift_record = json.loads(json.dumps(records[0]))
-        drift_record["manifest"]["artifact_sha256"]["generated_runner.c"] = "c" * 64
-        drift_record["host"]["artifact_sha256"]["generated_runner.c"] = "d" * 64
-        with open(drift_path, "w", encoding="utf-8") as handle:
-            json.dump(drift_record, handle, sort_keys=True)
-        check(
-            "analyze_3x10 rejects host/manifest artifact mismatch",
-            _reject(lambda: analyze_3x10([drift_path] + paths[1:])),
-        )
-
-    timeout_records = []
-    for boot in (1, 2, 3):
-        for run in range(1, 11):
-            timeout_records.append(
-                build_record(
-                    boot=boot,
-                    run=run,
-                    scenario="timeout" if (boot == 2 and run == 4) else "success",
-                    archive_path=f"boot{boot}_run{run:02d}.json",
-                    manifest=manifest,
-                )
-            )
-
-    with tempfile.TemporaryDirectory() as tempdir:
-        timeout_paths = []
-        for idx, rec in enumerate(timeout_records):
-            path = os.path.join(tempdir, "timeout_%03d.json" % idx)
-            with open(path, "w", encoding="utf-8") as handle:
-                json.dump(rec, handle, sort_keys=True)
-            timeout_paths.append(path)
-        check("analyze_3x10 rejects timeout campaign", _reject(lambda: analyze_3x10(timeout_paths)))
-
-    timeout_record = [
-        r
-        for r in timeout_records
-        if r["host"]["host_boot_index"] == 2
-        and r["raw"]
-        and json.loads(json.dumps(_as_dict(r["raw"]))).get("payload_hex")
-    ][3]
-
-    # The collector path must return this outcome when timeout is seen at boot/run 2,4
-    class _StubLink:
-        def __init__(self, payload):
-            self._payload = bytes.fromhex(payload["payload_hex"])
-            self.last_payload = None
-
-    stub = _StubLink(timeout_record["raw"])
-
-    collector_out = None
-    try:
-        # Probe common call shapes without coupling to one exact signature.
-        collector_out = collect_one(stub, raw=timeout_record["raw"])  # type: ignore[arg-type]
-    except TypeError:
-        try:
-            collector_out = collect_one(stub)
-        except TypeError:
-            try:
-                collector_out = collect_one(timeout_record["raw"])
-            except TypeError:
-                collector_out = collect_one()
-
-    collector_out_dict = _as_dict(collector_out)
-    if collector_out_dict:
-        check("collect_one marks timeout abort", bool(collector_out_dict.get("campaign_abort", True)))
-        check("collect_one suppresses derived sample", collector_out_dict.get("derived") is None)
-        check("collect_one blocks archive writes", not bool(collector_out_dict.get("archive_write", True)))
-        check("collect_one requests fresh boot", bool(collector_out_dict.get("fresh_boot_required", True)))
-
-    with tempfile.TemporaryDirectory() as tempdir:
         mismatch_out = os.path.join(tempdir, "mismatch.json")
-        mismatch_raw = json.loads(json.dumps(timeout_record["raw"]))
-        mismatch_raw["reread_payload_hex"] = mismatch_raw["payload_hex"][:-2] + "00"
-        mismatch_raw["reread_payload_sha256"] = hashlib.sha256(
-            bytes.fromhex(mismatch_raw["reread_payload_hex"])
-        ).hexdigest()
-        mismatch_raw["reread_matches_run_payload"] = False
-        mismatch_outcome = _as_dict(
-            collect_one(raw=mismatch_raw, manifest=manifest, out_path=mismatch_out)
+        reread = bytearray(raw)
+        reread[80] ^= 0x01
+        mismatch_raw = {
+            "payload_hex": raw.hex(),
+            "reread_payload_hex": bytes(reread).hex(),
+        }
+        mismatch = rv12.collect_one(
+            raw=mismatch_raw, manifest=man, out_path=mismatch_out, host_boot_index=1
         )
-        check("collect_one rejects raw reread mismatch", not bool(mismatch_outcome.get("valid", True)))
-        check("collect_one aborts on raw reread mismatch", bool(mismatch_outcome.get("campaign_abort", False)))
-        check("collect_one writes no mismatch archive", not os.path.exists(mismatch_out))
+        check("raw reread mismatch aborts", mismatch["campaign_abort"] is True)
+        check("raw reread mismatch writes nothing", not os.path.exists(mismatch_out))
 
-    # Simulate analyzer-facing refusal policy for runs after timeout run4
-    refused = [r for r in timeout_records if r["host"]["host_boot_index"] == 2 and r["host"]["manifest_path"] in [
-        "boot2_run05.json",
-        "boot2_run06.json",
-        "boot2_run07.json",
-        "boot2_run08.json",
-        "boot2_run09.json",
-        "boot2_run10.json",
-    ]]
-    check("boot2 run5..run10 present", len(refused) == 6)
-
-
-def validate_command_contract():
-    base_payload = build_payload()
-    parsed = _as_dict(parse_payload(base_payload))
-    check(
-        "installed vector is stock name",
-        parsed.get("installed_vector") is not None and int(parsed["installed_vector"]) == STOCK_VECTOR_ADDR,
-    )
-    check(
-        "runtime hard bypass",
-        parsed.get("nvic_enabled_before_submit") == 0
-        and parsed.get("nvic_pending_after_initial_clear") == 0
-        and parsed.get("nvic_active_before_submit") == 0
-        and parsed.get("irq_triggered_before_submit") == 0,
-    )
-
-    # Diagnostic-only pending-before-final-clear must remain arbitrary u32 (not constrained to boolean)
-    status = parse_payload(
-        build_payload(
-            appendix_overrides={
-                "nvic_pending_before_final_clear": 0x123,
-                "nvic_pending_after_final_clear": 0,
-                "nvic_active_after_cleanup": 0,
-                "irq_triggered_after_cleanup": 0,
-            }
+        timeout_raw = build_payload(poll_result=v12.PMU_COMPLETION_POLL_V12_POLL_TIMEOUT)
+        timeout_out = os.path.join(tempdir, "timeout.json")
+        timeout = rv12.collect_one(
+            raw=timeout_raw, manifest=man, out_path=timeout_out, host_boot_index=2
         )
-    )
-    status_dict = _as_dict(status)
-    check("pending_before_final_clear not constrained", isinstance(status_dict["nvic_pending_before_final_clear"], int))
-    check("final cleanup clean", status_dict["nvic_pending_after_final_clear"] == 0)
-    check("final cleanup clean", status_dict["nvic_active_after_cleanup"] == 0)
-    check("final cleanup clean", status_dict["irq_triggered_after_cleanup"] == 0)
+        check("timeout aborts campaign", timeout["campaign_abort"] is True)
+        check("timeout requires fresh boot", timeout["fresh_boot_required"] is True)
+        check("timeout writes nothing", not os.path.exists(timeout_out))
 
-    d0 = _coerce_u32(status_dict["t_poll_entry"] - status_dict["t_submit_after_cmd"])
-    d1 = _coerce_u32(status_dict["t_status_completion_seen"] - status_dict["t_poll_entry"])
-    d2 = _coerce_u32(status_dict["t_poll_exit"] - status_dict["t_status_completion_seen"])
-    check("both identities", _coerce_u32(d0 + d1) == _coerce_u32(status_dict["t_status_completion_seen"] - status_dict["t_submit_after_cmd"]))
-    check("both identities", _coerce_u32(d0 + d1 + d2) == _coerce_u32(status_dict["t_poll_exit"] - status_dict["t_submit_after_cmd"]))
+
+def test_transport_contract():
+    payload = build_payload()
+    link = FakeLink(
+        lambda seq: [ack(seq), complete(payload, seq)],
+        lambda seq: [reread_reply(payload, seq)],
+    )
+    res, raw, reread = rv12.collect_pmu_completion_poll_v12(link)
+    check("ACK/COMPLETE/GET exchange accepted", raw == payload and reread == payload)
+    check("transport parsed exact run", res.run_sequence == 1)
+    rejects(
+        "COMPLETE before ACK rejected",
+        lambda: rv12.collect_pmu_completion_poll_v12(
+            FakeLink(lambda seq: [complete(payload, seq), ack(seq)], lambda seq: [reread_reply(payload, seq)])
+        ),
+    )
+    rejects(
+        "duplicate ACK rejected",
+        lambda: rv12.collect_pmu_completion_poll_v12(
+            FakeLink(lambda seq: [ack(seq), ack(seq), complete(payload, seq)], lambda seq: [reread_reply(payload, seq)])
+        ),
+    )
+    rejects(
+        "duplicate COMPLETE rejected",
+        lambda: rv12.collect_pmu_completion_poll_v12(
+            FakeLink(lambda seq: [ack(seq), complete(payload, seq), complete(payload, seq)], lambda seq: [reread_reply(payload, seq)])
+        ),
+    )
+    rejects(
+        "GET reread mismatch rejected",
+        lambda: rv12.collect_pmu_completion_poll_v12(
+            FakeLink(lambda seq: [ack(seq), complete(payload, seq)], lambda seq: [reread_reply(build_payload(run_sequence=1, appendix_overrides={"t_poll_exit": 0x10E0}), seq)])
+        ),
+    )
+    rejects(
+        "NACK rejected",
+        lambda: rv12.collect_pmu_completion_poll_v12(
+            FakeLink(
+                lambda seq: [Frame(v8.NACK, seq, bytes([0x60, 2]), flags=3)],
+                lambda seq: [],
+            )
+        ),
+    )
+
+
+def test_campaign_state_stop_gate():
+    state = rv12.CampaignState()
+    man = manifest()
+    for run in (1, 2, 3):
+        out = rv12.collect_one(
+            raw=build_payload(run_sequence=run),
+            manifest=man,
+            host_boot_index=2,
+            campaign_state=state,
+        )
+        check("boot2 run%d success before timeout" % run, out["valid"] is True)
+    timeout = rv12.collect_one(
+        raw=build_payload(
+            run_sequence=4,
+            poll_result=v12.PMU_COMPLETION_POLL_V12_POLL_TIMEOUT,
+        ),
+        manifest=man,
+        host_boot_index=2,
+        campaign_state=state,
+    )
+    check("boot2 run4 timeout recorded", timeout["fresh_boot_required"] is True)
+    rejects(
+        "boot2 run5 refused after timeout",
+        lambda: rv12.collect_one(
+            raw=build_payload(run_sequence=5),
+            manifest=man,
+            host_boot_index=2,
+            campaign_state=state,
+        ),
+    )
+    out = rv12.collect_one(
+        raw=build_payload(run_sequence=1),
+        manifest=man,
+        host_boot_index=3,
+        campaign_state=state,
+    )
+    check("fresh boot 3 resumes at run1", out["valid"] is True)
+
+
+def test_analyzer_contract():
+    with tempfile.TemporaryDirectory() as tempdir:
+        paths = campaign_paths(tempdir)
+        analysis = az.analyze_3x10(paths)
+        check("analyze_3x10 marks campaign valid", analysis["campaign_valid"] is True)
+        check("analyze_3x10 exact 3x10", analysis["sample_count"] == 30 and analysis["boot_count"] == 3)
+        check("analyze_3x10 exact labels", analysis["labels"] == az.OUTPUT_LABELS)
+
+        drift_target = json.loads(open(paths[0], encoding="utf-8").read())
+        drift_target["target"]["t_poll_exit"] += 4
+        drift_target_path = write_doc(tempdir, "drift_target.json", drift_target)
+        rejects("analyzer rejects target drift", lambda: az.load(drift_target_path))
+
+        drift_derived = json.loads(open(paths[1], encoding="utf-8").read())
+        drift_derived["derived"]["derived"]["submit_to_status_completion_observed_cycles"] += 1
+        drift_derived_path = write_doc(tempdir, "drift_derived.json", drift_derived)
+        rejects("analyzer rejects derived drift", lambda: az.load(drift_derived_path))
+
+        drift_manifest = json.loads(open(paths[2], encoding="utf-8").read())
+        drift_manifest["host"]["artifact_sha256"]["APP.BIN"] = hex64("0")
+        drift_manifest_path = write_doc(tempdir, "drift_manifest.json", drift_manifest)
+        rejects("analyzer rejects host/manifest artifact mismatch", lambda: az.load(drift_manifest_path))
+
+        timeout_paths = campaign_paths(
+            tempdir,
+            mutate=lambda doc, boot, run: archive_doc(
+                build_payload(
+                    run_sequence=run,
+                    poll_result=(
+                        v12.PMU_COMPLETION_POLL_V12_POLL_TIMEOUT
+                        if boot == 2 and run == 4
+                        else v12.PMU_COMPLETION_POLL_V12_POLL_SUCCESS
+                    ),
+                ),
+                host_boot_index=boot,
+            ),
+        )
+        rejects("analyze_3x10 rejects timeout campaign", lambda: az.analyze_3x10(timeout_paths))
 
 
 def run_checks():
-    if not _fixture_smoke_suite():
-        check("fixture smoke harness", False)
-        return
-    check("fixture smoke harness", True)
-    validate_payload_contracts()
-    validate_command_contract()
-    validate_transport_contracts()
-    validate_campaign_shape_and_stop()
+    test_schema_and_manifest()
+    test_collect_raw_and_timeout()
+    test_transport_contract()
+    test_campaign_state_stop_gate()
+    test_analyzer_contract()
 
 
 if __name__ == "__main__":

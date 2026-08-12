@@ -40,15 +40,54 @@ PMU_COMPLETION_POLL_V12_REQUIRED_MANIFEST_KEYS = (
     "build_id",
     "qualification_mode",
     "expected_return_address",
+    "evidence_source",
+    "artifact_sha256",
+    "build_evidence_sha256",
+)
+PMU_COMPLETION_POLL_V12_REQUIRED_MANIFEST_BOOLEANS = (
     "characterization_only",
     "not_a_performance_baseline",
     "not_a_latency_measurement",
     "generated_private_driver_diagnostic_only",
     "production_end_only_frozen",
-    "artifact_sha256",
-    "build_evidence_sha256",
+    "not_numerically_comparable_to_v11a",
+    "not_latency",
+    "not_t_npu",
+    "not_production",
+    "not_mlek",
+)
+PMU_COMPLETION_POLL_V12_REQUIRED_ARTIFACT_KEYS = (
+    "APP.BIN",
+    "VECTORS.BIN",
+    "DDR.BIN",
+)
+PMU_COMPLETION_POLL_V12_REQUIRED_BUILD_EVIDENCE_KEYS = (
+    "runner_pmu_completion_poll_v12.elf",
+    "runner_pmu_completion_poll_v12.map",
+    "generated_runner.c",
+    "generated_vendor_u85.c",
+    "checker_disassembly.txt",
+    "checker_nm.txt",
+)
+PMU_COMPLETION_POLL_V12_REQUIRED_BINDING_KEYS = (
+    "expected_return_address",
+    "wait_call_address",
+    "hprintf_callsite_address",
+    "helper_status_read_address",
+    "helper_status_test_address",
+    "poll_helper_p0_address",
+    "poll_helper_p1_address",
+    "poll_helper_p2_address",
+    "success_cmd2_1_store_address",
+    "success_qread_load_address",
+    "success_cmd2_2_store_address",
+    "timeout_qread_load_address",
+    "timeout_cmd2_store_address",
+    "cmd0_store_address",
+    "terminal_cmd0c_store_address",
 )
 HEX64 = re.compile(r"^[0-9a-f]{64}$")
+HEX32 = re.compile(r"^0x[0-9a-fA-F]{8}$")
 
 ProtocolError = v8.ProtocolError
 
@@ -125,32 +164,6 @@ def _manifest_build_id(doc: dict) -> int | None:
         return None
 
 
-def default_manifest() -> dict:
-    filler_a = "a" * 64
-    filler_b = "b" * 64
-    return {
-        "variant": PMU_COMPLETION_POLL_V12_NAME,
-        "schema_version": PMU_COMPLETION_POLL_V12_SCHEMA_VERSION,
-        "build_id": "0x%08X" % PMU_COMPLETION_POLL_V12_BUILD_ID,
-        "qualification_mode": "Q1",
-        "expected_return_address": 0x20002000,
-        "characterization_only": True,
-        "not_a_performance_baseline": True,
-        "not_a_latency_measurement": True,
-        "generated_private_driver_diagnostic_only": True,
-        "production_end_only_frozen": True,
-        "artifact_sha256": {
-            "generated_runner.c": filler_a,
-            "generated_vendor_u85.c": filler_b,
-        },
-        "build_evidence_sha256": {
-            "generated_runner.c": filler_a,
-            "generated_vendor_u85.c": filler_b,
-            "manifest": "",
-        },
-    }
-
-
 def verify_manifest_identity(doc: dict, where: str) -> None:
     if not isinstance(doc, dict):
         raise SystemExit("FAIL %s: manifest is not a JSON object" % where)
@@ -172,34 +185,77 @@ def verify_manifest_identity(doc: dict, where: str) -> None:
             "FAIL %s: manifest qualification_mode=%r, expected Q1"
             % (where, doc.get("qualification_mode"))
         )
+    if doc.get("evidence_source") != "arm_elf":
+        raise SystemExit(
+            "FAIL %s: manifest evidence_source=%r, expected arm_elf"
+            % (where, doc.get("evidence_source"))
+        )
     if _manifest_build_id(doc) != PMU_COMPLETION_POLL_V12_BUILD_ID:
         raise SystemExit(
             "FAIL %s: manifest build_id %r is not the V12 identity 0x%08X"
             % (where, doc.get("build_id"), PMU_COMPLETION_POLL_V12_BUILD_ID)
         )
-    for key in (
-        "characterization_only",
-        "not_a_performance_baseline",
-        "not_a_latency_measurement",
-        "generated_private_driver_diagnostic_only",
-        "production_end_only_frozen",
-    ):
+    for key in PMU_COMPLETION_POLL_V12_REQUIRED_MANIFEST_BOOLEANS:
         if doc.get(key) is not True:
             raise SystemExit(
                 "FAIL %s: manifest %s=%r, expected true" % (where, key, doc.get(key))
             )
-    for container in ("artifact_sha256", "build_evidence_sha256"):
-        value = doc.get(container)
-        if not isinstance(value, dict):
-            raise SystemExit("FAIL %s: %s is not an object" % (where, container))
-        for name, digest in value.items():
-            if name == "manifest" and digest == "":
-                continue
-            if not isinstance(digest, str) or HEX64.fullmatch(digest) is None:
+    artifacts = doc.get("artifact_sha256")
+    if not isinstance(artifacts, dict):
+        raise SystemExit("FAIL %s: artifact_sha256 is not an object" % where)
+    if tuple(sorted(artifacts)) != tuple(sorted(PMU_COMPLETION_POLL_V12_REQUIRED_ARTIFACT_KEYS)):
+        raise SystemExit(
+            "FAIL %s: artifact_sha256 keys %r, expected %r"
+            % (
+                where,
+                sorted(artifacts),
+                list(PMU_COMPLETION_POLL_V12_REQUIRED_ARTIFACT_KEYS),
+            )
+        )
+    for name in PMU_COMPLETION_POLL_V12_REQUIRED_ARTIFACT_KEYS:
+        digest = artifacts.get(name)
+        if not isinstance(digest, str) or HEX64.fullmatch(digest) is None:
+            raise SystemExit(
+                "FAIL %s: artifact_sha256[%s]=%r is not a lowercase SHA-256"
+                % (where, name, digest)
+            )
+    build_evidence = doc.get("build_evidence_sha256")
+    if not isinstance(build_evidence, dict):
+        raise SystemExit("FAIL %s: build_evidence_sha256 is not an object" % where)
+    for name in PMU_COMPLETION_POLL_V12_REQUIRED_BUILD_EVIDENCE_KEYS:
+        digest = build_evidence.get(name)
+        if not isinstance(digest, str) or HEX64.fullmatch(digest) is None:
+            raise SystemExit(
+                "FAIL %s: build_evidence_sha256[%s]=%r is not a lowercase SHA-256"
+                % (where, name, digest)
+            )
+    if doc.get("helper_symbol") != "v12_poll_completion":
+        raise SystemExit(
+            "FAIL %s: helper_symbol=%r, expected v12_poll_completion"
+            % (where, doc.get("helper_symbol"))
+        )
+    if doc.get("runtime_vector_target_symbol") != "u85_irq_handler":
+        raise SystemExit(
+            "FAIL %s: runtime_vector_target_symbol=%r, expected u85_irq_handler"
+            % (where, doc.get("runtime_vector_target_symbol"))
+        )
+    for key in PMU_COMPLETION_POLL_V12_REQUIRED_BINDING_KEYS:
+        value = doc.get(key)
+        if key == "expected_return_address":
+            if not isinstance(value, int) or isinstance(value, bool):
                 raise SystemExit(
-                    "FAIL %s: %s[%s]=%r is not a lowercase SHA-256"
-                    % (where, container, name, digest)
+                    "FAIL %s: %s=%r is not numeric" % (where, key, value)
                 )
+            continue
+        if not isinstance(value, str) or HEX32.fullmatch(value) is None:
+            raise SystemExit(
+                "FAIL %s: %s=%r is not 0xXXXXXXXX" % (where, key, value)
+            )
+    if doc["expected_return_address"] != int(doc["hprintf_callsite_address"], 16) + 4:
+        raise SystemExit(
+            "FAIL %s: expected_return_address=%r does not equal hprintf_callsite_address+4"
+            % (where, doc["expected_return_address"])
+        )
 
 
 def parse_pmu_completion_poll_v12_payload(payload: bytes) -> PmuCompletionPollV12Result:
@@ -300,9 +356,14 @@ def classify_pmu_completion_poll_v12_payload(
 ) -> dict:
     expected_build_id = _manifest_build_id(expected_manifest)
     expected_lr = expected_manifest.get("expected_return_address")
+    # Reuse the retained v8 sample-validity terms without laundering the V12
+    # manifest identity. The inherited classifier sees the retained Q1 shape,
+    # while V12-specific manifest identity is checked separately against the
+    # unmodified producer manifest by verify_manifest_identity() and by the
+    # V12-specific terms below.
     v8_manifest = dict(expected_manifest)
     v8_manifest["schema_version"] = v8.PMU_QUAL_SCHEMA_VERSION
-    v8_manifest["build_id"] = "0x%08X" % res.build_id
+    v8_manifest["build_id"] = "0x%08X" % v8.PMU_QUAL_BUILD_IDS["Q1"]
     v8_derived = v8.classify_pmu_qual(res.base, v8_manifest)
     inherited_terms = dict(v8_derived["terms"])
     for key in ("manifest_schema_matches", "manifest_build_id_matches", "build_id_is_hprintf"):
