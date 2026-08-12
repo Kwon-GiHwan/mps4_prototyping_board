@@ -1112,12 +1112,13 @@ if __name__ == "__main__":
     runner_out, runner_counts = patcher.patch_runner(RUNNER)
     vendor_out, vendor_counts = patcher.patch_vendor(VENDOR_STOCK)
 
-    counts = gate.verify_generated_sources(runner_out, VENDOR_V12_OK)
+    check("vendor patch emits canonical V12 helper", vendor_out == VENDOR_V12_OK)
+    counts = gate.verify_generated_sources(runner_out, vendor_out)
     check("gate can parse positive generated source", counts.get("PMU_COMPLETION_POLL_V12_HELPER", 0) == 1)
-    gate.verify_callsite_trace(runner_out, VENDOR_V12_OK, DISASSEMBLY, NM)
+    gate.verify_callsite_trace(runner_out, vendor_out, DISASSEMBLY, NM)
 
     for name, fix in MUTATION_FIXTURES.items():
-        broken_vendor = fix.get("vendor", VENDOR_V12_OK)
+        broken_vendor = fix.get("vendor", vendor_out)
         broken_disassembly = fix.get("disassembly", DISASSEMBLY)
         broken_manifest = fix.get("manifest", MANIFEST_OK)
         try:
