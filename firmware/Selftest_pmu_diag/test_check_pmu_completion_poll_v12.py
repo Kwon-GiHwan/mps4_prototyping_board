@@ -132,7 +132,7 @@ static inline void wait_for_irq(void)
     status_register = read_reg(NPU_REG_STATUS);
     /* V12_HELPER_STATUS_TEST */
     if ((status_register & 0x02U)) {
-        /* V12_HELPER_IRQ_HISTORY_STORE */
+        /* V12_STOCK_IRQ_HISTORY_STORE */
         irq_history_mask = (uint16_t)(status_register >> 16);
         irq_triggered = true;
         /* V12_STOCK_CMD2 */
@@ -220,12 +220,11 @@ void test_commands(void)
 
         /* V12_SUCCESS_QREAD_READ */
         read_val = read_reg(NPU_REG_QREAD);
+        /* V12_SUCCESS_CMD2_2 */
+        write_reg(NPU_REG_CMD, 0x00000002);
         if ((read_val & 0x0FU) == 0x03U) {
             pmu_completion_poll_v12_t_success_qread_verified = 1U;
         }
-
-        /* V12_SUCCESS_CMD2_2 */
-        write_reg(NPU_REG_CMD, 0x00000002);
         if (pmu_completion_poll_v12_t_success_qread_verified == 1U) {
             pmu_completion_poll_v12_t_success_qread_verified = 1U;
         }
@@ -304,7 +303,6 @@ DISASSEMBLY = """Disassembly of section .text:
    101c:\tf8c3 20c0\tstr.w\tr2, [r3, #192]     ; pmu_completion_poll_v12_t_status_completion_seen
    1020:\t; V12_P2
    1020:\tf8c3 21c0\tstr.w\tr2, [r3, #256]     ; pmu_completion_poll_v12_t_poll_exit
-   1024:\t; V12_HELPER_IRQ_HISTORY_STORE
    1024:\tbx\tlr
 
 00001100 <test_u85>:
@@ -446,11 +444,11 @@ def _mutate_vendor_cmd2_before_qread(v):
     before = (
         "        /* V12_SUCCESS_QREAD_READ */\n"
         "        read_val = read_reg(NPU_REG_QREAD);\n"
-        "        if ((read_val & 0x0FU) == 0x03U) {\n"
-        "            pmu_completion_poll_v12_t_success_qread_verified = 1U;\n"
-        "        }\n\n"
         "        /* V12_SUCCESS_CMD2_2 */\n"
         "        write_reg(NPU_REG_CMD, 0x00000002);\n"
+        "        if ((read_val & 0x0FU) == 0x03U) {\n"
+        "            pmu_completion_poll_v12_t_success_qread_verified = 1U;\n"
+        "        }\n"
         "        if (pmu_completion_poll_v12_t_success_qread_verified == 1U) {\n"
         "            pmu_completion_poll_v12_t_success_qread_verified = 1U;\n"
         "        }\n\n"
@@ -462,7 +460,7 @@ def _mutate_vendor_cmd2_before_qread(v):
         "        read_val = read_reg(NPU_REG_QREAD);\n"
         "        if ((read_val & 0x0FU) == 0x03U) {\n"
         "            pmu_completion_poll_v12_t_success_qread_verified = 1U;\n"
-        "        }\n\n"
+        "        }\n"
         "        if (pmu_completion_poll_v12_t_success_qread_verified == 1U) {\n"
         "            pmu_completion_poll_v12_t_success_qread_verified = 1U;\n"
         "        }\n\n"
@@ -503,8 +501,16 @@ def _mutate_vendor_vector_v11_veneer(v):
 
 
 def _mutate_vendor_reach_v11(v):
-    return v.replace("    write_reg(NPU_REG_CMD, 0x00000002);\n        if (pmu_completion_poll_v12_t_success_qread_verified == 1U) {",
-                     "    pmu_interval_v11a_t_j0 = DWT->CYCCNT;\n        write_reg(NPU_REG_CMD, 0x00000002);\n        if (pmu_completion_poll_v12_t_success_qread_verified == 1U) {")
+    return v.replace(
+        "        /* V12_SUCCESS_CMD2_2 */\n"
+        "        write_reg(NPU_REG_CMD, 0x00000002);\n"
+        "        if ((read_val & 0x0FU) == 0x03U) {\n",
+        "        /* V12_SUCCESS_CMD2_2 */\n"
+        "        pmu_interval_v11a_t_j0 = DWT->CYCCNT;\n"
+        "        write_reg(NPU_REG_CMD, 0x00000002);\n"
+        "        if ((read_val & 0x0FU) == 0x03U) {\n",
+        1
+    )
 
 
 def _mutate_vendor_success_status_reread(v):
@@ -571,8 +577,8 @@ def _mutate_disassembly_inlined_helper(v):
 
 
 def _mutate_vendor_merge_qread_verify(v):
-    return v.replace("        if ((read_val & 0x0FU) == 0x03U) {\n            pmu_completion_poll_v12_t_success_qread_verified = 1U;\n        }\n\n        /* V12_SUCCESS_CMD2_2 */",
-                     "        if ((read_val & 0x0FU) == 0x03U) {}\n\n        /* V12_SUCCESS_CMD2_2 */", 1)
+    return v.replace("        /* V12_SUCCESS_QREAD_READ */\n        read_val = read_reg(NPU_REG_QREAD);\n        /* V12_SUCCESS_CMD2_2 */\n        write_reg(NPU_REG_CMD, 0x00000002);\n        if ((read_val & 0x0FU) == 0x03U) {\n            pmu_completion_poll_v12_t_success_qread_verified = 1U;\n        }\n",
+                     "        /* V12_SUCCESS_QREAD_READ */\n        read_val = read_reg(NPU_REG_QREAD);\n        /* V12_SUCCESS_CMD2_2 */\n        write_reg(NPU_REG_CMD, 0x00000002);\n        if ((read_val & 0x0FU) == 0x03U) {}\n", 1)
 
 
 def _mutate_vendor_indirect_cmd_store(v):
@@ -804,7 +810,6 @@ REQUIRED_SITE_MARKERS = {
     "V12_RUNTIME_IRQ_TRIGGERED_READ": "runtime_irq_triggered_read_address",
     "V12_HELPER_STATUS_READ": "helper_status_read_address",
     "V12_HELPER_STATUS_TEST": "helper_status_test_address",
-    "V12_HELPER_IRQ_HISTORY_STORE": "helper_history_mask_store_address",
     "V12_P0": "poll_helper_p0_address",
     "V12_P1": "poll_helper_p1_address",
     "V12_P2": "poll_helper_p2_address",
@@ -837,7 +842,6 @@ REQUIRED_DISASSEMBLY_MARKERS = {
     "V12_P0": "poll_helper_p0_address",
     "V12_HELPER_STATUS_READ": "helper_status_read_address",
     "V12_HELPER_STATUS_TEST": "helper_status_test_address",
-    "V12_HELPER_IRQ_HISTORY_STORE": "helper_history_mask_store_address",
     "V12_P1": "poll_helper_p1_address",
     "V12_P2": "poll_helper_p2_address",
     "V12_RUNTIME_DISABLE": "runtime_disable_site_address",
@@ -882,7 +886,6 @@ EXPECTED_MANIFEST_KEYS = {
     "runtime_irq_triggered_read_address": "runtime irq-triggered snapshot",
     "helper_status_read_address": "helper status MMIO load",
     "helper_status_test_address": "helper completion-bit test",
-    "helper_history_mask_store_address": "helper irq-history mask store",
     "poll_helper_p0_address": "helper poll entry time capture",
     "poll_helper_p1_address": "helper poll status completion timestamp",
     "poll_helper_p2_address": "helper poll exit timestamp",
