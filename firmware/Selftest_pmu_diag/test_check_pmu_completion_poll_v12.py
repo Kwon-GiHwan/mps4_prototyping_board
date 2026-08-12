@@ -128,9 +128,7 @@ VENDOR_V12_OK = """#define BUSY_SLEEP
 
 static inline void wait_for_irq(void)
 {
-    /* V12_HELPER_STATUS_READ */
     status_register = read_reg(NPU_REG_STATUS);
-    /* V12_HELPER_STATUS_TEST */
     if ((status_register & 0x02U)) {
         /* V12_STOCK_IRQ_HISTORY_STORE */
         irq_history_mask = (uint16_t)(status_register >> 16);
@@ -150,7 +148,9 @@ uint32_t __attribute__((noinline)) v12_poll_completion(void)
     pmu_completion_poll_v12_t_poll_entry = DWT->CYCCNT;
 
     for (uint32_t i = 0U; i < 10000U; ++i) {
+        /* V12_HELPER_STATUS_READ */
         status = *status_reg;
+        /* V12_HELPER_STATUS_TEST */
         if ((status & 0x02U) != 0U) {
             /* V12_P1 */
             pmu_completion_poll_v12_t_status_completion_seen = DWT->CYCCNT;
@@ -291,19 +291,18 @@ DISASSEMBLY = """Disassembly of section .text:
 00001000 <v12_poll_completion>:
    1000:\t4f10\tldr\tr0, [pc, #64] @ (1040 <v12_poll_completion+0x40>)
    1004:\tf8d0 2000\tldr.w\tr0, [r0]
-   1008:\tf3bf 8f4f\tdsb\tsy
-   100c:\t; V12_P0
-   100c:\tf8c3 2080\tstr.w\tr2, [r3, #128]     ; pmu_completion_poll_v12_t_poll_entry
-   1010:\t; V12_HELPER_STATUS_READ
-   1010:\t... status load from 0x50004004
-   1014:\t; V12_HELPER_STATUS_TEST
-   1014:\ttst\tr3, #2
-   1018:\tbeq\t1010 <v12_poll_completion+0x10>
-   101c:\t; V12_P1
-   101c:\tf8c3 20c0\tstr.w\tr2, [r3, #192]     ; pmu_completion_poll_v12_t_status_completion_seen
-   1020:\t; V12_P2
-   1020:\tf8c3 21c0\tstr.w\tr2, [r3, #256]     ; pmu_completion_poll_v12_t_poll_exit
-   1024:\tbx\tlr
+   1008:\t; V12_P0
+   1008:\tf8c3 2080\tstr.w\tr2, [r3, #128]     ; pmu_completion_poll_v12_t_poll_entry
+   100c:\t; V12_HELPER_STATUS_READ
+   100c:\t... status load from 0x50004004
+   1010:\t; V12_HELPER_STATUS_TEST
+   1010:\ttst\tr3, #2
+   1014:\tbeq\t100c <v12_poll_completion+0x0c>
+   1018:\t; V12_P1
+   1018:\tf8c3 20c0\tstr.w\tr2, [r3, #192]     ; pmu_completion_poll_v12_t_status_completion_seen
+   101c:\t; V12_P2
+   101c:\tf8c3 21c0\tstr.w\tr2, [r3, #256]     ; pmu_completion_poll_v12_t_poll_exit
+   1020:\tbx\tlr
 
 00001100 <test_u85>:
    1100:\t... \tbl\t__asm_nvic_set_vector\t; V12_RUNTIME_VECTOR_INSTALL
@@ -345,20 +344,9 @@ DISASSEMBLY = """Disassembly of section .text:
    1228:\t... success CMD2 #2
    122c:\t; V12_SUCCESS_QREAD_VERIFY
    122c:\t... qread verify check
-   1230:\t; V12_CMD0
-   1230:\t... cmd0
-   1234:\t; V12_HPRINTF_SEAM
-   1234:\t... printf call
-   1238:\t; V12_CMD0C
-   1238:\t... cmd 0x0c
-   123c:\t... v12_common_cleanup
-   1240:\t; V12_TIMEOUT_REPORT
-   1240:\tb\t1270 <pmu_completion_poll_v12_timeout>
-   1244:\t; V12_TIMEOUT_QREAD_READ
-   1244:\t... timeout qread
-   1248:\t; V12_TIMEOUT_CMD2
-   1248:\t... timeout CMD2
-   124c:\t... v12_common_cleanup
+   1230:\tb\t1250 <v12_common_cleanup>
+   1234:\t; V12_TIMEOUT_REPORT
+   1234:\tb\t1270 <pmu_completion_poll_v12_timeout>
    1250:\t; V12_FINAL_PENDING_BEFORE_CLEAR
    1250:\t... pending before clear
    1254:\t; V12_FINAL_PENDING_AFTER_CLEAR
@@ -367,6 +355,17 @@ DISASSEMBLY = """Disassembly of section .text:
    1258:\t... active after clear
    125c:\t; V12_FINAL_IRQ_TRIGGERED_AFTER_CLEAR
    125c:\t... irq false
+   1260:\t; V12_CMD0
+   1260:\t... cmd0
+   1264:\t; V12_HPRINTF_SEAM
+   1264:\t... printf call
+   1268:\t; V12_CMD0C
+   1268:\t... cmd 0x0c
+   1270:\t; V12_TIMEOUT_QREAD_READ
+   1270:\t... timeout qread
+   1274:\t; V12_TIMEOUT_CMD2
+   1274:\t... timeout CMD2
+   1278:\tb\t1250 <v12_common_cleanup>
 
 00001300 <u85_irq_handler>:
    1300:\t; V12_ISR_STATUS_READ
@@ -382,7 +381,7 @@ DISASSEMBLY = """Disassembly of section .text:
 NM = """00001000 T v12_poll_completion
 00001100 T test_u85
 00001200 T test_commands
-00001260 T v12_common_cleanup
+00001250 T v12_common_cleanup
 00001300 T u85_irq_handler
 
 20002000 B pmu_completion_poll_v12_t_installed_vector
