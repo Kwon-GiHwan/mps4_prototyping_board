@@ -50,13 +50,47 @@ EXPECTED_MANIFEST_KEYS = (
 
 EXPECTED_BOOLEAN_KEYS = (
     "helper_one_direct_callsite",
+    "helper_call_target_exact",
     "status_success_dataflow_exact",
     "history_mask_from_success_status",
     "success_cmd2_count_2",
     "timeout_cmd2_count_1",
     "nvic_enable_replaced",
     "irq_triggered_true_reachable_false",
+    "runtime_vector_target_exact",
+    "result_paths_distinct",
 )
+
+HEX32_RE = re.compile(r"^0x[0-9A-Fa-f]{4,8}$")
+HEX64_RE = re.compile(r"^[0-9a-f]{64}$")
+EXPECTED_MANIFEST_EXACT = {
+    "schema_version": SCHEMA_VERSION,
+    "build_id": "0x32314950",
+    "runner_source_sha256": "69cab8c48a2248d0cc0b883a2bc651efa8eb8867c86369051ebc99cc5ee5a88b",
+    "vendor_source_sha256": "bcd877bbd42a35d83c8696d02b64d2ae4985a46fcce91b98102e08661b356bcf",
+    "helper_symbol": "v12_poll_completion",
+    "helper_address": "0x00001000",
+    "runtime_vector_target_symbol": "u85_irq_handler",
+    "runtime_vector_target_address": "0x00001300",
+    "wait_call_target_address": "0x00001000",
+    "wait_result_branch_block_address": "0x00001214",
+    "success_entry_block_address": "0x0000121C",
+    "timeout_entry_block_address": "0x0000127C",
+    "merge_block_address": "0x0000125C",
+    "helper_status_register_address": "0x50004004",
+    "helper_completion_mask_value": "0x00000002",
+    "success_cmd2_write_value": "0x00000002",
+    "timeout_cmd2_write_value": "0x00000002",
+    "qread_verify_mask_value": "0x0000000F",
+    "qread_verify_expected_value": "0x00000003",
+    "runtime_vector_api_symbol": "NVIC_SetVector",
+    "nvic_disable_symbol": "NVIC_DisableIRQ",
+    "nvic_clear_pending_symbol": "NVIC_ClearPendingIRQ",
+    "nvic_get_vector_symbol": "NVIC_GetVector",
+    "nvic_get_enable_symbol": "NVIC_GetEnableIRQ",
+    "nvic_get_pending_symbol": "NVIC_GetPendingIRQ",
+    "nvic_get_active_symbol": "NVIC_GetActive",
+}
 
 _FUNC_HDR = re.compile(r"^\s*([0-9a-fA-F]+)\s+<([^>]+)>:\s*$")
 _LINE = re.compile(r"^\s*([0-9a-fA-F]+):\s*(.*)$")
@@ -118,6 +152,36 @@ def _commands_section(vendor_text: str) -> str:
             if depth == 0:
                 return vendor_text[start:index + 1]
     raise fail("test_commands closing brace not found")
+
+
+def _function_section(disassembly_text: str, name: str) -> str:
+    pattern = re.compile(
+        r"(?ms)^[0-9a-fA-F]+\s+<%s>:\s*$\n(.*?)(?=^[0-9a-fA-F]+\s+<|\Z)" % re.escape(name)
+    )
+    hit = pattern.search(disassembly_text)
+    if hit is None:
+        raise fail("function section missing: %s" % name)
+    return hit.group(1)
+
+
+def _code_line_after_marker(section_text: str, marker: str) -> str:
+    lines = section_text.splitlines()
+    for index, line in enumerate(lines):
+        if ("; %s" % marker) in line:
+            for nxt in lines[index + 1:]:
+                if re.match(r"^\s*[0-9a-fA-F]+:\s+", nxt):
+                    return nxt.strip()
+            break
+    raise fail("disassembly code line missing after marker: %s" % marker)
+
+
+def _parse_nm_symbols(nm_text: str) -> dict[str, int]:
+    symbols: dict[str, int] = {}
+    for raw in nm_text.splitlines():
+        parts = raw.split()
+        if len(parts) == 3 and re.fullmatch(r"[0-9A-Fa-f]+", parts[0]):
+            symbols[parts[2]] = int(parts[0], 16)
+    return symbols
 
 
 @dataclass(frozen=True)
@@ -643,12 +707,16 @@ def verify_callsite_trace(runner_text: str, vendor_text: str, disassembly_text: 
     count_once(disassembly_text, "<test_commands>:", "caller function in disassembly")
 
     funcs = parse_functions(disassembly_text)
+    nm_symbols = _parse_nm_symbols(nm_text)
     helper_insns = funcs.get("v12_poll_completion")
     caller_insns = funcs.get("test_commands")
     if helper_insns is None:
         raise fail("helper function in disassembly: expected 1 match, found 0")
     if caller_insns is None:
         raise fail("caller function <test_commands> missing from disassembly")
+    helper_addr = nm_symbols.get("v12_poll_completion")
+    if helper_addr != helper_insns[0].addr:
+        raise fail("helper symbol/address mismatch")
 
     helper_blocks = split_basic_blocks(helper_insns)
     helper_edges = build_direct_edges(helper_blocks)
@@ -686,9 +754,12 @@ def verify_callsite_trace(runner_text: str, vendor_text: str, disassembly_text: 
 
     if "blx\tr3" in disassembly_text:
         raise fail("indirect helper branch present")
-    helper_call_count = sum(1 for ins in wait_call.insns if ins.kind == "call_direct")
+    helper_calls = [ins for ins in wait_call.insns if ins.kind == "call_direct"]
+    helper_call_count = len(helper_calls)
     if helper_call_count != 1:
         raise fail("helper direct callsite count != 1")
+    if helper_calls[0].target != helper_addr:
+        raise fail("helper direct call target mismatch")
     if _marker_addr(disassembly_text, "V12_P0") >= _marker_addr(disassembly_text, "V12_HELPER_STATUS_READ"):
         raise fail("P0 must precede helper status read")
     if _marker_addr(disassembly_text, "V12_HELPER_STATUS_READ") >= _marker_addr(disassembly_text, "V12_HELPER_STATUS_TEST"):
@@ -705,25 +776,55 @@ def verify_callsite_trace(runner_text: str, vendor_text: str, disassembly_text: 
         raise fail("CMD0/HPRINTF ordering violated")
     if _marker_addr(disassembly_text, "V12_HPRINTF_SEAM") >= _marker_addr(disassembly_text, "V12_CMD0C"):
         raise fail("HPRINTF/CMD0xC ordering violated")
+
+    helper_text = _function_section(disassembly_text, "v12_poll_completion")
+    caller_text = _function_section(disassembly_text, "test_commands")
+    helper_status_line = _code_line_after_marker(helper_text, "V12_HELPER_STATUS_READ")
+    helper_test_line = _code_line_after_marker(helper_text, "V12_HELPER_STATUS_TEST")
+    result_store_line = _code_line_after_marker(caller_text, "V12_WAIT_RESULT_STORE")
+    success_history_line = _code_line_after_marker(caller_text, "V12_SUCCESS_HISTORY_STORE")
+    status_store_match = re.search(r"\bstr(?:\.w)?\s+(r\d+),", success_history_line)
+    helper_load_match = re.search(r"\bldr(?:\.w)?\s+(r\d+),.*0x50004004", helper_status_line)
+    helper_test_match = re.search(r"\btst(?:\.w)?\s+(r\d+),\s*#2", helper_test_line)
+    result_store_match = re.search(r"\bmov(?:\.w)?\s+(r\d+),\s+(r\d+)", result_store_line)
+    shift_match = re.search(r"\blsrs(?:\.w)?\s+(r\d+),\s+(r\d+),\s*#16", caller_text)
+    if not all((helper_load_match, helper_test_match, result_store_match, status_store_match, shift_match)):
+        raise fail("status success dataflow proof missing")
+    helper_reg = helper_load_match.group(1)
+    if helper_reg != "r0" or helper_test_match.group(1) != helper_reg:
+        raise fail("status success dataflow violated")
+    serialized_reg, returned_reg = result_store_match.groups()
+    if returned_reg != "r0":
+        raise fail("status success dataflow violated")
+    if status_store_match.group(1) != serialized_reg:
+        raise fail("status success dataflow violated")
+    if shift_match.group(2) != serialized_reg:
+        raise fail("status success dataflow violated")
+    if "0x50004004" in caller_text:
+        raise fail("status success dataflow violated")
     return {
         "helper_symbol": "v12_poll_completion",
         "runtime_vector_symbol": "u85_irq_handler",
         "helper_one_direct_callsite": True,
+        "helper_call_target_exact": True,
+        "status_success_dataflow_exact": True,
+        "history_mask_from_success_status": True,
         "result_paths": paths,
     }
 
 
 def validate_artifact_contract(manifest_json: str) -> dict:
     doc = json.loads(manifest_json)
-    if doc.get("schema_version") != SCHEMA_VERSION:
-        raise fail("schema_version mismatch")
-    if doc.get("build_id") != "0x%08X" % BUILD_ID:
-        raise fail("build_id mismatch")
-    if doc.get("parser_sha256") in (None, "", "DRIFTED"):
-        raise fail("parser provenance drift")
+    for key, expected in EXPECTED_MANIFEST_EXACT.items():
+        if doc.get(key) != expected:
+            raise fail("%s mismatch" % key)
+    for key in ("runner_source_sha256", "vendor_source_sha256", "manifest_sha256", "artifact_sha256", "parser_sha256"):
+        value = doc.get(key)
+        if not isinstance(value, str) or HEX64_RE.fullmatch(value) is None:
+            raise fail("%s malformed" % key)
     for key in EXPECTED_MANIFEST_KEYS:
         value = doc.get(key)
-        if not isinstance(value, str) or not value.startswith("0x"):
+        if not isinstance(value, str) or HEX32_RE.fullmatch(value) is None:
             raise fail("manifest key missing or not address-like: %s" % key)
     for key in EXPECTED_BOOLEAN_KEYS:
         if doc.get(key) is not True:

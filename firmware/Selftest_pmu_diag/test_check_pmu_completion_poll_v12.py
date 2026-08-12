@@ -312,14 +312,14 @@ v12_common_cleanup:
 DISASSEMBLY = """Disassembly of section .text:
 
 00001000 <v12_poll_completion>:
-   1000:\t4f10\tldr\tr0, [pc, #64] @ (1040 <v12_poll_completion+0x40>)
-   1004:\tf8d0 2000\tldr.w\tr0, [r0]
+   1000:\t4f10\tldr\tr4, [pc, #64] @ (1044 <v12_poll_completion+0x44>)
+   1004:\tf8d4 5000\tldr.w\tr5, [r4]
    1008:\t; V12_P0
    1008:\tf8c3 2080\tstr.w\tr2, [r3, #128]     ; pmu_completion_poll_v12_t_poll_entry
    100c:\t; V12_HELPER_STATUS_READ
-   100c:\t... status load from 0x50004004
+   100c:\tf8d5 0004\tldr.w\tr0, [r5, #4]       ; helper STATUS load from 0x50004004
    1010:\t; V12_HELPER_STATUS_TEST
-   1010:\ttst\tr3, #2
+   1010:\tf010 0f02\ttst.w\tr0, #2
    1014:\tbeq\t100c <v12_poll_completion+0x0c>
    1018:\t; V12_P1
    1018:\tf8c3 20c0\tstr.w\tr2, [r3, #192]     ; pmu_completion_poll_v12_t_status_completion_seen
@@ -353,42 +353,45 @@ DISASSEMBLY = """Disassembly of section .text:
    120c:\t; V12_SUBMIT_T2
    120c:\t... t2 store
    1210:\t... \t; V12_WAIT_CALL
-   1210:\tbl\tv12_poll_completion
+   1210:\tbl\t1000 <v12_poll_completion>
    1214:\t... \t; V12_WAIT_RESULT_STORE
-   1214:\t... poll_result store
-   1218:\tcbz\tr0, 1270 <pmu_completion_poll_v12_timeout>
+   1214:\t4624\tmov\tr4, r0
+   1218:\tcbz\tr4, 127c <pmu_completion_poll_v12_timeout>
    121c:\t; V12_SUCCESS_HISTORY_STORE
-   121c:\t... history store
-   1220:\t; V12_SUCCESS_CMD2_1
-   1220:\t... success CMD2 #1
-   1224:\t; V12_SUCCESS_QREAD_READ
-   1224:\t... qread load
-   1228:\t; V12_SUCCESS_CMD2_2
-   1228:\t... success CMD2 #2
-   122c:\t; V12_SUCCESS_QREAD_VERIFY
-   122c:\t... qread verify check
-   1230:\tb\t1250 <v12_common_cleanup>
-   1234:\t; V12_TIMEOUT_REPORT
-   1234:\tb\t1270 <pmu_completion_poll_v12_timeout>
-   1250:\t; V12_FINAL_PENDING_BEFORE_CLEAR
-   1250:\t... pending before clear
-   1254:\t; V12_FINAL_PENDING_AFTER_CLEAR
-   1254:\t... pending after clear
-   1258:\t; V12_FINAL_ACTIVE_AFTER_CLEAR
-   1258:\t... active after clear
-   125c:\t; V12_FINAL_IRQ_TRIGGERED_AFTER_CLEAR
-   125c:\t... irq false
-   1260:\t; V12_CMD0
-   1260:\t... cmd0
-   1264:\t; V12_HPRINTF_SEAM
-   1264:\t... printf call
-   1268:\t; V12_CMD0C
-   1268:\t... cmd 0x0c
-   1270:\t; V12_TIMEOUT_QREAD_READ
-   1270:\t... timeout qread
-   1274:\t; V12_TIMEOUT_CMD2
-   1274:\t... timeout CMD2
-   1278:\tb\t1250 <v12_common_cleanup>
+   121c:\tf8cd 4010\tstr.w\tr4, [sp, #16]      ; status_at_success
+   1220:\tea5f 4114\tlsrs.w\tr1, r4, #16
+   1224:\tf8a7 1004\tstrh.w\tr1, [r7, #4]      ; irq_history_mask
+   1228:\t; V12_SUCCESS_CMD2_1
+   1228:\t... success CMD2 #1
+   122c:\t; V12_SUCCESS_QREAD_READ
+   122c:\tf8d7 6030\tldr.w\tr6, [r7, #48]      ; qread load
+   1230:\t; V12_SUCCESS_CMD2_2
+   1230:\t... success CMD2 #2
+   1234:\t; V12_SUCCESS_QREAD_VERIFY
+   1234:\tf016 060f\tands.w\tr6, r6, #15
+   1238:\t2e03\tcmp\tr6, #3
+   123c:\tb\t125c <v12_common_cleanup>
+   1240:\t; V12_TIMEOUT_REPORT
+   1240:\tb\t127c <pmu_completion_poll_v12_timeout>
+   125c:\t; V12_FINAL_PENDING_BEFORE_CLEAR
+   125c:\t... pending before clear
+   1260:\t; V12_FINAL_PENDING_AFTER_CLEAR
+   1260:\t... pending after clear
+   1264:\t; V12_FINAL_ACTIVE_AFTER_CLEAR
+   1264:\t... active after clear
+   1268:\t; V12_FINAL_IRQ_TRIGGERED_AFTER_CLEAR
+   1268:\t... irq false
+   126c:\t; V12_CMD0
+   126c:\t... cmd0
+   1270:\t; V12_HPRINTF_SEAM
+   1270:\t... printf call
+   1274:\t; V12_CMD0C
+   1274:\t... cmd 0x0c
+   127c:\t; V12_TIMEOUT_QREAD_READ
+   127c:\t... timeout qread
+   1280:\t; V12_TIMEOUT_CMD2
+   1280:\t... timeout CMD2
+   1284:\tb\t125c <v12_common_cleanup>
 
 00001300 <u85_irq_handler>:
    1300:\t; V12_ISR_STATUS_READ
@@ -404,8 +407,9 @@ DISASSEMBLY = """Disassembly of section .text:
 NM = """00001000 T v12_poll_completion
 00001100 T test_u85
 00001200 T test_commands
-00001250 T v12_common_cleanup
+0000125c T v12_common_cleanup
 00001300 T u85_irq_handler
+00001400 T wrong_helper
 
 20002000 B pmu_completion_poll_v12_t_installed_vector
 20002004 B pmu_completion_poll_v12_t_nvic_enabled_before_submit
@@ -598,6 +602,18 @@ def _mutate_disassembly_inlined_helper(v):
     return v.replace("00001000 <v12_poll_completion>:\n", "")
 
 
+def _mutate_disassembly_wrong_direct_callee(v):
+    return v.replace("   1210:\tbl\t1000 <v12_poll_completion>\n",
+                     "   1210:\tbl\t1400 <wrong_helper>\n", 1)
+
+
+def _mutate_disassembly_status_dataflow_break(v):
+    return v.replace("   1214:\t4624\tmov\tr4, r0\n",
+                     "   1214:\t4622\tmov\tr2, r0\n", 1).replace(
+                     "   121c:\tf8cd 4010\tstr.w\tr4, [sp, #16]      ; status_at_success\n",
+                     "   121c:\tf8cd 2010\tstr.w\tr2, [sp, #16]      ; status_at_success\n", 1)
+
+
 def _mutate_vendor_merge_qread_verify(v):
     return v.replace("        /* V12_SUCCESS_QREAD_READ */\n        read_val = read_reg(NPU_REG_QREAD);\n        /* V12_SUCCESS_CMD2_2 */\n        write_reg(NPU_REG_CMD, 0x00000002);\n        if ((read_val & 0x0FU) == 0x03U) {\n            pmu_completion_poll_v12_t_success_qread_verified = 1U;\n        }\n",
                      "        /* V12_SUCCESS_QREAD_READ */\n        read_val = read_reg(NPU_REG_QREAD);\n        /* V12_SUCCESS_CMD2_2 */\n        write_reg(NPU_REG_CMD, 0x00000002);\n        if ((read_val & 0x0FU) == 0x03U) {}\n", 1)
@@ -639,8 +655,8 @@ def _mutate_manifest_parser_drift(v):
 def _mutate_disassembly_indirect_branch(v):
     lines = v.splitlines()
     for i, line in enumerate(lines):
-        if "\tbl\tv12_poll_completion" in line:
-            lines[i] = line.replace("\tbl\tv12_poll_completion", "\tblx\tr3", 1)
+        if "\tbl\t1000 <v12_poll_completion>" in line:
+            lines[i] = line.replace("\tbl\t1000 <v12_poll_completion>", "\tblx\tr3", 1)
             break
     else:
         return v
@@ -938,16 +954,41 @@ MANIFEST_OK = {
     "build_id": BUILD_ID,
     "runner_source_sha256": RUNNER_SHA256,
     "vendor_source_sha256": VENDOR_SHA256,
-    "manifest_sha256": "OKMANIFESTSHA",
-    "artifact_sha256": "OKBINHASH",
-    "parser_sha256": "OKPARSE",
+    "manifest_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+    "artifact_sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+    "parser_sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+    "helper_symbol": "v12_poll_completion",
+    "helper_address": "0x00001000",
+    "runtime_vector_target_symbol": "u85_irq_handler",
+    "runtime_vector_target_address": "0x00001300",
+    "wait_call_target_address": "0x00001000",
+    "wait_result_branch_block_address": "0x00001214",
+    "success_entry_block_address": "0x0000121C",
+    "timeout_entry_block_address": "0x0000127C",
+    "merge_block_address": "0x0000125C",
+    "helper_status_register_address": "0x50004004",
+    "helper_completion_mask_value": "0x00000002",
+    "success_cmd2_write_value": "0x00000002",
+    "timeout_cmd2_write_value": "0x00000002",
+    "qread_verify_mask_value": "0x0000000F",
+    "qread_verify_expected_value": "0x00000003",
+    "runtime_vector_api_symbol": "NVIC_SetVector",
+    "nvic_disable_symbol": "NVIC_DisableIRQ",
+    "nvic_clear_pending_symbol": "NVIC_ClearPendingIRQ",
+    "nvic_get_vector_symbol": "NVIC_GetVector",
+    "nvic_get_enable_symbol": "NVIC_GetEnableIRQ",
+    "nvic_get_pending_symbol": "NVIC_GetPendingIRQ",
+    "nvic_get_active_symbol": "NVIC_GetActive",
     "helper_one_direct_callsite": True,
+    "helper_call_target_exact": True,
     "status_success_dataflow_exact": True,
     "history_mask_from_success_status": True,
     "success_cmd2_count_2": True,
     "timeout_cmd2_count_1": True,
     "nvic_enable_replaced": True,
     "irq_triggered_true_reachable_false": True,
+    "runtime_vector_target_exact": True,
+    "result_paths_distinct": True,
 }
 for _marker, _manifest_key in REQUIRED_SITE_MARKERS.items():
     MANIFEST_OK[_manifest_key] = _DISASSEMBLY_SITE_ADDRESSES.get(_marker)
@@ -1090,9 +1131,9 @@ MUTATION_FIXTURES = {
         "vendor_include": ["0xABCDU"],
     },
     "25_helper_inlined_or_cloned_or_tailcall": {
-        "disassembly": _mutate_disassembly_inlined_helper(DISASSEMBLY),
-        "note": "helper inline/clone/tail-call",
-        "disassembly_exclude": ["00001000 <v12_poll_completion>:"],
+        "disassembly": _mutate_disassembly_wrong_direct_callee(DISASSEMBLY),
+        "note": "wrong direct helper callee target",
+        "disassembly_include": ["1400 <wrong_helper>"],
     },
     "26_success_timeout_merge_before_qread": {
         "vendor": _mutate_vendor_merge_qread_verify(VENDOR_V12_OK),
@@ -1133,7 +1174,7 @@ EXPECTED_MUTATION_ERRORS = {
     "22_retain_enable_before_disable": "NVIC enable path remains reachable",
     "23_reachable_irq_true_then_false": "unexpected reachable irq_triggered=true count",
     "24_history_mask_not_from_success_status": "history mask lost single-source status dataflow",
-    "25_helper_inlined_or_cloned_or_tailcall": "helper function in disassembly: expected 1 match, found 0",
+    "25_helper_inlined_or_cloned_or_tailcall": "helper direct call target mismatch",
     "26_success_timeout_merge_before_qread": "success qread verify body missing",
     "27_indirect_or_it_predicated_cmd": "indirect or IT-predicated CMD store",
 }
@@ -1423,12 +1464,30 @@ int test_u85( const u85_eTest eTest,
         caller_paths == {
             "branch_block": 0x1214,
             "success_entry": 0x121c,
-            "timeout_entry": 0x1270,
-            "merge_block": 0x1250,
+            "timeout_entry": 0x127c,
+            "merge_block": 0x125c,
         },
     )
     gate.verify_callsite_trace(runner_out, vendor_out, DISASSEMBLY, NM)
     gate.validate_artifact_contract(json.dumps(MANIFEST_OK))
+    try:
+        gate.verify_callsite_trace(runner_out, vendor_out, _mutate_disassembly_status_dataflow_break(DISASSEMBLY), NM)
+        check("gate rejects executable status dataflow break", False, "unexpected pass")
+    except Exception as exc:
+        check("gate rejects executable status dataflow break", "status success dataflow violated" in str(exc), str(exc))
+    for name, key, value, expected in (
+        ("manifest rejects wrong runner hash", "runner_source_sha256", "0" * 64, "runner_source_sha256 mismatch"),
+        ("manifest rejects wrong vector symbol", "runtime_vector_target_symbol", "wrong_helper", "runtime_vector_target_symbol mismatch"),
+        ("manifest rejects wrong NVIC symbol", "nvic_disable_symbol", "NVIC_EnableIRQ", "nvic_disable_symbol mismatch"),
+        ("manifest rejects false critical boolean", "helper_call_target_exact", False, "manifest boolean missing or false: helper_call_target_exact"),
+    ):
+        broken = dict(MANIFEST_OK)
+        broken[key] = value
+        try:
+            gate.validate_artifact_contract(json.dumps(broken))
+            check(name, False, "unexpected pass")
+        except Exception as exc:
+            check(name, expected in str(exc), str(exc))
 
     for name, fix in MUTATION_FIXTURES.items():
         synthetic_runner = RUNNER_V12_OK
