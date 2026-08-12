@@ -331,7 +331,7 @@ def build_payload(
         0,
         0,
         0,
-        0xBEEF,
+        0,
     ]
 
     if len(appendix) != 15:
@@ -670,10 +670,13 @@ def validate_campaign_shape_and_stop():
     records = []
     for boot in (1, 2, 3):
         for run in range(1, 11):
-            if boot == 2 and run == 4:
-                rec = build_record(boot=boot, run=run, scenario="timeout", archive_path=f"boot{boot}_run{run:02d}.json", manifest=manifest)
-            else:
-                rec = build_record(boot=boot, run=run, scenario="success", archive_path=f"boot{boot}_run{run:02d}.json", manifest=manifest)
+            rec = build_record(
+                boot=boot,
+                run=run,
+                scenario="success",
+                archive_path=f"boot{boot}_run{run:02d}.json",
+                manifest=manifest,
+            )
             records.append(rec)
 
     with tempfile.TemporaryDirectory() as tempdir:
@@ -687,6 +690,7 @@ def validate_campaign_shape_and_stop():
         analysis = analyze_3x10(paths)
         analysis_dict = _as_dict(analysis)
         check("analyze_3x10 accepts payloads", bool(analysis_dict))
+        check("analyze_3x10 marks success campaign valid", bool(analysis_dict.get("campaign_valid")))
         for key, expected in {
             "total_samples": 30,
             "sample_count": 30,
@@ -694,8 +698,101 @@ def validate_campaign_shape_and_stop():
         }.items():
             if key in analysis_dict:
                 check("analyze_3x10 total count key %s" % key, analysis_dict[key] == expected)
+        check("analyze_3x10 exact boot count", analysis_dict.get("boot_count") == 3)
+        check("analyze_3x10 exact boots", analysis_dict.get("boots") == [1, 2, 3])
+        check(
+            "analyze_3x10 exact per-boot cardinality",
+            analysis_dict.get("per_boot_run_count") == {"1": 10, "2": 10, "3": 10},
+        )
+        check(
+            "analyze_3x10 emits within-boot CV",
+            sorted((analysis_dict.get("within_boot_cv") or {}).keys()) == ["1", "2", "3"],
+        )
+        check(
+            "analyze_3x10 emits between-boot spread",
+            analysis_dict.get("between_boot_spread") == 0.0,
+        )
+        check(
+            "analyze_3x10 emits exact mode frequencies",
+            analysis_dict.get("mode_frequencies") == {"160": 30},
+        )
+        check(
+            "analyze_3x10 emits exact modes",
+            analysis_dict.get("modes") == [{"value": 160, "count": 30}],
+        )
+        check("analyze_3x10 no excursion on flat fixture", analysis_dict.get("excursion_count") == 0)
+        check("analyze_3x10 hard-floor count on flat fixture", analysis_dict.get("hard_floor_count") == 30)
 
-    timeout_record = [r for r in records if r["host"]["host_boot_index"] == 2 and r["raw"] and json.loads(json.dumps(_as_dict(r["raw"]))).get("payload_hex")][3]
+        check("analyze_3x10 rejects non-30 cardinality", _reject(lambda: analyze_3x10(paths[:-1])))
+
+        boot_reuse_records = json.loads(json.dumps(records))
+        for rec in boot_reuse_records:
+            if rec["host"]["host_boot_index"] == 3:
+                rec["host"]["host_boot_index"] = 2
+        boot_reuse_paths = []
+        for idx, rec in enumerate(boot_reuse_records):
+            path = os.path.join(tempdir, "boot_reuse_%03d.json" % idx)
+            with open(path, "w", encoding="utf-8") as handle:
+                json.dump(rec, handle, sort_keys=True)
+            boot_reuse_paths.append(path)
+        check("analyze_3x10 rejects boot reuse", _reject(lambda: analyze_3x10(boot_reuse_paths)))
+
+        seq_gap_records = json.loads(json.dumps(records))
+        seq_gap_records[-1] = build_record(
+            boot=3,
+            run=9,
+            scenario="success",
+            archive_path="boot3_run10.json",
+            manifest=manifest,
+        )
+        seq_gap_paths = []
+        for idx, rec in enumerate(seq_gap_records):
+            path = os.path.join(tempdir, "seq_gap_%03d.json" % idx)
+            with open(path, "w", encoding="utf-8") as handle:
+                json.dump(rec, handle, sort_keys=True)
+            seq_gap_paths.append(path)
+        check("analyze_3x10 rejects sequence gap", _reject(lambda: analyze_3x10(seq_gap_paths)))
+
+        drift_path = os.path.join(tempdir, "record_manifest_drift.json")
+        drift_record = json.loads(json.dumps(records[0]))
+        drift_record["manifest"]["artifact_sha256"]["generated_runner.c"] = "c" * 64
+        drift_record["host"]["artifact_sha256"]["generated_runner.c"] = "d" * 64
+        with open(drift_path, "w", encoding="utf-8") as handle:
+            json.dump(drift_record, handle, sort_keys=True)
+        check(
+            "analyze_3x10 rejects host/manifest artifact mismatch",
+            _reject(lambda: analyze_3x10([drift_path] + paths[1:])),
+        )
+
+    timeout_records = []
+    for boot in (1, 2, 3):
+        for run in range(1, 11):
+            timeout_records.append(
+                build_record(
+                    boot=boot,
+                    run=run,
+                    scenario="timeout" if (boot == 2 and run == 4) else "success",
+                    archive_path=f"boot{boot}_run{run:02d}.json",
+                    manifest=manifest,
+                )
+            )
+
+    with tempfile.TemporaryDirectory() as tempdir:
+        timeout_paths = []
+        for idx, rec in enumerate(timeout_records):
+            path = os.path.join(tempdir, "timeout_%03d.json" % idx)
+            with open(path, "w", encoding="utf-8") as handle:
+                json.dump(rec, handle, sort_keys=True)
+            timeout_paths.append(path)
+        check("analyze_3x10 rejects timeout campaign", _reject(lambda: analyze_3x10(timeout_paths)))
+
+    timeout_record = [
+        r
+        for r in timeout_records
+        if r["host"]["host_boot_index"] == 2
+        and r["raw"]
+        and json.loads(json.dumps(_as_dict(r["raw"]))).get("payload_hex")
+    ][3]
 
     # The collector path must return this outcome when timeout is seen at boot/run 2,4
     class _StubLink:
@@ -725,8 +822,23 @@ def validate_campaign_shape_and_stop():
         check("collect_one blocks archive writes", not bool(collector_out_dict.get("archive_write", True)))
         check("collect_one requests fresh boot", bool(collector_out_dict.get("fresh_boot_required", True)))
 
+    with tempfile.TemporaryDirectory() as tempdir:
+        mismatch_out = os.path.join(tempdir, "mismatch.json")
+        mismatch_raw = json.loads(json.dumps(timeout_record["raw"]))
+        mismatch_raw["reread_payload_hex"] = mismatch_raw["payload_hex"][:-2] + "00"
+        mismatch_raw["reread_payload_sha256"] = hashlib.sha256(
+            bytes.fromhex(mismatch_raw["reread_payload_hex"])
+        ).hexdigest()
+        mismatch_raw["reread_matches_run_payload"] = False
+        mismatch_outcome = _as_dict(
+            collect_one(raw=mismatch_raw, manifest=manifest, out_path=mismatch_out)
+        )
+        check("collect_one rejects raw reread mismatch", not bool(mismatch_outcome.get("valid", True)))
+        check("collect_one aborts on raw reread mismatch", bool(mismatch_outcome.get("campaign_abort", False)))
+        check("collect_one writes no mismatch archive", not os.path.exists(mismatch_out))
+
     # Simulate analyzer-facing refusal policy for runs after timeout run4
-    refused = [r for r in records if r["host"]["host_boot_index"] == 2 and r["host"]["manifest_path"] in [
+    refused = [r for r in timeout_records if r["host"]["host_boot_index"] == 2 and r["host"]["manifest_path"] in [
         "boot2_run05.json",
         "boot2_run06.json",
         "boot2_run07.json",

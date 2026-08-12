@@ -59,6 +59,14 @@ def _raw_meta(payload: bytes, raw) -> dict:
     }
 
 
+def _raw_reread_identity_ok(raw_doc: dict) -> bool:
+    return (
+        raw_doc.get("reread_matches_run_payload") is True
+        and raw_doc.get("payload_hex") == raw_doc.get("reread_payload_hex")
+        and raw_doc.get("payload_sha256") == raw_doc.get("reread_payload_sha256")
+    )
+
+
 def collect_one(link=None, *, raw=None, manifest=None, out_path=None, host_boot_index=1):
     if raw is None:
         if link is not None and hasattr(link, "last_payload"):
@@ -96,7 +104,15 @@ def collect_one(link=None, *, raw=None, manifest=None, out_path=None, host_boot_
         "archive_write": False,
         "derived": record["derived"],
         "record": record,
+        "raw_reread_identity_ok": _raw_reread_identity_ok(raw_doc),
     }
+    if not outcome["raw_reread_identity_ok"]:
+        outcome["valid"] = False
+        outcome["campaign_abort"] = True
+        outcome["fresh_boot_required"] = True
+        outcome["derived"] = None
+        record["derived"] = None
+        return outcome
     if not derived["valid"]:
         return outcome
     if out_path is not None:
