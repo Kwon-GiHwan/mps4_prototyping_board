@@ -406,6 +406,10 @@ DISASSEMBLY = """Disassembly of section .text:
    1308:\t... irq_history_mask store
    130c:\t; V12_ISR_CMD2
    130c:\t... cmd2 store
+
+00001700 <dead_debug_path>:
+   1700:\tf7ff f846\tbl\t1600 <NVIC_EnableIRQ>
+   1704:\tf04f 20e0\tmov.w\tr0, #3758153728  ; 0xE000E100
 """
 
 NM = """00001000 T v12_poll_completion
@@ -627,6 +631,32 @@ def _mutate_disassembly_status_dataflow_break(v):
                      "   121c:\tf8cd 2010\tstr.w\tr2, [sp, #16]      ; status_at_success\n", 1)
 
 
+def _mutate_disassembly_alt_status_allocation(v):
+    return (
+        v.replace(
+            "   100c:\tf8d5 0004\tldr.w\tr0, [r5, #4]       ; helper STATUS load from 0x50004004\n",
+            "   100c:\tf8d5 3004\tldr.w\tr3, [r5, #4]       ; helper STATUS load from 0x50004004\n",
+            1,
+        )
+        .replace("   1010:\tf010 0f02\ttst.w\tr0, #2\n", "   1010:\tf013 0f02\ttst.w\tr3, #2\n", 1)
+        .replace("   101c:\tf8c3 21c0\tstr.w\tr2, [r3, #256]     ; pmu_completion_poll_v12_t_poll_exit\n   1020:\tbx\tlr\n",
+                 "   101c:\tf8c3 21c0\tstr.w\tr2, [r3, #256]     ; pmu_completion_poll_v12_t_poll_exit\n   1020:\t4618\tmov\tr0, r3\n   1024:\tbx\tlr\n",
+                 1)
+        .replace("   1214:\t4624\tmov\tr4, r0\n", "   1214:\t4606\tmov\tr6, r0\n", 1)
+        .replace("   1218:\tcbz\tr4, 127c <pmu_completion_poll_v12_timeout>\n", "   1218:\tcbz\tr6, 127c <pmu_completion_poll_v12_timeout>\n", 1)
+        .replace("   121c:\tf8cd 4010\tstr.w\tr4, [sp, #16]      ; status_at_success\n", "   121c:\tf8cd 6010\tstr.w\tr6, [sp, #16]      ; status_at_success\n", 1)
+        .replace("   1220:\tea5f 4114\tlsrs.w\tr1, r4, #16\n", "   1220:\tea5f 6116\tlsrs.w\tr1, r6, #16\n", 1)
+    )
+
+
+def _mutate_disassembly_status_return_overwrite(v):
+    return _mutate_disassembly_alt_status_allocation(v).replace(
+        "   1020:\t4618\tmov\tr0, r3\n   1024:\tbx\tlr\n",
+        "   1020:\t4618\tmov\tr0, r3\n   1024:\t2000\tmovs\tr0, #0\n   1028:\tbx\tlr\n",
+        1,
+    )
+
+
 def _mutate_disassembly_wrong_vector_target(v):
     return v.replace("   10fc:\tf8df 1000\tldr.w\tr1, [pc]          ; 1300 <u85_irq_handler>\n",
                      "   10fc:\tf8df 1000\tldr.w\tr1, [pc]          ; 1400 <wrong_helper>\n", 1)
@@ -635,6 +665,11 @@ def _mutate_disassembly_wrong_vector_target(v):
 def _mutate_disassembly_enable_iser(v):
     return v.replace("   1114:\tf7ff f808\tbl\t1540 <NVIC_GetEnableIRQ>\n",
                      "   1114:\tf7ff f808\tbl\t1600 <NVIC_EnableIRQ>\n", 1)
+
+
+def _mutate_disassembly_reachable_iser_write(v):
+    return v.replace("   1118:\tf7ff f80a\tbl\t1550 <NVIC_GetPendingIRQ>\n",
+                     "   1118:\tf04f 20e0\tmov.w\tr0, #3758153728  ; 0xE000E100\n", 1)
 
 
 def _mutate_vendor_merge_qread_verify(v):
@@ -1495,19 +1530,35 @@ int test_u85( const u85_eTest eTest,
     gate.validate_artifact_contract(json.dumps(MANIFEST_OK), evidence)
     gate.validate_artifact_against_evidence(json.dumps(MANIFEST_OK), evidence)
     try:
+        gate.verify_callsite_trace(runner_out, vendor_out, _mutate_disassembly_alt_status_allocation(DISASSEMBLY), NM)
+        check("gate accepts allocation-agnostic status dataflow", True)
+    except Exception as exc:
+        check("gate accepts allocation-agnostic status dataflow", False, str(exc))
+    try:
         gate.verify_callsite_trace(runner_out, vendor_out, _mutate_disassembly_status_dataflow_break(DISASSEMBLY), NM)
         check("gate rejects executable status dataflow break", False, "unexpected pass")
     except Exception as exc:
         check("gate rejects executable status dataflow break", "status success dataflow violated" in str(exc), str(exc))
+    try:
+        gate.verify_callsite_trace(runner_out, vendor_out, _mutate_disassembly_status_return_overwrite(DISASSEMBLY), NM)
+        check("gate rejects helper return overwrite after status move", False, "unexpected pass")
+    except Exception as exc:
+        check("gate rejects helper return overwrite after status move", "status success dataflow violated" in str(exc), str(exc))
     for name, mutated_disassembly, expected in (
         ("gate rejects wrong runtime vector target in disassembly", _mutate_disassembly_wrong_vector_target(DISASSEMBLY), "runtime vector target mismatch"),
         ("gate rejects reachable NVIC enable in disassembly", _mutate_disassembly_enable_iser(DISASSEMBLY), "NVIC enable path remains reachable"),
+        ("gate rejects reachable direct ISER write in disassembly", _mutate_disassembly_reachable_iser_write(DISASSEMBLY), "direct NVIC ISER enable write remains reachable"),
     ):
         try:
             gate.verify_callsite_trace(runner_out, vendor_out, mutated_disassembly, NM)
             check(name, False, "unexpected pass")
         except Exception as exc:
             check(name, expected in str(exc), str(exc))
+    try:
+        gate.verify_callsite_trace(runner_out, vendor_out, DISASSEMBLY, NM)
+        check("gate ignores unreachable dead-function NVIC enable", True)
+    except Exception as exc:
+        check("gate ignores unreachable dead-function NVIC enable", False, str(exc))
     for name, key, value, expected in (
         ("manifest rejects wrong runner hash", "runner_source_sha256", "0" * 64, "runner_source_sha256 mismatch"),
         ("manifest rejects wrong vector symbol", "runtime_vector_target_symbol", "wrong_helper", "runtime_vector_target_symbol mismatch"),

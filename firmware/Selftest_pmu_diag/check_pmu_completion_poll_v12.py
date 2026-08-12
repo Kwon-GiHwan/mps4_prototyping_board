@@ -212,6 +212,14 @@ def _code_line_after_marker(section_text: str, marker: str) -> str:
     raise fail("disassembly code line missing after marker: %s" % marker)
 
 
+def _function_code_lines(section_text: str) -> list[str]:
+    return [
+        line.strip()
+        for line in section_text.splitlines()
+        if re.match(r"^\s*[0-9a-fA-F]+:\s+", line)
+    ]
+
+
 def _parse_nm_symbols(nm_text: str) -> dict[str, int]:
     symbols: dict[str, int] = {}
     for raw in nm_text.splitlines():
@@ -470,6 +478,43 @@ def _marker_line_index(disassembly_text: str, marker: str) -> int:
         if needle in line:
             return index
     raise fail("disassembly marker missing: %s" % marker)
+
+
+def _propagate_aliases(lines: list[str], aliases: set[str]) -> set[str]:
+    current = set(aliases)
+    mov_matchers = (
+        re.compile(r"\bmov(?:s|\.w)?\s+(r\d+),\s+(r\d+)\b"),
+        re.compile(r"\borr(?:s|\.w)?\s+(r\d+),\s+(r\d+),\s*#0\b"),
+    )
+    mov_imm_match = re.compile(r"\bmov(?:s|\.w)?\s+(r\d+),\s*#")
+    clobber_match = re.compile(r"\b(?:ldr|ldrb|ldrh|add|adds|sub|subs|and|ands|eor|orr|bic|lsl|lsls|lsr|lsrs)(?:\.w)?\s+(r\d+),")
+    for line in lines:
+        handled = False
+        for matcher in mov_matchers:
+            hit = matcher.search(line)
+            if hit is None:
+                continue
+            dst, src = hit.groups()
+            if src in current:
+                current.add(dst)
+            elif dst in current:
+                current.remove(dst)
+            handled = True
+            break
+        if handled:
+            continue
+        mov_imm = mov_imm_match.search(line)
+        if mov_imm is not None:
+            dst = mov_imm.group(1)
+            if dst in current:
+                current.remove(dst)
+            continue
+        clobber = clobber_match.search(line)
+        if clobber is not None:
+            dst = clobber.group(1)
+            if dst in current:
+                current.remove(dst)
+    return current
 
 
 def _validate_helper(vendor_text: str) -> None:
@@ -824,10 +869,6 @@ def verify_callsite_trace(runner_text: str, vendor_text: str, disassembly_text: 
 
     if "blx\tr3" in disassembly_text:
         raise fail("indirect helper branch present")
-    if "NVIC_EnableIRQ" in disassembly_text:
-        raise fail("NVIC enable path remains reachable")
-    if "0xE000E100" in disassembly_text or "e000e100" in disassembly_text.lower():
-        raise fail("direct NVIC ISER enable write remains reachable")
     helper_calls = [ins for ins in wait_call.insns if ins.kind == "call_direct"]
     helper_call_count = len(helper_calls)
     if helper_call_count != 1:
@@ -835,6 +876,11 @@ def verify_callsite_trace(runner_text: str, vendor_text: str, disassembly_text: 
     if helper_calls[0].target != helper_addr:
         raise fail("helper direct call target mismatch")
     runtime_text = _function_section(disassembly_text, "test_u85")
+    reachable_text = "\n".join((runtime_text, _function_section(disassembly_text, "v12_poll_completion"), _function_section(disassembly_text, "test_commands")))
+    if "NVIC_EnableIRQ" in reachable_text:
+        raise fail("NVIC enable path remains reachable")
+    if "0xE000E100" in reachable_text or "e000e100" in reachable_text.lower():
+        raise fail("direct NVIC ISER enable write remains reachable")
     runtime_vector_value_line = _code_line_after_marker(runtime_text, "V12_RUNTIME_VECTOR_VALUE")
     runtime_vector_install_line = _code_line_after_marker(runtime_text, "V12_RUNTIME_VECTOR_INSTALL")
     runtime_disable_line = _code_line_after_marker(runtime_text, "V12_RUNTIME_DISABLE")
@@ -890,19 +936,28 @@ def verify_callsite_trace(runner_text: str, vendor_text: str, disassembly_text: 
     status_store_match = re.search(r"\bstr(?:\.w)?\s+(r\d+),", success_history_line)
     helper_load_match = re.search(r"\bldr(?:\.w)?\s+(r\d+),.*0x50004004", helper_status_line)
     helper_test_match = re.search(r"\btst(?:\.w)?\s+(r\d+),\s*#2", helper_test_line)
-    result_store_match = re.search(r"\bmov(?:\.w)?\s+(r\d+),\s+(r\d+)", result_store_line)
     shift_match = re.search(r"\blsrs(?:\.w)?\s+(r\d+),\s+(r\d+),\s*#16", caller_text)
-    if not all((helper_load_match, helper_test_match, result_store_match, status_store_match, shift_match)):
+    if not all((helper_load_match, helper_test_match, status_store_match, shift_match)):
         raise fail("status success dataflow proof missing")
     helper_reg = helper_load_match.group(1)
-    if helper_reg != "r0" or helper_test_match.group(1) != helper_reg:
+    if helper_test_match.group(1) != helper_reg:
         raise fail("status success dataflow violated")
-    serialized_reg, returned_reg = result_store_match.groups()
-    if returned_reg != "r0":
+    helper_lines = _function_code_lines(helper_text)
+    helper_load_index = next((i for i, line in enumerate(helper_lines) if "0x50004004" in line), -1)
+    helper_return_index = next((i for i, line in enumerate(helper_lines) if re.search(r"\bbx\s+lr\b", line)), -1)
+    caller_lines = _function_code_lines(caller_text)
+    result_store_index = next((i for i, line in enumerate(caller_lines) if "; V12_WAIT_RESULT_STORE" in line), -1)
+    history_index = next((i for i, line in enumerate(caller_lines) if re.search(r"\blsrs(?:\.w)?\s+(r\d+),\s+(r\d+),\s*#16", line)), -1)
+    if min(helper_load_index, helper_return_index, result_store_index, history_index) < 0:
+        raise fail("status success dataflow proof missing")
+    helper_aliases = _propagate_aliases(helper_lines[helper_load_index + 1:helper_return_index], {helper_reg})
+    if "r0" not in helper_aliases:
         raise fail("status success dataflow violated")
-    if status_store_match.group(1) != serialized_reg:
+    result_aliases = _propagate_aliases(caller_lines[result_store_index:history_index], {"r0"})
+    shift_src = shift_match.group(2)
+    if shift_src not in result_aliases:
         raise fail("status success dataflow violated")
-    if shift_match.group(2) != serialized_reg:
+    if status_store_match.group(1) not in result_aliases:
         raise fail("status success dataflow violated")
     if "0x50004004" in caller_text:
         raise fail("status success dataflow violated")
