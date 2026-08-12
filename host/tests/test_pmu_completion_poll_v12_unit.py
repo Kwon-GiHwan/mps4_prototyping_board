@@ -14,9 +14,6 @@ import sys
 import tempfile
 import zlib
 
-from inspect import signature
-
-
 # -----------------------------------------------------------------------------
 # Shared import path setup (host package style like existing V11-A tests)
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -259,6 +256,7 @@ def build_payload(
         "reset_guard_cycles": 0x4000,
         "pmcr_guard": 1,
         "pmcr_program": 1,
+        "arm_program": 1,
         "stability_samples": 1,
         "program_stable": 0xC,
         "cmd_after_return": 0,
@@ -333,7 +331,7 @@ def build_payload(
         raise ValueError("V12 appendix must be exactly 15 words")
 
     if appendix_overrides:
-        for idx, value in enumerate([
+        appendix_fields = [
             "t_submit_after_cmd",
             "t_poll_entry",
             "t_status_completion_seen",
@@ -350,9 +348,10 @@ def build_payload(
             "nvic_active_after_cleanup",
             "irq_triggered_after_cleanup",
             "_unused",
-        ]):
-            if field in appendix_overrides:
-                appendix[idx] = appendix_overrides[field]
+        ]
+        for field, value in appendix_overrides.items():
+            if field in appendix_fields:
+                appendix[appendix_fields.index(field)] = value
 
     body.extend(appendix)
 
@@ -498,6 +497,41 @@ def _reject(fn) -> bool:
         return True
 
 
+def _fixture_smoke_suite() -> bool:
+    """Build/parse fixture smoke checks without hidden name/key errors.\n\n    Executed before API assertions when APIs are importable.\n    """
+    try:
+        payload_success = build_payload()
+        timeout_payload = build_payload(
+            appendix_overrides={
+                "poll_result": POLL_TIMEOUT,
+                "status_at_success": 0,
+                "t_poll_entry": 0x0808,
+                "t_status_completion_seen": 0,
+                "t_poll_exit": 0,
+            }
+        )
+        wrap_payload = build_payload(
+            appendix_overrides={
+                "t_submit_after_cmd": 0xFFFFFF90,
+                "t_poll_entry": 0xFFFFFFC0,
+                "t_status_completion_seen": 0,
+                "t_poll_exit": 0x30,
+            }
+        )
+        records = [
+            build_record(boot=1, run=1, scenario="success", archive_path="boot1_run01.json", manifest=make_manifest()),
+            build_record(boot=2, run=4, scenario="timeout", archive_path="boot2_run04.json", manifest=make_manifest()),
+        ]
+        parse_payload(payload_success)
+        parse_payload(timeout_payload)
+        parse_payload(wrap_payload)
+        for path in records:
+            json.dumps(path)
+        return True
+    except Exception:
+        return False
+
+
 def validate_payload_contracts():
     manifest = make_manifest()
     base_payload = build_payload()
@@ -519,11 +553,11 @@ def validate_payload_contracts():
         check("has V12 field %s" % name, name in _as_dict(parsed))
 
     for schema in (8, 9, 10, 11):
+        bad_schema_payload = bytearray(base_payload)
+        struct.pack_into("<I", bad_schema_payload, 4, schema)
         check(
             "schema %d rejected" % schema,
-            _reject(lambda: parse_payload(bytes(struct.pack("<I", MAGIC)
-                + struct.pack("<I", schema)
-                + base_payload[8:])) if False else False),
+            _reject(lambda: parse_payload(bytes(bad_schema_payload))),
         )
 
     parse_bad_build = build_payload(build_id=BUILD_ID ^ 0x1)
@@ -723,6 +757,10 @@ def validate_command_contract():
 
 
 def run_checks():
+    if not _fixture_smoke_suite():
+        check("fixture smoke harness", False)
+        return
+    check("fixture smoke harness", True)
     validate_payload_contracts()
     validate_command_contract()
     validate_transport_contracts()
