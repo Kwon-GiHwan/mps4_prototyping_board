@@ -33,7 +33,6 @@ PMU_COMPLETION_POLL_V12_BUILD_ID = 0x32314950  # ASCII "PI12", little-endian.
 PMU_COMPLETION_POLL_V12_POLL_SUCCESS = 1
 PMU_COMPLETION_POLL_V12_POLL_TIMEOUT = 2
 PMU_COMPLETION_POLL_V12_STATUS_COMPLETE_MASK = 0x02
-PMU_COMPLETION_POLL_V12_STOCK_VECTOR_ADDR = 0x20001000
 PMU_COMPLETION_POLL_V12_REQUIRED_MANIFEST_KEYS = (
     "variant",
     "schema_version",
@@ -50,6 +49,7 @@ PMU_COMPLETION_POLL_V12_REQUIRED_MANIFEST_BOOLEANS = (
     "not_a_latency_measurement",
     "generated_private_driver_diagnostic_only",
     "production_end_only_frozen",
+    "diagnostic_only",
     "not_numerically_comparable_to_v11a",
     "not_latency",
     "not_t_npu",
@@ -71,6 +71,7 @@ PMU_COMPLETION_POLL_V12_REQUIRED_BUILD_EVIDENCE_KEYS = (
 )
 PMU_COMPLETION_POLL_V12_REQUIRED_BINDING_KEYS = (
     "expected_return_address",
+    "runtime_vector_target_address",
     "wait_call_address",
     "hprintf_callsite_address",
     "helper_status_read_address",
@@ -356,6 +357,14 @@ def classify_pmu_completion_poll_v12_payload(
 ) -> dict:
     expected_build_id = _manifest_build_id(expected_manifest)
     expected_lr = expected_manifest.get("expected_return_address")
+    runtime_vector_target = expected_manifest.get("runtime_vector_target_address")
+    runtime_vector_target_int = None
+    try:
+        if isinstance(runtime_vector_target, str):
+            runtime_vector_target_int = int(runtime_vector_target, 16)
+    except ValueError:
+        runtime_vector_target_int = None
+
     # Reuse the retained v8 sample-validity terms without laundering the V12
     # manifest identity. The inherited classifier sees the retained Q1 shape,
     # while V12-specific manifest identity is checked separately against the
@@ -393,8 +402,9 @@ def classify_pmu_completion_poll_v12_payload(
                 isinstance(expected_lr, int)
                 and res.hook_callsite_lr_observed == expected_lr
             ),
-            "runtime_vector_is_stock": (
-                res.installed_vector == PMU_COMPLETION_POLL_V12_STOCK_VECTOR_ADDR
+            "runtime_vector_matches_manifest": (
+                runtime_vector_target_int is not None
+                and res.installed_vector == runtime_vector_target_int
             ),
             "nvic_disabled_before_submit": res.nvic_enabled_before_submit == 0,
             "nvic_pending_cleared_before_submit": (

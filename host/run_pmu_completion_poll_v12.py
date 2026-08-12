@@ -129,11 +129,15 @@ def verify_record_identity(res, manifest: dict) -> None:
 
 
 def _canonical_manifest_bytes(manifest: dict, manifest_blob: bytes | None) -> bytes:
-    return (
-        manifest_blob
-        if manifest_blob is not None
-        else (json.dumps(manifest, sort_keys=True) + "\n").encode("utf-8")
-    )
+    if manifest_blob is None:
+        return (json.dumps(manifest, sort_keys=True) + "\n").encode("utf-8")
+    try:
+        decoded = json.loads(manifest_blob.decode("utf-8"))
+    except (UnicodeDecodeError, ValueError) as exc:
+        raise CampaignAbort("manifest_blob is not valid JSON: %s" % exc)
+    if decoded != manifest:
+        raise CampaignAbort("manifest_blob does not decode to the supplied manifest")
+    return manifest_blob
 
 
 def _raw_payload_bytes(raw) -> bytes:
@@ -306,7 +310,7 @@ def collect_one(
     verify_manifest_identity(manifest, manifest_path or "<manifest>")
     manifest_blob = _canonical_manifest_bytes(manifest, manifest_blob)
     artifacts = dict(artifact_sha256 or manifest.get("artifact_sha256") or {})
-    if set(artifacts) != set(manifest["artifact_sha256"]):
+    if artifacts != manifest["artifact_sha256"]:
         raise CampaignAbort("artifact identity mismatch before collection")
     if out_path is not None and Path(out_path).exists():
         raise CampaignAbort("refusing to overwrite existing archive %s" % out_path)

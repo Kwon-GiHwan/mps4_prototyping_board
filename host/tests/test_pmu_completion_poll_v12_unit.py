@@ -78,6 +78,7 @@ def manifest(**over):
         "not_a_latency_measurement": True,
         "generated_private_driver_diagnostic_only": True,
         "production_end_only_frozen": True,
+        "diagnostic_only": True,
         "not_numerically_comparable_to_v11a": True,
         "not_latency": True,
         "not_t_npu": True,
@@ -98,6 +99,7 @@ def manifest(**over):
         },
         "helper_symbol": "v12_poll_completion",
         "runtime_vector_target_symbol": "u85_irq_handler",
+        "runtime_vector_target_address": "0x20001000",
         "wait_call_address": "0x00001200",
         "hprintf_callsite_address": "0x31000788",
         "helper_status_read_address": "0x0000100c",
@@ -154,7 +156,7 @@ def build_payload(
         0x10D0 if poll_result == v12.PMU_COMPLETION_POLL_V12_POLL_SUCCESS else 0,
         poll_result,
         0x00020002 if poll_result == v12.PMU_COMPLETION_POLL_V12_POLL_SUCCESS else 0,
-        v12.PMU_COMPLETION_POLL_V12_STOCK_VECTOR_ADDR,
+        int(manifest()["runtime_vector_target_address"], 16),
         0,
         0,
         0,
@@ -323,6 +325,29 @@ def test_schema_and_manifest():
             dict(manifest(), artifact_sha256={"APP.BIN": hex64("a")}), "fixture"
         ),
     )
+    rejects(
+        "manifest diagnostic_only required",
+        lambda: v12.verify_manifest_identity(
+            dict(manifest(), diagnostic_only=False), "fixture"
+        ),
+    )
+    relocated = manifest(
+        runtime_vector_target_address="0x20001234",
+        expected_return_address=0x3100078C,
+    )
+    relocated_raw = build_payload(
+        appendix_overrides={"installed_vector": int(relocated["runtime_vector_target_address"], 16)}
+    )
+    relocated_parsed = v12.parse_pmu_completion_poll_v12_payload(relocated_raw)
+    relocated_derived = v12.classify_pmu_completion_poll_v12_payload(relocated_parsed, relocated)
+    check("relocated stock vector address accepted", relocated_derived["valid"] is True)
+    stale_derived = v12.classify_pmu_completion_poll_v12_payload(
+        relocated_parsed, manifest()
+    )
+    check(
+        "stale hardcoded vector address rejected",
+        "runtime_vector_matches_manifest" in stale_derived["invalid_reasons"],
+    )
 
 
 def test_collect_raw_and_timeout():
@@ -347,6 +372,32 @@ def test_collect_raw_and_timeout():
         check("raw reread mismatch aborts", mismatch["campaign_abort"] is True)
         check("raw reread mismatch writes nothing", not os.path.exists(mismatch_out))
 
+        artifact_bad_out = os.path.join(tempdir, "artifact_bad.json")
+        rejects(
+            "artifact digest mismatch rejects before write",
+            lambda: rv12.collect_one(
+                raw=raw,
+                manifest=man,
+                artifact_sha256=dict(man["artifact_sha256"], **{"APP.BIN": hex64("0")}),
+                out_path=artifact_bad_out,
+                host_boot_index=1,
+            ),
+        )
+        check("artifact digest mismatch opens no output", not os.path.exists(artifact_bad_out))
+
+        manifest_blob_bad_out = os.path.join(tempdir, "manifest_blob_bad.json")
+        rejects(
+            "manifest_blob mismatch rejects before write",
+            lambda: rv12.collect_one(
+                raw=raw,
+                manifest=man,
+                manifest_blob=(json.dumps(dict(man, helper_symbol="wrong"), sort_keys=True) + "\n").encode("utf-8"),
+                out_path=manifest_blob_bad_out,
+                host_boot_index=1,
+            ),
+        )
+        check("manifest_blob mismatch opens no output", not os.path.exists(manifest_blob_bad_out))
+
         timeout_raw = build_payload(poll_result=v12.PMU_COMPLETION_POLL_V12_POLL_TIMEOUT)
         timeout_out = os.path.join(tempdir, "timeout.json")
         timeout = rv12.collect_one(
@@ -366,6 +417,18 @@ def test_transport_contract():
     res, raw, reread = rv12.collect_pmu_completion_poll_v12(link)
     check("ACK/COMPLETE/GET exchange accepted", raw == payload and reread == payload)
     check("transport parsed exact run", res.run_sequence == 1)
+    rejects(
+        "no ACK rejected",
+        lambda: rv12.collect_pmu_completion_poll_v12(
+            FakeLink(lambda seq: [], lambda seq: [])
+        ),
+    )
+    rejects(
+        "ACK without COMPLETE rejected",
+        lambda: rv12.collect_pmu_completion_poll_v12(
+            FakeLink(lambda seq: [ack(seq)], lambda seq: [])
+        ),
+    )
     rejects(
         "COMPLETE before ACK rejected",
         lambda: rv12.collect_pmu_completion_poll_v12(
@@ -390,6 +453,24 @@ def test_transport_contract():
             FakeLink(lambda seq: [ack(seq), complete(payload, seq)], lambda seq: [reread_reply(build_payload(run_sequence=1, appendix_overrides={"t_poll_exit": 0x10E0}), seq)])
         ),
     )
+    rejects(
+        "GET empty rejected",
+        lambda: rv12.collect_pmu_completion_poll_v12(
+            FakeLink(lambda seq: [ack(seq), complete(payload, seq)], lambda seq: [reread_reply(b"", seq)])
+        ),
+    )
+    rejects(
+        "GET wrong command rejected",
+        lambda: rv12.collect_pmu_completion_poll_v12(
+            FakeLink(lambda seq: [ack(seq), complete(payload, seq)], lambda seq: [Frame(v8.CMD_PING | 0x80, seq, payload)])
+        ),
+    )
+    stale_seq = FakeLink(
+        lambda seq: [ack(seq), Frame(v8.CMD_PMU_DIAG_COMPLETE, seq - 1, b"stale"), complete(payload, seq)],
+        lambda seq: [Frame(v8.CMD_GET_PMU_DIAG_RESULT | 0x80, seq - 1, b"late"), reread_reply(payload, seq)],
+    )
+    _, raw2, reread2 = rv12.collect_pmu_completion_poll_v12(stale_seq)
+    check("stale sequence frames skipped", raw2 == payload and reread2 == payload and stale_seq.late_frames == 2)
     rejects(
         "NACK rejected",
         lambda: rv12.collect_pmu_completion_poll_v12(
@@ -480,12 +561,49 @@ def test_analyzer_contract():
         rejects("analyze_3x10 rejects timeout campaign", lambda: az.analyze_3x10(timeout_paths))
 
 
+def test_pretransport_fail_closed():
+    class GuardLink:
+        def __init__(self):
+            self.touched = False
+
+        def send_raw(self, blob):
+            self.touched = True
+            raise AssertionError("transport must not start")
+
+    man = manifest()
+    raw = build_payload()
+    link = GuardLink()
+    rejects(
+        "invalid manifest blocks transport open",
+        lambda: rv12.collect_one(
+            link=link,
+            raw=raw,
+            manifest=dict(man, diagnostic_only=False),
+            host_boot_index=1,
+        ),
+    )
+    check("invalid manifest kept transport closed", link.touched is False)
+    link = GuardLink()
+    rejects(
+        "artifact mismatch blocks transport open",
+        lambda: rv12.collect_one(
+            link=link,
+            raw=raw,
+            manifest=man,
+            artifact_sha256=dict(man["artifact_sha256"], **{"APP.BIN": hex64("0")}),
+            host_boot_index=1,
+        ),
+    )
+    check("artifact mismatch kept transport closed", link.touched is False)
+
+
 def run_checks():
     test_schema_and_manifest()
     test_collect_raw_and_timeout()
     test_transport_contract()
     test_campaign_state_stop_gate()
     test_analyzer_contract()
+    test_pretransport_fail_closed()
 
 
 if __name__ == "__main__":
