@@ -6,6 +6,7 @@ import hashlib
 import shlex
 import subprocess
 import tempfile
+import copy
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
@@ -1039,14 +1040,35 @@ EXPECTED_MANIFEST_KEYS = {
 _DISASSEMBLY_SITE_ADDRESSES = _collect_disassembly_marker_addresses(DISASSEMBLY, REQUIRED_SITE_MARKERS.keys())
 
 MANIFEST_OK = {
+    "variant": "PMU_COMPLETION_POLL_DIAG_V12",
     "schema_version": SCHEMA_VERSION,
     "build_id": BUILD_ID,
+    "qualification_mode": "Q1",
     "evidence_source": "arm_elf",
+    "expected_return_address": 0x1274,
+    "characterization_only": True,
+    "not_a_performance_baseline": True,
+    "not_a_latency_measurement": True,
+    "generated_private_driver_diagnostic_only": True,
+    "production_end_only_frozen": True,
     "runner_source_sha256": RUNNER_SHA256,
     "vendor_source_sha256": VENDOR_SHA256,
     "manifest_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
-    "artifact_sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+    "artifact_bundle_sha256": "2222222222222222222222222222222222222222222222222222222222222222",
     "parser_sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+    "artifact_sha256": {
+        "APP.BIN": "4".ljust(64, "4"),
+        "VECTORS.BIN": "5".ljust(64, "5"),
+        "DDR.BIN": "6".ljust(64, "6"),
+    },
+    "build_evidence_sha256": {
+        "runner_pmu_completion_poll_v12.elf": "7".ljust(64, "7"),
+        "runner_pmu_completion_poll_v12.map": "8".ljust(64, "8"),
+        "generated_runner.c": RUNNER_SHA256,
+        "generated_vendor_u85.c": VENDOR_SHA256,
+        "checker_disassembly.txt": "9".ljust(64, "9"),
+        "checker_nm.txt": "a".ljust(64, "a"),
+    },
     "helper_symbol": "v12_poll_completion",
     "helper_address": "0x00001000",
     "runtime_vector_target_symbol": "u85_irq_handler",
@@ -1082,6 +1104,27 @@ MANIFEST_OK = {
 }
 for _marker, _manifest_key in REQUIRED_SITE_MARKERS.items():
     MANIFEST_OK[_manifest_key] = _DISASSEMBLY_SITE_ADDRESSES.get(_marker)
+
+
+def relocate_disassembly(disassembly_text: str, delta: int) -> str:
+    def repl_line(match):
+        return ("%04x" % (int(match.group(1), 16) + delta)) + match.group(2)
+    def repl_target(match):
+        return "%04x <" % (int(match.group(1), 16) + delta)
+    text = re.sub(r"(?m)^(\s*[0-9a-fA-F]{4})(:)", lambda m: ("%04x" % (int(m.group(1), 16) + delta)) + m.group(2), disassembly_text)
+    text = re.sub(r"\b([0-9a-fA-F]{4}) <", repl_target, text)
+    return text
+
+
+def relocate_nm(nm_text: str, delta: int) -> str:
+    lines = []
+    for line in nm_text.splitlines():
+        parts = line.split()
+        if len(parts) == 3 and re.fullmatch(r"[0-9A-Fa-f]+", parts[0]):
+            lines.append("%08x %s %s" % (int(parts[0], 16) + delta, parts[1], parts[2]))
+        else:
+            lines.append(line)
+    return "\n".join(lines) + ("\n" if nm_text.endswith("\n") else "")
 
 
 MUTATION_FIXTURES = {
@@ -1561,6 +1604,32 @@ int test_u85( const u85_eTest eTest,
     evidence = gate.verify_callsite_trace(runner_out, vendor_out, DISASSEMBLY, NM)
     gate.validate_artifact_contract(json.dumps(MANIFEST_OK), evidence)
     gate.validate_artifact_against_evidence(json.dumps(MANIFEST_OK), evidence)
+    relocated_disassembly = relocate_disassembly(DISASSEMBLY, 0x200)
+    relocated_nm = relocate_nm(NM, 0x200)
+    relocated_evidence = gate.verify_callsite_trace(runner_out, vendor_out, relocated_disassembly, relocated_nm)
+    relocated_manifest = copy.deepcopy(MANIFEST_OK)
+    for key in (
+        "helper_address",
+        "runtime_vector_target_address",
+        "wait_call_target_address",
+        "wait_result_branch_block_address",
+        "success_entry_block_address",
+        "timeout_entry_block_address",
+        "merge_block_address",
+    ):
+        relocated_manifest[key] = relocated_evidence[key]
+    for key in gate.MANIFEST_MARKER_KEYS.values():
+        relocated_manifest[key] = relocated_evidence[key]
+    relocated_manifest["expected_return_address"] = int(relocated_evidence["terminal_cmd0c_store_address"], 16)
+    gate.validate_artifact_contract(json.dumps(relocated_manifest), relocated_evidence)
+    gate.validate_artifact_against_evidence(json.dumps(relocated_manifest), relocated_evidence)
+    broken_relocated = copy.deepcopy(relocated_manifest)
+    broken_relocated["helper_address"] = "0x00001000"
+    try:
+        gate.validate_artifact_against_evidence(json.dumps(broken_relocated), relocated_evidence)
+        check("manifest rejects relocated dynamic address mismatch", False, "unexpected pass")
+    except Exception as exc:
+        check("manifest rejects relocated dynamic address mismatch", "helper_address mismatch" in str(exc), str(exc))
     try:
         gate.verify_callsite_trace(runner_out, vendor_out, _mutate_disassembly_alt_status_allocation(DISASSEMBLY), NM)
         check("gate accepts allocation-agnostic status dataflow", True)
@@ -1597,7 +1666,7 @@ int test_u85( const u85_eTest eTest,
         ("manifest rejects wrong NVIC symbol", "nvic_disable_symbol", "NVIC_EnableIRQ", "nvic_disable_symbol mismatch"),
         ("manifest rejects false critical boolean", "helper_call_target_exact", False, "manifest boolean missing or false: helper_call_target_exact"),
         ("manifest rejects stale wait callsite address", "wait_call_address", "0x00001234", "wait_call_address mismatch"),
-        ("manifest rejects wrong vector address", "runtime_vector_target_address", "0x00001400", "runtime_vector_target_address mismatch"),
+        ("manifest rejects wrong expected return address", "expected_return_address", 0x1270, "expected_return_address mismatch"),
         ("manifest rejects fabricated boolean", "runtime_vector_target_exact", False, "manifest boolean missing or false: runtime_vector_target_exact"),
     ):
         broken = dict(MANIFEST_OK)
@@ -1696,7 +1765,12 @@ int test_u85( const u85_eTest eTest,
                 cli_manifest = json.load(handle)
             try:
                 gate.validate_artifact_contract(json.dumps(cli_manifest), allow_synthetic=True)
-                check("checker CLI synthetic manifest validates only with explicit allow", cli_manifest.get("evidence_source") == "synthetic_fixture")
+                check(
+                    "checker CLI synthetic manifest validates only with explicit allow",
+                    cli_manifest.get("evidence_source") == "synthetic_fixture"
+                    and cli_manifest.get("artifact_sha256", {}).keys() == {"APP.BIN", "VECTORS.BIN", "DDR.BIN"}
+                    and "runner_pmu_completion_poll_v12.map" in cli_manifest.get("build_evidence_sha256", {}),
+                )
             except Exception as exc:
                 check("checker CLI synthetic manifest validates only with explicit allow", False, str(exc))
             try:
@@ -1834,7 +1908,15 @@ int test_u85( const u85_eTest eTest,
                 real_manifest = json.load(handle)
             try:
                 gate.validate_artifact_contract(json.dumps(real_manifest))
-                check("real-elf manifest validates by default", real_manifest.get("evidence_source") == "arm_elf")
+                check(
+                    "real-elf manifest validates by default",
+                    real_manifest.get("evidence_source") == "arm_elf"
+                    and real_manifest.get("variant") == "PMU_COMPLETION_POLL_DIAG_V12"
+                    and real_manifest.get("qualification_mode") == "Q1"
+                    and real_manifest.get("expected_return_address") == int(real_manifest["terminal_cmd0c_store_address"], 16)
+                    and set(real_manifest.get("artifact_sha256", {}).keys()) == {"APP.BIN", "VECTORS.BIN", "DDR.BIN"}
+                    and "runner_pmu_completion_poll_v12.elf" in real_manifest.get("build_evidence_sha256", {}),
+                )
             except Exception as exc:
                 check("real-elf manifest validates by default", False, str(exc))
 

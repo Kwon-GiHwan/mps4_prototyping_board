@@ -15,6 +15,16 @@ BUILD_ID = 0x32314950
 SCHEMA_VERSION = 12
 VARIANT = "PMU_COMPLETION_POLL_DIAG_V12"
 
+EXPECTED_DYNAMIC_ADDRESS_KEYS = (
+    "helper_address",
+    "runtime_vector_target_address",
+    "wait_call_target_address",
+    "wait_result_branch_block_address",
+    "success_entry_block_address",
+    "timeout_entry_block_address",
+    "merge_block_address",
+)
+
 EXPECTED_MANIFEST_KEYS = (
     "runtime_vector_install_site_address",
     "runtime_disable_site_address",
@@ -69,20 +79,20 @@ EXPECTED_BOOLEAN_KEYS = (
 HEX32_RE = re.compile(r"^0x[0-9A-Fa-f]{4,8}$")
 HEX64_RE = re.compile(r"^[0-9a-f]{64}$")
 EXPECTED_MANIFEST_EXACT = {
+    "variant": VARIANT,
     "schema_version": SCHEMA_VERSION,
     "build_id": "0x32314950",
+    "qualification_mode": "Q1",
     "evidence_source": "arm_elf",
+    "characterization_only": True,
+    "not_a_performance_baseline": True,
+    "not_a_latency_measurement": True,
+    "generated_private_driver_diagnostic_only": True,
+    "production_end_only_frozen": True,
     "runner_source_sha256": "69cab8c48a2248d0cc0b883a2bc651efa8eb8867c86369051ebc99cc5ee5a88b",
     "vendor_source_sha256": "bcd877bbd42a35d83c8696d02b64d2ae4985a46fcce91b98102e08661b356bcf",
     "helper_symbol": "v12_poll_completion",
-    "helper_address": "0x00001000",
     "runtime_vector_target_symbol": "u85_irq_handler",
-    "runtime_vector_target_address": "0x00001300",
-    "wait_call_target_address": "0x00001000",
-    "wait_result_branch_block_address": "0x00001214",
-    "success_entry_block_address": "0x0000121C",
-    "timeout_entry_block_address": "0x0000127C",
-    "merge_block_address": "0x0000125C",
     "helper_status_register_address": "0x50004004",
     "helper_completion_mask_value": "0x00000002",
     "success_cmd2_write_value": "0x00000002",
@@ -1043,10 +1053,41 @@ def validate_artifact_contract(
             continue
         if doc.get(key) != expected:
             raise fail("%s mismatch" % key)
-    for key in ("runner_source_sha256", "vendor_source_sha256", "manifest_sha256", "artifact_sha256", "parser_sha256"):
+    for key in ("runner_source_sha256", "vendor_source_sha256", "manifest_sha256", "artifact_bundle_sha256", "parser_sha256"):
         value = doc.get(key)
         if not isinstance(value, str) or HEX64_RE.fullmatch(value) is None:
             raise fail("%s malformed" % key)
+    if not isinstance(doc.get("expected_return_address"), int) or doc["expected_return_address"] <= 0:
+        raise fail("expected_return_address malformed")
+    if doc["expected_return_address"] != int(doc["terminal_cmd0c_store_address"], 16):
+        raise fail("expected_return_address mismatch")
+    artifacts = doc.get("artifact_sha256")
+    if not isinstance(artifacts, dict):
+        raise fail("artifact_sha256 malformed")
+    for key in ("APP.BIN", "VECTORS.BIN", "DDR.BIN"):
+        value = artifacts.get(key)
+        if not isinstance(value, str) or HEX64_RE.fullmatch(value) is None:
+            raise fail("artifact_sha256 malformed: %s" % key)
+    build_evidence = doc.get("build_evidence_sha256")
+    if not isinstance(build_evidence, dict):
+        raise fail("build_evidence_sha256 malformed")
+    required_build_evidence = {
+        "generated_runner.c",
+        "generated_vendor_u85.c",
+        "runner_pmu_completion_poll_v12.map",
+        "checker_disassembly.txt",
+        "checker_nm.txt",
+    }
+    if evidence_source == "arm_elf":
+        required_build_evidence.add("runner_pmu_completion_poll_v12.elf")
+    for key in required_build_evidence:
+        value = build_evidence.get(key)
+        if not isinstance(value, str) or HEX64_RE.fullmatch(value) is None:
+            raise fail("build_evidence_sha256 malformed: %s" % key)
+    for key in EXPECTED_DYNAMIC_ADDRESS_KEYS:
+        value = doc.get(key)
+        if not isinstance(value, str) or HEX32_RE.fullmatch(value) is None:
+            raise fail("manifest key missing or not address-like: %s" % key)
     for key in EXPECTED_MANIFEST_KEYS:
         value = doc.get(key)
         if not isinstance(value, str) or HEX32_RE.fullmatch(value) is None:
@@ -1055,7 +1096,7 @@ def validate_artifact_contract(
         if doc.get(key) is not True:
             raise fail("manifest boolean missing or false: %s" % key)
     if evidence is not None:
-        for key in tuple(EXPECTED_MANIFEST_EXACT.keys()) + EXPECTED_MANIFEST_KEYS + EXPECTED_BOOLEAN_KEYS:
+        for key in tuple(EXPECTED_MANIFEST_EXACT.keys()) + EXPECTED_DYNAMIC_ADDRESS_KEYS + EXPECTED_MANIFEST_KEYS + EXPECTED_BOOLEAN_KEYS:
             actual = doc.get(key)
             expected = evidence[key] if key in evidence else None
             if key in evidence and actual != expected and not _same_hex32(actual, expected):
@@ -1086,17 +1127,55 @@ def _parser_sha256() -> str:
     return _sha256_path(__file__)
 
 
+def manifest_document(
+    *,
+    evidence: dict,
+    artifacts: dict[str, str],
+    build_evidence: dict[str, str],
+    runner_sha: str,
+    vendor_sha: str,
+    evidence_source: str,
+) -> dict:
+    doc = dict(evidence)
+    doc.update(
+        {
+            "variant": VARIANT,
+            "schema_version": SCHEMA_VERSION,
+            "build_id": "0x%08X" % BUILD_ID,
+            "qualification_mode": "Q1",
+            "expected_return_address": int(evidence["terminal_cmd0c_store_address"], 16),
+            "characterization_only": True,
+            "not_a_performance_baseline": True,
+            "not_a_latency_measurement": True,
+            "generated_private_driver_diagnostic_only": True,
+            "production_end_only_frozen": True,
+            "evidence_source": evidence_source,
+            "runner_source_sha256": runner_sha,
+            "vendor_source_sha256": vendor_sha,
+            "artifact_sha256": dict(artifacts),
+            "build_evidence_sha256": dict(build_evidence),
+        }
+    )
+    return doc
+
+
 def build_manifest_document(
     evidence: dict,
     artifact_hashes: dict[str, str],
     *,
     evidence_source: str,
+    build_evidence: dict[str, str],
 ) -> dict:
-    doc = dict(evidence)
-    doc["evidence_source"] = evidence_source
-    doc["runner_source_sha256"] = EXPECTED_MANIFEST_EXACT["runner_source_sha256"]
-    doc["vendor_source_sha256"] = EXPECTED_MANIFEST_EXACT["vendor_source_sha256"]
-    doc["artifact_sha256"] = _artifact_bundle_sha256(artifact_hashes)
+    artifact_doc = {name: artifact_hashes[name] for name in ("APP.BIN", "VECTORS.BIN", "DDR.BIN")}
+    doc = manifest_document(
+        evidence=evidence,
+        artifacts=artifact_doc,
+        build_evidence=build_evidence,
+        runner_sha=EXPECTED_MANIFEST_EXACT["runner_source_sha256"],
+        vendor_sha=EXPECTED_MANIFEST_EXACT["vendor_source_sha256"],
+        evidence_source=evidence_source,
+    )
+    doc["artifact_bundle_sha256"] = _artifact_bundle_sha256(artifact_hashes)
     doc["parser_sha256"] = _parser_sha256()
     manifest_seed = dict(doc)
     manifest_seed["manifest_sha256"] = "0" * 64
@@ -1105,7 +1184,7 @@ def build_manifest_document(
     return doc
 
 
-def _load_trace_inputs(paths: argparse.Namespace) -> tuple[str, str, dict[str, str], str]:
+def _load_trace_inputs(paths: argparse.Namespace) -> tuple[str, str, dict[str, str], dict[str, str], str]:
     synthetic_requested = any(
         getattr(paths, name) is not None for name in ("disassembly_text", "nm_text")
     )
@@ -1137,9 +1216,12 @@ def _load_trace_inputs(paths: argparse.Namespace) -> tuple[str, str, dict[str, s
         disassembly_text = _read_text(paths.disassembly_text)
         nm_text = _read_text(paths.nm_text)
         artifact_hashes = {label: _sha256_path(path) for label, path in common_artifacts.items()}
-        artifact_hashes["disassembly"] = _sha256_path(paths.disassembly_text)
-        artifact_hashes["nm"] = _sha256_path(paths.nm_text)
-        return disassembly_text, nm_text, artifact_hashes, "synthetic_fixture"
+        build_evidence = {
+            "runner_pmu_completion_poll_v12.map": artifact_hashes["map"],
+            "checker_disassembly.txt": _sha256_path(paths.disassembly_text),
+            "checker_nm.txt": _sha256_path(paths.nm_text),
+        }
+        return disassembly_text, nm_text, artifact_hashes, build_evidence, "synthetic_fixture"
 
     missing = [
         name
@@ -1170,7 +1252,13 @@ def _load_trace_inputs(paths: argparse.Namespace) -> tuple[str, str, dict[str, s
     ).stdout
     artifact_hashes = {label: _sha256_path(path) for label, path in common_artifacts.items()}
     artifact_hashes["elf"] = _sha256_path(paths.elf)
-    return disassembly_text, nm_text, artifact_hashes, "arm_elf"
+    build_evidence = {
+        "runner_pmu_completion_poll_v12.elf": artifact_hashes["elf"],
+        "runner_pmu_completion_poll_v12.map": artifact_hashes["map"],
+        "checker_disassembly.txt": _sha256_text(disassembly_text),
+        "checker_nm.txt": _sha256_text(nm_text),
+    }
+    return disassembly_text, nm_text, artifact_hashes, build_evidence, "arm_elf"
 
 
 def verify(paths: argparse.Namespace) -> dict:
@@ -1180,10 +1268,19 @@ def verify(paths: argparse.Namespace) -> dict:
         raise fail("build_id %s is not 0x%08X" % (paths.build_id, BUILD_ID))
     runner_text = _read_text(paths.runner_generated)
     vendor_text = _read_text(paths.vendor_generated)
+    runner_generated_sha = _sha256_text(runner_text)
+    vendor_generated_sha = _sha256_text(vendor_text)
     verify_generated_sources(runner_text, vendor_text)
-    disassembly_text, nm_text, artifact_hashes, evidence_source = _load_trace_inputs(paths)
+    disassembly_text, nm_text, artifact_hashes, build_evidence, evidence_source = _load_trace_inputs(paths)
+    build_evidence["generated_runner.c"] = runner_generated_sha
+    build_evidence["generated_vendor_u85.c"] = vendor_generated_sha
     evidence = verify_callsite_trace(runner_text, vendor_text, disassembly_text, nm_text)
-    doc = build_manifest_document(evidence, artifact_hashes, evidence_source=evidence_source)
+    doc = build_manifest_document(
+        evidence,
+        artifact_hashes,
+        evidence_source=evidence_source,
+        build_evidence=build_evidence,
+    )
     validate_artifact_contract(
         json.dumps(doc, sort_keys=True),
         evidence,
