@@ -518,6 +518,17 @@ def _fixture_smoke_suite() -> bool:
                 "t_poll_exit": 0x30,
             }
         )
+        campaign_records = [
+            build_record(
+                boot=boot,
+                run=run,
+                scenario="timeout" if (boot == 2 and run == 4) else "success",
+                archive_path=f"boot{boot}_run{run:02d}.json",
+                manifest=make_manifest(),
+            )
+            for boot in (1, 2, 3)
+            for run in range(1, 11)
+        ]
         records = [
             build_record(boot=1, run=1, scenario="success", archive_path="boot1_run01.json", manifest=make_manifest()),
             build_record(boot=2, run=4, scenario="timeout", archive_path="boot2_run04.json", manifest=make_manifest()),
@@ -525,7 +536,7 @@ def _fixture_smoke_suite() -> bool:
         parse_payload(payload_success)
         parse_payload(timeout_payload)
         parse_payload(wrap_payload)
-        for path in records:
+        for path in records + campaign_records:
             json.dumps(path)
         return True
     except Exception:
