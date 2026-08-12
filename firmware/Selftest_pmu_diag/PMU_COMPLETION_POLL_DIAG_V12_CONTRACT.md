@@ -16,7 +16,7 @@ Measured checkpoints:
 
 Hard-bypass rules:
 - Runtime vector target remains the exact stock `u85_irq_handler`.
-- The stock `wait_for_irq()` body and stock ISR body are retained in source; V12 replaces only the runtime `NVIC_EnableIRQ()` site and the single `wait_for_irq()` callsite on the measured path.
+- The stock `wait_for_irq()` body and stock ISR body are retained in source. On the measured path, V12 replaces the runtime `NVIC_EnableIRQ()` site and the measured completion-wait block rooted at the single `wait_for_irq()` callsite, including the explicit poll result, success/timeout split, QREAD/CMD=2 sequencing, and final NVIC cleanup.
 - `NPU0_IRQn` stays disabled on the measured path.
 - Initial runtime order is fixed:
   - `NVIC_SetVector`
