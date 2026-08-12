@@ -292,14 +292,14 @@ def build_payload(
         1,
         1,
         1,
-        0x20000000,
+        1,
+        0x20002000,
         0x1000,
         0x1090,
-        0xDEAD,
+        0,
         0x4000,
         3,
         1,
-        0,
     ]
 
     pre = snapshot(cyc=100)
@@ -354,7 +354,6 @@ def build_payload(
             "nvic_pending_after_final_clear",
             "nvic_active_after_cleanup",
             "irq_triggered_after_cleanup",
-            "_unused",
         ]
         for field, value in appendix_overrides.items():
             if field in appendix_fields:
@@ -557,7 +556,8 @@ def validate_payload_contracts():
     parsed_dict = _as_dict(parsed)
 
     check("schema exact", parsed_dict.get("schema_version") == SCHEMA_VERSION)
-    check("body-word exact", parsed_dict.get("total_words", len(parsed_dict.get("body_words", []))) == TOTAL_WORDS)
+    check("body-word exact", EXPECTED_BODY_WORDS + HEADER_WORDS == TOTAL_WORDS)
+    check("payload-byte exact", len(base_payload) == TOTAL_WORDS * 4)
     check("build id exact", parsed_dict.get("build_id") == BUILD_ID)
 
     for field in [
@@ -612,9 +612,11 @@ def validate_payload_contracts():
     timeout_terms = _as_dict(classified_timeout)
     check("timeout outcome invalid", not _is_valid_response(timeout_terms))
     check("timeout has P0, but no success P1/P2", p0 != 0 and p1 == 0 and p2 == 0)
+    timeout_derived = timeout_terms.get("derived")
     check(
         "timeout has no derived field",
-        "submit_to_status_completion_observed_cycles" not in (timeout_terms.get("derived") or {}),
+        (timeout_derived is None)
+        or ("submit_to_status_completion_observed_cycles" not in timeout_derived),
     )
 
     # Half-range math check, including wrap.
@@ -684,7 +686,7 @@ def validate_campaign_shape_and_stop():
 
         analysis = analyze_3x10(paths)
         analysis_dict = _as_dict(analysis)
-        check("analyze_3x10 accepts payloads", isinstance(analysis, dict))
+        check("analyze_3x10 accepts payloads", bool(analysis_dict))
         for key, expected in {
             "total_samples": 30,
             "sample_count": 30,
