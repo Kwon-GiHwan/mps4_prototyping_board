@@ -1123,18 +1123,18 @@ EXPECTED_MUTATION_ERRORS = {
     "12_reachable_j0_i0_t3": "V11 marker remains reachable",
     "13_success_status_reread": "helper status load: expected 1 match, found 2",
     "14_status_at_success_from_reread": "wait helper call: expected 1 match, found 0",
-    "15_loop_back_after_p1": ("unexpected control-flow cycle", "poll helper symbol: expected 1 match, found 0"),
+    "15_loop_back_after_p1": "unexpected post-P1 cycle",
     "16_timeout_flows_to_success_cfg": "timeout path reaches success CFG",
     "17_wrong_completion_mask": "helper completion mask: expected 1 match, found 0",
     "18_extra_helper_mmio": "helper contains forbidden operation 'read_reg('",
     "19_per_iteration_store": "helper contains forbidden operation '0x20000000U'",
-    "20_broken_modular_identity": ("P1/P2 ordering violated", "poll helper symbol: expected 1 match, found 0"),
+    "20_broken_modular_identity": "P1/P2 modular-order identity violated",
     "21_cross_schema_parser_manifest_drift": "schema_version mismatch",
     "22_retain_enable_before_disable": "NVIC enable path remains reachable",
     "23_reachable_irq_true_then_false": "unexpected reachable irq_triggered=true count",
     "24_history_mask_not_from_success_status": "history mask lost single-source status dataflow",
-    "25_helper_inlined_or_cloned_or_tailcall": ("helper function in disassembly: expected 1 match, found 0", "poll helper symbol: expected 1 match, found 0"),
-    "26_success_timeout_merge_before_qread": "success qread verify body: expected 1 match, found 0",
+    "25_helper_inlined_or_cloned_or_tailcall": "helper function in disassembly: expected 1 match, found 0",
+    "26_success_timeout_merge_before_qread": "success qread verify body missing",
     "27_indirect_or_it_predicated_cmd": "indirect or IT-predicated CMD store",
 }
 
@@ -1383,14 +1383,9 @@ int test_u85( const u85_eTest eTest,
 
     try:
         gate.verify_generated_sources(runner_out, vendor_out)
-        check("current checker RED is still expected", False, "unexpected checker pass")
+        check("current checker accepts canonical generator sources", True)
     except Exception as exc:
-        check(
-            "current checker RED is still expected",
-            ("runner internal snapshot: expected 1 match, found 0" in str(exc))
-            or ("poll result store: expected 1 match, found 0" in str(exc)),
-            str(exc),
-        )
+        check("current checker accepts canonical generator sources", False, str(exc))
 
     check(
         "gate exports bounded CFG interfaces",

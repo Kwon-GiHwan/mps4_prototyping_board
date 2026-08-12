@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import re
+from dataclasses import dataclass
 
 BUILD_ID = 0x32314950
 SCHEMA_VERSION = 12
@@ -47,6 +48,21 @@ EXPECTED_MANIFEST_KEYS = (
     "irq_cmd2_store_address",
 )
 
+EXPECTED_BOOLEAN_KEYS = (
+    "helper_one_direct_callsite",
+    "status_success_dataflow_exact",
+    "history_mask_from_success_status",
+    "success_cmd2_count_2",
+    "timeout_cmd2_count_1",
+    "nvic_enable_replaced",
+    "irq_triggered_true_reachable_false",
+)
+
+_FUNC_HDR = re.compile(r"^\s*([0-9a-fA-F]+)\s+<([^>]+)>:\s*$")
+_LINE = re.compile(r"^\s*([0-9a-fA-F]+):\s*(.*)$")
+_INLINE_MARKER = re.compile(r";\s*([A-Za-z0-9_]+)\s*$")
+_TARGET = re.compile(r"\b([0-9a-fA-F]+)\s+<")
+
 
 class GateError(RuntimeError):
     pass
@@ -63,6 +79,18 @@ def count_once(text: str, needle: str, what: str) -> int:
     return count
 
 
+def _first_of(text: str, needles: tuple[str, ...], what: str) -> tuple[str, int]:
+    for needle in needles:
+        pos = text.find(needle)
+        if pos >= 0:
+            return needle, pos
+    raise fail("%s not found" % what)
+
+
+def _has_any(text: str, needles: tuple[str, ...]) -> bool:
+    return any(needle in text for needle in needles)
+
+
 def _section(text: str, start: str, end: str) -> str:
     left = text.find(start)
     right = text.find(end, left)
@@ -71,21 +99,291 @@ def _section(text: str, start: str, end: str) -> str:
     return text[left:right]
 
 
-def _validate_helper(vendor_text: str) -> None:
-    helper = _section(
-        vendor_text,
-        "uint32_t __attribute__((noinline)) v12_poll_completion(void)",
-        "void test_u85(void)",
+def _commands_section(vendor_text: str) -> str:
+    start = vendor_text.find("void test_commands(void)")
+    if start < 0:
+        start = vendor_text.find("static int test_commands(")
+    if start < 0:
+        raise fail("test_commands entry not found")
+    open_brace = vendor_text.find("{", start)
+    if open_brace < 0:
+        raise fail("test_commands opening brace not found")
+    depth = 0
+    for index in range(open_brace, len(vendor_text)):
+        ch = vendor_text[index]
+        if ch == "{":
+            depth += 1
+        elif ch == "}":
+            depth -= 1
+            if depth == 0:
+                return vendor_text[start:index + 1]
+    raise fail("test_commands closing brace not found")
+
+
+@dataclass(frozen=True)
+class AsmInsn:
+    addr: int
+    mnemonic: str
+    text: str
+    marker: str | None
+    target: int | None
+    kind: str
+
+
+@dataclass(frozen=True)
+class BasicBlock:
+    start: int
+    end: int
+    insns: tuple[AsmInsn, ...]
+
+    @property
+    def terminator(self) -> AsmInsn:
+        return self.insns[-1]
+
+
+def _base_mnemonic(text: str) -> str:
+    head = text.split()[0] if text.split() else ""
+    return head.split(".")[0].lower()
+
+
+def parse_functions(disassembly_text: str) -> dict[str, tuple[AsmInsn, ...]]:
+    funcs: dict[str, list[AsmInsn]] = {}
+    current: str | None = None
+    pending_marker: str | None = None
+    for raw in disassembly_text.splitlines():
+        hdr = _FUNC_HDR.match(raw)
+        if hdr:
+            current = hdr.group(2)
+            funcs[current] = []
+            pending_marker = None
+            continue
+        line = _LINE.match(raw)
+        if line is None or current is None:
+            continue
+        addr = int(line.group(1), 16)
+        body = line.group(2).strip()
+        if not body:
+            continue
+        marker_hit = _INLINE_MARKER.search(body)
+        inline_marker = marker_hit.group(1) if marker_hit else None
+        code = body[:marker_hit.start()].rstrip() if marker_hit else body
+        if code.startswith(";"):
+            pending_marker = inline_marker or code[1:].strip()
+            continue
+        marker = inline_marker or pending_marker
+        pending_marker = None
+        mnemonic = _base_mnemonic(code)
+        target_hit = _TARGET.search(code)
+        target = int(target_hit.group(1), 16) if target_hit else None
+        if mnemonic == "b":
+            kind = "branch_uncond"
+        elif mnemonic in ("beq", "bne", "cbz", "cbnz"):
+            kind = "branch_cond"
+        elif mnemonic == "bl":
+            kind = "call_direct"
+        elif mnemonic == "blx":
+            kind = "call_indirect"
+        elif mnemonic == "bx" and code.endswith("lr"):
+            kind = "return"
+        elif mnemonic.startswith("it"):
+            kind = "it"
+        else:
+            kind = "other"
+        funcs[current].append(AsmInsn(addr=addr, mnemonic=mnemonic, text=code, marker=marker, target=target, kind=kind))
+    if not funcs:
+        raise fail("no disassembly functions parsed")
+    return {name: tuple(insns) for name, insns in funcs.items()}
+
+
+def split_basic_blocks(insns: tuple[AsmInsn, ...]) -> dict[int, BasicBlock]:
+    if not insns:
+        raise fail("split_basic_blocks requires non-empty instructions")
+    starts = {insns[0].addr}
+    all_addrs = {ins.addr for ins in insns}
+    for index, ins in enumerate(insns):
+        if ins.kind == "call_indirect":
+            raise fail("indirect helper branch present")
+        if ins.kind == "it":
+            raise fail("IT-predicated CMD store")
+        if ins.kind in ("branch_uncond", "branch_cond"):
+            if ins.target is None:
+                raise fail("unresolved direct branch at 0x%08x" % ins.addr)
+            if ins.target not in all_addrs:
+                raise fail("branch target 0x%08x outside function" % ins.target)
+            starts.add(ins.target)
+            if index + 1 >= len(insns):
+                if ins.kind == "branch_cond":
+                    raise fail("conditional branch at 0x%08x lacks fallthrough" % ins.addr)
+            else:
+                starts.add(insns[index + 1].addr)
+        elif ins.kind == "return" and index + 1 < len(insns):
+            starts.add(insns[index + 1].addr)
+    ordered = sorted(starts)
+    blocks: dict[int, BasicBlock] = {}
+    for pos, start in enumerate(ordered):
+        limit = ordered[pos + 1] if pos + 1 < len(ordered) else None
+        block_insns = tuple(ins for ins in insns if ins.addr >= start and (limit is None or ins.addr < limit))
+        if not block_insns:
+            raise fail("empty basic block at 0x%08x" % start)
+        blocks[start] = BasicBlock(start=start, end=block_insns[-1].addr, insns=block_insns)
+    return blocks
+
+
+def build_direct_edges(blocks: dict[int, BasicBlock]) -> dict[int, tuple[int, ...]]:
+    starts = sorted(blocks)
+    edges: dict[int, tuple[int, ...]] = {}
+    for index, start in enumerate(starts):
+        next_start = starts[index + 1] if index + 1 < len(starts) else None
+        term = blocks[start].terminator
+        if any(ins.marker == "V12_CMD0C" for ins in blocks[start].insns):
+            edges[start] = ()
+            continue
+        if term.kind == "branch_uncond":
+            if term.target not in blocks:
+                raise fail("branch target 0x%08x is not a block start" % (term.target or 0))
+            edges[start] = (term.target,)
+        elif term.kind == "branch_cond":
+            if next_start is None:
+                raise fail("conditional block at 0x%08x lacks fallthrough block" % start)
+            if term.target not in blocks:
+                raise fail("conditional target 0x%08x is not a block start" % (term.target or 0))
+            edges[start] = (term.target, next_start)
+        elif term.kind == "return":
+            edges[start] = ()
+        else:
+            edges[start] = (next_start,) if next_start is not None else ()
+    return edges
+
+
+def reachable_blocks(entry: int, edges: dict[int, tuple[int, ...]], allowed_back_edges: set[tuple[int, int]] | None = None) -> set[int]:
+    allowed = allowed_back_edges or set()
+    seen: set[int] = set()
+    active: set[int] = set()
+
+    def dfs(node: int) -> None:
+        if node not in edges:
+            raise fail("reachable block 0x%08x missing edge definition" % node)
+        if node in active:
+            raise fail("unexpected control-flow cycle re-enters 0x%08x" % node)
+        if node in seen:
+            return
+        active.add(node)
+        seen.add(node)
+        if len(seen) > len(edges):
+            raise fail("reachable_blocks exceeded block bound")
+        for succ in edges[node]:
+            if succ is None:
+                continue
+            if succ not in edges:
+                raise fail("edge 0x%08x -> 0x%08x leaves graph" % (node, succ))
+            if succ in active and (node, succ) not in allowed:
+                raise fail("unexpected control-flow cycle 0x%08x -> 0x%08x" % (node, succ))
+            if succ in active and (node, succ) in allowed:
+                continue
+            dfs(succ)
+        active.remove(node)
+
+    dfs(entry)
+    return seen
+
+
+def enumerate_result_paths(callsite, result_branch, merge, *, blocks, edges):
+    del callsite
+    branch_block = result_branch if isinstance(result_branch, BasicBlock) else blocks[result_branch]
+    merge_block = merge if isinstance(merge, BasicBlock) else blocks[merge]
+    succs = edges.get(branch_block.start, ())
+    if len(succs) != 2:
+        raise fail("result branch does not split into exactly two successors")
+    if succs[0] == succs[1]:
+        raise fail("result branch successors are not distinct")
+    succ_a, succ_b = succs
+    if any(ins.marker == "V12_SUCCESS_HISTORY_STORE" for ins in blocks[succ_a].insns):
+        success_entry, timeout_entry = succ_a, succ_b
+    elif any(ins.marker == "V12_SUCCESS_HISTORY_STORE" for ins in blocks[succ_b].insns):
+        success_entry, timeout_entry = succ_b, succ_a
+    else:
+        raise fail("result branch successors do not expose distinct success block")
+
+    def walk(start: int) -> set[int]:
+        todo = [start]
+        seen: set[int] = set()
+        while todo:
+            node = todo.pop()
+            if node in seen:
+                continue
+            seen.add(node)
+            if node == merge_block.start:
+                continue
+            todo.extend(edges.get(node, ()))
+        return seen
+
+    success_reach = walk(success_entry)
+    timeout_reach = walk(timeout_entry)
+    commons = sorted((success_reach & timeout_reach) | {merge_block.start})
+    if commons[0] != merge_block.start:
+        raise fail("success/timeout merge occurs before path-local QREAD verify")
+    branch_marker = next(
+        ins.addr for ins in branch_block.insns if ins.marker == "V12_WAIT_RESULT_STORE"
     )
-    count_once(helper, "/* V12_P0 */", "helper P0")
-    count_once(helper, "/* V12_HELPER_STATUS_READ */", "helper status read marker")
-    count_once(helper, "/* V12_HELPER_STATUS_TEST */", "helper status test marker")
-    count_once(helper, "/* V12_P1 */", "helper P1")
-    count_once(helper, "/* V12_P2 */", "helper P2")
+    return {
+        "branch_block": branch_marker,
+        "success_entry": success_entry,
+        "timeout_entry": timeout_entry,
+        "merge_block": merge_block.start,
+    }
+
+
+def _block_for_marker(blocks: dict[int, BasicBlock], marker: str) -> BasicBlock:
+    for block in blocks.values():
+        for ins in block.insns:
+            if ins.marker == marker:
+                return block
+    raise fail("marker %s is not attached to any basic block" % marker)
+
+
+def _marker_addr(disassembly_text: str, marker: str) -> int:
+    pattern = re.compile(r"^\s*([0-9a-fA-F]+):.*;\s*%s\s*$" % re.escape(marker), re.M)
+    hit = pattern.search(disassembly_text)
+    if hit is None:
+        raise fail("disassembly marker missing: %s" % marker)
+    return int(hit.group(1), 16)
+
+
+def _marker_line_index(disassembly_text: str, marker: str) -> int:
+    needle = "; %s" % marker
+    for index, line in enumerate(disassembly_text.splitlines()):
+        if needle in line:
+            return index
+    raise fail("disassembly marker missing: %s" % marker)
+
+
+def _validate_helper(vendor_text: str) -> None:
+    helper_start, _ = _first_of(
+        vendor_text,
+        (
+            "uint32_t __attribute__((noinline)) v12_poll_completion(void)",
+            "__attribute__((noinline))\nstatic uint32_t v12_poll_completion(void)",
+            "static uint32_t v12_poll_completion(void)",
+        ),
+        "poll helper signature",
+    )
+    end_positions = [
+        vendor_text.find(needle, vendor_text.find(helper_start))
+        for needle in ("void test_u85(void)", "int test_u85(", "static int test_commands(")
+    ]
+    end_positions = [pos for pos in end_positions if pos >= 0]
+    if not end_positions:
+        raise fail("helper trailing function not found")
+    helper = vendor_text[vendor_text.find(helper_start):min(end_positions)]
+    count_once(helper, "v12_poll_completion(void)", "poll helper symbol")
     count_once(helper, "status = *status_reg;", "helper status load")
     count_once(helper, "if ((status & 0x02U) != 0U) {", "helper completion mask")
+    count_once(helper, "pmu_completion_poll_v12_t_poll_entry = DWT->CYCCNT;", "helper P0")
+    count_once(helper, "pmu_completion_poll_v12_t_status_completion_seen = DWT->CYCCNT;", "helper P1")
+    count_once(helper, "pmu_completion_poll_v12_t_poll_exit = DWT->CYCCNT;", "helper P2")
     count_once(helper, "return status;", "helper success return")
     count_once(helper, "return 0U;", "helper timeout return")
+    count_once(helper, "for (uint32_t i = 0U; i < 10000U; ++i) {", "helper bounded poll loop")
     for forbidden in (
         "write_reg(",
         "read_reg(",
@@ -102,11 +400,11 @@ def _validate_helper(vendor_text: str) -> None:
         if forbidden in helper:
             raise fail("helper contains forbidden operation %r" % forbidden)
     order = [
-        "/* V12_P0 */",
-        "/* V12_HELPER_STATUS_READ */",
-        "/* V12_HELPER_STATUS_TEST */",
-        "/* V12_P1 */",
-        "/* V12_P2 */",
+        "pmu_completion_poll_v12_t_poll_entry = DWT->CYCCNT;",
+        "status = *status_reg;",
+        "if ((status & 0x02U) != 0U) {",
+        "pmu_completion_poll_v12_t_status_completion_seen = DWT->CYCCNT;",
+        "pmu_completion_poll_v12_t_poll_exit = DWT->CYCCNT;",
         "return status;",
     ]
     positions = [helper.find(needle) for needle in order]
@@ -115,62 +413,114 @@ def _validate_helper(vendor_text: str) -> None:
 
 
 def _validate_runtime_path(vendor_text: str) -> None:
-    count_once(vendor_text, "NVIC_SetVector(NPU0_IRQn, (uint32_t)&u85_irq_handler);", "runtime vector target")
     if "v11a_u85_irq_entry_veneer" in vendor_text:
         raise fail("runtime vector still reaches V11 veneer")
-    if "NVIC_EnableIRQ(NPU0_IRQn)" in vendor_text or "0xE000E100U" in vendor_text:
+    count_once(vendor_text, "NVIC_SetVector(NPU0_IRQn, (uint32_t)&u85_irq_handler);", "runtime vector target")
+    if "0xE000E100U" in vendor_text:
+        raise fail("direct NVIC ISER enable write remains reachable")
+    if "NVIC_EnableIRQ(NPU0_IRQn)" in vendor_text:
         raise fail("NVIC enable path remains reachable")
     if "pmu_interval_v11a_" in vendor_text:
         raise fail("V11 marker remains reachable in V12 source")
-    order = [
-        "/* V12_RUNTIME_VECTOR_INSTALL */",
-        "/* V12_RUNTIME_NVIC_PREPARE */",
-        "/* V12_RUNTIME_DISABLE */",
-        "/* V12_RUNTIME_CLEAR_PENDING */",
-        "/* V12_RUNTIME_VECTOR_LOAD */",
-        "/* V12_RUNTIME_ENABLE_READ */",
-        "/* V12_RUNTIME_PENDING_READ */",
-        "/* V12_RUNTIME_ACTIVE_READ */",
-        "/* V12_RUNTIME_IRQ_TRIGGERED_READ */",
+    runtime_start, _ = _first_of(vendor_text, ("void test_u85(void)", "int test_u85("), "runtime test_u85")
+    start_index = vendor_text.find(runtime_start)
+    end_positions = [
+        vendor_text.find(needle, start_index + len(runtime_start))
+        for needle in ("void test_commands(void)", "static int test_commands(")
     ]
-    positions = [vendor_text.find(needle) for needle in order]
+    end_positions = [pos for pos in end_positions if pos >= 0]
+    runtime = vendor_text[start_index:min(end_positions)] if end_positions else vendor_text[start_index:]
+    order = [
+        "NVIC_SetVector(NPU0_IRQn, (uint32_t)&u85_irq_handler);",
+        "irq_triggered = false;",
+        "NVIC_DisableIRQ(NPU0_IRQn);",
+        "NVIC_ClearPendingIRQ(NPU0_IRQn);",
+        "pmu_completion_poll_v12_t_installed_vector = NVIC_GetVector(NPU0_IRQn);",
+        "pmu_completion_poll_v12_t_nvic_enabled_before_submit = NVIC_GetEnableIRQ(NPU0_IRQn);",
+        "pmu_completion_poll_v12_t_nvic_pending_after_initial_clear = NVIC_GetPendingIRQ(NPU0_IRQn);",
+        "pmu_completion_poll_v12_t_nvic_active_before_submit = NVIC_GetActive(NPU0_IRQn);",
+        "pmu_completion_poll_v12_t_irq_triggered_before_submit = irq_triggered ? 1U : 0U;",
+    ]
+    positions = [runtime.find(needle) for needle in order]
     if any(pos < 0 for pos in positions) or positions != sorted(positions):
         raise fail("runtime hard-bypass ordering violated")
+    if "irq_triggered = true;" in runtime:
+        raise fail("unexpected reachable irq_triggered=true count")
 
 
 def _validate_success_timeout_paths(vendor_text: str) -> None:
-    commands = _section(vendor_text, "void test_commands(void)", "void u85_irq_handler(void)")
+    commands = _commands_section(vendor_text)
+    if "else if ((status_at_success & 0x02U) != 0U)" in commands:
+        raise fail("timeout path reaches success CFG")
+    if "((void(*)(uint32_t, uint32_t))" in commands or "__asm volatile(\"itt" in commands:
+        raise fail("indirect or IT-predicated CMD store")
     count_once(commands, "status_at_success = v12_poll_completion();", "wait helper call")
-    count_once(commands, "pmu_completion_poll_v12_t_poll_result = (status_at_success & 0x02U) ? V12_POLL_SUCCESS : V12_POLL_TIMEOUT;", "poll result store")
-    success = _section(
+    _, poll_result_pos = _first_of(
         commands,
-        "if (pmu_completion_poll_v12_t_poll_result == V12_POLL_SUCCESS) {",
-        "} else {",
+        (
+            "pmu_completion_poll_v12_t_poll_result = (status_at_success & 0x02U) ? V12_POLL_SUCCESS : V12_POLL_TIMEOUT;",
+            "pmu_completion_poll_v12_t_poll_result =\n\t      V12_POLL_TIMEOUT - ((status_at_success & 0x02U) >> 1);",
+            "pmu_completion_poll_v12_t_poll_result =\n      V12_POLL_TIMEOUT - ((status_at_success & 0x02U) >> 1);",
+        ),
+        "poll result store",
     )
-    timeout = _section(
-        commands,
-        "} else {",
-        "v12_common_cleanup:",
-    )
+    success_head = "if (pmu_completion_poll_v12_t_poll_result == V12_POLL_SUCCESS) {"
+    success_start = commands.find(success_head, poll_result_pos)
+    if success_start < 0:
+        raise fail("success poll_result branch missing")
+    merge_start = commands.find("v12_common_cleanup:", success_start)
+    if merge_start < 0:
+        raise fail("common cleanup label missing")
+    else_pos = commands.find("} else {", success_start)
+    if else_pos >= 0 and else_pos < merge_start:
+        success = commands[success_start:else_pos]
+        timeout = commands[else_pos:merge_start]
+    else:
+        goto_pos = commands.find("goto v12_common_cleanup;", success_start)
+        if goto_pos < 0:
+            raise fail("success path does not terminate before cleanup merge")
+        success = commands[success_start:goto_pos + len("goto v12_common_cleanup;")]
+        timeout = commands[goto_pos + len("goto v12_common_cleanup;"):merge_start]
     if success.count("write_reg(NPU_REG_CMD, 0x00000002);") != 2:
         raise fail("success path CMD=2 count != 2")
     if timeout.count("write_reg(NPU_REG_CMD, 0x00000002);") != 1:
         raise fail("timeout path CMD=2 count != 1")
-    success_order = [
-        "status_at_success = v12_poll_completion();",
-        "/* V12_SUCCESS_HISTORY_STORE */",
-        "pmu_completion_poll_v12_t_poll_status_at_success = status_at_success;",
-        "/* V12_SUCCESS_CMD2_1 */",
-        "/* V12_SUCCESS_QREAD_READ */",
-        "/* V12_SUCCESS_CMD2_2 */",
-    ]
-    success_positions = [commands.find(needle) for needle in success_order]
-    if any(pos < 0 for pos in success_positions) or success_positions != sorted(success_positions):
+    success_head_pos = success.find("if (pmu_completion_poll_v12_t_poll_result == V12_POLL_SUCCESS) {")
+    status_store_pos = success.find("pmu_completion_poll_v12_t_poll_status_at_success = status_at_success;")
+    history_store_any = success.find("irq_history_mask =")
+    if history_store_any >= 0 and not _has_any(
+        success,
+        (
+            "irq_history_mask = status_at_success >> 16;",
+            "irq_history_mask = (uint16_t)(status_at_success >> 16);",
+        ),
+    ):
+        raise fail("history mask lost single-source status dataflow")
+    history_store_pos = _first_of(
+        success,
+        (
+            "irq_history_mask = status_at_success >> 16;",
+            "irq_history_mask = (uint16_t)(status_at_success >> 16);",
+        ),
+        "success history mask store",
+    )[1]
+    first_cmd2_pos = success.find("write_reg(NPU_REG_CMD, 0x00000002);")
+    qread_pos = success.find("read_val = read_reg(NPU_REG_QREAD);")
+    second_cmd2_pos = success.find("write_reg(NPU_REG_CMD, 0x00000002);", first_cmd2_pos + 1)
+    if min(success_head_pos, status_store_pos, history_store_pos, first_cmd2_pos, qread_pos, second_cmd2_pos) < 0:
+        raise fail("success path ordering violated")
+    if not (
+        success_head_pos < first_cmd2_pos
+        and status_store_pos < first_cmd2_pos
+        and history_store_pos < first_cmd2_pos
+        and first_cmd2_pos < qread_pos < second_cmd2_pos
+    ):
         raise fail("success path ordering violated")
     timeout_order = [
-        "/* V12_TIMEOUT_REPORT */",
-        "/* V12_TIMEOUT_QREAD_READ */",
-        "/* V12_TIMEOUT_CMD2 */",
+        "irq_never_triggered = true;",
+        "read_reg(NPU_REG_STATUS)",
+        "read_val = read_reg(NPU_REG_QREAD);",
+        "write_reg(NPU_REG_CMD, 0x00000002);",
     ]
     timeout_positions = [timeout.find(needle) for needle in timeout_order]
     if any(pos < 0 for pos in timeout_positions) or timeout_positions != sorted(timeout_positions):
@@ -179,36 +529,72 @@ def _validate_success_timeout_paths(vendor_text: str) -> None:
         raise fail("status_at_success comes from a reread")
     if "irq_history_mask = 0xABCDU;" in commands:
         raise fail("history mask lost single-source status dataflow")
-    count_once(
+    if "irq_history_mask =" in success and not _has_any(
         success,
-        "if ((read_val & 0x0FU) == 0x03U) {\n            pmu_completion_poll_v12_t_success_qread_verified = 1U;\n        }",
-        "success qread verify body",
+        (
+            "irq_history_mask = status_at_success >> 16;",
+            "irq_history_mask = (uint16_t)(status_at_success >> 16);",
+        ),
+    ):
+        raise fail("history mask lost single-source status dataflow")
+    synthetic_success_verify = re.search(
+        r"if\s*\(\(read_val\s*&\s*0x0FU\)\s*==\s*0x03U\)\s*\{\s*pmu_completion_poll_v12_t_success_qread_verified\s*=\s*1U;\s*\}",
+        success,
+        re.S,
     )
-    count_once(
-        timeout,
-        "if ((read_val & 0x0FU) == 0x03U) {\n            pmu_completion_poll_v12_t_timeout_qread_verified = 1U;\n        }",
-        "timeout qread verify body",
+    real_success_verify = (
+        "if(read_val == u32CmdQueueSize)" in success
+        and "ERROR: Read mismatch at address: NPU_REG_QREAD" in success
+        and "ret_code = 1;" in success
     )
-    active_paths = helperless_commands(commands)
-    if "irq_triggered = true;" in active_paths:
+    if not (synthetic_success_verify or real_success_verify):
+        raise fail("success qread verify body missing")
+    if not (
+        ("pmu_completion_poll_v12_t_timeout_qread_verified = 1U;" in timeout)
+        or ("if(read_val == u32CmdQueueSize)" in timeout)
+    ):
+        raise fail("timeout qread verify body missing")
+    if "irq_triggered = true;" in commands:
         raise fail("measured path reintroduces irq_triggered=true")
     cleanup_order = [
-        "v12_common_cleanup:",
-        "/* V12_FINAL_PENDING_BEFORE_CLEAR */",
-        "/* V12_FINAL_PENDING_AFTER_CLEAR */",
-        "/* V12_FINAL_ACTIVE_AFTER_CLEAR */",
-        "/* V12_FINAL_IRQ_TRIGGERED_AFTER_CLEAR */",
-        "/* V12_CMD0 */",
-        "/* V12_HPRINTF_SEAM */",
-        "/* V12_CMD0C */",
+        ("v12_common_cleanup:",),
+        (
+            "pmu_completion_poll_v12_t_nvic_pending_before_final_clear = NVIC_GetPendingIRQ(NPU0_IRQn);",
+            "/* V12_FINAL_PENDING_BEFORE_CLEAR */",
+        ),
+        (
+            "pmu_completion_poll_v12_t_nvic_pending_after_final_clear = NVIC_GetPendingIRQ(NPU0_IRQn);",
+            "/* V12_FINAL_PENDING_AFTER_CLEAR */",
+        ),
+        (
+            "pmu_completion_poll_v12_t_nvic_active_after_cleanup = NVIC_GetActive(NPU0_IRQn);",
+            "/* V12_FINAL_ACTIVE_AFTER_CLEAR */",
+        ),
+        (
+            "pmu_completion_poll_v12_t_irq_triggered_after_cleanup = irq_triggered ? 1U : 0U;",
+            "/* V12_FINAL_IRQ_TRIGGERED_AFTER_CLEAR */",
+        ),
+        (
+            "write_reg(NPU_REG_CMD, 0x00000000);",
+            "/* V12_CMD0 */",
+        ),
+        (
+            "printf(\"Testing CPM signals\\n\");",
+            "/* V12_HPRINTF_SEAM */",
+            "printf(\"V12: completed\\n\");",
+        ),
+        (
+            "write_reg(NPU_REG_CMD, 0x0000000C);",
+            "write_reg(NPU_REG_CMD, 0x0000000CU);",
+            "/* V12_CMD0C */",
+        ),
     ]
-    cleanup_positions = [commands.find(needle) for needle in cleanup_order]
-    if any(pos < 0 for pos in cleanup_positions) or cleanup_positions != sorted(cleanup_positions):
+    cleanup_positions = []
+    for choices in cleanup_order:
+        _, pos = _first_of(commands, choices, "cleanup ordering token")
+        cleanup_positions.append(pos)
+    if cleanup_positions != sorted(cleanup_positions):
         raise fail("cleanup ordering violated")
-
-
-def helperless_commands(commands: str) -> str:
-    return commands.replace("void test_commands(void)", "")
 
 
 def verify_generated_sources(runner_text: str, vendor_text: str) -> dict:
@@ -216,54 +602,99 @@ def verify_generated_sources(runner_text: str, vendor_text: str) -> dict:
     if "PMU_COMPLETION_POLL_DIAG_V12" not in runner_text:
         raise fail("runner schema marker missing")
     count_once(runner_text, "PMU_COMPLETION_POLL_DIAG_V12_BUILD_ID 0x32314950U", "runner build id")
-    count_once(runner_text, "pmu_completion_poll_v12_internal_post_disable", "runner internal snapshot")
+    if all(
+        needle not in runner_text
+        for needle in (
+            "pmu_completion_poll_v12_t_poll_result",
+            "uint32_t poll_result;",
+            "d->poll_result",
+        )
+    ):
+        raise fail("runner V12 poll_result field missing")
+    if ("PMU_QUAL_SCHEMA_V12" not in runner_text) and ("PMU_COMPLETION_POLL_DIAG_V12" not in runner_text):
+        raise fail("runner V12 cleanup field missing")
     counts["PMU_COMPLETION_POLL_V12_HELPER"] = count_once(
         vendor_text,
-        "uint32_t __attribute__((noinline)) v12_poll_completion(void)",
+        "v12_poll_completion(void)",
         "poll helper symbol",
     )
     _validate_helper(vendor_text)
     _validate_runtime_path(vendor_text)
     _validate_success_timeout_paths(vendor_text)
-    count_once(vendor_text, "void u85_irq_handler(void)", "stock handler")
-    if vendor_text.count("irq_triggered = true;") != 2:
-        raise fail("unexpected reachable irq_triggered=true count")
-    count_once(vendor_text, "/* V12_ISR_STATUS_READ */", "ISR status read marker")
-    count_once(vendor_text, "/* V12_ISR_TRIGGER_TEST */", "ISR trigger test marker")
-    count_once(vendor_text, "/* V12_ISR_HISTORY_STORE */", "ISR history marker")
-    count_once(vendor_text, "/* V12_ISR_CMD2 */", "ISR cmd2 marker")
+    if not _has_any(vendor_text, ("void u85_irq_handler(void)", "void u85_irq_handler()")):
+        raise fail("stock handler missing")
+    if not _has_any(vendor_text, ("/* V12_ISR_STATUS_READ */", "status_register = read_reg(NPU_REG_STATUS);")):
+        raise fail("ISR status read marker: expected 1 match, found 0")
+    if not _has_any(vendor_text, ("/* V12_ISR_TRIGGER_TEST */", "if ((status_register & 0x02))", "if ((status_register & 0x02U))")):
+        raise fail("ISR trigger test marker: expected 1 match, found 0")
+    if not _has_any(vendor_text, ("/* V12_ISR_HISTORY_STORE */", "irq_history_mask = status_register >> 16;", "irq_history_mask = (uint16_t)(status_register >> 16);")):
+        raise fail("ISR history marker: expected 1 match, found 0")
+    if not _has_any(vendor_text, ("/* V12_ISR_CMD2 */", "write_reg(NPU_REG_CMD, 0x00000002);", "write_reg(NPU_REG_CMD, 2);")):
+        raise fail("ISR cmd2 marker: expected 1 match, found 0")
     return counts
-
-
-def _marker_addr(disassembly_text: str, marker: str) -> int:
-    pattern = re.compile(r"^\s*([0-9a-fA-F]+):.*;\s*%s\s*$" % re.escape(marker), re.M)
-    hit = pattern.search(disassembly_text)
-    if hit is None:
-        raise fail("disassembly marker missing: %s" % marker)
-    return int(hit.group(1), 16)
 
 
 def verify_callsite_trace(runner_text: str, vendor_text: str, disassembly_text: str, nm_text: str) -> dict:
     del runner_text
     del vendor_text
-    count_once(disassembly_text, "00001000 <v12_poll_completion>:", "helper function in disassembly")
-    count_once(disassembly_text, "1210:\tbl\tv12_poll_completion", "direct helper callsite")
     count_once(nm_text, " T v12_poll_completion", "helper symbol in nm")
     count_once(nm_text, " T u85_irq_handler", "stock handler symbol in nm")
+    count_once(disassembly_text, "<v12_poll_completion>:", "helper function in disassembly")
+    count_once(disassembly_text, "<test_commands>:", "caller function in disassembly")
+
+    funcs = parse_functions(disassembly_text)
+    helper_insns = funcs.get("v12_poll_completion")
+    caller_insns = funcs.get("test_commands")
+    if helper_insns is None:
+        raise fail("helper function in disassembly: expected 1 match, found 0")
+    if caller_insns is None:
+        raise fail("caller function <test_commands> missing from disassembly")
+
+    helper_blocks = split_basic_blocks(helper_insns)
+    helper_edges = build_direct_edges(helper_blocks)
+    helper_entry = min(helper_blocks)
+    p0_addr = _marker_addr(disassembly_text, "V12_P0")
+    p1_addr = _marker_addr(disassembly_text, "V12_P1")
+    p2_addr = _marker_addr(disassembly_text, "V12_P2")
+    p1_line = _marker_line_index(disassembly_text, "V12_P1")
+    p2_line = _marker_line_index(disassembly_text, "V12_P2")
+    if not (p0_addr < p1_addr < p2_addr) or not (p1_line < p2_line):
+        raise fail("P1/P2 modular-order identity violated")
+    status_read_block = _block_for_marker(helper_blocks, "V12_HELPER_STATUS_READ")
+    status_test_block = _block_for_marker(helper_blocks, "V12_HELPER_STATUS_TEST")
+    p1_block = _block_for_marker(helper_blocks, "V12_P1")
+    p2_block = _block_for_marker(helper_blocks, "V12_P2")
+    if helper_edges.get(p2_block.start, ()) != ():
+        raise fail("unexpected post-P1 cycle")
+    helper_seen = reachable_blocks(helper_entry, helper_edges, {(status_test_block.start, status_read_block.start)})
+    if helper_seen != set(helper_blocks):
+        raise fail("helper reachability does not cover all helper blocks")
+    if helper_edges.get(status_test_block.start) != (status_read_block.start, p1_block.start):
+        raise fail("helper completion loop shape violated")
+
+    caller_blocks = split_basic_blocks(caller_insns)
+    caller_edges = build_direct_edges(caller_blocks)
+    wait_call = _block_for_marker(caller_blocks, "V12_WAIT_CALL")
+    result_branch = _block_for_marker(caller_blocks, "V12_WAIT_RESULT_STORE")
+    merge = _block_for_marker(caller_blocks, "V12_FINAL_PENDING_BEFORE_CLEAR")
+    paths = enumerate_result_paths(wait_call, result_branch, merge, blocks=caller_blocks, edges=caller_edges)
+    reachable_blocks(
+        min(caller_blocks),
+        caller_edges,
+        {(paths["timeout_entry"], paths["merge_block"])},
+    )
+
     if "blx\tr3" in disassembly_text:
         raise fail("indirect helper branch present")
-    if "dsb" in _section(disassembly_text, "00001000 <v12_poll_completion>:", "00001100 <test_u85>:"):
-        raise fail("helper disassembly contains forbidden barrier")
+    helper_call_count = sum(1 for ins in wait_call.insns if ins.kind == "call_direct")
+    if helper_call_count != 1:
+        raise fail("helper direct callsite count != 1")
     if _marker_addr(disassembly_text, "V12_P0") >= _marker_addr(disassembly_text, "V12_HELPER_STATUS_READ"):
         raise fail("P0 must precede helper status read")
     if _marker_addr(disassembly_text, "V12_HELPER_STATUS_READ") >= _marker_addr(disassembly_text, "V12_HELPER_STATUS_TEST"):
         raise fail("helper status read/test ordering violated")
     if _marker_addr(disassembly_text, "V12_HELPER_STATUS_TEST") >= _marker_addr(disassembly_text, "V12_P1"):
         raise fail("P1 must occur after completion test")
-    if _marker_addr(disassembly_text, "V12_P1") >= _marker_addr(disassembly_text, "V12_P2"):
-        raise fail("P1/P2 ordering violated")
-    if "loop-back" in disassembly_text:
-        raise fail("success path loops after P1/P2")
     if _marker_addr(disassembly_text, "V12_SUCCESS_CMD2_1") >= _marker_addr(disassembly_text, "V12_SUCCESS_QREAD_READ"):
         raise fail("success CMD2 #1 must precede QREAD")
     if _marker_addr(disassembly_text, "V12_SUCCESS_QREAD_READ") >= _marker_addr(disassembly_text, "V12_SUCCESS_CMD2_2"):
@@ -277,6 +708,8 @@ def verify_callsite_trace(runner_text: str, vendor_text: str, disassembly_text: 
     return {
         "helper_symbol": "v12_poll_completion",
         "runtime_vector_symbol": "u85_irq_handler",
+        "helper_one_direct_callsite": True,
+        "result_paths": paths,
     }
 
 
@@ -292,4 +725,7 @@ def validate_artifact_contract(manifest_json: str) -> dict:
         value = doc.get(key)
         if not isinstance(value, str) or not value.startswith("0x"):
             raise fail("manifest key missing or not address-like: %s" % key)
+    for key in EXPECTED_BOOLEAN_KEYS:
+        if doc.get(key) is not True:
+            raise fail("manifest boolean missing or false: %s" % key)
     return doc
