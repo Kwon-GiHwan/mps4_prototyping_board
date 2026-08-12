@@ -3,11 +3,14 @@ import sys
 import json
 import re
 import hashlib
+import shlex
 import subprocess
 import tempfile
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
+
+MAKEFILE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "Makefile.pmu_completion_poll_v12")
 
 passed = 0
 failed = 0
@@ -20,6 +23,33 @@ def check(name, ok, detail=""):
         passed += 1
     else:
         failed += 1
+
+
+def extract_makefile_gate_argv() -> list[str]:
+    with open(MAKEFILE_PATH, "r", encoding="utf-8") as handle:
+        lines = handle.readlines()
+    for index, line in enumerate(lines):
+        if line.startswith("manifest:"):
+            recipe = []
+            for body in lines[index + 1:]:
+                if not body.startswith("\t"):
+                    break
+                piece = body.strip()
+                if piece.endswith("\\"):
+                    piece = piece[:-1].strip()
+                recipe.append(piece)
+            if not recipe:
+                raise AssertionError("manifest recipe missing")
+            joined = " ".join(recipe)
+            tokens = shlex.split(joined)
+            if tokens[:2] != ["python3", "$(GATE)"]:
+                raise AssertionError("unexpected manifest recipe prefix: %r" % (tokens[:2],))
+            return tokens[2:]
+    raise AssertionError("manifest target missing")
+
+
+def extract_makefile_gate_flags() -> list[str]:
+    return [token for token in extract_makefile_gate_argv() if token.startswith("--")]
 
 
 RUNNER_STOCK = """#if defined(PMU_QUAL_SCHEMA_V8)
@@ -1600,23 +1630,59 @@ int test_u85( const u85_eTest eTest,
             (app_bin, b"app"),
             (vectors_bin, b"vectors"),
             (ddr_bin, b"ddr"),
+            (os.path.join(tmp, "runner.elf"), b"elf"),
         ):
             with open(path, "wb") as handle:
                 handle.write(payload)
+        recipe_flags = extract_makefile_gate_flags()
+        parser = gate.build_arg_parser()
+        parser_flags = {
+            opt
+            for action in parser._actions
+            for opt in action.option_strings
+            if opt.startswith("--")
+        }
+        check(
+            "makefile recipe flags are accepted by checker argparse",
+            all(flag in parser_flags for flag in recipe_flags),
+            "unknown=%s" % [flag for flag in recipe_flags if flag not in parser_flags],
+        )
+        check(
+            "makefile recipe flags match V12 real-elf contract",
+            recipe_flags == [
+                "--build-id",
+                "--runner-generated",
+                "--vendor-generated",
+                "--elf",
+                "--map",
+                "--app-bin",
+                "--vectors-bin",
+                "--ddr-bin",
+                "--objdump",
+                "--nm",
+                "--readelf",
+                "--manifest-out",
+            ],
+            str(recipe_flags),
+        )
+
+        exact_cli_args = [
+            "--build-id", BUILD_ID,
+            "--runner-generated", runner_path,
+            "--vendor-generated", vendor_path,
+            "--disassembly-text", disassembly_path,
+            "--nm-text", nm_path,
+            "--map", map_path,
+            "--app-bin", app_bin,
+            "--vectors-bin", vectors_bin,
+            "--ddr-bin", ddr_bin,
+            "--manifest-out", manifest_path,
+        ]
         cli_ok = subprocess.run(
             [
                 sys.executable,
                 os.path.join(os.path.dirname(__file__), "check_pmu_completion_poll_v12.py"),
-                "--build-id", BUILD_ID,
-                "--runner-generated", runner_path,
-                "--vendor-generated", vendor_path,
-                "--disassembly-text", disassembly_path,
-                "--nm-text", nm_path,
-                "--map", map_path,
-                "--app-bin", app_bin,
-                "--vectors-bin", vectors_bin,
-                "--ddr-bin", ddr_bin,
-                "--manifest-out", manifest_path,
+                *exact_cli_args,
             ],
             capture_output=True,
             text=True,
@@ -1633,19 +1699,16 @@ int test_u85( const u85_eTest eTest,
                 check("checker CLI manifest validates", False, str(exc))
 
         missing_manifest = os.path.join(tmp, "missing_manifest.json")
+        fail_args = list(exact_cli_args)
+        dis_idx = fail_args.index("--disassembly-text")
+        del fail_args[dis_idx:dis_idx + 2]
+        manifest_idx = fail_args.index(manifest_path)
+        fail_args[manifest_idx] = missing_manifest
         cli_fail = subprocess.run(
             [
                 sys.executable,
                 os.path.join(os.path.dirname(__file__), "check_pmu_completion_poll_v12.py"),
-                "--build-id", BUILD_ID,
-                "--runner-generated", runner_path,
-                "--vendor-generated", vendor_path,
-                "--nm-text", nm_path,
-                "--map", map_path,
-                "--app-bin", app_bin,
-                "--vectors-bin", vectors_bin,
-                "--ddr-bin", ddr_bin,
-                "--manifest-out", missing_manifest,
+                *fail_args,
             ],
             capture_output=True,
             text=True,

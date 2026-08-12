@@ -113,14 +113,9 @@ preprocess: $(PREPROCESSED)
 $(PREPROCESSED): $(GEN_RUNNER)
 	$(CC) $(CFLAGS) -E $(GEN_RUNNER) -o $@
 
-manifest: $(TARGET).elf $(GEN_RUNNER) $(GEN_VENDOR) $(PREPROCESSED) $(GATE) Selftest_pmu_diag/check_pmu_qual.py bins
+manifest: $(TARGET).elf $(GEN_RUNNER) $(GEN_VENDOR) $(GATE) bins
 	python3 $(GATE) \
 	    --build-id $(BUILD_ID) \
-	    --vendor-src $(VENDOR_SRC) \
-	    --interface-header Drivers/u85_driver/interface.h \
-	    --vendor-object $(GEN_VENDOR_OBJ) \
-	    --regs-header Selftest_pmu/npu_pmu_regs.h \
-	    --preprocessed $(PREPROCESSED) \
 	    --runner-generated $(GEN_RUNNER) \
 	    --vendor-generated $(GEN_VENDOR) \
 	    --elf $(TARGET).elf \
@@ -131,7 +126,6 @@ manifest: $(TARGET).elf $(GEN_RUNNER) $(GEN_VENDOR) $(PREPROCESSED) $(GATE) Self
 	    --objdump $(OBJDUMP) \
 	    --nm $(NM) \
 	    --readelf $(READELF) \
-	    --cflags "$(CFLAGS)" \
 	    --manifest-out $(MANIFEST)
 
 check: manifest

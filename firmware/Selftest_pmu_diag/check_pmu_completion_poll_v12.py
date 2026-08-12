@@ -1180,7 +1180,7 @@ def _write_manifest_atomic(path: str, doc: dict) -> None:
     os.replace(temp_path, path)
 
 
-def main(argv: list[str] | None = None) -> int:
+def build_arg_parser() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser()
     ap.add_argument("--build-id", required=True)
     ap.add_argument("--runner-generated", required=True)
@@ -1196,6 +1196,11 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--objdump")
     ap.add_argument("--nm")
     ap.add_argument("--readelf")
+    return ap
+
+
+def main(argv: list[str] | None = None) -> int:
+    ap = build_arg_parser()
     args = ap.parse_args(argv)
     doc = verify(args)
     _write_manifest_atomic(args.manifest_out, doc)
