@@ -47,6 +47,7 @@ def main() -> int:
     forbid(text, "--regs-header")
     forbid(text, "--preprocessed")
     forbid(text, "--cflags")
+    forbid(text, "--allow-synthetic-evidence")
 
     forbid(text, "v11a")
     forbid(text, "pmu_interval")

@@ -71,6 +71,7 @@ HEX64_RE = re.compile(r"^[0-9a-f]{64}$")
 EXPECTED_MANIFEST_EXACT = {
     "schema_version": SCHEMA_VERSION,
     "build_id": "0x32314950",
+    "evidence_source": "arm_elf",
     "runner_source_sha256": "69cab8c48a2248d0cc0b883a2bc651efa8eb8867c86369051ebc99cc5ee5a88b",
     "vendor_source_sha256": "bcd877bbd42a35d83c8696d02b64d2ae4985a46fcce91b98102e08661b356bcf",
     "helper_symbol": "v12_poll_completion",
@@ -1021,9 +1022,25 @@ def validate_artifact_against_evidence(manifest_json: str, evidence: dict) -> di
     return doc
 
 
-def validate_artifact_contract(manifest_json: str, evidence: dict | None = None) -> dict:
+def validate_artifact_contract(
+    manifest_json: str,
+    evidence: dict | None = None,
+    *,
+    allow_synthetic: bool = False,
+) -> dict:
     doc = json.loads(manifest_json)
+    evidence_source = doc.get("evidence_source")
+    if evidence_source not in ("arm_elf", "synthetic_fixture"):
+        raise fail("evidence_source mismatch")
+    if evidence_source == "synthetic_fixture" and not allow_synthetic:
+        raise fail("synthetic evidence rejected without explicit allow_synthetic")
     for key, expected in EXPECTED_MANIFEST_EXACT.items():
+        if key == "evidence_source":
+            if evidence_source == "arm_elf" and doc.get(key) != expected:
+                raise fail("%s mismatch" % key)
+            if evidence_source == "synthetic_fixture" and doc.get(key) != "synthetic_fixture":
+                raise fail("%s mismatch" % key)
+            continue
         if doc.get(key) != expected:
             raise fail("%s mismatch" % key)
     for key in ("runner_source_sha256", "vendor_source_sha256", "manifest_sha256", "artifact_sha256", "parser_sha256"):
@@ -1069,8 +1086,14 @@ def _parser_sha256() -> str:
     return _sha256_path(__file__)
 
 
-def build_manifest_document(evidence: dict, artifact_hashes: dict[str, str]) -> dict:
+def build_manifest_document(
+    evidence: dict,
+    artifact_hashes: dict[str, str],
+    *,
+    evidence_source: str,
+) -> dict:
     doc = dict(evidence)
+    doc["evidence_source"] = evidence_source
     doc["runner_source_sha256"] = EXPECTED_MANIFEST_EXACT["runner_source_sha256"]
     doc["vendor_source_sha256"] = EXPECTED_MANIFEST_EXACT["vendor_source_sha256"]
     doc["artifact_sha256"] = _artifact_bundle_sha256(artifact_hashes)
@@ -1082,7 +1105,7 @@ def build_manifest_document(evidence: dict, artifact_hashes: dict[str, str]) -> 
     return doc
 
 
-def _load_trace_inputs(paths: argparse.Namespace) -> tuple[str, str, dict[str, str]]:
+def _load_trace_inputs(paths: argparse.Namespace) -> tuple[str, str, dict[str, str], str]:
     synthetic_requested = any(
         getattr(paths, name) is not None for name in ("disassembly_text", "nm_text")
     )
@@ -1102,6 +1125,8 @@ def _load_trace_inputs(paths: argparse.Namespace) -> tuple[str, str, dict[str, s
     }
 
     if synthetic_requested:
+        if not paths.allow_synthetic_evidence:
+            raise fail("synthetic evidence requires --allow-synthetic-evidence")
         missing = [
             name
             for name in ("disassembly_text", "nm_text", "map", "app_bin", "vectors_bin", "ddr_bin")
@@ -1114,7 +1139,7 @@ def _load_trace_inputs(paths: argparse.Namespace) -> tuple[str, str, dict[str, s
         artifact_hashes = {label: _sha256_path(path) for label, path in common_artifacts.items()}
         artifact_hashes["disassembly"] = _sha256_path(paths.disassembly_text)
         artifact_hashes["nm"] = _sha256_path(paths.nm_text)
-        return disassembly_text, nm_text, artifact_hashes
+        return disassembly_text, nm_text, artifact_hashes, "synthetic_fixture"
 
     missing = [
         name
@@ -1145,7 +1170,7 @@ def _load_trace_inputs(paths: argparse.Namespace) -> tuple[str, str, dict[str, s
     ).stdout
     artifact_hashes = {label: _sha256_path(path) for label, path in common_artifacts.items()}
     artifact_hashes["elf"] = _sha256_path(paths.elf)
-    return disassembly_text, nm_text, artifact_hashes
+    return disassembly_text, nm_text, artifact_hashes, "arm_elf"
 
 
 def verify(paths: argparse.Namespace) -> dict:
@@ -1156,10 +1181,14 @@ def verify(paths: argparse.Namespace) -> dict:
     runner_text = _read_text(paths.runner_generated)
     vendor_text = _read_text(paths.vendor_generated)
     verify_generated_sources(runner_text, vendor_text)
-    disassembly_text, nm_text, artifact_hashes = _load_trace_inputs(paths)
+    disassembly_text, nm_text, artifact_hashes, evidence_source = _load_trace_inputs(paths)
     evidence = verify_callsite_trace(runner_text, vendor_text, disassembly_text, nm_text)
-    doc = build_manifest_document(evidence, artifact_hashes)
-    validate_artifact_against_evidence(json.dumps(doc, sort_keys=True), evidence)
+    doc = build_manifest_document(evidence, artifact_hashes, evidence_source=evidence_source)
+    validate_artifact_contract(
+        json.dumps(doc, sort_keys=True),
+        evidence,
+        allow_synthetic=(evidence_source == "synthetic_fixture"),
+    )
     return doc
 
 
@@ -1188,6 +1217,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
     ap.add_argument("--manifest-out", required=True)
     ap.add_argument("--disassembly-text")
     ap.add_argument("--nm-text")
+    ap.add_argument("--allow-synthetic-evidence", action="store_true")
     ap.add_argument("--elf")
     ap.add_argument("--map")
     ap.add_argument("--app-bin")

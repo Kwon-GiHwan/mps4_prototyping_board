@@ -1041,6 +1041,7 @@ _DISASSEMBLY_SITE_ADDRESSES = _collect_disassembly_marker_addresses(DISASSEMBLY,
 MANIFEST_OK = {
     "schema_version": SCHEMA_VERSION,
     "build_id": BUILD_ID,
+    "evidence_source": "arm_elf",
     "runner_source_sha256": RUNNER_SHA256,
     "vendor_source_sha256": VENDOR_SHA256,
     "manifest_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
@@ -1666,10 +1667,11 @@ int test_u85( const u85_eTest eTest,
             str(recipe_flags),
         )
 
-        exact_cli_args = [
+        synthetic_cli_args = [
             "--build-id", BUILD_ID,
             "--runner-generated", runner_path,
             "--vendor-generated", vendor_path,
+            "--allow-synthetic-evidence",
             "--disassembly-text", disassembly_path,
             "--nm-text", nm_path,
             "--map", map_path,
@@ -1682,7 +1684,7 @@ int test_u85( const u85_eTest eTest,
             [
                 sys.executable,
                 os.path.join(os.path.dirname(__file__), "check_pmu_completion_poll_v12.py"),
-                *exact_cli_args,
+                *synthetic_cli_args,
             ],
             capture_output=True,
             text=True,
@@ -1693,13 +1695,18 @@ int test_u85( const u85_eTest eTest,
             with open(manifest_path, "r", encoding="utf-8") as handle:
                 cli_manifest = json.load(handle)
             try:
-                gate.validate_artifact_contract(json.dumps(cli_manifest))
-                check("checker CLI manifest validates", True)
+                gate.validate_artifact_contract(json.dumps(cli_manifest), allow_synthetic=True)
+                check("checker CLI synthetic manifest validates only with explicit allow", cli_manifest.get("evidence_source") == "synthetic_fixture")
             except Exception as exc:
-                check("checker CLI manifest validates", False, str(exc))
+                check("checker CLI synthetic manifest validates only with explicit allow", False, str(exc))
+            try:
+                gate.validate_artifact_contract(json.dumps(cli_manifest))
+                check("checker CLI synthetic manifest rejected by default validator", False, "unexpected pass")
+            except Exception as exc:
+                check("checker CLI synthetic manifest rejected by default validator", "allow_synthetic" in str(exc), str(exc))
 
         missing_manifest = os.path.join(tmp, "missing_manifest.json")
-        fail_args = list(exact_cli_args)
+        fail_args = list(synthetic_cli_args)
         dis_idx = fail_args.index("--disassembly-text")
         del fail_args[dis_idx:dis_idx + 2]
         manifest_idx = fail_args.index(manifest_path)
@@ -1715,6 +1722,137 @@ int test_u85( const u85_eTest eTest,
         )
         check("checker CLI rejects missing evidence inputs", cli_fail.returncode != 0, cli_fail.stderr or cli_fail.stdout)
         check("checker CLI does not write manifest on failure", not os.path.exists(missing_manifest))
+
+        synthetic_without_flag_manifest = os.path.join(tmp, "synthetic_without_flag.json")
+        synthetic_without_flag_args = [arg for arg in synthetic_cli_args if arg != "--allow-synthetic-evidence"]
+        manifest_idx = synthetic_without_flag_args.index(manifest_path)
+        synthetic_without_flag_args[manifest_idx] = synthetic_without_flag_manifest
+        cli_no_allow = subprocess.run(
+            [
+                sys.executable,
+                os.path.join(os.path.dirname(__file__), "check_pmu_completion_poll_v12.py"),
+                *synthetic_without_flag_args,
+            ],
+            capture_output=True,
+            text=True,
+        )
+        check("synthetic CLI requires explicit allow flag", cli_no_allow.returncode != 0, cli_no_allow.stderr or cli_no_allow.stdout)
+        check("synthetic CLI without allow flag writes no manifest", not os.path.exists(synthetic_without_flag_manifest))
+
+    with tempfile.TemporaryDirectory() as tmp:
+        runner_path = os.path.join(tmp, "runner_generated.c")
+        vendor_path = os.path.join(tmp, "vendor_generated.c")
+        elf_path = os.path.join(tmp, "runner.elf")
+        map_path = os.path.join(tmp, "runner.map")
+        app_bin = os.path.join(tmp, "APP.BIN")
+        vectors_bin = os.path.join(tmp, "VECTORS.BIN")
+        ddr_bin = os.path.join(tmp, "DDR.BIN")
+        manifest_path = os.path.join(tmp, "pmu_completion_poll_v12_manifest.json")
+        objdump_path = os.path.join(tmp, "fake_objdump.py")
+        nm_tool_path = os.path.join(tmp, "fake_nm.py")
+        readelf_path = os.path.join(tmp, "fake_readelf.py")
+        bad_readelf_path = os.path.join(tmp, "bad_readelf.py")
+        for path, content in (
+            (runner_path, RUNNER_V12_OK),
+            (vendor_path, VENDOR_V12_OK),
+            (map_path, "MEMORY MAP\n"),
+        ):
+            with open(path, "w", encoding="utf-8") as handle:
+                handle.write(content)
+        for path, payload in (
+            (elf_path, b"elf"),
+            (app_bin, b"app"),
+            (vectors_bin, b"vectors"),
+            (ddr_bin, b"ddr"),
+        ):
+            with open(path, "wb") as handle:
+                handle.write(payload)
+        with open(objdump_path, "w", encoding="utf-8") as handle:
+            handle.write(
+                "#!/usr/bin/env python3\n"
+                "import sys\n"
+                "from pathlib import Path\n"
+                "mode = sys.argv[1]\n"
+                "if mode == '-d':\n"
+                "    sys.stdout.write(Path(sys.argv[2]).with_name('objdump_dis.txt').read_text())\n"
+                "else:\n"
+                "    raise SystemExit(2)\n"
+            )
+        with open(nm_tool_path, "w", encoding="utf-8") as handle:
+            handle.write(
+                "#!/usr/bin/env python3\n"
+                "import sys\n"
+                "from pathlib import Path\n"
+                "sys.stdout.write(Path(sys.argv[1]).with_name('nm_out.txt').read_text())\n"
+            )
+        with open(readelf_path, "w", encoding="utf-8") as handle:
+            handle.write(
+                "#!/usr/bin/env python3\n"
+                "import sys\n"
+                "sys.stdout.write('ELF Header\\nType: EXEC (Executable file)\\n')\n"
+            )
+        with open(bad_readelf_path, "w", encoding="utf-8") as handle:
+            handle.write(
+                "#!/usr/bin/env python3\n"
+                "import sys\n"
+                "sys.stdout.write('ELF Header\\nType: REL (Relocatable file)\\n')\n"
+            )
+        for script in (objdump_path, nm_tool_path, readelf_path, bad_readelf_path):
+            os.chmod(script, 0o755)
+        with open(os.path.join(tmp, "objdump_dis.txt"), "w", encoding="utf-8") as handle:
+            handle.write(DISASSEMBLY)
+        with open(os.path.join(tmp, "nm_out.txt"), "w", encoding="utf-8") as handle:
+            handle.write(NM)
+
+        real_cli_args = [
+            "--build-id", BUILD_ID,
+            "--runner-generated", runner_path,
+            "--vendor-generated", vendor_path,
+            "--elf", elf_path,
+            "--map", map_path,
+            "--app-bin", app_bin,
+            "--vectors-bin", vectors_bin,
+            "--ddr-bin", ddr_bin,
+            "--objdump", objdump_path,
+            "--nm", nm_tool_path,
+            "--readelf", readelf_path,
+            "--manifest-out", manifest_path,
+        ]
+        real_ok = subprocess.run(
+            [
+                sys.executable,
+                os.path.join(os.path.dirname(__file__), "check_pmu_completion_poll_v12.py"),
+                *real_cli_args,
+            ],
+            capture_output=True,
+            text=True,
+        )
+        check("real-elf CLI accepts hermetic fake toolchain", real_ok.returncode == 0, real_ok.stderr or real_ok.stdout)
+        check("real-elf CLI writes manifest on success", os.path.exists(manifest_path) and os.path.getsize(manifest_path) > 0)
+        if os.path.exists(manifest_path):
+            with open(manifest_path, "r", encoding="utf-8") as handle:
+                real_manifest = json.load(handle)
+            try:
+                gate.validate_artifact_contract(json.dumps(real_manifest))
+                check("real-elf manifest validates by default", real_manifest.get("evidence_source") == "arm_elf")
+            except Exception as exc:
+                check("real-elf manifest validates by default", False, str(exc))
+
+        bad_manifest = os.path.join(tmp, "bad_real_manifest.json")
+        bad_real_args = list(real_cli_args)
+        bad_real_args[bad_real_args.index(readelf_path)] = bad_readelf_path
+        bad_real_args[bad_real_args.index(manifest_path)] = bad_manifest
+        real_fail = subprocess.run(
+            [
+                sys.executable,
+                os.path.join(os.path.dirname(__file__), "check_pmu_completion_poll_v12.py"),
+                *bad_real_args,
+            ],
+            capture_output=True,
+            text=True,
+        )
+        check("real-elf CLI rejects non-executable readelf result", real_fail.returncode != 0, real_fail.stderr or real_fail.stdout)
+        check("real-elf CLI non-executable path writes no manifest", not os.path.exists(bad_manifest))
 
     for name, fix in MUTATION_FIXTURES.items():
         synthetic_runner = RUNNER_V12_OK
