@@ -328,22 +328,26 @@ DISASSEMBLY = """Disassembly of section .text:
    1020:\tbx\tlr
 
 00001100 <test_u85>:
-   1100:\t... \tbl\t__asm_nvic_set_vector\t; V12_RUNTIME_VECTOR_INSTALL
+   10fc:\t; V12_RUNTIME_VECTOR_VALUE
+   10fc:\tf8df 1000\tldr.w\tr1, [pc]          ; 1300 <u85_irq_handler>
+   1100:\t; V12_RUNTIME_VECTOR_INSTALL
+   1100:\tf7ff f800\tbl\t1500 <NVIC_SetVector>
    1104:\t; V12_RUNTIME_NVIC_PREPARE
-   1104:\t... \tstr\tr0, [r1]
+   1104:\tf881 0000\tstrb.w\tr0, [r1]
    1108:\t; V12_RUNTIME_DISABLE
-   1108:\t... \tbl\tNVIC_DisableIRQ
+   1108:\tf7ff f802\tbl\t1510 <NVIC_DisableIRQ>
    110c:\t; V12_RUNTIME_CLEAR_PENDING
-   110c:\t... \tbl\tNVIC_ClearPendingIRQ
-   1110:\t... \t; V12_RUNTIME_VECTOR_LOAD
+   110c:\tf7ff f804\tbl\t1520 <NVIC_ClearPendingIRQ>
+   1110:\t; V12_RUNTIME_VECTOR_LOAD
+   1110:\tf7ff f806\tbl\t1530 <NVIC_GetVector>
    1114:\t; V12_RUNTIME_ENABLE_READ
-   1114:\t...
-   1118:\t... \t; V12_RUNTIME_PENDING_READ
+   1114:\tf7ff f808\tbl\t1540 <NVIC_GetEnableIRQ>
+   1118:\t; V12_RUNTIME_PENDING_READ
+   1118:\tf7ff f80a\tbl\t1550 <NVIC_GetPendingIRQ>
    111c:\t; V12_RUNTIME_ACTIVE_READ
-   111c:\t...
+   111c:\tf7ff f80c\tbl\t1560 <NVIC_GetActive>
    1120:\t; V12_RUNTIME_IRQ_TRIGGERED_READ
-   1120:\t... \t; irq_triggered
-   1124:\t... \t; vector install site
+   1120:\tf897 0010\tldrb.w\tr0, [r7, #16]
 
 00001200 <test_commands>:
    1200:\t... \t; V12_SUBMIT_READ
@@ -374,19 +378,19 @@ DISASSEMBLY = """Disassembly of section .text:
    1240:\t; V12_TIMEOUT_REPORT
    1240:\tb\t127c <pmu_completion_poll_v12_timeout>
    125c:\t; V12_FINAL_PENDING_BEFORE_CLEAR
-   125c:\t... pending before clear
+   125c:\tf7ff f80a\tbl\t1550 <NVIC_GetPendingIRQ>
    1260:\t; V12_FINAL_PENDING_AFTER_CLEAR
-   1260:\t... pending after clear
+   1260:\tf7ff f804\tbl\t1520 <NVIC_ClearPendingIRQ>
    1264:\t; V12_FINAL_ACTIVE_AFTER_CLEAR
-   1264:\t... active after clear
+   1264:\tf7ff f80a\tbl\t1550 <NVIC_GetPendingIRQ>
    1268:\t; V12_FINAL_IRQ_TRIGGERED_AFTER_CLEAR
-   1268:\t... irq false
+   1268:\tf7ff f80c\tbl\t1560 <NVIC_GetActive>
    126c:\t; V12_CMD0
-   126c:\t... cmd0
+   126c:\tf887 0000\tstrb.w\tr0, [r7]
    1270:\t; V12_HPRINTF_SEAM
-   1270:\t... printf call
+   1270:\tf7ff f810\tbl\t1900 <printf>
    1274:\t; V12_CMD0C
-   1274:\t... cmd 0x0c
+   1274:\tf887 000c\tstrb.w\tr0, [r7, #12]
    127c:\t; V12_TIMEOUT_QREAD_READ
    127c:\t... timeout qread
    1280:\t; V12_TIMEOUT_CMD2
@@ -410,6 +414,15 @@ NM = """00001000 T v12_poll_completion
 0000125c T v12_common_cleanup
 00001300 T u85_irq_handler
 00001400 T wrong_helper
+00001500 T NVIC_SetVector
+00001510 T NVIC_DisableIRQ
+00001520 T NVIC_ClearPendingIRQ
+00001530 T NVIC_GetVector
+00001540 T NVIC_GetEnableIRQ
+00001550 T NVIC_GetPendingIRQ
+00001560 T NVIC_GetActive
+00001600 T NVIC_EnableIRQ
+00001900 T printf
 
 20002000 B pmu_completion_poll_v12_t_installed_vector
 20002004 B pmu_completion_poll_v12_t_nvic_enabled_before_submit
@@ -612,6 +625,16 @@ def _mutate_disassembly_status_dataflow_break(v):
                      "   1214:\t4622\tmov\tr2, r0\n", 1).replace(
                      "   121c:\tf8cd 4010\tstr.w\tr4, [sp, #16]      ; status_at_success\n",
                      "   121c:\tf8cd 2010\tstr.w\tr2, [sp, #16]      ; status_at_success\n", 1)
+
+
+def _mutate_disassembly_wrong_vector_target(v):
+    return v.replace("   10fc:\tf8df 1000\tldr.w\tr1, [pc]          ; 1300 <u85_irq_handler>\n",
+                     "   10fc:\tf8df 1000\tldr.w\tr1, [pc]          ; 1400 <wrong_helper>\n", 1)
+
+
+def _mutate_disassembly_enable_iser(v):
+    return v.replace("   1114:\tf7ff f808\tbl\t1540 <NVIC_GetEnableIRQ>\n",
+                     "   1114:\tf7ff f808\tbl\t1600 <NVIC_EnableIRQ>\n", 1)
 
 
 def _mutate_vendor_merge_qread_verify(v):
@@ -1468,23 +1491,36 @@ int test_u85( const u85_eTest eTest,
             "merge_block": 0x125c,
         },
     )
-    gate.verify_callsite_trace(runner_out, vendor_out, DISASSEMBLY, NM)
-    gate.validate_artifact_contract(json.dumps(MANIFEST_OK))
+    evidence = gate.verify_callsite_trace(runner_out, vendor_out, DISASSEMBLY, NM)
+    gate.validate_artifact_contract(json.dumps(MANIFEST_OK), evidence)
+    gate.validate_artifact_against_evidence(json.dumps(MANIFEST_OK), evidence)
     try:
         gate.verify_callsite_trace(runner_out, vendor_out, _mutate_disassembly_status_dataflow_break(DISASSEMBLY), NM)
         check("gate rejects executable status dataflow break", False, "unexpected pass")
     except Exception as exc:
         check("gate rejects executable status dataflow break", "status success dataflow violated" in str(exc), str(exc))
+    for name, mutated_disassembly, expected in (
+        ("gate rejects wrong runtime vector target in disassembly", _mutate_disassembly_wrong_vector_target(DISASSEMBLY), "runtime vector target mismatch"),
+        ("gate rejects reachable NVIC enable in disassembly", _mutate_disassembly_enable_iser(DISASSEMBLY), "NVIC enable path remains reachable"),
+    ):
+        try:
+            gate.verify_callsite_trace(runner_out, vendor_out, mutated_disassembly, NM)
+            check(name, False, "unexpected pass")
+        except Exception as exc:
+            check(name, expected in str(exc), str(exc))
     for name, key, value, expected in (
         ("manifest rejects wrong runner hash", "runner_source_sha256", "0" * 64, "runner_source_sha256 mismatch"),
         ("manifest rejects wrong vector symbol", "runtime_vector_target_symbol", "wrong_helper", "runtime_vector_target_symbol mismatch"),
         ("manifest rejects wrong NVIC symbol", "nvic_disable_symbol", "NVIC_EnableIRQ", "nvic_disable_symbol mismatch"),
         ("manifest rejects false critical boolean", "helper_call_target_exact", False, "manifest boolean missing or false: helper_call_target_exact"),
+        ("manifest rejects stale wait callsite address", "wait_call_address", "0x00001234", "wait_call_address mismatch"),
+        ("manifest rejects wrong vector address", "runtime_vector_target_address", "0x00001400", "runtime_vector_target_address mismatch"),
+        ("manifest rejects fabricated boolean", "runtime_vector_target_exact", False, "manifest boolean missing or false: runtime_vector_target_exact"),
     ):
         broken = dict(MANIFEST_OK)
         broken[key] = value
         try:
-            gate.validate_artifact_contract(json.dumps(broken))
+            gate.validate_artifact_contract(json.dumps(broken), evidence)
             check(name, False, "unexpected pass")
         except Exception as exc:
             check(name, expected in str(exc), str(exc))
@@ -1496,7 +1532,7 @@ int test_u85( const u85_eTest eTest,
         broken_manifest = fix.get("manifest", MANIFEST_OK)
         try:
             if "manifest" in fix:
-                gate.validate_artifact_contract(json.dumps(broken_manifest))
+                gate.validate_artifact_contract(json.dumps(broken_manifest), evidence)
             gate.verify_generated_sources(synthetic_runner, broken_vendor)
             gate.verify_callsite_trace(synthetic_runner, broken_vendor, broken_disassembly, NM)
             check("mutation rejected: %s" % name, False, fix["note"])

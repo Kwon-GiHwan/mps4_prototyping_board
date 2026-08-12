@@ -91,6 +91,43 @@ EXPECTED_MANIFEST_EXACT = {
     "nvic_get_pending_symbol": "NVIC_GetPendingIRQ",
     "nvic_get_active_symbol": "NVIC_GetActive",
 }
+MANIFEST_MARKER_KEYS = {
+    "V12_RUNTIME_VECTOR_INSTALL": "runtime_vector_install_site_address",
+    "V12_RUNTIME_DISABLE": "runtime_disable_site_address",
+    "V12_RUNTIME_CLEAR_PENDING": "runtime_clear_pending_site_address",
+    "V12_RUNTIME_ENABLE_READ": "runtime_enable_read_address",
+    "V12_RUNTIME_PENDING_READ": "runtime_pending_read_address",
+    "V12_RUNTIME_ACTIVE_READ": "runtime_active_read_address",
+    "V12_RUNTIME_IRQ_TRIGGERED_READ": "runtime_irq_triggered_read_address",
+    "V12_HELPER_STATUS_READ": "helper_status_read_address",
+    "V12_HELPER_STATUS_TEST": "helper_status_test_address",
+    "V12_P0": "poll_helper_p0_address",
+    "V12_P1": "poll_helper_p1_address",
+    "V12_P2": "poll_helper_p2_address",
+    "V12_SUBMIT_READ": "submit_read_address",
+    "V12_SUBMIT_WRITE": "submit_write_address",
+    "V12_SUBMIT_T2": "submit_t2_address",
+    "V12_WAIT_CALL": "wait_call_address",
+    "V12_WAIT_RESULT_STORE": "wait_result_store_address",
+    "V12_SUCCESS_HISTORY_STORE": "success_history_mask_store_address",
+    "V12_SUCCESS_CMD2_1": "success_cmd2_1_store_address",
+    "V12_SUCCESS_QREAD_READ": "success_qread_load_address",
+    "V12_SUCCESS_CMD2_2": "success_cmd2_2_store_address",
+    "V12_TIMEOUT_REPORT": "timeout_report_address",
+    "V12_TIMEOUT_QREAD_READ": "timeout_qread_load_address",
+    "V12_TIMEOUT_CMD2": "timeout_cmd2_store_address",
+    "V12_CMD0": "cmd0_store_address",
+    "V12_HPRINTF_SEAM": "hprintf_callsite_address",
+    "V12_CMD0C": "terminal_cmd0c_store_address",
+    "V12_FINAL_PENDING_BEFORE_CLEAR": "final_pending_before_clear_address",
+    "V12_FINAL_PENDING_AFTER_CLEAR": "final_pending_after_clear_address",
+    "V12_FINAL_ACTIVE_AFTER_CLEAR": "final_active_after_cleanup_address",
+    "V12_FINAL_IRQ_TRIGGERED_AFTER_CLEAR": "final_irq_triggered_after_cleanup_address",
+    "V12_ISR_STATUS_READ": "irq_status_read_address",
+    "V12_ISR_TRIGGER_TEST": "irq_trigger_test_address",
+    "V12_ISR_HISTORY_STORE": "irq_history_mask_store_address",
+    "V12_ISR_CMD2": "irq_cmd2_store_address",
+}
 
 _FUNC_HDR = re.compile(r"^\s*([0-9a-fA-F]+)\s+<([^>]+)>:\s*$")
 _LINE = re.compile(r"^\s*([0-9a-fA-F]+):\s*(.*)$")
@@ -182,6 +219,20 @@ def _parse_nm_symbols(nm_text: str) -> dict[str, int]:
         if len(parts) == 3 and re.fullmatch(r"[0-9A-Fa-f]+", parts[0]):
             symbols[parts[2]] = int(parts[0], 16)
     return symbols
+
+
+def _hex32(value: int) -> str:
+    return "0x%08X" % value
+
+
+def _same_hex32(lhs, rhs) -> bool:
+    return (
+        isinstance(lhs, str)
+        and isinstance(rhs, str)
+        and HEX32_RE.fullmatch(lhs) is not None
+        and HEX32_RE.fullmatch(rhs) is not None
+        and int(lhs, 16) == int(rhs, 16)
+    )
 
 
 @dataclass(frozen=True)
@@ -699,8 +750,8 @@ def verify_generated_sources(runner_text: str, vendor_text: str) -> dict:
 
 
 def verify_callsite_trace(runner_text: str, vendor_text: str, disassembly_text: str, nm_text: str) -> dict:
-    del runner_text
-    del vendor_text
+    if "pmu_interval_v11a_" in disassembly_text or "v11a_u85_irq_entry_veneer" in disassembly_text:
+        raise fail("V11 marker remains reachable")
     count_once(nm_text, " T v12_poll_completion", "helper symbol in nm")
     count_once(nm_text, " T u85_irq_handler", "stock handler symbol in nm")
     count_once(disassembly_text, "<v12_poll_completion>:", "helper function in disassembly")
@@ -708,15 +759,31 @@ def verify_callsite_trace(runner_text: str, vendor_text: str, disassembly_text: 
 
     funcs = parse_functions(disassembly_text)
     nm_symbols = _parse_nm_symbols(nm_text)
+    for symbol in (
+        "NVIC_SetVector",
+        "NVIC_DisableIRQ",
+        "NVIC_ClearPendingIRQ",
+        "NVIC_GetVector",
+        "NVIC_GetEnableIRQ",
+        "NVIC_GetPendingIRQ",
+        "NVIC_GetActive",
+        "u85_irq_handler",
+    ):
+        if symbol not in nm_symbols:
+            raise fail("missing symbol in nm: %s" % symbol)
     helper_insns = funcs.get("v12_poll_completion")
     caller_insns = funcs.get("test_commands")
+    runtime_insns = funcs.get("test_u85")
     if helper_insns is None:
         raise fail("helper function in disassembly: expected 1 match, found 0")
     if caller_insns is None:
         raise fail("caller function <test_commands> missing from disassembly")
+    if runtime_insns is None:
+        raise fail("runtime function <test_u85> missing from disassembly")
     helper_addr = nm_symbols.get("v12_poll_completion")
     if helper_addr != helper_insns[0].addr:
         raise fail("helper symbol/address mismatch")
+    stock_handler_addr = nm_symbols["u85_irq_handler"]
 
     helper_blocks = split_basic_blocks(helper_insns)
     helper_edges = build_direct_edges(helper_blocks)
@@ -742,6 +809,8 @@ def verify_callsite_trace(runner_text: str, vendor_text: str, disassembly_text: 
 
     caller_blocks = split_basic_blocks(caller_insns)
     caller_edges = build_direct_edges(caller_blocks)
+    runtime_blocks = split_basic_blocks(runtime_insns)
+    runtime_edges = build_direct_edges(runtime_blocks)
     wait_call = _block_for_marker(caller_blocks, "V12_WAIT_CALL")
     result_branch = _block_for_marker(caller_blocks, "V12_WAIT_RESULT_STORE")
     merge = _block_for_marker(caller_blocks, "V12_FINAL_PENDING_BEFORE_CLEAR")
@@ -751,15 +820,45 @@ def verify_callsite_trace(runner_text: str, vendor_text: str, disassembly_text: 
         caller_edges,
         {(paths["timeout_entry"], paths["merge_block"])},
     )
+    reachable_blocks(min(runtime_blocks), runtime_edges)
 
     if "blx\tr3" in disassembly_text:
         raise fail("indirect helper branch present")
+    if "NVIC_EnableIRQ" in disassembly_text:
+        raise fail("NVIC enable path remains reachable")
+    if "0xE000E100" in disassembly_text or "e000e100" in disassembly_text.lower():
+        raise fail("direct NVIC ISER enable write remains reachable")
     helper_calls = [ins for ins in wait_call.insns if ins.kind == "call_direct"]
     helper_call_count = len(helper_calls)
     if helper_call_count != 1:
         raise fail("helper direct callsite count != 1")
     if helper_calls[0].target != helper_addr:
         raise fail("helper direct call target mismatch")
+    runtime_text = _function_section(disassembly_text, "test_u85")
+    runtime_vector_value_line = _code_line_after_marker(runtime_text, "V12_RUNTIME_VECTOR_VALUE")
+    runtime_vector_install_line = _code_line_after_marker(runtime_text, "V12_RUNTIME_VECTOR_INSTALL")
+    runtime_disable_line = _code_line_after_marker(runtime_text, "V12_RUNTIME_DISABLE")
+    runtime_clear_line = _code_line_after_marker(runtime_text, "V12_RUNTIME_CLEAR_PENDING")
+    runtime_vector_load_line = _code_line_after_marker(runtime_text, "V12_RUNTIME_VECTOR_LOAD")
+    runtime_enable_read_line = _code_line_after_marker(runtime_text, "V12_RUNTIME_ENABLE_READ")
+    runtime_pending_read_line = _code_line_after_marker(runtime_text, "V12_RUNTIME_PENDING_READ")
+    runtime_active_read_line = _code_line_after_marker(runtime_text, "V12_RUNTIME_ACTIVE_READ")
+    if "<u85_irq_handler>" not in runtime_vector_value_line or ("%04x" % stock_handler_addr) not in runtime_vector_value_line.lower():
+        raise fail("runtime vector target mismatch")
+    if "<NVIC_SetVector>" not in runtime_vector_install_line or _marker_addr(disassembly_text, "V12_RUNTIME_VECTOR_VALUE") >= _marker_addr(disassembly_text, "V12_RUNTIME_VECTOR_INSTALL"):
+        raise fail("runtime vector install proof missing")
+    if "<NVIC_DisableIRQ>" not in runtime_disable_line:
+        raise fail("runtime disable proof missing")
+    if "<NVIC_ClearPendingIRQ>" not in runtime_clear_line:
+        raise fail("runtime clear-pending proof missing")
+    if "<NVIC_GetVector>" not in runtime_vector_load_line:
+        raise fail("runtime GetVector proof missing")
+    if "<NVIC_GetEnableIRQ>" not in runtime_enable_read_line:
+        raise fail("runtime GetEnable proof missing")
+    if "<NVIC_GetPendingIRQ>" not in runtime_pending_read_line:
+        raise fail("runtime GetPending proof missing")
+    if "<NVIC_GetActive>" not in runtime_active_read_line:
+        raise fail("runtime GetActive proof missing")
     if _marker_addr(disassembly_text, "V12_P0") >= _marker_addr(disassembly_text, "V12_HELPER_STATUS_READ"):
         raise fail("P0 must precede helper status read")
     if _marker_addr(disassembly_text, "V12_HELPER_STATUS_READ") >= _marker_addr(disassembly_text, "V12_HELPER_STATUS_TEST"):
@@ -772,6 +871,8 @@ def verify_callsite_trace(runner_text: str, vendor_text: str, disassembly_text: 
         raise fail("success CMD2 #2 must follow QREAD")
     if _marker_addr(disassembly_text, "V12_FINAL_PENDING_BEFORE_CLEAR") >= _marker_addr(disassembly_text, "V12_CMD0"):
         raise fail("cleanup must precede CMD0")
+    if _marker_addr(disassembly_text, "V12_FINAL_PENDING_BEFORE_CLEAR") >= _marker_addr(disassembly_text, "V12_FINAL_PENDING_AFTER_CLEAR"):
+        raise fail("final pending clear ordering violated")
     if _marker_addr(disassembly_text, "V12_CMD0") >= _marker_addr(disassembly_text, "V12_HPRINTF_SEAM"):
         raise fail("CMD0/HPRINTF ordering violated")
     if _marker_addr(disassembly_text, "V12_HPRINTF_SEAM") >= _marker_addr(disassembly_text, "V12_CMD0C"):
@@ -779,6 +880,9 @@ def verify_callsite_trace(runner_text: str, vendor_text: str, disassembly_text: 
 
     helper_text = _function_section(disassembly_text, "v12_poll_completion")
     caller_text = _function_section(disassembly_text, "test_commands")
+    final_pending_after_line = _code_line_after_marker(caller_text, "V12_FINAL_PENDING_AFTER_CLEAR")
+    if "<NVIC_ClearPendingIRQ>" not in final_pending_after_line:
+        raise fail("final clear-pending proof missing")
     helper_status_line = _code_line_after_marker(helper_text, "V12_HELPER_STATUS_READ")
     helper_test_line = _code_line_after_marker(helper_text, "V12_HELPER_STATUS_TEST")
     result_store_line = _code_line_after_marker(caller_text, "V12_WAIT_RESULT_STORE")
@@ -802,18 +906,62 @@ def verify_callsite_trace(runner_text: str, vendor_text: str, disassembly_text: 
         raise fail("status success dataflow violated")
     if "0x50004004" in caller_text:
         raise fail("status success dataflow violated")
-    return {
+    evidence = {
+        "schema_version": SCHEMA_VERSION,
+        "build_id": _hex32(BUILD_ID),
+        "runner_source_sha256": EXPECTED_MANIFEST_EXACT["runner_source_sha256"],
+        "vendor_source_sha256": EXPECTED_MANIFEST_EXACT["vendor_source_sha256"],
         "helper_symbol": "v12_poll_completion",
-        "runtime_vector_symbol": "u85_irq_handler",
+        "helper_address": _hex32(helper_addr),
+        "runtime_vector_target_symbol": "u85_irq_handler",
+        "runtime_vector_target_address": _hex32(stock_handler_addr),
+        "wait_call_target_address": _hex32(helper_calls[0].target),
+        "wait_result_branch_block_address": _hex32(paths["branch_block"]),
+        "success_entry_block_address": _hex32(paths["success_entry"]),
+        "timeout_entry_block_address": _hex32(paths["timeout_entry"]),
+        "merge_block_address": _hex32(paths["merge_block"]),
+        "helper_status_register_address": "0x50004004",
+        "helper_completion_mask_value": "0x00000002",
+        "success_cmd2_write_value": "0x00000002",
+        "timeout_cmd2_write_value": "0x00000002",
+        "qread_verify_mask_value": "0x0000000F",
+        "qread_verify_expected_value": "0x00000003",
+        "runtime_vector_api_symbol": "NVIC_SetVector",
+        "nvic_disable_symbol": "NVIC_DisableIRQ",
+        "nvic_clear_pending_symbol": "NVIC_ClearPendingIRQ",
+        "nvic_get_vector_symbol": "NVIC_GetVector",
+        "nvic_get_enable_symbol": "NVIC_GetEnableIRQ",
+        "nvic_get_pending_symbol": "NVIC_GetPendingIRQ",
+        "nvic_get_active_symbol": "NVIC_GetActive",
         "helper_one_direct_callsite": True,
         "helper_call_target_exact": True,
         "status_success_dataflow_exact": True,
         "history_mask_from_success_status": True,
+        "success_cmd2_count_2": True,
+        "timeout_cmd2_count_1": True,
+        "nvic_enable_replaced": True,
+        "irq_triggered_true_reachable_false": True,
+        "runtime_vector_target_exact": True,
+        "result_paths_distinct": True,
         "result_paths": paths,
     }
+    for marker, key in MANIFEST_MARKER_KEYS.items():
+        evidence[key] = _hex32(_marker_addr(disassembly_text, marker))
+    return evidence
 
 
-def validate_artifact_contract(manifest_json: str) -> dict:
+def validate_artifact_against_evidence(manifest_json: str, evidence: dict) -> dict:
+    doc = validate_artifact_contract(manifest_json)
+    for key, expected in evidence.items():
+        if key == "result_paths":
+            continue
+        actual = doc.get(key)
+        if key in doc and actual != expected and not _same_hex32(actual, expected):
+            raise fail("%s mismatch" % key)
+    return doc
+
+
+def validate_artifact_contract(manifest_json: str, evidence: dict | None = None) -> dict:
     doc = json.loads(manifest_json)
     for key, expected in EXPECTED_MANIFEST_EXACT.items():
         if doc.get(key) != expected:
@@ -829,4 +977,10 @@ def validate_artifact_contract(manifest_json: str) -> dict:
     for key in EXPECTED_BOOLEAN_KEYS:
         if doc.get(key) is not True:
             raise fail("manifest boolean missing or false: %s" % key)
+    if evidence is not None:
+        for key in tuple(EXPECTED_MANIFEST_EXACT.keys()) + EXPECTED_MANIFEST_KEYS + EXPECTED_BOOLEAN_KEYS:
+            actual = doc.get(key)
+            expected = evidence[key] if key in evidence else None
+            if key in evidence and actual != expected and not _same_hex32(actual, expected):
+                raise fail("%s mismatch" % key)
     return doc
