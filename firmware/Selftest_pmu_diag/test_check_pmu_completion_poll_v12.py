@@ -2,6 +2,8 @@ import os
 import sys
 import json
 import re
+import hashlib
+import tempfile
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
@@ -19,7 +21,26 @@ def check(name, ok, detail=""):
         failed += 1
 
 
-RUNNER = """#if defined(PMU_QUAL_SCHEMA_V12)
+RUNNER_STOCK = """#if defined(PMU_QUAL_SCHEMA_V8)
+#define PMU_DIAG_SCHEMA_VERSION 8U
+#else
+#define PMU_DIAG_SCHEMA_VERSION 7U
+#endif
+
+static pmu_diag_snapshot_t pmu_qual_internal_post_disable;
+
+void test_entry(v12_t* d)
+{
+    d->pmcr_readback_after_disable = 0U;
+}
+
+void run_once(v12_t* d)
+{
+    d->t_pmu_disable = DWT->CYCCNT;
+}
+"""
+
+RUNNER_V12_OK = """#if defined(PMU_QUAL_SCHEMA_V12)
 #define PMU_DIAG_SCHEMA_VERSION 12U
 #else
 #error "PMU_COMPLETION_POLL_DIAG_V12 requires PMU_QUAL_SCHEMA_V12"
@@ -30,10 +51,12 @@ RUNNER = """#if defined(PMU_QUAL_SCHEMA_V12)
 #define V12_POLL_SUCCESS 1U
 #define V12_POLL_TIMEOUT 2U
 
+static pmu_diag_snapshot_t pmu_qual_internal_post_disable;
 static pmu_diag_snapshot_t pmu_completion_poll_v12_internal_post_disable;
 
 void test_entry(v12_t* d)
 {
+    d->pmcr_readback_after_disable = 0U;
     d->poll_result = V12_POLL_TIMEOUT;
     d->poll_status_at_success = 0U;
     d->t_poll_entry = 0U;
@@ -76,7 +99,7 @@ static inline void wait_for_irq(void)
 
     irq_never_triggered = true;
     status_register = read_reg(NPU_REG_STATUS);
-    printf("TEST FAILED: IRQ not triggered after timeout, Status reg is %x\n", status_register);
+    printf("TEST FAILED: IRQ not triggered after timeout, Status reg is %x\\n", status_register);
     irq_triggered = false;
 }
 
@@ -114,7 +137,7 @@ void test_commands(void)
     if ((read_val & 0x0FU) == 0x03U) {
         /* V12_STOCK_CMD0 */
         write_reg(NPU_REG_CMD, 0x00000000);
-        printf("NPU completion poll: success\n");
+        printf("NPU completion poll: success\\n");
         /* V12_STOCK_CMD0xC */
         write_reg(NPU_REG_CMD, 0x0000000CU);
     }
@@ -134,6 +157,20 @@ static inline void wait_for_irq(void)
         irq_history_mask = (uint16_t)(status_register >> 16);
         irq_triggered = true;
         /* V12_STOCK_CMD2 */
+        write_reg(NPU_REG_CMD, 0x00000002);
+    }
+}
+
+void u85_irq_handler(void)
+{
+    /* V12_ISR_STATUS_READ */
+    status_register = read_reg(NPU_REG_STATUS);
+    /* V12_ISR_TRIGGER_TEST */
+    if ((status_register & 0x02U)) {
+        /* V12_ISR_HISTORY_STORE */
+        irq_history_mask = (uint16_t)(status_register >> 16);
+        irq_triggered = true;
+        /* V12_ISR_CMD2 */
         write_reg(NPU_REG_CMD, 0x00000002);
     }
 }
@@ -234,7 +271,7 @@ void test_commands(void)
         /* V12_TIMEOUT_TRIGGERED */
         irq_never_triggered = true;
         status_register = read_reg(NPU_REG_STATUS);
-        printf("TEST FAILED: IRQ not triggered after timeout, Status reg is %x\n", status_register);
+        printf("TEST FAILED: IRQ not triggered after timeout, Status reg is %x\\n", status_register);
 
         /* V12_TIMEOUT_QREAD_READ */
         read_val = read_reg(NPU_REG_QREAD);
@@ -262,25 +299,11 @@ v12_common_cleanup:
     write_reg(NPU_REG_CMD, 0x00000000);
     if (TEST_CPM) {
         /* V12_HPRINTF_SEAM */
-        printf("V12: completed\n");
+        printf("V12: completed\\n");
     }
 
     /* V12_CMD0C */
     write_reg(NPU_REG_CMD, 0x0000000CU);
-}
-
-void u85_irq_handler(void)
-{
-    /* V12_ISR_STATUS_READ */
-    status_register = read_reg(NPU_REG_STATUS);
-    /* V12_ISR_TRIGGER_TEST */
-    if ((status_register & 0x02U)) {
-        /* V12_ISR_HISTORY_STORE */
-        irq_history_mask = (uint16_t)(status_register >> 16);
-        irq_triggered = true;
-        /* V12_ISR_CMD2 */
-        write_reg(NPU_REG_CMD, 0x00000002);
-    }
 }
 """
 
@@ -525,7 +548,7 @@ def _mutate_vendor_status_from_reread(v):
 
 
 def _mutate_disassembly_loop_back(v):
-    return v + "\n   1028:\tb\t1008 <v12_poll_completion> ; loop-back after success path"
+    return v.replace("   1020:\tbx\tlr\n", "   1020:\tb\t100c <v12_poll_completion+0x0c>\t; loop-back after success path\n", 1)
 
 
 def _mutate_vendor_timeout_falls_into_success(v):
@@ -596,20 +619,14 @@ def _mutate_vendor_it_predicated_cmd(v):
 
 def _mutate_disassembly_wrong_p_order(v):
     lines = v.splitlines()
-    p1_line = next(i for i, l in enumerate(lines) if "V12_P1" in l and "; V12_P1" in l)
-    p2_line = next(i for i, l in enumerate(lines) if "V12_P2" in l and "; V12_P2" in l)
-    p1_op_line = p1_line + 1
-    p2_op_line = p2_line + 1
-    if p1_op_line >= len(lines) or p2_op_line >= len(lines):
+    p1_line = next(i for i, l in enumerate(lines) if "; V12_P1" in l)
+    p2_line = next(i for i, l in enumerate(lines) if "; V12_P2" in l)
+    if p1_line + 1 >= len(lines) or p2_line + 1 >= len(lines):
         return v
-    p1_addr = lines[p1_line][:6]
-    p2_addr = lines[p2_line][:6]
-    p1_op = lines[p1_op_line]
-    p2_op = lines[p2_op_line]
-    lines[p1_line] = p1_addr + "\t; V12_P2"
-    lines[p1_op_line] = p2_op.replace("21c0", "20c0")
-    lines[p2_line] = p2_addr + "\t; V12_P1"
-    lines[p2_op_line] = p1_op.replace("20c0", "21c0")
+    p1_pair = lines[p1_line:p1_line + 2]
+    p2_pair = lines[p2_line:p2_line + 2]
+    lines[p1_line:p1_line + 2] = p2_pair
+    lines[p2_line:p2_line + 2] = p1_pair
     return "\n".join(lines) + ("\\n" if v.endswith("\\n") else "")
 
 
@@ -924,6 +941,13 @@ MANIFEST_OK = {
     "manifest_sha256": "OKMANIFESTSHA",
     "artifact_sha256": "OKBINHASH",
     "parser_sha256": "OKPARSE",
+    "helper_one_direct_callsite": True,
+    "status_success_dataflow_exact": True,
+    "history_mask_from_success_status": True,
+    "success_cmd2_count_2": True,
+    "timeout_cmd2_count_1": True,
+    "nvic_enable_replaced": True,
+    "irq_triggered_true_reachable_false": True,
 }
 for _marker, _manifest_key in REQUIRED_SITE_MARKERS.items():
     MANIFEST_OK[_manifest_key] = _DISASSEMBLY_SITE_ADDRESSES.get(_marker)
@@ -1084,6 +1108,36 @@ MUTATION_FIXTURES = {
     },
 }
 
+EXPECTED_MUTATION_ERRORS = {
+    "01_missing_success_cmd2_first": "success path CMD=2 count != 2",
+    "02_missing_success_cmd2_second": "success path CMD=2 count != 2",
+    "03_third_success_cmd2": "success path CMD=2 count != 2",
+    "04_success_cmd2_1_moved_after_qread": "success path ordering violated",
+    "05_success_cmd2_2_moved_before_qread": "success path ordering violated",
+    "06_missing_timeout_cmd2": "timeout path CMD=2 count != 1",
+    "07_two_timeout_cmd2": "timeout path CMD=2 count != 1",
+    "08_helper_cmd2_injected": "helper contains forbidden operation",
+    "09_active_path_nvic_enable": "NVIC enable path remains reachable",
+    "10_iser_write": "direct NVIC ISER enable write remains reachable",
+    "11_v11_veneer_vector": "runtime vector still reaches V11 veneer",
+    "12_reachable_j0_i0_t3": "V11 marker remains reachable",
+    "13_success_status_reread": "helper status load: expected 1 match, found 2",
+    "14_status_at_success_from_reread": "wait helper call: expected 1 match, found 0",
+    "15_loop_back_after_p1": ("unexpected control-flow cycle", "poll helper symbol: expected 1 match, found 0"),
+    "16_timeout_flows_to_success_cfg": "timeout path reaches success CFG",
+    "17_wrong_completion_mask": "helper completion mask: expected 1 match, found 0",
+    "18_extra_helper_mmio": "helper contains forbidden operation 'read_reg('",
+    "19_per_iteration_store": "helper contains forbidden operation '0x20000000U'",
+    "20_broken_modular_identity": ("P1/P2 ordering violated", "poll helper symbol: expected 1 match, found 0"),
+    "21_cross_schema_parser_manifest_drift": "schema_version mismatch",
+    "22_retain_enable_before_disable": "NVIC enable path remains reachable",
+    "23_reachable_irq_true_then_false": "unexpected reachable irq_triggered=true count",
+    "24_history_mask_not_from_success_status": "history mask lost single-source status dataflow",
+    "25_helper_inlined_or_cloned_or_tailcall": ("helper function in disassembly: expected 1 match, found 0", "poll helper symbol: expected 1 match, found 0"),
+    "26_success_timeout_merge_before_qread": "success qread verify body: expected 1 match, found 0",
+    "27_indirect_or_it_predicated_cmd": "indirect or IT-predicated CMD store",
+}
+
 
 if __name__ == "__main__":
     # Fail fast if mutation fixtures are accidentally no-op.
@@ -1108,27 +1162,301 @@ if __name__ == "__main__":
     import check_pmu_completion_poll_v12 as gate
     import patches.patch_pmu_completion_poll_v12 as patcher
 
-    check("runner patch emits v12 schema marker", "PMU_COMPLETION_POLL_DIAG_V12" in RUNNER)
-    runner_out, runner_counts = patcher.patch_runner(RUNNER)
-    vendor_out, vendor_counts = patcher.patch_vendor(VENDOR_STOCK)
+    patch_vendor_stock = """#define BUSY_SLEEP
+#define VERIFY_OUTPUT 1
+#define TEST_CPM 1
+#define BUSY_SLEEP_TIMEOUT 10000
 
-    check("vendor patch emits canonical V12 helper", vendor_out == VENDOR_V12_OK)
-    counts = gate.verify_generated_sources(runner_out, vendor_out)
-    check("gate can parse positive generated source", counts.get("PMU_COMPLETION_POLL_V12_HELPER", 0) == 1)
+void u85_irq_handler(void)
+{
+    int32_t status_register = 0;
+    status_register = read_reg(NPU_REG_STATUS);
+    irq_history_mask = status_register >> 16;
+    if ((status_register & 0x02)){
+        printf("Got IRQ, History_mask is %x status_register is %x\\n", irq_history_mask, status_register);
+        printf("Expected History_mask is set in CMD0_NPU_OP_STOP of the corresponding cmd stream include file\\n");
+        irq_triggered = true;
+        write_reg(NPU_REG_CMD, 2);
+    }
+}
+
+static inline void wait_for_irq(void)
+{
+    while (false == irq_triggered) {
+      sleep();
+      if (!irq_triggered) {
+        irq_never_triggered = true;
+        printf("TEST FAILED: IRQ not triggered after timeout, Status reg is %x\\n", read_reg(NPU_REG_STATUS));
+        break;
+      }
+    }
+    irq_triggered = false;
+}
+
+static int test_commands( const u85_eTest eTest,
+\t\t                  const uint32_t u32CmdQueueSize,
+\t\t                  struct u85_warp_data_t *pu85_warp_data_st)
+{
+\tint ret_code;
+    int read_val;
+
+\t/* Init locals */
+\tret_code =0;
+\tread_val =0;
+
+\t  //Start NPU
+\t  read_val = read_reg(NPU_REG_CMD);
+\t  write_reg(NPU_REG_CMD, read_val | 0x00000001);
+\t  //Clear IRQ
+\t  wait_for_irq();
+\t  // Read QREAD register
+\t  read_val = read_reg(NPU_REG_QREAD);
+\t  write_reg(NPU_REG_CMD, 0x00000002);
+\t  if(read_val == u32CmdQueueSize) {
+\t    printf("Read match at address: NPU_REG_QREAD, Expected Read Value: 0x%x \\n",u32CmdQueueSize);
+\t  }
+\t  else {
+\t    printf("ERROR: Read mismatch at address: NPU_REG_QREAD, Expected Read Value: 0x%x, Read Value : 0x%x\\n",u32CmdQueueSize, read_val);
+\t    ret_code = 1;
+\t  }
+\t  //Stop NPU
+\t  write_reg(NPU_REG_CMD, 0x00000000);
+\t  // Enable clock and power Q interfaces to ask for shutdown
+#if(TEST_CPM==1)
+\t    printf("Testing CPM signals\\n");
+\t    //Enable Program CLKQ and PWRQ interfaces
+\t    //Bit[2] enables CLKQ, and Bit[3] Enables PWRQ
+\t    write_reg(NPU_REG_CMD, 0x0000000C);
+#endif
+}
+
+int test_u85( const u85_eTest eTest,
+              const uint32_t u32ExpectedIRQMask,
+              const uint32_t u32OutputSize,
+              const uint32_t u32CmdQueueSize,
+              struct u85_warp_data_t *pu85_warp_data_st )
+{
+    int ret_code = 0;
+
+    NVIC_SetVector(NPU0_IRQn, (uint32_t)&u85_irq_handler);
+    NVIC_EnableIRQ(NPU0_IRQn);
+    return ret_code;
+}
+"""
+
+    real_runner_path = os.path.join(os.path.dirname(__file__), "runner_pmu_diag_main.c")
+    with open(real_runner_path, "r", encoding="utf-8") as handle:
+        real_runner_stock = handle.read()
+    check(
+        "real frozen runner hash matches V12 pin",
+        hashlib.sha256(real_runner_stock.encode("utf-8")).hexdigest() == RUNNER_SHA256,
+    )
+    env_vendor_path = os.environ.get("V12_FROZEN_VENDOR_SOURCE")
+    if env_vendor_path:
+        with open(env_vendor_path, "rb") as handle:
+            env_vendor_raw = handle.read()
+        env_vendor_stock = env_vendor_raw.decode("utf-8", errors="replace")
+        check(
+            "env frozen vendor hash matches V12 pin",
+            hashlib.sha256(env_vendor_raw).hexdigest() == VENDOR_SHA256,
+        )
+        env_vendor_out, env_vendor_counts = patcher.patch_vendor(env_vendor_stock)
+        check(
+            "env frozen vendor default patch succeeds",
+            env_vendor_out.count("v12_poll_completion(void)") == 1,
+        )
+        check(
+            "env frozen vendor patch counts recorded",
+            env_vendor_counts == {
+                "global_defs": 1,
+                "helper_insert": 1,
+                "command_locals": 1,
+                "runtime_enable_site": 1,
+                "command_wait_block": 1,
+            },
+        )
+
+    check("runner stock fixture is pre-v12", "PMU_COMPLETION_POLL_DIAG_V12" not in real_runner_stock)
+    runner_out, runner_counts = patcher.patch_runner(real_runner_stock)
+    vendor_out, vendor_counts = patcher.patch_vendor(patch_vendor_stock)
+
+    check("runner patch emits schema 12 branch", "#define PMU_DIAG_SCHEMA_VERSION 12U" in runner_out)
+    check("runner patch pins V12 build id", "#define PMU_COMPLETION_POLL_DIAG_V12_BUILD_ID 0x32314950U" in runner_out)
+    check("runner patch appends 15 V12 fields", all(
+        needle in runner_out for needle in (
+            "uint32_t t_submit_after_cmd;",
+            "uint32_t t_poll_entry;",
+            "uint32_t t_status_completion_seen;",
+            "uint32_t t_poll_exit;",
+            "uint32_t poll_result;",
+            "uint32_t status_at_success;",
+            "uint32_t installed_vector;",
+            "uint32_t nvic_enabled_before_submit;",
+            "uint32_t nvic_pending_after_initial_clear;",
+            "uint32_t nvic_active_before_submit;",
+            "uint32_t irq_triggered_before_submit;",
+            "uint32_t nvic_pending_before_final_clear;",
+            "uint32_t nvic_pending_after_final_clear;",
+            "uint32_t nvic_active_after_cleanup;",
+            "uint32_t irq_triggered_after_cleanup;",
+        )
+    ))
+    check("runner patch adds explicit timeout invalid emission",
+          "if (d.poll_result != V12_POLL_SUCCESS) {" in runner_out and
+          "d.t_status_completion_seen = 0U;" in runner_out and
+          "d.t_poll_exit              = 0U;" in runner_out and
+          "d.status_at_success        = 0U;" in runner_out)
+    check("runner patch counts recorded",
+          runner_counts == {
+              "schema_version_branch": 1,
+              "extern_v12_globals": 1,
+              "record_append_fields": 1,
+              "field_count_block": 1,
+              "static_asserts": 1,
+              "reset_v12_globals": 1,
+              "copy_v12_values": 1,
+              "serialize_v12_values": 1,
+          })
+    check("vendor patch keeps stock wait body", "while (false == irq_triggered) {" in vendor_out and "sleep();" in vendor_out)
+    check("vendor patch keeps stock ISR body", "void u85_irq_handler(void)" in vendor_out and "irq_triggered = true;" in vendor_out)
+    check("vendor patch inserts helper once", vendor_out.count("v12_poll_completion(void)") == 1)
+    check("vendor patch hard-bypasses enable site", "NVIC_EnableIRQ(NPU0_IRQn)" not in vendor_out and "NVIC_DisableIRQ(NPU0_IRQn);" in vendor_out)
+    check("vendor patch stores explicit poll_result", "V12_POLL_TIMEOUT - ((status_at_success & 0x02U) >> 1);" in vendor_out)
+    check("vendor patch preserves path-specific CMD semantics",
+          vendor_out.count("write_reg(NPU_REG_CMD, 0x00000002);") == 3 and
+          "goto v12_common_cleanup;" in vendor_out)
+    check("vendor patch counts recorded",
+          vendor_counts == {
+              "global_defs": 1,
+              "helper_insert": 1,
+              "command_locals": 1,
+              "runtime_enable_site": 1,
+              "command_wait_block": 1,
+          })
+
+    duplicate_runner = real_runner_stock + patcher._RUNNER_SCHEMA_STOCK
+    try:
+        patcher.patch_runner(duplicate_runner)
+        check("runner exact-one duplicate schema fails", False, "unexpected pass")
+    except BaseException as exc:
+        check("runner exact-one duplicate schema fails", "schema version branch: expected 1 match, found 2" in str(exc), str(exc))
+
+    try:
+        patcher.patch_vendor(patch_vendor_stock.replace("    NVIC_EnableIRQ(NPU0_IRQn);\n", "", 1))
+        check("vendor exact-one missing enable site fails", False, "unexpected pass")
+    except BaseException as exc:
+        check("vendor exact-one missing enable site fails", "vendor V12 NVIC hard-bypass start block: expected 1 match, found 0" in str(exc), str(exc))
+
+    with tempfile.TemporaryDirectory() as tmp:
+        runner_in = os.path.join(tmp, "runner.c")
+        vendor_in = os.path.join(tmp, "u85.c")
+        runner_out_path = os.path.join(tmp, "runner_v12.c")
+        vendor_out_path = os.path.join(tmp, "u85_v12.c")
+        with open(runner_in, "w", encoding="utf-8") as handle:
+            handle.write(real_runner_stock)
+        with open(vendor_in, "w", encoding="utf-8") as handle:
+            handle.write(patch_vendor_stock)
+        try:
+            patcher.main([
+                "--runner-in", runner_in,
+                "--vendor-in", vendor_in,
+                "--runner-out", runner_out_path,
+                "--vendor-out", vendor_out_path,
+            ])
+            check("generator default hash pin rejects fixture vendor", False, "unexpected pass")
+        except BaseException as exc:
+            check("generator default hash pin rejects fixture vendor", "vendor hash mismatch" in str(exc), str(exc))
+
+        runner_fixture_hash = hashlib.sha256(real_runner_stock.encode("utf-8")).hexdigest()
+        vendor_fixture_hash = hashlib.sha256(patch_vendor_stock.encode("utf-8")).hexdigest()
+        rc = patcher.main([
+            "--runner-in", runner_in,
+            "--vendor-in", vendor_in,
+            "--runner-out", runner_out_path,
+            "--vendor-out", vendor_out_path,
+            "--expect-runner-sha256", runner_fixture_hash,
+            "--expect-vendor-sha256", vendor_fixture_hash,
+        ])
+        check("generator CLI accepts exact override hashes", rc == 0)
+        check("generator CLI writes runner output", os.path.exists(runner_out_path))
+        check("generator CLI writes vendor output", os.path.exists(vendor_out_path))
+
+    try:
+        gate.verify_generated_sources(runner_out, vendor_out)
+        check("current checker RED is still expected", False, "unexpected checker pass")
+    except Exception as exc:
+        check(
+            "current checker RED is still expected",
+            ("runner internal snapshot: expected 1 match, found 0" in str(exc))
+            or ("poll result store: expected 1 match, found 0" in str(exc)),
+            str(exc),
+        )
+
+    check(
+        "gate exports bounded CFG interfaces",
+        all(
+            hasattr(gate, name)
+            for name in (
+                "parse_functions",
+                "split_basic_blocks",
+                "build_direct_edges",
+                "reachable_blocks",
+                "enumerate_result_paths",
+            )
+        ),
+    )
+    counts = gate.verify_generated_sources(RUNNER_V12_OK, VENDOR_V12_OK)
+    check("gate can parse synthetic positive source", counts.get("PMU_COMPLETION_POLL_V12_HELPER", 0) == 1)
+    funcs = gate.parse_functions(DISASSEMBLY)
+    helper_blocks = gate.split_basic_blocks(funcs["v12_poll_completion"])
+    helper_edges = gate.build_direct_edges(helper_blocks)
+    helper_status_read = next(block.start for block in helper_blocks.values() if any(ins.marker == "V12_HELPER_STATUS_READ" for ins in block.insns))
+    helper_status_test = next(block.start for block in helper_blocks.values() if any(ins.marker == "V12_HELPER_STATUS_TEST" for ins in block.insns))
+    helper_seen = gate.reachable_blocks(min(helper_blocks), helper_edges, {(helper_status_test, helper_status_read)})
+    check("bounded helper CFG reaches all helper blocks", helper_seen == set(helper_blocks))
+    caller_blocks = gate.split_basic_blocks(funcs["test_commands"])
+    caller_edges = gate.build_direct_edges(caller_blocks)
+    caller_paths = gate.enumerate_result_paths(
+        next(block for block in caller_blocks.values() if any(ins.marker == "V12_WAIT_CALL" for ins in block.insns)),
+        next(block for block in caller_blocks.values() if any(ins.marker == "V12_WAIT_RESULT_STORE" for ins in block.insns)),
+        next(block for block in caller_blocks.values() if any(ins.marker == "V12_FINAL_PENDING_BEFORE_CLEAR" for ins in block.insns)),
+        blocks=caller_blocks,
+        edges=caller_edges,
+    )
+    check(
+        "caller CFG keeps distinct success/timeout split",
+        caller_paths == {
+            "branch_block": 0x1214,
+            "success_entry": 0x121c,
+            "timeout_entry": 0x1270,
+            "merge_block": 0x1250,
+        },
+    )
     gate.verify_callsite_trace(runner_out, vendor_out, DISASSEMBLY, NM)
+    gate.validate_artifact_contract(json.dumps(MANIFEST_OK))
 
     for name, fix in MUTATION_FIXTURES.items():
+        synthetic_runner = RUNNER_V12_OK
         broken_vendor = fix.get("vendor", vendor_out)
         broken_disassembly = fix.get("disassembly", DISASSEMBLY)
         broken_manifest = fix.get("manifest", MANIFEST_OK)
         try:
             if "manifest" in fix:
                 gate.validate_artifact_contract(json.dumps(broken_manifest))
-            gate.verify_generated_sources(runner_out, broken_vendor)
-            gate.verify_callsite_trace(runner_out, broken_vendor, broken_disassembly, NM)
+            gate.verify_generated_sources(synthetic_runner, broken_vendor)
+            gate.verify_callsite_trace(synthetic_runner, broken_vendor, broken_disassembly, NM)
             check("mutation rejected: %s" % name, False, fix["note"])
-        except Exception:
-            check("mutation rejected: %s" % name, True, fix["note"])
+        except Exception as exc:
+            expected_error = EXPECTED_MUTATION_ERRORS[name]
+            if isinstance(expected_error, tuple):
+                ok = any(part in str(exc) for part in expected_error)
+            else:
+                ok = expected_error in str(exc)
+            check(
+                "mutation rejected: %s" % name,
+                ok,
+                "%s [%s]" % (fix["note"], str(exc)),
+            )
 
     print()
     print("passed=%d failed=%d" % (passed, failed))

@@ -16,6 +16,7 @@ Measured checkpoints:
 
 Hard-bypass rules:
 - Runtime vector target remains the exact stock `u85_irq_handler`.
+- The stock `wait_for_irq()` body and stock ISR body are retained in source; V12 replaces only the runtime `NVIC_EnableIRQ()` site and the single `wait_for_irq()` callsite on the measured path.
 - `NPU0_IRQn` stays disabled on the measured path.
 - Initial runtime order is fixed:
   - `NVIC_SetVector`
@@ -44,6 +45,25 @@ Polling helper rules:
   - per-iteration SRAM stores
   - V10/V11 marker reachability
 
+Wire-schema rules:
+- V12 appends exactly 15 fields to the retained qualification record:
+  - `t_submit_after_cmd`
+  - `t_poll_entry`
+  - `t_status_completion_seen`
+  - `t_poll_exit`
+  - `poll_result`
+  - `status_at_success`
+  - `installed_vector`
+  - `nvic_enabled_before_submit`
+  - `nvic_pending_after_initial_clear`
+  - `nvic_active_before_submit`
+  - `irq_triggered_before_submit`
+  - `nvic_pending_before_final_clear`
+  - `nvic_pending_after_final_clear`
+  - `nvic_active_after_cleanup`
+  - `irq_triggered_after_cleanup`
+- `P1/P2` and `status_at_success` are explicitly emitted invalid/zero when `poll_result != V12_POLL_SUCCESS`.
+
 Success-path rules:
 - `status_at_success` comes from the helper return value.
 - `irq_history_mask` is derived from that exact `status_at_success`.
@@ -60,6 +80,8 @@ Timeout-path rules:
   - timeout `QREAD`
   - timeout `CMD=2`
 - Timeout must not synthesize `P1`, `P2`, or a success-style diagnostic cycle.
+- Timeout leaves `poll_result != V12_POLL_SUCCESS`, so diagnostic-cycle fields stay invalid and must not be emitted as a usable completion-observation value.
+- Timeout is fail-closed: after a timeout sample, the same boot is not reused for characterization and the next attempt requires a fresh boot.
 
 Cleanup rules:
 - Both branches converge at common cleanup.
@@ -72,6 +94,7 @@ Cleanup rules:
   - `CMD=0`
   - H-PRINTF seam
   - terminal `CMD=0xC`
+- The timeout branch may still reach the retained H-PRINTF / PMU cleanup path, but that does not upgrade the sample to valid characterization output.
 
 Interpretation rules:
 - `submit_to_status_completion_observed_cycles = delta32(P1 - T2)`
