@@ -166,6 +166,26 @@ _Static_assert(PMU_DIAG_SCHEMA_VERSION == 8U,
                "PMU_QUAL: the v8 record must declare schema version 8");
 #endif"""
 
+_RUNNER_PRIVATE_DRIVER_SEAM_STOCK = """#if defined(PMU_DIAG_SEAM_S1) || defined(PMU_DIAG_SEAM_S2)
+#if defined(PMU_DIAG_USES_PRIVATE_DRIVER)
+#error "PMU_DIAG: S1/S2 must link the reference vendor u85.c"
+#endif
+#endif"""
+
+_RUNNER_PRIVATE_DRIVER_SEAM_V12 = """#if (defined(PMU_DIAG_SEAM_S1) || defined(PMU_DIAG_SEAM_S2)) && !defined(PMU_QUAL_SCHEMA_V12)
+#if defined(PMU_DIAG_USES_PRIVATE_DRIVER)
+#error "PMU_DIAG: S1/S2 must link the reference vendor u85.c"
+#endif
+#endif"""
+
+_RUNNER_PRIVATE_DRIVER_V8_STOCK = """#if defined(PMU_DIAG_USES_PRIVATE_DRIVER)
+#error "PMU_QUAL: schema v8 must link the reference vendor u85.c"
+#endif"""
+
+_RUNNER_PRIVATE_DRIVER_V12 = """#if defined(PMU_DIAG_USES_PRIVATE_DRIVER) && !defined(PMU_QUAL_SCHEMA_V12)
+#error "PMU_QUAL: schema v8 must link the reference vendor u85.c"
+#endif"""
+
 _RUNNER_CLEAR_STOCK = """#if defined(PMU_QUAL_SCHEMA_V8)
     /* Same freshness rule as the two result gates above, and for the same
      * reason: a hook count or an LR left over from the previous run would be
@@ -279,6 +299,9 @@ _RUNNER_COPY_V12 = """        d.hook_pmu_mmio_read_count      = pmu_qual_hook_pm
 _VENDOR_DEFS_ANCHOR = "#define TEST_CPM 1"
 _VENDOR_DEFS_V12 = """#define TEST_CPM 1
 
+#define V12_POLL_SUCCESS 1U
+#define V12_POLL_TIMEOUT 2U
+
 volatile uint32_t pmu_completion_poll_v12_t_submit_after_cmd;
 volatile uint32_t pmu_completion_poll_v12_t_poll_entry;
 volatile uint32_t pmu_completion_poll_v12_t_status_completion_seen;
@@ -320,6 +343,7 @@ static uint32_t v12_poll_completion(void)
     return 0U;
 }
 
+__attribute__((noinline))
 static int test_commands( const u85_eTest eTest,
 \t\t                  const uint32_t u32CmdQueueSize,
 \t\t                  struct u85_warp_data_t *pu85_warp_data_st)
@@ -473,6 +497,18 @@ def patch_runner(text: str) -> tuple[str, dict[str, int]]:
         _RUNNER_ASSERTS_STOCK,
         _RUNNER_ASSERTS_V12,
         "runner static asserts",
+    )
+    text, counts["private_driver_seam_exemption"] = sub_once(
+        text,
+        _RUNNER_PRIVATE_DRIVER_SEAM_STOCK,
+        _RUNNER_PRIVATE_DRIVER_SEAM_V12,
+        "runner V12 private-driver seam exemption",
+    )
+    text, counts["private_driver_v8_exemption"] = sub_once(
+        text,
+        _RUNNER_PRIVATE_DRIVER_V8_STOCK,
+        _RUNNER_PRIVATE_DRIVER_V12,
+        "runner V12 private-driver v8 exemption",
     )
     text, counts["reset_v12_globals"] = sub_once(
         text,

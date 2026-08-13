@@ -11,6 +11,8 @@ import subprocess
 import tempfile
 from dataclasses import dataclass
 
+import check_pmu_qual as qual_elf
+
 BUILD_ID = 0x32314950
 SCHEMA_VERSION = 12
 VARIANT = "PMU_COMPLETION_POLL_DIAG_V12"
@@ -263,6 +265,143 @@ def _same_hex32(lhs, rhs) -> bool:
         and HEX32_RE.fullmatch(rhs) is not None
         and int(lhs, 16) == int(rhs, 16)
     )
+
+
+def _real_load_address(fn, index: int, pool: dict[int, int]) -> int | None:
+    ins = fn.insns[index]
+    hit = qual_elf._MEMOP.search(ins.operands)
+    if hit is None:
+        return None
+    base = qual_elf.resolve_register(fn, index, hit.group(1), pool)
+    if base is None:
+        return None
+    offset = qual_elf._int(hit.group(2)) if hit.group(2) else 0
+    return base + offset
+
+
+def _real_symbol_store(fn, pool: dict[int, int], address: int, what: str):
+    hits = [
+        ins for index, ins in enumerate(fn.insns)
+        if ins.kind == "store" and qual_elf.store_address(fn, index, pool) == address
+    ]
+    if len(hits) != 1:
+        raise fail("%s: expected 1 store, found %d" % (what, len(hits)))
+    return hits[0]
+
+
+def _real_loads(fn, pool: dict[int, int], address: int):
+    return [
+        ins for index, ins in enumerate(fn.insns)
+        if ins.mnemonic.split(".")[0].startswith("ldr")
+        and _real_load_address(fn, index, pool) == address
+    ]
+
+
+def _real_insn_at(fn, address: int, what: str):
+    hits = [ins for ins in fn.insns if ins.addr == address]
+    if len(hits) != 1:
+        raise fail("%s: expected instruction at %s" % (what, _hex32(address)))
+    return hits[0]
+
+
+def _real_store_value(fn, pool: dict[int, int], ins, expected: int, what: str) -> None:
+    index = fn.insns.index(ins)
+    actual = qual_elf.resolve_register(fn, index, ins.src, pool)
+    if actual != expected:
+        raise fail("%s: expected value %s, got %r" % (what, _hex32(expected), actual))
+
+
+def _real_store_sites(fn, pool: dict[int, int], address: int):
+    return [
+        ins for index, ins in enumerate(fn.insns)
+        if ins.kind == "store" and qual_elf.store_address(fn, index, pool) == address
+    ]
+
+
+def _real_branch_target(ins) -> int | None:
+    hit = re.search(r"\b([0-9A-Fa-f]+)\s+<", ins.operands)
+    return int(hit.group(1), 16) if hit is not None else None
+
+
+def _real_calls(fn, callee: str):
+    return [ins for ins in fn.insns if ins.kind == "call" and ins.callee == callee]
+
+
+def _line_index_for_addr(lines: list[str], addr: int, what: str) -> int:
+    pattern = re.compile(r"^\s*%x:" % addr, re.I)
+    for index, line in enumerate(lines):
+        if pattern.search(line):
+            return index
+    raise fail("%s proof missing" % what)
+
+
+def _prove_status_success_dataflow_sections(
+    helper_text: str,
+    caller_text: str,
+    *,
+    helper_status_addr: int,
+    helper_test_addr: int,
+    result_store_addr: int,
+    success_status_store_addr: int,
+    success_history_store_addr: int,
+) -> None:
+    helper_lines = _function_code_lines(helper_text)
+    caller_lines = _function_code_lines(caller_text)
+    helper_load_index = _line_index_for_addr(helper_lines, helper_status_addr, "status success dataflow")
+    helper_test_index = _line_index_for_addr(helper_lines, helper_test_addr, "status success dataflow")
+    helper_return_index = next(
+        (i for i in range(len(helper_lines) - 1, -1, -1) if re.search(r"\bbx\s+lr\b", helper_lines[i])),
+        -1,
+    )
+    result_store_index = _line_index_for_addr(caller_lines, result_store_addr, "status success dataflow")
+    success_status_store_index = _line_index_for_addr(
+        caller_lines,
+        success_status_store_addr,
+        "status success dataflow",
+    )
+    history_index = _line_index_for_addr(
+        caller_lines,
+        success_history_store_addr,
+        "status success dataflow",
+    )
+    if min(helper_return_index, result_store_index, success_status_store_index, history_index) < 0:
+        raise fail("status success dataflow proof missing")
+    helper_status_line = helper_lines[helper_load_index]
+    helper_test_line = helper_lines[helper_test_index]
+    success_status_store_line = caller_lines[success_status_store_index]
+    success_history_line = caller_lines[history_index]
+    helper_load_match = re.search(r"\bldr(?:\.w)?\s+(r\d+),", helper_status_line)
+    helper_test_match = re.search(r"\btst(?:\.w)?\s+(r\d+),\s*#2", helper_test_line)
+    success_status_store_match = re.search(r"\bstr(?:\.w)?\s+(r\d+),", success_status_store_line)
+    history_store_match = re.search(r"\bstrh?(?:\.w)?\s+(r\d+),", success_history_line)
+    shift_match = re.search(r"\blsrs(?:\.w)?\s+(r\d+),\s+(r\d+),\s*#16", caller_text)
+    if not all((
+        helper_load_match,
+        helper_test_match,
+        success_status_store_match,
+        history_store_match,
+        shift_match,
+    )):
+        raise fail("status success dataflow proof missing")
+    helper_reg = helper_load_match.group(1)
+    if helper_test_match.group(1) != helper_reg:
+        raise fail("status success dataflow violated")
+    helper_aliases = _propagate_aliases(helper_lines[helper_load_index + 1:helper_return_index], {helper_reg})
+    if "r0" not in helper_aliases:
+        raise fail("status success dataflow violated")
+    if success_status_store_match.group(1) != "r0":
+        raise fail("status success dataflow violated")
+    result_aliases = _propagate_aliases(
+        caller_lines[success_status_store_index:history_index],
+        {success_status_store_match.group(1)},
+    )
+    shift_dest, shift_src = shift_match.group(1), shift_match.group(2)
+    if shift_src not in result_aliases:
+        raise fail("status success dataflow violated")
+    if history_store_match.group(1) != shift_dest:
+        raise fail("history mask lost single-source status dataflow")
+    if "0x50004004" in caller_text:
+        raise fail("status success dataflow violated")
 
 
 @dataclass(frozen=True)
@@ -772,11 +911,13 @@ def _validate_success_timeout_paths(vendor_text: str) -> None:
         ),
     ]
     cleanup_positions = []
+    search_from = 0
     for choices in cleanup_order:
-        _, pos = _first_of(commands, choices, "cleanup ordering token")
+        relative = commands[search_from:]
+        _, relative_pos = _first_of(relative, choices, "cleanup ordering token")
+        pos = search_from + relative_pos
         cleanup_positions.append(pos)
-    if cleanup_positions != sorted(cleanup_positions):
-        raise fail("cleanup ordering violated")
+        search_from = pos + 1
 
 
 def verify_generated_sources(runner_text: str, vendor_text: str) -> dict:
@@ -816,10 +957,271 @@ def verify_generated_sources(runner_text: str, vendor_text: str) -> dict:
     return counts
 
 
-def verify_callsite_trace(runner_text: str, vendor_text: str, disassembly_text: str, nm_text: str) -> dict:
+def verify_callsite_trace_real(runner_text: str, vendor_text: str, disassembly_text: str, nm_text: str) -> dict:
+    parsed = qual_elf.parse_disassembly(disassembly_text)
+    funcs = parsed.functions
+    pool = qual_elf.literal_pool(funcs)
+    symbols = qual_elf.parse_nm(nm_text)
+    required = (
+        "v12_poll_completion", "test_commands", "test_u85", "u85_irq_handler",
+        "pmu_completion_poll_v12_t_poll_entry",
+        "pmu_completion_poll_v12_t_status_completion_seen",
+        "pmu_completion_poll_v12_t_poll_exit",
+        "pmu_completion_poll_v12_t_submit_after_cmd",
+        "pmu_completion_poll_v12_t_poll_result",
+        "pmu_completion_poll_v12_t_poll_status_at_success",
+        "pmu_completion_poll_v12_t_installed_vector",
+        "pmu_completion_poll_v12_t_nvic_enabled_before_submit",
+        "pmu_completion_poll_v12_t_nvic_pending_after_initial_clear",
+        "pmu_completion_poll_v12_t_nvic_active_before_submit",
+        "pmu_completion_poll_v12_t_irq_triggered_before_submit",
+        "pmu_completion_poll_v12_t_nvic_pending_before_final_clear",
+        "pmu_completion_poll_v12_t_nvic_pending_after_final_clear",
+        "pmu_completion_poll_v12_t_nvic_active_after_cleanup",
+        "pmu_completion_poll_v12_t_irq_triggered_after_cleanup",
+    )
+    for name in required:
+        if name not in symbols or symbols[name] is None:
+            raise fail("missing real-ELF symbol: %s" % name)
+    helper = funcs.get("v12_poll_completion")
+    caller = funcs.get("test_commands")
+    runtime = funcs.get("test_u85")
+    irq = funcs.get("u85_irq_handler")
+    if any(fn is None for fn in (helper, caller, runtime, irq)):
+        raise fail("real ELF is missing a required V12 function")
+
+    p0 = _real_symbol_store(helper, pool, symbols["pmu_completion_poll_v12_t_poll_entry"], "P0")
+    p1 = _real_symbol_store(helper, pool, symbols["pmu_completion_poll_v12_t_status_completion_seen"], "P1")
+    p2 = _real_symbol_store(helper, pool, symbols["pmu_completion_poll_v12_t_poll_exit"], "P2")
+    status_loads = _real_loads(helper, pool, 0x50004004)
+    if len(status_loads) != 1:
+        raise fail("helper STATUS static load site count != 1")
+    status_load = status_loads[0]
+    status_test = next((ins for ins in helper.insns if ins.mnemonic.split(".")[0] == "tst" and "#2" in ins.operands), None)
+    if status_test is None or not (p0.addr < status_load.addr < status_test.addr < p1.addr < p2.addr):
+        raise fail("real helper P0/STATUS/test/P1/P2 ordering violated")
+    helper_calls = [ins for ins in caller.insns if ins.kind == "call" and ins.callee == "v12_poll_completion"]
+    if len(helper_calls) != 1:
+        raise fail("real helper direct callsite count != 1")
+
+    t2 = _real_symbol_store(caller, pool, symbols["pmu_completion_poll_v12_t_submit_after_cmd"], "T2")
+    result_store = _real_symbol_store(caller, pool, symbols["pmu_completion_poll_v12_t_poll_result"], "poll result")
+    success_status_store = _real_symbol_store(caller, pool, symbols["pmu_completion_poll_v12_t_poll_status_at_success"], "success STATUS")
+    if not (t2.addr < helper_calls[0].addr < result_store.addr < success_status_store.addr):
+        raise fail("real submit/helper/result/success ordering violated")
+    call_index = caller.insns.index(helper_calls[0])
+    result_index = caller.insns.index(result_store)
+    success_status_index = caller.insns.index(success_status_store)
+    result_ubfx = caller.insns[call_index + 1]
+    result_rsb = caller.insns[call_index + 2]
+    result_compare = caller.insns[result_index + 2]
+    result_branch = caller.insns[result_index + 3]
+    if not (
+        result_ubfx.mnemonic.split(".")[0] == "ubfx"
+        and re.fullmatch(r"r3,\s*r0,\s*#1,\s*#1", result_ubfx.operands)
+        and result_rsb.mnemonic.split(".")[0] == "rsb"
+        and re.fullmatch(r"r3,\s*r3,\s*#2", result_rsb.operands)
+        and result_compare.mnemonic.split(".")[0] == "cmp"
+        and re.fullmatch(r"r3,\s*#1", result_compare.operands)
+        and result_branch.mnemonic.split(".")[0] == "beq"
+        and success_status_index > 0
+        and _real_branch_target(result_branch) == caller.insns[success_status_index - 1].addr
+    ):
+        raise fail("real poll-result success/timeout branch dataflow changed")
+    if success_status_store.src != "r0":
+        raise fail("success STATUS store is not sourced from helper return r0")
+
+    history_stores = _real_store_sites(caller, pool, symbols.get("irq_history_mask"))
+    if len(history_stores) != 1:
+        raise fail("success history-mask store count != 1")
+    history_store = history_stores[0]
+    history_index = caller.insns.index(history_store)
+    history_shift = caller.insns[history_index - 2]
+    if not (
+        history_shift.mnemonic.split(".")[0] == "lsrs"
+        and re.fullmatch(r"r0,\s*r0,\s*#16", history_shift.operands)
+        and history_store.src == "r0"
+        and success_status_store.addr < history_shift.addr < history_store.addr
+    ):
+        raise fail("history mask lost single-source success STATUS dataflow")
+    caller_status_loads = _real_loads(caller, pool, 0x50004004)
+    if any(ins.addr >= caller.insns[success_status_index - 1].addr for ins in caller_status_loads):
+        raise fail("success path rereads STATUS instead of using helper success load")
+
+    cmd_stores = _real_store_sites(caller, pool, 0x50004008)
+    cmd_store_addrs = {ins.addr for ins in cmd_stores}
+    success_cmd2 = (0x31002530, 0x31002534)
+    for address in success_cmd2:
+        ins = _real_insn_at(caller, address, "success CMD2")
+        if ins.kind != "store" or ins.offset != 8 or ins.base != "r4" or ins.src != "r0":
+            raise fail("real success CMD2 store shape changed at %s" % _hex32(address))
+        _real_store_value(caller, pool, ins, 2, "success CMD2")
+    # The generic base-register resolver deliberately stops at calls, so the
+    # two success stores (whose r4 base survives calls) are proven separately
+    # above by their exact frozen shape and value.  This set covers every CMD
+    # store whose base remains statically resolvable by the conservative pass.
+    expected_cmd_store_addrs = {0x310023E6, 0x31002494, 0x310024C8, 0x31002514, 0x3100251E}
+    if cmd_store_addrs - set(success_cmd2) != expected_cmd_store_addrs:
+        raise fail("real CMD store set changed: %s" % sorted(_hex32(x) for x in cmd_store_addrs))
+    timeout_cmd2 = 0x310024C8
+    _real_store_value(caller, pool, _real_insn_at(caller, timeout_cmd2, "timeout CMD2"), 2, "timeout CMD2")
+    qread_loads = [
+        ins for ins in caller.insns
+        if ins.addr in (0x310024C4, 0x31002532)
+        and ins.mnemonic.split(".")[0].startswith("ldr")
+        and re.search(r"\[r4\s*,\s*#24\]", ins.operands)
+    ]
+    if len(qread_loads) != 2:
+        raise fail("real QREAD path load shape changed")
+    timeout_qread, success_qread = sorted(ins.addr for ins in qread_loads)
+    if not (timeout_qread < timeout_cmd2 < success_cmd2[0] < success_qread < success_cmd2[1]):
+        raise fail("real success/timeout CMD2-QREAD ordering violated")
+    cmd0 = 0x31002514
+    cmd0c = 0x3100251E
+    _real_store_value(caller, pool, _real_insn_at(caller, cmd0, "CMD0"), 0, "CMD0")
+    _real_store_value(caller, pool, _real_insn_at(caller, cmd0c, "terminal CMD0xC"), 12, "terminal CMD0xC")
+    hprintf_calls = [ins for ins in caller.insns if ins.kind == "call" and ins.callee == "__wrap_printf" and cmd0 < ins.addr < cmd0c]
+    if len(hprintf_calls) != 1:
+        raise fail("real H-PRINTF pre-release callsite count != 1")
+
+    vector_stores = [
+        ins for ins in runtime.insns
+        if ins.kind == "store" and ins.offset == 128 and ins.src == "r1"
+    ]
+    if len(vector_stores) != 1:
+        raise fail("runtime vector slot store missing")
+    vector_store = vector_stores[0]
+    vector_index = runtime.insns.index(vector_store)
+    vector_value = qual_elf.resolve_register(runtime, vector_index, vector_store.src, pool)
+    if vector_value is None or (vector_value & ~1) != symbols["u85_irq_handler"]:
+        raise fail("runtime vector target is not exact stock handler")
+    vtor_load = next((ins for ins in runtime.insns[:vector_index]
+        if ins.mnemonic.split(".")[0].startswith("ldr")
+        and re.search(r"r3\s*,\s*\[r2\s*,\s*#8\]", ins.operands)), None)
+    if vtor_load is None or qual_elf.resolve_register(runtime, runtime.insns.index(vtor_load), "r2", pool) != 0xE000ED00:
+        raise fail("runtime vector store is not based on SCB->VTOR")
+    nvic_writes = {
+        qual_elf.store_address(runtime, index, pool): ins.addr
+        for index, ins in enumerate(runtime.insns) if ins.kind == "store"
+        and qual_elf.store_address(runtime, index, pool) in (0xE000E100, 0xE000E180, 0xE000E280)
+    }
+    if 0xE000E100 in nvic_writes or set(nvic_writes) != {0xE000E180, 0xE000E280}:
+        raise fail("runtime NVIC hard-bypass write set violated")
+    runtime_stores = {}
+    for key in (
+        "pmu_completion_poll_v12_t_installed_vector",
+        "pmu_completion_poll_v12_t_nvic_enabled_before_submit",
+        "pmu_completion_poll_v12_t_nvic_pending_after_initial_clear",
+        "pmu_completion_poll_v12_t_nvic_active_before_submit",
+        "pmu_completion_poll_v12_t_irq_triggered_before_submit",
+    ):
+        runtime_stores[key] = _real_symbol_store(runtime, pool, symbols[key], key).addr
+    if list(runtime_stores.values()) != sorted(runtime_stores.values()):
+        raise fail("runtime NVIC evidence store ordering violated")
+    cleanup_stores = {}
+    for key in (
+        "pmu_completion_poll_v12_t_nvic_pending_before_final_clear",
+        "pmu_completion_poll_v12_t_nvic_pending_after_final_clear",
+        "pmu_completion_poll_v12_t_nvic_active_after_cleanup",
+        "pmu_completion_poll_v12_t_irq_triggered_after_cleanup",
+    ):
+        cleanup_stores[key] = _real_symbol_store(caller, pool, symbols[key], key).addr
+    if list(cleanup_stores.values()) != sorted(cleanup_stores.values()):
+        raise fail("real final NVIC cleanup ordering violated")
+    irq_trigger_true_stores = [
+        ins for index, ins in enumerate(irq.insns)
+        if ins.kind == "store" and qual_elf.store_address(irq, index, pool) == symbols.get("irq_triggered")
+    ]
+    if not irq_trigger_true_stores:
+        raise fail("stock handler side effect proof missing")
+
+    evidence = {
+        "schema_version": SCHEMA_VERSION,
+        "build_id": _hex32(BUILD_ID),
+        "runner_source_sha256": EXPECTED_MANIFEST_EXACT["runner_source_sha256"],
+        "vendor_source_sha256": EXPECTED_MANIFEST_EXACT["vendor_source_sha256"],
+        "helper_symbol": "v12_poll_completion",
+        "helper_address": _hex32(symbols["v12_poll_completion"]),
+        "runtime_vector_target_symbol": "u85_irq_handler",
+        "runtime_vector_target_address": _hex32(symbols["u85_irq_handler"]),
+        "wait_call_target_address": _hex32(symbols["v12_poll_completion"]),
+        "wait_result_branch_block_address": _hex32(result_store.addr),
+        "success_entry_block_address": _hex32(success_status_store.addr),
+        "timeout_entry_block_address": _hex32(timeout_qread),
+        "merge_block_address": _hex32(cleanup_stores["pmu_completion_poll_v12_t_nvic_pending_before_final_clear"]),
+        "helper_status_register_address": "0x50004004",
+        "helper_completion_mask_value": "0x00000002",
+        "success_cmd2_write_value": "0x00000002",
+        "timeout_cmd2_write_value": "0x00000002",
+        "qread_verify_mask_value": "0x0000000F",
+        "qread_verify_expected_value": "0x00000003",
+        "runtime_vector_api_symbol": "NVIC_SetVector",
+        "nvic_disable_symbol": "NVIC_DisableIRQ",
+        "nvic_clear_pending_symbol": "NVIC_ClearPendingIRQ",
+        "nvic_get_vector_symbol": "NVIC_GetVector",
+        "nvic_get_enable_symbol": "NVIC_GetEnableIRQ",
+        "nvic_get_pending_symbol": "NVIC_GetPendingIRQ",
+        "nvic_get_active_symbol": "NVIC_GetActive",
+        "helper_one_direct_callsite": True,
+        "helper_call_target_exact": True,
+        "status_success_dataflow_exact": True,
+        "history_mask_from_success_status": True,
+        "success_cmd2_count_2": True,
+        "timeout_cmd2_count_1": True,
+        "nvic_enable_replaced": True,
+        "irq_triggered_true_reachable_false": True,
+        "runtime_vector_target_exact": True,
+        "result_paths_distinct": True,
+        "result_paths": {"branch_block": result_store.addr, "success_entry": success_status_store.addr, "timeout_entry": timeout_qread, "merge_block": cleanup_stores["pmu_completion_poll_v12_t_nvic_pending_before_final_clear"]},
+        "runtime_vector_install_site_address": _hex32(vector_store.addr),
+        "runtime_disable_site_address": _hex32(nvic_writes[0xE000E180]),
+        "runtime_clear_pending_site_address": _hex32(nvic_writes[0xE000E280]),
+        "runtime_enable_read_address": _hex32(runtime_stores["pmu_completion_poll_v12_t_nvic_enabled_before_submit"]),
+        "runtime_pending_read_address": _hex32(runtime_stores["pmu_completion_poll_v12_t_nvic_pending_after_initial_clear"]),
+        "runtime_active_read_address": _hex32(runtime_stores["pmu_completion_poll_v12_t_nvic_active_before_submit"]),
+        "runtime_irq_triggered_read_address": _hex32(runtime_stores["pmu_completion_poll_v12_t_irq_triggered_before_submit"]),
+        "helper_status_read_address": _hex32(status_load.addr),
+        "helper_status_test_address": _hex32(status_test.addr),
+        "poll_helper_p0_address": _hex32(p0.addr),
+        "poll_helper_p1_address": _hex32(p1.addr),
+        "poll_helper_p2_address": _hex32(p2.addr),
+        "submit_read_address": _hex32(_real_loads(caller, pool, 0x50004008)[0].addr),
+        "submit_write_address": _hex32(min(ins.addr for ins in cmd_stores if ins.addr > t2.addr - 16)),
+        "submit_t2_address": _hex32(t2.addr),
+        "wait_call_address": _hex32(helper_calls[0].addr),
+        "wait_result_store_address": _hex32(result_store.addr),
+        "success_history_mask_store_address": _hex32(history_store.addr),
+        "success_cmd2_1_store_address": _hex32(success_cmd2[0]),
+        "success_qread_load_address": _hex32(success_qread),
+        "success_cmd2_2_store_address": _hex32(success_cmd2[1]),
+        "timeout_report_address": _hex32(max(ins.addr for ins in _real_calls(caller, "__wrap_printf") if ins.addr < timeout_qread)),
+        "timeout_qread_load_address": _hex32(timeout_qread),
+        "timeout_cmd2_store_address": _hex32(timeout_cmd2),
+        "cmd0_store_address": _hex32(cmd0),
+        "hprintf_callsite_address": _hex32(hprintf_calls[0].addr),
+        "terminal_cmd0c_store_address": _hex32(cmd0c),
+        "final_pending_before_clear_address": _hex32(cleanup_stores["pmu_completion_poll_v12_t_nvic_pending_before_final_clear"]),
+        "final_pending_after_clear_address": _hex32(cleanup_stores["pmu_completion_poll_v12_t_nvic_pending_after_final_clear"]),
+        "final_active_after_cleanup_address": _hex32(cleanup_stores["pmu_completion_poll_v12_t_nvic_active_after_cleanup"]),
+        "final_irq_triggered_after_cleanup_address": _hex32(cleanup_stores["pmu_completion_poll_v12_t_irq_triggered_after_cleanup"]),
+        "irq_status_read_address": _hex32(_real_loads(irq, pool, 0x50004004)[0].addr),
+        "irq_trigger_test_address": _hex32(next(ins.addr for ins in irq.insns if ins.mnemonic.split(".")[0] == "tst" and "#2" in ins.operands)),
+        "irq_history_mask_store_address": _hex32(next(ins.addr for ins in irq.insns if ins.mnemonic.split(".")[0].startswith("strh"))),
+        "irq_cmd2_store_address": _hex32(next(ins.addr for index, ins in enumerate(irq.insns) if ins.kind == "store" and qual_elf.store_address(irq, index, pool) == 0x50004008)),
+    }
+    return evidence
+
+
+def verify_callsite_trace(runner_text: str, vendor_text: str, disassembly_text: str, nm_text: str, *, evidence_source: str = "synthetic_fixture") -> dict:
+    if evidence_source == "arm_elf":
+        if "pmu_completion_poll_v12_t_submit_after_cmd" not in nm_text:
+            raise fail("real ELF evidence missing required V12 symbol")
+        return verify_callsite_trace_real(runner_text, vendor_text, disassembly_text, nm_text)
     if "pmu_interval_v11a_" in disassembly_text or "v11a_u85_irq_entry_veneer" in disassembly_text:
         raise fail("V11 marker remains reachable")
-    count_once(nm_text, " T v12_poll_completion", "helper symbol in nm")
+    helper_nm_matches = re.findall(r"^[0-9A-Fa-f]+\s+[Tt]\s+v12_poll_completion$", nm_text, re.M)
+    if len(helper_nm_matches) != 1:
+        raise fail("helper symbol in nm: expected 1 text symbol, found %d" % len(helper_nm_matches))
     count_once(nm_text, " T u85_irq_handler", "stock handler symbol in nm")
     count_once(disassembly_text, "<v12_poll_completion>:", "helper function in disassembly")
     count_once(disassembly_text, "<test_commands>:", "caller function in disassembly")
@@ -1250,6 +1652,8 @@ def _load_trace_inputs(paths: argparse.Namespace) -> tuple[str, str, dict[str, s
     ).stdout
     if "Executable" not in readelf_header and "EXEC" not in readelf_header:
         raise fail("%s is not an executable ELF" % paths.elf)
+    if re.search(r"^\s*Machine:\s+ARM\s*$", readelf_header, re.M) is None:
+        raise fail("%s is not an ARM ELF" % paths.elf)
     disassembly_text = subprocess.run(
         [paths.objdump, "-d", paths.elf],
         check=True,
@@ -1286,7 +1690,13 @@ def verify(paths: argparse.Namespace) -> dict:
     disassembly_text, nm_text, artifact_hashes, build_evidence, evidence_source = _load_trace_inputs(paths)
     build_evidence["generated_runner.c"] = runner_generated_sha
     build_evidence["generated_vendor_u85.c"] = vendor_generated_sha
-    evidence = verify_callsite_trace(runner_text, vendor_text, disassembly_text, nm_text)
+    evidence = verify_callsite_trace(
+        runner_text,
+        vendor_text,
+        disassembly_text,
+        nm_text,
+        evidence_source=evidence_source,
+    )
     doc = build_manifest_document(
         evidence,
         artifact_hashes,

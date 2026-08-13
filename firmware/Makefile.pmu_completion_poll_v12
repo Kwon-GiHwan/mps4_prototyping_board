@@ -27,7 +27,8 @@ GEN_STAMP := $(GEN)/.generated
 PREPROCESSED := $(BUILD)/runner_pmu_completion_poll_v12_main.i
 MANIFEST := $(BUILD)/pmu_completion_poll_v12_manifest.json
 
-PROFILE_CFLAGS := -DMEASUREMENT_BUILD -DPMU_DIAG_BUILD -DPMU_QUAL_SCHEMA_V12 \
+PROFILE_CFLAGS := -DMEASUREMENT_BUILD -DPMU_DIAG_BUILD -DPMU_QUAL_SCHEMA_V8 \
+                  -DPMU_QUAL_SCHEMA_V12 \
                   -DPMU_COMPLETION_POLL_DIAG_V12 -DPMU_QUAL_MODE_Q1 \
                   -DPMU_DIAG_CASE_A -DPMU_DIAG_SEAM_S1 \
                   -DPMU_DIAG_USES_PRIVATE_DRIVER
@@ -71,7 +72,7 @@ LDFLAGS   := $(ARCHFLAGS) --specs=nano.specs --specs=nosys.specs \
              -Wl,--print-memory-usage $(WRAPFLAGS)
 
 .PHONY: all clean bins check manifest preprocess
-all: bins check manifest
+all: bins preprocess check manifest
 
 $(BUILD)/lnk.ld: LinkScripts/lnk.ld.S LinkScripts/region_defs.h LinkScripts/region_limits.h
 	@mkdir -p $(dir $@)

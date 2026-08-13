@@ -479,6 +479,231 @@ NM = """00001000 T v12_poll_completion
 20002040 B pmu_completion_poll_v12_t_irq_triggered_after_cleanup
 """
 
+REAL_ARM_DISASSEMBLY = """Disassembly of section .text:
+
+0000000031002344 <v12_poll_completion>:
+31002344:\t4b0c      \tldr\tr3, [pc, #48]   @ (31002378 <v12_poll_completion+0x34>)
+31002346:\t685a      \tldr\tr2, [r3, #4]
+31002348:\t4b0c      \tldr\tr3, [pc, #48]   @ (3100237c <v12_poll_completion+0x38>)
+3100234a:\t601a      \tstr\tr2, [r3, #0]
+3100234c:\tf242 7210 \tmovw\tr2, #10000     @ 0x2710
+31002350:\t490b      \tldr\tr1, [pc, #44]   @ (31002380 <v12_poll_completion+0x3c>)
+31002352:\t4613      \tmov\tr3, r2
+31002354:\t6848      \tldr\tr0, [r1, #4]
+31002356:\tf010 0f02 \ttst.w\tr0, #2
+3100235a:\td104      \tbne.n\t31002366 <v12_poll_completion+0x22>
+3100235c:\t3a01      \tsubs\tr2, #1
+3100235e:\t3b01      \tsubs\tr3, #1
+31002360:\td1f8      \tbne.n\t31002354 <v12_poll_completion+0x10>
+31002362:\t4610      \tmov\tr0, r2
+31002364:\t4770      \tbx\tlr
+31002366:\t4b04      \tldr\tr3, [pc, #16]   @ (31002378 <v12_poll_completion+0x34>)
+31002368:\t6859      \tldr\tr1, [r3, #4]
+3100236a:\t4a06      \tldr\tr2, [pc, #24]   @ (31002384 <v12_poll_completion+0x40>)
+3100236c:\t6011      \tstr\tr1, [r2, #0]
+3100236e:\t685a      \tldr\tr2, [r3, #4]
+31002370:\t4b05      \tldr\tr3, [pc, #20]   @ (31002388 <v12_poll_completion+0x44>)
+31002372:\t601a      \tstr\tr2, [r3, #0]
+31002374:\t4770      \tbx\tlr
+31002376:\tbf00      \tnop
+31002378:\te0001000 \t.word\t0xe0001000
+3100237c:\t31005370 \t.word\t0x31005370
+31002380:\t50004000 \t.word\t0x50004000
+31002384:\t3100536c \t.word\t0x3100536c
+31002388:\t31005368 \t.word\t0x31005368
+
+000000003100238c <u85_irq_handler>:
+3100238c:\tb508      \tpush\t{r3, lr}
+3100238e:\t4b0c      \tldr\tr3, [pc, #48]   @ (310023c0 <u85_irq_handler+0x34>)
+31002390:\t685a      \tldr\tr2, [r3, #4]
+31002392:\t0c11      \tlsrs\tr1, r2, #16
+31002394:\t4b0b      \tldr\tr3, [pc, #44]   @ (310023c4 <u85_irq_handler+0x38>)
+31002396:\t8019      \tstrh\tr1, [r3, #0]
+31002398:\tf012 0f02 \ttst.w\tr2, #2
+3100239c:\td100      \tbne.n\t310023a0 <u85_irq_handler+0x14>
+3100239e:\tbd08      \tpop\t{r3, pc}
+310023a0:\t8819      \tldrh\tr1, [r3, #0]
+310023a2:\tb289      \tuxth\tr1, r1
+310023a4:\t4808      \tldr\tr0, [pc, #32]   @ (310023c8 <u85_irq_handler+0x3c>)
+310023a6:\tf7ff fe77 \tbl\t31002098 <__wrap_printf>
+310023aa:\t4808      \tldr\tr0, [pc, #32]   @ (310023cc <u85_irq_handler+0x40>)
+310023ac:\tf7ff fe74 \tbl\t31002098 <__wrap_printf>
+310023b0:\t4b07      \tldr\tr3, [pc, #28]   @ (310023d0 <u85_irq_handler+0x44>)
+310023b2:\t2201      \tmovs\tr2, #1
+310023b4:\t701a      \tstrb\tr2, [r3, #0]
+310023b6:\t4b02      \tldr\tr3, [pc, #8]    @ (310023c0 <u85_irq_handler+0x34>)
+310023b8:\t2202      \tmovs\tr2, #2
+310023ba:\t609a      \tstr\tr2, [r3, #8]
+310023bc:\te7ef      \tb.n\t3100239e <u85_irq_handler+0x12>
+310023be:\tbf00      \tnop
+310023c0:\t50004000 \t.word\t0x50004000
+310023c4:\t31005338 \t.word\t0x31005338
+310023c8:\t310028f0 \t.word\t0x310028f0
+310023cc:\t31002924 \t.word\t0x31002924
+310023d0:\t3100533b \t.word\t0x3100533b
+
+00000000310023d4 <test_commands>:
+310023d4:\tb570      \tpush\t{r4, r5, r6, lr}
+310023d6:\t4604      \tmov\tr4, r0
+310023d8:\t460e      \tmov\tr6, r1
+310023da:\t4615      \tmov\tr5, r2
+310023dc:\t4860      \tldr\tr0, [pc, #384]  @ (31002560 <test_commands+0x18c>)
+310023de:\tf7ff fe5b \tbl\t31002098 <__wrap_printf>
+310023e2:\t4b60      \tldr\tr3, [pc, #384]  @ (31002564 <test_commands+0x190>)
+310023e4:\t2200      \tmovs\tr2, #0
+310023e6:\t609a      \tstr\tr2, [r3, #8]
+31002438:\t4c4a      \tldr\tr4, [pc, #296]  @ (31002564 <test_commands+0x190>)
+3100243a:\t4b4d      \tldr\tr3, [pc, #308]  @ (31002570 <test_commands+0x19c>)
+3100243c:\t6523      \tstr\tr3, [r4, #80]   @ 0x50
+31002482:\t2102      \tmovs\tr1, #2
+31002484:\t483b      \tldr\tr0, [pc, #236]  @ (31002574 <test_commands+0x1a0>)
+31002486:\tf7ff fe07 \tbl\t31002098 <__wrap_printf>
+3100248a:\t2302      \tmovs\tr3, #2
+3100248c:\t63a3      \tstr\tr3, [r4, #56]   @ 0x38
+3100248e:\t68a3      \tldr\tr3, [r4, #8]
+31002490:\tf043 0301 \torr.w\tr3, r3, #1
+31002494:\t60a3      \tstr\tr3, [r4, #8]
+31002496:\t4b38      \tldr\tr3, [pc, #224]  @ (31002578 <test_commands+0x1a4>)
+31002498:\t685a      \tldr\tr2, [r3, #4]
+3100249a:\t4b38      \tldr\tr3, [pc, #224]  @ (3100257c <test_commands+0x1a8>)
+3100249c:\t601a      \tstr\tr2, [r3, #0]
+3100249e:\tf7ff ff51 \tbl\t31002344 <v12_poll_completion>
+310024a2:\tf3c0 0340 \tubfx\tr3, r0, #1, #1
+310024a6:\tf1c3 0302 \trsb\tr3, r3, #2
+310024aa:\t4a35      \tldr\tr2, [pc, #212]  @ (31002580 <test_commands+0x1ac>)
+310024ac:\t6013      \tstr\tr3, [r2, #0]
+310024ae:\t6813      \tldr\tr3, [r2, #0]
+310024b0:\t2b01      \tcmp\tr3, #1
+310024b2:\td037      \tbeq.n\t31002524 <test_commands+0x150>
+310024b4:\t4b33      \tldr\tr3, [pc, #204]  @ (31002584 <test_commands+0x1b0>)
+310024b6:\t2201      \tmovs\tr2, #1
+310024b8:\t701a      \tstrb\tr2, [r3, #0]
+310024ba:\t4c2a      \tldr\tr4, [pc, #168]  @ (31002564 <test_commands+0x190>)
+310024bc:\t6861      \tldr\tr1, [r4, #4]
+310024be:\t4832      \tldr\tr0, [pc, #200]  @ (31002588 <test_commands+0x1b4>)
+310024c0:\tf7ff fdea \tbl\t31002098 <__wrap_printf>
+310024c4:\t69a2      \tldr\tr2, [r4, #24]
+310024c6:\t2302      \tmovs\tr3, #2
+310024c8:\t60a3      \tstr\tr3, [r4, #8]
+310024d8:\t4b2d      \tldr\tr3, [pc, #180]  @ (31002590 <test_commands+0x1bc>)
+310024da:\tf8d3 2100 \tldr.w\tr2, [r3, #256] @ 0x100
+310024de:\tf3c2 4200 \tubfx\tr2, r2, #16, #1
+310024e2:\t492c      \tldr\tr1, [pc, #176]  @ (31002594 <test_commands+0x1c0>)
+310024e4:\t600a      \tstr\tr2, [r1, #0]
+310024e6:\tf44f 3280 \tmov.w\tr2, #65536    @ 0x10000
+310024ea:\tf8c3 2180 \tstr.w\tr2, [r3, #384] @ 0x180
+310024ee:\tf8d3 2100 \tldr.w\tr2, [r3, #256] @ 0x100
+310024f2:\tf3c2 4200 \tubfx\tr2, r2, #16, #1
+310024f6:\t4928      \tldr\tr1, [pc, #160]  @ (31002598 <test_commands+0x1c4>)
+310024f8:\t600a      \tstr\tr2, [r1, #0]
+310024fa:\tf8d3 3200 \tldr.w\tr3, [r3, #512] @ 0x200
+310024fe:\tf3c3 4300 \tubfx\tr3, r3, #16, #1
+31002502:\t4a26      \tldr\tr2, [pc, #152]  @ (3100259c <test_commands+0x1c8>)
+31002504:\t6013      \tstr\tr3, [r2, #0]
+31002506:\t4b26      \tldr\tr3, [pc, #152]  @ (310025a0 <test_commands+0x1cc>)
+31002508:\t781b      \tldrb\tr3, [r3, #0]
+3100250a:\tb2db      \tuxtb\tr3, r3
+3100250c:\t4a25      \tldr\tr2, [pc, #148]  @ (310025a4 <test_commands+0x1d0>)
+3100250e:\t6013      \tstr\tr3, [r2, #0]
+31002510:\t4d14      \tldr\tr5, [pc, #80]   @ (31002564 <test_commands+0x190>)
+31002512:\t2300      \tmovs\tr3, #0
+31002514:\t60ab      \tstr\tr3, [r5, #8]
+31002518:\tf7ff fdbe \tbl\t31002098 <__wrap_printf>
+3100251c:\t230c      \tmovs\tr3, #12
+3100251e:\t60ab      \tstr\tr3, [r5, #8]
+31002524:\t4b21      \tldr\tr3, [pc, #132]  @ (310025ac <test_commands+0x1d8>)
+31002526:\t6018      \tstr\tr0, [r3, #0]
+31002528:\t0c00      \tlsrs\tr0, r0, #16
+3100252a:\t4b21      \tldr\tr3, [pc, #132]  @ (310025b0 <test_commands+0x1dc>)
+3100252c:\t8018      \tstrh\tr0, [r3, #0]
+3100252e:\t2002      \tmovs\tr0, #2
+31002530:\t60a0      \tstr\tr0, [r4, #8]
+31002532:\t69a2      \tldr\tr2, [r4, #24]
+31002534:\t60a0      \tstr\tr0, [r4, #8]
+31002560:\t31002984 \t.word\t0x31002984
+31002564:\t50004000 \t.word\t0x50004000
+31002574:\t310029e8 \t.word\t0x310029e8
+31002578:\te0001000 \t.word\t0xe0001000
+3100257c:\t31005374 \t.word\t0x31005374
+31002580:\t31005364 \t.word\t0x31005364
+31002584:\t3100533a \t.word\t0x3100533a
+31002588:\t31002ac0 \t.word\t0x31002ac0
+3100258c:\t31002a60 \t.word\t0x31002a60
+31002590:\te000e100 \t.word\t0xe000e100
+31002594:\t31005348 \t.word\t0x31005348
+31002598:\t31005344 \t.word\t0x31005344
+3100259c:\t31005340 \t.word\t0x31005340
+310025a0:\t3100533b \t.word\t0x3100533b
+310025a4:\t3100533c \t.word\t0x3100533c
+310025a8:\t31002b00 \t.word\t0x31002b00
+310025ac:\t31005360 \t.word\t0x31005360
+310025b0:\t31005338 \t.word\t0x31005338
+
+00000000310025b8 <test_u85>:
+310025b8:\te92d 43f8 \tstmdb\tsp!, {r3, r4, r5, r6, r7, r8, r9, lr}
+310025c4:\t494f      \tldr\tr1, [pc, #316]  @ (31002704 <test_u85+0x14c>)
+310025c6:\t4a50      \tldr\tr2, [pc, #320]  @ (31002708 <test_u85+0x150>)
+310025c8:\t6893      \tldr\tr3, [r2, #8]
+310025ca:\tf8c3 1080 \tstr.w\tr1, [r3, #128] @ 0x80
+310025dc:\t4b4c      \tldr\tr3, [pc, #304]  @ (31002710 <test_u85+0x158>)
+310025de:\tf44f 3080 \tmov.w\tr0, #65536    @ 0x10000
+310025d8:\tf88c 3000 \tstrb.w\tr3, [ip]
+310025e2:\tf8c3 0080 \tstr.w\tr0, [r3, #128] @ 0x80
+310025ee:\tf8c3 0180 \tstr.w\tr0, [r3, #384] @ 0x180
+310025f2:\t6892      \tldr\tr2, [r2, #8]
+310025f4:\tf8d2 2080 \tldr.w\tr2, [r2, #128] @ 0x80
+310025f8:\t4846      \tldr\tr0, [pc, #280]  @ (31002714 <test_u85+0x15c>)
+310025fa:\t6002      \tstr\tr2, [r0, #0]
+310025fc:\t681a      \tldr\tr2, [r3, #0]
+310025fe:\tf3c2 4200 \tubfx\tr2, r2, #16, #1
+31002602:\tf8df e114 \tldr.w\tlr, [pc, #276] @ (31002718 <test_u85+0x160>)
+31002606:\tf8ce 2000 \tstr.w\tr2, [lr]
+3100260a:\tf8d3 2100 \tldr.w\tr2, [r3, #256] @ 0x100
+3100260e:\tf3c2 4200 \tubfx\tr2, r2, #16, #1
+31002612:\tf8df e108 \tldr.w\tlr, [pc, #264] @ (3100271c <test_u85+0x164>)
+31002616:\tf8ce 2000 \tstr.w\tr2, [lr]
+3100261a:\tf8d3 2200 \tldr.w\tr2, [r3, #512] @ 0x200
+3100261e:\tf3c2 4200 \tubfx\tr2, r2, #16, #1
+31002622:\t4b3f      \tldr\tr3, [pc, #252]  @ (31002720 <test_u85+0x168>)
+31002624:\t601a      \tstr\tr2, [r3, #0]
+31002626:\tf89c 2000 \tldrb.w\tr2, [ip]
+3100262a:\tb2d2      \tuxtb\tr2, r2
+3100262c:\t4b3d      \tldr\tr3, [pc, #244]  @ (31002724 <test_u85+0x16c>)
+3100262e:\t601a      \tstr\tr2, [r3, #0]
+31002704:\t3100238d \t.word\t0x3100238d
+31002708:\te000ed00 \t.word\t0xe000ed00
+3100270c:\t3100533b \t.word\t0x3100533b
+31002710:\te000e100 \t.word\t0xe000e100
+31002714:\t3100535c \t.word\t0x3100535c
+31002718:\t31005358 \t.word\t0x31005358
+3100271c:\t31005354 \t.word\t0x31005354
+31002720:\t31005350 \t.word\t0x31005350
+31002724:\t3100534c \t.word\t0x3100534c
+"""
+
+REAL_ARM_NM = """31002344 t v12_poll_completion
+3100238c T u85_irq_handler
+310023d4 t test_commands
+310025b8 T test_u85
+31005338 B irq_history_mask
+3100533b b irq_triggered
+3100533c B pmu_completion_poll_v12_t_irq_triggered_after_cleanup
+31005340 B pmu_completion_poll_v12_t_nvic_active_after_cleanup
+31005344 B pmu_completion_poll_v12_t_nvic_pending_after_final_clear
+31005348 B pmu_completion_poll_v12_t_nvic_pending_before_final_clear
+3100534c B pmu_completion_poll_v12_t_irq_triggered_before_submit
+31005350 B pmu_completion_poll_v12_t_nvic_active_before_submit
+31005354 B pmu_completion_poll_v12_t_nvic_pending_after_initial_clear
+31005358 B pmu_completion_poll_v12_t_nvic_enabled_before_submit
+3100535c B pmu_completion_poll_v12_t_installed_vector
+31005360 B pmu_completion_poll_v12_t_poll_status_at_success
+31005364 B pmu_completion_poll_v12_t_poll_result
+31005368 B pmu_completion_poll_v12_t_poll_exit
+3100536c B pmu_completion_poll_v12_t_status_completion_seen
+31005370 B pmu_completion_poll_v12_t_poll_entry
+31005374 B pmu_completion_poll_v12_t_submit_after_cmd
+"""
+
 # NOTE: MANIFEST_OK is defined after marker tables so it can carry concrete site-address keys.
 
 
@@ -1477,6 +1702,16 @@ int test_u85( const u85_eTest eTest,
 
     check("runner patch emits schema 12 branch", "#define PMU_DIAG_SCHEMA_VERSION 12U" in runner_out)
     check("runner patch pins V12 build id", "#define PMU_COMPLETION_POLL_DIAG_V12_BUILD_ID 0x32314950U" in runner_out)
+    check(
+        "runner patch exempts V12 from the S1/S2 private-driver compile trap",
+        "#if (defined(PMU_DIAG_SEAM_S1) || defined(PMU_DIAG_SEAM_S2)) && !defined(PMU_QUAL_SCHEMA_V12)"
+        in runner_out,
+    )
+    check(
+        "runner patch exempts V12 from the v8 private-driver compile trap",
+        "#if defined(PMU_DIAG_USES_PRIVATE_DRIVER) && !defined(PMU_QUAL_SCHEMA_V12)"
+        in runner_out,
+    )
     check("runner patch appends 15 V12 fields", all(
         needle in runner_out for needle in (
             "uint32_t t_submit_after_cmd;",
@@ -1508,6 +1743,8 @@ int test_u85( const u85_eTest eTest,
               "record_append_fields": 1,
               "field_count_block": 1,
               "static_asserts": 1,
+              "private_driver_seam_exemption": 1,
+              "private_driver_v8_exemption": 1,
               "reset_v12_globals": 1,
               "copy_v12_values": 1,
               "serialize_v12_values": 1,
@@ -1515,6 +1752,16 @@ int test_u85( const u85_eTest eTest,
     check("vendor patch keeps stock wait body", "while (false == irq_triggered) {" in vendor_out and "sleep();" in vendor_out)
     check("vendor patch keeps stock ISR body", "void u85_irq_handler(void)" in vendor_out and "irq_triggered = true;" in vendor_out)
     check("vendor patch inserts helper once", vendor_out.count("v12_poll_completion(void)") == 1)
+    check(
+        "vendor patch keeps caller auditable as noinline",
+        "__attribute__((noinline))\nstatic int test_commands(" in vendor_out,
+    )
+    check("vendor patch declares poll result constants", all(
+        needle in vendor_out for needle in (
+            "#define V12_POLL_SUCCESS 1U",
+            "#define V12_POLL_TIMEOUT 2U",
+        )
+    ))
     check("vendor patch hard-bypasses enable site", "NVIC_EnableIRQ(NPU0_IRQn)" not in vendor_out and "NVIC_DisableIRQ(NPU0_IRQn);" in vendor_out)
     check("vendor patch stores explicit poll_result", "V12_POLL_TIMEOUT - ((status_at_success & 0x02U) >> 1);" in vendor_out)
     check("vendor patch preserves path-specific CMD semantics",
@@ -1896,7 +2143,7 @@ int test_u85( const u85_eTest eTest,
             handle.write(
                 "#!/usr/bin/env python3\n"
                 "import sys\n"
-                "sys.stdout.write('ELF Header\\nType: EXEC (Executable file)\\n')\n"
+                "sys.stdout.write('ELF Header\\nType: EXEC (Executable file)\\nMachine: ARM\\n')\n"
             )
         with open(bad_readelf_path, "w", encoding="utf-8") as handle:
             handle.write(
@@ -1934,8 +2181,12 @@ int test_u85( const u85_eTest eTest,
             capture_output=True,
             text=True,
         )
-        check("real-elf CLI accepts hermetic fake toolchain", real_ok.returncode == 0, real_ok.stderr or real_ok.stdout)
-        check("real-elf CLI writes manifest on success", os.path.exists(manifest_path) and os.path.getsize(manifest_path) > 0)
+        check(
+            "real-elf CLI rejects synthetic-looking evidence from fake toolchain",
+            real_ok.returncode != 0 and "missing required V12 symbol" in (real_ok.stderr or real_ok.stdout),
+            real_ok.stderr or real_ok.stdout,
+        )
+        check("real-elf CLI fake-tool path writes no manifest", not os.path.exists(manifest_path))
         if os.path.exists(manifest_path):
             with open(manifest_path, "r", encoding="utf-8") as handle:
                 real_manifest = json.load(handle)
@@ -1991,6 +2242,77 @@ int test_u85( const u85_eTest eTest,
                 ok,
                 "%s [%s]" % (fix["note"], str(exc)),
             )
+
+    try:
+        real_evidence = gate.verify_callsite_trace(
+            runner_out,
+            vendor_out,
+            REAL_ARM_DISASSEMBLY,
+            REAL_ARM_NM,
+            evidence_source="arm_elf",
+        )
+        check(
+            "real fixture dispatches into real ELF verifier",
+            real_evidence["helper_address"] == "0x31002344"
+            and real_evidence["runtime_vector_target_address"] == "0x3100238C"
+            and real_evidence["success_cmd2_count_2"] is True
+            and real_evidence["timeout_cmd2_count_1"] is True,
+        )
+    except Exception as exc:
+        check("real fixture dispatches into real ELF verifier", False, str(exc))
+
+    for name, mutated_disassembly, expected in (
+        (
+            "real verifier rejects wrong runtime vector target literal",
+            REAL_ARM_DISASSEMBLY.replace(".word\t0x3100238d", ".word\t0x31002345", 1),
+            "runtime vector target is not exact stock handler",
+        ),
+        (
+            "real verifier rejects duplicate STATUS load site",
+            REAL_ARM_DISASSEMBLY.replace(
+                "31002354:\t6848      \tldr\tr0, [r1, #4]",
+                "31002353:\t684a      \tldr\tr2, [r1, #4]\n31002354:\t6848      \tldr\tr0, [r1, #4]",
+                1,
+            ),
+            "helper STATUS static load site count != 1",
+        ),
+        (
+            "real verifier rejects success CMD2 shape drift",
+            REAL_ARM_DISASSEMBLY.replace("31002534:\t60a0      \tstr\tr0, [r4, #8]", "31002534:\t60e0      \tstr\tr0, [r4, #12]", 1),
+            "real success CMD2 store shape changed",
+        ),
+        (
+            "real verifier rejects success CMD2 value drift",
+            REAL_ARM_DISASSEMBLY.replace("3100252e:\t2002      \tmovs\tr0, #2", "3100252e:\t2003      \tmovs\tr0, #3", 1),
+            "success CMD2: expected value",
+        ),
+        (
+            "real verifier rejects timeout CMD2 value drift",
+            REAL_ARM_DISASSEMBLY.replace("310024c6:\t2302      \tmovs\tr3, #2", "310024c6:\t2303      \tmovs\tr3, #3", 1),
+            "timeout CMD2: expected value",
+        ),
+        (
+            "real verifier rejects history shift drift",
+            REAL_ARM_DISASSEMBLY.replace("31002528:\t0c00      \tlsrs\tr0, r0, #16", "31002528:\t0c40      \tlsrs\tr0, r0, #17", 1),
+            "history mask lost single-source",
+        ),
+        (
+            "real verifier rejects terminal CMD0xC value drift",
+            REAL_ARM_DISASSEMBLY.replace("3100251c:\t230c      \tmovs\tr3, #12", "3100251c:\t230d      \tmovs\tr3, #13", 1),
+            "terminal CMD0xC: expected value",
+        ),
+    ):
+        try:
+            gate.verify_callsite_trace(
+                runner_out,
+                vendor_out,
+                mutated_disassembly,
+                REAL_ARM_NM,
+                evidence_source="arm_elf",
+            )
+            check(name, False, "unexpected pass")
+        except Exception as exc:
+            check(name, expected in str(exc), str(exc))
 
     print()
     print("passed=%d failed=%d" % (passed, failed))

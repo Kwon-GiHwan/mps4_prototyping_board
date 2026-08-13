@@ -8,6 +8,29 @@ Frozen identity:
 - Runner source SHA-256: `69cab8c48a2248d0cc0b883a2bc651efa8eb8867c86369051ebc99cc5ee5a88b`
 - Vendor source SHA-256: `bcd877bbd42a35d83c8696d02b64d2ae4985a46fcce91b98102e08661b356bcf`
 
+Frozen pre-board ARM identity (two independent clean builds, 10/10 byte-identical):
+- APP.BIN: `8826f3399e4666f59061e3c5d0e76c494e9660663f400d536a3c6dcd3a553513`
+- VECTORS.BIN: `66430b664782848c9d9ce3d1443308fc91ea89dc820b2ed2d71f9599bdfe4071`
+- DDR.BIN: `81d37a219a6b4141d0b433796711ab8af2ee2c3c668a28143a3ffe6a574ade98`
+- ELF: `cd44ad3e5f370833b03fb3c664da2a8cb9320e38d97786d4c2af6ec1109cf401`
+- map: `d437dd79bac71b48a4691407462826a1726a7de49e00acaa449d25cdface9355`
+- generated runner: `f0dc834a5df38232374550984968eabde203db0d0e3fd2985f5944fa78c156dd`
+- generated vendor: `f2b1beda5d008daed815222ac2ffa520c4f5318e25bf9e36d11074ae0f17262c`
+- generated vendor object: `c590d987cd97f601a88478f3a6b798a4e27608249ef261cad77b0712ab2dce9f`
+- preprocessed runner: `cca101f6fda77347300db837cab0b46bc39f0ef358f1d4ecb207767bee20cf31`
+- manifest: `611f095f54f4eaeac47db0b69a666e30e0a694eb313a7728cf839cec5f91ba29`
+- Build A/B hash diff: empty (0 bytes)
+
+Key final-ELF bindings:
+- helper / stock handler: `0x31002344` / `0x3100238C`
+- STATUS load / test: `0x31002354` / `0x31002356`
+- P0 / P1 / P2: `0x3100234A` / `0x3100236C` / `0x31002372`
+- submit / T2 / helper call: `0x31002494` / `0x3100249C` / `0x3100249E`
+- success CMD2 #1 / QREAD / CMD2 #2: `0x31002530` / `0x31002532` / `0x31002534`
+- timeout QREAD / CMD2: `0x310024C4` / `0x310024C8`
+- H-PRINTF call / terminal CMD0xC: `0x31002518` / `0x3100251E`
+- runtime vector slot store: `0x310025CA`, exact target `u85_irq_handler`
+
 Measured checkpoints:
 - `T2`: after submit write and before completion observation helper
 - `P0`: poll helper entry timestamp
