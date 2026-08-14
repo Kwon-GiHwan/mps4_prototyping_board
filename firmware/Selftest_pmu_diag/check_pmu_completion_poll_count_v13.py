@@ -58,6 +58,7 @@ import hashlib
 import re
 from dataclasses import dataclass
 
+import check_pmu_qual as qual_elf
 from check_pmu_completion_poll_v12 import (
     _function_section,
     fail,
@@ -129,7 +130,25 @@ _REMAINING_WORD_RE = re.compile(
 )
 _WRITE_OP_RE = re.compile(r"\s*(?:\+\+|--|<<=|>>=|[-+*/%&|^]=|=(?!=))")
 _PREFIX_WRITE_OP_RE = re.compile(r"(?:\+\+|--)\s*$")
-_NVIC_ISER_LITERAL_RE = re.compile(r"0x0*e000e100", re.IGNORECASE)
+# CMSIS `NVIC_Type` covers 0xE000E100..0xE000E4EF -- ISER at +0x000, ICER at
+# +0x080, ISPR +0x100, ICPR +0x180, IABR +0x200, IPR +0x300 -- and its base
+# address is also ISER[0]. A compiler therefore parks the single word
+# 0xE000E100 in the literal pool and reaches every one of those registers as
+# base + displacement, which is exactly how the retained V12 hard bypass writes
+# ICER and ICPR. Only ISER writes enable an interrupt, so the drift term is the
+# resolved destination, never the literal.
+_NVIC_BLOCK_FIRST = 0xE000E100
+_NVIC_BLOCK_LAST = 0xE000E4EF
+# ISER is the *whole* NVIC_ISER0..NVIC_ISER15 bank, 0xE000E100..0xE000E13C in
+# the Armv7-M/Armv8-M register map -- CMSIS `NVIC_Type.ISER[16U]`, whose 0x40
+# bytes are followed by 0x40 reserved bytes before ICER lands at +0x080. No
+# CMSIS header is vendored in this repository, so the bound is taken from that
+# architectural map; taking only ISER[0] would let an enable of any IRQ above
+# 31 through, and the diag's own NPU0 IRQ is not pinned to ISER[0] by anything
+# this gate can see.
+_NVIC_ISER_FIRST = 0xE000E100
+_NVIC_ISER_LAST = 0xE000E13F
+_REG_TOKEN_RE = re.compile(r"\b(?:r\d+|sl|sb|fp|ip|sp|lr|pc)\b")
 
 _HEX_WORD_RE = re.compile(r"\.word\s+0x([0-9A-Fa-f]+)")
 _ENCODING_RE = re.compile(r"^(?:[0-9a-f]{8}|[0-9a-f]{4}(?:\s+[0-9a-f]{4})*)\s+(?=[a-z.])")
@@ -1273,6 +1292,42 @@ def prove_remaining_dataflow(disassembly_text: str, nm_text: str) -> RemainingDa
     )
 
 
+def _nvic_block_bases(fn, pool: dict[int, int]) -> tuple[frozenset[str], ...]:
+    """Per-instruction set of registers that may hold an NVIC-block pointer.
+
+    A register enters the set by loading a literal inside ``NVIC_Type`` and
+    leaves it when it is redefined by anything that does not read a member of
+    the set. Arithmetic on such a pointer keeps it in the set even though its
+    value stops being provable, which is what makes the caller's fail-closed
+    branch reachable instead of vacuous.
+    """
+    states: list[frozenset[str]] = []
+    tainted: set[str] = set()
+    for ins in fn.insns:
+        states.append(frozenset(tainted))
+        if ins.kind == "call":
+            tainted -= set(qual_elf.CALL_CLOBBERED)
+            continue
+        if ins.kind == "ldr_lit":
+            word = pool.get(ins.literal_addr)
+            if word is not None and _NVIC_BLOCK_FIRST <= word <= _NVIC_BLOCK_LAST:
+                tainted.add(ins.dest)
+            else:
+                tainted.discard(ins.dest)
+            continue
+        if ins.dest is None:
+            continue
+        # Every other writer is opaque, so it is read pessimistically: it
+        # carries the taint of whatever registers it reads, which are the
+        # operands after the destination it writes in the first one.
+        _, _, read_operands = ins.operands.partition(",")
+        if set(_REG_TOKEN_RE.findall(read_operands)) & tainted:
+            tainted.add(ins.dest)
+        else:
+            tainted.discard(ins.dest)
+    return tuple(states)
+
+
 def _check_retained_v12_runtime(disassembly_text: str) -> None:
     """Refuse a re-introduced NVIC enable in the V13 image.
 
@@ -1280,13 +1335,50 @@ def _check_retained_v12_runtime(disassembly_text: str) -> None:
     the retained V12 runtime contract, so their mere existence is not drift and
     is not checked here; the whole-image gate proves their operands and order.
     What must never come back is an interrupt *enable*, in either form: a call
-    to ``NVIC_EnableIRQ`` or a direct write through the NVIC->ISER literal.
+    to ``NVIC_EnableIRQ`` or a direct write to NVIC->ISER.
+
+    The ISER half is a statement about *destinations*, not about text. The word
+    ``0xE000E100`` is ISER[0] and CMSIS ``NVIC_BASE`` at once, so it appears in
+    the literal pool of every build that clears ICER or ICPR through that base
+    -- which the retained V12 hard bypass is required to do. Store destinations
+    are therefore resolved the way V12 resolves them, through
+    ``qual_elf.store_address``, and only a store that lands inside ISER is
+    drift. A store that cannot be resolved is drift too whenever its base could
+    be an NVIC-block pointer, so an enable cannot hide behind a base the
+    resolver gives up on.
     """
     for callee in _V12_RUNTIME_DRIFT_CALLEES:
         if re.search(_CALL_TO_RE % re.escape(callee), disassembly_text):
             raise fail("retained V12 NVIC enable drift: %s call site" % callee)
-    if _NVIC_ISER_LITERAL_RE.search(disassembly_text):
-        raise fail("direct NVIC ISER enable write remains reachable")
+    dis = qual_elf.parse_disassembly(disassembly_text)
+    pool = qual_elf.literal_pool(dis.functions)
+    for name, fn in dis.functions.items():
+        bases = _nvic_block_bases(fn, pool)
+        for index, ins in enumerate(fn.insns):
+            if ins.kind == "store":
+                address = qual_elf.store_address(fn, index, pool)
+                if address is None:
+                    if ins.base in bases[index]:
+                        raise fail(
+                            "NVIC-block store destination unresolvable at %s+0x%X"
+                            % (name, ins.addr - fn.addr)
+                        )
+                    continue
+                if _NVIC_ISER_FIRST <= address <= _NVIC_ISER_LAST:
+                    raise fail(
+                        "direct NVIC ISER enable write remains reachable: %s+0x%X -> 0x%08X"
+                        % (name, ins.addr - fn.addr, address)
+                    )
+                continue
+            # A store the classifier could not decode -- a register-offset or
+            # writeback form -- is not a store it can prove innocent either.
+            if ins.mnemonic.split(".")[0].startswith("str") and (
+                set(_REG_TOKEN_RE.findall(ins.operands)) & bases[index]
+            ):
+                raise fail(
+                    "NVIC-block store destination unresolvable at %s+0x%X"
+                    % (name, ins.addr - fn.addr)
+                )
 
 
 def verify_cross_elf_contract(

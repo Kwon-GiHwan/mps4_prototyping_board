@@ -522,6 +522,22 @@ def extras_section(name: str, addr: int, *lines: str) -> str:
     return "\n%08x <%s>:\n%s" % (addr, name, body)
 
 
+def objdump_section(name: str, addr: int, *rows: tuple[str, str, str]) -> str:
+    """A section in real ``objdump -d`` layout: tab-separated columns.
+
+    The retained NVIC gate resolves store destinations through the V12 ELF
+    parser, whose line grammar is the tab-separated one objdump actually emits.
+    Fixtures aimed at that gate must therefore be written in the real layout
+    rather than the column-aligned shorthand the other fixtures use, or the
+    parser reads them as an empty function and proves nothing.
+    """
+    body = "".join(
+        "%08x:\t%s \t%s\t%s\n" % (addr + 4 * index, encoding, mnemonic, operands)
+        for index, (encoding, mnemonic, operands) in enumerate(rows)
+    )
+    return "\n%08x <%s>:\n%s" % (addr, name, body)
+
+
 V12_OBJDUMP_OK, V12_NM_OK = v12_elf()
 V13_OBJDUMP_OK, V13_NM_OK = v13_elf()
 
@@ -887,13 +903,13 @@ def _elf_negative_fixtures() -> dict[str, dict[str, str]]:
     fixtures["retained_v12_iser_direct_enable"] = _elf_case(
         (
             V13_OBJDUMP_OK
-            + extras_section(
+            + objdump_section(
                 "test_u85",
                 0x32004000,
-                "4b01        ldr     r3, [pc, #4]    ; V13_ISER_PTR",
-                "601a        str     r2, [r3]        ; V13_ISER_DIRECT_ENABLE",
-                "4770        bx      lr",
-                ".word   0xE000E100",
+                ("4b02", "ldr", "r3, [pc, #8]  @ (3200400c <test_u85+0xc>)"),
+                ("601a", "str", "r2, [r3, #0]"),
+                ("4770", "bx", "lr"),
+                ("e000e100", ".word", "0xe000e100"),
             ),
             V13_NM_OK + build_nm(((0x32004000, "test_u85"),)),
         ),
@@ -1313,11 +1329,82 @@ def run_retained_runtime_suite(gate):
             "retained V12 NVIC enable drift",
         ),
         (
-            "direct ISER enable literal is drift",
-            "32004000 <test_u85>:\n"
-            "32004000:   601a        str     r2, [r3]        ; V13_ISER_DIRECT_ENABLE\n"
-            "32004004:   .word   0xE000E100\n",
+            "direct ISER[0] enable store is drift",
+            objdump_section(
+                "test_u85",
+                0x32004000,
+                ("4b01", "ldr", "r3, [pc, #4]  @ (32004008 <test_u85+0x8>)"),
+                ("601a", "str", "r2, [r3, #0]"),
+                ("e000e100", ".word", "0xe000e100"),
+            ),
             "direct NVIC ISER enable write remains reachable",
+        ),
+        (
+            "direct ISER[15] enable store is drift",
+            objdump_section(
+                "test_u85",
+                0x32004000,
+                ("4b01", "ldr", "r3, [pc, #4]  @ (32004008 <test_u85+0x8>)"),
+                ("f8c3 203c", "str.w", "r2, [r3, #60] @ 0x3c"),
+                ("e000e100", ".word", "0xe000e100"),
+            ),
+            "direct NVIC ISER enable write remains reachable",
+        ),
+        (
+            "ICER clear through the NVIC base literal is not drift",
+            objdump_section(
+                "test_u85",
+                0x32004000,
+                ("4b01", "ldr", "r3, [pc, #4]  @ (32004008 <test_u85+0x8>)"),
+                ("f8c3 2080", "str.w", "r2, [r3, #128] @ 0x80"),
+                ("e000e100", ".word", "0xe000e100"),
+            ),
+            None,
+        ),
+        (
+            "ISER reached by a negative displacement off the ICER base is drift",
+            objdump_section(
+                "test_u85",
+                0x32004000,
+                ("4b01", "ldr", "r3, [pc, #4]  @ (32004008 <test_u85+0x8>)"),
+                ("f8c3 2080", "str.w", "r2, [r3, #-128] @ 0x80"),
+                ("e000e180", ".word", "0xe000e180"),
+            ),
+            "direct NVIC ISER enable write remains reachable",
+        ),
+        (
+            "unresolvable store through an NVIC-block base fails closed",
+            objdump_section(
+                "test_u85",
+                0x32004000,
+                ("4b02", "ldr", "r3, [pc, #8]  @ (3200400c <test_u85+0xc>)"),
+                ("4419", "add", "r1, r3"),
+                ("600a", "str", "r2, [r1, #0]"),
+                ("e000e100", ".word", "0xe000e100"),
+            ),
+            "NVIC-block store destination unresolvable",
+        ),
+        (
+            "register-offset store through an NVIC-block base fails closed",
+            objdump_section(
+                "test_u85",
+                0x32004000,
+                ("4b01", "ldr", "r3, [pc, #4]  @ (32004008 <test_u85+0x8>)"),
+                ("509a", "str", "r2, [r3, r2]"),
+                ("e000e100", ".word", "0xe000e100"),
+            ),
+            "NVIC-block store destination unresolvable",
+        ),
+        (
+            "a store through an unrelated base is not drift",
+            objdump_section(
+                "test_u85",
+                0x32004000,
+                ("4b01", "ldr", "r3, [pc, #4]  @ (32004008 <test_u85+0x8>)"),
+                ("601a", "str", "r2, [r3, #0]"),
+                ("e000ed00", ".word", "0xe000ed00"),
+            ),
+            None,
         ),
     ):
         try:
@@ -1326,6 +1413,76 @@ def run_retained_runtime_suite(gate):
         except Exception as exc:
             check(
                 "retained runtime callee list: %s" % label,
+                expected is not None and expected in str(exc),
+                str(exc),
+            )
+
+
+def run_real_image_nvic_suite(gate):
+    """The retained NVIC gate, run against the real MPS4 ARM disassembly.
+
+    ``0xE000E100`` is CMSIS ``NVIC_BASE`` as well as ``ISER[0]``, so the stock
+    hard bypass loads it as a literal and then writes ICER (``+128``) and ICPR
+    (``+384``) through it. A whole-image text search for that word cannot tell
+    the required clears from a re-introduced enable; only the resolved store
+    destination can. This suite pins that distinction on the one real image the
+    repository carries rather than on a hand-built fixture.
+    """
+    from test_check_pmu_completion_poll_v12 import REAL_ARM_DISASSEMBLY
+
+    icer_store = "310025e2:\tf8c3 0080 \tstr.w\tr0, [r3, #128] @ 0x80"
+    icpr_store = "310025ee:\tf8c3 0180 \tstr.w\tr0, [r3, #384] @ 0x180"
+
+    for label, text, expected in (
+        (
+            "known-good real image with ICER/ICPR through the NVIC base literal",
+            REAL_ARM_DISASSEMBLY,
+            None,
+        ),
+        (
+            "real ICER store retargeted to ISER[0] is drift",
+            replace_once(
+                REAL_ARM_DISASSEMBLY,
+                icer_store,
+                "310025e2:\tf8c3 0000 \tstr.w\tr0, [r3, #0]",
+                "real ICER store",
+            ),
+            "direct NVIC ISER enable write remains reachable",
+        ),
+        (
+            "real ICPR store retargeted to ISER[15] is drift",
+            replace_once(
+                REAL_ARM_DISASSEMBLY,
+                icpr_store,
+                "310025ee:\tf8c3 003c \tstr.w\tr0, [r3, #60] @ 0x3c",
+                "real ICPR store",
+            ),
+            "direct NVIC ISER enable write remains reachable",
+        ),
+        (
+            "real ICER store moved into the reserved gap above ISER is not an enable",
+            replace_once(
+                REAL_ARM_DISASSEMBLY,
+                icer_store,
+                "310025e2:\tf8c3 0040 \tstr.w\tr0, [r3, #64] @ 0x40",
+                "real ICER store",
+            ),
+            None,
+        ),
+        (
+            "an objdump comment naming the NVIC base is not drift",
+            REAL_ARM_DISASSEMBLY.replace(
+                icpr_store, icpr_store + "  @ NVIC_BASE 0xe000e100", 1
+            ),
+            None,
+        ),
+    ):
+        try:
+            gate._check_retained_v12_runtime(text)
+            check("real-image NVIC gate: %s" % label, expected is None, "unexpected pass")
+        except Exception as exc:
+            check(
+                "real-image NVIC gate: %s" % label,
                 expected is not None and expected in str(exc),
                 str(exc),
             )
@@ -1825,6 +1982,7 @@ if __name__ == "__main__":
     run_future_suite(gate, patcher)
     run_future_elf_suite(gate)
     run_retained_runtime_suite(gate)
+    run_real_image_nvic_suite(gate)
 
     print()
     print("passed=%d failed=%d" % (passed, failed))
