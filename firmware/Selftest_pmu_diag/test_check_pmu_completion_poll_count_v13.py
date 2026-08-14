@@ -59,10 +59,15 @@ EXPECTED_SOURCE_NEGATIVE_FIXTURES = {
     "vendor_memcpy_alias_publish",
     "vendor_pointer_alias_publish",
     "vendor_read_alias_publish",
+    "vendor_token_paste_publish",
     "wrong_completion_mask",
 }
 
 REAL_RUNNER_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "runner_pmu_diag_main.c")
+CONTRACT_PATH = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)),
+    "PMU_COMPLETION_POLL_COUNT_DIAG_V13_CONTRACT.md",
+)
 ENV_VENDOR_KEY = "V12_FROZEN_VENDOR_SOURCE"
 PATCH_VENDOR_STOCK = """#define BUSY_SLEEP
 #define VERIFY_OUTPUT 1
@@ -300,6 +305,21 @@ static int test_commands(void)
 # global's address to code that can publish through it. The third one does not
 # even write inside this translation unit: it hands the address to every other
 # one.
+# Token pasting builds the symbol out of two fragments, neither of which the
+# reference lock's token regex can see -- so the alias is formed without the
+# name ever being spelled. The canonical generated vendor TU carries no `##` in
+# any `#define` at all, which is what makes refusing the operator outright a
+# cost-free rule there rather than a guess about macro intent.
+VENDOR_TOKEN_PASTE_PUBLISH = """#define V13_GLUE(a, b) a##b
+#define V13_SLOT V13_GLUE(pmu_completion_poll_v13_t_poll_remaining_, at_success)
+
+void v13_paste_publish(uint32_t value)
+{
+    V13_SLOT = value;
+}
+
+"""
+
 VENDOR_POINTER_ALIAS_PUBLISH = """void v13_alias_publish(uint32_t value)
 {
     volatile uint32_t *slot = &pmu_completion_poll_v13_t_poll_remaining_at_success;
@@ -623,6 +643,13 @@ V13_ACCEPTED_VARIANTS = (
         ),
     ),
     ("reversed literal-pool layout", v13_elf(literals=literals_reversed(V13_LITERALS))),
+    # Control for the CFG-vs-layout binding rule: a detour that lands *on* the
+    # pointer load binds the base on every edge, so it is benign and must stay
+    # accepted. Without it the rule could be satisfied by refusing every branch.
+    (
+        "success-block branch that lands on the publication pointer load",
+        v13_elf(rows=rows_after(v13_rows(), "p2_store", row("benign", "bne.n   {to:rem_ptr}"))),
+    ),
 )
 
 
@@ -1064,6 +1091,28 @@ def _elf_negative_fixtures() -> dict[str, dict[str, str]]:
         "alternate remaining store reachable on the success path",
     )
 
+    # Layout-order pointer bindings vs. the helper's own CFG. Every drift below
+    # keeps all three publication *sites* exactly where the CFG proof wants
+    # them -- the store shapes, the publication count and the timeout
+    # unreachability are all unchanged -- and only moves the literal load that
+    # binds a base off one of the paths that reach the store. In layout order
+    # the base still "holds" the literal, so the effective address is certified
+    # against a word the register never held on the taken edge.
+    fixtures["cfg_detour_skips_remaining_pointer"] = _elf_case(
+        v13_elf(
+            rows=rows_after(v13_rows(), "p2_store", row("skip_bind", "bne.n   {to:rem_store}"))
+        ),
+        "effective address unproven on some path reaching it",
+    )
+    fixtures["cfg_detour_skips_p2_pointer"] = _elf_case(
+        v13_elf(rows=rows_after(v13_rows(), "p1_store", row("skip_bind", "bne.n   {to:p2_store}"))),
+        "effective address unproven on some path reaching it",
+    )
+    fixtures["prologue_branch_into_publication"] = _elf_case(
+        v13_elf(rows=rows_before(v13_rows(), "loop", row("early", "bcs.n   {to:rem_store}"))),
+        "effective address unproven on some path reaching it",
+    )
+
     fixtures["retained_v12_runtime_drift"] = _elf_case(
         (
             V13_OBJDUMP_OK
@@ -1299,6 +1348,10 @@ def _negative_vendor_fixtures() -> dict[str, dict[str, str]]:
         # Alias publication: the write count stays at one because no write
         # operator ever sits next to the symbol, so only a rule about *every*
         # reference to the global can see these.
+        "vendor_token_paste_publish": {
+            "vendor": VENDOR_TOKEN_PASTE_PUBLISH + VENDOR_V13_OK,
+            "expected": "vendor TU token pasting",
+        },
         "vendor_pointer_alias_publish": {
             "vendor": VENDOR_POINTER_ALIAS_PUBLISH + VENDOR_V13_OK,
             "expected": "vendor TU remaining reference outside",
@@ -1868,6 +1921,151 @@ def run_real_image_nvic_suite(gate):
             ),
             "NVIC-block store destination unresolvable",
         ),
+        # A store-multiple whose base is *proven* one word below the bank is
+        # never tainted -- taint is only ever seeded by a value inside the block
+        # -- so the tainted-base refusal above never sees it, while the register
+        # list still lands on ISER[0]. `strd` already carries this span
+        # reasoning; the register-list forms did not.
+        (
+            "real image ISER write through a store-multiple spanning up into the bank",
+            replace_once(
+                REAL_ARM_DISASSEMBLY,
+                icer_store,
+                "310025e2:\tf24e 1500 \tmovw\tr5, #57596\n"
+                "310025e6:\tf2ce 0500 \tmovt\tr5, #57344\n"
+                "310025ea:\te885 0003 \tstmia\tr5, {r0, r1}",
+                "real ICER store",
+            ),
+            "NVIC ISER bank within store-multiple reach",
+        ),
+        (
+            "real image ISER write through a writeback store-multiple spanning up into the bank",
+            replace_once(
+                REAL_ARM_DISASSEMBLY,
+                icer_store,
+                "310025e2:\tf24e 1500 \tmovw\tr5, #57596\n"
+                "310025e6:\tf2ce 0500 \tmovt\tr5, #57344\n"
+                "310025ea:\te8a5 0003 \tstmia.w\tr5!, {r0, r1}",
+                "real ICER store",
+            ),
+            "NVIC ISER bank within store-multiple reach",
+        ),
+        # A decrementing store-multiple writes *below* its base, so the span
+        # rule has to be symmetric. Every base from which one could reach ISER
+        # downwards lies inside `NVIC_Type` itself and is therefore already
+        # tainted; this pins that the two rules together leave no gap on either
+        # side of the base rather than claiming a second span refusal.
+        (
+            "real image ISER write through a decrementing store-multiple from inside the block",
+            replace_once(
+                REAL_ARM_DISASSEMBLY,
+                icer_store,
+                "310025e2:\tf24e 1544 \tmovw\tr5, #57668\n"
+                "310025e6:\tf2ce 0500 \tmovt\tr5, #57344\n"
+                "310025ea:\te905 0003 \tstmdb\tr5, {r0, r1}",
+                "real ICER store",
+            ),
+            "NVIC-block multiple store destination unresolvable",
+        ),
+        (
+            "a store-multiple through a proven base far from the bank is not drift",
+            replace_once(
+                REAL_ARM_DISASSEMBLY,
+                icer_store,
+                "310025e2:\tf245 0500 \tmovw\tr5, #20480\n"
+                "310025e6:\tf2c3 1500 \tmovt\tr5, #12544\n"
+                "310025ea:\te885 0003 \tstmia\tr5, {r0, r1}",
+                "real ICER store",
+            ),
+            None,
+        ),
+        # Post-index writeback advances a base that was proven *outside* the
+        # block into it. `_writeback_base` drops the proven value, and taint was
+        # never seeded because the pre-advance value was not in the block, so
+        # both halves of the analysis were blind at the second store.
+        (
+            "real image ISER write behind a post-index advance into the bank",
+            replace_once(
+                REAL_ARM_DISASSEMBLY,
+                icer_store,
+                "310025e2:\tf24e 1500 \tmovw\tr5, #57596\n"
+                "310025e6:\tf2ce 0500 \tmovt\tr5, #57344\n"
+                "310025ea:\tf845 0b04 \tstr.w\tr0, [r5], #4\n"
+                "310025ee:\t6028      \tstr\tr0, [r5, #0]",
+                "real ICER store",
+            ),
+            "NVIC-block store destination unresolvable",
+        ),
+        (
+            "real image ISER write behind a wider post-index advance into the bank",
+            replace_once(
+                REAL_ARM_DISASSEMBLY,
+                icer_store,
+                "310025e2:\tf24e 15f0 \tmovw\tr5, #57584\n"
+                "310025e6:\tf2ce 0500 \tmovt\tr5, #57344\n"
+                "310025ea:\tf845 0b10 \tstr.w\tr0, [r5], #16\n"
+                "310025ee:\t6028      \tstr\tr0, [r5, #0]",
+                "real ICER store",
+            ),
+            "NVIC-block store destination unresolvable",
+        ),
+        (
+            "a post-index advance far from the bank is not drift",
+            replace_once(
+                REAL_ARM_DISASSEMBLY,
+                icer_store,
+                "310025e2:\tf245 0500 \tmovw\tr5, #20480\n"
+                "310025e6:\tf2c3 1500 \tmovt\tr5, #12544\n"
+                "310025ea:\tf845 0b04 \tstr.w\tr0, [r5], #4\n"
+                "310025ee:\t6028      \tstr\tr0, [r5, #0]",
+                "real ICER store",
+            ),
+            None,
+        ),
+        # Armv8.1-M Helium interleaving stores and the A-profile vector stores
+        # write memory through a base register but matched none of the store
+        # prefixes the filter enumerated, so they were skipped before any taint
+        # reasoning ran -- here through the real image's own tainted NVIC base.
+        (
+            "real image ISER write through an MVE interleaving store is drift",
+            replace_once(
+                REAL_ARM_DISASSEMBLY,
+                icer_store,
+                "310025e2:\tfc81 0f01 \tvst20.32\t{q0, q1}, [r3]",
+                "real ICER store",
+            ),
+            "NVIC-block store destination unresolvable",
+        ),
+        (
+            "real image ISER write through a four-way MVE interleaving store is drift",
+            replace_once(
+                REAL_ARM_DISASSEMBLY,
+                icer_store,
+                "310025e2:\tfc81 0f81 \tvst40.32\t{q0, q1, q2, q3}, [r3]",
+                "real ICER store",
+            ),
+            "NVIC-block store destination unresolvable",
+        ),
+        (
+            "real image ISER write through a vst1 element store is drift",
+            replace_once(
+                REAL_ARM_DISASSEMBLY,
+                icer_store,
+                "310025e2:\tf943 070f \tvst1.32\t{d0-d1}, [r3]",
+                "real ICER store",
+            ),
+            "NVIC-block store destination unresolvable",
+        ),
+        (
+            "vpush writes the stack, not the NVIC block, and is not drift",
+            replace_once(
+                REAL_ARM_DISASSEMBLY,
+                icer_store,
+                "310025e2:\ted2d 8b10 \tvpush\t{d8-d15}",
+                "real ICER store",
+            ),
+            None,
+        ),
     ):
         try:
             gate._check_retained_v12_runtime(text)
@@ -2039,6 +2237,42 @@ def run_runner_gate_suite(gate, runner_out, vendor_out):
             ),
             "runner remaining global reference outside",
         ),
+        # Enclosing-record mutations: valid C that overwrites the whole record
+        # after the success copy without ever spelling the field or the global,
+        # so the reference lock -- which is a rule about *mentions* of the two
+        # names -- cannot see any of them. Each leaves the record's published
+        # word zeroed or caller-controlled while every count the gate keeps is
+        # still exactly what the canonical runner produces.
+        (
+            "whole record zeroed by a builtin memset after the success copy",
+            replace_once(
+                runner_out,
+                copy_line,
+                copy_line + "        __builtin_memset(&d, 0, sizeof d);\n",
+                "record-memset",
+            ),
+            "runner record mutated after the success copy",
+        ),
+        (
+            "whole record reassigned from a compound literal after the success copy",
+            replace_once(
+                runner_out,
+                copy_line,
+                copy_line + "        d = (pmu_diag_record_t){0};\n",
+                "record-reassign",
+            ),
+            "runner record mutated after the success copy",
+        ),
+        (
+            "record address handed to a helper after the success copy",
+            replace_once(
+                runner_out,
+                copy_line,
+                copy_line + "        pmu_diag_scrub(&d);\n",
+                "record-escape",
+            ),
+            "runner record mutated after the success copy",
+        ),
     ):
         try:
             gate.verify_generated_sources(mutated, vendor_out)
@@ -2060,6 +2294,18 @@ def run_runner_gate_suite(gate, runner_out, vendor_out):
         (
             "re-indented timeout reset",
             replace_once(runner_out, timeout_reset, "\t\t\td.poll_remaining_at_success  =  0U;\n", "reset-realign"),
+        ),
+        # Control for the record-mutation rule: taking the address of a *member*
+        # is how the canonical runner captures every other snapshot, so the rule
+        # must be about the record as a whole and not about the `&d` spelling.
+        (
+            "member address taken after the success copy",
+            replace_once(
+                runner_out,
+                copy_line,
+                copy_line + "        pmu_diag_capture_pre_order(&d.after_return);\n",
+                "member-address",
+            ),
         ),
     ):
         try:
@@ -2317,6 +2563,38 @@ def run_scope_honesty_suite(gate):
         "module docstring states retained whole-image proofs are not qualified yet",
         "not qualified" in doc,
     )
+
+    # Prose the probes falsified. Each pair below pins the absolute claim as
+    # gone *and* the narrowed one as present, in both artifacts a downstream
+    # reader trusts, so neither half can drift back on its own.
+    with open(CONTRACT_PATH, "r", encoding="utf-8") as handle:
+        contract = " ".join(handle.read().split())
+    flat_doc = " ".join(doc.split())
+    for label, text in (("module docstring", flat_doc), ("contract", contract)):
+        check(
+            "%s does not call writeback the only certified/touched address drift" % label,
+            "one way a certified" not in text and "one form under which a certified" not in text,
+        )
+        check(
+            "%s names the CFG-vs-layout binding rule as the other drift" % label,
+            "one of the two" in text and "branch edges" in text,
+        )
+        check(
+            "%s does not claim the ISER half examines every memory-writing instruction" % label,
+            "examines every instruction in the image that can write memory" not in text,
+        )
+        check(
+            "%s states the store-mnemonic list is an allow-list of names" % label,
+            "allow-list of names" in text,
+        )
+        check(
+            "%s narrows the retained no-enable term to a bounded refusal" % label,
+            "bounded" in text and "not a complete proof" in text,
+        )
+        check(
+            "%s defers unnamed-slot source publications to the Task 5 ELF" % label,
+            "inline assembly" in text and "store lock" in text,
+        )
 
 
 def run_generator_suite(patcher):
