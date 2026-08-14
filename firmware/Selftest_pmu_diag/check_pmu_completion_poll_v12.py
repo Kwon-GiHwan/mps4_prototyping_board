@@ -327,6 +327,45 @@ def _real_calls(fn, callee: str):
     return [ins for ins in fn.insns if ins.kind == "call" and ins.callee == callee]
 
 
+def _real_trace_symbol(contract: RealTraceContract, suffix: str) -> str:
+    return "%s%s" % (contract.trace_prefix, suffix)
+
+
+def _real_completion_test_insn(fn, lowering: RealTraceCompletionTestLowering, *, scope: str):
+    if scope == "helper":
+        mnemonic = lowering.helper_mnemonic
+        status_register = lowering.helper_status_register
+        dest_register = lowering.helper_dest_register
+    elif scope == "irq":
+        mnemonic = lowering.irq_mnemonic
+        status_register = lowering.irq_status_register
+        dest_register = lowering.irq_dest_register
+    else:
+        raise fail("unknown completion-test scope: %s" % scope)
+    base_mnemonic = mnemonic.split(".")[0]
+    if base_mnemonic == "tst":
+        operands_re = re.compile(r"%s,\s*#%d\b" % (re.escape(status_register), lowering.mask))
+    elif base_mnemonic == "ands":
+        if dest_register is None:
+            raise fail("%s completion-test contract missing dest register" % scope)
+        operands_re = re.compile(
+            r"%s,\s*%s,\s*#%d\b" % (
+                re.escape(dest_register),
+                re.escape(status_register),
+                lowering.mask,
+            )
+        )
+    else:
+        raise fail("%s completion-test contract uses unsupported mnemonic %s" % (scope, mnemonic))
+    return next(
+        (
+            ins for ins in fn.insns
+            if ins.mnemonic.split(".")[0] == base_mnemonic and operands_re.fullmatch(ins.operands)
+        ),
+        None,
+    )
+
+
 def _line_index_for_addr(lines: list[str], addr: int, what: str) -> int:
     pattern = re.compile(r"^\s*%x:" % addr, re.I)
     for index, line in enumerate(lines):
@@ -423,6 +462,67 @@ class BasicBlock:
     @property
     def terminator(self) -> AsmInsn:
         return self.insns[-1]
+
+
+@dataclass(frozen=True)
+class RealTraceCompletionTestLowering:
+    helper_mnemonic: str
+    helper_status_register: str
+    helper_dest_register: str | None
+    irq_mnemonic: str
+    irq_status_register: str
+    irq_dest_register: str | None
+    mask: int = 2
+
+
+@dataclass(frozen=True)
+class RealTraceCallerAddresses:
+    success_cmd2: tuple[int, int]
+    other_cmd_stores: tuple[int, ...]
+    timeout_cmd2: int
+    qread_loads: tuple[int, int]
+    cmd0: int
+    cmd0c: int
+
+
+@dataclass(frozen=True)
+class RealTraceContract:
+    schema_version: int
+    build_id: int
+    runner_source_sha256: str
+    vendor_source_sha256: str
+    helper_symbol: str
+    trace_prefix: str
+    completion_test_lowering: RealTraceCompletionTestLowering
+    caller_addresses: RealTraceCallerAddresses
+    runtime_vector_target_symbol: str = "u85_irq_handler"
+
+
+DEFAULT_REAL_TRACE_CONTRACT = RealTraceContract(
+    schema_version=SCHEMA_VERSION,
+    build_id=BUILD_ID,
+    runner_source_sha256=EXPECTED_MANIFEST_EXACT["runner_source_sha256"],
+    vendor_source_sha256=EXPECTED_MANIFEST_EXACT["vendor_source_sha256"],
+    helper_symbol="v12_poll_completion",
+    trace_prefix="pmu_completion_poll_v12_t_",
+    completion_test_lowering=RealTraceCompletionTestLowering(
+        helper_mnemonic="tst",
+        helper_status_register="r0",
+        helper_dest_register=None,
+        irq_mnemonic="tst",
+        irq_status_register="r2",
+        irq_dest_register=None,
+        mask=2,
+    ),
+    caller_addresses=RealTraceCallerAddresses(
+        success_cmd2=(0x31002530, 0x31002534),
+        other_cmd_stores=(0x310023E6, 0x31002494, 0x310024C8, 0x31002514, 0x3100251E),
+        timeout_cmd2=0x310024C8,
+        qread_loads=(0x310024C4, 0x31002532),
+        cmd0=0x31002514,
+        cmd0c=0x3100251E,
+    ),
+)
 
 
 def _base_mnemonic(text: str) -> str:
@@ -957,56 +1057,80 @@ def verify_generated_sources(runner_text: str, vendor_text: str) -> dict:
     return counts
 
 
-def verify_callsite_trace_real(runner_text: str, vendor_text: str, disassembly_text: str, nm_text: str) -> dict:
+def verify_callsite_trace_real(
+    runner_text: str,
+    vendor_text: str,
+    disassembly_text: str,
+    nm_text: str,
+    *,
+    contract: RealTraceContract = DEFAULT_REAL_TRACE_CONTRACT,
+) -> dict:
     parsed = qual_elf.parse_disassembly(disassembly_text)
     funcs = parsed.functions
     pool = qual_elf.literal_pool(funcs)
     symbols = qual_elf.parse_nm(nm_text)
+    trace_symbols = {
+        "poll_entry": _real_trace_symbol(contract, "poll_entry"),
+        "status_completion_seen": _real_trace_symbol(contract, "status_completion_seen"),
+        "poll_exit": _real_trace_symbol(contract, "poll_exit"),
+        "submit_after_cmd": _real_trace_symbol(contract, "submit_after_cmd"),
+        "poll_result": _real_trace_symbol(contract, "poll_result"),
+        "poll_status_at_success": _real_trace_symbol(contract, "poll_status_at_success"),
+        "installed_vector": _real_trace_symbol(contract, "installed_vector"),
+        "nvic_enabled_before_submit": _real_trace_symbol(contract, "nvic_enabled_before_submit"),
+        "nvic_pending_after_initial_clear": _real_trace_symbol(contract, "nvic_pending_after_initial_clear"),
+        "nvic_active_before_submit": _real_trace_symbol(contract, "nvic_active_before_submit"),
+        "irq_triggered_before_submit": _real_trace_symbol(contract, "irq_triggered_before_submit"),
+        "nvic_pending_before_final_clear": _real_trace_symbol(contract, "nvic_pending_before_final_clear"),
+        "nvic_pending_after_final_clear": _real_trace_symbol(contract, "nvic_pending_after_final_clear"),
+        "nvic_active_after_cleanup": _real_trace_symbol(contract, "nvic_active_after_cleanup"),
+        "irq_triggered_after_cleanup": _real_trace_symbol(contract, "irq_triggered_after_cleanup"),
+    }
     required = (
-        "v12_poll_completion", "test_commands", "test_u85", "u85_irq_handler",
-        "pmu_completion_poll_v12_t_poll_entry",
-        "pmu_completion_poll_v12_t_status_completion_seen",
-        "pmu_completion_poll_v12_t_poll_exit",
-        "pmu_completion_poll_v12_t_submit_after_cmd",
-        "pmu_completion_poll_v12_t_poll_result",
-        "pmu_completion_poll_v12_t_poll_status_at_success",
-        "pmu_completion_poll_v12_t_installed_vector",
-        "pmu_completion_poll_v12_t_nvic_enabled_before_submit",
-        "pmu_completion_poll_v12_t_nvic_pending_after_initial_clear",
-        "pmu_completion_poll_v12_t_nvic_active_before_submit",
-        "pmu_completion_poll_v12_t_irq_triggered_before_submit",
-        "pmu_completion_poll_v12_t_nvic_pending_before_final_clear",
-        "pmu_completion_poll_v12_t_nvic_pending_after_final_clear",
-        "pmu_completion_poll_v12_t_nvic_active_after_cleanup",
-        "pmu_completion_poll_v12_t_irq_triggered_after_cleanup",
+        contract.helper_symbol, "test_commands", "test_u85", contract.runtime_vector_target_symbol,
+        trace_symbols["poll_entry"],
+        trace_symbols["status_completion_seen"],
+        trace_symbols["poll_exit"],
+        trace_symbols["submit_after_cmd"],
+        trace_symbols["poll_result"],
+        trace_symbols["poll_status_at_success"],
+        trace_symbols["installed_vector"],
+        trace_symbols["nvic_enabled_before_submit"],
+        trace_symbols["nvic_pending_after_initial_clear"],
+        trace_symbols["nvic_active_before_submit"],
+        trace_symbols["irq_triggered_before_submit"],
+        trace_symbols["nvic_pending_before_final_clear"],
+        trace_symbols["nvic_pending_after_final_clear"],
+        trace_symbols["nvic_active_after_cleanup"],
+        trace_symbols["irq_triggered_after_cleanup"],
     )
     for name in required:
         if name not in symbols or symbols[name] is None:
             raise fail("missing real-ELF symbol: %s" % name)
-    helper = funcs.get("v12_poll_completion")
+    helper = funcs.get(contract.helper_symbol)
     caller = funcs.get("test_commands")
     runtime = funcs.get("test_u85")
-    irq = funcs.get("u85_irq_handler")
+    irq = funcs.get(contract.runtime_vector_target_symbol)
     if any(fn is None for fn in (helper, caller, runtime, irq)):
         raise fail("real ELF is missing a required V12 function")
 
-    p0 = _real_symbol_store(helper, pool, symbols["pmu_completion_poll_v12_t_poll_entry"], "P0")
-    p1 = _real_symbol_store(helper, pool, symbols["pmu_completion_poll_v12_t_status_completion_seen"], "P1")
-    p2 = _real_symbol_store(helper, pool, symbols["pmu_completion_poll_v12_t_poll_exit"], "P2")
+    p0 = _real_symbol_store(helper, pool, symbols[trace_symbols["poll_entry"]], "P0")
+    p1 = _real_symbol_store(helper, pool, symbols[trace_symbols["status_completion_seen"]], "P1")
+    p2 = _real_symbol_store(helper, pool, symbols[trace_symbols["poll_exit"]], "P2")
     status_loads = _real_loads(helper, pool, 0x50004004)
     if len(status_loads) != 1:
         raise fail("helper STATUS static load site count != 1")
     status_load = status_loads[0]
-    status_test = next((ins for ins in helper.insns if ins.mnemonic.split(".")[0] == "tst" and "#2" in ins.operands), None)
+    status_test = _real_completion_test_insn(helper, contract.completion_test_lowering, scope="helper")
     if status_test is None or not (p0.addr < status_load.addr < status_test.addr < p1.addr < p2.addr):
         raise fail("real helper P0/STATUS/test/P1/P2 ordering violated")
-    helper_calls = [ins for ins in caller.insns if ins.kind == "call" and ins.callee == "v12_poll_completion"]
+    helper_calls = [ins for ins in caller.insns if ins.kind == "call" and ins.callee == contract.helper_symbol]
     if len(helper_calls) != 1:
         raise fail("real helper direct callsite count != 1")
 
-    t2 = _real_symbol_store(caller, pool, symbols["pmu_completion_poll_v12_t_submit_after_cmd"], "T2")
-    result_store = _real_symbol_store(caller, pool, symbols["pmu_completion_poll_v12_t_poll_result"], "poll result")
-    success_status_store = _real_symbol_store(caller, pool, symbols["pmu_completion_poll_v12_t_poll_status_at_success"], "success STATUS")
+    t2 = _real_symbol_store(caller, pool, symbols[trace_symbols["submit_after_cmd"]], "T2")
+    result_store = _real_symbol_store(caller, pool, symbols[trace_symbols["poll_result"]], "poll result")
+    success_status_store = _real_symbol_store(caller, pool, symbols[trace_symbols["poll_status_at_success"]], "success STATUS")
     if not (t2.addr < helper_calls[0].addr < result_store.addr < success_status_store.addr):
         raise fail("real submit/helper/result/success ordering violated")
     call_index = caller.insns.index(helper_calls[0])
@@ -1050,7 +1174,7 @@ def verify_callsite_trace_real(runner_text: str, vendor_text: str, disassembly_t
 
     cmd_stores = _real_store_sites(caller, pool, 0x50004008)
     cmd_store_addrs = {ins.addr for ins in cmd_stores}
-    success_cmd2 = (0x31002530, 0x31002534)
+    success_cmd2 = contract.caller_addresses.success_cmd2
     for address in success_cmd2:
         ins = _real_insn_at(caller, address, "success CMD2")
         if ins.kind != "store" or ins.offset != 8 or ins.base != "r4" or ins.src != "r0":
@@ -1060,14 +1184,14 @@ def verify_callsite_trace_real(runner_text: str, vendor_text: str, disassembly_t
     # two success stores (whose r4 base survives calls) are proven separately
     # above by their exact frozen shape and value.  This set covers every CMD
     # store whose base remains statically resolvable by the conservative pass.
-    expected_cmd_store_addrs = {0x310023E6, 0x31002494, 0x310024C8, 0x31002514, 0x3100251E}
+    expected_cmd_store_addrs = set(contract.caller_addresses.other_cmd_stores)
     if cmd_store_addrs - set(success_cmd2) != expected_cmd_store_addrs:
         raise fail("real CMD store set changed: %s" % sorted(_hex32(x) for x in cmd_store_addrs))
-    timeout_cmd2 = 0x310024C8
+    timeout_cmd2 = contract.caller_addresses.timeout_cmd2
     _real_store_value(caller, pool, _real_insn_at(caller, timeout_cmd2, "timeout CMD2"), 2, "timeout CMD2")
     qread_loads = [
         ins for ins in caller.insns
-        if ins.addr in (0x310024C4, 0x31002532)
+        if ins.addr in contract.caller_addresses.qread_loads
         and ins.mnemonic.split(".")[0].startswith("ldr")
         and re.search(r"\[r4\s*,\s*#24\]", ins.operands)
     ]
@@ -1076,8 +1200,8 @@ def verify_callsite_trace_real(runner_text: str, vendor_text: str, disassembly_t
     timeout_qread, success_qread = sorted(ins.addr for ins in qread_loads)
     if not (timeout_qread < timeout_cmd2 < success_cmd2[0] < success_qread < success_cmd2[1]):
         raise fail("real success/timeout CMD2-QREAD ordering violated")
-    cmd0 = 0x31002514
-    cmd0c = 0x3100251E
+    cmd0 = contract.caller_addresses.cmd0
+    cmd0c = contract.caller_addresses.cmd0c
     _real_store_value(caller, pool, _real_insn_at(caller, cmd0, "CMD0"), 0, "CMD0")
     _real_store_value(caller, pool, _real_insn_at(caller, cmd0c, "terminal CMD0xC"), 12, "terminal CMD0xC")
     hprintf_calls = [ins for ins in caller.insns if ins.kind == "call" and ins.callee == "__wrap_printf" and cmd0 < ins.addr < cmd0c]
@@ -1093,7 +1217,7 @@ def verify_callsite_trace_real(runner_text: str, vendor_text: str, disassembly_t
     vector_store = vector_stores[0]
     vector_index = runtime.insns.index(vector_store)
     vector_value = qual_elf.resolve_register(runtime, vector_index, vector_store.src, pool)
-    if vector_value is None or (vector_value & ~1) != symbols["u85_irq_handler"]:
+    if vector_value is None or (vector_value & ~1) != symbols[contract.runtime_vector_target_symbol]:
         raise fail("runtime vector target is not exact stock handler")
     vtor_load = next((ins for ins in runtime.insns[:vector_index]
         if ins.mnemonic.split(".")[0].startswith("ldr")
@@ -1109,23 +1233,23 @@ def verify_callsite_trace_real(runner_text: str, vendor_text: str, disassembly_t
         raise fail("runtime NVIC hard-bypass write set violated")
     runtime_stores = {}
     for key in (
-        "pmu_completion_poll_v12_t_installed_vector",
-        "pmu_completion_poll_v12_t_nvic_enabled_before_submit",
-        "pmu_completion_poll_v12_t_nvic_pending_after_initial_clear",
-        "pmu_completion_poll_v12_t_nvic_active_before_submit",
-        "pmu_completion_poll_v12_t_irq_triggered_before_submit",
+        "installed_vector",
+        "nvic_enabled_before_submit",
+        "nvic_pending_after_initial_clear",
+        "nvic_active_before_submit",
+        "irq_triggered_before_submit",
     ):
-        runtime_stores[key] = _real_symbol_store(runtime, pool, symbols[key], key).addr
+        runtime_stores[key] = _real_symbol_store(runtime, pool, symbols[trace_symbols[key]], key).addr
     if list(runtime_stores.values()) != sorted(runtime_stores.values()):
         raise fail("runtime NVIC evidence store ordering violated")
     cleanup_stores = {}
     for key in (
-        "pmu_completion_poll_v12_t_nvic_pending_before_final_clear",
-        "pmu_completion_poll_v12_t_nvic_pending_after_final_clear",
-        "pmu_completion_poll_v12_t_nvic_active_after_cleanup",
-        "pmu_completion_poll_v12_t_irq_triggered_after_cleanup",
+        "nvic_pending_before_final_clear",
+        "nvic_pending_after_final_clear",
+        "nvic_active_after_cleanup",
+        "irq_triggered_after_cleanup",
     ):
-        cleanup_stores[key] = _real_symbol_store(caller, pool, symbols[key], key).addr
+        cleanup_stores[key] = _real_symbol_store(caller, pool, symbols[trace_symbols[key]], key).addr
     if list(cleanup_stores.values()) != sorted(cleanup_stores.values()):
         raise fail("real final NVIC cleanup ordering violated")
     irq_trigger_true_stores = [
@@ -1134,21 +1258,24 @@ def verify_callsite_trace_real(runner_text: str, vendor_text: str, disassembly_t
     ]
     if not irq_trigger_true_stores:
         raise fail("stock handler side effect proof missing")
+    irq_test = _real_completion_test_insn(irq, contract.completion_test_lowering, scope="irq")
+    if irq_test is None:
+        raise fail("stock handler completion-test lowering changed")
 
     evidence = {
-        "schema_version": SCHEMA_VERSION,
-        "build_id": _hex32(BUILD_ID),
-        "runner_source_sha256": EXPECTED_MANIFEST_EXACT["runner_source_sha256"],
-        "vendor_source_sha256": EXPECTED_MANIFEST_EXACT["vendor_source_sha256"],
-        "helper_symbol": "v12_poll_completion",
-        "helper_address": _hex32(symbols["v12_poll_completion"]),
-        "runtime_vector_target_symbol": "u85_irq_handler",
-        "runtime_vector_target_address": _hex32(symbols["u85_irq_handler"]),
-        "wait_call_target_address": _hex32(symbols["v12_poll_completion"]),
+        "schema_version": contract.schema_version,
+        "build_id": _hex32(contract.build_id),
+        "runner_source_sha256": contract.runner_source_sha256,
+        "vendor_source_sha256": contract.vendor_source_sha256,
+        "helper_symbol": contract.helper_symbol,
+        "helper_address": _hex32(symbols[contract.helper_symbol]),
+        "runtime_vector_target_symbol": contract.runtime_vector_target_symbol,
+        "runtime_vector_target_address": _hex32(symbols[contract.runtime_vector_target_symbol]),
+        "wait_call_target_address": _hex32(symbols[contract.helper_symbol]),
         "wait_result_branch_block_address": _hex32(result_store.addr),
         "success_entry_block_address": _hex32(success_status_store.addr),
         "timeout_entry_block_address": _hex32(timeout_qread),
-        "merge_block_address": _hex32(cleanup_stores["pmu_completion_poll_v12_t_nvic_pending_before_final_clear"]),
+        "merge_block_address": _hex32(cleanup_stores["nvic_pending_before_final_clear"]),
         "helper_status_register_address": "0x50004004",
         "helper_completion_mask_value": "0x00000002",
         "success_cmd2_write_value": "0x00000002",
@@ -1172,14 +1299,14 @@ def verify_callsite_trace_real(runner_text: str, vendor_text: str, disassembly_t
         "irq_triggered_true_reachable_false": True,
         "runtime_vector_target_exact": True,
         "result_paths_distinct": True,
-        "result_paths": {"branch_block": result_store.addr, "success_entry": success_status_store.addr, "timeout_entry": timeout_qread, "merge_block": cleanup_stores["pmu_completion_poll_v12_t_nvic_pending_before_final_clear"]},
+        "result_paths": {"branch_block": result_store.addr, "success_entry": success_status_store.addr, "timeout_entry": timeout_qread, "merge_block": cleanup_stores["nvic_pending_before_final_clear"]},
         "runtime_vector_install_site_address": _hex32(vector_store.addr),
         "runtime_disable_site_address": _hex32(nvic_writes[0xE000E180]),
         "runtime_clear_pending_site_address": _hex32(nvic_writes[0xE000E280]),
-        "runtime_enable_read_address": _hex32(runtime_stores["pmu_completion_poll_v12_t_nvic_enabled_before_submit"]),
-        "runtime_pending_read_address": _hex32(runtime_stores["pmu_completion_poll_v12_t_nvic_pending_after_initial_clear"]),
-        "runtime_active_read_address": _hex32(runtime_stores["pmu_completion_poll_v12_t_nvic_active_before_submit"]),
-        "runtime_irq_triggered_read_address": _hex32(runtime_stores["pmu_completion_poll_v12_t_irq_triggered_before_submit"]),
+        "runtime_enable_read_address": _hex32(runtime_stores["nvic_enabled_before_submit"]),
+        "runtime_pending_read_address": _hex32(runtime_stores["nvic_pending_after_initial_clear"]),
+        "runtime_active_read_address": _hex32(runtime_stores["nvic_active_before_submit"]),
+        "runtime_irq_triggered_read_address": _hex32(runtime_stores["irq_triggered_before_submit"]),
         "helper_status_read_address": _hex32(status_load.addr),
         "helper_status_test_address": _hex32(status_test.addr),
         "poll_helper_p0_address": _hex32(p0.addr),
@@ -1200,23 +1327,37 @@ def verify_callsite_trace_real(runner_text: str, vendor_text: str, disassembly_t
         "cmd0_store_address": _hex32(cmd0),
         "hprintf_callsite_address": _hex32(hprintf_calls[0].addr),
         "terminal_cmd0c_store_address": _hex32(cmd0c),
-        "final_pending_before_clear_address": _hex32(cleanup_stores["pmu_completion_poll_v12_t_nvic_pending_before_final_clear"]),
-        "final_pending_after_clear_address": _hex32(cleanup_stores["pmu_completion_poll_v12_t_nvic_pending_after_final_clear"]),
-        "final_active_after_cleanup_address": _hex32(cleanup_stores["pmu_completion_poll_v12_t_nvic_active_after_cleanup"]),
-        "final_irq_triggered_after_cleanup_address": _hex32(cleanup_stores["pmu_completion_poll_v12_t_irq_triggered_after_cleanup"]),
+        "final_pending_before_clear_address": _hex32(cleanup_stores["nvic_pending_before_final_clear"]),
+        "final_pending_after_clear_address": _hex32(cleanup_stores["nvic_pending_after_final_clear"]),
+        "final_active_after_cleanup_address": _hex32(cleanup_stores["nvic_active_after_cleanup"]),
+        "final_irq_triggered_after_cleanup_address": _hex32(cleanup_stores["irq_triggered_after_cleanup"]),
         "irq_status_read_address": _hex32(_real_loads(irq, pool, 0x50004004)[0].addr),
-        "irq_trigger_test_address": _hex32(next(ins.addr for ins in irq.insns if ins.mnemonic.split(".")[0] == "tst" and "#2" in ins.operands)),
+        "irq_trigger_test_address": _hex32(irq_test.addr),
         "irq_history_mask_store_address": _hex32(next(ins.addr for ins in irq.insns if ins.mnemonic.split(".")[0].startswith("strh"))),
         "irq_cmd2_store_address": _hex32(next(ins.addr for index, ins in enumerate(irq.insns) if ins.kind == "store" and qual_elf.store_address(irq, index, pool) == 0x50004008)),
     }
     return evidence
 
 
-def verify_callsite_trace(runner_text: str, vendor_text: str, disassembly_text: str, nm_text: str, *, evidence_source: str = "synthetic_fixture") -> dict:
+def verify_callsite_trace(
+    runner_text: str,
+    vendor_text: str,
+    disassembly_text: str,
+    nm_text: str,
+    *,
+    evidence_source: str = "synthetic_fixture",
+    real_trace_contract: RealTraceContract = DEFAULT_REAL_TRACE_CONTRACT,
+) -> dict:
     if evidence_source == "arm_elf":
-        if "pmu_completion_poll_v12_t_submit_after_cmd" not in nm_text:
+        if _real_trace_symbol(real_trace_contract, "submit_after_cmd") not in nm_text:
             raise fail("real ELF evidence missing required V12 symbol")
-        return verify_callsite_trace_real(runner_text, vendor_text, disassembly_text, nm_text)
+        return verify_callsite_trace_real(
+            runner_text,
+            vendor_text,
+            disassembly_text,
+            nm_text,
+            contract=real_trace_contract,
+        )
     if "pmu_interval_v11a_" in disassembly_text or "v11a_u85_irq_entry_veneer" in disassembly_text:
         raise fail("V11 marker remains reachable")
     helper_nm_matches = re.findall(r"^[0-9A-Fa-f]+\s+[Tt]\s+v12_poll_completion$", nm_text, re.M)

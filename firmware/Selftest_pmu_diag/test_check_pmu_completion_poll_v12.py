@@ -1358,6 +1358,30 @@ def relocate_nm(nm_text: str, delta: int) -> str:
     return "\n".join(lines) + ("\n" if nm_text.endswith("\n") else "")
 
 
+def _parameterized_real_fixture(disassembly_text: str, nm_text: str) -> tuple[str, str]:
+    mutated_disassembly = (
+        disassembly_text
+        .replace("v12_poll_completion", "v13_poll_completion")
+        .replace("pmu_completion_poll_v12_t_", "pmu_completion_poll_v13_t_")
+        .replace(
+            "31002356:\tf010 0f02 \ttst.w\tr0, #2",
+            "31002356:\tf010 0002 \tands\tr0, r0, #2",
+            1,
+        )
+        .replace(
+            "31002398:\tf012 0f02 \ttst.w\tr2, #2",
+            "31002398:\tf012 0202 \tands\tr2, r2, #2",
+            1,
+        )
+    )
+    mutated_nm = (
+        nm_text
+        .replace(" v12_poll_completion\n", " v13_poll_completion\n")
+        .replace("pmu_completion_poll_v12_t_", "pmu_completion_poll_v13_t_")
+    )
+    return mutated_disassembly, mutated_nm
+
+
 def move_cmd0c_after_return(disassembly_text: str) -> str:
     return disassembly_text.replace(
         "   1270:\t; V12_HPRINTF_SEAM\n"
@@ -2260,6 +2284,101 @@ int test_u85( const u85_eTest eTest,
         )
     except Exception as exc:
         check("real fixture dispatches into real ELF verifier", False, str(exc))
+
+    try:
+        default_contract = gate.DEFAULT_REAL_TRACE_CONTRACT
+        check(
+            "real verifier exports default V12 trace contract",
+            isinstance(default_contract, gate.RealTraceContract)
+            and default_contract.helper_symbol == "v12_poll_completion"
+            and default_contract.trace_prefix == "pmu_completion_poll_v12_t_",
+        )
+    except Exception as exc:
+        check("real verifier exports default V12 trace contract", False, str(exc))
+
+    try:
+        custom_disassembly, custom_nm = _parameterized_real_fixture(REAL_ARM_DISASSEMBLY, REAL_ARM_NM)
+        custom_contract = gate.RealTraceContract(
+            schema_version=13,
+            build_id=0x33314950,
+            runner_source_sha256="1" * 64,
+            vendor_source_sha256="2" * 64,
+            helper_symbol="v13_poll_completion",
+            trace_prefix="pmu_completion_poll_v13_t_",
+            completion_test_lowering=gate.RealTraceCompletionTestLowering(
+                helper_mnemonic="ands",
+                helper_status_register="r0",
+                helper_dest_register="r0",
+                irq_mnemonic="ands",
+                irq_status_register="r2",
+                irq_dest_register="r2",
+                mask=2,
+            ),
+            caller_addresses=gate.RealTraceCallerAddresses(
+                success_cmd2=(0x31002530, 0x31002534),
+                other_cmd_stores=(0x310023E6, 0x31002494, 0x310024C8, 0x31002514, 0x3100251E),
+                timeout_cmd2=0x310024C8,
+                qread_loads=(0x310024C4, 0x31002532),
+                cmd0=0x31002514,
+                cmd0c=0x3100251E,
+            ),
+        )
+        custom_evidence = gate.verify_callsite_trace(
+            runner_out,
+            vendor_out,
+            custom_disassembly,
+            custom_nm,
+            evidence_source="arm_elf",
+            real_trace_contract=custom_contract,
+        )
+        check(
+            "real verifier accepts parameterized V13-style trace contract",
+            custom_evidence["schema_version"] == 13
+            and custom_evidence["build_id"] == "0x33314950"
+            and custom_evidence["runner_source_sha256"] == "1" * 64
+            and custom_evidence["vendor_source_sha256"] == "2" * 64
+            and custom_evidence["helper_symbol"] == "v13_poll_completion",
+        )
+    except Exception as exc:
+        check("real verifier accepts parameterized V13-style trace contract", False, str(exc))
+
+    try:
+        custom_disassembly, custom_nm = _parameterized_real_fixture(REAL_ARM_DISASSEMBLY, REAL_ARM_NM)
+        gate.verify_callsite_trace(
+            runner_out,
+            vendor_out,
+            custom_disassembly,
+            custom_nm,
+            evidence_source="arm_elf",
+            real_trace_contract=gate.RealTraceContract(
+                schema_version=13,
+                build_id=0x33314950,
+                runner_source_sha256="1" * 64,
+                vendor_source_sha256="2" * 64,
+                helper_symbol="v13_poll_completion",
+                trace_prefix="pmu_completion_poll_v13_t_",
+                completion_test_lowering=gate.RealTraceCompletionTestLowering(
+                    helper_mnemonic="ands",
+                    helper_status_register="r0",
+                    helper_dest_register="r0",
+                    irq_mnemonic="ands",
+                    irq_status_register="r2",
+                    irq_dest_register="r2",
+                    mask=2,
+                ),
+                caller_addresses=gate.RealTraceCallerAddresses(
+                    success_cmd2=(0x31002530, 0x31002538),
+                    other_cmd_stores=(0x310023E6, 0x31002494, 0x310024C8, 0x31002514, 0x3100251E),
+                    timeout_cmd2=0x310024C8,
+                    qread_loads=(0x310024C4, 0x31002532),
+                    cmd0=0x31002514,
+                    cmd0c=0x3100251E,
+                ),
+            ),
+        )
+        check("real verifier binds caller address groups from contract", False, "unexpected pass")
+    except Exception as exc:
+        check("real verifier binds caller address groups from contract", "success CMD2" in str(exc), str(exc))
 
     for name, mutated_disassembly, expected in (
         (
