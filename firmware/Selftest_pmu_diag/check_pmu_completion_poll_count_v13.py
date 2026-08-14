@@ -22,7 +22,13 @@ completion test. Every pointer the helper uses is resolved through the Thumb
 literal-pool rule ``((addr + 4) & ~3) + imm`` and bound to the exact address
 its role requires, so a build that polls a RAM shadow, reads a fake cycle
 counter or publishes the countdown over the P2 slot is refused even though its
-instruction shape is unchanged. The runner half of property 1 is likewise derived
+instruction shape is unchanged. Where the publication actually *runs* is proven
+over an explicit control-flow graph of the helper rather than over layout order:
+the remaining store must be unreachable from the timeout exit, and every path
+from the completion branch to a return must execute it exactly once, so a build
+that jumps over it, jumps back to it, publishes from a second site or falls into
+it from the timeout tail is refused even though its store shape is unchanged.
+The runner half of property 1 is likewise derived
 from brace nesting and assignment right-hand sides, never from column alignment,
 so reformatting the generated runner cannot change the verdict.
 
@@ -137,6 +143,13 @@ _COND_BRANCH_MNEMONICS = frozenset(
         "bhi", "bls", "bge", "blt", "bgt", "ble", "cbz", "cbnz",
     )
 )
+_UNCONDITIONAL_BRANCH_MNEMONIC = "b"
+_INDIRECT_BRANCH_MNEMONICS = frozenset(("bx", "blx", "tbb", "tbh"))
+_IT_RE = re.compile(r"^it[te]{0,3}$")
+_PC_DEST_RE = re.compile(r"^[a-z][a-z0-9.]*\s+pc\b")
+# Publication counts saturate here, so a cycle through the store terminates the
+# walk with a witness of the second visit instead of counting forever.
+_MAX_PUBLICATIONS = 2
 _V12_RUNTIME_DRIFT_CALLEES = ("NVIC_EnableIRQ",)
 # STATUS load, completion test, success branch, two failed-path decrements and
 # the back edge -- the whole of what one poll iteration is allowed to execute.
@@ -870,11 +883,106 @@ def normalize_poll_loop(loop: PollLoop) -> tuple[tuple[str, str | int], ...]:
     return loop.signature
 
 
+def _build_helper_cfg(code: tuple[_Insn, ...]) -> tuple[tuple[int, ...], ...]:
+    """Successor indices for every helper instruction.
+
+    Exactly four edge kinds are modelled: a direct conditional branch (taken
+    target plus fall-through), a direct unconditional ``b`` (taken target only),
+    a plain fall-through, and a return (no successor). Anything whose successors
+    would have to be guessed is refused rather than approximated -- a call, an
+    indirect branch, a branch out of the helper, or an IT block, which is the
+    only way Thumb-2 reaches predication and would otherwise turn a modelled
+    unconditional edge into a conditional one.
+    """
+    index_of = {insn.addr: index for index, insn in enumerate(code)}
+    successors: list[tuple[int, ...]] = []
+    for index, insn in enumerate(code):
+        if insn.is_return:
+            successors.append(())
+            continue
+        if _is_call(insn):
+            raise fail("helper CFG cannot model a call")
+        if insn.mnemonic in _INDIRECT_BRANCH_MNEMONICS or _PC_DEST_RE.match(insn.text):
+            raise fail("helper CFG cannot model an indirect branch")
+        if _IT_RE.match(insn.mnemonic):
+            raise fail("helper CFG cannot model a predicated instruction")
+
+        taken: tuple[int, ...] = ()
+        if insn.is_cond_branch or insn.mnemonic == _UNCONDITIONAL_BRANCH_MNEMONIC:
+            if insn.target is None or insn.target not in index_of:
+                raise fail("helper CFG branch target outside the helper")
+            taken = (index_of[insn.target],)
+            if not insn.is_cond_branch:
+                successors.append(taken)
+                continue
+        if index + 1 >= len(code):
+            raise fail("helper CFG falls off the end of the helper")
+        successors.append(taken + (index + 1,))
+    return tuple(successors)
+
+
+def _reachable(successors: tuple[tuple[int, ...], ...], entry: int) -> frozenset[int]:
+    seen: set[int] = set()
+    stack = [entry]
+    while stack:
+        index = stack.pop()
+        if index in seen:
+            continue
+        seen.add(index)
+        stack.extend(successors[index])
+    return frozenset(seen)
+
+
+def _return_publication_counts(
+    successors: tuple[tuple[int, ...], ...], entry: int, publisher: int
+) -> frozenset[int]:
+    """Publication counts observed at every return reachable from ``entry``.
+
+    The walk is over ``(instruction, publications so far)`` pairs, so a path
+    that skips the store and a path that takes it stay distinct states and a
+    cycle back through the store is seen as a second publication. The empty set
+    means no return is reachable at all, which the caller reads as a failure the
+    same way an unbalanced count is.
+    """
+    counts: set[int] = set()
+    seen: set[tuple[int, int]] = set()
+    stack = [(entry, 0)]
+    while stack:
+        state = stack.pop()
+        if state in seen:
+            continue
+        seen.add(state)
+        index, count = state
+        if index == publisher:
+            count = min(count + 1, _MAX_PUBLICATIONS)
+        if not successors[index]:
+            counts.add(count)
+            continue
+        stack.extend((successor, count) for successor in successors[index])
+    return frozenset(counts)
+
+
+def _stores_to(analysis: _HelperAnalysis, address: int) -> frozenset[int]:
+    """Indices of every helper store whose destination resolves to ``address``."""
+    return frozenset(
+        index
+        for index, insn in enumerate(analysis.code)
+        if (hit := _STORE_RE.match(insn.text)) is not None
+        and analysis.pointer_words[index].get(hit.group(2)) == address
+    )
+
+
 def _success_block(analysis: _HelperAnalysis) -> tuple[_Insn, ...]:
-    for index in range(analysis.success_index, len(analysis.code)):
-        if analysis.code[index].is_return:
-            return analysis.code[analysis.success_index:index + 1]
-    raise fail("success path return missing")
+    """Every instruction from the success entry to the end of the helper.
+
+    The block deliberately runs past the first return rather than stopping at
+    it: an early return planted ahead of the publication must still leave the
+    store visible to the classifier, so that the control-flow proof is what
+    rejects it instead of a store count that quietly lost sight of it.
+    """
+    if not any(insn.is_return for insn in analysis.code[analysis.success_index:]):
+        raise fail("success path return missing")
+    return analysis.code[analysis.success_index:]
 
 
 def _classify_success_stores(block: tuple[_Insn, ...]) -> tuple[list[int], list[tuple[int, str]]]:
@@ -910,7 +1018,7 @@ def prove_remaining_dataflow(disassembly_text: str, nm_text: str) -> RemainingDa
     cyccnt_store_offsets, live_in_stores = _classify_success_stores(block)
     if len(cyccnt_store_offsets) != 2:
         raise fail("success path P1/P2 cycle-count store count != 2")
-    if len(live_in_stores) != 1:
+    if not live_in_stores:
         raise fail("remaining store after P2 count != 1")
     remaining_offset, remaining_reg = live_in_stores[0]
     if remaining_offset < max(cyccnt_store_offsets):
@@ -928,6 +1036,37 @@ def prove_remaining_dataflow(disassembly_text: str, nm_text: str) -> RemainingDa
     if len(set(destinations)) != len(destinations):
         raise fail("P1/P2/remaining must target three distinct SRAM destinations")
 
+    # Reachability, walked over the helper's own branch edges. The store-shape
+    # checks above only see instructions in layout order, so they cannot tell
+    # that the publication is jumped over, jumped back to, duplicated at a
+    # second site or reached from the timeout exit; the graph can.
+    successors = _build_helper_cfg(analysis.code)
+    remaining_index = analysis.success_index + remaining_offset
+    publishers = _stores_to(analysis, destinations[-1])
+    # The timeout exit is the failed-poll back edge's not-taken successor.
+    timeout_entry = analysis.back_edge_index + 1
+    # The success entry is the completion branch's taken target.
+    success_entry = analysis.success_index
+
+    remaining_store_timeout_unreachable = not (
+        publishers & _reachable(successors, timeout_entry)
+    )
+    if not remaining_store_timeout_unreachable:
+        raise fail("remaining store must be unreachable from the timeout path")
+    if (publishers - {remaining_index}) & _reachable(successors, success_entry):
+        raise fail("alternate remaining store reachable on the success path")
+
+    return_counts = _return_publication_counts(successors, success_entry, remaining_index)
+    remaining_store_after_p2_exactly_once = return_counts == frozenset((1,))
+    if not remaining_store_after_p2_exactly_once:
+        raise fail(
+            "success path must publish remaining exactly once: return counts %s"
+            % sorted(return_counts)
+        )
+
+    if len(live_in_stores) != 1:
+        raise fail("remaining store after P2 count != 1")
+
     induction_reg = analysis.decrement_regs[-1]
     if remaining_reg != induction_reg:
         raise fail("remaining must dataflow from failed-poll countdown live-out")
@@ -943,8 +1082,8 @@ def prove_remaining_dataflow(disassembly_text: str, nm_text: str) -> RemainingDa
     return RemainingDataflowProof(
         source="back_edge_induction",
         induction_register=induction_reg,
-        remaining_store_after_p2_exactly_once=True,
-        remaining_store_timeout_unreachable=True,
+        remaining_store_after_p2_exactly_once=remaining_store_after_p2_exactly_once,
+        remaining_store_timeout_unreachable=remaining_store_timeout_unreachable,
         remaining_from_back_edge_induction=True,
         helper_leaf_no_stack_access=True,
     )

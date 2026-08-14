@@ -766,6 +766,40 @@ def _elf_negative_fixtures() -> dict[str, dict[str, str]]:
         v13_elf(rows=rows_without(v13_rows(), "timeout_return")), "timeout exit edge missing"
     )
 
+    # Control-flow reachability: every drift below keeps the instruction *shape*
+    # the store-classifying checks look at intact, so only walking the helper's
+    # own branch edges can tell that the publication is skipped, repeated,
+    # duplicated or reachable from the timeout exit.
+    fixtures["timeout_branches_to_remaining_store"] = _elf_case(
+        v13_elf(rows=rows_after(v13_rows(), "timeout_result", row("t_jump", "b.n     {to:rem_ptr}"))),
+        "remaining store must be unreachable from the timeout path",
+    )
+    fixtures["success_branch_skips_remaining_store"] = _elf_case(
+        v13_elf(rows=rows_after(v13_rows(), "p2_store", row("skip", "bcs.n   {to:succ_result}"))),
+        "success path must publish remaining exactly once: return counts [0, 1]",
+    )
+    fixtures["success_returns_before_remaining_store"] = _elf_case(
+        v13_elf(rows=rows_after(v13_rows(), "p2_store", row("early_return", "bx      lr"))),
+        "success path must publish remaining exactly once: return counts [0]",
+    )
+    fixtures["success_branch_revisits_remaining_store"] = _elf_case(
+        v13_elf(rows=rows_after(v13_rows(), "rem_store", row("revisit", "bne.n   {to:rem_ptr}"))),
+        "success path must publish remaining exactly once: return counts [1, 2]",
+    )
+    fixtures["alternate_reachable_remaining_store"] = _elf_case(
+        v13_elf(
+            rows=rows_after(
+                rows_after(v13_rows(), "p2_store", row("alt_branch", "bcc.n   {to:alt_ptr}")),
+                "succ_return",
+                row("alt_ptr", "ldr     r5, [pc, {lit:REMAINING}]"),
+                row("alt_store", "str     r1, [r5]"),
+                row("alt_result", "mov     r0, r4"),
+                row("alt_return", "bx      lr"),
+            )
+        ),
+        "alternate remaining store reachable on the success path",
+    )
+
     fixtures["retained_v12_runtime_drift"] = _elf_case(
         (
             V13_OBJDUMP_OK
@@ -1592,6 +1626,17 @@ if __name__ == "__main__":
             "status_pointer_into_sram",
             "cycle_count_read_from_sram",
             "remaining_reuses_p2_destination",
+        }
+        <= set(ELF_NEGATIVE_FIXTURES),
+    )
+    check(
+        "CFG reachability drifts are covered on both helper exits",
+        {
+            "timeout_branches_to_remaining_store",
+            "success_branch_skips_remaining_store",
+            "success_returns_before_remaining_store",
+            "success_branch_revisits_remaining_store",
+            "alternate_reachable_remaining_store",
         }
         <= set(ELF_NEGATIVE_FIXTURES),
     )
