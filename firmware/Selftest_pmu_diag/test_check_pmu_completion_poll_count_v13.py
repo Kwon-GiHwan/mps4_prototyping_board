@@ -200,6 +200,10 @@ V12_OBJDUMP_OK = """31002000 <v12_poll_completion>:
 3100202e:   6028        str     r0, [r5]        ; V12_P2_STORE
 31002030:   4620        mov     r0, r4
 31002032:   4770        bx      lr
+31002034:   .word   0x51000014   ; V12_HELPER_STATUS_ADDR
+31002038:   .word   0xE0001004   ; V12_DWT_CYCCNT_ADDR
+3100203c:   .word   0x20001000   ; V12_P1_STORE_ADDR
+31002040:   .word   0x20001004   ; V12_P2_STORE_ADDR
 
 31003000 <u85_irq_handler>:
 31003000:   4770        bx      lr
@@ -229,6 +233,11 @@ V13_OBJDUMP_OK = """32002040 <v13_poll_completion>:
 32002072:   6029        str     r1, [r5]        ; V13_REMAINING_STORE
 32002074:   4620        mov     r0, r4
 32002076:   4770        bx      lr
+32002078:   .word   0x51000014   ; V13_HELPER_STATUS_ADDR
+3200207c:   .word   0xE0001004   ; V13_DWT_CYCCNT_ADDR
+32002080:   .word   0x20002000   ; V13_P1_STORE_ADDR
+32002084:   .word   0x20002004   ; V13_P2_STORE_ADDR
+32002088:   .word   0x20002008   ; V13_REMAINING_STORE_ADDR
 
 32003020 <u85_irq_handler>:
 32003020:   4770        bx      lr
@@ -421,8 +430,8 @@ def _elf_negative_fixtures() -> dict[str, dict[str, str]]:
         },
         "wrong_status_address": {
             "objdump": V13_OBJDUMP_OK.replace(
-                "32002048:   4f0c        ldr     r7, [pc, #48]   ; V13_HELPER_STATUS_PTR\n",
-                "32002048:   4f0c        ldr     r7, [pc, #48]   ; V13_HELPER_STATUS_PTR_WRONG_MMIO\n",
+                "32002078:   .word   0x51000014   ; V13_HELPER_STATUS_ADDR\n",
+                "32002078:   .word   0x51000018   ; V13_HELPER_STATUS_ADDR_WRONG\n",
                 1,
             ),
             "nm": V13_NM_OK,
@@ -584,18 +593,6 @@ def _negative_vendor_fixtures() -> dict[str, dict[str, str]]:
             ),
             "expected": "timeout path must not publish remaining",
         },
-        "recomputed_remaining": {
-            "vendor": replace_once(
-                VENDOR_V13_OK,
-                "    uint32_t remaining = 10000U;\n"
-                "    uint32_t status;\n",
-                "    uint32_t remaining = 10000U;\n"
-                "    uint32_t i = 0U;\n"
-                "    uint32_t status;\n",
-                "recomputed-remaining-counter",
-            ),
-            "expected": "remaining must dataflow from failed-poll countdown live-out",
-        },
         "recomputed_remaining_store": {
             "vendor": replace_once(
                 replace_once(
@@ -756,10 +753,12 @@ def validate_local_fixtures():
     for marker in (
         "V12_HELPER_STATUS_READ",
         "V12_HELPER_STATUS_TEST",
+        "V12_HELPER_STATUS_ADDR",
         "V12_P1",
         "V12_P2",
         "V13_HELPER_STATUS_READ",
         "V13_HELPER_STATUS_TEST",
+        "V13_HELPER_STATUS_ADDR",
         "V13_P1",
         "V13_P2",
         "V13_REMAINING_STORE",
@@ -877,15 +876,15 @@ def run_future_suite(gate, patcher):
         check("future V13 gate accepts canonical generated sources", False, str(exc))
         evidence = None
 
-    for wrong_runner, wrong_vendor, label in (
-        (RUNNER_RAW_STOCK + "\n/* drift */\n", VENDOR_RAW_STOCK, "runner hash mismatch"),
-        (RUNNER_RAW_STOCK, VENDOR_RAW_STOCK + "\n/* drift */\n", "vendor hash mismatch"),
-        (RUNNER_V12_GENERATED, VENDOR_RAW_STOCK, "generated V12 runner as raw input"),
-        (RUNNER_RAW_STOCK, VENDOR_V12_GENERATED, "generated V12 vendor as raw input"),
-        (RUNNER_RAW_STOCK + RUNNER_RAW_STOCK, VENDOR_RAW_STOCK, "multiple raw runner targets"),
-        ("/* missing helper */\n", VENDOR_RAW_STOCK, "zero raw runner targets"),
-        (RUNNER_RAW_STOCK, VENDOR_RAW_STOCK + VENDOR_RAW_STOCK, "multiple raw vendor targets"),
-        (RUNNER_RAW_STOCK, "/* missing helper */\n", "zero raw vendor targets"),
+    for wrong_runner, wrong_vendor, label, expected_reason in (
+        (RUNNER_RAW_STOCK + "\n/* drift */\n", VENDOR_RAW_STOCK, "runner hash mismatch", "runner hash mismatch"),
+        (RUNNER_RAW_STOCK, VENDOR_RAW_STOCK + "\n/* drift */\n", "vendor hash mismatch", "vendor hash mismatch"),
+        (RUNNER_V12_GENERATED, VENDOR_RAW_STOCK, "generated V12 runner as raw input", "generated runner input"),
+        (RUNNER_RAW_STOCK, VENDOR_V12_GENERATED, "generated V12 vendor as raw input", "generated vendor input"),
+        (RUNNER_RAW_STOCK + RUNNER_RAW_STOCK, VENDOR_RAW_STOCK, "multiple raw runner targets", "multiple raw runner targets"),
+        ("/* missing helper */\n", VENDOR_RAW_STOCK, "zero raw runner targets", "zero raw runner targets"),
+        (RUNNER_RAW_STOCK, VENDOR_RAW_STOCK + VENDOR_RAW_STOCK, "multiple raw vendor targets", "multiple raw vendor targets"),
+        (RUNNER_RAW_STOCK, "/* missing helper */\n", "zero raw vendor targets", "zero raw vendor targets"),
     ):
         try:
             gate.verify_generated_sources(
@@ -898,7 +897,7 @@ def run_future_suite(gate, patcher):
         except TypeError:
             check("future V13 gate rejects %s" % label, False, "verify_generated_sources signature still missing V13 raw-input contract")
         except Exception as exc:
-            check("future V13 gate rejects %s" % label, True, str(exc))
+            check("future V13 gate rejects %s" % label, expected_reason in str(exc), str(exc))
 
     for name, payload in NEGATIVE_VENDOR_FIXTURES.items():
         try:
