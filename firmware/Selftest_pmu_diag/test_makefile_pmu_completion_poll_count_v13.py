@@ -1,4 +1,5 @@
 import pathlib
+import re
 import subprocess
 import sys
 
@@ -45,6 +46,7 @@ def validate_makefile(text: str) -> None:
     require(text, "manifest: $(MANIFEST)")
     require(text, "$(CROSS_ELF_EVIDENCE): $(TARGET).elf $(AUTHORITATIVE_V12_ELF) $(GATE)")
     require(text, "$(RUNNER_RECORD_WIRE_EVIDENCE): $(TARGET).elf $(GATE)")
+    require(text, "\t@false\n")
     require(text, "verify_cross_elf_contract(")
     require(text, "hashlib.sha256")
     require(text, "authoritative V12 ELF hash mismatch")
@@ -61,6 +63,7 @@ def validate_makefile(text: str) -> None:
     require(text, "--nm $(NM)")
     require(text, "--readelf $(READELF)")
     require(text, "--manifest-out $(MANIFEST)")
+    require(text, "\t@test -s $(MANIFEST)\n")
 
     forbid(text, "--allow-synthetic-evidence")
     forbid(text, "--vendor-src")
@@ -76,6 +79,10 @@ def validate_makefile(text: str) -> None:
     forbid(text, "ENTRY_OBJ")
     forbid(text, "ttyUSB")
     forbid(text, "mount")
+    forbid(text, "ssh")
+    forbid(text, "scp")
+    forbid(text, "docker")
+    forbid(text, "sudo")
     forbid(text, "github")
     forbid(text, "actions")
 
@@ -88,9 +95,21 @@ def expect_invalid(text: str, label: str) -> None:
     raise SystemExit(f"{label}: mutation unexpectedly passed")
 
 
+def extract_cross_elf_python(text: str) -> str:
+    match = re.search(
+        r"\$\(CROSS_ELF_EVIDENCE\):.*?\n\tpython3 -c '(.*?)'\n\n",
+        text,
+        re.DOTALL,
+    )
+    if match is None:
+        raise SystemExit("missing CROSS_ELF_EVIDENCE python3 -c body")
+    return match.group(1)
+
+
 def main() -> int:
     text = MAKEFILE.read_text(encoding="utf-8")
     validate_makefile(text)
+    compile(extract_cross_elf_python(text), str(MAKEFILE), "exec")
 
     expect_invalid(
         text.replace("check: $(CROSS_ELF_EVIDENCE) $(RUNNER_RECORD_WIRE_EVIDENCE)", "check: $(CROSS_ELF_EVIDENCE)"),
@@ -108,6 +127,14 @@ def main() -> int:
     expect_invalid(
         text.replace(AUTHORITATIVE_V12_SHA256, "0" * 64),
         "wrong authoritative V12 hash plumbing",
+    )
+    expect_invalid(
+        text.replace("\t@false\n", ""),
+        "missing intentional linked proof failure",
+    )
+    expect_invalid(
+        text.replace("\t@test -s $(MANIFEST)\n", ""),
+        "missing manifest non-empty guard",
     )
 
     help_text = subprocess.run(

@@ -145,7 +145,7 @@ import check_pmu_completion_poll_count_v13 as gate; \
 v12_elf = pathlib.Path("$(AUTHORITATIVE_V12_ELF)"); \
 actual = hashlib.sha256(v12_elf.read_bytes()).hexdigest(); \
 expected = "$(AUTHORITATIVE_V12_SHA256)"; \
-if actual != expected: raise SystemExit("authoritative V12 ELF hash mismatch: %s != %s" % (actual, expected)); \
+sys.exit("authoritative V12 ELF hash mismatch: %s != %s" % (actual, expected)) if actual != expected else None; \
 evidence = gate.verify_cross_elf_contract(pathlib.Path("$(V12_OBJDUMP)").read_text(encoding="utf-8"), pathlib.Path("$(V12_NM)").read_text(encoding="utf-8"), pathlib.Path("$(V13_OBJDUMP)").read_text(encoding="utf-8"), pathlib.Path("$(V13_NM)").read_text(encoding="utf-8")); \
 pathlib.Path("$(CROSS_ELF_EVIDENCE)").write_text(json.dumps(evidence, indent=2, sort_keys=True) + "\n", encoding="utf-8")'
 
@@ -171,6 +171,7 @@ $(MANIFEST): $(TARGET).elf $(GEN_RUNNER) $(GEN_VENDOR) $(GATE) bins $(CROSS_ELF_
 	    --nm $(NM) \
 	    --readelf $(READELF) \
 	    --manifest-out $(MANIFEST)
+	@test -s $(MANIFEST)
 
 clean:
 	rm -rf $(BUILD)
