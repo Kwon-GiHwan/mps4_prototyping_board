@@ -32,6 +32,7 @@ V12_OBJDUMP := $(BUILD)/authoritative_v12.objdump
 V12_NM := $(BUILD)/authoritative_v12.nm
 V13_OBJDUMP := $(BUILD)/runner_pmu_completion_poll_count_v13.objdump
 V13_NM := $(BUILD)/runner_pmu_completion_poll_count_v13.nm
+V13_DWARF := $(BUILD)/runner_pmu_completion_poll_count_v13.dwarf.txt
 CROSS_ELF_EVIDENCE := $(BUILD)/pmu_completion_poll_count_v13_cross_elf_evidence.json
 RUNNER_RECORD_WIRE_EVIDENCE := $(BUILD)/pmu_completion_poll_count_v13_runner_record_wire_evidence.json
 
@@ -138,6 +139,10 @@ $(V13_NM): $(TARGET).elf
 	@mkdir -p $(dir $@)
 	$(NM) -n $< > $@
 
+$(V13_DWARF): $(TARGET).elf
+	@mkdir -p $(dir $@)
+	$(READELF) --debug-dump=info,loc $< > $@
+
 $(CROSS_ELF_EVIDENCE): $(TARGET).elf $(AUTHORITATIVE_V12_ELF) $(GATE) $(V12_OBJDUMP) $(V12_NM) $(V13_OBJDUMP) $(V13_NM)
 	python3 -c 'import hashlib, json, pathlib, sys; \
 sys.path.insert(0, "Selftest_pmu_diag"); \
@@ -149,9 +154,12 @@ sys.exit("authoritative V12 ELF hash mismatch: %s != %s" % (actual, expected)) i
 evidence = gate.verify_cross_elf_contract(pathlib.Path("$(V12_OBJDUMP)").read_text(encoding="utf-8"), pathlib.Path("$(V12_NM)").read_text(encoding="utf-8"), pathlib.Path("$(V13_OBJDUMP)").read_text(encoding="utf-8"), pathlib.Path("$(V13_NM)").read_text(encoding="utf-8")); \
 pathlib.Path("$(CROSS_ELF_EVIDENCE)").write_text(json.dumps(evidence, indent=2, sort_keys=True) + "\n", encoding="utf-8")'
 
-$(RUNNER_RECORD_WIRE_EVIDENCE): $(TARGET).elf $(GATE)
-	@printf '%s\n' 'runner-record and wire dataflow gate must be produced by distinct linked-image proof' >&2
-	@false
+$(RUNNER_RECORD_WIRE_EVIDENCE): $(TARGET).elf $(GEN_RUNNER) $(GATE) $(V13_OBJDUMP) $(V13_NM) $(V13_DWARF)
+	python3 -c 'import json, pathlib, sys; \
+sys.path.insert(0, "Selftest_pmu_diag"); \
+import check_pmu_completion_poll_count_v13 as gate; \
+evidence = gate.verify_runner_record_wire_contract(pathlib.Path("$(GEN_RUNNER)").read_text(encoding="utf-8"), pathlib.Path("$(V13_OBJDUMP)").read_text(encoding="utf-8"), pathlib.Path("$(V13_NM)").read_text(encoding="utf-8"), pathlib.Path("$(V13_DWARF)").read_text(encoding="utf-8")); \
+pathlib.Path("$(RUNNER_RECORD_WIRE_EVIDENCE)").write_text(json.dumps(evidence, indent=2, sort_keys=True) + "\n", encoding="utf-8")'
 
 check: $(CROSS_ELF_EVIDENCE) $(RUNNER_RECORD_WIRE_EVIDENCE)
 
@@ -170,6 +178,8 @@ $(MANIFEST): $(TARGET).elf $(GEN_RUNNER) $(GEN_VENDOR) $(GATE) bins $(CROSS_ELF_
 	    --objdump $(OBJDUMP) \
 	    --nm $(NM) \
 	    --readelf $(READELF) \
+	    --cross-elf-evidence $(CROSS_ELF_EVIDENCE) \
+	    --runner-record-wire-evidence $(RUNNER_RECORD_WIRE_EVIDENCE) \
 	    --manifest-out $(MANIFEST)
 	@test -s $(MANIFEST)
 

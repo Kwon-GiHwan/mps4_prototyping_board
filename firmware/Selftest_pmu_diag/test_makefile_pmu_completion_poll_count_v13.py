@@ -36,6 +36,7 @@ def validate_makefile(text: str) -> None:
     require(text, "MANIFEST := $(BUILD)/pmu_completion_poll_count_v13_manifest.json")
     require(text, "AUTHORITATIVE_V12_ELF := authoritative-v12/runner_pmu_completion_poll_v12.elf")
     require(text, f"AUTHORITATIVE_V12_SHA256 := {AUTHORITATIVE_V12_SHA256}")
+    require(text, "V13_DWARF := $(BUILD)/runner_pmu_completion_poll_count_v13.dwarf.txt")
     require(text, "CROSS_ELF_EVIDENCE := $(BUILD)/pmu_completion_poll_count_v13_cross_elf_evidence.json")
     require(
         text,
@@ -45,13 +46,13 @@ def validate_makefile(text: str) -> None:
     require(text, "check: $(CROSS_ELF_EVIDENCE) $(RUNNER_RECORD_WIRE_EVIDENCE)")
     require(text, "manifest: $(MANIFEST)")
     require(text, "$(CROSS_ELF_EVIDENCE): $(TARGET).elf $(AUTHORITATIVE_V12_ELF) $(GATE)")
-    require(text, "$(RUNNER_RECORD_WIRE_EVIDENCE): $(TARGET).elf $(GATE)")
-    require(text, "\t@false\n")
+    require(text, "$(RUNNER_RECORD_WIRE_EVIDENCE): $(TARGET).elf $(GEN_RUNNER) $(GATE) $(V13_OBJDUMP) $(V13_NM) $(V13_DWARF)")
+    require(text, "$(V13_DWARF): $(TARGET).elf")
     require(text, "verify_cross_elf_contract(")
+    require(text, "verify_runner_record_wire_contract(")
     require(text, "hashlib.sha256")
     require(text, "authoritative V12 ELF hash mismatch")
-    require(text, "runner-record and wire dataflow gate")
-    require(text, "must be produced by distinct linked-image proof")
+    require(text, "--debug-dump=info,loc")
     require(text, "--runner-generated $(GEN_RUNNER)")
     require(text, "--vendor-generated $(GEN_VENDOR)")
     require(text, "--elf $(TARGET).elf")
@@ -62,6 +63,8 @@ def validate_makefile(text: str) -> None:
     require(text, "--objdump $(OBJDUMP)")
     require(text, "--nm $(NM)")
     require(text, "--readelf $(READELF)")
+    require(text, "--cross-elf-evidence $(CROSS_ELF_EVIDENCE)")
+    require(text, "--runner-record-wire-evidence $(RUNNER_RECORD_WIRE_EVIDENCE)")
     require(text, "--manifest-out $(MANIFEST)")
     require(text, "\t@test -s $(MANIFEST)\n")
 
@@ -106,10 +109,22 @@ def extract_cross_elf_python(text: str) -> str:
     return match.group(1)
 
 
+def extract_runner_record_wire_python(text: str) -> str:
+    match = re.search(
+        r"\$\(RUNNER_RECORD_WIRE_EVIDENCE\):.*?\n\tpython3 -c '(.*?)'\n\n",
+        text,
+        re.DOTALL,
+    )
+    if match is None:
+        raise SystemExit("missing RUNNER_RECORD_WIRE_EVIDENCE python3 -c body")
+    return match.group(1)
+
+
 def main() -> int:
     text = MAKEFILE.read_text(encoding="utf-8")
     validate_makefile(text)
     compile(extract_cross_elf_python(text), str(MAKEFILE), "exec")
+    compile(extract_runner_record_wire_python(text), str(MAKEFILE), "exec")
 
     expect_invalid(
         text.replace("check: $(CROSS_ELF_EVIDENCE) $(RUNNER_RECORD_WIRE_EVIDENCE)", "check: $(CROSS_ELF_EVIDENCE)"),
@@ -129,12 +144,20 @@ def main() -> int:
         "wrong authoritative V12 hash plumbing",
     )
     expect_invalid(
-        text.replace("\t@false\n", ""),
-        "missing intentional linked proof failure",
+        text.replace("$(RUNNER_RECORD_WIRE_EVIDENCE): $(TARGET).elf $(GEN_RUNNER) $(GATE) $(V13_OBJDUMP) $(V13_NM) $(V13_DWARF)", "$(RUNNER_RECORD_WIRE_EVIDENCE): $(TARGET).elf $(GATE)"),
+        "missing linked proof inputs",
     )
     expect_invalid(
         text.replace("\t@test -s $(MANIFEST)\n", ""),
         "missing manifest non-empty guard",
+    )
+    expect_invalid(
+        text.replace("--cross-elf-evidence $(CROSS_ELF_EVIDENCE) \\\n", ""),
+        "missing cross-elf manifest binding",
+    )
+    expect_invalid(
+        text.replace("--runner-record-wire-evidence $(RUNNER_RECORD_WIRE_EVIDENCE) \\\n", ""),
+        "missing runner-record/wire manifest binding",
     )
 
     help_text = subprocess.run(

@@ -1,4 +1,5 @@
 import hashlib
+import json
 import os
 import re
 import subprocess
@@ -2940,6 +2941,393 @@ def run_generator_suite(patcher):
     return runner_out, vendor_out
 
 
+RUNNER_RECORD_WIRE_RUNNER_OK = """typedef struct {
+    uint32_t poll_remaining_at_success;
+} pmu_diag_record_t;
+
+static pmu_diag_record_t last_pmu_diag;
+
+static void collect_record(void)
+{
+    pmu_diag_record_t d = {0};
+
+    d.poll_remaining_at_success = pmu_completion_poll_v13_t_poll_remaining_at_success;
+    last_pmu_diag = d;
+}
+
+static void emit_wire(void)
+{
+    uint32_t resp[109] = {0};
+    const pmu_diag_record_t *d = &last_pmu_diag;
+
+    resp[100] = d->poll_remaining_at_success;
+}
+"""
+
+RUNNER_RECORD_WIRE_DWARF_OK = """<1><0x10>: Abbrev Number: 1 (DW_TAG_structure_type)
+    <0x11>   DW_AT_name        : pmu_diag_record_t
+<2><0x20>: Abbrev Number: 2 (DW_TAG_member)
+    <0x21>   DW_AT_name        : poll_remaining_at_success
+    <0x22>   DW_AT_data_member_location: 20
+<1><0x30>: Abbrev Number: 3 (DW_TAG_subprogram)
+    <0x31>   DW_AT_name        : collect_record
+    <0x32>   DW_AT_low_pc      : 0x32001000
+    <0x33>   DW_AT_high_pc     : 0x14
+<2><0x40>: Abbrev Number: 4 (DW_TAG_variable)
+    <0x41>   DW_AT_name        : d
+    <0x42>   DW_AT_location    : [0x32001000, 0x32001014): DW_OP_fbreg 0
+<1><0x50>: Abbrev Number: 3 (DW_TAG_subprogram)
+    <0x51>   DW_AT_name        : emit_wire
+    <0x52>   DW_AT_low_pc      : 0x32002000
+    <0x53>   DW_AT_high_pc     : 0x10
+<2><0x60>: Abbrev Number: 4 (DW_TAG_variable)
+    <0x61>   DW_AT_name        : resp
+    <0x62>   DW_AT_location    : [0x32002000, 0x32002010): DW_OP_fbreg 0
+"""
+
+RUNNER_RECORD_WIRE_SECTION = extras_section(
+    "collect_record",
+    0x32001000,
+    "2101        movs    r1, #1",
+    "9505        str     r1, [sp, #20]",
+    "4c01        ldr     r4, [pc, #4]",
+    "6161        str     r1, [r4, #20]",
+    "4770        bx      lr",
+    "31005000    .word   0x31005000",
+) + extras_section(
+    "emit_wire",
+    0x32002000,
+    "4c01        ldr     r4, [pc, #4]",
+    "6961        ldr     r1, [r4, #20]",
+    "f8cd 1190   str.w   r1, [sp, #400]",
+    "4770        bx      lr",
+    "31005000    .word   0x31005000",
+)
+
+RUNNER_RECORD_WIRE_NM_OK = build_nm(
+    (
+        (0x32001000, "collect_record"),
+        (0x32002000, "emit_wire"),
+        (0x31005000, "last_pmu_diag"),
+    )
+)
+
+RUNNER_RECORD_WIRE_NEGATIVES = {
+    "local_d_overlap": (
+        RUNNER_RECORD_WIRE_SECTION.replace(
+            "4770        bx      lr\n",
+            "2202        movs    r2, #2\n"
+            "9505        str     r2, [sp, #20]\n"
+            "4770        bx      lr\n",
+            1,
+        ),
+        "overlapping write to local d.poll_remaining_at_success",
+    ),
+    "last_pmu_diag_overlap": (
+        RUNNER_RECORD_WIRE_SECTION.replace(
+            "6161        str     r1, [r4, #20]\n",
+            "6161        str     r1, [r4, #20]\n"
+            "2202        movs    r2, #2\n"
+            "6162        str     r2, [r4, #20]\n",
+            1,
+        ),
+        "overlapping write to last_pmu_diag.poll_remaining_at_success",
+    ),
+    "wire_overlap": (
+        RUNNER_RECORD_WIRE_SECTION.replace(
+            "3200200c:   4770        bx      lr\n",
+            "3200200c:   2202        movs    r2, #2\n"
+            "32002010:   f8cd 2190   str.w   r2, [sp, #400]\n"
+            "32002014:   4770        bx      lr\n",
+            1,
+        ),
+        "overlapping write to wire poll_remaining_at_success slot",
+    ),
+    "store_multiple_span": (
+        RUNNER_RECORD_WIRE_SECTION.replace(
+            "6161        str     r1, [r4, #20]\n",
+            "e884 0006   stmia   r4, {r1, r2}\n",
+            1,
+        ),
+        "store-multiple overlaps last_pmu_diag.poll_remaining_at_success",
+    ),
+    "escaped_pointer_callee_write": (
+        RUNNER_RECORD_WIRE_SECTION.replace(
+            "4c01        ldr     r4, [pc, #4]\n",
+            "a800        add     r0, sp, #0\n"
+            "f000 f801   bl      32003000 <clobber_record>\n"
+            "4c01        ldr     r4, [pc, #4]\n",
+            1,
+        ),
+        "pointer escape or unresolved callee write reaches local d",
+    ),
+    "unsupported_write": (
+        RUNNER_RECORD_WIRE_SECTION.replace(
+            "9505        str     r1, [sp, #20]\n",
+            "e9cd 1105   strd    r1, r1, [sp, #20]\n",
+            1,
+        ),
+        "unsupported write form reaches local d",
+    ),
+}
+
+
+def _runner_record_wire_objdump() -> str:
+    return V13_OBJDUMP_OK + RUNNER_RECORD_WIRE_SECTION
+
+
+def _runner_record_wire_nm() -> str:
+    return V13_NM_OK + RUNNER_RECORD_WIRE_NM_OK
+
+
+def run_runner_record_wire_cli_suite(gate):
+    if not hasattr(gate, "verify_runner_record_wire_contract"):
+        check(
+            "runner-record/wire gate API exists",
+            False,
+            "verify_runner_record_wire_contract missing",
+        )
+        check(
+            "V13 checker argparse exposes manifest evidence bindings",
+            False,
+            "build_arg_parser missing",
+        )
+        return
+    objdump_text = _runner_record_wire_objdump()
+    nm_text = _runner_record_wire_nm()
+    try:
+        evidence = gate.verify_runner_record_wire_contract(
+            RUNNER_RECORD_WIRE_RUNNER_OK,
+            objdump_text,
+            nm_text,
+            RUNNER_RECORD_WIRE_DWARF_OK,
+        )
+        check(
+            "runner-record/wire gate accepts canonical linked-image fixture",
+            evidence.get("runner_record_wire_proof_scope") == "linked_image_dwarf_exact_locations"
+            and evidence.get("dwarf_required") is True
+            and evidence.get("poll_remaining_field_offset_bytes") == 20
+            and evidence.get("wire_word_index") == 100,
+        )
+    except Exception as exc:
+        check("runner-record/wire gate accepts canonical linked-image fixture", False, str(exc))
+        evidence = None
+
+    probe_dir = "/tmp/v13-arm-dwarf-probe-20260814T213700Z"
+    probe_runner = os.path.join(probe_dir, "generated_runner.c")
+    probe_objdump = os.path.join(probe_dir, "runner.objdump.txt")
+    probe_nm = os.path.join(probe_dir, "runner.nm.txt")
+    probe_dwarf = os.path.join(probe_dir, "runner.dwarf.txt")
+    if all(os.path.exists(path) for path in (probe_runner, probe_objdump, probe_nm, probe_dwarf)):
+        try:
+            probe_evidence = gate.verify_runner_record_wire_contract(
+                open(probe_runner, "r", encoding="utf-8").read(),
+                open(probe_objdump, "r", encoding="utf-8").read(),
+                open(probe_nm, "r", encoding="utf-8").read(),
+                open(probe_dwarf, "r", encoding="utf-8").read(),
+            )
+            check(
+                "runner-record/wire gate accepts real ARM probe exact-form evidence",
+                probe_evidence.get("evidence_source") == "arm_elf"
+                and probe_evidence.get("poll_remaining_field_offset_bytes") == 400
+                and probe_evidence.get("handle_run_pmu_diag_local_d_fbreg") == -1056
+                and probe_evidence.get("handle_run_pmu_diag_resp_fbreg") == -652
+                and probe_evidence.get("wire_word_index") == 100,
+            )
+        except Exception as exc:
+            check("runner-record/wire gate accepts real ARM probe exact-form evidence", False, str(exc))
+
+    for name, (mutated_objdump, expected) in RUNNER_RECORD_WIRE_NEGATIVES.items():
+        try:
+            gate.verify_runner_record_wire_contract(
+                RUNNER_RECORD_WIRE_RUNNER_OK,
+                V13_OBJDUMP_OK + mutated_objdump,
+                nm_text,
+                RUNNER_RECORD_WIRE_DWARF_OK,
+            )
+            check("runner-record/wire gate rejects %s" % name, False, "unexpected pass")
+        except Exception as exc:
+            check("runner-record/wire gate rejects %s" % name, expected in str(exc), str(exc))
+
+    with tempfile.TemporaryDirectory() as tmp:
+        runner_path = os.path.join(tmp, "runner_generated.c")
+        vendor_path = os.path.join(tmp, "vendor_generated.c")
+        elf_path = os.path.join(tmp, "runner.elf")
+        map_path = os.path.join(tmp, "runner.map")
+        app_bin = os.path.join(tmp, "APP.BIN")
+        vectors_bin = os.path.join(tmp, "VECTORS.BIN")
+        ddr_bin = os.path.join(tmp, "DDR.BIN")
+        manifest_path = os.path.join(tmp, "pmu_completion_poll_count_v13_manifest.json")
+        cross_path = os.path.join(tmp, "cross.json")
+        runner_record_wire_path = os.path.join(tmp, "runner_record_wire.json")
+        objdump_path = os.path.join(tmp, "fake_objdump.py")
+        nm_tool_path = os.path.join(tmp, "fake_nm.py")
+        readelf_path = os.path.join(tmp, "fake_readelf.py")
+        for path, content in (
+            (runner_path, RUNNER_RECORD_WIRE_RUNNER_OK),
+            (vendor_path, VENDOR_V13_OK),
+            (map_path, "MEMORY MAP\n"),
+        ):
+            with open(path, "w", encoding="utf-8") as handle:
+                handle.write(content)
+        for path, payload in (
+            (elf_path, b"elf"),
+            (app_bin, b"app"),
+            (vectors_bin, b"vectors"),
+            (ddr_bin, b"ddr"),
+        ):
+            with open(path, "wb") as handle:
+                handle.write(payload)
+        with open(objdump_path, "w", encoding="utf-8") as handle:
+            handle.write(
+                "#!/usr/bin/env python3\n"
+                "import sys\n"
+                "from pathlib import Path\n"
+                "sys.stdout.write(Path(sys.argv[2]).with_name(\"objdump_dis.txt\").read_text())\n"
+            )
+        with open(nm_tool_path, "w", encoding="utf-8") as handle:
+            handle.write(
+                "#!/usr/bin/env python3\n"
+                "import sys\n"
+                "from pathlib import Path\n"
+                "sys.stdout.write(Path(sys.argv[1]).with_name(\"nm_out.txt\").read_text())\n"
+            )
+        with open(readelf_path, "w", encoding="utf-8") as handle:
+            handle.write(
+                "#!/usr/bin/env python3\n"
+                "import sys\n"
+                "from pathlib import Path\n"
+                "if sys.argv[1] == '-h':\n"
+                "    sys.stdout.write('ELF Header\\nType: EXEC (Executable file)\\nMachine: ARM\\n')\n"
+                "elif sys.argv[1] == '--debug-dump=info,loc':\n"
+                "    sys.stdout.write(Path(sys.argv[2]).with_name('readelf_dwarf.txt').read_text())\n"
+                "else:\n"
+                "    raise SystemExit(2)\n"
+            )
+        for script in (objdump_path, nm_tool_path, readelf_path):
+            os.chmod(script, 0o755)
+        with open(os.path.join(tmp, "objdump_dis.txt"), "w", encoding="utf-8") as handle:
+            handle.write(objdump_text)
+        with open(os.path.join(tmp, "nm_out.txt"), "w", encoding="utf-8") as handle:
+            handle.write(nm_text)
+        with open(os.path.join(tmp, "readelf_dwarf.txt"), "w", encoding="utf-8") as handle:
+            handle.write(RUNNER_RECORD_WIRE_DWARF_OK)
+
+        if not hasattr(gate, "build_arg_parser"):
+            check(
+                "V13 checker argparse exposes manifest evidence bindings",
+                False,
+                "build_arg_parser missing",
+            )
+            return
+        parser = gate.build_arg_parser()
+        parser_flags = {
+            opt
+            for action in parser._actions
+            for opt in action.option_strings
+            if opt.startswith("--")
+        }
+        check(
+            "V13 checker argparse exposes manifest evidence bindings",
+            {
+                "--cross-elf-evidence",
+                "--runner-record-wire-evidence",
+            } <= parser_flags,
+            str(sorted(parser_flags)),
+        )
+
+        if evidence is not None:
+            cross = gate.verify_cross_elf_contract(V12_OBJDUMP_OK, V12_NM_OK, objdump_text, nm_text)
+            with open(cross_path, "w", encoding="utf-8") as handle:
+                json.dump(cross, handle, indent=2, sort_keys=True)
+            with open(runner_record_wire_path, "w", encoding="utf-8") as handle:
+                json.dump(evidence, handle, indent=2, sort_keys=True)
+
+            help_result = subprocess.run(
+                [
+                    sys.executable,
+                    os.path.join(os.path.dirname(__file__), "check_pmu_completion_poll_count_v13.py"),
+                    "--help",
+                ],
+                capture_output=True,
+                text=True,
+            )
+            check(
+                "V13 checker CLI help works",
+                help_result.returncode == 0
+                and "--cross-elf-evidence" in help_result.stdout
+                and "--runner-record-wire-evidence" in help_result.stdout,
+                help_result.stderr or help_result.stdout,
+            )
+
+            cli_args = [
+                "--build-id", BUILD_ID,
+                "--runner-generated", runner_path,
+                "--vendor-generated", vendor_path,
+                "--elf", elf_path,
+                "--map", map_path,
+                "--app-bin", app_bin,
+                "--vectors-bin", vectors_bin,
+                "--ddr-bin", ddr_bin,
+                "--objdump", objdump_path,
+                "--nm", nm_tool_path,
+                "--readelf", readelf_path,
+                "--cross-elf-evidence", cross_path,
+                "--runner-record-wire-evidence", runner_record_wire_path,
+                "--manifest-out", manifest_path,
+            ]
+            cli_ok = subprocess.run(
+                [
+                    sys.executable,
+                    os.path.join(os.path.dirname(__file__), "check_pmu_completion_poll_count_v13.py"),
+                    *cli_args,
+                ],
+                capture_output=True,
+                text=True,
+            )
+            check(
+                "V13 checker CLI writes manifest for real linked-image inputs",
+                cli_ok.returncode == 0 and os.path.exists(manifest_path) and os.path.getsize(manifest_path) > 0,
+                cli_ok.stderr or cli_ok.stdout,
+            )
+            if os.path.exists(manifest_path):
+                with open(manifest_path, "r", encoding="utf-8") as handle:
+                    manifest = json.load(handle)
+                try:
+                    gate.validate_artifact_contract(json.dumps(manifest), cross, evidence)
+                    check(
+                        "V13 manifest binds exact evidence JSON and hashes",
+                        manifest.get("cross_elf_evidence") == cross
+                        and manifest.get("runner_record_wire_evidence") == evidence
+                        and manifest.get("cross_elf_evidence_sha256") == sha256_text(json.dumps(cross, indent=2, sort_keys=True) + "\n")
+                        and manifest.get("runner_record_wire_evidence_sha256") == sha256_text(json.dumps(evidence, indent=2, sort_keys=True) + "\n"),
+                    )
+                except Exception as exc:
+                    check("V13 manifest binds exact evidence JSON and hashes", False, str(exc))
+
+            broken_runner_record_wire = os.path.join(tmp, "runner_record_wire_bad.json")
+            with open(broken_runner_record_wire, "w", encoding="utf-8") as handle:
+                bad = dict(evidence)
+                bad["wire_word_index"] = 99
+                json.dump(bad, handle, indent=2, sort_keys=True)
+            bad_manifest = os.path.join(tmp, "bad_manifest.json")
+            cli_bad = subprocess.run(
+                [
+                    sys.executable,
+                    os.path.join(os.path.dirname(__file__), "check_pmu_completion_poll_count_v13.py"),
+                    *(arg if arg != runner_record_wire_path else broken_runner_record_wire for arg in cli_args[:-1]),
+                    "--manifest-out", bad_manifest,
+                ],
+                capture_output=True,
+                text=True,
+            )
+            check(
+                "V13 checker CLI rejects mismatched linked-image evidence",
+                cli_bad.returncode != 0 and not os.path.exists(bad_manifest),
+                cli_bad.stderr or cli_bad.stdout,
+            )
+
+
 def run_future_suite(gate, patcher):
     runner_out, vendor_out = run_generator_suite(patcher)
 
@@ -3121,6 +3509,7 @@ if __name__ == "__main__":
 
     run_future_suite(gate, patcher)
     run_future_elf_suite(gate)
+    run_runner_record_wire_cli_suite(gate)
     run_scope_honesty_suite(gate)
     run_retained_runtime_suite(gate)
     run_real_image_nvic_suite(gate)

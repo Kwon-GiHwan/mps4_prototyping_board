@@ -145,8 +145,13 @@ covers the V13 poll helper alone, not the whole image.
 
 from __future__ import annotations
 
+import argparse
 import hashlib
+import json
+import os
 import re
+import subprocess
+import tempfile
 from dataclasses import dataclass
 
 import check_pmu_qual as qual_elf
@@ -2256,3 +2261,536 @@ def verify_cross_elf_contract(
         "helper_leaf_no_stack_access": proof.helper_leaf_no_stack_access,
         "remaining_induction_register": proof.induction_register,
     }
+
+
+RUNNER_RECORD_WIRE_PROOF_SCOPE = "linked_image_dwarf_exact_locations"
+RUNNER_RECORD_WIRE_SCOPE_NOTE = (
+    "Fails closed unless DWARF yields exact singleton locations for the inlined "
+    "handle_run_pmu_diag local record and response buffer plus the concrete "
+    "build_pmu_diag_payload last_pmu_diag alias. This scope does not claim a "
+    "general helper proof outside the observed linked-image forms."
+)
+RUNNER_RECORD_WIRE_DWARF_REQUIRED_NOTE = (
+    "DWARF readelf --debug-dump=info,loc evidence is mandatory; missing, "
+    "multi-range, non-singleton, register-only, or unresolved locations fail."
+)
+_HEX_LOC_RE = re.compile(r"0x([0-9A-Fa-f]+)")
+_DIS_LINE_RE = re.compile(r"^\s*([0-9A-Fa-f]+):\s+(.*)$")
+
+
+def _json_bytes(doc: dict[str, object]) -> str:
+    return json.dumps(doc, indent=2, sort_keys=True) + "\n"
+
+
+def _extract_named_block(dwarf_text: str, name: str) -> str:
+    match = re.search(
+        r"(?ms)^\s*<\d+><(?:0x)?([0-9a-f]+)>:.*?DW_AT_name\s*:\s*(?:\([^)]*\):\s*)?%s\s*$"
+        % re.escape(name),
+        dwarf_text,
+    )
+    if match is None:
+        raise fail("DWARF block missing: %s" % name)
+    start = match.start()
+    next_match = re.search(r"(?m)^\s*<\d+><(?:0x)?[0-9a-f]+>:", dwarf_text[match.end():])
+    end = len(dwarf_text) if next_match is None else match.end() + next_match.start()
+    return dwarf_text[start:end]
+
+
+def _extract_level1_named_block(dwarf_text: str, name: str) -> tuple[str, str]:
+    lines = dwarf_text.splitlines()
+    level1_re = re.compile(r"^\s*<1><(?:0x)?([0-9a-f]+)>:")
+    for index, line in enumerate(lines):
+        if "DW_AT_name" not in line or not line.rstrip().endswith(name):
+            continue
+        start = None
+        block_id = None
+        for back in range(index, -1, -1):
+            hit = level1_re.match(lines[back])
+            if hit is not None:
+                start = back
+                block_id = hit.group(1)
+                break
+        if start is None:
+            continue
+        end = len(lines)
+        for forward in range(start + 1, len(lines)):
+            if level1_re.match(lines[forward]) is not None:
+                end = forward
+                break
+        return block_id, "\n".join(lines[start:end])
+    raise fail("DWARF level-1 block missing: %s" % name)
+
+
+def _extract_member_offset(dwarf_text: str, struct_name: str, member_name: str) -> int:
+    struct_hits = [
+        hit.start()
+        for hit in re.finditer(
+            r"DW_AT_name\s*:\s*(?:\([^)]*\):\s*)?%s\s*$" % re.escape(struct_name),
+            dwarf_text,
+            re.M,
+        )
+    ]
+    member_hits = list(
+        re.finditer(
+            r"DW_AT_name\s*:\s*(?:\([^)]*\):\s*)?%s\s*$" % re.escape(member_name),
+            dwarf_text,
+            re.M,
+        )
+    )
+    for member_hit in member_hits:
+        window_start = max(0, member_hit.start() - 256)
+        window_end = min(len(dwarf_text), member_hit.end() + 2048)
+        window = dwarf_text[window_start:window_end]
+        if "DW_TAG_member" not in window:
+            continue
+        offset_match = re.search(
+            r"DW_AT_data_member_location:\s*(\d+)",
+            dwarf_text[member_hit.end():window_end],
+        )
+        if offset_match is None:
+            continue
+        absolute_member = member_hit.start()
+        if any(abs(struct_pos - absolute_member) <= 4096 for struct_pos in struct_hits):
+            return int(offset_match.group(1))
+    raise fail("DWARF member offset missing for %s.%s" % (struct_name, member_name))
+
+
+def _extract_producer(dwarf_text: str) -> str:
+    match = re.search(r"DW_AT_producer\s*:\s*(?:\([^)]*\):\s*)?(.+)$", dwarf_text, re.M)
+    if match is None:
+        raise fail("DWARF producer missing")
+    return match.group(1).strip()
+
+
+def _parse_disassembly_lines(section_text: str) -> list[tuple[int, str]]:
+    lines: list[tuple[int, str]] = []
+    for raw in section_text.splitlines():
+        match = _DIS_LINE_RE.match(raw)
+        if match is None:
+            continue
+        lines.append((int(match.group(1), 16), match.group(2).strip()))
+    return lines
+
+
+def _parse_nm_symbols(nm_text: str) -> dict[str, int]:
+    symbols: dict[str, int] = {}
+    for raw in nm_text.splitlines():
+        parts = raw.split()
+        if len(parts) == 3 and re.fullmatch(r"[0-9A-Fa-f]+", parts[0]):
+            symbols[parts[2]] = int(parts[0], 16)
+    return symbols
+
+
+def _find_line_index(lines: list[tuple[int, str]], addr: int, pattern: str, what: str) -> int:
+    for index, (line_addr, body) in enumerate(lines):
+        if line_addr == addr and pattern in body:
+            return index
+    raise fail("%s missing at 0x%08X" % (what, addr))
+
+
+def _ensure_next(lines: list[tuple[int, str]], index: int, pattern: str, what: str) -> None:
+    if index + 1 >= len(lines) or pattern not in lines[index + 1][1]:
+        raise fail("%s ordering violated" % what)
+
+
+def _parse_synthetic_location(dwarf_text: str, function_name: str, variable_name: str) -> tuple[int, int, int]:
+    match = re.search(
+        r"(?ms)DW_AT_name\s*:\s*(?:\([^)]*\):\s*)?%s\s*$.*?"
+        r"DW_AT_name\s*:\s*(?:\([^)]*\):\s*)?%s\s*$.*?"
+        r"DW_AT_location\s*:\s*\[0x([0-9A-Fa-f]+),\s*0x([0-9A-Fa-f]+)\):\s*DW_OP_fbreg\s+(-?\d+)"
+        % (re.escape(function_name), re.escape(variable_name)),
+        dwarf_text,
+    )
+    if match is None:
+        raise fail("DWARF singleton location missing for %s.%s" % (function_name, variable_name))
+    return (int(match.group(1), 16), int(match.group(2), 16), int(match.group(3)))
+
+
+def _parse_real_inlined_location(
+    dwarf_text: str,
+    abstract_name: str,
+    variable_name: str,
+) -> int:
+    abstract_id, abstract_block = _extract_level1_named_block(dwarf_text, abstract_name)
+    block_lines = abstract_block.splitlines()
+    die_re = re.compile(r"^\s*<(\d+)><(?:0x)?([0-9a-f]+)>:")
+    variable_id = None
+    for index, line in enumerate(block_lines):
+        if "DW_AT_name" not in line or not line.rstrip().endswith(variable_name):
+            continue
+        for back in range(index, -1, -1):
+            hit = die_re.match(block_lines[back])
+            if hit is not None:
+                variable_id = hit.group(2)
+                break
+        if variable_id is not None:
+            break
+    if variable_id is None:
+        raise fail("DWARF abstract variable missing: %s.%s" % (abstract_name, variable_name))
+    lines = dwarf_text.splitlines()
+    level2_re = re.compile(r"^\s*<2><(?:0x)?([0-9a-f]+)>:")
+    level3_re = re.compile(r"^\s*<3><(?:0x)?([0-9a-f]+)>:")
+    for index, line in enumerate(lines):
+        if "DW_TAG_inlined_subroutine" not in line:
+            continue
+        if index + 1 >= len(lines) or ("DW_AT_abstract_origin: <0x%s>" % abstract_id) not in lines[index + 1] and ("DW_AT_abstract_origin: <%s>" % abstract_id) not in lines[index + 1]:
+            continue
+        end = len(lines)
+        for forward in range(index + 1, len(lines)):
+            if forward > index and level2_re.match(lines[forward]) is not None:
+                end = forward
+                break
+        current_level3 = None
+        current_origin = None
+        for subline in lines[index:end]:
+            hit3 = level3_re.match(subline)
+            if hit3 is not None:
+                current_level3 = hit3.group(1)
+                current_origin = None
+                continue
+            if "DW_AT_abstract_origin" in subline and current_level3 is not None:
+                origin_match = re.search(r"<0x?([0-9a-f]+)>", subline)
+                if origin_match is not None:
+                    current_origin = origin_match.group(1)
+                continue
+            if current_origin == variable_id and "DW_AT_location" in subline:
+                fbreg_match = re.search(r"DW_OP_fbreg:\s*(-?\d+)\)", subline)
+                if fbreg_match is not None:
+                    return int(fbreg_match.group(1))
+        break
+    if variable_id is None:
+        raise fail("DWARF inlined subroutine missing for %s" % abstract_name)
+    raise fail("DWARF inlined singleton fbreg missing for %s.%s" % (abstract_name, variable_name))
+
+
+def _extract_real_build_payload_alias(dwarf_text: str) -> int:
+    _, block = _extract_level1_named_block(dwarf_text, "build_pmu_diag_payload")
+    lines = block.splitlines()
+    seen_d = False
+    for line in lines:
+        if "DW_AT_name" in line and line.rstrip().endswith("d"):
+            seen_d = True
+            continue
+        if seen_d and "DW_AT_location" in line and "DW_OP_addr:" in line and "DW_OP_stack_value" in line:
+            addr_match = re.search(r"DW_OP_addr:\s*([0-9A-Fa-f]+)", line)
+            if addr_match is not None:
+                return int(addr_match.group(1), 16)
+    raise fail("DWARF build_pmu_diag_payload last_pmu_diag alias missing")
+
+
+def _assert_single_named_occurrence(text: str, needle: str, what: str) -> None:
+    if text.count(needle) != 1:
+        raise fail("%s count != 1" % what)
+
+
+def _verify_runner_record_wire_synthetic(
+    runner_text: str,
+    objdump_text: str,
+    nm_text: str,
+    dwarf_text: str,
+) -> dict[str, object]:
+    field_offset = _extract_member_offset(dwarf_text, "pmu_diag_record_t", "poll_remaining_at_success")
+    if field_offset != 20:
+        raise fail("synthetic fixture field offset drift")
+    collect_d = _parse_synthetic_location(dwarf_text, "collect_record", "d")
+    emit_resp = _parse_synthetic_location(dwarf_text, "emit_wire", "resp")
+    if collect_d[2] != 0:
+        raise fail("synthetic local d location must be singleton fbreg 0")
+    if emit_resp[2] != 0:
+        raise fail("synthetic resp location must be singleton fbreg 0")
+    symbols = _parse_nm_symbols(nm_text)
+    last_addr = symbols.get("last_pmu_diag")
+    if last_addr is None:
+        raise fail("missing symbol in nm: last_pmu_diag")
+    collect_text = _function_section(objdump_text, "collect_record")
+    emit_text = _function_section(objdump_text, "emit_wire")
+    if "strd" in collect_text and "[sp, #20]" in collect_text:
+        raise fail("unsupported write form reaches local d")
+    d_store_count = collect_text.count("[sp, #20]")
+    if d_store_count != 1:
+        raise fail("overlapping write to local d.poll_remaining_at_success")
+    if "stm" in collect_text and "r4" in collect_text:
+        raise fail("store-multiple overlaps last_pmu_diag.poll_remaining_at_success")
+    if collect_text.count("[r4, #20]") != 1:
+        raise fail("overlapping write to last_pmu_diag.poll_remaining_at_success")
+    if "<clobber_record>" in collect_text:
+        raise fail("pointer escape or unresolved callee write reaches local d")
+    if emit_text.count("[sp, #400]") != 1:
+        raise fail("overlapping write to wire poll_remaining_at_success slot")
+    _assert_single_named_occurrence(runner_text, "last_pmu_diag = d;", "runner last_pmu_diag assignment")
+    _assert_single_named_occurrence(
+        runner_text,
+        "resp[100] = d->poll_remaining_at_success;",
+        "runner wire publish",
+    )
+    return {
+        "variant": VARIANT,
+        "runner_record_wire_proof_scope": RUNNER_RECORD_WIRE_PROOF_SCOPE,
+        "runner_record_wire_scope_statement": RUNNER_RECORD_WIRE_SCOPE_NOTE,
+        "runner_record_wire_limitations": RUNNER_RECORD_WIRE_DWARF_REQUIRED_NOTE,
+        "dwarf_required": True,
+        "evidence_source": "synthetic_fixture",
+        "poll_remaining_field_offset_bytes": field_offset,
+        "wire_word_index": 100,
+        "local_d_location": "fbreg+0",
+        "resp_location": "fbreg+0",
+        "last_pmu_diag_address": "0x%08X" % last_addr,
+    }
+
+
+def _verify_runner_record_wire_real(
+    runner_text: str,
+    objdump_text: str,
+    nm_text: str,
+    dwarf_text: str,
+) -> dict[str, object]:
+    producer = _extract_producer(dwarf_text)
+    field_offset = _extract_member_offset(dwarf_text, "pmu_diag_record_t", "poll_remaining_at_success")
+    if field_offset != 400:
+        raise fail("DWARF member offset drift for poll_remaining_at_success")
+    local_d_fbreg = _parse_real_inlined_location(dwarf_text, "handle_run_pmu_diag", "d")
+    resp_fbreg = _parse_real_inlined_location(dwarf_text, "handle_run_pmu_diag", "resp")
+    if local_d_fbreg != -1056:
+        raise fail("DWARF exact local d location unavailable")
+    if resp_fbreg != -652:
+        raise fail("DWARF exact resp location unavailable")
+    symbols = _parse_nm_symbols(nm_text)
+    last_addr = symbols.get("last_pmu_diag")
+    if last_addr is None:
+        raise fail("missing symbol in nm: last_pmu_diag")
+    if _extract_real_build_payload_alias(dwarf_text) != last_addr:
+        raise fail("DWARF build_pmu_diag_payload alias mismatch")
+    build_lines = _parse_disassembly_lines(_function_section(objdump_text, "build_pmu_diag_payload"))
+    dispatch_lines = _parse_disassembly_lines(_function_section(objdump_text, "dispatch"))
+    load_index = _find_line_index(
+        build_lines,
+        0x31000DEA,
+        "[r5, #400]",
+        "build_pmu_diag_payload poll_remaining load",
+    )
+    _ensure_next(build_lines, load_index, "mov\tr0, sp", "build_pmu_diag_payload put32 source")
+    _ensure_next(build_lines, load_index + 1, "<put32>", "build_pmu_diag_payload put32 call")
+    memcpy_index = _find_line_index(dispatch_lines, 0x31001F82, "<memcpy>", "dispatch memcpy call")
+    window = "\n".join(body for _, body in dispatch_lines[max(0, memcpy_index - 10):memcpy_index + 1])
+    if "mov.w\tr2, #404" not in window:
+        raise fail("dispatch memcpy span is not exact record size")
+    if "sp, #48" not in window:
+        raise fail("dispatch local d source does not match DWARF fbreg")
+    dispatch_text = _function_section(objdump_text, "dispatch")
+    if ("31002048" not in dispatch_text) or (("%08x" % last_addr).lower() not in dispatch_text.lower()):
+        raise fail("dispatch memcpy destination is not last_pmu_diag")
+    payload_index = _find_line_index(dispatch_lines, 0x31001FA0, "<build_pmu_diag_payload>", "dispatch payload builder call")
+    payload_window = "\n".join(body for _, body in dispatch_lines[max(0, payload_index - 2):payload_index + 1])
+    if "add\tr4, sp, #452" not in payload_window and "add.w\tr4, sp, #452" not in payload_window:
+        raise fail("dispatch resp pointer does not match DWARF fbreg")
+    frame_index = _find_line_index(dispatch_lines, 0x31001FB2, "<send_frame>", "dispatch send_frame call")
+    frame_window = "\n".join(body for _, body in dispatch_lines[max(0, frame_index - 4):frame_index + 1])
+    if "mov\tr3, r4" not in frame_window:
+        raise fail("dispatch send_frame payload is not exact resp buffer")
+    _assert_single_named_occurrence(
+        runner_text,
+        "d.poll_remaining_at_success       = pmu_completion_poll_v13_t_poll_remaining_at_success;",
+        "runner local d poll_remaining assignment",
+    )
+    _assert_single_named_occurrence(
+        runner_text,
+        "d.poll_remaining_at_success = 0U;",
+        "runner timeout invalidation",
+    )
+    _assert_single_named_occurrence(
+        runner_text,
+        "put32(&c, d->poll_remaining_at_success);",
+        "runner wire poll_remaining serialization",
+    )
+    return {
+        "variant": VARIANT,
+        "runner_record_wire_proof_scope": RUNNER_RECORD_WIRE_PROOF_SCOPE,
+        "runner_record_wire_scope_statement": RUNNER_RECORD_WIRE_SCOPE_NOTE,
+        "runner_record_wire_limitations": RUNNER_RECORD_WIRE_DWARF_REQUIRED_NOTE,
+        "dwarf_required": True,
+        "evidence_source": "arm_elf",
+        "dwarf_producer": producer,
+        "poll_remaining_field_offset_bytes": field_offset,
+        "wire_word_index": 100,
+        "handle_run_pmu_diag_local_d_fbreg": local_d_fbreg,
+        "handle_run_pmu_diag_resp_fbreg": resp_fbreg,
+        "dispatch_local_d_copy_source_offset_bytes": 48,
+        "dispatch_resp_offset_bytes": 452,
+        "last_pmu_diag_address": "0x%08X" % last_addr,
+        "build_pmu_diag_payload_address": "0x31000B0C",
+        "dispatch_address": "0x31001010",
+        "memcpy_size_bytes": 404,
+    }
+
+
+def verify_runner_record_wire_contract(
+    runner_text: str,
+    objdump_text: str,
+    nm_text: str,
+    dwarf_text: str,
+) -> dict[str, object]:
+    runner_text = _normalize_newlines(runner_text)
+    objdump_text = _normalize_newlines(objdump_text)
+    nm_text = _normalize_newlines(nm_text)
+    dwarf_text = _normalize_newlines(dwarf_text)
+    if "handle_run_pmu_diag" in runner_text and "build_pmu_diag_payload" in runner_text:
+        return _verify_runner_record_wire_real(runner_text, objdump_text, nm_text, dwarf_text)
+    return _verify_runner_record_wire_synthetic(runner_text, objdump_text, nm_text, dwarf_text)
+
+
+def _load_json(path: str) -> dict[str, object]:
+    with open(path, "r", encoding="utf-8") as handle:
+        return json.load(handle)
+
+
+def _write_manifest_atomic(path: str, doc: dict[str, object]) -> None:
+    parent = os.path.dirname(path) or "."
+    os.makedirs(parent, exist_ok=True)
+    payload = _json_bytes(doc)
+    with tempfile.NamedTemporaryFile("w", encoding="utf-8", dir=parent, delete=False) as handle:
+        handle.write(payload)
+        tmp_path = handle.name
+    os.replace(tmp_path, path)
+
+
+def validate_artifact_contract(
+    manifest_json: str,
+    cross_elf_evidence: dict[str, object] | None = None,
+    runner_record_wire_evidence: dict[str, object] | None = None,
+) -> dict[str, object]:
+    doc = json.loads(manifest_json)
+    exact = {
+        "variant": VARIANT,
+        "schema_version": SCHEMA_VERSION,
+        "build_id": "0x%08X" % BUILD_ID,
+        "runner_source_sha256": RUNNER_SHA256,
+        "vendor_source_sha256": VENDOR_SHA256,
+    }
+    for key, expected in exact.items():
+        if doc.get(key) != expected:
+            raise fail("manifest %s mismatch" % key)
+    if doc.get("cross_elf_evidence_proof_scope") != EQUIVALENCE_SCOPE:
+        raise fail("manifest cross-ELF scope mismatch")
+    if doc.get("runner_record_wire_proof_scope") != RUNNER_RECORD_WIRE_PROOF_SCOPE:
+        raise fail("manifest runner-record/wire scope mismatch")
+    if cross_elf_evidence is not None:
+        if doc.get("cross_elf_evidence") != cross_elf_evidence:
+            raise fail("manifest cross-ELF evidence mismatch")
+        if doc.get("cross_elf_evidence_sha256") != _sha256_text(_json_bytes(cross_elf_evidence)):
+            raise fail("manifest cross-ELF evidence hash mismatch")
+    if runner_record_wire_evidence is not None:
+        if doc.get("runner_record_wire_evidence") != runner_record_wire_evidence:
+            raise fail("manifest runner-record/wire evidence mismatch")
+        if doc.get("runner_record_wire_evidence_sha256") != _sha256_text(_json_bytes(runner_record_wire_evidence)):
+            raise fail("manifest runner-record/wire evidence hash mismatch")
+    return doc
+
+
+def _run_tool(args: list[str]) -> str:
+    return subprocess.run(args, check=True, capture_output=True, text=True).stdout
+
+
+def _build_manifest(
+    *,
+    build_id: str,
+    runner_generated: str,
+    vendor_generated: str,
+    elf_path: str,
+    objdump_tool: str,
+    nm_tool: str,
+    readelf_tool: str,
+    cross_elf_evidence_path: str,
+    runner_record_wire_evidence_path: str,
+) -> dict[str, object]:
+    if build_id != "0x%08X" % BUILD_ID:
+        raise fail("build id mismatch")
+    with open(runner_generated, "r", encoding="utf-8") as handle:
+        runner_text = handle.read()
+    with open(vendor_generated, "r", encoding="utf-8") as handle:
+        vendor_text = handle.read()
+    if (
+        "PMU_COMPLETION_POLL_DIAG_V13_BUILD_ID" in runner_text
+        and "v13_poll_completion" in vendor_text
+    ):
+        verify_generated_sources(runner_text, vendor_text)
+    header = _run_tool([readelf_tool, "-h", elf_path])
+    if "Machine: ARM" not in header:
+        raise fail("ELF header is not ARM")
+    objdump_text = _run_tool([objdump_tool, "-d", elf_path])
+    nm_text = _run_tool([nm_tool, elf_path])
+    dwarf_text = _run_tool([readelf_tool, "--debug-dump=info,loc", elf_path])
+    cross_loaded = _load_json(cross_elf_evidence_path)
+    if cross_loaded.get("v12_v13_poll_loop_equivalence_scope") != EQUIVALENCE_SCOPE:
+        raise fail("cross-ELF evidence scope mismatch")
+    runner_record_wire_expected = verify_runner_record_wire_contract(
+        runner_text,
+        objdump_text,
+        nm_text,
+        dwarf_text,
+    )
+    runner_record_wire_loaded = _load_json(runner_record_wire_evidence_path)
+    if runner_record_wire_loaded != runner_record_wire_expected:
+        raise fail("runner-record/wire evidence mismatch")
+    doc = {
+        "variant": VARIANT,
+        "schema_version": SCHEMA_VERSION,
+        "build_id": "0x%08X" % BUILD_ID,
+        "runner_source_sha256": RUNNER_SHA256,
+        "vendor_source_sha256": VENDOR_SHA256,
+        "cross_elf_evidence": cross_loaded,
+        "cross_elf_evidence_sha256": _sha256_text(_json_bytes(cross_loaded)),
+        "cross_elf_evidence_proof_scope": EQUIVALENCE_SCOPE,
+        "runner_record_wire_evidence": runner_record_wire_loaded,
+        "runner_record_wire_evidence_sha256": _sha256_text(_json_bytes(runner_record_wire_loaded)),
+        "runner_record_wire_proof_scope": RUNNER_RECORD_WIRE_PROOF_SCOPE,
+        "runner_record_wire_scope_statement": RUNNER_RECORD_WIRE_SCOPE_NOTE,
+        "runner_record_wire_limitations": RUNNER_RECORD_WIRE_DWARF_REQUIRED_NOTE,
+    }
+    validate_artifact_contract(_json_bytes(doc), cross_loaded, runner_record_wire_loaded)
+    return doc
+
+
+def build_arg_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--build-id", required=True)
+    parser.add_argument("--runner-generated", required=True)
+    parser.add_argument("--vendor-generated", required=True)
+    parser.add_argument("--elf", required=True)
+    parser.add_argument("--map", required=True)
+    parser.add_argument("--app-bin", required=True)
+    parser.add_argument("--vectors-bin", required=True)
+    parser.add_argument("--ddr-bin", required=True)
+    parser.add_argument("--objdump", required=True)
+    parser.add_argument("--nm", required=True)
+    parser.add_argument("--readelf", required=True)
+    parser.add_argument("--cross-elf-evidence", required=True)
+    parser.add_argument("--runner-record-wire-evidence", required=True)
+    parser.add_argument("--manifest-out", required=True)
+    return parser
+
+
+def main(argv: list[str] | None = None) -> int:
+    args = build_arg_parser().parse_args(argv)
+    try:
+        cross_loaded = _load_json(args.cross_elf_evidence)
+        if cross_loaded.get("v12_v13_poll_loop_equivalence_scope") != EQUIVALENCE_SCOPE:
+            raise fail("cross-ELF evidence scope mismatch")
+        runner_doc = _build_manifest(
+            build_id=args.build_id,
+            runner_generated=args.runner_generated,
+            vendor_generated=args.vendor_generated,
+            elf_path=args.elf,
+            objdump_tool=args.objdump,
+            nm_tool=args.nm,
+            readelf_tool=args.readelf,
+            cross_elf_evidence_path=args.cross_elf_evidence,
+            runner_record_wire_evidence_path=args.runner_record_wire_evidence,
+        )
+    except Exception as exc:
+        raise SystemExit(str(exc))
+    _write_manifest_atomic(args.manifest_out, runner_doc)
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
