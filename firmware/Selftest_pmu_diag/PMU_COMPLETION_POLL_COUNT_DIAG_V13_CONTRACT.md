@@ -203,3 +203,32 @@ Neither static artifact qualifies runtime golden output or performance; those
 remain explicit false fields. The separate generated-source NVIC screen remains a bounded static
 refusal of the enable forms listed above and is not a complete proof that the
 V13 image contains no NVIC enable.
+
+## ARM Pre-board Evidence (2026-08-15)
+
+The canonical non-board build was produced from commit
+`2bf3c62e6b6d983ca5f1f62ad5311ce90ec3669f` in two independent clean builds.
+The 22 declared binaries, linked/generated inputs, sidecars, and evidence
+artifacts were byte-identical across builds A and B. The evidence root is
+`/home/gihwan/mps4/PMU_COMPLETION_POLL_COUNT_V13_PREBOARD_STAGE`.
+
+Canonical board-candidate hashes are:
+
+- `APP.BIN`: `800130bf04719bd477a0e3c73268a9bf3aacda7bbb5ecf6e32c3b2f4d676e57a`
+- `VECTORS.BIN`: `50d8950cf6bc61124af19368b83e95dcd5cdb21a34eac2db656b51776fb227f1`
+- `DDR.BIN`: `81d37a219a6b4141d0b433796711ab8af2ee2c3c668a28143a3ffe6a574ade98`
+- linked ELF: `d12fc98510b63f5fa19b4fd4998d49479de3fc210a66dc4321ad734a7267fe11`
+- manifest file: `fa648ca2c445b4e94fb0ed77478fe3281af4b97debb7e10c01ec12314af45ada`
+- retained executable evidence: `f8a041f1549ee1b44b0868d550650cb49d8faebb3066be67ba1f8650da5882d3`
+- retained static base-PMU evidence: `fd652849efd3a162473784e99979778b8757b9bc6ffe6c5285cad946f383f95c`
+
+The fixed linked-image proof locates the helper at `0x31002368`, P0/P1/P2 at
+`0x3100236E`/`0x31002392`/`0x3100239A`, the runtime stock vector target at
+`0x310023BC`, the H-PRINTF seam at `0x31002548`, and terminal `CMD=0xC` at
+`0x3100254E`. It proves the V12/V13 poll-loop semantic equivalence, zero extra
+per-iteration instructions, synchronized countdown provenance, post-P2
+exactly-once publication, and timeout unreachability for the publication.
+
+This is ARM executable and firmware pre-board qualification only. No board
+deployment occurred, the runtime golden output remains unqualified, and the
+image is neither a performance baseline nor Production/MLEK measurement.
