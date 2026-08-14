@@ -165,7 +165,7 @@ check: $(CROSS_ELF_EVIDENCE) $(RUNNER_RECORD_WIRE_EVIDENCE)
 
 manifest: $(MANIFEST)
 
-$(MANIFEST): $(TARGET).elf $(GEN_RUNNER) $(GEN_VENDOR) $(GATE) bins $(CROSS_ELF_EVIDENCE) $(RUNNER_RECORD_WIRE_EVIDENCE)
+$(MANIFEST): $(TARGET).elf $(GEN_RUNNER) $(GEN_VENDOR) $(GATE) bins $(CROSS_ELF_EVIDENCE) $(RUNNER_RECORD_WIRE_EVIDENCE) $(V12_OBJDUMP) $(V12_NM) $(V13_OBJDUMP) $(V13_NM) $(V13_DWARF)
 	python3 $(GATE) \
 	    --build-id $(BUILD_ID) \
 	    --runner-generated $(GEN_RUNNER) \
@@ -175,8 +175,11 @@ $(MANIFEST): $(TARGET).elf $(GEN_RUNNER) $(GEN_VENDOR) $(GATE) bins $(CROSS_ELF_
 	    --app-bin $(BUILD)/APP.BIN \
 	    --vectors-bin $(BUILD)/VECTORS.BIN \
 	    --ddr-bin $(BUILD)/DDR.BIN \
-	    --objdump $(OBJDUMP) \
-	    --nm $(NM) \
+	    --v12-objdump $(V12_OBJDUMP) \
+	    --v12-nm $(V12_NM) \
+	    --v13-objdump $(V13_OBJDUMP) \
+	    --v13-nm $(V13_NM) \
+	    --v13-dwarf $(V13_DWARF) \
 	    --readelf $(READELF) \
 	    --cross-elf-evidence $(CROSS_ELF_EVIDENCE) \
 	    --runner-record-wire-evidence $(RUNNER_RECORD_WIRE_EVIDENCE) \

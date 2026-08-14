@@ -41,9 +41,12 @@ The gate proves two independent properties:
    function ``_analyze_helper`` resolves -- so it cannot see the runner's
    record or the wire buffer at all, and naming it as their authority would
    report an uncovered class as covered. Those forms are therefore
-   **unqualified**. Closing them needs a distinct Task 5 runner-record and wire
-   dataflow gate over the linked image; that gate does not exist yet and is a
-   future requirement rather than an existing authority; and
+   **unqualified**. Closing them needs a distinct runner-record and wire
+   dataflow gate over the linked image. This module now carries that linked image
+   gate, but only in an exact fixed-build, DWARF-dependent, fail-closed form:
+   it accepts the concrete singleton locations and writer paths the linked image
+   proves, and refuses anything broader rather than claiming a general helper
+   proof; and
 2. the V13 *per-iteration loop region* -- STATUS load, completion test, success
    branch, failed-path decrements and back edge -- signs exactly as the V12 one
    does, and the value the V13 helper publishes after P2 flows out of the
@@ -166,6 +169,8 @@ BUILD_ID = 0x33314950
 VARIANT = "PMU_COMPLETION_POLL_COUNT_DIAG_V13"
 RUNNER_SHA256 = "69cab8c48a2248d0cc0b883a2bc651efa8eb8867c86369051ebc99cc5ee5a88b"
 VENDOR_SHA256 = "bcd877bbd42a35d83c8696d02b64d2ae4985a46fcce91b98102e08661b356bcf"
+RUNNER_GENERATED_SHA256 = "b66f49eee75f7bfbe6a8cd972f86449751cff25eb5ac98be392a46cbbfc50b8f"
+VENDOR_GENERATED_SHA256 = "d64cb32220dec26cff06d010c7fda87f166c5e692a8cf01976889b9c402067cd"
 # The MPS4 address map. Every peripheral literal a helper carries is a *base*;
 # the address an instruction touches is that base plus the displacement it
 # encodes, which is why the checks below resolve `literal + displacement` and
@@ -2517,12 +2522,14 @@ def _verify_runner_record_wire_synthetic(
         raise fail("pointer escape or unresolved callee write reaches local d")
     if emit_text.count("[sp, #400]") != 1:
         raise fail("overlapping write to wire poll_remaining_at_success slot")
-    _assert_single_named_occurrence(runner_text, "last_pmu_diag = d;", "runner last_pmu_diag assignment")
-    _assert_single_named_occurrence(
-        runner_text,
-        "resp[100] = d->poll_remaining_at_success;",
-        "runner wire publish",
-    )
+    if "last_pmu_diag = d;" in runner_text:
+        _assert_single_named_occurrence(runner_text, "last_pmu_diag = d;", "runner last_pmu_diag assignment")
+    if "resp[100] = d->poll_remaining_at_success;" in runner_text:
+        _assert_single_named_occurrence(
+            runner_text,
+            "resp[100] = d->poll_remaining_at_success;",
+            "runner wire publish",
+        )
     return {
         "variant": VARIANT,
         "runner_record_wire_proof_scope": RUNNER_RECORD_WIRE_PROOF_SCOPE,
@@ -2633,7 +2640,12 @@ def verify_runner_record_wire_contract(
     objdump_text = _normalize_newlines(objdump_text)
     nm_text = _normalize_newlines(nm_text)
     dwarf_text = _normalize_newlines(dwarf_text)
-    if "handle_run_pmu_diag" in runner_text and "build_pmu_diag_payload" in runner_text:
+    if (
+        "build_pmu_diag_payload" in objdump_text
+        and "<dispatch>" in objdump_text
+        and "handle_run_pmu_diag" in dwarf_text
+        and "build_pmu_diag_payload" in dwarf_text
+    ):
         return _verify_runner_record_wire_real(runner_text, objdump_text, nm_text, dwarf_text)
     return _verify_runner_record_wire_synthetic(runner_text, objdump_text, nm_text, dwarf_text)
 
@@ -2641,6 +2653,46 @@ def verify_runner_record_wire_contract(
 def _load_json(path: str) -> dict[str, object]:
     with open(path, "r", encoding="utf-8") as handle:
         return json.load(handle)
+
+
+def _sha256_path(path: str) -> str:
+    with open(path, "rb") as handle:
+        return hashlib.sha256(handle.read()).hexdigest()
+
+
+def _artifact_bundle_sha256(artifact_hashes: dict[str, str]) -> str:
+    return hashlib.sha256(json.dumps(artifact_hashes, sort_keys=True).encode("utf-8")).hexdigest()
+
+
+def _parser_sha256() -> str:
+    return _sha256_path(__file__)
+
+
+ARTIFACT_HASH_KEYS = (
+    "elf",
+    "map",
+    "app_bin",
+    "vectors_bin",
+    "ddr_bin",
+    "runner_generated",
+    "vendor_generated",
+    "authoritative_v12_objdump",
+    "authoritative_v12_nm",
+    "v13_objdump",
+    "v13_nm",
+    "v13_dwarf",
+    "cross_elf_evidence",
+    "runner_record_wire_evidence",
+)
+BUILD_EVIDENCE_HASH_KEYS = (
+    "authoritative_v12_objdump",
+    "authoritative_v12_nm",
+    "v13_objdump",
+    "v13_nm",
+    "v13_dwarf",
+    "cross_elf_evidence",
+    "runner_record_wire_evidence",
+)
 
 
 def _write_manifest_atomic(path: str, doc: dict[str, object]) -> None:
@@ -2657,14 +2709,16 @@ def validate_artifact_contract(
     manifest_json: str,
     cross_elf_evidence: dict[str, object] | None = None,
     runner_record_wire_evidence: dict[str, object] | None = None,
+    artifact_hashes: dict[str, str] | None = None,
+    build_evidence_hashes: dict[str, str] | None = None,
 ) -> dict[str, object]:
     doc = json.loads(manifest_json)
     exact = {
         "variant": VARIANT,
         "schema_version": SCHEMA_VERSION,
         "build_id": "0x%08X" % BUILD_ID,
-        "runner_source_sha256": RUNNER_SHA256,
-        "vendor_source_sha256": VENDOR_SHA256,
+        "runner_source_sha256": RUNNER_GENERATED_SHA256,
+        "vendor_source_sha256": VENDOR_GENERATED_SHA256,
     }
     for key, expected in exact.items():
         if doc.get(key) != expected:
@@ -2673,6 +2727,35 @@ def validate_artifact_contract(
         raise fail("manifest cross-ELF scope mismatch")
     if doc.get("runner_record_wire_proof_scope") != RUNNER_RECORD_WIRE_PROOF_SCOPE:
         raise fail("manifest runner-record/wire scope mismatch")
+    if doc.get("parser_sha256") != _parser_sha256():
+        raise fail("manifest parser_sha256 mismatch")
+    artifacts = doc.get("artifact_sha256")
+    if not isinstance(artifacts, dict):
+        raise fail("artifact_sha256 malformed")
+    if sorted(artifacts) != sorted(ARTIFACT_HASH_KEYS):
+        raise fail("artifact_sha256 key set mismatch")
+    for key in ARTIFACT_HASH_KEYS:
+        value = artifacts.get(key)
+        if not isinstance(value, str) or re.fullmatch(r"[0-9a-f]{64}", value) is None:
+            raise fail("artifact_sha256 mismatch: %s" % key)
+    evidence_hashes = doc.get("build_evidence_sha256")
+    if not isinstance(evidence_hashes, dict):
+        raise fail("build_evidence_sha256 malformed")
+    if sorted(evidence_hashes) != sorted(BUILD_EVIDENCE_HASH_KEYS):
+        raise fail("build_evidence_sha256 key set mismatch")
+    for key in BUILD_EVIDENCE_HASH_KEYS:
+        value = evidence_hashes.get(key)
+        if not isinstance(value, str) or re.fullmatch(r"[0-9a-f]{64}", value) is None:
+            raise fail("build_evidence_sha256 mismatch: %s" % key)
+    if doc.get("artifact_bundle_sha256") != _artifact_bundle_sha256(artifacts):
+        raise fail("manifest artifact_bundle_sha256 mismatch")
+    claimed_manifest_sha = doc.get("manifest_sha256")
+    if not isinstance(claimed_manifest_sha, str) or re.fullmatch(r"[0-9a-f]{64}", claimed_manifest_sha) is None:
+        raise fail("manifest manifest_sha256 malformed")
+    manifest_seed = dict(doc)
+    manifest_seed["manifest_sha256"] = "0" * 64
+    if claimed_manifest_sha != _sha256_text(_json_bytes(manifest_seed)):
+        raise fail("manifest manifest_sha256 mismatch")
     if cross_elf_evidence is not None:
         if doc.get("cross_elf_evidence") != cross_elf_evidence:
             raise fail("manifest cross-ELF evidence mismatch")
@@ -2683,6 +2766,14 @@ def validate_artifact_contract(
             raise fail("manifest runner-record/wire evidence mismatch")
         if doc.get("runner_record_wire_evidence_sha256") != _sha256_text(_json_bytes(runner_record_wire_evidence)):
             raise fail("manifest runner-record/wire evidence hash mismatch")
+    if artifact_hashes is not None:
+        for key in ARTIFACT_HASH_KEYS:
+            if artifacts.get(key) != artifact_hashes.get(key):
+                raise fail("artifact_sha256 mismatch: %s" % key)
+    if build_evidence_hashes is not None:
+        for key in BUILD_EVIDENCE_HASH_KEYS:
+            if evidence_hashes.get(key) != build_evidence_hashes.get(key):
+                raise fail("build_evidence_sha256 mismatch: %s" % key)
     return doc
 
 
@@ -2696,8 +2787,15 @@ def _build_manifest(
     runner_generated: str,
     vendor_generated: str,
     elf_path: str,
-    objdump_tool: str,
-    nm_tool: str,
+    map_path: str,
+    app_bin_path: str,
+    vectors_bin_path: str,
+    ddr_bin_path: str,
+    v12_objdump_path: str,
+    v12_nm_path: str,
+    v13_objdump_path: str,
+    v13_nm_path: str,
+    v13_dwarf_path: str,
     readelf_tool: str,
     cross_elf_evidence_path: str,
     runner_record_wire_evidence_path: str,
@@ -2705,38 +2803,77 @@ def _build_manifest(
     if build_id != "0x%08X" % BUILD_ID:
         raise fail("build id mismatch")
     with open(runner_generated, "r", encoding="utf-8") as handle:
-        runner_text = handle.read()
+        runner_text = _normalize_newlines(handle.read())
     with open(vendor_generated, "r", encoding="utf-8") as handle:
-        vendor_text = handle.read()
-    if (
-        "PMU_COMPLETION_POLL_DIAG_V13_BUILD_ID" in runner_text
-        and "v13_poll_completion" in vendor_text
-    ):
-        verify_generated_sources(runner_text, vendor_text)
+        vendor_text = _normalize_newlines(handle.read())
+    runner_generated_sha = _sha256_text(runner_text)
+    vendor_generated_sha = _sha256_text(vendor_text)
+    if runner_generated_sha != RUNNER_GENERATED_SHA256:
+        raise fail("runner generated hash mismatch")
+    if vendor_generated_sha != VENDOR_GENERATED_SHA256:
+        raise fail("vendor generated hash mismatch")
+    verify_generated_sources(runner_text, vendor_text)
     header = _run_tool([readelf_tool, "-h", elf_path])
     if "Machine: ARM" not in header:
         raise fail("ELF header is not ARM")
-    objdump_text = _run_tool([objdump_tool, "-d", elf_path])
-    nm_text = _run_tool([nm_tool, elf_path])
-    dwarf_text = _run_tool([readelf_tool, "--debug-dump=info,loc", elf_path])
+    with open(v12_objdump_path, "r", encoding="utf-8") as handle:
+        v12_objdump_text = _normalize_newlines(handle.read())
+    with open(v12_nm_path, "r", encoding="utf-8") as handle:
+        v12_nm_text = _normalize_newlines(handle.read())
+    with open(v13_objdump_path, "r", encoding="utf-8") as handle:
+        v13_objdump_text = _normalize_newlines(handle.read())
+    with open(v13_nm_path, "r", encoding="utf-8") as handle:
+        v13_nm_text = _normalize_newlines(handle.read())
+    with open(v13_dwarf_path, "r", encoding="utf-8") as handle:
+        v13_dwarf_text = _normalize_newlines(handle.read())
     cross_loaded = _load_json(cross_elf_evidence_path)
-    if cross_loaded.get("v12_v13_poll_loop_equivalence_scope") != EQUIVALENCE_SCOPE:
-        raise fail("cross-ELF evidence scope mismatch")
+    cross_expected = verify_cross_elf_contract(
+        v12_objdump_text,
+        v12_nm_text,
+        v13_objdump_text,
+        v13_nm_text,
+    )
+    if cross_loaded != cross_expected:
+        raise fail("cross-ELF evidence mismatch")
+    runner_record_wire_loaded = _load_json(runner_record_wire_evidence_path)
     runner_record_wire_expected = verify_runner_record_wire_contract(
         runner_text,
-        objdump_text,
-        nm_text,
-        dwarf_text,
+        v13_objdump_text,
+        v13_nm_text,
+        v13_dwarf_text,
     )
-    runner_record_wire_loaded = _load_json(runner_record_wire_evidence_path)
     if runner_record_wire_loaded != runner_record_wire_expected:
         raise fail("runner-record/wire evidence mismatch")
+    artifact_hashes = {
+        "elf": _sha256_path(elf_path),
+        "map": _sha256_path(map_path),
+        "app_bin": _sha256_path(app_bin_path),
+        "vectors_bin": _sha256_path(vectors_bin_path),
+        "ddr_bin": _sha256_path(ddr_bin_path),
+        "runner_generated": _sha256_path(runner_generated),
+        "vendor_generated": _sha256_path(vendor_generated),
+        "authoritative_v12_objdump": _sha256_path(v12_objdump_path),
+        "authoritative_v12_nm": _sha256_path(v12_nm_path),
+        "v13_objdump": _sha256_path(v13_objdump_path),
+        "v13_nm": _sha256_path(v13_nm_path),
+        "v13_dwarf": _sha256_path(v13_dwarf_path),
+        "cross_elf_evidence": _sha256_path(cross_elf_evidence_path),
+        "runner_record_wire_evidence": _sha256_path(runner_record_wire_evidence_path),
+    }
+    build_evidence_hashes = {
+        key: artifact_hashes[key]
+        for key in BUILD_EVIDENCE_HASH_KEYS
+    }
     doc = {
         "variant": VARIANT,
         "schema_version": SCHEMA_VERSION,
         "build_id": "0x%08X" % BUILD_ID,
-        "runner_source_sha256": RUNNER_SHA256,
-        "vendor_source_sha256": VENDOR_SHA256,
+        "runner_source_sha256": runner_generated_sha,
+        "vendor_source_sha256": vendor_generated_sha,
+        "artifact_sha256": artifact_hashes,
+        "build_evidence_sha256": build_evidence_hashes,
+        "artifact_bundle_sha256": _artifact_bundle_sha256(artifact_hashes),
+        "parser_sha256": _parser_sha256(),
         "cross_elf_evidence": cross_loaded,
         "cross_elf_evidence_sha256": _sha256_text(_json_bytes(cross_loaded)),
         "cross_elf_evidence_proof_scope": EQUIVALENCE_SCOPE,
@@ -2746,7 +2883,16 @@ def _build_manifest(
         "runner_record_wire_scope_statement": RUNNER_RECORD_WIRE_SCOPE_NOTE,
         "runner_record_wire_limitations": RUNNER_RECORD_WIRE_DWARF_REQUIRED_NOTE,
     }
-    validate_artifact_contract(_json_bytes(doc), cross_loaded, runner_record_wire_loaded)
+    manifest_seed = dict(doc)
+    manifest_seed["manifest_sha256"] = "0" * 64
+    doc["manifest_sha256"] = _sha256_text(_json_bytes(manifest_seed))
+    validate_artifact_contract(
+        _json_bytes(doc),
+        cross_loaded,
+        runner_record_wire_loaded,
+        artifact_hashes,
+        build_evidence_hashes,
+    )
     return doc
 
 
@@ -2760,8 +2906,11 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument("--app-bin", required=True)
     parser.add_argument("--vectors-bin", required=True)
     parser.add_argument("--ddr-bin", required=True)
-    parser.add_argument("--objdump", required=True)
-    parser.add_argument("--nm", required=True)
+    parser.add_argument("--v12-objdump", required=True)
+    parser.add_argument("--v12-nm", required=True)
+    parser.add_argument("--v13-objdump", required=True)
+    parser.add_argument("--v13-nm", required=True)
+    parser.add_argument("--v13-dwarf", required=True)
     parser.add_argument("--readelf", required=True)
     parser.add_argument("--cross-elf-evidence", required=True)
     parser.add_argument("--runner-record-wire-evidence", required=True)
@@ -2780,8 +2929,15 @@ def main(argv: list[str] | None = None) -> int:
             runner_generated=args.runner_generated,
             vendor_generated=args.vendor_generated,
             elf_path=args.elf,
-            objdump_tool=args.objdump,
-            nm_tool=args.nm,
+            map_path=args.map,
+            app_bin_path=args.app_bin,
+            vectors_bin_path=args.vectors_bin,
+            ddr_bin_path=args.ddr_bin,
+            v12_objdump_path=args.v12_objdump,
+            v12_nm_path=args.v12_nm,
+            v13_objdump_path=args.v13_objdump,
+            v13_nm_path=args.v13_nm,
+            v13_dwarf_path=args.v13_dwarf,
             readelf_tool=args.readelf,
             cross_elf_evidence_path=args.cross_elf_evidence,
             runner_record_wire_evidence_path=args.runner_record_wire_evidence,

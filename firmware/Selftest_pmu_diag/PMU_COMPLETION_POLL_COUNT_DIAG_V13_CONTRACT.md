@@ -163,13 +163,20 @@ runner's record or the wire buffer at all. Naming it as their authority would
 report an uncovered class as covered, which is the failure mode this contract
 exists to end. These forms are **unqualified**.
 
-Closing them is a **Task 5 requirement**: a distinct runner-record and wire
-dataflow gate over the linked image, proving that the record's published word
-and the wire slot it serializes into are written only by the sites this
-contract models, whether or not those writes name the slot. That gate does not
-exist yet and is a future requirement rather than an existing authority. Until
-it exists, V13's coverage of these forms is *none*, and no downstream task may
-inherit an assumption that they are refused.
+Closing them is the **linked image runner-record and wire gate** in
+`check_pmu_completion_poll_count_v13`: it proves, over the final linked image,
+that the record's published word and the wire slot it serializes into are
+written only by the exact sites this contract models, whether or not those
+writes name the slot.
+
+That gate is intentionally **exact fixed-build** and **fail-closed**. It
+depends on `readelf --debug-dump=info,loc` yielding exact singleton DWARF
+locations for the inlined `handle_run_pmu_diag` local record and response
+buffer and for the concrete `build_pmu_diag_payload` alias to
+`last_pmu_diag`, plus the exact linked-image disassembly/nm forms the current
+build exhibits. If any location is missing, multi-range, non-singleton,
+register-only, producer-drifted, or otherwise broader than the exact forms the
+gate models, V13 fails rather than claiming a wider proof.
 
 ## Retained V12 Whole-Image Proofs
 

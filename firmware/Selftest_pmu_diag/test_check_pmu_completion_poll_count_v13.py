@@ -30,6 +30,11 @@ def sha256_text(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
+def sha256_path(path: str) -> str:
+    with open(path, "rb") as handle:
+        return hashlib.sha256(handle.read()).hexdigest()
+
+
 def replace_once(text: str, old: str, new: str, what: str) -> str:
     count = text.count(old)
     if count != 1:
@@ -43,6 +48,8 @@ POLL_LIMIT = 10000
 INVALID_REMAINING = 0
 RUNNER_SHA256 = "69cab8c48a2248d0cc0b883a2bc651efa8eb8867c86369051ebc99cc5ee5a88b"
 VENDOR_SHA256 = "bcd877bbd42a35d83c8696d02b64d2ae4985a46fcce91b98102e08661b356bcf"
+RUNNER_GENERATED_SHA256 = "b66f49eee75f7bfbe6a8cd972f86449751cff25eb5ac98be392a46cbbfc50b8f"
+VENDOR_GENERATED_SHA256 = "d64cb32220dec26cff06d010c7fda87f166c5e692a8cf01976889b9c402067cd"
 EXPECTED_SOURCE_NEGATIVE_FIXTURES = {
     "duplicate_helper_definition",
     "duplicate_store",
@@ -2839,10 +2846,14 @@ def run_scope_honesty_suite(gate):
             and "unqualified" in text,
         )
         check(
-            "%s makes the Task 5 runner-record/wire dataflow gate a future requirement" % label,
-            "runner-record and wire dataflow gate" in text
-            and "does not exist yet" in text
-            and "future requirement rather than an existing authority" in text,
+            "%s states the linked-image runner-record/wire gate now exists" % label,
+            "runner-record and wire" in text
+            and "linked image" in text
+            and "exact fixed-build" in text,
+        )
+        check(
+            "%s states the linked-image runner-record/wire gate is DWARF-dependent and fail-closed" % label,
+            "DWARF" in text and "fail-closed" in text,
         )
         check(
             "%s scopes the record rule to the record's own scope, not the post-copy tail" % label,
@@ -3080,7 +3091,7 @@ def _runner_record_wire_nm() -> str:
     return V13_NM_OK + RUNNER_RECORD_WIRE_NM_OK
 
 
-def run_runner_record_wire_cli_suite(gate):
+def run_runner_record_wire_cli_suite(gate, patcher):
     if not hasattr(gate, "verify_runner_record_wire_contract"):
         check(
             "runner-record/wire gate API exists",
@@ -3103,14 +3114,14 @@ def run_runner_record_wire_cli_suite(gate):
             RUNNER_RECORD_WIRE_DWARF_OK,
         )
         check(
-            "runner-record/wire gate accepts canonical linked-image fixture",
+            "runner-record/wire gate accepts synthetic linked-image fixture",
             evidence.get("runner_record_wire_proof_scope") == "linked_image_dwarf_exact_locations"
             and evidence.get("dwarf_required") is True
             and evidence.get("poll_remaining_field_offset_bytes") == 20
             and evidence.get("wire_word_index") == 100,
         )
     except Exception as exc:
-        check("runner-record/wire gate accepts canonical linked-image fixture", False, str(exc))
+        check("runner-record/wire gate accepts synthetic linked-image fixture", False, str(exc))
         evidence = None
 
     probe_dir = "/tmp/v13-arm-dwarf-probe-20260814T213700Z"
@@ -3150,6 +3161,8 @@ def run_runner_record_wire_cli_suite(gate):
             check("runner-record/wire gate rejects %s" % name, expected in str(exc), str(exc))
 
     with tempfile.TemporaryDirectory() as tmp:
+        canonical_runner, _ = patcher.patch_runner(load_real_runner_stock())
+        canonical_vendor, _ = patcher.patch_vendor(PATCH_VENDOR_STOCK)
         runner_path = os.path.join(tmp, "runner_generated.c")
         vendor_path = os.path.join(tmp, "vendor_generated.c")
         elf_path = os.path.join(tmp, "runner.elf")
@@ -3157,16 +3170,24 @@ def run_runner_record_wire_cli_suite(gate):
         app_bin = os.path.join(tmp, "APP.BIN")
         vectors_bin = os.path.join(tmp, "VECTORS.BIN")
         ddr_bin = os.path.join(tmp, "DDR.BIN")
+        v12_objdump_path = os.path.join(tmp, "authoritative_v12.objdump")
+        v12_nm_path = os.path.join(tmp, "authoritative_v12.nm")
+        v13_objdump_path = os.path.join(tmp, "runner_v13.objdump")
+        v13_nm_path = os.path.join(tmp, "runner_v13.nm")
+        v13_dwarf_path = os.path.join(tmp, "runner_v13.dwarf.txt")
         manifest_path = os.path.join(tmp, "pmu_completion_poll_count_v13_manifest.json")
         cross_path = os.path.join(tmp, "cross.json")
         runner_record_wire_path = os.path.join(tmp, "runner_record_wire.json")
-        objdump_path = os.path.join(tmp, "fake_objdump.py")
-        nm_tool_path = os.path.join(tmp, "fake_nm.py")
         readelf_path = os.path.join(tmp, "fake_readelf.py")
         for path, content in (
-            (runner_path, RUNNER_RECORD_WIRE_RUNNER_OK),
-            (vendor_path, VENDOR_V13_OK),
+            (runner_path, canonical_runner),
+            (vendor_path, canonical_vendor),
             (map_path, "MEMORY MAP\n"),
+            (v12_objdump_path, V12_OBJDUMP_OK),
+            (v12_nm_path, V12_NM_OK),
+            (v13_objdump_path, objdump_text),
+            (v13_nm_path, nm_text),
+            (v13_dwarf_path, RUNNER_RECORD_WIRE_DWARF_OK),
         ):
             with open(path, "w", encoding="utf-8") as handle:
                 handle.write(content)
@@ -3178,40 +3199,17 @@ def run_runner_record_wire_cli_suite(gate):
         ):
             with open(path, "wb") as handle:
                 handle.write(payload)
-        with open(objdump_path, "w", encoding="utf-8") as handle:
-            handle.write(
-                "#!/usr/bin/env python3\n"
-                "import sys\n"
-                "from pathlib import Path\n"
-                "sys.stdout.write(Path(sys.argv[2]).with_name(\"objdump_dis.txt\").read_text())\n"
-            )
-        with open(nm_tool_path, "w", encoding="utf-8") as handle:
-            handle.write(
-                "#!/usr/bin/env python3\n"
-                "import sys\n"
-                "from pathlib import Path\n"
-                "sys.stdout.write(Path(sys.argv[1]).with_name(\"nm_out.txt\").read_text())\n"
-            )
         with open(readelf_path, "w", encoding="utf-8") as handle:
             handle.write(
                 "#!/usr/bin/env python3\n"
                 "import sys\n"
-                "from pathlib import Path\n"
                 "if sys.argv[1] == '-h':\n"
                 "    sys.stdout.write('ELF Header\\nType: EXEC (Executable file)\\nMachine: ARM\\n')\n"
-                "elif sys.argv[1] == '--debug-dump=info,loc':\n"
-                "    sys.stdout.write(Path(sys.argv[2]).with_name('readelf_dwarf.txt').read_text())\n"
                 "else:\n"
                 "    raise SystemExit(2)\n"
             )
-        for script in (objdump_path, nm_tool_path, readelf_path):
+        for script in (readelf_path,):
             os.chmod(script, 0o755)
-        with open(os.path.join(tmp, "objdump_dis.txt"), "w", encoding="utf-8") as handle:
-            handle.write(objdump_text)
-        with open(os.path.join(tmp, "nm_out.txt"), "w", encoding="utf-8") as handle:
-            handle.write(nm_text)
-        with open(os.path.join(tmp, "readelf_dwarf.txt"), "w", encoding="utf-8") as handle:
-            handle.write(RUNNER_RECORD_WIRE_DWARF_OK)
 
         if not hasattr(gate, "build_arg_parser"):
             check(
@@ -3232,6 +3230,11 @@ def run_runner_record_wire_cli_suite(gate):
             {
                 "--cross-elf-evidence",
                 "--runner-record-wire-evidence",
+                "--v12-objdump",
+                "--v12-nm",
+                "--v13-objdump",
+                "--v13-nm",
+                "--v13-dwarf",
             } <= parser_flags,
             str(sorted(parser_flags)),
         )
@@ -3269,8 +3272,11 @@ def run_runner_record_wire_cli_suite(gate):
                 "--app-bin", app_bin,
                 "--vectors-bin", vectors_bin,
                 "--ddr-bin", ddr_bin,
-                "--objdump", objdump_path,
-                "--nm", nm_tool_path,
+                "--v12-objdump", v12_objdump_path,
+                "--v12-nm", v12_nm_path,
+                "--v13-objdump", v13_objdump_path,
+                "--v13-nm", v13_nm_path,
+                "--v13-dwarf", v13_dwarf_path,
                 "--readelf", readelf_path,
                 "--cross-elf-evidence", cross_path,
                 "--runner-record-wire-evidence", runner_record_wire_path,
@@ -3286,24 +3292,94 @@ def run_runner_record_wire_cli_suite(gate):
                 text=True,
             )
             check(
-                "V13 checker CLI writes manifest for real linked-image inputs",
+                "V13 checker CLI writes manifest for synthetic smoke inputs",
                 cli_ok.returncode == 0 and os.path.exists(manifest_path) and os.path.getsize(manifest_path) > 0,
                 cli_ok.stderr or cli_ok.stdout,
             )
             if os.path.exists(manifest_path):
                 with open(manifest_path, "r", encoding="utf-8") as handle:
                     manifest = json.load(handle)
+                expected_artifacts = {
+                    "elf": sha256_path(elf_path),
+                    "map": sha256_path(map_path),
+                    "app_bin": sha256_path(app_bin),
+                    "vectors_bin": sha256_path(vectors_bin),
+                    "ddr_bin": sha256_path(ddr_bin),
+                    "runner_generated": sha256_path(runner_path),
+                    "vendor_generated": sha256_path(vendor_path),
+                    "authoritative_v12_objdump": sha256_path(v12_objdump_path),
+                    "authoritative_v12_nm": sha256_path(v12_nm_path),
+                    "v13_objdump": sha256_path(v13_objdump_path),
+                    "v13_nm": sha256_path(v13_nm_path),
+                    "v13_dwarf": sha256_path(v13_dwarf_path),
+                    "cross_elf_evidence": sha256_path(cross_path),
+                    "runner_record_wire_evidence": sha256_path(runner_record_wire_path),
+                }
+                expected_build_evidence = {
+                    key: expected_artifacts[key]
+                    for key in (
+                        "authoritative_v12_objdump",
+                        "authoritative_v12_nm",
+                        "v13_objdump",
+                        "v13_nm",
+                        "v13_dwarf",
+                        "cross_elf_evidence",
+                        "runner_record_wire_evidence",
+                    )
+                }
                 try:
-                    gate.validate_artifact_contract(json.dumps(manifest), cross, evidence)
+                    gate.validate_artifact_contract(
+                        json.dumps(manifest),
+                        cross,
+                        evidence,
+                        expected_artifacts,
+                        expected_build_evidence,
+                    )
                     check(
-                        "V13 manifest binds exact evidence JSON and hashes",
+                        "V13 manifest binds exact evidence JSON and artifact hashes",
                         manifest.get("cross_elf_evidence") == cross
                         and manifest.get("runner_record_wire_evidence") == evidence
+                        and manifest.get("runner_source_sha256") == RUNNER_GENERATED_SHA256
+                        and manifest.get("vendor_source_sha256") == VENDOR_GENERATED_SHA256
+                        and manifest.get("artifact_sha256") == expected_artifacts
+                        and manifest.get("build_evidence_sha256") == expected_build_evidence
                         and manifest.get("cross_elf_evidence_sha256") == sha256_text(json.dumps(cross, indent=2, sort_keys=True) + "\n")
                         and manifest.get("runner_record_wire_evidence_sha256") == sha256_text(json.dumps(evidence, indent=2, sort_keys=True) + "\n"),
                     )
                 except Exception as exc:
-                    check("V13 manifest binds exact evidence JSON and hashes", False, str(exc))
+                    check("V13 manifest binds exact evidence JSON and artifact hashes", False, str(exc))
+
+                for key in sorted(expected_artifacts):
+                    mutated = dict(manifest)
+                    mutated["artifact_sha256"] = dict(manifest["artifact_sha256"])
+                    mutated["artifact_sha256"][key] = "0" * 64
+                    try:
+                        gate.validate_artifact_contract(
+                            json.dumps(mutated),
+                            cross,
+                            evidence,
+                            expected_artifacts,
+                            expected_build_evidence,
+                        )
+                        check("V13 manifest rejects mutated artifact hash for %s" % key, False, "unexpected pass")
+                    except Exception as exc:
+                        check("V13 manifest rejects mutated artifact hash for %s" % key, True, str(exc))
+
+                for key in sorted(expected_build_evidence):
+                    mutated = dict(manifest)
+                    mutated["build_evidence_sha256"] = dict(manifest["build_evidence_sha256"])
+                    mutated["build_evidence_sha256"][key] = "f" * 64
+                    try:
+                        gate.validate_artifact_contract(
+                            json.dumps(mutated),
+                            cross,
+                            evidence,
+                            expected_artifacts,
+                            expected_build_evidence,
+                        )
+                        check("V13 manifest rejects mutated build-evidence hash for %s" % key, False, "unexpected pass")
+                    except Exception as exc:
+                        check("V13 manifest rejects mutated build-evidence hash for %s" % key, True, str(exc))
 
             broken_runner_record_wire = os.path.join(tmp, "runner_record_wire_bad.json")
             with open(broken_runner_record_wire, "w", encoding="utf-8") as handle:
@@ -3316,7 +3392,7 @@ def run_runner_record_wire_cli_suite(gate):
                     sys.executable,
                     os.path.join(os.path.dirname(__file__), "check_pmu_completion_poll_count_v13.py"),
                     *(arg if arg != runner_record_wire_path else broken_runner_record_wire for arg in cli_args[:-1]),
-                    "--manifest-out", bad_manifest,
+                    cli_args[-1].replace(manifest_path, bad_manifest),
                 ],
                 capture_output=True,
                 text=True,
@@ -3325,6 +3401,51 @@ def run_runner_record_wire_cli_suite(gate):
                 "V13 checker CLI rejects mismatched linked-image evidence",
                 cli_bad.returncode != 0 and not os.path.exists(bad_manifest),
                 cli_bad.stderr or cli_bad.stdout,
+            )
+
+            bad_cross_path = os.path.join(tmp, "cross_bad.json")
+            with open(bad_cross_path, "w", encoding="utf-8") as handle:
+                bad_cross = dict(cross)
+                bad_cross["v12_v13_poll_loop_semantically_equivalent"] = False
+                json.dump(bad_cross, handle, indent=2, sort_keys=True)
+            bad_cross_manifest = os.path.join(tmp, "cross_bad_manifest.json")
+            cli_cross_bad = subprocess.run(
+                [
+                    sys.executable,
+                    os.path.join(os.path.dirname(__file__), "check_pmu_completion_poll_count_v13.py"),
+                    *(arg if arg != cross_path else bad_cross_path for arg in cli_args[:-1]),
+                    cli_args[-1].replace(manifest_path, bad_cross_manifest),
+                ],
+                capture_output=True,
+                text=True,
+            )
+            check(
+                "V13 checker CLI rejects forged cross-ELF evidence fields",
+                cli_cross_bad.returncode != 0 and not os.path.exists(bad_cross_manifest),
+                cli_cross_bad.stderr or cli_cross_bad.stdout,
+            )
+
+            noncanonical_runner_path = os.path.join(tmp, "runner_noncanonical.c")
+            noncanonical_vendor_path = os.path.join(tmp, "vendor_noncanonical.c")
+            with open(noncanonical_runner_path, "w", encoding="utf-8") as handle:
+                handle.write(RUNNER_RECORD_WIRE_RUNNER_OK)
+            with open(noncanonical_vendor_path, "w", encoding="utf-8") as handle:
+                handle.write(VENDOR_V13_OK)
+            noncanonical_manifest = os.path.join(tmp, "noncanonical_manifest.json")
+            cli_noncanonical = subprocess.run(
+                [
+                    sys.executable,
+                    os.path.join(os.path.dirname(__file__), "check_pmu_completion_poll_count_v13.py"),
+                    *(noncanonical_runner_path if arg == runner_path else arg for arg in cli_args[:-1]),
+                    cli_args[-1].replace(manifest_path, noncanonical_manifest),
+                ],
+                capture_output=True,
+                text=True,
+            )
+            check(
+                "V13 checker CLI rejects noncanonical generated inputs",
+                cli_noncanonical.returncode != 0 and not os.path.exists(noncanonical_manifest),
+                cli_noncanonical.stderr or cli_noncanonical.stdout,
             )
 
 
@@ -3509,7 +3630,7 @@ if __name__ == "__main__":
 
     run_future_suite(gate, patcher)
     run_future_elf_suite(gate)
-    run_runner_record_wire_cli_suite(gate)
+    run_runner_record_wire_cli_suite(gate, patcher)
     run_scope_honesty_suite(gate)
     run_retained_runtime_suite(gate)
     run_real_image_nvic_suite(gate)
