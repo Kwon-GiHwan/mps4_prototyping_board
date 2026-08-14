@@ -76,6 +76,39 @@ there is nothing to compare them against across images.
 If the real ARM ELF shows loop perturbation or dataflow drift, V13 fails
 qualification even if the source looks correct.
 
+### Forms the gate refuses rather than models
+
+These are contract terms, not gate implementation details: a build that uses
+any of them fails qualification even though its semantics may be innocent.
+
+- **Writeback addressing** (`[rN, #imm]!`, `[rN], #imm`) anywhere in the helper.
+  It advances the base without naming it as a destination, which is the one way
+  a certified effective address and the address actually touched can drift
+  apart from the second iteration on.
+- **Long multiply** (`umull`, `smull`, and the accumulating forms) on any path
+  the helper can execute: they write a second destination the live-out proof
+  cannot read.
+- **Any store outside the three published slots** (P1, P2, remaining), each at
+  its single canonical site. A fourth referenced SRAM literal is a slot the
+  record never names.
+- **Source-level aliasing** of `pmu_completion_poll_v13_t_poll_remaining_at_success`
+  or of the record field `poll_remaining_at_success`: each translation unit may
+  mention them only in the declared uses (definition/extern, the canonical
+  write, the record copy, the timeout invalidation, the wire serialization).
+  Taking either address is refused, because a write classified by the operator
+  next to the name cannot see a publication made through a pointer.
+- **NVIC-block store forms in the whole image**: a store-multiple through a base
+  that may point into `NVIC_Type`, and any store whose destination stays
+  unproven while its base may be such a pointer, are drift. A base materialised
+  by `movw`/`movt` is resolved rather than ignored, and a two-operand
+  `adds Rd, #imm` keeps the pointer's taint.
+
+Known limits of the NVIC half, in force until the Task 5 whole-image graph
+exists: a base whose value arrives from memory, from a function argument or
+from a register transfer list is neither proven nor tainted, so a store through
+it is accepted; taint does not flow through memory; and the analysis is in
+layout order per function, not over its control-flow graph.
+
 ## Retained V12 Whole-Image Proofs
 
 The retained V12 executable proofs that need whole-image artifacts (stock

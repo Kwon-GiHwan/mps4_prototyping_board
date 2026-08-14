@@ -56,6 +56,9 @@ EXPECTED_SOURCE_NEGATIVE_FIXTURES = {
     "success_remaining_10001",
     "success_remaining_zero",
     "timeout_reachable_store",
+    "vendor_memcpy_alias_publish",
+    "vendor_pointer_alias_publish",
+    "vendor_read_alias_publish",
     "wrong_completion_mask",
 }
 
@@ -289,6 +292,34 @@ static int test_commands(void)
     pmu_completion_poll_v13_t_poll_remaining_at_success = 9U;
     return 0;
 }
+"""
+
+# Alias publication. None of the three puts a write operator next to the symbol
+# token, so the write classifier that reads the adjacent operator sees exactly
+# one write -- the canonical helper assignment -- while each of them hands the
+# global's address to code that can publish through it. The third one does not
+# even write inside this translation unit: it hands the address to every other
+# one.
+VENDOR_POINTER_ALIAS_PUBLISH = """void v13_alias_publish(uint32_t value)
+{
+    volatile uint32_t *slot = &pmu_completion_poll_v13_t_poll_remaining_at_success;
+    *slot = value;
+}
+
+"""
+
+VENDOR_MEMCPY_ALIAS_PUBLISH = """void v13_memcpy_publish(const void *source)
+{
+    __builtin_memcpy((void *)&pmu_completion_poll_v13_t_poll_remaining_at_success, source, 4U);
+}
+
+"""
+
+VENDOR_READ_ALIAS_PUBLISH = """volatile uint32_t *v13_remaining_slot(void)
+{
+    return &pmu_completion_poll_v13_t_poll_remaining_at_success;
+}
+
 """
 
 # ---------------------------------------------------------------------------
@@ -783,6 +814,39 @@ def _elf_negative_fixtures() -> dict[str, dict[str, str]]:
         "store destination must resolve to an SRAM literal slot",
     )
 
+    # Writeback addressing. Every row below keeps the immediate displacement its
+    # role requires, so each address check resolves exactly the address it wants
+    # to see -- and the same instruction advances the base the gate still
+    # believes holds the literal, so the *next* access touches the next word of
+    # the window. The polled STATUS pointer walking the U85 register file and a
+    # P2 that reads DWT CPICNT while the gate certifies CYCCNT are both this
+    # shape.
+    fixtures["status_read_preindex_writeback"] = _elf_case(
+        v13_elf(rows=rows_retext(v13_rows(), "loop", "ldr.w   r4, [r7, #4]!")),
+        "writeback addressing mode",
+    )
+    fixtures["status_read_postindex_writeback"] = _elf_case(
+        v13_elf(rows=rows_retext(v13_rows(), "loop", "ldr.w   r4, [r7], #4")),
+        "writeback addressing mode",
+    )
+    fixtures["cycle_count_read_writeback"] = _elf_case(
+        v13_elf(rows=rows_retext(v13_rows(), "p1_read", "ldr     r0, [r6, #4]!")),
+        "writeback addressing mode",
+    )
+    fixtures["publication_writeback"] = _elf_case(
+        v13_elf(rows=rows_retext(v13_rows(), "rem_store", "str     r1, [r5, #0]!")),
+        "writeback addressing mode",
+    )
+
+    # Long multiply writes RdLo *and* RdHi. The live-out proof reads only the
+    # first destination operand, so the second one redefines the published
+    # countdown register invisibly unless the mnemonic is refused outright.
+    for label, text in (("umull", "umull   r0, r1, r4, r4"), ("smull", "smull   r0, r1, r4, r4")):
+        fixtures["%s_clobbers_remaining_register" % label] = _elf_case(
+            v13_elf(rows=rows_before(v13_rows(), "rem_store", row(label, text, size=4))),
+            "multi-destination multiply",
+        )
+
     fixtures["pc_load_in_poll_region"] = _elf_case(
         v13_elf(rows=rows_after(v13_rows(), "loop", row("pc_load", "ldr     r3, [pc, {lit:DWT}]"))),
         "extra per-iteration load/store",
@@ -921,6 +985,37 @@ def _elf_negative_fixtures() -> dict[str, dict[str, str]]:
             ),
             "written away from its canonical site",
         )
+    # The three published slots are locked to their canonical sites, but a
+    # *fourth* referenced SRAM literal is a slot the record never names -- and a
+    # prologue store through it runs ahead of both the success and the timeout
+    # entry, so it can clobber whatever global happens to live at that address.
+    fixtures["prologue_fourth_slot_store"] = _elf_case(
+        v13_elf(
+            rows=rows_before(
+                v13_rows(),
+                "loop",
+                row("spare_ptr", "ldr     r5, [pc, {lit:SPARE}]"),
+                row("spare_store", "str     r2, [r5]"),
+            ),
+            literals=literals_with(V13_LITERALS, ("SPARE", 0x31005390)),
+        ),
+        "helper store outside its three published slots",
+    )
+    fixtures["success_tail_fourth_slot_store"] = _elf_case(
+        v13_elf(
+            rows=rows_after(
+                v13_rows(),
+                "succ_result",
+                row("spare_ptr", "ldr     r5, [pc, {lit:SPARE}]"),
+                row("spare_store", "str     r2, [r5]"),
+            ),
+            literals=literals_with(V13_LITERALS, ("SPARE", 0x31005390)),
+        ),
+        # On the success path the same store is already a second live-in store,
+        # which the publication count refuses first; the prologue one above is
+        # the case only the whole-helper store lock can see.
+        "remaining store after P2 count != 1",
+    )
     fixtures["timeout_detour_remaining_store"] = _elf_case(
         v13_elf(
             rows=rows_after(
@@ -1201,6 +1296,21 @@ def _negative_vendor_fixtures() -> dict[str, dict[str, str]]:
             "vendor": VENDOR_V13_OK + SECOND_WRITER_AFTER_TEST_COMMANDS,
             "expected": "vendor TU remaining write count != 1",
         },
+        # Alias publication: the write count stays at one because no write
+        # operator ever sits next to the symbol, so only a rule about *every*
+        # reference to the global can see these.
+        "vendor_pointer_alias_publish": {
+            "vendor": VENDOR_POINTER_ALIAS_PUBLISH + VENDOR_V13_OK,
+            "expected": "vendor TU remaining reference outside",
+        },
+        "vendor_memcpy_alias_publish": {
+            "vendor": VENDOR_MEMCPY_ALIAS_PUBLISH + VENDOR_V13_OK,
+            "expected": "vendor TU remaining reference outside",
+        },
+        "vendor_read_alias_publish": {
+            "vendor": VENDOR_READ_ALIAS_PUBLISH + VENDOR_V13_OK,
+            "expected": "vendor TU remaining reference outside",
+        },
         "duplicate_helper_definition": {
             "vendor": VENDOR_V13_OK + "\n" + VENDOR_V13_OK,
             "expected": "duplicate V13 poll helper definition",
@@ -1380,7 +1490,7 @@ def run_retained_runtime_suite(gate):
         )
         check(
             "retained runtime gate accepts stock NVIC_SetVector and NVIC_ClearPendingIRQ call sites",
-            evidence.get("loop_equivalent") is True,
+            evidence.get("v12_v13_poll_loop_semantically_equivalent") is True,
             str(evidence),
         )
     except Exception as exc:
@@ -1487,6 +1597,150 @@ def run_retained_runtime_suite(gate):
             ),
             None,
         ),
+        # A store-multiple writes a whole register list through the base, and
+        # the decrementing forms write *below* it, so a base inside the NVIC
+        # block reaches ISER from either side. None of that is decodable as a
+        # single destination, so it fails closed rather than being resolved.
+        (
+            "stmia through an NVIC-block base fails closed",
+            objdump_section(
+                "test_u85",
+                0x32004000,
+                ("4b01", "ldr", "r3, [pc, #4]  @ (32004008 <test_u85+0x8>)"),
+                ("c301", "stmia", "r3!, {r0}"),
+                ("e000e100", ".word", "0xe000e100"),
+            ),
+            "NVIC-block multiple store destination unresolvable",
+        ),
+        (
+            "stmdb through an NVIC-block base fails closed",
+            objdump_section(
+                "test_u85",
+                0x32004000,
+                ("4b01", "ldr", "r3, [pc, #4]  @ (32004008 <test_u85+0x8>)"),
+                ("e903 0001", "stmdb", "r3, {r0}"),
+                ("e000e100", ".word", "0xe000e100"),
+            ),
+            "NVIC-block multiple store destination unresolvable",
+        ),
+        (
+            "an ordinary stack frame push is not NVIC drift",
+            objdump_section(
+                "test_u85",
+                0x32004000,
+                ("4b01", "ldr", "r3, [pc, #4]  @ (32004008 <test_u85+0x8>)"),
+                ("b508", "push", "{r3, lr}"),
+                ("e000e100", ".word", "0xe000e100"),
+            ),
+            None,
+        ),
+        (
+            "stack frame stmdb through sp is not NVIC drift",
+            objdump_section(
+                "test_u85",
+                0x32004000,
+                ("4b01", "ldr", "r3, [pc, #4]  @ (32004008 <test_u85+0x8>)"),
+                ("e92d 43f8", "stmdb", "sp!, {r3, r4, lr}"),
+                ("e000e100", ".word", "0xe000e100"),
+            ),
+            None,
+        ),
+        # `adds Rd, #imm` names its destination once and its immediate second,
+        # so a taint rule that reads only the operands past the first comma sees
+        # no register at all and drops the pointer it is walking.
+        (
+            "two-operand adds pointer walk keeps the NVIC taint",
+            objdump_section(
+                "test_u85",
+                0x32004000,
+                ("4b02", "ldr", "r3, [pc, #8]  @ (3200400c <test_u85+0xc>)"),
+                ("3304", "adds", "r3, #4"),
+                ("6018", "str", "r0, [r3, #0]"),
+                ("e000e100", ".word", "0xe000e100"),
+            ),
+            "NVIC-block store destination unresolvable",
+        ),
+        # movw/movt materialisation carries no literal pool entry at all: the
+        # low half arrives as a move-immediate and the high half as an opaque
+        # writer, so neither the taint rule nor the resolver used to see it.
+        (
+            "movw/movt materialized ISER[0] base is drift",
+            objdump_section(
+                "test_u85",
+                0x32004000,
+                ("f24e 1300", "movw", "r3, #57600\t@ 0xe100"),
+                ("f2ce 0300", "movt", "r3, #57344\t@ 0xe000"),
+                ("6018", "str", "r0, [r3, #0]"),
+            ),
+            "direct NVIC ISER enable write remains reachable",
+        ),
+        (
+            "movw/movt materialized ICPR base is not drift",
+            objdump_section(
+                "test_u85",
+                0x32004000,
+                ("f24e 1380", "movw", "r3, #57728\t@ 0xe180"),
+                ("f2ce 0300", "movt", "r3, #57344\t@ 0xe000"),
+                ("6018", "str", "r0, [r3, #0]"),
+            ),
+            None,
+        ),
+        (
+            "movt into a store base with an unproven low half fails closed",
+            objdump_section(
+                "test_u85",
+                0x32004000,
+                ("f2ce 0300", "movt", "r3, #57344\t@ 0xe000"),
+                ("6018", "str", "r0, [r3, #0]"),
+            ),
+            "NVIC-block store destination unresolvable",
+        ),
+        # A `strd` writes two consecutive words, so a proven destination one
+        # word below ISER[0] still lands inside the bank.
+        (
+            "strd spanning into ISER[0] is drift",
+            objdump_section(
+                "test_u85",
+                0x32004000,
+                ("4b02", "ldr", "r3, [pc, #8]  @ (3200400c <test_u85+0xc>)"),
+                ("e943 0101", "strd", "r0, r1, [r3, #-4]"),
+                ("4770", "bx", "lr"),
+                ("e000e100", ".word", "0xe000e100"),
+            ),
+            "direct NVIC ISER enable write remains reachable",
+        ),
+        # A register-offset store hides which operand is the base, so the taint
+        # has to be looked for on every register it names -- here the NVIC
+        # pointer is the *offset*, not the syntactic base.
+        (
+            "register-offset store whose offset carries the NVIC pointer fails closed",
+            objdump_section(
+                "test_u85",
+                0x32004000,
+                ("4b02", "ldr", "r3, [pc, #8]  @ (3200400c <test_u85+0xc>)"),
+                ("2100", "movs", "r1, #0"),
+                ("50ca", "str", "r2, [r1, r3]"),
+                ("e000e100", ".word", "0xe000e100"),
+            ),
+            "NVIC-block store destination unresolvable",
+        ),
+        # Writeback advances the base the resolver still reads off the literal
+        # load, so the address it proves is the one the *previous* access
+        # touched. Here the proven address is the reserved gap while the store
+        # really lands on ISER[0].
+        (
+            "writeback advance of an NVIC base poisons the later store",
+            objdump_section(
+                "test_u85",
+                0x32004000,
+                ("4b03", "ldr", "r3, [pc, #12]  @ (32004010 <test_u85+0x10>)"),
+                ("f853 0f80", "ldr.w", "r0, [r3, #128]!"),
+                ("f843 0c80", "str.w", "r0, [r3, #-128]"),
+                ("4770", "bx", "lr"),
+                ("e000e100", ".word", "0xe000e100"),
+            ),
+            "NVIC-block store destination unresolvable",
+        ),
     ):
         try:
             gate._check_retained_v12_runtime(text)
@@ -1556,6 +1810,63 @@ def run_real_image_nvic_suite(gate):
                 icpr_store, icpr_store + "  @ NVIC_BASE 0xe000e100", 1
             ),
             None,
+        ),
+        # Four ordinary Thumb-2 shapes, injected in place of the real ICER store
+        # so each one inherits the real image's own NVIC base literal in r3.
+        # Every one of them writes ISER on the real image.
+        (
+            "real image ISER write through stmia is drift",
+            replace_once(
+                REAL_ARM_DISASSEMBLY,
+                icer_store,
+                "310025e2:\tc301      \tstmia\tr3!, {r0}",
+                "real ICER store",
+            ),
+            "NVIC-block multiple store destination unresolvable",
+        ),
+        (
+            "real image ISER write through stmdb is drift",
+            replace_once(
+                REAL_ARM_DISASSEMBLY,
+                icer_store,
+                "310025e2:\te903 0001 \tstmdb\tr3, {r0}",
+                "real ICER store",
+            ),
+            "NVIC-block multiple store destination unresolvable",
+        ),
+        (
+            "real image ISER write after a two-operand adds pointer walk is drift",
+            replace_once(
+                REAL_ARM_DISASSEMBLY,
+                icer_store,
+                "310025e2:\t3304      \tadds\tr3, #4\n"
+                "310025e4:\t6018      \tstr\tr0, [r3, #0]",
+                "real ICER store",
+            ),
+            "NVIC-block store destination unresolvable",
+        ),
+        (
+            "real image ISER write through a movw/movt materialized base is drift",
+            replace_once(
+                REAL_ARM_DISASSEMBLY,
+                icer_store,
+                "310025e2:\tf24e 1500 \tmovw\tr5, #57600\n"
+                "310025e6:\tf2ce 0500 \tmovt\tr5, #57344\n"
+                "310025ea:\t6028      \tstr\tr0, [r5, #0]",
+                "real ICER store",
+            ),
+            "direct NVIC ISER enable write remains reachable",
+        ),
+        (
+            "real image ISER write behind a writeback-advanced base is drift",
+            replace_once(
+                REAL_ARM_DISASSEMBLY,
+                icer_store,
+                "310025e2:\tf853 0f80 \tldr.w\tr0, [r3, #128]!\n"
+                "310025e6:\tf843 0c80 \tstr.w\tr0, [r3, #-128]",
+                "real ICER store",
+            ),
+            "NVIC-block store destination unresolvable",
         ),
     ):
         try:
@@ -1693,6 +2004,41 @@ def run_runner_gate_suite(gate, runner_out, vendor_out):
             ),
             "runner timeout gate: expected 1 match",
         ),
+        # Alias publication on the runner side. Each of these leaves the two
+        # record writes and the single global reset exactly as the gate counts
+        # them, because none of them puts a write operator next to the name the
+        # gate matches; only a rule about every reference can see them.
+        (
+            "record field published through a pointer alias",
+            replace_once(
+                runner_out,
+                copy_line,
+                copy_line + "        *(&d.poll_remaining_at_success) = 7U;\n",
+                "field-alias",
+            ),
+            "runner remaining record field reference outside",
+        ),
+        (
+            "record field written through a second record pointer",
+            replace_once(
+                runner_out,
+                copy_line,
+                copy_line + "        rec->poll_remaining_at_success = 7U;\n",
+                "field-second-record",
+            ),
+            "runner remaining record field reference outside",
+        ),
+        (
+            "remaining global published through a pointer alias",
+            replace_once(
+                runner_out,
+                copy_line,
+                copy_line
+                + "        *(volatile uint32_t *)&pmu_completion_poll_v13_t_poll_remaining_at_success = 7U;\n",
+                "global-alias",
+            ),
+            "runner remaining global reference outside",
+        ),
     ):
         try:
             gate.verify_generated_sources(mutated, vendor_out)
@@ -1732,10 +2078,14 @@ def run_future_elf_suite(gate):
         "future ELF gate normalizes V12 and V13 loop effects identically",
         gate.normalize_poll_loop(v12_loop) == gate.normalize_poll_loop(v13_loop),
     )
-    loop_equivalent = getattr(evidence, "loop_equivalent", None) if not isinstance(evidence, dict) else evidence.get("loop_equivalent")
+    scoped_equivalent = (
+        getattr(evidence, "v12_v13_poll_loop_semantically_equivalent", None)
+        if not isinstance(evidence, dict)
+        else evidence.get("v12_v13_poll_loop_semantically_equivalent")
+    )
     check(
         "future ELF gate accepts canonical V12/V13 pair through authoritative contract",
-        loop_equivalent is True,
+        scoped_equivalent is True,
         str(evidence),
     )
 
@@ -1793,7 +2143,7 @@ def run_future_elf_suite(gate):
             check(
                 "future ELF gate accepts %s under an unchanged signature" % label,
                 gate.normalize_poll_loop(variant) == canonical_signature
-                and evidence.get("loop_equivalent") is True,
+                and evidence.get("v12_v13_poll_loop_semantically_equivalent") is True,
                 str(gate.normalize_poll_loop(variant)),
             )
         except Exception as exc:
@@ -1886,6 +2236,20 @@ def run_scope_honesty_suite(gate):
         str(offending),
     )
 
+    # An unscoped duplicate of the scoped boolean hands a consumer that reads
+    # the short key exactly the whole-helper reading the scope tag exists to
+    # prevent, so the manifest carries the scoped name only.
+    unscoped = [
+        key
+        for key in evidence
+        if "equivalent" in key.lower() and not key.startswith("v12_v13_poll_loop_")
+    ]
+    check(
+        "manifest carries no unscoped equivalence alias",
+        unscoped == [],
+        str(unscoped),
+    )
+
     with open(gate.__file__, "r", encoding="utf-8") as handle:
         gate_source = handle.read()
     literal_keys = [
@@ -1893,7 +2257,6 @@ def run_scope_honesty_suite(gate):
         for key in (
             "v12_v13_poll_loop_semantically_equivalent",
             "v13_extra_per_iteration_instruction_count_zero",
-            "loop_equivalent",
         )
         if '"%s": True' % key in gate_source
     ]
@@ -2141,6 +2504,21 @@ if __name__ == "__main__":
         <= set(ELF_NEGATIVE_FIXTURES),
     )
     check(
+        "writeback addressing drifts are covered on every resolved address",
+        {
+            "status_read_preindex_writeback",
+            "status_read_postindex_writeback",
+            "cycle_count_read_writeback",
+            "publication_writeback",
+        }
+        <= set(ELF_NEGATIVE_FIXTURES),
+    )
+    check(
+        "multi-destination long multiply is covered on the published register",
+        {"umull_clobbers_remaining_register", "smull_clobbers_remaining_register"}
+        <= set(ELF_NEGATIVE_FIXTURES),
+    )
+    check(
         "CFG reachability drifts are covered on both helper exits",
         {
             "timeout_branches_to_remaining_store",
@@ -2185,6 +2563,8 @@ if __name__ == "__main__":
             "pre_loop_p2_store",
             "pre_loop_p1_store",
             "timeout_detour_remaining_store",
+            "prologue_fourth_slot_store",
+            "success_tail_fourth_slot_store",
         }
         <= set(ELF_NEGATIVE_FIXTURES),
     )

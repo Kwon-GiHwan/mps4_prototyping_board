@@ -7,7 +7,14 @@ The gate proves two independent properties:
    immediately after P2, from the loop induction variable -- and the generated
    runner can only forward that value on the success path, because its single
    other write to the record field is the ``0U`` invalidation inside the
-   ``poll_result != V13_POLL_SUCCESS`` gate that follows the copy; and
+   ``poll_result != V13_POLL_SUCCESS`` gate that follows the copy. Both halves
+   are held to *every mention* of the name rather than to a write count: a
+   write is classified by the operator next to the symbol, and taking the
+   symbol's address never puts one there, so ``&SYM`` handed to a helper, to
+   ``memcpy`` or to a second record pointer would publish through an alias
+   while the count stayed at one. Each translation unit may therefore mention
+   the global and the record field only in the uses this gate models, which is
+   what stops an alias from being formed at all; and
 2. the V13 *per-iteration loop region* -- STATUS load, completion test, success
    branch, failed-path decrements and back edge -- signs exactly as the V12 one
    does, and the value the V13 helper publishes after P2 flows out of the
@@ -32,7 +39,15 @@ completion test. Every pointer the helper uses is resolved through the Thumb
 literal-pool rule ``((addr + 4) & ~3) + imm`` and bound to the exact address
 its role requires, so a build that polls a RAM shadow, reads a fake cycle
 counter or publishes the countdown over the P2 slot is refused even though its
-instruction shape is unchanged. Where the publication actually *runs* is proven
+instruction shape is unchanged. Because that resolution stands on a register
+still holding the literal it was loaded with, writeback addressing --
+``[rN, #imm]!`` and ``[rN], #imm``, which advance the base without ever naming
+it as a destination -- is refused anywhere in the helper rather than modelled:
+it is the one form under which a certified address and a touched address can
+drift apart on the second iteration. The three published slots are also the
+only stores the helper may execute at all, so a fourth referenced SRAM literal
+cannot be written from the prologue, where it would run ahead of both the
+success and the timeout entry. Where the publication actually *runs* is proven
 over an explicit control-flow graph of the helper rather than over layout order:
 the remaining store must be unreachable from the timeout exit, and every path
 from the completion branch to a return must execute it exactly once, so a build
@@ -48,7 +63,10 @@ helper can *execute* -- the set reachable from its entry, not a slice between
 two indices -- so a multi-register ``ldrd`` reload, a predicated ``moveq`` or an
 ``rrx`` recomputation is refused outright instead of being read as writing
 nothing, and so is a ``cpsid``, ``wfi`` or coprocessor effect anywhere on that
-set, including the pre-loop prologue and the tail past the publication. On the
+set, including the pre-loop prologue and the tail past the publication. A long
+multiply belongs to the same family for the same reason: ``umull``/``smull``
+write RdLo *and* RdHi, and only the first destination operand is readable, so
+the pair is refused rather than read as writing the register it names first. On the
 same footing, each of the three published slots must be written by its canonical
 site and by nothing else the helper can reach, which is what refuses a pre-loop
 store that pre-seeds the record ahead of both the success and timeout entries.
@@ -68,7 +86,17 @@ proof enforced here is that the V13 image reintroduces no NVIC *enable*: neither
 an ``NVIC_EnableIRQ`` call site nor a direct NVIC->ISER write. The stock
 ``NVIC_SetVector`` and ``NVIC_ClearPendingIRQ`` call sites are required by that
 retained contract, so their presence is not drift here; their operands and
-ordering are proven by the whole-image gate.
+ordering are proven by the whole-image gate. That ISER half examines every
+instruction in the image that can write memory through a base register -- the
+store-multiple forms included, and a base materialised by ``movw``/``movt``
+rather than by a literal pool -- and it keeps a pointer's taint across the
+two-operand ``adds Rd, #imm`` that a ``NVIC->ISER[i]`` walk lowers to.
+
+What it still cannot see, stated so no reader takes the gate for more than it
+is: a base whose value arrives from memory, from a function argument or from a
+transfer list is unproven *and* untainted, so a store through it is accepted;
+taint does not flow through memory; and every one of these judgements is made
+in layout order over each function, not over its control-flow graph.
 """
 
 from __future__ import annotations
@@ -149,6 +177,12 @@ _REMAINING_WORD_RE = re.compile(
 )
 _WRITE_OP_RE = re.compile(r"\s*(?:\+\+|--|<<=|>>=|[-+*/%&|^]=|=(?!=))")
 _PREFIX_WRITE_OP_RE = re.compile(r"(?:\+\+|--)\s*$")
+_REMAINING_FIELD_WORD_RE = re.compile(
+    r"(?<![A-Za-z0-9_])%s(?![A-Za-z0-9_])" % re.escape(_REMAINING_FIELD)
+)
+_VENDOR_REMAINING_DECLARATION_RE = re.compile(
+    r"(?:extern\s+)?volatile\s+uint32_t\s+(%s)\s*(?:=\s*0U\s*)?;" % re.escape(_REMAINING_SYMBOL)
+)
 # CMSIS `NVIC_Type` covers 0xE000E100..0xE000E4EF -- ISER at +0x000, ICER at
 # +0x080, ISPR +0x100, ICPR +0x180, IABR +0x200, IPR +0x300 -- and its base
 # address is also ISER[0]. A compiler therefore parks the single word
@@ -167,7 +201,25 @@ _NVIC_BLOCK_LAST = 0xE000E4EF
 # this gate can see.
 _NVIC_ISER_FIRST = 0xE000E100
 _NVIC_ISER_LAST = 0xE000E13F
+_NVIC_BLOCK_HIGH_HALFWORD = _NVIC_BLOCK_FIRST >> 16
 _REG_TOKEN_RE = re.compile(r"\b(?:r\d+|sl|sb|fp|ip|sp|lr|pc)\b")
+_QUAL_IMMEDIATE_RE = re.compile(r"#(-?(?:0x[0-9A-Fa-f]+|\d+))")
+_MEMORY_BASE_RE = re.compile(r"\[\s*([a-z0-9]+)")
+_REGISTER_LIST_RE = re.compile(r"\{([^}]*)\}")
+# Store-family prefixes the whole-image gate must look at. ``check_pmu_qual``
+# decodes a destination only for ``str*`` with a literal- or immediate-proven
+# base, so every other one of these reaches an address the resolver cannot see
+# -- and a store-multiple through an NVIC-block base writes ISER just as surely
+# as a single store does.
+_STORE_FAMILY_PREFIXES = ("str", "stm", "stl", "stc", "vstr", "vstm")
+_MULTIPLE_TRANSFER_PREFIXES = ("stm", "ldm")
+_LOAD_MULTIPLE_PREFIXES = ("ldm", "pop")
+_STACK_TRANSFER_MNEMONICS = frozenset(("push", "pop"))
+# Mnemonics that overwrite their destination without reading it. Every other
+# two-operand data-processing form reads the register it writes.
+_FULL_WRITE_MNEMONICS = frozenset(
+    ("mov", "movs", "movw", "mvn", "mvns", "adr", "ldr", "ldrb", "ldrh", "ldrsb", "ldrsh")
+)
 
 _HEX_WORD_RE = re.compile(r"\.word\s+0x([0-9A-Fa-f]+)")
 _ENCODING_RE = re.compile(r"^(?:[0-9a-f]{8}|[0-9a-f]{4}(?:\s+[0-9a-f]{4})*)\s+(?=[a-z.])")
@@ -184,6 +236,16 @@ _PC_OFFSET_RE = re.compile(
 )
 _STORE_RE = re.compile(r"^str(?:b|h)?(?:\.w)?\s+(r\d+),\s*\[([a-z0-9]+)([^\]]*)\]")
 _DISPLACEMENT_RE = re.compile(r"^,\s*#(-?(?:0x[0-9a-fA-F]+|\d+))$")
+# Writeback: `[rN, #imm]!` advances the base before the access, `[rN], #imm`
+# after it. Both live *outside* the brackets, so `_LOAD_RE`/`_STORE_RE` report
+# the displacement the access uses and nothing about the advance, and
+# `_defined_register` reads the first register operand, which is never the
+# base. The base would therefore keep its literal binding while the next access
+# through it touches the next word of the window -- the polled STATUS pointer
+# walking the U85 register file, a P2 that reads DWT CPICNT while the gate
+# certifies CYCCNT. The form is refused outright, the way register-offset
+# addressing already is, rather than modelled.
+_WRITEBACK_RE = re.compile(r"\]\s*(?:!|,)")
 _DECREMENT_RE = re.compile(r"^subs(?:\.w)?\s+(r\d+),\s*#1$")
 _TEST_RE = re.compile(r"^tst(?:\.w)?\s+(r\d+),\s*#(\d+)$")
 _DEST_RE = re.compile(r"^[a-z][a-z0-9.]*\s+(r\d+)\b")
@@ -195,7 +257,7 @@ _WRITING_MNEMONICS = frozenset(
         "add", "adds", "adc", "adcs", "sub", "subs", "sbc", "sbcs", "rsb", "rsbs",
         "and", "ands", "orr", "orrs", "orn", "eor", "eors", "bic", "bics",
         "lsl", "lsls", "lsr", "lsrs", "asr", "asrs", "ror", "rors",
-        "mul", "muls", "mla", "mls", "udiv", "sdiv", "umull", "smull",
+        "mul", "muls", "mla", "mls", "udiv", "sdiv",
         "ldr", "ldrb", "ldrh", "ldrsb", "ldrsh",
         "uxtb", "uxth", "sxtb", "sxth", "rev", "rev16", "clz", "ubfx", "sbfx",
     )
@@ -219,6 +281,15 @@ _PC_DEST_RE = re.compile(r"^[a-z][a-z0-9.]*\s+pc\b")
 _STORE_MNEMONICS = frozenset(("str", "strb", "strh"))
 _COMPARE_MNEMONICS = frozenset(("cmp", "cmn", "tst", "teq"))
 _MULTI_REGISTER_TRANSFER_MNEMONICS = frozenset(("ldrd", "strd"))
+# A long multiply writes RdLo *and* RdHi, and `_defined_register` reports only
+# the first register operand -- so the second destination would redefine the
+# published countdown register with the multiply-high result while the live-out
+# proof reads the instruction as writing something else entirely. Modelling two
+# destinations for one mnemonic family buys nothing the helper needs, so the
+# family is refused on any path the helper can execute.
+_MULTI_DESTINATION_MNEMONICS = frozenset(
+    ("umull", "smull", "umlal", "smlal", "umaal", "smlald", "smlsld")
+)
 # The whole vocabulary the live-out proof knows how to reason about. Anything
 # outside it is refused rather than ignored, because `_defined_register` reports
 # "defines nothing" for every mnemonic it does not list -- which is exactly what
@@ -412,6 +483,73 @@ def _verify_vendor_tu_single_writer(vendor_text: str, canonical_position: int) -
         raise fail("vendor TU remaining write must be the canonical helper success assignment")
 
 
+def _reference_spans(text: str, patterns) -> tuple[tuple[int, int], ...]:
+    return tuple((hit.start(), hit.end()) for pattern in patterns for hit in pattern.finditer(text))
+
+
+def _reject_unclassified_references(text: str, token_re, spans, what: str) -> None:
+    """Every mention of a name must lie inside one of the uses the gate models."""
+    for hit in token_re.finditer(text):
+        if not any(start <= hit.start() and hit.end() <= stop for start, stop in spans):
+            raise fail("%s at offset %d" % (what, hit.start()))
+
+
+def _verify_vendor_tu_reference_sites(vendor_text: str, canonical_position: int) -> None:
+    """Hold the whole vendor TU to the two references the contract names.
+
+    ``_remaining_write_positions`` classifies a mention by the operator directly
+    next to the symbol token, and taking the symbol's *address* never puts one
+    there: ``&SYM`` passed to a helper, handed to ``memcpy`` or returned from a
+    getter publishes the slot while the write count stays at one. Rather than
+    enumerate the ways an alias can be built, every mention must be either the
+    definition or the canonical success assignment -- so a pointer to the slot
+    cannot be formed inside this translation unit at all.
+    """
+    spans = tuple(
+        (hit.start(1), hit.end(1)) for hit in _VENDOR_REMAINING_DECLARATION_RE.finditer(vendor_text)
+    ) + ((canonical_position, canonical_position + len(_REMAINING_SYMBOL)),)
+    _reject_unclassified_references(
+        vendor_text,
+        _REMAINING_WORD_RE,
+        spans,
+        "vendor TU remaining reference outside its definition and canonical write",
+    )
+
+
+def _verify_runner_reference_sites(runner_text: str) -> None:
+    """Hold the runner to the uses its gate actually models.
+
+    The record write gate reads ``d.<field> = ...`` and the global gate reads
+    the extern, the reset and that copy. An alias defeats both the same way it
+    defeats the vendor scan -- ``&d.<field>``, or a second pointer to the same
+    record -- so the field and the global are each held to their declared uses
+    instead of to a write count.
+    """
+    for token_re, patterns, what in (
+        (
+            _REMAINING_FIELD_WORD_RE,
+            (
+                _RUNNER_REMAINING_MEMBER_RE,
+                _RECORD_REMAINING_WRITE_RE,
+                _RUNNER_REMAINING_SERIALIZE_RE,
+            ),
+            "runner remaining record field reference outside its declared uses",
+        ),
+        (
+            _REMAINING_WORD_RE,
+            (
+                _RUNNER_REMAINING_EXTERN_RE,
+                _RUNNER_REMAINING_GLOBAL_RESET_RE,
+                _RECORD_REMAINING_WRITE_RE,
+            ),
+            "runner remaining global reference outside its declared uses",
+        ),
+    ):
+        _reject_unclassified_references(
+            runner_text, token_re, _reference_spans(runner_text, patterns), what
+        )
+
+
 def _verify_runner_remaining_gate(runner_text: str) -> None:
     """Prove the runner can publish remaining only on the success path.
 
@@ -465,6 +603,7 @@ def _verify_runner_source(runner_text: str) -> None:
     if _RUNNER_REMAINING_SERIALIZE_RE.search(runner_text) is None:
         raise fail("runner remaining serialization missing")
     _verify_runner_remaining_gate(runner_text)
+    _verify_runner_reference_sites(runner_text)
 
 
 def _verify_vendor_helper_source(helper: str) -> int:
@@ -563,6 +702,7 @@ def verify_generated_sources(
         helper, helper_start = _extract_vendor_helper(vendor_text)
         remaining_offset = _verify_vendor_helper_source(helper)
         _verify_vendor_tu_single_writer(vendor_text, helper_start + remaining_offset)
+        _verify_vendor_tu_reference_sites(vendor_text, helper_start + remaining_offset)
 
     return {
         "variant": VARIANT,
@@ -747,6 +887,24 @@ def _resolved_address(bindings: dict[str, int], hit: re.Match[str]) -> int | Non
     return word + displacement
 
 
+def _reject_writeback_addressing(code: tuple[_Insn, ...]) -> None:
+    """Refuse every access whose base register the gate cannot keep track of.
+
+    Pointer bindings are what every effective-address check in this module
+    stands on, and they are dropped only when an instruction *defines* the
+    register. Writeback redefines the base without naming it as a destination,
+    so an access certified against the literal it was loaded with silently walks
+    forward on the next iteration. The helper's pointers are loop-invariant by
+    contract, so refusing the form costs nothing the contract allows and closes
+    the whole family at once.
+    """
+    for insn in code:
+        if not _WRITEBACK_RE.search(insn.text):
+            continue
+        if _LOAD_RE.match(insn.text) or _STORE_RE.match(insn.text) or _PC_LOAD_RE.match(insn.text):
+            raise fail("writeback addressing mode in helper: %s" % insn.text)
+
+
 def _check_literal_pool(
     literals: tuple[tuple[int, int], ...], referenced: frozenset[int]
 ) -> None:
@@ -817,6 +975,7 @@ def _analyze_helper(disassembly_text: str, nm_text: str) -> _HelperAnalysis:
     code, literals = _split_code_and_literals(insns)
     if not code:
         raise fail("helper disassembly empty")
+    _reject_writeback_addressing(code)
 
     tests = [(index, _TEST_RE.match(insn.text)) for index, insn in enumerate(code)]
     tests = [(index, hit) for index, hit in tests if hit is not None]
@@ -1192,6 +1351,8 @@ def _reject_unmodelled_active_effects(
             raise fail("predicated instruction on an active helper path: %s" % insn.text)
         if insn.mnemonic in _MULTI_REGISTER_TRANSFER_MNEMONICS:
             raise fail("multi-register transfer on an active helper path: %s" % insn.text)
+        if insn.mnemonic in _MULTI_DESTINATION_MNEMONICS:
+            raise fail("multi-destination multiply on an active helper path: %s" % insn.text)
         if insn.mnemonic not in _MODELLED_MNEMONICS:
             raise fail("unmodelled active-helper effect: %s" % insn.text)
 
@@ -1301,6 +1462,7 @@ def prove_remaining_dataflow(disassembly_text: str, nm_text: str) -> RemainingDa
                 % (address, min(duplicates))
             )
 
+
     return_counts = _return_publication_counts(successors, success_entry, remaining_index)
     remaining_store_after_p2_exactly_once = return_counts == frozenset((1,))
     if not remaining_store_after_p2_exactly_once:
@@ -1311,6 +1473,24 @@ def prove_remaining_dataflow(disassembly_text: str, nm_text: str) -> RemainingDa
 
     if len(live_in_stores) != 1:
         raise fail("remaining store after P2 count != 1")
+
+    # Those three sites are also the *only* stores the helper may execute. The
+    # lock above is per published slot, so a store through a fourth referenced
+    # SRAM literal -- a slot the record never names -- passes every check above:
+    # it resolves to a literal the pool really carries, it is not a duplicate of
+    # any published slot, and in the prologue it runs ahead of both the success
+    # and the timeout entry. Whatever global sits at that address is then
+    # clobbered by a helper this gate had called closed.
+    stray_stores = sorted(
+        index
+        for index in active
+        if _STORE_RE.match(analysis.code[index].text) is not None
+        and index not in set(canonical_sites)
+    )
+    if stray_stores:
+        raise fail(
+            "helper store outside its three published slots: helper index %d" % stray_stores[0]
+        )
 
     # The published register must be the one the back edge counts on, and it
     # must still hold that decrement's value when the store runs. "Still holds"
@@ -1347,39 +1527,151 @@ def prove_remaining_dataflow(disassembly_text: str, nm_text: str) -> RemainingDa
     )
 
 
-def _nvic_block_bases(fn, pool: dict[int, int]) -> tuple[frozenset[str], ...]:
-    """Per-instruction set of registers that may hold an NVIC-block pointer.
+def _qual_mnemonic(ins) -> str:
+    """Bare mnemonic of a ``check_pmu_qual`` instruction, suffixes removed."""
+    return ins.mnemonic if ins.mnemonic.startswith(".") else ins.mnemonic.split(".")[0]
 
-    A register enters the set by loading a literal inside ``NVIC_Type`` and
-    leaves it when it is redefined by anything that does not read a member of
-    the set. Arithmetic on such a pointer keeps it in the set even though its
-    value stops being provable, which is what makes the caller's fail-closed
-    branch reachable instead of vacuous.
+
+def _immediate(ins) -> int | None:
+    hit = _QUAL_IMMEDIATE_RE.search(ins.operands)
+    if hit is None:
+        return None
+    text = hit.group(1)
+    return int(text, 16) if text.lower().startswith(("0x", "-0x")) else int(text, 10)
+
+
+def _read_operands(ins) -> str:
+    """The operand text an instruction reads its inputs from.
+
+    A three-operand data-processing form names its destination first and its
+    sources after it, so the sources are everything past the first comma. A
+    *two*-operand form does not: ``adds r3, #4`` and ``movt r3, #57344`` both
+    read the register they write. Dropping the destination there is how an NVIC
+    pointer being walked forward -- exactly what ``for (i) NVIC->ISER[i] = ...``
+    lowers to -- used to shed the taint that keeps its stores fail-closed.
     """
-    states: list[frozenset[str]] = []
+    operands = ins.operands.split(",")
+    if len(operands) < 2:
+        return ins.operands
+    if len(operands) == 2 and _qual_mnemonic(ins) not in _FULL_WRITE_MNEMONICS:
+        return ins.operands
+    return ins.operands.partition(",")[2]
+
+
+def _register_list(ins) -> tuple[str, ...]:
+    """Registers a ``{...}`` transfer list names."""
+    hit = _REGISTER_LIST_RE.search(ins.operands)
+    return tuple(_REG_TOKEN_RE.findall(hit.group(1))) if hit else ()
+
+
+def _memory_base(ins) -> str | None:
+    """Base register a memory access addresses through, when it is readable."""
+    hit = _MEMORY_BASE_RE.search(ins.operands)
+    if hit is not None:
+        return hit.group(1)
+    mnemonic = _qual_mnemonic(ins)
+    if mnemonic in _STACK_TRANSFER_MNEMONICS:
+        return "sp"
+    if mnemonic.startswith(_MULTIPLE_TRANSFER_PREFIXES):
+        head = ins.operands.partition(",")[0].strip().rstrip("!")
+        return head if _REG_TOKEN_RE.fullmatch(head) else None
+    return None
+
+
+def _writeback_base(ins) -> str | None:
+    """Base register an access advances as a side effect, or None."""
+    if _WRITEBACK_RE.search(ins.operands) or "!" in ins.operands:
+        return _memory_base(ins)
+    return None
+
+
+def _bind_pointer(values: dict[str, int], tainted: set[str], reg: str | None, word: int | None) -> None:
+    if reg is None:
+        return
+    if word is None:
+        values.pop(reg, None)
+        tainted.discard(reg)
+        return
+    values[reg] = word
+    if _NVIC_BLOCK_FIRST <= word <= _NVIC_BLOCK_LAST:
+        tainted.add(reg)
+    else:
+        tainted.discard(reg)
+
+
+def _bind_movt(values: dict[str, int], tainted: set[str], reg: str, imm: int | None) -> None:
+    """``movt`` replaces the top halfword and keeps the bottom one.
+
+    Materialising a pointer as ``movw``/``movt`` carries no literal-pool entry
+    at all, so a gate that only reads literal loads sees neither the value nor
+    anything to taint -- and a toolchain that materialises addresses this way
+    (``-mslow-flash-data``, for one) would make the ISER proof vacuous across
+    the whole image, silently. A ``movt`` of the NVIC block's own high halfword
+    over an unproven low half is treated as a pointer into the block, because
+    it may be one.
+    """
+    low = values.get(reg)
+    if imm is not None and low is not None:
+        _bind_pointer(values, tainted, reg, (low & 0xFFFF) | ((imm & 0xFFFF) << 16))
+        return
+    values.pop(reg, None)
+    if imm is not None and (imm & 0xFFFF) == _NVIC_BLOCK_HIGH_HALFWORD:
+        tainted.add(reg)
+    else:
+        tainted.discard(reg)
+
+
+def _nvic_pointer_state(
+    fn, pool: dict[int, int]
+) -> tuple[tuple[dict[str, int], frozenset[str]], ...]:
+    """Per-instruction proven register values and NVIC-tainted registers.
+
+    The value half resolves the three ways a Thumb-2 build materialises a
+    peripheral pointer -- a literal-pool load, a move-immediate and a
+    ``movw``/``movt`` pair -- and drops a register the moment anything else
+    writes it, a transfer list pops it, a call clobbers it or a writeback form
+    advances it by an amount this gate does not model.
+
+    The taint half is the fail-closed companion: a register enters it by
+    holding a word inside ``NVIC_Type`` and stays in it while its value is
+    derived from one, even once that value stops being provable. That is what
+    makes the caller's fail-closed branch reachable instead of vacuous.
+    """
+    states: list[tuple[dict[str, int], frozenset[str]]] = []
+    values: dict[str, int] = {}
     tainted: set[str] = set()
     for ins in fn.insns:
-        states.append(frozenset(tainted))
+        states.append((dict(values), frozenset(tainted)))
+        mnemonic = _qual_mnemonic(ins)
         if ins.kind == "call":
+            for reg in qual_elf.CALL_CLOBBERED:
+                values.pop(reg, None)
             tainted -= set(qual_elf.CALL_CLOBBERED)
             continue
+        if mnemonic in _STACK_TRANSFER_MNEMONICS or mnemonic.startswith(_MULTIPLE_TRANSFER_PREFIXES):
+            # A transfer list defines registers the classifier never reports as
+            # a destination, so a stale proven value would survive the load.
+            for reg in _register_list(ins):
+                if mnemonic.startswith(_LOAD_MULTIPLE_PREFIXES):
+                    values.pop(reg, None)
+                    tainted.discard(reg)
         if ins.kind == "ldr_lit":
-            word = pool.get(ins.literal_addr)
-            if word is not None and _NVIC_BLOCK_FIRST <= word <= _NVIC_BLOCK_LAST:
+            _bind_pointer(values, tainted, ins.dest, pool.get(ins.literal_addr))
+        elif mnemonic == "movt" and ins.dest is not None:
+            _bind_movt(values, tainted, ins.dest, _immediate(ins))
+        elif ins.kind == "mov_imm":
+            _bind_pointer(values, tainted, ins.dest, ins.value)
+        elif ins.dest is not None:
+            # Every other writer is opaque, so it is read pessimistically: it
+            # carries the taint of whatever registers it reads.
+            values.pop(ins.dest, None)
+            if set(_REG_TOKEN_RE.findall(_read_operands(ins))) & tainted:
                 tainted.add(ins.dest)
             else:
                 tainted.discard(ins.dest)
-            continue
-        if ins.dest is None:
-            continue
-        # Every other writer is opaque, so it is read pessimistically: it
-        # carries the taint of whatever registers it reads, which are the
-        # operands after the destination it writes in the first one.
-        _, _, read_operands = ins.operands.partition(",")
-        if set(_REG_TOKEN_RE.findall(read_operands)) & tainted:
-            tainted.add(ins.dest)
-        else:
-            tainted.discard(ins.dest)
+        advanced = _writeback_base(ins)
+        if advanced is not None:
+            values.pop(advanced, None)
     return tuple(states)
 
 
@@ -1395,12 +1687,20 @@ def _check_retained_v12_runtime(disassembly_text: str) -> None:
     The ISER half is a statement about *destinations*, not about text. The word
     ``0xE000E100`` is ISER[0] and CMSIS ``NVIC_BASE`` at once, so it appears in
     the literal pool of every build that clears ICER or ICPR through that base
-    -- which the retained V12 hard bypass is required to do. Store destinations
-    are therefore resolved the way V12 resolves them, through
-    ``qual_elf.store_address``, and only a store that lands inside ISER is
-    drift. A store that cannot be resolved is drift too whenever its base could
-    be an NVIC-block pointer, so an enable cannot hide behind a base the
-    resolver gives up on.
+    -- which the retained V12 hard bypass is required to do. Only a store that
+    lands inside ISER is drift.
+
+    Every instruction that can write memory through a base register is examined,
+    not only the ones ``check_pmu_qual`` decodes as single stores: a
+    ``stmia``/``stmdb`` through an NVIC-block base reaches ISER from either side
+    of the base and is refused outright, because no single destination can be
+    resolved for a register list at all. What *grants* acceptance is
+    ``_nvic_pointer_state``'s own resolution, never ``qual_elf.store_address``:
+    the latter reads a base's defining literal load straight through a writeback
+    form that has since advanced it, so its answer can only ever raise the
+    verdict to drift, not settle it. A destination that stays unproven is drift
+    whenever its base could be an NVIC-block pointer, so an enable cannot hide
+    behind a base the resolver gives up on.
     """
     for callee in _V12_RUNTIME_DRIFT_CALLEES:
         if re.search(_CALL_TO_RE % re.escape(callee), disassembly_text):
@@ -1408,32 +1708,54 @@ def _check_retained_v12_runtime(disassembly_text: str) -> None:
     dis = qual_elf.parse_disassembly(disassembly_text)
     pool = qual_elf.literal_pool(dis.functions)
     for name, fn in dis.functions.items():
-        bases = _nvic_block_bases(fn, pool)
+        states = _nvic_pointer_state(fn, pool)
         for index, ins in enumerate(fn.insns):
-            if ins.kind == "store":
-                address = qual_elf.store_address(fn, index, pool)
-                if address is None:
-                    if ins.base in bases[index]:
-                        raise fail(
-                            "NVIC-block store destination unresolvable at %s+0x%X"
-                            % (name, ins.addr - fn.addr)
-                        )
+            mnemonic = _qual_mnemonic(ins)
+            if not (
+                mnemonic.startswith(_STORE_FAMILY_PREFIXES)
+                or mnemonic in _STACK_TRANSFER_MNEMONICS
+            ):
+                continue
+            values, tainted = states[index]
+            base = _memory_base(ins)
+            where = "%s+0x%X" % (name, ins.addr - fn.addr)
+            if mnemonic.startswith("stm") or mnemonic in _STACK_TRANSFER_MNEMONICS:
+                if mnemonic in _LOAD_MULTIPLE_PREFIXES:
                     continue
-                if _NVIC_ISER_FIRST <= address <= _NVIC_ISER_LAST:
+                if base is None or base in tainted:
                     raise fail(
-                        "direct NVIC ISER enable write remains reachable: %s+0x%X -> 0x%08X"
-                        % (name, ins.addr - fn.addr, address)
+                        "NVIC-block multiple store destination unresolvable at %s" % where
                     )
                 continue
-            # A store the classifier could not decode -- a register-offset or
-            # writeback form -- is not a store it can prove innocent either.
-            if ins.mnemonic.split(".")[0].startswith("str") and (
-                set(_REG_TOKEN_RE.findall(ins.operands)) & bases[index]
-            ):
-                raise fail(
-                    "NVIC-block store destination unresolvable at %s+0x%X"
-                    % (name, ins.addr - fn.addr)
-                )
+            proven = (
+                values.get(ins.base) if ins.kind == "store" and ins.base is not None else None
+            )
+            reported = qual_elf.store_address(fn, index, pool) if ins.kind == "store" else None
+            # A `strd` writes two consecutive words, so a destination four bytes
+            # below ISER[0] still lands one word inside the bank.
+            span = 2 if mnemonic == "strd" else 1
+            for first in (None if proven is None else proven + ins.offset, reported):
+                if first is None:
+                    continue
+                for address in range(first, first + 4 * span, 4):
+                    if _NVIC_ISER_FIRST <= address <= _NVIC_ISER_LAST:
+                        raise fail(
+                            "direct NVIC ISER enable write remains reachable: %s -> 0x%08X"
+                            % (where, address)
+                        )
+            if proven is not None:
+                continue
+            # An unproven destination. A form the classifier could not decode at
+            # all -- register-offset, shifted-register, a vector store -- hides
+            # which of its operands is the base, so it is judged on every
+            # register it names rather than on a base that may not be one.
+            candidates = (
+                {ins.base}
+                if ins.kind == "store" and ins.base is not None
+                else set(_REG_TOKEN_RE.findall(ins.operands))
+            )
+            if candidates & tainted:
+                raise fail("NVIC-block store destination unresolvable at %s" % where)
 
 
 def verify_cross_elf_contract(
@@ -1483,5 +1805,4 @@ def verify_cross_elf_contract(
         "remaining_store_timeout_unreachable": proof.remaining_store_timeout_unreachable,
         "helper_leaf_no_stack_access": proof.helper_leaf_no_stack_access,
         "remaining_induction_register": proof.induction_register,
-        "loop_equivalent": poll_loop_region_equivalent,
     }
