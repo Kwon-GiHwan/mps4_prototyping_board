@@ -36,7 +36,7 @@ def replace_once(text: str, old: str, new: str, what: str) -> str:
 SCHEMA_VERSION = 13
 BUILD_ID = "0x33314950"
 POLL_LIMIT = 10000
-INVALID_REMAINING = 0xFFFFFFFF
+INVALID_REMAINING = 0
 
 RUNNER_RAW_STOCK = """#if defined(PMU_QUAL_SCHEMA_V8)
 #define PMU_DIAG_SCHEMA_VERSION 8U
@@ -117,9 +117,16 @@ RUNNER_V13_OK = """#if defined(PMU_QUAL_SCHEMA_V13)
 #define V13_POLL_SUCCESS 1U
 #define V13_POLL_TIMEOUT 2U
 #define PMU_DIAG_FIELD_COUNT 101U
+#define PMU_DIAG_TOTAL_WORDS 109U
+#define PMU_DIAG_PAYLOAD_SIZE 436U
 #endif
 
 static pmu_diag_snapshot_t pmu_qual_internal_post_disable;
+typedef struct {
+    uint32_t poll_result;
+    uint32_t poll_status_at_success;
+    uint32_t poll_remaining_at_success;
+} v13_wire_tail_t;
 extern volatile uint32_t pmu_completion_poll_v13_t_poll_remaining_at_success;
 
 void test_entry(v13_t* d)
@@ -127,7 +134,7 @@ void test_entry(v13_t* d)
     d->pmcr_readback_after_disable = 0U;
     d->poll_result = V13_POLL_TIMEOUT;
     d->poll_status_at_success = 0U;
-    d->poll_remaining_at_success = 0xFFFFFFFFU;
+    d->poll_remaining_at_success = 0U;
 }
 
 void emit_record(v13_t* d, uint32_t *out_words)
@@ -140,17 +147,21 @@ VENDOR_V13_OK = """uint32_t __attribute__((noinline)) v13_poll_completion(void)
 {
     volatile uint32_t *const status_reg =
         (volatile uint32_t *)(uintptr_t)(U85_BASE_ADDRESS + NPU_REG_STATUS);
+    uint32_t remaining = 10000U;
     uint32_t status;
 
     pmu_completion_poll_v13_t_poll_entry = DWT->CYCCNT;
 
-    for (uint32_t i = 0U; i < 10000U; ++i) {
+    for (;;) {
         status = *status_reg;
         if ((status & 0x02U) != 0U) {
             pmu_completion_poll_v13_t_status_completion_seen = DWT->CYCCNT;
             pmu_completion_poll_v13_t_poll_exit = DWT->CYCCNT;
-            pmu_completion_poll_v13_t_poll_remaining_at_success = (10000U - i);
+            pmu_completion_poll_v13_t_poll_remaining_at_success = remaining;
             return status;
+        }
+        if (--remaining == 0U) {
+            break;
         }
     }
 
@@ -171,15 +182,15 @@ SEMANTIC_BOUNDARIES = (
 
 
 def _negative_vendor_fixtures() -> dict[str, dict[str, str]]:
-    duplicate_store = """            pmu_completion_poll_v13_t_poll_remaining_at_success = (10000U - i);
-            pmu_completion_poll_v13_t_poll_remaining_at_success = (10000U - i);
+    duplicate_store = """            pmu_completion_poll_v13_t_poll_remaining_at_success = remaining;
+            pmu_completion_poll_v13_t_poll_remaining_at_success = remaining;
 """
     timeout_store = """    pmu_completion_poll_v13_t_poll_remaining_at_success = 1U;
     return 0U;
 """
     second_status_read = """            pmu_completion_poll_v13_t_poll_exit = DWT->CYCCNT;
             status = *status_reg;
-            pmu_completion_poll_v13_t_poll_remaining_at_success = (10000U - i);
+            pmu_completion_poll_v13_t_poll_remaining_at_success = remaining;
 """
     extra_mmio = """        (void)*(volatile uint32_t *)(uintptr_t)(U85_BASE_ADDRESS + NPU_REG_CMD);
         status = *status_reg;
@@ -188,7 +199,7 @@ def _negative_vendor_fixtures() -> dict[str, dict[str, str]]:
 
     pmu_completion_poll_v13_t_poll_entry = DWT->CYCCNT;
 
-    for (uint32_t i = 0U; i < 10000U; ++i) {
+    for (;;) {
         remaining = 10000U;
         status = *status_reg;
         if ((status & 0x02U) != 0U) {
@@ -196,6 +207,9 @@ def _negative_vendor_fixtures() -> dict[str, dict[str, str]]:
             pmu_completion_poll_v13_t_poll_exit = DWT->CYCCNT;
             pmu_completion_poll_v13_t_poll_remaining_at_success = remaining;
             return status;
+        }
+        if (--remaining == 0U) {
+            break;
         }
     }
 """
@@ -208,9 +222,9 @@ def _negative_vendor_fixtures() -> dict[str, dict[str, str]]:
                 VENDOR_V13_OK,
                 "            pmu_completion_poll_v13_t_status_completion_seen = DWT->CYCCNT;\n"
                 "            pmu_completion_poll_v13_t_poll_exit = DWT->CYCCNT;\n"
-                "            pmu_completion_poll_v13_t_poll_remaining_at_success = (10000U - i);\n",
+                "            pmu_completion_poll_v13_t_poll_remaining_at_success = remaining;\n",
                 "            pmu_completion_poll_v13_t_status_completion_seen = DWT->CYCCNT;\n"
-                "            pmu_completion_poll_v13_t_poll_remaining_at_success = (10000U - i);\n"
+                "            pmu_completion_poll_v13_t_poll_remaining_at_success = remaining;\n"
                 "            pmu_completion_poll_v13_t_poll_exit = DWT->CYCCNT;\n",
                 "remaining-before-p2",
             ),
@@ -219,7 +233,7 @@ def _negative_vendor_fixtures() -> dict[str, dict[str, str]]:
         "duplicate_store": {
             "vendor": replace_once(
                 VENDOR_V13_OK,
-                "            pmu_completion_poll_v13_t_poll_remaining_at_success = (10000U - i);\n",
+                "            pmu_completion_poll_v13_t_poll_remaining_at_success = remaining;\n",
                 duplicate_store,
                 "duplicate-store",
             ),
@@ -234,32 +248,53 @@ def _negative_vendor_fixtures() -> dict[str, dict[str, str]]:
             ),
             "expected": "timeout path must not publish remaining",
         },
-        "constant_remaining": {
+        "recomputed_remaining": {
             "vendor": replace_once(
                 VENDOR_V13_OK,
+                "            pmu_completion_poll_v13_t_poll_remaining_at_success = remaining;\n",
                 "            pmu_completion_poll_v13_t_poll_remaining_at_success = (10000U - i);\n",
-                "            pmu_completion_poll_v13_t_poll_remaining_at_success = 10000U;\n",
-                "constant-remaining",
+                "recomputed-remaining",
             ),
-            "expected": "remaining must be computed as (10000U - i)",
+            "expected": "remaining must dataflow from failed-poll countdown live-out",
+        },
+        "success_remaining_zero": {
+            "vendor": replace_once(
+                VENDOR_V13_OK,
+                "            pmu_completion_poll_v13_t_poll_remaining_at_success = remaining;\n",
+                "            pmu_completion_poll_v13_t_poll_remaining_at_success = 0U;\n",
+                "remaining-zero",
+            ),
+            "expected": "success remaining must be in 1..10000",
+        },
+        "success_remaining_10001": {
+            "vendor": replace_once(
+                VENDOR_V13_OK,
+                "            pmu_completion_poll_v13_t_poll_remaining_at_success = remaining;\n",
+                "            pmu_completion_poll_v13_t_poll_remaining_at_success = 10001U;\n",
+                "remaining-10001",
+            ),
+            "expected": "success remaining must be in 1..10000",
         },
         "unrelated_reinitialized_counter": {
             "vendor": replace_once(
                 VENDOR_V13_OK,
                 "    pmu_completion_poll_v13_t_poll_entry = DWT->CYCCNT;\n\n"
-                "    for (uint32_t i = 0U; i < 10000U; ++i) {\n"
+                "    for (;;) {\n"
                 "        status = *status_reg;\n"
                 "        if ((status & 0x02U) != 0U) {\n"
                 "            pmu_completion_poll_v13_t_status_completion_seen = DWT->CYCCNT;\n"
                 "            pmu_completion_poll_v13_t_poll_exit = DWT->CYCCNT;\n"
-                "            pmu_completion_poll_v13_t_poll_remaining_at_success = (10000U - i);\n"
+                "            pmu_completion_poll_v13_t_poll_remaining_at_success = remaining;\n"
                 "            return status;\n"
+                "        }\n"
+                "        if (--remaining == 0U) {\n"
+                "            break;\n"
                 "        }\n"
                 "    }\n",
                 unrelated_counter,
                 "reinitialized-counter",
             ),
-            "expected": "remaining must dataflow from loop index only",
+            "expected": "remaining must dataflow from failed-poll countdown live-out",
         },
         "per_iteration_increment_store": {
             "vendor": replace_once(
@@ -274,7 +309,7 @@ def _negative_vendor_fixtures() -> dict[str, dict[str, str]]:
             "vendor": replace_once(
                 VENDOR_V13_OK,
                 "            pmu_completion_poll_v13_t_poll_exit = DWT->CYCCNT;\n"
-                "            pmu_completion_poll_v13_t_poll_remaining_at_success = (10000U - i);\n",
+                "            pmu_completion_poll_v13_t_poll_remaining_at_success = remaining;\n",
                 second_status_read,
                 "second-status-read",
             ),
@@ -318,18 +353,24 @@ def validate_local_fixtures():
     required_suffix = (
         "            pmu_completion_poll_v13_t_status_completion_seen = DWT->CYCCNT;\n"
         "            pmu_completion_poll_v13_t_poll_exit = DWT->CYCCNT;\n"
-        "            pmu_completion_poll_v13_t_poll_remaining_at_success = (10000U - i);\n"
+        "            pmu_completion_poll_v13_t_poll_remaining_at_success = remaining;\n"
         "            return status;\n"
     )
-    if VENDOR_V13_OK.count("for (uint32_t i = 0U; i < 10000U; ++i)") != 1:
+    if VENDOR_V13_OK.count("for (;;) {") != 1:
         raise fail("positive vendor fixture must have exactly one helper loop")
     if required_suffix not in VENDOR_V13_OK:
         raise fail("positive vendor fixture lost V13 success suffix")
+    if VENDOR_V13_OK.count("uint32_t remaining = 10000U;") != 1:
+        raise fail("positive vendor fixture must seed countdown once")
+    if VENDOR_V13_OK.count("if (--remaining == 0U) {") != 1:
+        raise fail("positive vendor fixture must use failed-path countdown exactly once")
     if sha256_text(RUNNER_RAW_STOCK) != RUNNER_SHA256:
         raise fail("pinned runner raw SHA fixture drifted")
     if sha256_text(VENDOR_RAW_STOCK) != VENDOR_SHA256:
         raise fail("pinned vendor raw SHA fixture drifted")
-    if RUNNER_V13_OK.count("poll_remaining_at_success = 0xFFFFFFFFU;") != 1:
+    if RUNNER_V13_OK.count("uint32_t poll_remaining_at_success;") != 1:
+        raise fail("runner fixture must declare remaining member exactly once")
+    if RUNNER_V13_OK.count("poll_remaining_at_success = 0U;") != 1:
         raise fail("runner fixture must reset invalid remaining sentinel exactly once")
     if RUNNER_V13_OK.count("extern volatile uint32_t pmu_completion_poll_v13_t_poll_remaining_at_success;") != 1:
         raise fail("runner fixture must declare remaining field exactly once")
@@ -337,6 +378,10 @@ def validate_local_fixtures():
         raise fail("runner fixture must serialize remaining wire word exactly once")
     if RUNNER_V13_OK.count("#define PMU_DIAG_FIELD_COUNT 101U") != 1:
         raise fail("runner fixture must pin field count for appended wire word exactly once")
+    if RUNNER_V13_OK.count("#define PMU_DIAG_TOTAL_WORDS 109U") != 1:
+        raise fail("runner fixture must pin total words for appended wire word exactly once")
+    if RUNNER_V13_OK.count("#define PMU_DIAG_PAYLOAD_SIZE 436U") != 1:
+        raise fail("runner fixture must pin payload size for appended wire word exactly once")
     if RUNNER_V12_GENERATED.count("PMU_COMPLETION_POLL_DIAG_V12_BUILD_ID") != 1:
         raise fail("generated V12 raw-input rejection fixture malformed")
     for name, payload in NEGATIVE_VENDOR_FIXTURES.items():
@@ -354,14 +399,17 @@ def run_future_suite(gate, patcher):
     check("runner patch pins build id 0x33314950", "#define PMU_COMPLETION_POLL_DIAG_V13_BUILD_ID 0x33314950U" in runner_out)
     check(
         "runner patch declares remaining record field exactly once",
-        runner_out.count("pmu_completion_poll_v13_t_poll_remaining_at_success") >= 1
+        runner_out.count("uint32_t poll_remaining_at_success;") == 1
+        and runner_out.count("pmu_completion_poll_v13_t_poll_remaining_at_success") >= 1
         and runner_out.count("extern volatile uint32_t pmu_completion_poll_v13_t_poll_remaining_at_success;") == 1,
     )
-    check("runner patch resets invalid remaining sentinel", "poll_remaining_at_success = 0xFFFFFFFFU;" in runner_out)
+    check("runner patch resets invalid remaining sentinel", "poll_remaining_at_success = 0U;" in runner_out)
     check(
         "runner patch appends exactly one remaining wire word",
         runner_out.count("out_words[100] = d->poll_remaining_at_success;") == 1
-        and runner_out.count("#define PMU_DIAG_FIELD_COUNT 101U") == 1,
+        and runner_out.count("#define PMU_DIAG_FIELD_COUNT 101U") == 1
+        and runner_out.count("#define PMU_DIAG_TOTAL_WORDS 109U") == 1
+        and runner_out.count("#define PMU_DIAG_PAYLOAD_SIZE 436U") == 1,
     )
     check("vendor patch emits V13 helper symbol", "v13_poll_completion" in vendor_out)
     check("vendor patch appends one remaining word", vendor_out.count("pmu_completion_poll_v13_t_poll_remaining_at_success") == 1)
@@ -370,9 +418,15 @@ def run_future_suite(gate, patcher):
         (
             "pmu_completion_poll_v13_t_status_completion_seen = DWT->CYCCNT;\n"
             "            pmu_completion_poll_v13_t_poll_exit = DWT->CYCCNT;\n"
-            "            pmu_completion_poll_v13_t_poll_remaining_at_success = (10000U - i);\n"
+            "            pmu_completion_poll_v13_t_poll_remaining_at_success = remaining;\n"
             "            return status;"
         ) in vendor_out,
+    )
+    check(
+        "vendor patch uses failed-path countdown live-out",
+        "uint32_t remaining = 10000U;" in vendor_out
+        and "if (--remaining == 0U) {" in vendor_out
+        and "pmu_completion_poll_v13_t_poll_remaining_at_success = (10000U - i);" not in vendor_out,
     )
     check(
         "vendor timeout path does not publish remaining",
@@ -387,7 +441,7 @@ def run_future_suite(gate, patcher):
             1 <= remaining <= 10000 and iterations == (10001 - remaining),
             "remaining=%d iterations=%d" % (remaining, iterations),
         )
-    check("timeout semantic keeps invalid remaining sentinel", INVALID_REMAINING == 0xFFFFFFFF)
+    check("timeout semantic keeps invalid remaining sentinel", INVALID_REMAINING == 0)
 
     try:
         evidence = gate.verify_generated_sources(runner_out, vendor_out)
@@ -443,10 +497,16 @@ if __name__ == "__main__":
     check("raw vendor SHA fixture is frozen", VENDOR_SHA256 == sha256_text(VENDOR_RAW_STOCK))
     check("positive vendor stores remaining exactly once", VENDOR_V13_OK.count("pmu_completion_poll_v13_t_poll_remaining_at_success") == 1)
     check("positive vendor timeout publishes no remaining", "return 0U;" in VENDOR_V13_OK and "pmu_completion_poll_v13_t_poll_remaining_at_success = 1U;" not in VENDOR_V13_OK)
-    check("negative fixture count covers required drifts", len(NEGATIVE_VENDOR_FIXTURES) >= 11)
+    check(
+        "runner fixture pins concrete V13 ABI values",
+        "#define PMU_DIAG_FIELD_COUNT 101U" in RUNNER_V13_OK
+        and "#define PMU_DIAG_TOTAL_WORDS 109U" in RUNNER_V13_OK
+        and "#define PMU_DIAG_PAYLOAD_SIZE 436U" in RUNNER_V13_OK,
+    )
+    check("negative fixture count covers required drifts", len(NEGATIVE_VENDOR_FIXTURES) >= 13)
     check(
         "boundary semantics cover first interior last and timeout invalid",
-        [item["remaining"] for item in SEMANTIC_BOUNDARIES] == [10000, 5679, 1] and INVALID_REMAINING == 0xFFFFFFFF,
+        [item["remaining"] for item in SEMANTIC_BOUNDARIES] == [10000, 5679, 1] and INVALID_REMAINING == 0,
     )
 
     import check_pmu_completion_poll_count_v13 as gate
