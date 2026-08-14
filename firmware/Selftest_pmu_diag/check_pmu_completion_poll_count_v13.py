@@ -15,7 +15,14 @@ The gate proves two independent properties:
 Property 2 is derived from the instruction stream itself (basic-block edges,
 register definitions and uses), not from disassembly comments or fixed
 addresses, so a relabelled or relocated build is accepted while an extra
-per-iteration effect is not. The runner half of property 1 is likewise derived
+per-iteration effect is not. The whole per-iteration region -- STATUS load,
+completion test, success branch, failed-path tail and back edge -- is closed:
+it may contain those six instructions and nothing else, on either side of the
+completion test. Every pointer the helper uses is resolved through the Thumb
+literal-pool rule ``((addr + 4) & ~3) + imm`` and bound to the exact address
+its role requires, so a build that polls a RAM shadow, reads a fake cycle
+counter or publishes the countdown over the P2 slot is refused even though its
+instruction shape is unchanged. The runner half of property 1 is likewise derived
 from brace nesting and assignment right-hand sides, never from column alignment,
 so reformatting the generated runner cannot change the verdict.
 
@@ -100,7 +107,10 @@ _HEX_WORD_RE = re.compile(r"\.word\s+0x([0-9A-Fa-f]+)")
 _ENCODING_RE = re.compile(r"^(?:[0-9a-f]{8}|[0-9a-f]{4}(?:\s+[0-9a-f]{4})*)\s+(?=[a-z.])")
 _BRANCH_TARGET_RE = re.compile(r"\b([0-9a-fA-F]+)\s+<")
 _LOAD_RE = re.compile(r"^ldr(?:b|h|sb|sh)?(?:\.w)?\s+(r\d+),\s*\[([a-z0-9]+)")
-_PC_LOAD_RE = re.compile(r"^ldr(?:\.w)?\s+(r\d+),\s*\[pc\b")
+_PC_LOAD_RE = re.compile(r"^ldr(?:b|h|sb|sh)?(?:\.w)?\s+(r\d+),\s*\[pc\b")
+_PC_OFFSET_RE = re.compile(
+    r"^ldr(?:b|h|sb|sh)?(?:\.w)?\s+r\d+,\s*\[pc,\s*#(-?\d+)\]"
+)
 _STORE_RE = re.compile(r"^str(?:b|h)?(?:\.w)?\s+(r\d+),\s*\[([a-z0-9]+)")
 _DECREMENT_RE = re.compile(r"^subs(?:\.w)?\s+(r\d+),\s*#1$")
 _TEST_RE = re.compile(r"^tst(?:\.w)?\s+(r\d+),\s*#(\d+)$")
@@ -120,6 +130,7 @@ _WRITING_MNEMONICS = frozenset(
 )
 _STACK_MNEMONICS = frozenset(("push", "pop", "stm", "stmdb", "ldm", "ldmia"))
 _CALL_MNEMONICS = frozenset(("bl", "blx"))
+_BARRIER_MNEMONICS = frozenset(("dsb", "isb", "dmb"))
 _COND_BRANCH_MNEMONICS = frozenset(
     (
         "bne", "beq", "bcs", "bhs", "bcc", "blo", "bmi", "bpl", "bvs", "bvc",
@@ -127,6 +138,9 @@ _COND_BRANCH_MNEMONICS = frozenset(
     )
 )
 _V12_RUNTIME_DRIFT_CALLEES = ("NVIC_EnableIRQ",)
+# STATUS load, completion test, success branch, two failed-path decrements and
+# the back edge -- the whole of what one poll iteration is allowed to execute.
+_CANONICAL_PER_ITERATION_INSTRUCTIONS = 6
 
 
 @dataclass(frozen=True)
@@ -161,6 +175,7 @@ class PollLoop:
     has_stack_access: bool
     has_extra_non_status_load: bool
     has_forbidden_loop_effect: bool
+    signature: tuple[tuple[str, str | int], ...]
 
 
 @dataclass(frozen=True)
@@ -179,7 +194,8 @@ class _HelperAnalysis:
     helper_name: str
     helper_addr: int
     code: tuple[_Insn, ...]
-    literal_words: tuple[int, ...]
+    literals: tuple[tuple[int, int], ...]
+    pointer_words: tuple[dict[str, int], ...]
     status_index: int
     test_index: int
     success_branch_index: int
@@ -192,6 +208,10 @@ class _HelperAnalysis:
     decrement_regs: tuple[str, ...]
     loop_body: tuple[_Insn, ...]
     timeout_block: tuple[_Insn, ...]
+    status_read_count: int
+    conditional_back_edge_count: int
+    success_edge_count: int
+    timeout_edge_count: int
     has_stack_access: bool
     has_extra_non_status_load: bool
 
@@ -471,21 +491,23 @@ def _symbol_addr_from_nm(nm_text: str, symbol: str) -> int:
     return int(match.group(1), 16)
 
 
-def _split_code_and_literals(raw_insns) -> tuple[tuple[_Insn, ...], tuple[int, ...]]:
+def _split_code_and_literals(raw_insns) -> tuple[tuple[_Insn, ...], tuple[tuple[int, int], ...]]:
     """Normalize objdump rows into instructions plus the helper literal pool.
 
     The V12 parser keeps the raw encoding column in ``text``; strip it here so
     mnemonic classification does not depend on the objdump invocation flags.
+    Literal-pool entries keep their address next to their word so a PC-relative
+    load can be resolved back to the exact slot it reads.
     """
     code: list[_Insn] = []
-    words: list[int] = []
+    words: list[tuple[int, int]] = []
     for raw in raw_insns:
         body = _ENCODING_RE.sub("", raw.text).strip()
         if body.startswith(".word"):
             hit = _HEX_WORD_RE.search(body)
             if hit is None:
                 raise fail("helper literal pool word unreadable")
-            words.append(int(hit.group(1), 16))
+            words.append((raw.addr, int(hit.group(1), 16)))
             continue
         if not body or body.startswith("."):
             continue
@@ -522,7 +544,75 @@ def _is_call(insn: _Insn) -> bool:
     return insn.mnemonic in _CALL_MNEMONICS
 
 
-def _check_literal_pool(words: tuple[int, ...]) -> None:
+def _is_barrier(insn: _Insn) -> bool:
+    return insn.mnemonic in _BARRIER_MNEMONICS
+
+
+def _pc_literal_target(insn: _Insn) -> int:
+    """Resolve a PC-relative load to its literal slot under Thumb PC semantics.
+
+    Thumb reads the literal pool through ``Align(PC, 4)`` where ``PC`` is the
+    instruction address plus four, so the slot is ``((addr + 4) & ~3) + imm``.
+    Both the 16-bit and 32-bit encodings share that rule, which is why the
+    encoding width never has to be modelled.
+    """
+    hit = _PC_OFFSET_RE.match(insn.text)
+    if hit is None:
+        raise fail("PC-relative literal offset unreadable: %s" % insn.text)
+    return ((insn.addr + 4) & ~3) + int(hit.group(1))
+
+
+def _resolve_pc_literals(
+    code: tuple[_Insn, ...], literals: tuple[tuple[int, int], ...]
+) -> dict[int, int]:
+    """Map each PC-relative load index to the literal-pool address it reads."""
+    slots = dict(literals)
+    targets: dict[int, int] = {}
+    for index, insn in enumerate(code):
+        if _PC_LOAD_RE.match(insn.text) is None:
+            continue
+        target = _pc_literal_target(insn)
+        if target not in slots:
+            raise fail(
+                "PC-relative literal target 0x%08X outside helper literal pool" % target
+            )
+        targets[index] = target
+    return targets
+
+
+def _pointer_bindings(
+    code: tuple[_Insn, ...],
+    pc_targets: dict[int, int],
+    literals: tuple[tuple[int, int], ...],
+) -> tuple[dict[str, int], ...]:
+    """Per-instruction map of registers to the literal word they still hold.
+
+    A register is bound only by a PC-relative load and is dropped the moment any
+    other instruction redefines it, so a pointer that was recomputed at runtime
+    never counts as literal-pool resolved.
+    """
+    slots = dict(literals)
+    states: list[dict[str, int]] = []
+    state: dict[str, int] = {}
+    for index, insn in enumerate(code):
+        states.append(dict(state))
+        target = pc_targets.get(index)
+        if target is not None:
+            state[_PC_LOAD_RE.match(insn.text).group(1)] = slots[target]
+            continue
+        dest = _defined_register(insn)
+        if dest is not None:
+            state.pop(dest, None)
+    return tuple(states)
+
+
+def _check_literal_pool(
+    literals: tuple[tuple[int, int], ...], referenced: frozenset[int]
+) -> None:
+    for addr, word in literals:
+        if addr not in referenced:
+            raise fail("unreferenced helper literal 0x%08X at 0x%08X" % (word, addr))
+    words = [word for _, word in literals]
     npu_words = [word for word in words if NPU_MMIO_BASE <= word < NPU_MMIO_LIMIT]
     if npu_words != [STATUS_ADDRESS]:
         raise fail("helper STATUS MMIO address")
@@ -534,25 +624,36 @@ def _check_literal_pool(words: tuple[int, ...]) -> None:
         raise fail("helper references unexpected MMIO literal 0x%08X" % word)
 
 
+def _forbidden_region_effect(insn: _Insn) -> str:
+    """Name the effect that disqualifies ``insn`` from the per-iteration region."""
+    if _is_call(insn):
+        return "extra per-iteration call"
+    if _is_stack_access(insn):
+        return "extra per-iteration load/store"
+    if _STORE_RE.match(insn.text):
+        return "extra per-iteration store"
+    if _LOAD_RE.match(insn.text) or _PC_LOAD_RE.match(insn.text):
+        return "extra per-iteration load/store"
+    if _is_barrier(insn):
+        return "extra per-iteration barrier"
+    return "extra per-iteration instruction"
+
+
+def _reject_region_residue(residue: tuple[_Insn, ...]) -> None:
+    """Fail closed on anything the per-iteration contract does not name."""
+    if residue:
+        raise fail(_forbidden_region_effect(residue[0]))
+
+
 def _check_loop_body(loop_body: tuple[_Insn, ...]) -> tuple[str, ...]:
-    for insn in loop_body:
-        if _is_call(insn):
-            raise fail("extra per-iteration call")
-    for insn in loop_body:
-        if _is_stack_access(insn):
-            raise fail("extra per-iteration load/store")
-    for insn in loop_body:
-        if _STORE_RE.match(insn.text):
-            raise fail("extra per-iteration store")
-        if _LOAD_RE.match(insn.text):
-            raise fail("extra per-iteration load/store")
     decrements = tuple(
         hit.group(1) for hit in (_DECREMENT_RE.match(insn.text) for insn in loop_body) if hit
     )
+    _reject_region_residue(
+        tuple(insn for insn in loop_body if _DECREMENT_RE.match(insn.text) is None)
+    )
     if len(decrements) != 2:
         raise fail("failed-poll decrement count")
-    if len(loop_body) != len(decrements):
-        raise fail("extra per-iteration instruction")
     return decrements
 
 
@@ -572,16 +673,9 @@ def _analyze_helper(disassembly_text: str, nm_text: str) -> _HelperAnalysis:
         raise fail("helper symbol/address mismatch")
     _function_section(disassembly_text, helper_name)
 
-    code, literal_words = _split_code_and_literals(insns)
+    code, literals = _split_code_and_literals(insns)
     if not code:
         raise fail("helper disassembly empty")
-    _check_literal_pool(literal_words)
-
-    pointer_regs = {
-        hit.group(1)
-        for hit in (_PC_LOAD_RE.match(insn.text) for insn in code)
-        if hit is not None
-    }
 
     tests = [(index, _TEST_RE.match(insn.text)) for index, insn in enumerate(code)]
     tests = [(index, hit) for index, hit in tests if hit is not None]
@@ -602,8 +696,6 @@ def _analyze_helper(disassembly_text: str, nm_text: str) -> _HelperAnalysis:
     if status_index < 0:
         raise fail("helper STATUS read shape missing")
     status_base_reg = _LOAD_RE.match(code[status_index].text).group(2)
-    if status_base_reg not in pointer_regs:
-        raise fail("helper STATUS pointer is not literal-pool resolved")
     status_reads = [
         insn
         for insn in code
@@ -635,8 +727,15 @@ def _analyze_helper(disassembly_text: str, nm_text: str) -> _HelperAnalysis:
     if not success_branch_index < back_edge_index < success_index:
         raise fail("conditional loop back-edge")
 
+    # The per-iteration region is everything the CPU re-executes: the STATUS
+    # load, the completion test, the success branch, the failed-path tail and
+    # the back edge. Nothing else may live inside it, so both the gap between
+    # the load and the test and the failed-path tail are checked for residue.
+    _reject_region_residue(code[status_index + 1:test_index])
     loop_body = code[success_branch_index + 1:back_edge_index]
     decrement_regs = _check_loop_body(loop_body)
+    if status_base_reg in decrement_regs or status_value_reg in decrement_regs:
+        raise fail("failed-poll decrement clobbers the STATUS read")
 
     timeout_block = code[back_edge_index + 1:success_index]
     for insn in timeout_block:
@@ -645,21 +744,39 @@ def _analyze_helper(disassembly_text: str, nm_text: str) -> _HelperAnalysis:
     if not any(insn.is_return for insn in timeout_block):
         raise fail("timeout exit edge missing")
 
+    pc_targets = _resolve_pc_literals(code, literals)
+    _check_literal_pool(literals, frozenset(pc_targets.values()))
+    pointer_words = _pointer_bindings(code, pc_targets, literals)
+
+    if pointer_words[status_index].get(status_base_reg) != STATUS_ADDRESS:
+        raise fail("helper STATUS pointer must resolve to 0x%08X" % STATUS_ADDRESS)
+
     has_extra_non_status_load = False
-    for insn in code:
+    for index, insn in enumerate(code):
         hit = _LOAD_RE.match(insn.text)
-        if hit is None or hit.group(2) == "pc":
+        if hit is None or hit.group(2) == "pc" or index == status_index:
             continue
-        if hit.group(2) not in pointer_regs:
+        word = pointer_words[index].get(hit.group(2))
+        if word is None:
             has_extra_non_status_load = True
             break
+        if word != DWT_CYCCNT_ADDRESS:
+            raise fail("cycle-count read must resolve to DWT CYCCNT 0x%08X" % DWT_CYCCNT_ADDRESS)
+    for index, insn in enumerate(code):
+        hit = _STORE_RE.match(insn.text)
+        if hit is None:
+            continue
+        word = pointer_words[index].get(hit.group(2))
+        if word is None or not SRAM_BASE <= word < SRAM_LIMIT:
+            raise fail("store destination must resolve to an SRAM literal slot")
 
     return _HelperAnalysis(
         variant="v12" if helper_name.startswith("v12_") else "v13",
         helper_name=helper_name,
         helper_addr=helper_addr,
         code=code,
-        literal_words=literal_words,
+        literals=literals,
+        pointer_words=pointer_words,
         status_index=status_index,
         test_index=test_index,
         success_branch_index=success_branch_index,
@@ -672,8 +789,46 @@ def _analyze_helper(disassembly_text: str, nm_text: str) -> _HelperAnalysis:
         decrement_regs=decrement_regs,
         loop_body=loop_body,
         timeout_block=timeout_block,
+        status_read_count=len(status_reads),
+        conditional_back_edge_count=len(back_edges),
+        success_edge_count=sum(
+            1
+            for insn in code[status_index:back_edge_index + 1]
+            if insn.is_cond_branch and insn.target == success_addr
+        ),
+        timeout_edge_count=sum(1 for insn in timeout_block if insn.is_return),
         has_stack_access=any(_is_stack_access(insn) for insn in code),
         has_extra_non_status_load=has_extra_non_status_load,
+    )
+
+
+def _region_signature(analysis: _HelperAnalysis) -> tuple[tuple[str, str | int], ...]:
+    """Effect signature of the per-iteration region, computed from the stream.
+
+    Every entry is read off the parsed instructions: the opcode that performs
+    each named step, the tested mask, the branch conditions and the counted
+    edges. Register names, literal addresses, encoding widths and disassembly
+    comments are all absent, so a relabelled or relocated build signs the same
+    while a build that reads STATUS at a different width, tests a different
+    mask or grows an iteration step does not.
+    """
+    code = analysis.code
+    return (
+        ("status_read_op", code[analysis.status_index].mnemonic),
+        ("status_reads_per_iteration", analysis.status_read_count),
+        ("completion_test_op", code[analysis.test_index].mnemonic),
+        ("completion_mask", analysis.mask),
+        ("success_branch_op", code[analysis.success_branch_index].mnemonic),
+        ("success_edges", analysis.success_edge_count),
+        ("failed_path_ops", "|".join(insn.mnemonic for insn in analysis.loop_body)),
+        ("failed_path_decrements", len(analysis.decrement_regs)),
+        ("back_edge_op", code[analysis.back_edge_index].mnemonic),
+        ("conditional_back_edges", analysis.conditional_back_edge_count),
+        ("timeout_edges", analysis.timeout_edge_count),
+        (
+            "per_iteration_instruction_count",
+            analysis.back_edge_index - analysis.status_index + 1,
+        ),
     )
 
 
@@ -687,34 +842,32 @@ def extract_poll_loop(disassembly_text: str, nm_text: str) -> PollLoop:
         mask=analysis.mask,
         status_base_reg=analysis.status_base_reg,
         status_value_reg=analysis.status_value_reg,
-        status_read_count=1,
+        status_read_count=analysis.status_read_count,
         failed_path_decrement_regs=analysis.decrement_regs,
         failed_path_decrement_count=len(analysis.decrement_regs),
         back_edge_target=analysis.loop_head_addr,
-        conditional_back_edge_count=1,
-        success_edge_count=1,
-        timeout_edge_count=1,
-        extra_per_iteration_instruction_count=len(analysis.loop_body) - len(analysis.decrement_regs),
+        conditional_back_edge_count=analysis.conditional_back_edge_count,
+        success_edge_count=analysis.success_edge_count,
+        timeout_edge_count=analysis.timeout_edge_count,
+        extra_per_iteration_instruction_count=(
+            analysis.back_edge_index
+            - analysis.status_index
+            + 1
+            - _CANONICAL_PER_ITERATION_INSTRUCTIONS
+        ),
         has_stack_access=analysis.has_stack_access,
         has_extra_non_status_load=analysis.has_extra_non_status_load,
         has_forbidden_loop_effect=any(
-            _is_call(insn) or _is_stack_access(insn) or _STORE_RE.match(insn.text)
-            for insn in analysis.loop_body
+            _is_call(insn) or _is_stack_access(insn) or _is_barrier(insn) or _STORE_RE.match(insn.text)
+            for insn in analysis.code[analysis.status_index:analysis.back_edge_index + 1]
         ),
+        signature=_region_signature(analysis),
     )
 
 
-def normalize_poll_loop(loop: PollLoop) -> tuple[tuple[str, int], ...]:
+def normalize_poll_loop(loop: PollLoop) -> tuple[tuple[str, str | int], ...]:
     """Register names, addresses and literal-pool layout are normalized away."""
-    return (
-        ("status_reads_per_iteration", loop.status_read_count),
-        ("mask", loop.mask),
-        ("failed_path_decrements", loop.failed_path_decrement_count),
-        ("conditional_back_edges", loop.conditional_back_edge_count),
-        ("success_edges", loop.success_edge_count),
-        ("timeout_edges", loop.timeout_edge_count),
-        ("extra_per_iteration_instruction_count", loop.extra_per_iteration_instruction_count),
-    )
+    return loop.signature
 
 
 def _success_block(analysis: _HelperAnalysis) -> tuple[_Insn, ...]:
@@ -762,6 +915,18 @@ def prove_remaining_dataflow(disassembly_text: str, nm_text: str) -> RemainingDa
     remaining_offset, remaining_reg = live_in_stores[0]
     if remaining_offset < max(cyccnt_store_offsets):
         raise fail("remaining store must follow P2 exactly")
+
+    # P1, P2 and remaining must land in three different SRAM slots. Reusing the
+    # P2 destination would publish a cycle count where the record expects the
+    # poll countdown, which no store-shape check alone can see.
+    destinations = [
+        analysis.pointer_words[analysis.success_index + offset][
+            _STORE_RE.match(block[offset].text).group(2)
+        ]
+        for offset in sorted(cyccnt_store_offsets + [remaining_offset])
+    ]
+    if len(set(destinations)) != len(destinations):
+        raise fail("P1/P2/remaining must target three distinct SRAM destinations")
 
     induction_reg = analysis.decrement_regs[-1]
     if remaining_reg != induction_reg:

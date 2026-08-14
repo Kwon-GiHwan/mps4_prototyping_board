@@ -1,5 +1,6 @@
 import hashlib
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -290,391 +291,529 @@ static int test_commands(void)
 }
 """
 
-V12_NM_OK = """31002000 T v12_poll_completion
-31003000 T u85_irq_handler
-"""
+# ---------------------------------------------------------------------------
+# Synthetic ELF fixtures.
+#
+# `build_helper_disassembly` lays the rows out, then derives every PC-relative
+# literal offset and every branch target from that layout. No fixture below
+# names an instruction address, so inserting or deleting a row re-derives the
+# whole image -- including the Thumb ``((addr + 4) & ~3) + imm`` offsets the
+# gate independently re-computes when it resolves the literal pool.
+#
+# The encoding column is filler. The gate strips it by design, so that two
+# builds that encode the same instruction differently still verify; these
+# fixtures therefore do not model real encodings. Width suffixes (`.w` / `.n`)
+# live in the mnemonic text because that is what the gate actually reads.
+# ---------------------------------------------------------------------------
 
-V13_NM_OK = """32002040 T v13_poll_completion
-32003020 T u85_irq_handler
-32004200 T NVIC_EnableIRQ
-"""
+V12_HELPER = "v12_poll_completion"
+V13_HELPER = "v13_poll_completion"
+V12_HELPER_ADDR = 0x31002000
+V13_HELPER_ADDR = 0x32002040
+EXTERNAL_CALLEE = "helper_bookkeeping"
 
-V12_OBJDUMP_OK = """31002000 <v12_poll_completion>:
-31002000:   f242 7210   movw    r2, #10000      ; V12_FAILED_POLL_REMAINING_INIT
-31002004:   f242 7110   movw    r1, #10000      ; V12_TIMEOUT_INIT
-31002008:   4f0b        ldr     r7, [pc, #44]   ; V12_HELPER_STATUS_PTR
-3100200a:   bf00        nop
-3100200c:   f8d7 4000   ldr.w   r4, [r7]        ; V12_HELPER_STATUS_READ
-31002010:   f014 0f02   tst.w   r4, #2          ; V12_HELPER_STATUS_TEST
-31002014:   d105        bne.n   31002022 <v12_poll_completion+0x22>
-31002016:   3a01        subs    r2, #1          ; V12_FAILED_POLL_DECREMENT
-31002018:   3901        subs    r1, #1          ; V12_TIMEOUT_DECREMENT
-3100201a:   d1f7        bne.n   3100200c <v12_poll_completion+0x0c>
-3100201c:   2000        movs    r0, #0
-3100201e:   4770        bx      lr
-31002022:   4e08        ldr     r6, [pc, #32]   ; V12_DWT_CYCCNT_PTR
-31002024:   6830        ldr     r0, [r6]        ; V12_P1_DWT_READ
-31002026:   4d08        ldr     r5, [pc, #32]   ; V12_P1_STORE_PTR
-31002028:   6028        str     r0, [r5]        ; V12_P1_STORE
-3100202a:   6830        ldr     r0, [r6]        ; V12_P2_DWT_READ
-3100202c:   4d08        ldr     r5, [pc, #32]   ; V12_P2_STORE_PTR
-3100202e:   6028        str     r0, [r5]        ; V12_P2_STORE
-31002030:   4620        mov     r0, r4
-31002032:   4770        bx      lr
-31002034:   .word   0x51000014   ; V12_HELPER_STATUS_ADDR
-31002038:   .word   0xE0001004   ; V12_DWT_CYCCNT_ADDR
-3100203c:   .word   0x20001000   ; V12_P1_STORE_ADDR
-31002040:   .word   0x20001004   ; V12_P2_STORE_ADDR
+V12_LITERALS = (
+    ("STATUS", 0x51000014),
+    ("DWT", 0xE0001004),
+    ("P1", 0x20001000),
+    ("P2", 0x20001004),
+)
 
-31003000 <u85_irq_handler>:
-31003000:   4770        bx      lr
-"""
-
-V13_OBJDUMP_OK = """32002040 <v13_poll_completion>:
-32002040:   f242 7210   movw    r2, #10000      ; V13_FAILED_POLL_REMAINING_INIT
-32002044:   f242 7110   movw    r1, #10000      ; V13_BACK_EDGE_INDUCTION_INIT
-32002048:   4f0c        ldr     r7, [pc, #48]   ; V13_HELPER_STATUS_PTR
-3200204a:   bf00        nop
-3200204c:   f8d7 4000   ldr.w   r4, [r7]        ; V13_HELPER_STATUS_READ
-32002050:   f014 0f02   tst.w   r4, #2          ; V13_HELPER_STATUS_TEST
-32002054:   d105        bne.n   32002062 <v13_poll_completion+0x22>
-32002056:   3a01        subs    r2, #1          ; V13_FAILED_POLL_SHADOW_DECREMENT
-32002058:   3901        subs    r1, #1          ; V13_BACK_EDGE_INDUCTION_DECREMENT
-3200205a:   d1f7        bne.n   3200204c <v13_poll_completion+0x0c>
-3200205c:   2000        movs    r0, #0
-3200205e:   4770        bx      lr
-32002062:   4e09        ldr     r6, [pc, #36]   ; V13_DWT_CYCCNT_PTR
-32002064:   6830        ldr     r0, [r6]        ; V13_P1_DWT_READ
-32002066:   4d09        ldr     r5, [pc, #36]   ; V13_P1_STORE_PTR
-32002068:   6028        str     r0, [r5]        ; V13_P1_STORE
-3200206a:   6830        ldr     r0, [r6]        ; V13_P2_DWT_READ
-3200206c:   4d09        ldr     r5, [pc, #36]   ; V13_P2_STORE_PTR
-3200206e:   6028        str     r0, [r5]        ; V13_P2_STORE
-32002070:   4d09        ldr     r5, [pc, #36]   ; V13_REMAINING_STORE_PTR
-32002072:   6029        str     r1, [r5]        ; V13_REMAINING_STORE
-32002074:   4620        mov     r0, r4
-32002076:   4770        bx      lr
-32002078:   .word   0x51000014   ; V13_HELPER_STATUS_ADDR
-3200207c:   .word   0xE0001004   ; V13_DWT_CYCCNT_ADDR
-32002080:   .word   0x20002000   ; V13_P1_STORE_ADDR
-32002084:   .word   0x20002004   ; V13_P2_STORE_ADDR
-32002088:   .word   0x20002008   ; V13_REMAINING_STORE_ADDR
-
-32003020 <u85_irq_handler>:
-32003020:   4770        bx      lr
-"""
+V13_LITERALS = (
+    ("STATUS", 0x51000014),
+    ("DWT", 0xE0001004),
+    ("P1", 0x20002000),
+    ("P2", 0x20002004),
+    ("REMAINING", 0x20002008),
+)
 
 
-def _replace_once_exact(text: str, old: str, new: str, label: str) -> str:
-    if old not in text:
-        raise fail("%s old text missing" % label)
-    return replace_once(text, old, new, label)
+def row(label: str, text: str, *, size: int = 2, comment: str = "") -> dict[str, object]:
+    return {"label": label, "size": size, "text": text, "comment": comment}
 
 
-def _replace_block(text: str, old: str, new: str, label: str) -> str:
-    return _replace_once_exact(text, old, new, label)
+def _align4(value: int) -> int:
+    return (value + 3) & ~3
 
 
-def _elf_negative_fixtures() -> dict[str, dict[str, str]]:
-    return {
-        "extra_loop_mov": {
-            "objdump": _replace_block(
-                V13_OBJDUMP_OK,
-                "32002054:   d105        bne.n   32002062 <v13_poll_completion+0x22>\n"
-                "32002056:   3a01        subs    r2, #1          ; V13_FAILED_POLL_SHADOW_DECREMENT\n"
-                "32002058:   3901        subs    r1, #1          ; V13_BACK_EDGE_INDUCTION_DECREMENT\n"
-                "3200205a:   d1f7        bne.n   3200204c <v13_poll_completion+0x0c>\n"
-                "3200205c:   2000        movs    r0, #0\n"
-                "3200205e:   4770        bx      lr\n"
-                "32002062:   4e09        ldr     r6, [pc, #36]   ; V13_DWT_CYCCNT_PTR\n",
-                "32002054:   d106        bne.n   32002064 <v13_poll_completion+0x24>\n"
-                "32002056:   4629        mov     r1, r5          ; V13_EXTRA_LOOP_MOV\n"
-                "32002058:   3a01        subs    r2, #1          ; V13_FAILED_POLL_SHADOW_DECREMENT\n"
-                "3200205a:   3901        subs    r1, #1          ; V13_BACK_EDGE_INDUCTION_DECREMENT\n"
-                "3200205c:   d1f6        bne.n   3200204c <v13_poll_completion+0x0c>\n"
-                "3200205e:   2000        movs    r0, #0\n"
-                "32002060:   4770        bx      lr\n"
-                "32002064:   4e09        ldr     r6, [pc, #36]   ; V13_DWT_CYCCNT_PTR\n",
-                "extra-loop-mov",
-            ),
-            "nm": V13_NM_OK,
-            "expected": "extra per-iteration instruction",
-        },
-        "extra_loop_store": {
-            "objdump": _replace_block(
-                V13_OBJDUMP_OK,
-                "32002054:   d105        bne.n   32002062 <v13_poll_completion+0x22>\n"
-                "32002056:   3a01        subs    r2, #1          ; V13_FAILED_POLL_SHADOW_DECREMENT\n"
-                "32002058:   3901        subs    r1, #1          ; V13_BACK_EDGE_INDUCTION_DECREMENT\n"
-                "3200205a:   d1f7        bne.n   3200204c <v13_poll_completion+0x0c>\n"
-                "3200205c:   2000        movs    r0, #0\n"
-                "3200205e:   4770        bx      lr\n"
-                "32002062:   4e09        ldr     r6, [pc, #36]   ; V13_DWT_CYCCNT_PTR\n",
-                "32002054:   d106        bne.n   32002064 <v13_poll_completion+0x24>\n"
-                "32002056:   6019        str     r1, [r3]        ; V13_EXTRA_LOOP_STORE\n"
-                "32002058:   3a01        subs    r2, #1          ; V13_FAILED_POLL_SHADOW_DECREMENT\n"
-                "3200205a:   3901        subs    r1, #1          ; V13_BACK_EDGE_INDUCTION_DECREMENT\n"
-                "3200205c:   d1f6        bne.n   3200204c <v13_poll_completion+0x0c>\n"
-                "3200205e:   2000        movs    r0, #0\n"
-                "32002060:   4770        bx      lr\n"
-                "32002064:   4e09        ldr     r6, [pc, #36]   ; V13_DWT_CYCCNT_PTR\n",
-                "extra-loop-store",
-            ),
-            "nm": V13_NM_OK,
-            "expected": "extra per-iteration store",
-        },
-        "extra_loop_spill_reload": {
-            "objdump": _replace_block(
-                V13_OBJDUMP_OK,
-                "32002054:   d105        bne.n   32002062 <v13_poll_completion+0x22>\n"
-                "32002056:   3a01        subs    r2, #1          ; V13_FAILED_POLL_SHADOW_DECREMENT\n"
-                "32002058:   3901        subs    r1, #1          ; V13_BACK_EDGE_INDUCTION_DECREMENT\n"
-                "3200205a:   d1f7        bne.n   3200204c <v13_poll_completion+0x0c>\n"
-                "3200205c:   2000        movs    r0, #0\n"
-                "3200205e:   4770        bx      lr\n"
-                "32002062:   4e09        ldr     r6, [pc, #36]   ; V13_DWT_CYCCNT_PTR\n",
-                "32002054:   d107        bne.n   32002068 <v13_poll_completion+0x28>\n"
-                "32002056:   9300        str     r3, [sp, #0]    ; V13_EXTRA_LOOP_SPILL\n"
-                "32002058:   9b00        ldr     r3, [sp, #0]    ; V13_EXTRA_LOOP_RELOAD\n"
-                "3200205a:   3a01        subs    r2, #1          ; V13_FAILED_POLL_SHADOW_DECREMENT\n"
-                "3200205c:   3901        subs    r1, #1          ; V13_BACK_EDGE_INDUCTION_DECREMENT\n"
-                "3200205e:   d1f5        bne.n   3200204c <v13_poll_completion+0x0c>\n"
-                "32002060:   2000        movs    r0, #0\n"
-                "32002062:   4770        bx      lr\n"
-                "32002068:   4e09        ldr     r6, [pc, #36]   ; V13_DWT_CYCCNT_PTR\n",
-                "extra-loop-spill-reload",
-            ),
-            "nm": V13_NM_OK,
-            "expected": "extra per-iteration load/store",
-        },
-        "extra_loop_call": {
-            "objdump": _replace_block(
-                V13_OBJDUMP_OK,
-                "32002054:   d105        bne.n   32002062 <v13_poll_completion+0x22>\n"
-                "32002056:   3a01        subs    r2, #1          ; V13_FAILED_POLL_SHADOW_DECREMENT\n"
-                "32002058:   3901        subs    r1, #1          ; V13_BACK_EDGE_INDUCTION_DECREMENT\n"
-                "3200205a:   d1f7        bne.n   3200204c <v13_poll_completion+0x0c>\n"
-                "3200205c:   2000        movs    r0, #0\n"
-                "3200205e:   4770        bx      lr\n"
-                "32002062:   4e09        ldr     r6, [pc, #36]   ; V13_DWT_CYCCNT_PTR\n",
-                "32002054:   d106        bne.n   32002066 <v13_poll_completion+0x26>\n"
-                "32002056:   f7ff ffd3   bl      32002000 <helper_bookkeeping> ; V13_EXTRA_LOOP_CALL\n"
-                "3200205a:   3a01        subs    r2, #1          ; V13_FAILED_POLL_SHADOW_DECREMENT\n"
-                "3200205c:   3901        subs    r1, #1          ; V13_BACK_EDGE_INDUCTION_DECREMENT\n"
-                "3200205e:   d1f5        bne.n   3200204c <v13_poll_completion+0x0c>\n"
-                "32002060:   2000        movs    r0, #0\n"
-                "32002062:   4770        bx      lr\n"
-                "32002066:   4e09        ldr     r6, [pc, #36]   ; V13_DWT_CYCCNT_PTR\n",
-                "extra-loop-call",
-            ),
-            "nm": V13_NM_OK + "32002000 T helper_bookkeeping\n",
-            "expected": "extra per-iteration call",
-        },
-        "missing_failed_decrement": {
-            "objdump": V13_OBJDUMP_OK.replace(
-                "32002056:   3a01        subs    r2, #1          ; V13_FAILED_POLL_SHADOW_DECREMENT\n",
-                "",
-                1,
-            ),
-            "nm": V13_NM_OK,
-            "expected": "failed-poll decrement count",
-        },
-        "third_failed_decrement": {
-            "objdump": _replace_once_exact(
-                V13_OBJDUMP_OK,
-                "32002056:   3a01        subs    r2, #1          ; V13_FAILED_POLL_SHADOW_DECREMENT\n"
-                "32002058:   3901        subs    r1, #1          ; V13_BACK_EDGE_INDUCTION_DECREMENT\n",
-                "32002056:   3a01        subs    r2, #1          ; V13_FAILED_POLL_SHADOW_DECREMENT\n"
-                "32002058:   3901        subs    r1, #1          ; V13_BACK_EDGE_INDUCTION_DECREMENT\n"
-                "3200205a:   3d01        subs    r5, #1          ; V13_THIRD_DECREMENT\n",
-                "third-decrement",
-            ),
-            "nm": V13_NM_OK,
-            "expected": "failed-poll decrement count",
-        },
-        "wrong_back_edge": {
-            "objdump": V13_OBJDUMP_OK.replace(
-                "3200205a:   d1f7        bne.n   3200204c <v13_poll_completion+0x0c>\n",
-                "3200205a:   d1f7        bne.n   32002048 <v13_poll_completion+0x08> ; V13_WRONG_BACK_EDGE\n",
-                1,
-            ),
-            "nm": V13_NM_OK,
-            "expected": "conditional loop back-edge",
-        },
-        "second_status_read": {
-            "objdump": _replace_block(
-                V13_OBJDUMP_OK,
-                "32002062:   4e09        ldr     r6, [pc, #36]   ; V13_DWT_CYCCNT_PTR\n"
-                "32002064:   6830        ldr     r0, [r6]        ; V13_P1_DWT_READ\n"
-                "32002066:   4d09        ldr     r5, [pc, #36]   ; V13_P1_STORE_PTR\n"
-                "32002068:   6028        str     r0, [r5]        ; V13_P1_STORE\n"
-                "3200206a:   6830        ldr     r0, [r6]        ; V13_P2_DWT_READ\n"
-                "3200206c:   4d09        ldr     r5, [pc, #36]   ; V13_P2_STORE_PTR\n"
-                "3200206e:   6028        str     r0, [r5]        ; V13_P2_STORE\n"
-                "32002070:   4d09        ldr     r5, [pc, #36]   ; V13_REMAINING_STORE_PTR\n"
-                "32002072:   6029        str     r1, [r5]        ; V13_REMAINING_STORE\n"
-                "32002074:   4620        mov     r0, r4\n"
-                "32002076:   4770        bx      lr\n",
-                "32002062:   4e09        ldr     r6, [pc, #36]   ; V13_DWT_CYCCNT_PTR\n"
-                "32002064:   6830        ldr     r0, [r6]        ; V13_P1_DWT_READ\n"
-                "32002066:   4d09        ldr     r5, [pc, #36]   ; V13_P1_STORE_PTR\n"
-                "32002068:   6028        str     r0, [r5]        ; V13_P1_STORE\n"
-                "3200206a:   6830        ldr     r0, [r6]        ; V13_P2_DWT_READ\n"
-                "3200206c:   4d09        ldr     r5, [pc, #36]   ; V13_P2_STORE_PTR\n"
-                "3200206e:   6028        str     r0, [r5]        ; V13_P2_STORE\n"
-                "32002070:   f8d7 4000   ldr.w   r4, [r7]        ; V13_SECOND_STATUS_READ\n"
-                "32002074:   4d09        ldr     r5, [pc, #36]   ; V13_REMAINING_STORE_PTR\n"
-                "32002076:   6029        str     r1, [r5]        ; V13_REMAINING_STORE\n"
-                "32002078:   4620        mov     r0, r4\n"
-                "3200207a:   4770        bx      lr\n",
-                "second-status-read",
-            ),
-            "nm": V13_NM_OK,
-            "expected": "helper STATUS read count != 1",
-        },
-        "extra_non_status_load": {
-            "objdump": _replace_block(
-                V13_OBJDUMP_OK,
-                "32002062:   4e09        ldr     r6, [pc, #36]   ; V13_DWT_CYCCNT_PTR\n"
-                "32002064:   6830        ldr     r0, [r6]        ; V13_P1_DWT_READ\n"
-                "32002066:   4d09        ldr     r5, [pc, #36]   ; V13_P1_STORE_PTR\n"
-                "32002068:   6028        str     r0, [r5]        ; V13_P1_STORE\n",
-                "32002062:   4e09        ldr     r6, [pc, #36]   ; V13_DWT_CYCCNT_PTR\n"
-                "32002064:   685b        ldr     r3, [r3, #4]    ; V13_EXTRA_NON_STATUS_LOAD\n"
-                "32002066:   6830        ldr     r0, [r6]        ; V13_P1_DWT_READ\n"
-                "32002068:   4d09        ldr     r5, [pc, #36]   ; V13_P1_STORE_PTR\n"
-                "3200206a:   6028        str     r0, [r5]        ; V13_P1_STORE\n",
-                "extra-non-status-load",
-            ),
-            "nm": V13_NM_OK,
-            "expected": "extra non-STATUS load",
-        },
-        "wrong_status_address": {
-            "objdump": V13_OBJDUMP_OK.replace(
-                "32002078:   .word   0x51000014   ; V13_HELPER_STATUS_ADDR\n",
-                "32002078:   .word   0x51000018   ; V13_HELPER_STATUS_ADDR_WRONG\n",
-                1,
-            ),
-            "nm": V13_NM_OK,
-            "expected": "helper STATUS MMIO address",
-        },
-        "store_before_p2": {
-            "objdump": V13_OBJDUMP_OK.replace(
-                "3200206a:   6830        ldr     r0, [r6]        ; V13_P2_DWT_READ\n"
-                "3200206c:   4d09        ldr     r5, [pc, #36]   ; V13_P2_STORE_PTR\n"
-                "3200206e:   6028        str     r0, [r5]        ; V13_P2_STORE\n"
-                "32002070:   4d09        ldr     r5, [pc, #36]   ; V13_REMAINING_STORE_PTR\n"
-                "32002072:   6029        str     r1, [r5]        ; V13_REMAINING_STORE\n",
-                "3200206a:   4d09        ldr     r5, [pc, #36]   ; V13_REMAINING_STORE_PTR\n"
-                "3200206c:   6029        str     r1, [r5]        ; V13_REMAINING_STORE\n"
-                "3200206e:   6830        ldr     r0, [r6]        ; V13_P2_DWT_READ\n"
-                "32002070:   4d09        ldr     r5, [pc, #36]   ; V13_P2_STORE_PTR\n"
-                "32002072:   6028        str     r0, [r5]        ; V13_P2_STORE\n",
-                1,
-            ),
-            "nm": V13_NM_OK,
-            "expected": "remaining store must follow P2 exactly",
-        },
-        "constant_store": {
-            "objdump": V13_OBJDUMP_OK.replace(
-                "32002070:   4d09        ldr     r5, [pc, #36]   ; V13_REMAINING_STORE_PTR\n"
-                "32002072:   6029        str     r1, [r5]        ; V13_REMAINING_STORE\n",
-                "32002070:   4d09        ldr     r5, [pc, #36]   ; V13_REMAINING_STORE_PTR\n"
-                "32002072:   2101        movs    r1, #1\n"
-                "32002074:   6029        str     r1, [r5]        ; V13_REMAINING_STORE_CONSTANT\n",
-                1,
-            ),
-            "nm": V13_NM_OK,
-            "expected": "remaining must dataflow from failed-poll countdown live-out",
-        },
-        "recomputed_store": {
-            "objdump": V13_OBJDUMP_OK.replace(
-                "32002070:   4d09        ldr     r5, [pc, #36]   ; V13_REMAINING_STORE_PTR\n"
-                "32002072:   6029        str     r1, [r5]        ; V13_REMAINING_STORE\n",
-                "32002070:   f1c1 0120   sub.w   r1, r1, #32      ; V13_RECOMPUTE_REMAINING\n"
-                "32002074:   4d09        ldr     r5, [pc, #36]   ; V13_REMAINING_STORE_PTR\n"
-                "32002076:   6029        str     r1, [r5]        ; V13_REMAINING_STORE_RECOMPUTED\n",
-                1,
-            ),
-            "nm": V13_NM_OK,
-            "expected": "remaining must dataflow from failed-poll countdown live-out",
-        },
-        "timeout_reaches_store": {
-            "objdump": V13_OBJDUMP_OK.replace(
-                "3200205c:   2000        movs    r0, #0\n"
-                "3200205e:   4770        bx      lr\n",
-                "3200205c:   4d09        ldr     r5, [pc, #36]   ; V13_REMAINING_STORE_PTR\n"
-                "3200205e:   6029        str     r1, [r5]        ; V13_TIMEOUT_STORE\n"
-                "32002060:   2000        movs    r0, #0\n"
-                "32002062:   4770        bx      lr\n",
-                1,
-            ),
-            "nm": V13_NM_OK,
-            "expected": "timeout path must not publish remaining",
-        },
-        "push_pop_stack_frame": {
-            "objdump": V13_OBJDUMP_OK.replace(
-                "32002040:   f242 7210   movw    r2, #10000      ; V13_FAILED_POLL_REMAINING_INIT\n",
-                "32002040:   b510        push    {r4, lr}        ; V13_PUSH\n"
-                "32002042:   f242 7210   movw    r2, #10000      ; V13_FAILED_POLL_REMAINING_INIT\n",
-                1,
-            ),
-            "nm": V13_NM_OK,
-            "expected": "helper must remain a leaf without stack access",
-        },
-        "retained_v12_runtime_drift": {
-            "objdump": V13_OBJDUMP_OK
-            + "\n32004000 <test_u85>:\n"
-            + "32004000:   f7ff f8fe   bl      32004200 <NVIC_EnableIRQ> ; V12_RUNTIME_ENABLE_DRIFT\n",
-            "nm": V13_NM_OK + "32004000 T test_u85\n",
-            "expected": "retained V12 NVIC enable drift",
-        },
-        "retained_v12_iser_direct_enable": {
-            "objdump": V13_OBJDUMP_OK
-            + "\n32004000 <test_u85>:\n"
-            + "32004000:   4b01        ldr     r3, [pc, #4]    ; V13_ISER_PTR\n"
-            + "32004002:   601a        str     r2, [r3]        ; V13_ISER_DIRECT_ENABLE\n"
-            + "32004004:   4770        bx      lr\n"
-            + "32004008:   .word   0xE000E100\n",
-            "nm": V13_NM_OK + "32004000 T test_u85\n",
-            "expected": "direct NVIC ISER enable write remains reachable",
-        },
-        "duplicate_helper_nm_symbol": {
-            "objdump": V13_OBJDUMP_OK,
-            "nm": V13_NM_OK + "32005000 T v13_poll_completion\n",
-            "expected": "duplicate poll helper symbol in nm",
-        },
-        "ambiguous_v12_and_v13_helper_nm_symbols": {
-            "objdump": V13_OBJDUMP_OK,
-            "nm": V13_NM_OK + "32006000 T v12_poll_completion\n",
-            "expected": "duplicate poll helper symbol in nm",
-        },
-        "duplicate_helper_disassembly_section": {
-            "objdump": V13_OBJDUMP_OK
-            + "\n32005000 <v13_poll_completion>:\n"
-            + "32005000:   4770        bx      lr\n",
-            "nm": V13_NM_OK,
-            "expected": "duplicate poll helper section in disassembly",
-        },
-    }
+def build_helper_disassembly(
+    helper: str,
+    base: int,
+    rows,
+    literals,
+    *,
+    comments: bool = True,
+    pool_gap: int = 0,
+    extras: str = "",
+) -> str:
+    placed = []
+    addr = base
+    for item in rows:
+        placed.append((addr, item))
+        addr += item["size"]
+    labels = {item["label"]: at for at, item in placed}
+    pool = _align4(addr + pool_gap)
+    slots = {name: pool + 4 * index for index, (name, _word) in enumerate(literals)}
 
+    def render(at: int, text: str) -> str:
+        for name, slot in slots.items():
+            text = text.replace("{lit:%s}" % name, "#%d" % (slot - ((at + 4) & ~3)))
+        for name, target in labels.items():
+            text = text.replace(
+                "{to:%s}" % name, "%08x <%s+0x%x>" % (target, helper, target - base)
+            )
+        return text.replace("{call}", "%08x <%s>" % (base - 0x1000, EXTERNAL_CALLEE))
+
+    lines = ["%08x <%s>:" % (base, helper)]
+    for at, item in placed:
+        body = render(at, item["text"])
+        if comments and item["comment"]:
+            body = "%-32s; %s" % (body, item["comment"])
+        lines.append(
+            "%08x:   %-11s %s" % (at, "0000" if item["size"] == 2 else "0000 0000", body.rstrip())
+        )
+    for name, word in literals:
+        body = ".word   0x%08X" % word
+        if comments:
+            body = "%-32s; %s" % (body, name)
+        lines.append("%08x:   %s" % (slots[name], body.rstrip()))
+    return "\n".join(lines) + "\n" + extras
+
+
+def build_nm(entries) -> str:
+    return "".join("%08x T %s\n" % (addr, name) for addr, name in entries)
+
+
+def _row_index(rows, label: str) -> int:
+    for index, item in enumerate(rows):
+        if item["label"] == label:
+            return index
+    raise fail("fixture row not found: %s" % label)
+
+
+def rows_after(rows, label: str, *inserted):
+    at = _row_index(rows, label) + 1
+    return list(rows[:at]) + list(inserted) + list(rows[at:])
+
+
+def rows_before(rows, label: str, *inserted):
+    at = _row_index(rows, label)
+    return list(rows[:at]) + list(inserted) + list(rows[at:])
+
+
+def rows_without(rows, *labels):
+    return [item for item in rows if item["label"] not in labels]
+
+
+def rows_retext(rows, label: str, text: str):
+    at = _row_index(rows, label)
+    return [dict(item, text=text) if index == at else item for index, item in enumerate(rows)]
+
+
+def rows_relocate(rows, moved, before_label: str):
+    moving = [item for item in rows if item["label"] in moved]
+    rest = [item for item in rows if item["label"] not in moved]
+    at = _row_index(rest, before_label)
+    return rest[:at] + moving + rest[at:]
+
+
+def literals_with(literals, *added):
+    return tuple(literals) + tuple(added)
+
+
+def literals_without(literals, *names):
+    return tuple(item for item in literals if item[0] not in names)
+
+
+def literals_set(literals, name: str, word: int):
+    return tuple((key, word if key == name else value) for key, value in literals)
+
+
+def literals_reversed(literals):
+    return tuple(reversed(literals))
+
+
+def v12_rows():
+    return [
+        row("init_shadow", "movw    r2, #10000", size=4, comment="V12_FAILED_POLL_REMAINING_INIT"),
+        row("init_induction", "movw    r1, #10000", size=4, comment="V12_TIMEOUT_INIT"),
+        row("status_ptr", "ldr     r7, [pc, {lit:STATUS}]", comment="V12_HELPER_STATUS_PTR"),
+        row("pad", "nop", comment="V12_ALIGNMENT_PAD"),
+        row("loop", "ldr.w   r4, [r7]", size=4, comment="V12_HELPER_STATUS_READ"),
+        row("test", "tst.w   r4, #2", size=4, comment="V12_HELPER_STATUS_TEST"),
+        row("succ_branch", "bne.n   {to:success}", comment="V12_SUCCESS_BRANCH"),
+        row("dec_shadow", "subs    r2, #1", comment="V12_FAILED_POLL_DECREMENT"),
+        row("dec_induction", "subs    r1, #1", comment="V12_TIMEOUT_DECREMENT"),
+        row("back_edge", "bne.n   {to:loop}", comment="V12_BACK_EDGE"),
+        row("timeout_result", "movs    r0, #0", comment="V12_TIMEOUT_RESULT"),
+        row("timeout_return", "bx      lr", comment="V12_TIMEOUT_RETURN"),
+        row("success", "ldr     r6, [pc, {lit:DWT}]", comment="V12_DWT_CYCCNT_PTR"),
+        row("p1_read", "ldr     r0, [r6]", comment="V12_P1_DWT_READ"),
+        row("p1_ptr", "ldr     r5, [pc, {lit:P1}]", comment="V12_P1_STORE_PTR"),
+        row("p1_store", "str     r0, [r5]", comment="V12_P1_STORE"),
+        row("p2_read", "ldr     r0, [r6]", comment="V12_P2_DWT_READ"),
+        row("p2_ptr", "ldr     r5, [pc, {lit:P2}]", comment="V12_P2_STORE_PTR"),
+        row("p2_store", "str     r0, [r5]", comment="V12_P2_STORE"),
+        row("succ_result", "mov     r0, r4", comment="V12_SUCCESS_RESULT"),
+        row("succ_return", "bx      lr", comment="V12_SUCCESS_RETURN"),
+    ]
+
+
+def v13_rows():
+    return rows_after(
+        [dict(item, comment=item["comment"].replace("V12_", "V13_")) for item in v12_rows()],
+        "p2_store",
+        row("rem_ptr", "ldr     r5, [pc, {lit:REMAINING}]", comment="V13_REMAINING_STORE_PTR"),
+        row("rem_store", "str     r1, [r5]", comment="V13_REMAINING_STORE"),
+    )
+
+
+def v12_elf(*, rows=None, literals=None, base=V12_HELPER_ADDR, extra_nm=(), **kwargs):
+    objdump = build_helper_disassembly(
+        V12_HELPER,
+        base,
+        v12_rows() if rows is None else rows,
+        V12_LITERALS if literals is None else literals,
+        **kwargs,
+    )
+    nm = build_nm(((base, V12_HELPER), (0x31003000, "u85_irq_handler")) + tuple(extra_nm))
+    return objdump, nm
+
+
+def v13_elf(*, rows=None, literals=None, base=V13_HELPER_ADDR, extra_nm=(), **kwargs):
+    objdump = build_helper_disassembly(
+        V13_HELPER,
+        base,
+        v13_rows() if rows is None else rows,
+        V13_LITERALS if literals is None else literals,
+        **kwargs,
+    )
+    nm = build_nm(
+        (
+            (base, V13_HELPER),
+            (0x32003020, "u85_irq_handler"),
+            (0x32004200, "NVIC_EnableIRQ"),
+        )
+        + tuple(extra_nm)
+    )
+    return objdump, nm
+
+
+def extras_section(name: str, addr: int, *lines: str) -> str:
+    body = "".join("%08x:   %s\n" % (addr + 4 * index, text) for index, text in enumerate(lines))
+    return "\n%08x <%s>:\n%s" % (addr, name, body)
+
+
+V12_OBJDUMP_OK, V12_NM_OK = v12_elf()
+V13_OBJDUMP_OK, V13_NM_OK = v13_elf()
 
 # Retained-V12 runtime shape that the V13 image is *required* to keep: the
 # stock vector install and the pending clear. Neither is drift, so the gate
 # must accept an image that still calls them.
-V13_RETAINED_STOCK_OBJDUMP = V13_OBJDUMP_OK + """
-32004000 <test_u85>:
-32004000:   f7ff f97e   bl      32004300 <NVIC_SetVector> ; V13_RUNTIME_VECTOR_INSTALL
-32004004:   f7ff f9fc   bl      32004400 <NVIC_ClearPendingIRQ> ; V13_RUNTIME_CLEAR_PENDING
-32004008:   4770        bx      lr
-"""
-
-V13_RETAINED_STOCK_NM = (
-    V13_NM_OK
-    + "32004000 T test_u85\n"
-    + "32004300 T NVIC_SetVector\n"
-    + "32004400 T NVIC_ClearPendingIRQ\n"
+V13_RETAINED_STOCK_OBJDUMP = V13_OBJDUMP_OK + extras_section(
+    "test_u85",
+    0x32004000,
+    "f7ff f97e   bl      32004300 <NVIC_SetVector> ; V13_RUNTIME_VECTOR_INSTALL",
+    "f7ff f9fc   bl      32004400 <NVIC_ClearPendingIRQ> ; V13_RUNTIME_CLEAR_PENDING",
+    "4770        bx      lr",
 )
+
+V13_RETAINED_STOCK_NM = V13_NM_OK + build_nm(
+    (
+        (0x32004000, "test_u85"),
+        (0x32004300, "NVIC_SetVector"),
+        (0x32004400, "NVIC_ClearPendingIRQ"),
+    )
+)
+
+
+# Builds the gate must accept: same semantics, different relocation, register
+# allocation, literal-pool layout, encoding width or comment stripping.
+V13_ACCEPTED_VARIANTS = (
+    ("relocated helper with re-derived literal offsets", v13_elf(base=0x32009100, pool_gap=8)),
+    ("comment-stripped disassembly", v13_elf(comments=False)),
+    (
+        "narrow/wide encoding swap on the polled instructions",
+        v13_elf(
+            rows=rows_retext(
+                rows_retext(
+                    rows_retext(v13_rows(), "loop", "ldr     r4, [r7]"),
+                    "test",
+                    "tst     r4, #2",
+                ),
+                "back_edge",
+                "bne.w   {to:loop}",
+            )
+        ),
+    ),
+    (
+        "different register allocation",
+        v13_elf(
+            rows=[
+                dict(item, text=item["text"].replace("r7", "r3").replace("r4", "r0").replace("r1", "r2")
+                     if item["label"] in ("status_ptr", "loop", "test", "succ_result")
+                     else item["text"])
+                for item in v13_rows()
+            ]
+        ),
+    ),
+    ("reversed literal-pool layout", v13_elf(literals=literals_reversed(V13_LITERALS))),
+)
+
+
+# Drifted V12 references: each one still satisfies the V12 half of the
+# structural gate on its own, so only the normalized cross-ELF signature can
+# tell it apart from the canonical V13 loop.
+V12_DRIFTED_REFERENCES = (
+    (
+        "halfword STATUS read",
+        v12_elf(rows=rows_retext(v12_rows(), "loop", "ldrh.w  r4, [r7]")),
+    ),
+    (
+        "success branch on the whole register instead of the masked flags",
+        v12_elf(rows=rows_retext(v12_rows(), "succ_branch", "cbnz    r4, {to:success}")),
+    ),
+)
+
+
+def _elf_negative_fixtures() -> dict[str, dict[str, str]]:
+    """Every V13 image the final-ELF gate must refuse, keyed by drift name."""
+    gap_effects = (
+        ("gap_extra_mov", "mov     r3, r4", 2, "extra per-iteration instruction"),
+        ("gap_dwt_read", "ldr     r0, [r6]", 2, "extra per-iteration load/store"),
+        ("gap_sram_store", "str     r4, [r5]", 2, "extra per-iteration store"),
+        ("gap_barrier", "dsb     sy", 4, "extra per-iteration barrier"),
+        ("gap_call", "bl      {call}", 4, "extra per-iteration call"),
+    )
+    fixtures = {}
+
+    # The region between the STATUS load and the completion test is executed
+    # once per poll just like the failed-path tail, so it must reject the same
+    # effects. Every one of these used to slip through unseen.
+    for name, text, size, expected in gap_effects:
+        fixtures[name] = _elf_case(
+            v13_elf(rows=rows_after(v13_rows(), "loop", row(name, text, size=size))), expected
+        )
+
+    tail_effects = (
+        ("extra_loop_mov", "mov     r1, r5", 2, "extra per-iteration instruction"),
+        ("extra_loop_store", "str     r1, [r5]", 2, "extra per-iteration store"),
+        ("extra_loop_barrier", "isb     sy", 4, "extra per-iteration barrier"),
+        ("extra_loop_call", "bl      {call}", 4, "extra per-iteration call"),
+    )
+    for name, text, size, expected in tail_effects:
+        fixtures[name] = _elf_case(
+            v13_elf(
+                rows=rows_after(v13_rows(), "succ_branch", row(name, text, size=size)),
+                extra_nm=((V13_HELPER_ADDR - 0x1000, EXTERNAL_CALLEE),),
+            ),
+            expected,
+        )
+
+    fixtures["extra_loop_spill_reload"] = _elf_case(
+        v13_elf(
+            rows=rows_after(
+                v13_rows(),
+                "succ_branch",
+                row("spill", "str     r3, [sp, #0]"),
+                row("reload", "ldr     r3, [sp, #0]"),
+            )
+        ),
+        "extra per-iteration load/store",
+    )
+    fixtures["missing_failed_decrement"] = _elf_case(
+        v13_elf(rows=rows_without(v13_rows(), "dec_shadow")), "failed-poll decrement count"
+    )
+    fixtures["third_failed_decrement"] = _elf_case(
+        v13_elf(rows=rows_after(v13_rows(), "dec_induction", row("dec_third", "subs    r5, #1"))),
+        "failed-poll decrement count",
+    )
+    fixtures["wrong_back_edge"] = _elf_case(
+        v13_elf(rows=rows_retext(v13_rows(), "back_edge", "bne.n   {to:status_ptr}")),
+        "conditional loop back-edge",
+    )
+    fixtures["decrement_clobbers_status_pointer"] = _elf_case(
+        v13_elf(rows=rows_retext(v13_rows(), "dec_shadow", "subs    r7, #1")),
+        "failed-poll decrement clobbers the STATUS read",
+    )
+    fixtures["second_status_read"] = _elf_case(
+        v13_elf(rows=rows_after(v13_rows(), "p2_store", row("reread", "ldr.w   r4, [r7]", size=4))),
+        "helper STATUS read count != 1",
+    )
+    fixtures["extra_non_status_load"] = _elf_case(
+        v13_elf(rows=rows_after(v13_rows(), "success", row("stray", "ldr     r3, [r3, #4]"))),
+        "extra non-STATUS load",
+    )
+    fixtures["wrong_status_address"] = _elf_case(
+        v13_elf(literals=literals_set(V13_LITERALS, "STATUS", 0x51000018)),
+        "helper STATUS MMIO address",
+    )
+    fixtures["store_before_p2"] = _elf_case(
+        v13_elf(rows=rows_relocate(v13_rows(), ("rem_ptr", "rem_store"), "p2_read")),
+        "remaining store must follow P2 exactly",
+    )
+    fixtures["constant_store"] = _elf_case(
+        v13_elf(rows=rows_before(v13_rows(), "rem_store", row("const", "movs    r1, #1"))),
+        "remaining must dataflow from failed-poll countdown live-out",
+    )
+    fixtures["recomputed_store"] = _elf_case(
+        v13_elf(
+            rows=rows_before(v13_rows(), "rem_ptr", row("recompute", "sub.w   r1, r1, #32", size=4))
+        ),
+        "remaining must dataflow from failed-poll countdown live-out",
+    )
+    fixtures["timeout_reaches_store"] = _elf_case(
+        v13_elf(
+            rows=rows_before(
+                v13_rows(),
+                "timeout_result",
+                row("t_ptr", "ldr     r5, [pc, {lit:REMAINING}]"),
+                row("t_store", "str     r1, [r5]"),
+            )
+        ),
+        "timeout path must not publish remaining",
+    )
+    fixtures["push_pop_stack_frame"] = _elf_case(
+        v13_elf(rows=rows_before(v13_rows(), "init_shadow", row("push", "push    {r4, lr}"))),
+        "helper must remain a leaf without stack access",
+    )
+
+    # Literal-pool binding: the pool must be exactly the slots the helper
+    # reads, and each pointer must resolve to the address its role requires.
+    fixtures["decoy_status_literal"] = _elf_case(
+        v13_elf(literals=literals_with(V13_LITERALS, ("DECOY_STATUS", 0x51000014))),
+        "unreferenced helper literal",
+    )
+    fixtures["decoy_dwt_literal"] = _elf_case(
+        v13_elf(literals=literals_with(V13_LITERALS, ("DECOY_DWT", 0xE0001004))),
+        "unreferenced helper literal",
+    )
+    fixtures["bogus_literal_offset"] = _elf_case(
+        v13_elf(rows=rows_retext(v13_rows(), "status_ptr", "ldr     r7, [pc, #400]")),
+        "outside helper literal pool",
+    )
+    fixtures["status_pointer_into_sram"] = _elf_case(
+        v13_elf(
+            rows=rows_retext(
+                rows_before(
+                    v13_rows(), "status_ptr", row("keep_status", "ldr     r3, [pc, {lit:STATUS}]")
+                ),
+                "status_ptr",
+                "ldr     r7, [pc, {lit:SHADOW}]",
+            ),
+            literals=literals_with(V13_LITERALS, ("SHADOW", 0x20003000)),
+        ),
+        "helper STATUS pointer must resolve to 0x51000014",
+    )
+    fixtures["cycle_count_read_from_sram"] = _elf_case(
+        v13_elf(
+            rows=rows_retext(
+                rows_before(v13_rows(), "init_shadow", row("keep_dwt", "ldr     r3, [pc, {lit:DWT}]")),
+                "success",
+                "ldr     r6, [pc, {lit:FAKE_CYCCNT}]",
+            ),
+            literals=literals_with(V13_LITERALS, ("FAKE_CYCCNT", 0x20003100)),
+        ),
+        "cycle-count read must resolve to DWT CYCCNT 0xE0001004",
+    )
+    fixtures["remaining_reuses_p2_destination"] = _elf_case(
+        v13_elf(
+            rows=rows_retext(v13_rows(), "rem_ptr", "ldr     r5, [pc, {lit:P2}]"),
+            literals=literals_without(V13_LITERALS, "REMAINING"),
+        ),
+        "P1/P2/remaining must target three distinct SRAM destinations",
+    )
+    fixtures["store_destination_in_mmio"] = _elf_case(
+        v13_elf(
+            rows=rows_retext(v13_rows(), "p1_ptr", "ldr     r5, [pc, {lit:STATUS}]"),
+            literals=literals_without(V13_LITERALS, "P1"),
+        ),
+        "store destination must resolve to an SRAM literal slot",
+    )
+
+    fixtures["pc_load_in_poll_region"] = _elf_case(
+        v13_elf(rows=rows_after(v13_rows(), "loop", row("pc_load", "ldr     r3, [pc, {lit:DWT}]"))),
+        "extra per-iteration load/store",
+    )
+    fixtures["backward_literal_offset"] = _elf_case(
+        v13_elf(rows=rows_retext(v13_rows(), "status_ptr", "ldr     r7, [pc, #-16]")),
+        "outside helper literal pool",
+    )
+    fixtures["foreign_peripheral_literal"] = _elf_case(
+        v13_elf(
+            rows=rows_after(v13_rows(), "init_shadow", row("other", "ldr     r3, [pc, {lit:OTHER}]")),
+            literals=literals_with(V13_LITERALS, ("OTHER", 0x40000000)),
+        ),
+        "helper references unexpected MMIO literal 0x40000000",
+    )
+    fixtures["fourth_success_store"] = _elf_case(
+        v13_elf(
+            rows=rows_after(
+                v13_rows(),
+                "rem_store",
+                row("x_ptr", "ldr     r5, [pc, {lit:EXTRA}]"),
+                row("x_store", "str     r1, [r5]"),
+            ),
+            literals=literals_with(V13_LITERALS, ("EXTRA", 0x20002010)),
+        ),
+        "remaining store after P2 count != 1",
+    )
+    fixtures["remaining_register_redefined"] = _elf_case(
+        v13_elf(rows=rows_before(v13_rows(), "rem_store", row("clobber", "mov     r1, r2"))),
+        "remaining must dataflow from failed-poll countdown live-out",
+    )
+    fixtures["timeout_falls_through_to_success"] = _elf_case(
+        v13_elf(rows=rows_without(v13_rows(), "timeout_return")), "timeout exit edge missing"
+    )
+
+    fixtures["retained_v12_runtime_drift"] = _elf_case(
+        (
+            V13_OBJDUMP_OK
+            + extras_section(
+                "test_u85",
+                0x32004000,
+                "f7ff f8fe   bl      32004200 <NVIC_EnableIRQ> ; V12_RUNTIME_ENABLE_DRIFT",
+            ),
+            V13_NM_OK + build_nm(((0x32004000, "test_u85"),)),
+        ),
+        "retained V12 NVIC enable drift",
+    )
+    fixtures["retained_v12_iser_direct_enable"] = _elf_case(
+        (
+            V13_OBJDUMP_OK
+            + extras_section(
+                "test_u85",
+                0x32004000,
+                "4b01        ldr     r3, [pc, #4]    ; V13_ISER_PTR",
+                "601a        str     r2, [r3]        ; V13_ISER_DIRECT_ENABLE",
+                "4770        bx      lr",
+                ".word   0xE000E100",
+            ),
+            V13_NM_OK + build_nm(((0x32004000, "test_u85"),)),
+        ),
+        "direct NVIC ISER enable write remains reachable",
+    )
+    fixtures["duplicate_helper_nm_symbol"] = _elf_case(
+        (V13_OBJDUMP_OK, V13_NM_OK + build_nm(((0x32005000, V13_HELPER),))),
+        "duplicate poll helper symbol in nm",
+    )
+    fixtures["ambiguous_v12_and_v13_helper_nm_symbols"] = _elf_case(
+        (V13_OBJDUMP_OK, V13_NM_OK + build_nm(((0x32006000, V12_HELPER),))),
+        "duplicate poll helper symbol in nm",
+    )
+    fixtures["duplicate_helper_disassembly_section"] = _elf_case(
+        (
+            V13_OBJDUMP_OK + extras_section(V13_HELPER, 0x32005000, "4770        bx      lr"),
+            V13_NM_OK,
+        ),
+        "duplicate poll helper section in disassembly",
+    )
+    return fixtures
+
+
+def _elf_case(elf, expected: str) -> dict[str, str]:
+    objdump, nm = elf
+    return {"objdump": objdump, "nm": nm, "expected": expected}
 
 
 ELF_NEGATIVE_FIXTURES = _elf_negative_fixtures()
@@ -946,32 +1085,51 @@ def validate_local_fixtures():
             raise fail("negative fixture is a no-op: %s" % name)
     if V12_NM_OK.count("v12_poll_completion") != 1 or V13_NM_OK.count("v13_poll_completion") != 1:
         raise fail("synthetic nm fixtures must define exactly one helper symbol each")
-    for marker in (
-        "V12_HELPER_STATUS_READ",
-        "V12_HELPER_STATUS_TEST",
-        "V12_HELPER_STATUS_ADDR",
-        "V12_P1",
-        "V12_P2",
-        "V13_HELPER_STATUS_READ",
-        "V13_HELPER_STATUS_TEST",
-        "V13_HELPER_STATUS_ADDR",
-        "V13_P1",
-        "V13_P2",
-        "V13_REMAINING_STORE",
-    ):
-        if marker not in V12_OBJDUMP_OK and marker not in V13_OBJDUMP_OK:
-            raise fail("synthetic objdump fixture missing marker: %s" % marker)
-    if V12_OBJDUMP_OK.count("ldr.w   r4, [r7]        ; V12_HELPER_STATUS_READ") != 1:
-        raise fail("V12 synthetic objdump must expose exactly one STATUS read site")
-    if V13_OBJDUMP_OK.count("ldr.w   r4, [r7]        ; V13_HELPER_STATUS_READ") != 1:
-        raise fail("V13 synthetic objdump must expose exactly one STATUS read site")
-    if V13_OBJDUMP_OK.count("str     r1, [r5]        ; V13_REMAINING_STORE") != 1:
-        raise fail("V13 synthetic objdump must expose exactly one post-P2 remaining store")
-    if V13_OBJDUMP_OK.find("V13_P2") > V13_OBJDUMP_OK.find("V13_REMAINING_STORE"):
-        raise fail("V13 synthetic objdump must keep remaining store after P2")
+    for label, rows in (("V12", v12_rows()), ("V13", v13_rows())):
+        labels = [item["label"] for item in rows]
+        if len(set(labels)) != len(labels):
+            raise fail("%s synthetic row labels must be unique" % label)
+        if labels.count("loop") != 1 or labels.count("test") != 1 or labels.count("back_edge") != 1:
+            raise fail("%s synthetic helper must expose exactly one poll iteration" % label)
+        if labels[labels.index("succ_branch") + 1:labels.index("back_edge")] != [
+            "dec_shadow",
+            "dec_induction",
+        ]:
+            raise fail("%s synthetic failed path must be exactly two decrements" % label)
+    v13_labels = [item["label"] for item in v13_rows()]
+    if v13_labels.index("rem_store") < v13_labels.index("p2_store"):
+        raise fail("V13 synthetic helper must keep the remaining store after P2")
+    if [item["label"] for item in v12_rows()] != [
+        label for label in v13_labels if label not in ("rem_ptr", "rem_store")
+    ]:
+        raise fail("V13 synthetic helper must be the V12 helper plus the remaining store")
+
+    # The fixture builder is only trustworthy if its PC-relative offsets really
+    # do resolve under the same Thumb rule the gate applies, so re-derive them
+    # here from the emitted text rather than trusting the layout pass.
+    for label, text in (("V12", V12_OBJDUMP_OK), ("V13", V13_OBJDUMP_OK)):
+        slots = {
+            int(hit.group(1), 16)
+            for hit in re.finditer(r"^([0-9a-f]+):\s+\.word", text, re.M)
+        }
+        loads = re.findall(r"^([0-9a-f]+):\s+\S+\s+ldr\S*\s+r\d+, \[pc, #(\d+)\]", text, re.M)
+        if not loads:
+            raise fail("%s synthetic helper must use PC-relative literal loads" % label)
+        for at, offset in loads:
+            if (((int(at, 16) + 4) & ~3) + int(offset)) not in slots:
+                raise fail("%s synthetic PC-relative load misses the literal pool" % label)
+        if len(loads) != len(slots):
+            raise fail("%s synthetic literal pool must be fully referenced" % label)
+
     for name, payload in ELF_NEGATIVE_FIXTURES.items():
         if payload["objdump"] == V13_OBJDUMP_OK and payload["nm"] == V13_NM_OK:
             raise fail("synthetic ELF negative fixture is a no-op: %s" % name)
+    for label, (objdump, nm) in V13_ACCEPTED_VARIANTS:
+        if (objdump, nm) == (V13_OBJDUMP_OK, V13_NM_OK):
+            raise fail("accepted V13 variant is a no-op: %s" % label)
+    for label, (objdump, nm) in V12_DRIFTED_REFERENCES:
+        if (objdump, nm) == (V12_OBJDUMP_OK, V12_NM_OK):
+            raise fail("drifted V12 reference is a no-op: %s" % label)
 
 
 def run_retained_runtime_suite(gate):
@@ -1208,6 +1366,52 @@ def run_future_elf_suite(gate):
         str(proof),
     )
 
+    canonical_signature = gate.normalize_poll_loop(v13_loop)
+    check(
+        "normalized signature is derived from the parsed stream, not constants",
+        dict(canonical_signature).get("status_read_op") == "ldr"
+        and dict(canonical_signature).get("failed_path_ops") == "subs|subs"
+        and dict(canonical_signature).get("per_iteration_instruction_count") == 6,
+        str(canonical_signature),
+    )
+
+    for label, (objdump, nm) in V13_ACCEPTED_VARIANTS:
+        try:
+            variant = gate.extract_poll_loop(objdump, nm)
+            evidence = gate.verify_cross_elf_contract(V12_OBJDUMP_OK, V12_NM_OK, objdump, nm)
+            check(
+                "future ELF gate accepts %s under an unchanged signature" % label,
+                gate.normalize_poll_loop(variant) == canonical_signature
+                and evidence.get("loop_equivalent") is True,
+                str(gate.normalize_poll_loop(variant)),
+            )
+        except Exception as exc:
+            check("future ELF gate accepts %s under an unchanged signature" % label, False, str(exc))
+
+    for label, (objdump, nm) in V12_DRIFTED_REFERENCES:
+        try:
+            drifted = gate.extract_poll_loop(objdump, nm)
+            check(
+                "drifted V12 reference (%s) still clears its own structural gate" % label,
+                gate.normalize_poll_loop(drifted) != canonical_signature,
+                str(gate.normalize_poll_loop(drifted)),
+            )
+        except Exception as exc:
+            check(
+                "drifted V12 reference (%s) still clears its own structural gate" % label,
+                False,
+                str(exc),
+            )
+        try:
+            gate.verify_cross_elf_contract(objdump, nm, V13_OBJDUMP_OK, V13_NM_OK)
+            check("cross-ELF mismatch gate fires for %s" % label, False, "unexpected pass")
+        except Exception as exc:
+            check(
+                "cross-ELF mismatch gate fires for %s" % label,
+                "V12/V13 normalized poll loop mismatch" in str(exc),
+                str(exc),
+            )
+
     for name, payload in ELF_NEGATIVE_FIXTURES.items():
         try:
             gate.verify_cross_elf_contract(V12_OBJDUMP_OK, V12_NM_OK, payload["objdump"], payload["nm"])
@@ -1373,7 +1577,24 @@ if __name__ == "__main__":
         "source negative fixture set matches intended drift list",
         set(NEGATIVE_VENDOR_FIXTURES) == EXPECTED_SOURCE_NEGATIVE_FIXTURES,
     )
-    check("synthetic ELF negative fixture count covers required drifts", len(ELF_NEGATIVE_FIXTURES) >= 18)
+    check("synthetic ELF negative fixture count covers required drifts", len(ELF_NEGATIVE_FIXTURES) >= 34)
+    check(
+        "per-iteration gap drifts are covered on both sides of the completion test",
+        {"gap_extra_mov", "gap_dwt_read", "gap_sram_store", "gap_barrier", "gap_call"}
+        <= set(ELF_NEGATIVE_FIXTURES),
+    )
+    check(
+        "literal-binding drifts are covered",
+        {
+            "decoy_status_literal",
+            "decoy_dwt_literal",
+            "bogus_literal_offset",
+            "status_pointer_into_sram",
+            "cycle_count_read_from_sram",
+            "remaining_reuses_p2_destination",
+        }
+        <= set(ELF_NEGATIVE_FIXTURES),
+    )
     check(
         "boundary semantics cover first interior last and timeout invalid",
         [item["remaining"] for item in SEMANTIC_BOUNDARIES] == [10000, 5679, 1] and INVALID_REMAINING == 0,
