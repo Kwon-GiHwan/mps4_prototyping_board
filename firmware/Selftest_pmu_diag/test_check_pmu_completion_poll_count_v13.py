@@ -293,6 +293,30 @@ def _elf_negative_fixtures() -> dict[str, dict[str, str]]:
             "nm": V13_NM_OK,
             "expected": "extra per-iteration store",
         },
+        "extra_loop_spill_reload": {
+            "objdump": _replace_block(
+                V13_OBJDUMP_OK,
+                "32002054:   d105        bne.n   32002062 <v13_poll_completion+0x22>\n"
+                "32002056:   3a01        subs    r2, #1          ; V13_FAILED_POLL_SHADOW_DECREMENT\n"
+                "32002058:   3901        subs    r1, #1          ; V13_BACK_EDGE_INDUCTION_DECREMENT\n"
+                "3200205a:   d1f7        bne.n   3200204c <v13_poll_completion+0x0c>\n"
+                "3200205c:   2000        movs    r0, #0\n"
+                "3200205e:   4770        bx      lr\n"
+                "32002062:   4e09        ldr     r6, [pc, #36]   ; V13_DWT_CYCCNT_PTR\n",
+                "32002054:   d107        bne.n   32002068 <v13_poll_completion+0x28>\n"
+                "32002056:   9300        str     r3, [sp, #0]    ; V13_EXTRA_LOOP_SPILL\n"
+                "32002058:   9b00        ldr     r3, [sp, #0]    ; V13_EXTRA_LOOP_RELOAD\n"
+                "3200205a:   3a01        subs    r2, #1          ; V13_FAILED_POLL_SHADOW_DECREMENT\n"
+                "3200205c:   3901        subs    r1, #1          ; V13_BACK_EDGE_INDUCTION_DECREMENT\n"
+                "3200205e:   d1f5        bne.n   3200204c <v13_poll_completion+0x0c>\n"
+                "32002060:   2000        movs    r0, #0\n"
+                "32002062:   4770        bx      lr\n"
+                "32002068:   4e09        ldr     r6, [pc, #36]   ; V13_DWT_CYCCNT_PTR\n",
+                "extra-loop-spill-reload",
+            ),
+            "nm": V13_NM_OK,
+            "expected": "extra per-iteration load/store",
+        },
         "extra_loop_call": {
             "objdump": _replace_block(
                 V13_OBJDUMP_OK,
@@ -378,6 +402,23 @@ def _elf_negative_fixtures() -> dict[str, dict[str, str]]:
             "nm": V13_NM_OK,
             "expected": "helper STATUS read count != 1",
         },
+        "extra_non_status_load": {
+            "objdump": _replace_block(
+                V13_OBJDUMP_OK,
+                "32002062:   4e09        ldr     r6, [pc, #36]   ; V13_DWT_CYCCNT_PTR\n"
+                "32002064:   6830        ldr     r0, [r6]        ; V13_P1_DWT_READ\n"
+                "32002066:   4d09        ldr     r5, [pc, #36]   ; V13_P1_STORE_PTR\n"
+                "32002068:   6028        str     r0, [r5]        ; V13_P1_STORE\n",
+                "32002062:   4e09        ldr     r6, [pc, #36]   ; V13_DWT_CYCCNT_PTR\n"
+                "32002064:   685b        ldr     r3, [r3, #4]    ; V13_EXTRA_NON_STATUS_LOAD\n"
+                "32002066:   6830        ldr     r0, [r6]        ; V13_P1_DWT_READ\n"
+                "32002068:   4d09        ldr     r5, [pc, #36]   ; V13_P1_STORE_PTR\n"
+                "3200206a:   6028        str     r0, [r5]        ; V13_P1_STORE\n",
+                "extra-non-status-load",
+            ),
+            "nm": V13_NM_OK,
+            "expected": "extra non-STATUS load",
+        },
         "wrong_status_address": {
             "objdump": V13_OBJDUMP_OK.replace(
                 "32002048:   4f0c        ldr     r7, [pc, #48]   ; V13_HELPER_STATUS_PTR\n",
@@ -452,8 +493,10 @@ def _elf_negative_fixtures() -> dict[str, dict[str, str]]:
             "expected": "helper must remain a leaf without stack access",
         },
         "retained_v12_runtime_drift": {
-            "objdump": V13_OBJDUMP_OK + "\n32004000 <test_u85>:\n32004000:   4800        ldr     r0, [pc, #0]   ; V12_RUNTIME_ENABLE_DRIFT\n",
-            "nm": V13_NM_OK,
+            "objdump": V13_OBJDUMP_OK
+            + "\n32004000 <test_u85>:\n"
+            + "32004000:   f7ff f8fe   bl      32004200 <NVIC_EnableIRQ> ; V12_RUNTIME_ENABLE_DRIFT\n",
+            "nm": V13_NM_OK + "32004000 T test_u85\n",
             "expected": "retained V12 vector/NVIC/CMD/QREAD/PMU/release drift",
         },
     }
@@ -739,10 +782,17 @@ def validate_local_fixtures():
 def run_future_elf_suite(gate):
     v12_loop = gate.extract_poll_loop(V12_OBJDUMP_OK, V12_NM_OK)
     v13_loop = gate.extract_poll_loop(V13_OBJDUMP_OK, V13_NM_OK)
+    evidence = gate.verify_cross_elf_contract(V12_OBJDUMP_OK, V12_NM_OK, V13_OBJDUMP_OK, V13_NM_OK)
 
     check(
         "future ELF gate normalizes V12 and V13 loop effects identically",
         gate.normalize_poll_loop(v12_loop) == gate.normalize_poll_loop(v13_loop),
+    )
+    loop_equivalent = getattr(evidence, "loop_equivalent", None) if not isinstance(evidence, dict) else evidence.get("loop_equivalent")
+    check(
+        "future ELF gate accepts canonical V12/V13 pair through authoritative contract",
+        loop_equivalent is True,
+        str(evidence),
     )
 
     proof = gate.prove_remaining_dataflow(V13_OBJDUMP_OK, V13_NM_OK)
@@ -755,9 +805,7 @@ def run_future_elf_suite(gate):
 
     for name, payload in ELF_NEGATIVE_FIXTURES.items():
         try:
-            mutated = gate.extract_poll_loop(payload["objdump"], payload["nm"])
-            if gate.normalize_poll_loop(mutated) == gate.normalize_poll_loop(v12_loop):
-                gate.prove_remaining_dataflow(payload["objdump"], payload["nm"])
+            gate.verify_cross_elf_contract(V12_OBJDUMP_OK, V12_NM_OK, payload["objdump"], payload["nm"])
             check("future ELF gate rejects %s" % name, False, "unexpected pass")
         except Exception as exc:
             check("future ELF gate rejects %s" % name, payload["expected"] in str(exc), str(exc))
