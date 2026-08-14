@@ -104,14 +104,30 @@ any of them fails qualification even though its semantics may be innocent.
   write, the record copy, the timeout invalidation, the wire serialization).
   Taking either address is refused, because a write classified by the operator
   next to the name cannot see a publication made through a pointer.
-- **Token pasting in the vendor TU** (`##` in any `#define`). It forms the
-  symbol out of fragments that are not mentions of it, which is the one alias a
-  rule about mentions is structurally blind to. The canonical generated vendor
-  TU carries none.
-- **Mutation of the record that encloses the field, after the success copy**:
-  taking the record's address (`memset(&d, ...)`, `scrub(&d)`) or assigning it
-  as a whole. Each undoes the publication without spelling either name. Taking
-  the address of a *member* is unaffected.
+- **Token pasting in the vendor TU** (`##` anywhere on a `#define`'s *logical*
+  line, continuation lines included). It forms the symbol out of fragments that
+  are not mentions of it, which is the one alias a rule about mentions is
+  structurally blind to. The rule follows backslash continuations because any
+  macro long enough to wrap is written across one; a rule stopping at the first
+  newline would refuse the paste only in the formatting nobody writes. The
+  canonical generated vendor TU carries none.
+- **Naming the record that encloses the field as a whole, anywhere in the
+  record's scope**: taking its address (`memset(&d, ...)`, `scrub(&d)`) or
+  assigning it as a whole. Each undoes the publication without spelling either
+  name. The rule is scoped to the innermost block the canonical
+  `pmu_diag_record_t d` declaration lives in, not to the text after the success
+  copy: a scan bounded at the copy sees mutations but not the capability behind
+  them, and an alias captured above the copy (`pmu_diag_record_t *a = &d;`) is a
+  durable pointer the copy does not overwrite. That scope may therefore contain
+  exactly one whole-record address use — the canonical pre-run
+  `memset(&d, 0, sizeof(d));` reset, which must precede the copy — and exactly
+  one whole-record assignment, the declaration's own initializer. Taking the
+  address of a *member* is unaffected, and a `&d` outside that scope names a
+  different object and is not examined.
+- **Lexical scope of both rules above**: they read comment- and string-masked
+  source, so `&d` or `##` written inside a comment or a literal is text and not
+  a use. A construct that never closes does not mask, so an unbalanced quote
+  cannot hide real code from either rule.
 - **NVIC-block store forms in the whole image**: a store-multiple through a base
   that may point into `NVIC_Type`, a store-multiple whose proven base lies
   within the register list's own span of the ISER bank, and any store whose
@@ -136,10 +152,24 @@ exists:
   The CFG-derived binding rule above covers the V13 poll helper only.
 
 Source-level limits, on the same footing: a publication that never names the
-slot — an absolute-address store, a cast of the record pointer, inline assembly
-— is out of reach of any scan over source text. It is not claimed here, and the
-authoritative refusal is the ELF gate's three-slot store lock over the Task 5
-image, which does not exist yet.
+slot — an absolute-address store, a cast of the record pointer, inline assembly,
+or a store to the wire word by index — is out of reach of any scan over source
+text.
+
+**Nothing in this module covers those forms.** The three-slot store lock is
+helper-scoped: its domain is the code reachable from the V13 poll helper's own
+entry, the single function the helper analysis resolves, so it cannot see the
+runner's record or the wire buffer at all. Naming it as their authority would
+report an uncovered class as covered, which is the failure mode this contract
+exists to end. These forms are **unqualified**.
+
+Closing them is a **Task 5 requirement**: a distinct runner-record and wire
+dataflow gate over the linked image, proving that the record's published word
+and the wire slot it serializes into are written only by the sites this
+contract models, whether or not those writes name the slot. That gate does not
+exist yet and is a future requirement rather than an existing authority. Until
+it exists, V13's coverage of these forms is *none*, and no downstream task may
+inherit an assumption that they are refused.
 
 ## Retained V12 Whole-Image Proofs
 

@@ -236,7 +236,7 @@ typedef struct {
     uint32_t poll_result;
     uint32_t status_at_success;
     uint32_t poll_remaining_at_success;
-} v13_t;
+} pmu_diag_record_t;
 extern volatile uint32_t pmu_completion_poll_v13_t_poll_remaining_at_success;
 
 void reset_globals(void)
@@ -245,8 +245,12 @@ void reset_globals(void)
     pmu_completion_poll_v13_t_poll_remaining_at_success     = 0U;
 }
 
-void collect_record(v13_t d)
+void collect_record(void)
 {
+    pmu_diag_record_t d = {0};
+
+    memset(&d, 0, sizeof(d));
+
     d.poll_result                     = pmu_completion_poll_v13_t_poll_result;
     d.status_at_success               = pmu_completion_poll_v13_t_poll_status_at_success;
     d.poll_remaining_at_success       = pmu_completion_poll_v13_t_poll_remaining_at_success;
@@ -256,7 +260,7 @@ void collect_record(v13_t d)
     }
 }
 
-void emit_record(v13_t* d, uint32_t *out_words)
+void emit_record(pmu_diag_record_t* d, uint32_t *out_words)
 {
     out_words[100] = d->poll_remaining_at_success;
 }
@@ -2251,7 +2255,7 @@ def run_runner_gate_suite(gate, runner_out, vendor_out):
                 copy_line + "        __builtin_memset(&d, 0, sizeof d);\n",
                 "record-memset",
             ),
-            "runner record mutated after the success copy",
+            "runner record mutated",
         ),
         (
             "whole record reassigned from a compound literal after the success copy",
@@ -2261,7 +2265,7 @@ def run_runner_gate_suite(gate, runner_out, vendor_out):
                 copy_line + "        d = (pmu_diag_record_t){0};\n",
                 "record-reassign",
             ),
-            "runner record mutated after the success copy",
+            "runner record mutated",
         ),
         (
             "record address handed to a helper after the success copy",
@@ -2271,7 +2275,7 @@ def run_runner_gate_suite(gate, runner_out, vendor_out):
                 copy_line + "        pmu_diag_scrub(&d);\n",
                 "record-escape",
             ),
-            "runner record mutated after the success copy",
+            "runner record mutated",
         ),
     ):
         try:
@@ -2313,6 +2317,228 @@ def run_runner_gate_suite(gate, runner_out, vendor_out):
             check("runner gate accepts %s" % label, True)
         except Exception as exc:
             check("runner gate accepts %s" % label, False, str(exc))
+
+
+RECORD_DECL_LINE = "    pmu_diag_record_t d = {0};\n"
+RECORD_RESET_LINE = "    memset(&d, 0, sizeof(d));\n"
+RECORD_COPY_LINE = (
+    "        d.poll_remaining_at_success       = "
+    "pmu_completion_poll_v13_t_poll_remaining_at_success;\n"
+)
+
+
+def run_runner_record_scope_suite(gate, runner_out, vendor_out):
+    """The record scope, not the post-copy tail, is the region the rule covers.
+
+    A rule that only scans downstream of the success copy sees mutations, not
+    capabilities. An alias captured *upstream* of the copy is a durable pointer
+    the copy does not overwrite, so the publication can still be undone
+    afterwards through a name the downstream scan never matches. The rule is
+    therefore stated over the whole scope the record lives in: the only
+    whole-record address use permitted anywhere in it is the canonical pre-run
+    ``memset`` reset, which must itself precede the copy.
+
+    The scan is lexical, so ``&d`` written inside a comment or a string literal
+    is not a use of the record. Positive controls below pin that, because a
+    gate that refuses prose is a gate that gets disabled.
+    """
+    # The canonical runner already carries a whole-record `&d` *outside* the
+    # record scope (a different function's local `d`). That it is accepted while
+    # the in-scope rule is total is what makes the rule scoped rather than a ban
+    # on the spelling.
+    # The enclosing gate's own docstring claimed "structural, not textual" for a
+    # function that also runs a lexical scan. The claim survives only where it
+    # is true.
+    gate_doc = " ".join((gate._verify_runner_remaining_gate.__doc__ or "").split())
+    check(
+        "remaining-gate docstring drops the blanket structural-not-textual claim",
+        "Structural, not textual" not in gate_doc,
+        gate_doc[:120],
+    )
+    check(
+        "remaining-gate docstring scopes reformatting immunity to the write classification",
+        "brace nesting" in gate_doc and "lexical" in gate_doc,
+        gate_doc[:120],
+    )
+
+    whole_record_uses = len(re.findall(r"&\s*d(?![A-Za-z0-9_])(?!\s*(?:\.|->))", runner_out))
+    check(
+        "canonical runner carries a whole-record address outside the record scope",
+        whole_record_uses == 2 and runner_out.count(RECORD_RESET_LINE) == 1,
+        "whole-record &d uses=%d" % whole_record_uses,
+    )
+
+    pre_copy_alias = replace_once(
+        replace_once(
+            runner_out,
+            RECORD_RESET_LINE,
+            RECORD_RESET_LINE + "    pmu_diag_record_t *v13_pre_alias = &d;\n",
+            "pre-copy-alias-form",
+        ),
+        RECORD_COPY_LINE,
+        RECORD_COPY_LINE
+        + "        __builtin_memset(v13_pre_alias, 0, sizeof *v13_pre_alias);\n",
+        "pre-copy-alias-use",
+    )
+    # Meaningfulness of the mutant: the post-copy tail spells neither the record
+    # nor the field, so every scan bounded at the copy sees an unmodified runner.
+    tail = pre_copy_alias[pre_copy_alias.index(RECORD_COPY_LINE) + len(RECORD_COPY_LINE):]
+    check(
+        "pre-copy alias mutant leaves the post-copy tail free of both record spellings",
+        re.search(r"&\s*d(?![A-Za-z0-9_])(?!\s*(?:\.|->))", tail) is None
+        and re.search(r"(?<![A-Za-z0-9_])d\s*=(?!=)", tail) is None,
+    )
+
+    for label, mutated, expected in (
+        (
+            "whole-record alias captured before the success copy and used after it",
+            pre_copy_alias,
+            "runner record mutated",
+        ),
+        (
+            "whole-record alias captured before the success copy and never used",
+            replace_once(
+                runner_out,
+                RECORD_RESET_LINE,
+                RECORD_RESET_LINE + "    pmu_diag_record_t *v13_pre_alias = &d;\n",
+                "pre-copy-alias-only",
+            ),
+            "runner record mutated",
+        ),
+        (
+            "a second canonical-looking pre-run reset after the success copy",
+            replace_once(
+                runner_out,
+                RECORD_COPY_LINE,
+                RECORD_COPY_LINE + "        memset(&d, 0, sizeof(d));\n",
+                "duplicate-reset",
+            ),
+            "runner record pre-run reset",
+        ),
+        (
+            "the pre-run reset sunk below the success copy",
+            replace_once(
+                replace_once(runner_out, RECORD_RESET_LINE, "", "reset-sink-delete"),
+                RECORD_COPY_LINE,
+                RECORD_COPY_LINE + "        memset(&d, 0, sizeof(d));\n",
+                "reset-sink-insert",
+            ),
+            "runner record pre-run reset must precede the success copy",
+        ),
+        (
+            "the record declaration renamed out of the scope rule's reach",
+            replace_once(
+                runner_out,
+                RECORD_DECL_LINE,
+                "    pmu_diag_record_shadow_t d = {0};\n",
+                "decl-rename",
+            ),
+            "runner record declaration",
+        ),
+    ):
+        try:
+            gate.verify_generated_sources(mutated, vendor_out)
+            check("runner gate rejects %s" % label, False, "unexpected pass")
+        except Exception as exc:
+            check("runner gate rejects %s" % label, expected in str(exc), str(exc))
+
+    # Lexical positive controls. `&d` and `d =` inside a comment or a string
+    # literal are text, not uses of the record, and refusing them would be a
+    # false rejection of prose the generated runner is free to carry.
+    for label, accepted in (
+        (
+            "a block comment naming the record address after the success copy",
+            replace_once(
+                runner_out,
+                RECORD_COPY_LINE,
+                RECORD_COPY_LINE
+                + "        /* the record address &d is never taken after this point */\n",
+                "comment-record-address",
+            ),
+        ),
+        (
+            "a line comment naming the record address and a whole-record assignment",
+            replace_once(
+                runner_out,
+                RECORD_COPY_LINE,
+                RECORD_COPY_LINE + "        // &d = {0} would undo this\n",
+                "line-comment-record-address",
+            ),
+        ),
+        (
+            "a string literal containing the record address spelling",
+            replace_once(
+                runner_out,
+                RECORD_COPY_LINE,
+                RECORD_COPY_LINE + '        diag_note("&d = {0}");\n',
+                "string-record-address",
+            ),
+        ),
+        (
+            # Not a hole: a `//` comment ending in a backslash really does run
+            # on to the next physical line, so the compiler and the mask agree
+            # that what follows is comment text. Pinned because it is the one
+            # place the mask consumes a line that looks like code.
+            "a line comment spliced onto the following line",
+            replace_once(
+                runner_out,
+                RECORD_COPY_LINE,
+                RECORD_COPY_LINE + "        // spliced \\\n        scrub(&d);\n",
+                "spliced-line-comment",
+            ),
+        ),
+        (
+            "a bitwise and against an unrelated name after the success copy",
+            replace_once(
+                runner_out,
+                RECORD_COPY_LINE,
+                RECORD_COPY_LINE + "        flags = flags &d_mask;\n",
+                "bitwise-and",
+            ),
+        ),
+    ):
+        try:
+            gate.verify_generated_sources(accepted, vendor_out)
+            check("runner gate accepts %s" % label, True)
+        except Exception as exc:
+            check("runner gate accepts %s" % label, False, str(exc))
+
+    # The vendor token-paste rule spans a logical line, so a macro wrapped over
+    # a continuation cannot smuggle `##` past it -- and a `##` that is only ever
+    # comment or string text is not a paste operator.
+    paste_continued = (
+        "#define V13_GLUE(a, b) \\\n    a ## b\n"
+        "#define V13_SLOT V13_GLUE(pmu_completion_poll_v13_t_poll_remaining_, at_success)\n\n"
+    ) + vendor_out
+    try:
+        gate.verify_generated_sources(runner_out, paste_continued)
+        check("vendor gate rejects token paste on a continued #define", False, "unexpected pass")
+    except Exception as exc:
+        check(
+            "vendor gate rejects token paste on a continued #define",
+            "vendor TU token pasting" in str(exc),
+            str(exc),
+        )
+
+    for label, accepted_vendor in (
+        (
+            "a continued multi-line #define that pastes nothing",
+            "#define V13_WRAP(a, b) \\\n    ((a) + (b))\n\n" + vendor_out,
+        ),
+        (
+            "a #define whose ## is comment text",
+            "#define V13_DOC(a) /* ## is not a paste here */ (a)\n\n" + vendor_out,
+        ),
+        (
+            "a #define whose ## is string text",
+            '#define V13_TAG "a ## b"\n\n' + vendor_out,
+        ),
+    ):
+        try:
+            gate.verify_generated_sources(runner_out, accepted_vendor)
+            check("vendor gate accepts %s" % label, True)
+        except Exception as exc:
+            check("vendor gate accepts %s" % label, False, str(exc))
 
 
 def run_future_elf_suite(gate):
@@ -2591,9 +2817,39 @@ def run_scope_honesty_suite(gate):
             "%s narrows the retained no-enable term to a bounded refusal" % label,
             "bounded" in text and "not a complete proof" in text,
         )
+        # The deferral this pair replaces was itself false: the three-slot store
+        # lock runs over the code reachable from the V13 poll helper's entry, so
+        # it has no jurisdiction over the runner's record or the wire buffer.
+        # Naming it as the authority made an uncovered class read as covered.
         check(
-            "%s defers unnamed-slot source publications to the Task 5 ELF" % label,
-            "inline assembly" in text and "store lock" in text,
+            "%s does not defer runner-record corruption to the helper store lock" % label,
+            "store lock is the authority" not in text
+            and "store lock over the Task 5 image is the authority" not in text,
+        )
+        check(
+            "%s states the three-slot store lock is helper-scoped" % label,
+            "three-slot store lock is helper-scoped" in text
+            and "cannot see the runner's record" in text,
+        )
+        check(
+            "%s states the unnamed publication forms are unqualified" % label,
+            "inline assembly" in text
+            and "store to the wire word by index" in text
+            and "unqualified" in text,
+        )
+        check(
+            "%s makes the Task 5 runner-record/wire dataflow gate a future requirement" % label,
+            "runner-record and wire dataflow gate" in text
+            and "does not exist yet" in text
+            and "future requirement rather than an existing authority" in text,
+        )
+        check(
+            "%s scopes the record rule to the record's own scope, not the post-copy tail" % label,
+            "record's scope" in text and "canonical pre-run" in text,
+        )
+        check(
+            "%s states the vendor paste rule spans a continued #define" % label,
+            "continuation" in text or "logical line" in text,
         )
 
 
@@ -2731,6 +2987,7 @@ def run_future_suite(gate, patcher):
 
     run_raw_provenance_suite(gate)
     run_runner_gate_suite(gate, runner_out, vendor_out)
+    run_runner_record_scope_suite(gate, runner_out, vendor_out)
 
     return evidence
 

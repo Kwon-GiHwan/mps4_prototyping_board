@@ -15,15 +15,35 @@ The gate proves two independent properties:
    while the count stayed at one. Each translation unit may therefore mention
    the global and the record field only in the uses this gate models, which is
    what stops an alias from being *named*. Two things sit outside a rule about
-   mentions and are handled separately: token pasting, which forms the symbol
-   out of fragments that are not mentions of it, is refused in the vendor TU
-   by rejecting ``##`` in a ``#define``; and a mutation of the record that
-   encloses the field -- ``memset(&d, ...)``, a whole-record assignment, the
-   record's address handed out -- is refused downstream of the success copy.
+   mentions and are handled separately. Token pasting forms the symbol out of
+   fragments that are not mentions of it, and is refused in the vendor TU by
+   rejecting ``##`` anywhere on a ``#define``'s *logical* line -- across the
+   backslash continuation any wrapped macro is written over, because a rule
+   that stopped at the first newline would refuse the paste only in the
+   formatting nobody writes. A mutation of the record that encloses the field
+   -- ``memset(&d, ...)``, a whole-record assignment, the record's address
+   handed out -- is refused over the record's scope rather than downstream of
+   the success copy: a scan bounded at the copy sees mutations but not the
+   capability behind them, and an alias captured above the copy survives it.
+   So the innermost block the ``pmu_diag_record_t d`` declaration lives in may
+   name the record as a whole exactly twice -- the canonical pre-run
+   ``memset(&d, 0, sizeof(d));`` reset, which must precede the copy, and the
+   declaration's own initializer -- while member addresses stay untouched and a
+   ``&d`` outside that scope is a different object the rule does not examine.
+   Both scans read comment- and literal-masked text, so ``&d`` or ``##``
+   written inside a comment or a string is text rather than a use.
+
    What no scan over source text can reach is a publication that never names
-   the slot at all: an absolute-address store, a cast of the record pointer or
-   inline assembly. Those are not claimed here; the ELF gate's three-slot store
-   lock over the Task 5 image is the authority on them; and
+   the slot at all: an absolute-address store, a cast of the record pointer,
+   inline assembly, or a store to the wire word by index. Nothing in this
+   module covers those. The three-slot store lock is helper-scoped -- its
+   domain is the code reachable from the V13 poll helper's own entry, the one
+   function ``_analyze_helper`` resolves -- so it cannot see the runner's
+   record or the wire buffer at all, and naming it as their authority would
+   report an uncovered class as covered. Those forms are therefore
+   **unqualified**. Closing them needs a distinct Task 5 runner-record and wire
+   dataflow gate over the linked image; that gate does not exist yet and is a
+   future requirement rather than an existing authority; and
 2. the V13 *per-iteration loop region* -- STATUS load, completion test, success
    branch, failed-path decrements and back edge -- signs exactly as the V12 one
    does, and the value the V13 helper publishes after P2 flows out of the
@@ -204,14 +224,33 @@ _PREFIX_WRITE_OP_RE = re.compile(r"(?:\+\+|--)\s*$")
 _REMAINING_FIELD_WORD_RE = re.compile(
     r"(?<![A-Za-z0-9_])%s(?![A-Za-z0-9_])" % re.escape(_REMAINING_FIELD)
 )
+# Lexical constructs whose bodies are text rather than code. Each must close
+# to match, so an unterminated one leaves its opening character as code --
+# masking may never be used to hide a real reference behind a stray quote.
+_LINE_COMMENT_RE = re.compile(r"//(?:\\[ \t]*\n|[^\n])*")
+_BLOCK_COMMENT_RE = re.compile(r"/\*.*?\*/", re.S)
+_STRING_LITERAL_RE = re.compile(r'"(?:\\[\s\S]|[^"\\\n])*"')
+_CHAR_LITERAL_RE = re.compile(r"'(?:\\[\s\S]|[^'\\\n])+'")
+# A `#define` is one *logical* line: `##` on a continuation is the same paste
+# operator as `##` on the first line, so the directive is located here and its
+# extent is walked through the splices by `_logical_line_end`.
+_DEFINE_DIRECTIVE_RE = re.compile(r"(?m)^[ \t]*#[ \t]*define\b")
 # The record the runner publishes through, mentioned as a whole rather than
 # through a member: `&d` (but not `&d.field` or `&d->field`) and `d = ...` (but
 # not `d.field = ...`). Both are how a publication can be undone without ever
 # spelling the field -- `__builtin_memset(&d, 0, sizeof d)`, a compound-literal
 # reassignment, or handing the record's address to a function that scrubs it.
-_TOKEN_PASTE_DEFINE_RE = re.compile(r"(?m)^[ \t]*#[ \t]*define\b[^\n]*##")
 _RUNNER_RECORD_ADDRESS_RE = re.compile(r"&\s*d(?![A-Za-z0-9_])(?!\s*(?:\.|->))")
 _RUNNER_RECORD_ASSIGN_RE = re.compile(r"(?<![A-Za-z0-9_])d\s*=(?!=)")
+# The record object whose scope the whole-record rule is stated over, and the
+# one whole-record address use that scope may contain. The reset is pinned to
+# the canonical spelling -- plain `memset`, parenthesised `sizeof (d)` -- so
+# that a scrub wearing its shape (`__builtin_memset(&d, 0, sizeof d)`) is an
+# unpermitted address use rather than a second reset.
+_RUNNER_RECORD_DECL_RE = re.compile(r"(?<![A-Za-z0-9_])pmu_diag_record_t\s+d\s*(?:=|;)")
+_RUNNER_RECORD_RESET_RE = re.compile(
+    r"(?<![A-Za-z0-9_])memset\s*\(\s*&\s*d\s*,\s*0\s*,\s*sizeof\s*\(\s*d\s*\)\s*\)\s*;"
+)
 _VENDOR_REMAINING_DECLARATION_RE = re.compile(
     r"(?:extern\s+)?volatile\s+uint32_t\s+(%s)\s*(?:=\s*0U\s*)?;" % re.escape(_REMAINING_SYMBOL)
 )
@@ -467,6 +506,78 @@ def _count_raw_inputs(text: str, anchor: str, generated_marker: str, kind: str) 
         raise fail("multiple raw %s targets" % kind)
 
 
+def _blank_span(out: list[str], text: str, start: int, stop: int) -> None:
+    """Overwrite a span with spaces, keeping its newlines so offsets hold."""
+    for index in range(start, stop):
+        if text[index] != "\n":
+            out[index] = " "
+
+
+def _mask_c_lexical(text: str) -> str:
+    """Blank comment and literal *bodies*, returning a same-length string.
+
+    Every rule below that reads C source reads this instead of the raw text, so
+    that ``&d`` written inside a comment or a string is what it actually is --
+    text, not a use of the record -- while every offset the caller reports still
+    points into the original.
+
+    Each construct is recognised by a pattern that must close: an unterminated
+    block comment or literal simply does not match, and the opening character is
+    then left as ordinary code. That is the fail-closed direction: the scan may
+    look at something that is really comment text, but it can never be talked
+    out of looking at real code by an unbalanced quote. Line splices inside a
+    ``//`` comment and inside a string are honoured, because the C translation
+    phases join them before either construct is recognised. Trigraphs are not:
+    they are off by default in every mode this firmware builds under, and a
+    ``??/`` splice is therefore out of scope rather than silently handled.
+    """
+    out = list(text)
+    index = 0
+    length = len(text)
+    while index < length:
+        char = text[index]
+        if char == "/" and index + 1 < length and text[index + 1] in "/*":
+            pattern = _LINE_COMMENT_RE if text[index + 1] == "/" else _BLOCK_COMMENT_RE
+        elif char == '"':
+            pattern = _STRING_LITERAL_RE
+        elif char == "'":
+            pattern = _CHAR_LITERAL_RE
+        else:
+            index += 1
+            continue
+        hit = pattern.match(text, index)
+        if hit is None:
+            index += 1
+            continue
+        _blank_span(out, text, index, hit.end())
+        index = hit.end()
+    return "".join(out)
+
+
+def _logical_line_end(text: str, start: int) -> int:
+    """Offset of the newline that ends the logical line ``start`` is on.
+
+    A backslash immediately before the newline -- trailing blanks tolerated,
+    because every compiler this firmware builds under does -- splices the next
+    physical line onto this one. A preprocessing directive is one *logical*
+    line, so a rule scoped to a directive has to follow the splices or it stops
+    at the first wrap, which is the ordinary formatting for any macro long
+    enough to need one.
+    """
+    position = start
+    while True:
+        newline = text.find("\n", position)
+        if newline < 0:
+            return len(text)
+        tail = newline
+        while tail > position and text[tail - 1] in " \t":
+            tail -= 1
+        if tail > position and text[tail - 1] == "\\":
+            position = newline + 1
+            continue
+        return newline
+
+
 def _matching_brace(text: str, open_index: int, what: str) -> int:
     depth = 0
     for index in range(open_index, len(text)):
@@ -550,15 +661,25 @@ def _reject_vendor_token_pasting(vendor_text: str) -> None:
     identifiers. The generated vendor TU carries no ``##`` in any ``#define``,
     so refusing the operator there costs nothing the contract allows.
 
+    The rule is stated over the directive's *logical* line, not its first
+    physical one. Any macro long enough to wrap is written across a backslash
+    continuation, and the motivating example is exactly that shape, so a rule
+    that stopped at the first newline would refuse the paste only in the
+    formatting nobody uses. Comment and string bodies are masked first, because
+    the compiler removes comments before it looks for the operator and a ``##``
+    inside a string literal is characters, not a paste.
+
     This is the only such construction the gate closes. A publication that
     reaches the slot without naming it at all -- an absolute-address store, a
-    cast of a record pointer, inline assembly -- is out of reach of any scan
-    over source text, and is deferred to the ELF gate's own store lock over the
-    Task 5 image.
+    cast of a record pointer, inline assembly, or a store to the wire word by
+    index -- is out of reach of any scan over source text. Nothing in this
+    module covers those; see the module docstring for why the ELF half cannot.
     """
-    hit = _TOKEN_PASTE_DEFINE_RE.search(vendor_text)
-    if hit is not None:
-        raise fail("vendor TU token pasting at offset %d" % hit.start())
+    masked = _mask_c_lexical(vendor_text)
+    for directive in _DEFINE_DIRECTIVE_RE.finditer(masked):
+        paste = masked.find("##", directive.end(), _logical_line_end(vendor_text, directive.end()))
+        if paste >= 0:
+            raise fail("vendor TU token pasting at offset %d" % paste)
 
 
 def _verify_vendor_tu_reference_sites(vendor_text: str, canonical_position: int) -> None:
@@ -617,8 +738,22 @@ def _verify_runner_reference_sites(runner_text: str) -> None:
         )
 
 
-def _reject_runner_record_mutation(runner_text: str, copy_position: int) -> None:
-    """Refuse a whole-record mutation downstream of the success copy.
+def _enclosing_block(masked: str, position: int) -> int:
+    """Offset of the innermost ``{`` still open at ``position``."""
+    depth = 0
+    for index in range(position - 1, -1, -1):
+        char = masked[index]
+        if char == "}":
+            depth += 1
+        elif char == "{":
+            if depth == 0:
+                return index
+            depth -= 1
+    raise fail("runner record declaration is not inside a block")
+
+
+def _verify_runner_record_scope(runner_text: str, copy_position: int) -> None:
+    """Hold the record's whole scope to one whole-record address use.
 
     The reference locks are rules about *mentions* of the two names, so they
     cannot see a publication being undone through the record that encloses the
@@ -627,35 +762,76 @@ def _reject_runner_record_mutation(runner_text: str, copy_position: int) -> None
     as the canonical runner produces them while zeroing or caller-controlling
     the published word.
 
-    Only the text after the canonical success copy is scanned, because that is
-    the only region where such a mutation can beat the publication: the same
-    statement ahead of the copy is overwritten by it. Taking the address of a
-    *member* is untouched -- it is how the runner captures every other snapshot
-    -- so this is a rule about the record as a whole, not about the ``&d``
-    spelling. What it does not reach is a mutation made through a pointer the
-    record was already copied into, which is drift the ELF gate's own store
-    lock is the authority on.
+    Scanning only downstream of the success copy would see mutations and miss
+    the capability behind them. An alias captured *upstream* --
+    ``pmu_diag_record_t *alias = &d;`` above the copy, ``memset(alias, 0,
+    ...)`` below it -- is a durable pointer the copy does not overwrite, and it
+    spells neither the field nor the global anywhere the downstream scan looks.
+    The rule is therefore stated over the record's scope as a whole: the
+    innermost block the canonical ``pmu_diag_record_t d`` declaration lives in
+    may contain exactly one whole-record address use, the canonical pre-run
+    ``memset(&d, 0, sizeof(d));`` reset, which must itself precede the copy;
+    and exactly one whole-record assignment, the declaration's own initializer.
+    Nothing else in that scope may name the record as a whole. A ``&d``
+    *outside* the scope belongs to a different object and is not examined, and
+    taking the address of a *member* is untouched -- it is how the runner
+    captures every other snapshot -- so this stays a rule about one record, not
+    about the ``&d`` spelling.
+
+    The scan is lexical, over comment- and literal-masked text, so a comment
+    that discusses ``&d`` or a string that contains it is not a use. What no
+    rule over source text reaches is a publication that never names the record
+    at all: an absolute-address store, a cast, inline assembly, or a store to
+    the wire word by index. Those are unqualified -- see the module docstring.
     """
-    tail = runner_text[copy_position:]
-    for pattern, what in (
-        (_RUNNER_RECORD_ADDRESS_RE, "its address is taken"),
-        (_RUNNER_RECORD_ASSIGN_RE, "it is assigned as a whole"),
+    masked = _mask_c_lexical(runner_text)
+    declarations = list(_RUNNER_RECORD_DECL_RE.finditer(masked))
+    if len(declarations) != 1:
+        raise fail("runner record declaration: expected 1 match, found %d" % len(declarations))
+    declaration = declarations[0]
+    terminator = masked.find(";", declaration.start())
+    if terminator < 0:
+        raise fail("runner record declaration is unterminated")
+
+    scope_open = _enclosing_block(masked, declaration.start())
+    scope_end = _matching_brace(masked, scope_open, "runner record scope is unbalanced")
+    if not scope_open < copy_position < scope_end:
+        raise fail("runner success copy must lie in the record's scope")
+
+    resets = list(_RUNNER_RECORD_RESET_RE.finditer(masked, scope_open, scope_end))
+    if len(resets) != 1:
+        raise fail("runner record pre-run reset: expected 1 match, found %d" % len(resets))
+    if resets[0].start() > copy_position:
+        raise fail("runner record pre-run reset must precede the success copy")
+
+    for pattern, permitted, what in (
+        (
+            _RUNNER_RECORD_ADDRESS_RE,
+            resets[0].span(),
+            "its address is taken outside the canonical pre-run reset",
+        ),
+        (
+            _RUNNER_RECORD_ASSIGN_RE,
+            (declaration.start(), terminator + 1),
+            "it is assigned as a whole outside its declaration",
+        ),
     ):
-        hit = pattern.search(tail)
-        if hit is not None:
-            raise fail(
-                "runner record mutated after the success copy: %s at offset %d"
-                % (what, copy_position + hit.start())
-            )
+        for hit in pattern.finditer(masked, scope_open, scope_end):
+            if not (permitted[0] <= hit.start() and hit.end() <= permitted[1]):
+                raise fail("runner record mutated: %s at offset %d" % (what, hit.start()))
 
 
 def _verify_runner_remaining_gate(runner_text: str) -> None:
     """Prove the runner can publish remaining only on the success path.
 
-    Structural, not textual: the two record writes are located by brace nesting
-    relative to the ``poll_result != V13_POLL_SUCCESS`` gate and classified by
-    their normalized right-hand side, so re-indenting or re-aligning the
-    generated runner cannot change the verdict.
+    The two record writes are located by brace nesting relative to the
+    ``poll_result != V13_POLL_SUCCESS`` gate and classified by their normalized
+    right-hand side, so re-indenting or re-aligning the generated runner cannot
+    change which write is which. The whole-record rule this function then runs
+    is lexical rather than structural -- it reads masked source text, not a
+    parse -- so its own immunity to reformatting is the narrower one the mask
+    provides: comments, string literals and whitespace do not move the verdict,
+    but it is a scan over text and does not claim to be anything else.
     """
     gates = list(_RUNNER_TIMEOUT_GATE_RE.finditer(runner_text))
     if len(gates) != 1:
@@ -677,7 +853,7 @@ def _verify_runner_remaining_gate(runner_text: str) -> None:
         raise fail("runner success copy must read the V13 remaining global")
     if outside[0][0] > gate_open:
         raise fail("runner success copy must precede the timeout gate")
-    _reject_runner_record_mutation(runner_text, outside[0][0])
+    _verify_runner_record_scope(runner_text, outside[0][0])
 
 
 def _verify_runner_source(runner_text: str) -> None:
