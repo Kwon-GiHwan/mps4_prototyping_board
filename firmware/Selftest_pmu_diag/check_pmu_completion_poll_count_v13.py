@@ -28,6 +28,14 @@ the remaining store must be unreachable from the timeout exit, and every path
 from the completion branch to a return must execute it exactly once, so a build
 that jumps over it, jumps back to it, publishes from a second site or falls into
 it from the timeout tail is refused even though its store shape is unchanged.
+Which register carries the countdown is read off the loop's own control
+dependency -- the decrement whose flags the back edge branches on -- rather than
+off the position of a decrement in the loop body, and that register is proven
+undisturbed on every path from the success entry to the store, not merely in
+layout order. Because that proof can only see the register effects it models,
+the success path is held to the modelled instruction vocabulary: a multi-register
+``ldrd`` reload, a predicated ``moveq`` or an ``rrx`` recomputation is refused
+outright instead of being read as writing nothing.
 The runner half of property 1 is likewise derived
 from brace nesting and assignment right-hand sides, never from column alignment,
 so reformatting the generated runner cannot change the verdict.
@@ -147,6 +155,31 @@ _UNCONDITIONAL_BRANCH_MNEMONIC = "b"
 _INDIRECT_BRANCH_MNEMONICS = frozenset(("bx", "blx", "tbb", "tbh"))
 _IT_RE = re.compile(r"^it[te]{0,3}$")
 _PC_DEST_RE = re.compile(r"^[a-z][a-z0-9.]*\s+pc\b")
+_STORE_MNEMONICS = frozenset(("str", "strb", "strh"))
+_COMPARE_MNEMONICS = frozenset(("cmp", "cmn", "tst", "teq"))
+_MULTI_REGISTER_TRANSFER_MNEMONICS = frozenset(("ldrd", "strd"))
+# The whole vocabulary the live-out proof knows how to reason about. Anything
+# outside it is refused rather than ignored, because `_defined_register` reports
+# "defines nothing" for every mnemonic it does not list -- which is exactly what
+# an unmodelled reload of the published register would look like.
+_MODELLED_MNEMONICS = (
+    _WRITING_MNEMONICS
+    | _STORE_MNEMONICS
+    | _COMPARE_MNEMONICS
+    | _STACK_MNEMONICS
+    | _CALL_MNEMONICS
+    | _BARRIER_MNEMONICS
+    | _COND_BRANCH_MNEMONICS
+    | _INDIRECT_BRANCH_MNEMONICS
+    | frozenset((_UNCONDITIONAL_BRANCH_MNEMONIC, "nop"))
+)
+_CONDITION_SUFFIXES = (
+    "eq", "ne", "cs", "hs", "cc", "lo", "mi", "pl", "vs", "vc",
+    "hi", "ls", "ge", "lt", "gt", "le",
+)
+# The back edge shape the V13 contract freezes: a flag-test branch, so the
+# decrement whose flags it reads is recoverable from the instruction before it.
+_BACK_EDGE_MNEMONIC = "bne"
 # Publication counts saturate here, so a cycle through the store terminates the
 # walk with a witness of the second visit instead of counting forever.
 _MAX_PUBLICATIONS = 2
@@ -1009,6 +1042,79 @@ def _classify_success_stores(block: tuple[_Insn, ...]) -> tuple[list[int], list[
     return cyccnt_store_offsets, live_in_stores
 
 
+def _is_predicated(mnemonic: str) -> bool:
+    """True for an IT block header or an instruction carrying a condition code.
+
+    Predication is the one way a Thumb-2 instruction writes a register without
+    the write being visible in its mnemonic's usual meaning, so a ``moveq`` that
+    reloads the published register must never be read as an ordinary ``mov``.
+    Mnemonics the gate already models are exempt, which keeps the flag-setting
+    ``s`` forms (``adcs``, ``sbcs``, ``bics``) and the conditional branches from
+    being mistaken for predicated writes.
+    """
+    if _IT_RE.match(mnemonic):
+        return True
+    if mnemonic in _MODELLED_MNEMONICS:
+        return False
+    return any(
+        mnemonic.endswith(suffix) and mnemonic[: -len(suffix)] in _WRITING_MNEMONICS
+        for suffix in _CONDITION_SUFFIXES
+    )
+
+
+def _reject_unmodelled_success_effects(block: tuple[_Insn, ...]) -> None:
+    """Fail closed on every success-path effect the live-out proof cannot read.
+
+    ``_defined_register`` answers "defines nothing" both for an instruction that
+    really writes no register and for one whose mnemonic it has never heard of,
+    and the live-out proof cannot tell those two answers apart. So everything
+    between the success entry and the remaining store is held to the modelled
+    vocabulary: an ``ldrd`` pair reload, a predicated ``moveq`` and an ``rrx``
+    recomputation each redefine a register invisibly, and each is refused here
+    instead of being silently treated as a no-op.
+    """
+    for insn in block:
+        if _is_predicated(insn.mnemonic):
+            raise fail("predicated instruction on the success path: %s" % insn.text)
+        if insn.mnemonic in _MULTI_REGISTER_TRANSFER_MNEMONICS:
+            raise fail("multi-register transfer on the success path: %s" % insn.text)
+        if insn.mnemonic not in _MODELLED_MNEMONICS:
+            raise fail("unmodelled success-path effect: %s" % insn.text)
+
+
+def _back_edge_induction_register(analysis: _HelperAnalysis) -> str:
+    """Register whose decrement the failed-poll back edge actually branches on.
+
+    The back edge is the loop's only exit test, so the countdown that decides
+    how many polls are left is the one whose flags that branch reads -- not
+    whichever decrement happens to sit last in the loop body. Only the frozen
+    shape is accepted: a ``bne`` immediately preceded by the flag-setting
+    ``subs Rd, #1`` it tests. A back edge that branches on a register directly
+    (``cbnz``) or on flags set somewhere else is refused rather than guessed,
+    because for those the register the loop counts on is no longer recoverable
+    from the decrement's position.
+    """
+    back_edge = analysis.code[analysis.back_edge_index]
+    if back_edge.mnemonic != _BACK_EDGE_MNEMONIC:
+        raise fail("back edge must branch on the decrement flags: %s" % back_edge.text)
+    decrement = analysis.code[analysis.back_edge_index - 1]
+    hit = _DECREMENT_RE.match(decrement.text)
+    if hit is None:
+        raise fail(
+            "back edge must be preceded by its flag-setting decrement: %s" % decrement.text
+        )
+    return hit.group(1)
+
+
+def _co_reachable(successors: tuple[tuple[int, ...], ...], target: int) -> frozenset[int]:
+    """Indices from which ``target`` is reachable, walked over reversed edges."""
+    predecessors: list[list[int]] = [[] for _ in successors]
+    for index, edges in enumerate(successors):
+        for edge in edges:
+            predecessors[edge].append(index)
+    return _reachable(tuple(tuple(edges) for edges in predecessors), target)
+
+
 def prove_remaining_dataflow(disassembly_text: str, nm_text: str) -> RemainingDataflowProof:
     analysis = _analyze_helper(disassembly_text, nm_text)
     if analysis.variant != "v13":
@@ -1023,6 +1129,10 @@ def prove_remaining_dataflow(disassembly_text: str, nm_text: str) -> RemainingDa
     remaining_offset, remaining_reg = live_in_stores[0]
     if remaining_offset < max(cyccnt_store_offsets):
         raise fail("remaining store must follow P2 exactly")
+
+    # Everything the live-out proof is about to read must be an effect it can
+    # actually model, publication included.
+    _reject_unmodelled_success_effects(block[: remaining_offset + 1])
 
     # P1, P2 and remaining must land in three different SRAM slots. Reusing the
     # P2 destination would publish a cycle count where the record expects the
@@ -1067,14 +1177,27 @@ def prove_remaining_dataflow(disassembly_text: str, nm_text: str) -> RemainingDa
     if len(live_in_stores) != 1:
         raise fail("remaining store after P2 count != 1")
 
-    induction_reg = analysis.decrement_regs[-1]
-    if remaining_reg != induction_reg:
+    # The published register must be the one the back edge counts on, and it
+    # must still hold that decrement's value when the store runs. "Still holds"
+    # is a statement about every path, not about layout order, so the redefining
+    # instructions are looked for on the instructions that actually lie between
+    # the success entry and the publication: reachable from the entry and able
+    # to reach the store. A reload parked on a branch the entry can take reaches
+    # the store just as surely as one written in a straight line.
+    induction_reg = _back_edge_induction_register(analysis)
+    on_path_to_store = (
+        _reachable(successors, success_entry)
+        & _co_reachable(successors, remaining_index)
+    ) - {remaining_index}
+    redefined_on_path = any(
+        _defined_register(analysis.code[index]) == remaining_reg for index in on_path_to_store
+    )
+    remaining_from_back_edge_induction = remaining_reg == induction_reg and not redefined_on_path
+    if not remaining_from_back_edge_induction:
         raise fail("remaining must dataflow from failed-poll countdown live-out")
-    for insn in block[:remaining_offset]:
-        if _defined_register(insn) == remaining_reg:
-            raise fail("remaining must dataflow from failed-poll countdown live-out")
 
-    if analysis.has_stack_access:
+    helper_leaf_no_stack_access = not analysis.has_stack_access
+    if not helper_leaf_no_stack_access:
         raise fail("helper must remain a leaf without stack access")
     if analysis.has_extra_non_status_load:
         raise fail("extra non-STATUS load")
@@ -1084,8 +1207,8 @@ def prove_remaining_dataflow(disassembly_text: str, nm_text: str) -> RemainingDa
         induction_register=induction_reg,
         remaining_store_after_p2_exactly_once=remaining_store_after_p2_exactly_once,
         remaining_store_timeout_unreachable=remaining_store_timeout_unreachable,
-        remaining_from_back_edge_induction=True,
-        helper_leaf_no_stack_access=True,
+        remaining_from_back_edge_induction=remaining_from_back_edge_induction,
+        helper_leaf_no_stack_access=helper_leaf_no_stack_access,
     )
 
 

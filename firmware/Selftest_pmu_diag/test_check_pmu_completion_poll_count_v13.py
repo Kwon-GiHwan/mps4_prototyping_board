@@ -766,6 +766,42 @@ def _elf_negative_fixtures() -> dict[str, dict[str, str]]:
         v13_elf(rows=rows_without(v13_rows(), "timeout_return")), "timeout exit edge missing"
     )
 
+    # Live-out modelling: every drift below sits between the success entry and
+    # the remaining store, and every one of them writes -- or may write -- the
+    # published register through an effect the live-out proof does not model.
+    # A vocabulary the proof merely ignores would let each of them redefine the
+    # countdown invisibly, so the gate must refuse the instruction outright.
+    fixtures["ldrd_reloads_remaining_register"] = _elf_case(
+        v13_elf(
+            rows=rows_before(v13_rows(), "rem_store", row("ldrd", "ldrd    r1, r2, [r5]", size=4))
+        ),
+        "multi-register transfer on the success path",
+    )
+    fixtures["it_block_predicates_remaining_register"] = _elf_case(
+        v13_elf(
+            rows=rows_before(
+                v13_rows(),
+                "rem_store",
+                row("it_eq", "it      eq"),
+                row("moveq", "moveq   r1, #5"),
+            )
+        ),
+        "predicated instruction on the success path",
+    )
+    fixtures["predicated_move_without_it_header"] = _elf_case(
+        v13_elf(rows=rows_before(v13_rows(), "rem_store", row("moveq", "moveq   r1, #5"))),
+        "predicated instruction on the success path",
+    )
+    fixtures["rrx_recomputes_remaining_register"] = _elf_case(
+        v13_elf(rows=rows_before(v13_rows(), "rem_store", row("rrx", "rrx     r1, r1", size=4))),
+        "unmodelled success-path effect",
+    )
+    fixtures["unrelated_rrx_recompute"] = _elf_case(
+        v13_elf(rows=rows_before(v13_rows(), "rem_store", row("rrx", "rrx     r3, r3", size=4))),
+        "unmodelled success-path effect",
+    )
+
+
     # Control-flow reachability: every drift below keeps the instruction *shape*
     # the store-classifying checks look at intact, so only walking the helper's
     # own branch edges can tell that the publication is skipped, repeated,
@@ -845,12 +881,49 @@ def _elf_negative_fixtures() -> dict[str, dict[str, str]]:
     return fixtures
 
 
+def _dataflow_negative_fixtures() -> dict[str, dict[str, str]]:
+    """V13 images `prove_remaining_dataflow` must refuse on its own.
+
+    The cross-ELF signature would also reject the drift below -- a `cbnz` back
+    edge does not normalize to the V12 `bne` -- but only by comparing it against
+    the V12 reference. The live-out proof has to stand on its own instruction
+    stream, so it is exercised directly rather than through the paired gate.
+    """
+    # Control dependency: the loop exits on the flags the back edge reads, so
+    # the decrement it reads -- not whichever one happens to sit last in the
+    # loop body -- is the countdown the published value must come from. Here the
+    # back edge branches on `r1` while the store publishes `r2`, and `r2` is the
+    # last decrement in the body, so the layout convention `decrement_regs[-1]`
+    # calls it the induction variable even though the loop's exit never reads it.
+    return {
+        "back_edge_control_dependency_swapped": _elf_case(
+            v13_elf(
+                rows=rows_retext(
+                    rows_retext(
+                        rows_retext(
+                            rows_retext(v13_rows(), "dec_shadow", "subs    r1, #1"),
+                            "dec_induction",
+                            "subs    r2, #1",
+                        ),
+                        "back_edge",
+                        "cbnz    r1, {to:loop}",
+                    ),
+                    "rem_store",
+                    "str     r2, [r5]",
+                )
+            ),
+            "back edge must branch on the decrement flags",
+        ),
+    }
+
+
 def _elf_case(elf, expected: str) -> dict[str, str]:
     objdump, nm = elf
     return {"objdump": objdump, "nm": nm, "expected": expected}
 
 
 ELF_NEGATIVE_FIXTURES = _elf_negative_fixtures()
+DATAFLOW_NEGATIVE_FIXTURES = _dataflow_negative_fixtures()
 
 
 def _remaining_after(iteration_index: int) -> int:
@@ -1155,7 +1228,7 @@ def validate_local_fixtures():
         if len(loads) != len(slots):
             raise fail("%s synthetic literal pool must be fully referenced" % label)
 
-    for name, payload in ELF_NEGATIVE_FIXTURES.items():
+    for name, payload in list(ELF_NEGATIVE_FIXTURES.items()) + list(DATAFLOW_NEGATIVE_FIXTURES.items()):
         if payload["objdump"] == V13_OBJDUMP_OK and payload["nm"] == V13_NM_OK:
             raise fail("synthetic ELF negative fixture is a no-op: %s" % name)
     for label, (objdump, nm) in V13_ACCEPTED_VARIANTS:
@@ -1400,6 +1473,36 @@ def run_future_elf_suite(gate):
         str(proof),
     )
 
+    # Re-derive the control dependency straight from the fixture text: the
+    # register the back edge branches on is the one the `subs` immediately
+    # before it writes, and that is the register the proof must name.
+    v13_labels = [item["label"] for item in v13_rows()]
+    back_edge_decrement = v13_rows()[v13_labels.index("back_edge") - 1]["text"]
+    expected_induction = re.match(r"subs\s+(r\d+),", back_edge_decrement).group(1)
+    reported = getattr(proof, "induction_register", None) if not isinstance(proof, dict) else proof.get("induction_register")
+    check(
+        "proved induction register is the one the back edge branches on",
+        reported == expected_induction,
+        "reported=%s expected=%s" % (reported, expected_induction),
+    )
+
+    # The two live-out booleans must record what the graph and the checks found,
+    # so a future regression that stops proving them shows up as a False verdict
+    # instead of an unconditional True the dataclass carries for free.
+    with open(gate.__file__, "r", encoding="utf-8") as handle:
+        gate_source = handle.read()
+    check(
+        "live-out proof booleans are derived, not literal True assignments",
+        "remaining_from_back_edge_induction=True" not in gate_source
+        and "helper_leaf_no_stack_access=True" not in gate_source,
+    )
+    check(
+        "live-out proof booleans are reported True for the canonical helper",
+        getattr(proof, "remaining_from_back_edge_induction", None) is True
+        and getattr(proof, "helper_leaf_no_stack_access", None) is True,
+        str(proof),
+    )
+
     canonical_signature = gate.normalize_poll_loop(v13_loop)
     check(
         "normalized signature is derived from the parsed stream, not constants",
@@ -1452,6 +1555,13 @@ def run_future_elf_suite(gate):
             check("future ELF gate rejects %s" % name, False, "unexpected pass")
         except Exception as exc:
             check("future ELF gate rejects %s" % name, payload["expected"] in str(exc), str(exc))
+
+    for name, payload in DATAFLOW_NEGATIVE_FIXTURES.items():
+        try:
+            gate.prove_remaining_dataflow(payload["objdump"], payload["nm"])
+            check("live-out proof rejects %s" % name, False, "unexpected pass")
+        except Exception as exc:
+            check("live-out proof rejects %s" % name, payload["expected"] in str(exc), str(exc))
 
 
 def run_generator_suite(patcher):
@@ -1639,6 +1749,21 @@ if __name__ == "__main__":
             "alternate_reachable_remaining_store",
         }
         <= set(ELF_NEGATIVE_FIXTURES),
+    )
+    check(
+        "unmodelled success-path effects are covered",
+        {
+            "ldrd_reloads_remaining_register",
+            "it_block_predicates_remaining_register",
+            "predicated_move_without_it_header",
+            "rrx_recomputes_remaining_register",
+            "unrelated_rrx_recompute",
+        }
+        <= set(ELF_NEGATIVE_FIXTURES),
+    )
+    check(
+        "back-edge control dependency drift is covered by the standalone live-out proof",
+        "back_edge_control_dependency_swapped" in DATAFLOW_NEGATIVE_FIXTURES,
     )
     check(
         "boundary semantics cover first interior last and timeout invalid",
