@@ -349,25 +349,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--expect-vendor-sha256", default=VENDOR_SHA256)
     args = parser.parse_args(argv)
 
-    if _sha256(args.runner_in) != args.expect_runner_sha256:
-        raise fail("runner hash mismatch")
-    if _sha256(args.vendor_in) != args.expect_vendor_sha256:
-        raise fail("vendor hash mismatch")
+    if args.expect_runner_sha256 != RUNNER_SHA256:
+        raise fail("runner expected sha override forbidden")
+    if args.expect_vendor_sha256 != VENDOR_SHA256:
+        raise fail("vendor expected sha override forbidden")
 
-    with open(args.runner_in, "r", encoding="utf-8") as handle:
-        runner_text = handle.read()
-    with open(args.vendor_in, "r", encoding="utf-8") as handle:
-        vendor_text = handle.read()
-
-    runner_out, _ = patch_runner(runner_text)
-    vendor_out, _ = patch_vendor(vendor_text)
-
-    os.makedirs(os.path.dirname(args.runner_out), exist_ok=True)
-    os.makedirs(os.path.dirname(args.vendor_out), exist_ok=True)
-    with open(args.runner_out, "w", encoding="utf-8") as handle:
-        handle.write(runner_out)
-    with open(args.vendor_out, "w", encoding="utf-8") as handle:
-        handle.write(vendor_out)
+    generate(args.runner_in, args.vendor_in, args.runner_out, args.vendor_out)
     return 0
 
 

@@ -1,6 +1,8 @@
 import hashlib
 import os
+import subprocess
 import sys
+import tempfile
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
@@ -762,6 +764,60 @@ def maybe_load_env_vendor_stock() -> str | None:
     return raw.decode("utf-8", errors="replace")
 
 
+def run_cli_override_rejection_suite(patcher):
+    script_path = patcher.__file__
+    real_runner_stock = load_real_runner_stock()
+    with tempfile.TemporaryDirectory() as tmp:
+        runner_in = os.path.join(tmp, "runner_in.c")
+        vendor_in = os.path.join(tmp, "vendor_in.c")
+        runner_out = os.path.join(tmp, "runner_out.c")
+        vendor_out = os.path.join(tmp, "vendor_out.c")
+        with open(runner_in, "w", encoding="utf-8") as handle:
+            handle.write(real_runner_stock + "\n/* drift */\n")
+        with open(vendor_in, "w", encoding="utf-8") as handle:
+            handle.write(PATCH_VENDOR_STOCK)
+
+        drift_runner_sha = hashlib.sha256((real_runner_stock + "\n/* drift */\n").encode("utf-8")).hexdigest()
+        cmd = [
+            "python3",
+            script_path,
+            "--runner-in", runner_in,
+            "--vendor-in", vendor_in,
+            "--runner-out", runner_out,
+            "--vendor-out", vendor_out,
+            "--expect-runner-sha256", drift_runner_sha,
+            "--expect-vendor-sha256", VENDOR_SHA256,
+        ]
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        detail = (result.stdout + result.stderr).strip()
+        check(
+            "CLI rejects drifted runner even when override SHA matches drift",
+            result.returncode != 0 and "runner expected sha override forbidden" in detail,
+            detail,
+        )
+
+        with open(runner_in, "w", encoding="utf-8") as handle:
+            handle.write(real_runner_stock)
+        wrong_vendor_sha = "0" * 64
+        cmd = [
+            "python3",
+            script_path,
+            "--runner-in", runner_in,
+            "--vendor-in", vendor_in,
+            "--runner-out", runner_out,
+            "--vendor-out", vendor_out,
+            "--expect-runner-sha256", RUNNER_SHA256,
+            "--expect-vendor-sha256", wrong_vendor_sha,
+        ]
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        detail = (result.stdout + result.stderr).strip()
+        check(
+            "CLI rejects mismatched expect-vendor override even with pinned inputs",
+            result.returncode != 0 and "vendor expected sha override forbidden" in detail,
+            detail,
+        )
+
+
 def validate_local_fixtures():
     required_suffix = (
         "            pmu_completion_poll_v13_t_status_completion_seen = DWT->CYCCNT;\n"
@@ -1023,6 +1079,7 @@ if __name__ == "__main__":
     import patches.patch_pmu_completion_poll_count_v13 as patcher
 
     run_generator_suite(patcher)
+    run_cli_override_rejection_suite(patcher)
 
     import check_pmu_completion_poll_count_v13 as gate
 
