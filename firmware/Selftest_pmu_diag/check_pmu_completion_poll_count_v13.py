@@ -113,16 +113,17 @@ from brace nesting and assignment right-hand sides, never from column alignment,
 so reformatting the generated runner cannot change the verdict.
 
 Scope: this module gates generated sources and the helper poll loop of the two
-final ELFs. The retained V12 executable proofs that need whole-image artifacts
-(stock vector table, NVIC hard-bypass, path-sensitive CMD/QREAD, PMU, H-PRINTF,
-golden output, terminal release) stay in ``check_pmu_completion_poll_v12``.
-They will be re-run against the V13 image by a V13 build graph that
-does not exist yet -- it and the V13 ELF it links are Task 5 -- so for the V13
-image those proofs are currently not qualified, and this module deliberately
-emits no manifest boolean for any of them. The only retained-V12
-proof enforced here is a bounded refusal of the NVIC *enable* forms it
-enumerates -- an ``NVIC_EnableIRQ`` call site and a direct NVIC->ISER write --
-not a complete proof that no enable exists. The stock
+final ELFs. It also re-runs an exact retained-V12 executable subset against the
+V13 linked image through ``check_pmu_completion_poll_v12``'s parameterized
+real-trace verifier. A distinct, hash-bound evidence artifact proves the stock
+vector target, NVIC hard-bypass, STATUS/history provenance, path-sensitive
+CMD/QREAD ordering, P0/P1/P2 publication, the H-PRINTF seam and terminal
+release at the frozen V13 addresses. That subset does not qualify runtime
+golden output or the full base-PMU contract, and its evidence states both
+limitations explicitly. Separately, the generated-source screen enforces a
+bounded refusal of the NVIC *enable* forms it enumerates -- an
+``NVIC_EnableIRQ`` call site and a direct NVIC->ISER write -- not a complete
+proof that no enable exists. The stock
 ``NVIC_SetVector`` and ``NVIC_ClearPendingIRQ`` call sites are required by that
 retained contract, so their presence is not drift here; their operands and
 ordering are proven by the whole-image gate. That ISER half examines the store
@@ -159,9 +160,13 @@ from dataclasses import dataclass
 
 import check_pmu_qual as qual_elf
 from check_pmu_completion_poll_v12 import (
+    RealTraceCallerAddresses,
+    RealTraceCompletionTestLowering,
+    RealTraceContract,
     _function_section,
     fail,
     parse_functions,
+    verify_callsite_trace_real,
 )
 
 SCHEMA_VERSION = 13
@@ -172,6 +177,92 @@ VENDOR_SHA256 = "bcd877bbd42a35d83c8696d02b64d2ae4985a46fcce91b98102e08661b356bc
 RUNNER_GENERATED_SHA256 = "b66f49eee75f7bfbe6a8cd972f86449751cff25eb5ac98be392a46cbbfc50b8f"
 VENDOR_GENERATED_SHA256 = "2d86f78f3e8b0ee1f52bf1a74bbf07a4a8c2e43d2e262a50a36a9f8a5a02b4c9"
 AUTHORITATIVE_V12_SHA256 = "cd44ad3e5f370833b03fb3c664da2a8cb9320e38d97786d4c2af6ec1109cf401"
+RETAINED_V12_EXECUTABLE_PROOF_SCOPE = "v12_real_trace_subset_replayed_on_v13"
+RETAINED_V12_EXECUTABLE_LIMITATIONS = (
+    "Proves the retained V12 real-trace subset over the fixed V13 linked image: "
+    "stock vector target, NVIC hard bypass, STATUS/history provenance, path-sensitive "
+    "CMD/QREAD ordering, P0/P1/P2, H-PRINTF seam, and terminal CMD=0xC. It does not "
+    "qualify runtime golden output or the full base PMU contract."
+)
+RETAINED_V12_EXECUTABLE_BOOLEAN_KEYS = (
+    "retained_v12_stock_vector_exact",
+    "retained_v12_nvic_hard_bypass_exact",
+    "retained_v12_status_history_provenance_exact",
+    "retained_v12_cmd_qread_ordering_exact",
+    "retained_v12_p0_p1_p2_exact",
+    "retained_v12_hprintf_seam_exact",
+    "retained_v12_terminal_release_exact",
+)
+V13_REAL_TRACE_CONTRACT = RealTraceContract(
+    schema_version=SCHEMA_VERSION,
+    build_id=BUILD_ID,
+    runner_source_sha256=RUNNER_GENERATED_SHA256,
+    vendor_source_sha256=VENDOR_GENERATED_SHA256,
+    helper_symbol="v13_poll_completion",
+    trace_prefix="pmu_completion_poll_v13_t_",
+    completion_test_lowering=RealTraceCompletionTestLowering(
+        helper_mnemonic="tst",
+        helper_status_register="r0",
+        helper_dest_register=None,
+        irq_mnemonic="tst",
+        irq_status_register="r2",
+        irq_dest_register=None,
+        mask=2,
+    ),
+    caller_addresses=RealTraceCallerAddresses(
+        success_cmd2=(0x31002560, 0x31002564),
+        other_cmd_stores=(0x31002416, 0x310024C4, 0x310024F8, 0x31002544, 0x3100254E),
+        timeout_cmd2=0x310024F8,
+        qread_loads=(0x310024F4, 0x31002562),
+        cmd0=0x31002544,
+        cmd0c=0x3100254E,
+    ),
+)
+V13_RETAINED_V12_EXPECTED_ADDRESSES = {
+    "helper_address": "0x31002368",
+    "runtime_vector_target_address": "0x310023BC",
+    "wait_call_target_address": "0x31002368",
+    "wait_result_branch_block_address": "0x310024DC",
+    "success_entry_block_address": "0x31002556",
+    "timeout_entry_block_address": "0x310024F4",
+    "merge_block_address": "0x31002514",
+    "helper_status_register_address": "0x50004004",
+    "runtime_vector_install_site_address": "0x310025FA",
+    "runtime_disable_site_address": "0x31002612",
+    "runtime_clear_pending_site_address": "0x3100261E",
+    "runtime_enable_read_address": "0x31002636",
+    "runtime_pending_read_address": "0x31002646",
+    "runtime_active_read_address": "0x31002654",
+    "runtime_irq_triggered_read_address": "0x3100265E",
+    "helper_status_read_address": "0x31002378",
+    "helper_status_test_address": "0x3100237A",
+    "poll_helper_p0_address": "0x3100236E",
+    "poll_helper_p1_address": "0x31002392",
+    "poll_helper_p2_address": "0x3100239A",
+    "submit_read_address": "0x310024BE",
+    "submit_write_address": "0x310024C4",
+    "submit_t2_address": "0x310024CC",
+    "wait_call_address": "0x310024CE",
+    "wait_result_store_address": "0x310024DC",
+    "success_history_mask_store_address": "0x3100255C",
+    "success_cmd2_1_store_address": "0x31002560",
+    "success_qread_load_address": "0x31002562",
+    "success_cmd2_2_store_address": "0x31002564",
+    "timeout_report_address": "0x310024F0",
+    "timeout_qread_load_address": "0x310024F4",
+    "timeout_cmd2_store_address": "0x310024F8",
+    "cmd0_store_address": "0x31002544",
+    "hprintf_callsite_address": "0x31002548",
+    "terminal_cmd0c_store_address": "0x3100254E",
+    "final_pending_before_clear_address": "0x31002514",
+    "final_pending_after_clear_address": "0x31002528",
+    "final_active_after_cleanup_address": "0x31002534",
+    "final_irq_triggered_after_cleanup_address": "0x3100253E",
+    "irq_status_read_address": "0x310023C0",
+    "irq_trigger_test_address": "0x310023C8",
+    "irq_history_mask_store_address": "0x310023C6",
+    "irq_cmd2_store_address": "0x310023EA",
+}
 # The MPS4 address map. Every peripheral literal a helper carries is a *base*;
 # the address an instruction touches is that base plus the displacement it
 # encodes, which is why the checks below resolve `literal + displacement` and
@@ -2337,6 +2428,101 @@ def verify_cross_elf_contract(
     }
 
 
+def verify_retained_v12_executable_contract(
+    runner_text: str,
+    vendor_text: str,
+    disassembly_text: str,
+    nm_text: str,
+) -> dict[str, object]:
+    """Replay the fixed V12 real-trace subset against the linked V13 image.
+
+    The shared verifier supplies the instruction-, symbol-, address-, and
+    dataflow-derived evidence. This wrapper binds that evidence to the exact
+    V13 generated inputs and adds only booleans whose underlying checks have
+    already succeeded. Runtime golden output and the complete base PMU gate are
+    deliberately outside this subset and remain explicitly unqualified.
+    """
+    runner_text = _normalize_newlines(runner_text)
+    vendor_text = _normalize_newlines(vendor_text)
+    if _sha256_text(runner_text) != RUNNER_GENERATED_SHA256:
+        raise fail("retained V12 executable runner hash mismatch")
+    if _sha256_text(vendor_text) != VENDOR_GENERATED_SHA256:
+        raise fail("retained V12 executable vendor hash mismatch")
+    evidence = verify_callsite_trace_real(
+        runner_text,
+        vendor_text,
+        _normalize_newlines(disassembly_text),
+        _normalize_newlines(nm_text),
+        contract=V13_REAL_TRACE_CONTRACT,
+    )
+    for key, expected in V13_RETAINED_V12_EXPECTED_ADDRESSES.items():
+        if evidence.get(key) != expected:
+            raise fail(
+                "retained V12 executable address drift: %s expected %s, got %s"
+                % (key, expected, evidence.get(key))
+            )
+
+    def address(key: str) -> int:
+        value = evidence.get(key)
+        if not isinstance(value, str) or re.fullmatch(r"0x[0-9A-Fa-f]{8}", value) is None:
+            raise fail("retained V12 executable address missing: %s" % key)
+        return int(value, 16)
+
+    stock_vector_exact = evidence.get("runtime_vector_target_exact") is True
+    nvic_hard_bypass_exact = (
+        evidence.get("nvic_enable_replaced") is True
+        and evidence.get("irq_triggered_true_reachable_false") is True
+        and address("runtime_disable_site_address") < address("runtime_clear_pending_site_address")
+    )
+    status_history_exact = (
+        evidence.get("status_success_dataflow_exact") is True
+        and evidence.get("history_mask_from_success_status") is True
+    )
+    cmd_qread_exact = (
+        evidence.get("success_cmd2_count_2") is True
+        and evidence.get("timeout_cmd2_count_1") is True
+        and address("timeout_qread_load_address") < address("timeout_cmd2_store_address")
+        and address("success_cmd2_1_store_address")
+        < address("success_qread_load_address")
+        < address("success_cmd2_2_store_address")
+    )
+    p0_p1_p2_exact = (
+        address("poll_helper_p0_address")
+        < address("helper_status_read_address")
+        < address("helper_status_test_address")
+        < address("poll_helper_p1_address")
+        < address("poll_helper_p2_address")
+    )
+    hprintf_exact = (
+        address("cmd0_store_address")
+        < address("hprintf_callsite_address")
+        < address("terminal_cmd0c_store_address")
+    )
+    terminal_release_exact = (
+        evidence.get("success_cmd2_write_value") == "0x00000002"
+        and address("terminal_cmd0c_store_address") > address("hprintf_callsite_address")
+    )
+    evidence.update(
+        {
+            "retained_v12_executable_proof_scope": RETAINED_V12_EXECUTABLE_PROOF_SCOPE,
+            "retained_v12_executable_limitations": RETAINED_V12_EXECUTABLE_LIMITATIONS,
+            "retained_v12_stock_vector_exact": stock_vector_exact,
+            "retained_v12_nvic_hard_bypass_exact": nvic_hard_bypass_exact,
+            "retained_v12_status_history_provenance_exact": status_history_exact,
+            "retained_v12_cmd_qread_ordering_exact": cmd_qread_exact,
+            "retained_v12_p0_p1_p2_exact": p0_p1_p2_exact,
+            "retained_v12_hprintf_seam_exact": hprintf_exact,
+            "retained_v12_terminal_release_exact": terminal_release_exact,
+            "runtime_golden_output_qualified": False,
+            "full_base_pmu_qualified": False,
+        }
+    )
+    for key in RETAINED_V12_EXECUTABLE_BOOLEAN_KEYS:
+        if evidence.get(key) is not True:
+            raise fail("retained V12 executable proof missing or false: %s" % key)
+    return evidence
+
+
 RUNNER_RECORD_WIRE_PROOF_SCOPE = "linked_image_dwarf_exact_locations"
 RUNNER_RECORD_WIRE_SCOPE_NOTE = (
     "Fails closed unless DWARF yields exact singleton locations for the inlined "
@@ -2755,6 +2941,7 @@ ARTIFACT_HASH_KEYS = (
     "v13_dwarf",
     "cross_elf_evidence",
     "runner_record_wire_evidence",
+    "retained_v12_executable_evidence",
 )
 BUILD_EVIDENCE_HASH_KEYS = (
     "authoritative_v12_elf",
@@ -2765,6 +2952,7 @@ BUILD_EVIDENCE_HASH_KEYS = (
     "v13_dwarf",
     "cross_elf_evidence",
     "runner_record_wire_evidence",
+    "retained_v12_executable_evidence",
 )
 
 
@@ -2784,6 +2972,7 @@ def validate_artifact_contract(
     runner_record_wire_evidence: dict[str, object] | None = None,
     artifact_hashes: dict[str, str] | None = None,
     build_evidence_hashes: dict[str, str] | None = None,
+    retained_v12_executable_evidence: dict[str, object] | None = None,
 ) -> dict[str, object]:
     doc = json.loads(manifest_json)
     exact = {
@@ -2801,6 +2990,23 @@ def validate_artifact_contract(
         raise fail("manifest cross-ELF scope mismatch")
     if doc.get("runner_record_wire_proof_scope") != RUNNER_RECORD_WIRE_PROOF_SCOPE:
         raise fail("manifest runner-record/wire scope mismatch")
+    if doc.get("retained_v12_executable_proof_scope") != RETAINED_V12_EXECUTABLE_PROOF_SCOPE:
+        raise fail("manifest retained V12 executable scope mismatch")
+    retained_doc = doc.get("retained_v12_executable_evidence")
+    if not isinstance(retained_doc, dict):
+        raise fail("manifest retained V12 executable evidence malformed")
+    if retained_doc.get("retained_v12_executable_proof_scope") != RETAINED_V12_EXECUTABLE_PROOF_SCOPE:
+        raise fail("manifest retained V12 executable evidence scope mismatch")
+    for key in RETAINED_V12_EXECUTABLE_BOOLEAN_KEYS:
+        if retained_doc.get(key) is not True:
+            raise fail("manifest retained V12 executable boolean missing or false: %s" % key)
+    if retained_doc.get("runtime_golden_output_qualified") is not False:
+        raise fail("manifest must not qualify runtime golden output")
+    if retained_doc.get("full_base_pmu_qualified") is not False:
+        raise fail("manifest must not qualify full base PMU")
+    retained_hash = doc.get("retained_v12_executable_evidence_sha256")
+    if retained_hash != _sha256_text(_json_bytes(retained_doc)):
+        raise fail("manifest retained V12 executable evidence hash mismatch")
     if doc.get("parser_sha256") != _parser_sha256():
         raise fail("manifest parser_sha256 mismatch")
     artifacts = doc.get("artifact_sha256")
@@ -2840,6 +3046,13 @@ def validate_artifact_contract(
             raise fail("manifest runner-record/wire evidence mismatch")
         if doc.get("runner_record_wire_evidence_sha256") != _sha256_text(_json_bytes(runner_record_wire_evidence)):
             raise fail("manifest runner-record/wire evidence hash mismatch")
+    if retained_v12_executable_evidence is not None:
+        if doc.get("retained_v12_executable_evidence") != retained_v12_executable_evidence:
+            raise fail("manifest retained V12 executable evidence mismatch")
+        if doc.get("retained_v12_executable_evidence_sha256") != _sha256_text(
+            _json_bytes(retained_v12_executable_evidence)
+        ):
+            raise fail("manifest retained V12 executable evidence hash mismatch")
     if artifact_hashes is not None:
         for key in ARTIFACT_HASH_KEYS:
             if artifacts.get(key) != artifact_hashes.get(key):
@@ -2880,6 +3093,7 @@ def _build_manifest(
     readelf_tool: str,
     cross_elf_evidence_path: str,
     runner_record_wire_evidence_path: str,
+    retained_v12_executable_evidence_path: str,
 ) -> dict[str, object]:
     if build_id != "0x%08X" % BUILD_ID:
         raise fail("build id mismatch")
@@ -2941,6 +3155,15 @@ def _build_manifest(
     )
     if runner_record_wire_loaded != runner_record_wire_expected:
         raise fail("runner-record/wire evidence mismatch")
+    retained_v12_executable_loaded = _load_json(retained_v12_executable_evidence_path)
+    retained_v12_executable_expected = verify_retained_v12_executable_contract(
+        runner_text,
+        vendor_text,
+        v13_objdump_text,
+        v13_nm_text,
+    )
+    if retained_v12_executable_loaded != retained_v12_executable_expected:
+        raise fail("retained V12 executable evidence mismatch")
     artifact_hashes = {
         "authoritative_v12_elf": authoritative_v12_sha,
         "elf": _sha256_path(elf_path),
@@ -2957,6 +3180,7 @@ def _build_manifest(
         "v13_dwarf": _sha256_path(v13_dwarf_path),
         "cross_elf_evidence": _sha256_path(cross_elf_evidence_path),
         "runner_record_wire_evidence": _sha256_path(runner_record_wire_evidence_path),
+        "retained_v12_executable_evidence": _sha256_path(retained_v12_executable_evidence_path),
     }
     build_evidence_hashes = {
         key: artifact_hashes[key]
@@ -2981,6 +3205,12 @@ def _build_manifest(
         "runner_record_wire_proof_scope": RUNNER_RECORD_WIRE_PROOF_SCOPE,
         "runner_record_wire_scope_statement": RUNNER_RECORD_WIRE_SCOPE_NOTE,
         "runner_record_wire_limitations": RUNNER_RECORD_WIRE_DWARF_REQUIRED_NOTE,
+        "retained_v12_executable_evidence": retained_v12_executable_loaded,
+        "retained_v12_executable_evidence_sha256": _sha256_text(
+            _json_bytes(retained_v12_executable_loaded)
+        ),
+        "retained_v12_executable_proof_scope": RETAINED_V12_EXECUTABLE_PROOF_SCOPE,
+        "retained_v12_executable_limitations": RETAINED_V12_EXECUTABLE_LIMITATIONS,
     }
     manifest_seed = dict(doc)
     manifest_seed["manifest_sha256"] = "0" * 64
@@ -2991,6 +3221,7 @@ def _build_manifest(
         runner_record_wire_loaded,
         artifact_hashes,
         build_evidence_hashes,
+        retained_v12_executable_loaded,
     )
     return doc
 
@@ -3016,6 +3247,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument("--readelf", required=True)
     parser.add_argument("--cross-elf-evidence", required=True)
     parser.add_argument("--runner-record-wire-evidence", required=True)
+    parser.add_argument("--retained-v12-executable-evidence", required=True)
     parser.add_argument("--manifest-out", required=True)
     return parser
 
@@ -3046,6 +3278,7 @@ def main(argv: list[str] | None = None) -> int:
             readelf_tool=args.readelf,
             cross_elf_evidence_path=args.cross_elf_evidence,
             runner_record_wire_evidence_path=args.runner_record_wire_evidence,
+            retained_v12_executable_evidence_path=args.retained_v12_executable_evidence,
         )
     except Exception as exc:
         raise SystemExit(str(exc))

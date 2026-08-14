@@ -2750,6 +2750,137 @@ WHOLE_IMAGE_PROOF_WORDS = (
     "whole_image",
 )
 
+RETAINED_V12_EXECUTABLE_BOOLEAN_KEYS = (
+    "retained_v12_stock_vector_exact",
+    "retained_v12_nvic_hard_bypass_exact",
+    "retained_v12_status_history_provenance_exact",
+    "retained_v12_cmd_qread_ordering_exact",
+    "retained_v12_p0_p1_p2_exact",
+    "retained_v12_hprintf_seam_exact",
+    "retained_v12_terminal_release_exact",
+)
+
+
+def run_retained_v12_executable_real_probe_suite(gate):
+    probe_dir = "/tmp/v13-arm-loop-probe-20260815T073000Z"
+    paths = {
+        name: os.path.join(probe_dir, filename)
+        for name, filename in (
+            ("runner", "generated_runner.c"),
+            ("vendor", "generated_vendor.c"),
+            ("objdump", "runner.objdump.txt"),
+            ("nm", "runner.nm.txt"),
+        )
+    }
+    if not all(os.path.exists(path) for path in paths.values()):
+        check("retained V12 executable real probe is mandatory", False, probe_dir)
+        return
+    texts = {
+        name: open(path, "r", encoding="utf-8").read()
+        for name, path in paths.items()
+    }
+    try:
+        evidence = gate.verify_retained_v12_executable_contract(
+            texts["runner"], texts["vendor"], texts["objdump"], texts["nm"]
+        )
+        check(
+            "retained V12 executable gate accepts fresh V13 ARM probe",
+            evidence.get("retained_v12_executable_proof_scope")
+            == "v12_real_trace_subset_replayed_on_v13"
+            and all(evidence.get(key) is True for key in RETAINED_V12_EXECUTABLE_BOOLEAN_KEYS)
+            and evidence.get("helper_address") == "0x31002368"
+            and evidence.get("runtime_vector_target_address") == "0x310023BC"
+            and evidence.get("success_cmd2_1_store_address") == "0x31002560"
+            and evidence.get("success_qread_load_address") == "0x31002562"
+            and evidence.get("success_cmd2_2_store_address") == "0x31002564"
+            and evidence.get("hprintf_callsite_address") == "0x31002548"
+            and evidence.get("terminal_cmd0c_store_address") == "0x3100254E"
+            and evidence.get("runtime_golden_output_qualified") is False
+            and evidence.get("full_base_pmu_qualified") is False,
+            str(evidence),
+        )
+    except Exception as exc:
+        check("retained V12 executable gate accepts fresh V13 ARM probe", False, str(exc))
+
+    mutations = (
+        (
+            "stock vector target",
+            texts["objdump"].replace(".word\t0x310023bd", ".word\t0x31002369", 1),
+            "runtime vector target is not exact stock handler",
+        ),
+        (
+            "NVIC hard bypass",
+            texts["objdump"].replace(
+                "31002612:\tf8c3 0080 \tstr.w\tr0, [r3, #128]\t@ 0x80",
+                "31002612:\tf8c3 0000 \tstr.w\tr0, [r3, #0]",
+                1,
+            ),
+            "runtime NVIC hard-bypass write set violated",
+        ),
+        (
+            "STATUS completion provenance",
+            texts["objdump"].replace(
+                "3100237a:\tf010 0f02 \ttst.w\tr0, #2",
+                "3100237a:\tf010 0f04 \ttst.w\tr0, #4",
+                1,
+            ),
+            "real helper P0/STATUS/test/P1/P2 ordering violated",
+        ),
+        (
+            "history provenance",
+            texts["objdump"].replace(
+                "31002558:\t0c00      \tlsrs\tr0, r0, #16",
+                "31002558:\t0c40      \tlsrs\tr0, r0, #17",
+                1,
+            ),
+            "history mask lost single-source",
+        ),
+        (
+            "success QREAD ordering",
+            texts["objdump"].replace(
+                "31002562:\t69a2      \tldr\tr2, [r4, #24]",
+                "31002562:\t6962      \tldr\tr2, [r4, #20]",
+                1,
+            ),
+            "real QREAD path load shape changed",
+        ),
+        (
+            "P2 destination",
+            texts["objdump"].replace(
+                "310023b4:\t31005370 \t.word\t0x31005370",
+                "310023b4:\t31005374 \t.word\t0x31005374",
+                1,
+            ),
+            "P1: expected 1 store, found 2",
+        ),
+        (
+            "H-PRINTF seam",
+            texts["objdump"].replace(
+                "31002548:\tf7ff fdb8 \tbl\t310020bc <__wrap_printf>",
+                "31002548:\tf7ff fdb8 \tbl\t310020bc <printf>",
+                1,
+            ),
+            "real H-PRINTF pre-release callsite count != 1",
+        ),
+        (
+            "terminal release",
+            texts["objdump"].replace(
+                "3100254c:\t230c      \tmovs\tr3, #12",
+                "3100254c:\t230d      \tmovs\tr3, #13",
+                1,
+            ),
+            "terminal CMD0xC: expected value",
+        ),
+    )
+    for label, objdump_text, expected in mutations:
+        try:
+            gate.verify_retained_v12_executable_contract(
+                texts["runner"], texts["vendor"], objdump_text, texts["nm"]
+            )
+            check("retained V12 executable gate rejects %s drift" % label, False, "unexpected pass")
+        except Exception as exc:
+            check("retained V12 executable gate rejects %s drift" % label, expected in str(exc), str(exc))
+
 
 def run_scope_honesty_suite(gate):
     """The cross-ELF manifest must claim exactly what it proved -- no more.
@@ -2848,16 +2979,16 @@ def run_scope_honesty_suite(gate):
         "prologue" in doc and "success tail" in doc and "epilogue" in doc and "is not claimed" in doc,
     )
     check(
-        "module docstring does not claim retained whole-image proofs already run against V13",
-        "are re-run against the V13 image" not in doc,
+        "module docstring claims only the exact retained-V12 executable subset",
+        "exact retained-V12 executable subset" in doc and "hash-bound evidence artifact" in doc,
     )
     check(
-        "module docstring defers retained whole-image proofs to the Task 5 build graph",
-        "will be re-run" in doc and "does not exist yet" in doc,
+        "module docstring names the retained subset's exact proof families",
+        all(term in doc for term in ("stock", "hard-bypass", "STATUS/history", "CMD/QREAD", "P0/P1/P2", "H-PRINTF", "terminal")),
     )
     check(
-        "module docstring states retained whole-image proofs are not qualified yet",
-        "not qualified" in doc,
+        "module docstring disclaims runtime golden and full base-PMU qualification",
+        "does not qualify runtime" in doc and "golden output" in doc and "full base-PMU contract" in doc,
     )
 
     # Prose the probes falsified. Each pair below pins the absolute claim as
@@ -2867,6 +2998,14 @@ def run_scope_honesty_suite(gate):
         contract = " ".join(handle.read().split())
     flat_doc = " ".join(doc.split())
     for label, text in (("module docstring", flat_doc), ("contract", contract)):
+        check(
+            "%s binds an exact retained subset through distinct hash-bound evidence" % label,
+            "exact retained" in text and "hash-bound" in text,
+        )
+        check(
+            "%s disclaims runtime golden output and full base-PMU qualification" % label,
+            "runtime golden output" in text and "full base-PMU contract" in text,
+        )
         check(
             "%s does not call writeback the only certified/touched address drift" % label,
             "one way a certified" not in text and "one form under which a certified" not in text,
@@ -3278,6 +3417,7 @@ def run_runner_record_wire_cli_suite(gate, patcher):
         manifest_path = os.path.join(tmp, "pmu_completion_poll_count_v13_manifest.json")
         cross_path = os.path.join(tmp, "cross.json")
         runner_record_wire_path = os.path.join(tmp, "runner_record_wire.json")
+        retained_v12_executable_path = os.path.join(tmp, "retained_v12_executable.json")
         objdump_path = os.path.join(tmp, "fake_objdump.py")
         nm_path = os.path.join(tmp, "fake_nm.py")
         readelf_path = os.path.join(tmp, "fake_readelf.py")
@@ -3364,6 +3504,7 @@ def run_runner_record_wire_cli_suite(gate, patcher):
             {
                 "--cross-elf-evidence",
                 "--runner-record-wire-evidence",
+                "--retained-v12-executable-evidence",
                 "--authoritative-v12-elf",
                 "--objdump-tool",
                 "--nm-tool",
@@ -3379,6 +3520,7 @@ def run_runner_record_wire_cli_suite(gate, patcher):
         if evidence is not None:
             cross_inputs = (V12_OBJDUMP_OK, V12_NM_OK, objdump_text, nm_text)
             current_runner_record_wire = evidence
+            current_retained_v12_executable = None
             if probe_matches_current and probe_evidence is not None:
                 with open(v13_objdump_path, "w", encoding="utf-8") as handle:
                     handle.write(open(probe_objdump, "r", encoding="utf-8").read())
@@ -3397,11 +3539,19 @@ def run_runner_record_wire_cli_suite(gate, patcher):
                     open(probe_nm, "r", encoding="utf-8").read(),
                 )
                 current_runner_record_wire = probe_evidence
+                current_retained_v12_executable = gate.verify_retained_v12_executable_contract(
+                    canonical_runner,
+                    canonical_vendor,
+                    open(probe_objdump, "r", encoding="utf-8").read(),
+                    open(probe_nm, "r", encoding="utf-8").read(),
+                )
             cross = gate.verify_cross_elf_contract(*cross_inputs)
             with open(cross_path, "w", encoding="utf-8") as handle:
                 json.dump(cross, handle, indent=2, sort_keys=True)
             with open(runner_record_wire_path, "w", encoding="utf-8") as handle:
                 json.dump(current_runner_record_wire, handle, indent=2, sort_keys=True)
+            with open(retained_v12_executable_path, "w", encoding="utf-8") as handle:
+                json.dump(current_retained_v12_executable or {}, handle, indent=2, sort_keys=True)
 
             help_result = subprocess.run(
                 [
@@ -3416,7 +3566,8 @@ def run_runner_record_wire_cli_suite(gate, patcher):
                 "V13 checker CLI help works",
                 help_result.returncode == 0
                 and "--cross-elf-evidence" in help_result.stdout
-                and "--runner-record-wire-evidence" in help_result.stdout,
+                and "--runner-record-wire-evidence" in help_result.stdout
+                and "--retained-v12-executable-evidence" in help_result.stdout,
                 help_result.stderr or help_result.stdout,
             )
 
@@ -3440,6 +3591,7 @@ def run_runner_record_wire_cli_suite(gate, patcher):
                 "--readelf", readelf_path,
                 "--cross-elf-evidence", cross_path,
                 "--runner-record-wire-evidence", runner_record_wire_path,
+                "--retained-v12-executable-evidence", retained_v12_executable_path,
                 "--manifest-out", manifest_path,
             ]
             cli_ok = subprocess.run(
@@ -3481,6 +3633,7 @@ def run_runner_record_wire_cli_suite(gate, patcher):
                     "v13_dwarf": sha256_path(v13_dwarf_path),
                     "cross_elf_evidence": sha256_path(cross_path),
                     "runner_record_wire_evidence": sha256_path(runner_record_wire_path),
+                    "retained_v12_executable_evidence": sha256_path(retained_v12_executable_path),
                 }
                 expected_build_evidence = {
                     key: expected_artifacts[key]
@@ -3493,6 +3646,7 @@ def run_runner_record_wire_cli_suite(gate, patcher):
                         "v13_dwarf",
                         "cross_elf_evidence",
                         "runner_record_wire_evidence",
+                        "retained_v12_executable_evidence",
                     )
                 }
                 try:
@@ -3502,18 +3656,21 @@ def run_runner_record_wire_cli_suite(gate, patcher):
                         current_runner_record_wire,
                         expected_artifacts,
                         expected_build_evidence,
+                        current_retained_v12_executable,
                     )
                     check(
                         "V13 manifest binds exact evidence JSON and artifact hashes",
                         manifest.get("cross_elf_evidence") == cross
                         and manifest.get("runner_record_wire_evidence") == current_runner_record_wire
+                        and manifest.get("retained_v12_executable_evidence") == current_retained_v12_executable
                         and manifest.get("runner_source_sha256") == RUNNER_GENERATED_SHA256
                         and manifest.get("vendor_source_sha256") == VENDOR_GENERATED_SHA256
                         and manifest.get("authoritative_v12_elf_sha256") == AUTHORITATIVE_V12_SHA256
                         and manifest.get("artifact_sha256") == expected_artifacts
                         and manifest.get("build_evidence_sha256") == expected_build_evidence
                         and manifest.get("cross_elf_evidence_sha256") == sha256_text(json.dumps(cross, indent=2, sort_keys=True) + "\n")
-                        and manifest.get("runner_record_wire_evidence_sha256") == sha256_text(json.dumps(current_runner_record_wire, indent=2, sort_keys=True) + "\n"),
+                        and manifest.get("runner_record_wire_evidence_sha256") == sha256_text(json.dumps(current_runner_record_wire, indent=2, sort_keys=True) + "\n")
+                        and manifest.get("retained_v12_executable_evidence_sha256") == sha256_text(json.dumps(current_retained_v12_executable, indent=2, sort_keys=True) + "\n"),
                     )
                 except Exception as exc:
                     check("V13 manifest binds exact evidence JSON and artifact hashes", False, str(exc))
@@ -3526,9 +3683,10 @@ def run_runner_record_wire_cli_suite(gate, patcher):
                         gate.validate_artifact_contract(
                             json.dumps(mutated),
                             cross,
-                            evidence,
+                            current_runner_record_wire,
                             expected_artifacts,
                             expected_build_evidence,
+                            current_retained_v12_executable,
                         )
                         check("V13 manifest rejects mutated artifact hash for %s" % key, False, "unexpected pass")
                     except Exception as exc:
@@ -3542,9 +3700,10 @@ def run_runner_record_wire_cli_suite(gate, patcher):
                         gate.validate_artifact_contract(
                             json.dumps(mutated),
                             cross,
-                            evidence,
+                            current_runner_record_wire,
                             expected_artifacts,
                             expected_build_evidence,
+                            current_retained_v12_executable,
                         )
                         check("V13 manifest rejects mutated build-evidence hash for %s" % key, False, "unexpected pass")
                     except Exception as exc:
@@ -3592,6 +3751,28 @@ def run_runner_record_wire_cli_suite(gate, patcher):
                 "V13 checker CLI rejects forged cross-ELF evidence fields",
                 cli_cross_bad.returncode != 0 and not os.path.exists(bad_cross_manifest),
                 cli_cross_bad.stderr or cli_cross_bad.stdout,
+            )
+
+            bad_retained_path = os.path.join(tmp, "retained_v12_executable_bad.json")
+            with open(bad_retained_path, "w", encoding="utf-8") as handle:
+                bad_retained = dict(current_retained_v12_executable or {})
+                bad_retained["retained_v12_terminal_release_exact"] = False
+                json.dump(bad_retained, handle, indent=2, sort_keys=True)
+            bad_retained_manifest = os.path.join(tmp, "retained_v12_bad_manifest.json")
+            cli_retained_bad = subprocess.run(
+                [
+                    sys.executable,
+                    os.path.join(os.path.dirname(__file__), "check_pmu_completion_poll_count_v13.py"),
+                    *(arg if arg != retained_v12_executable_path else bad_retained_path for arg in cli_args[:-1]),
+                    cli_args[-1].replace(manifest_path, bad_retained_manifest),
+                ],
+                capture_output=True,
+                text=True,
+            )
+            check(
+                "V13 checker CLI rejects forged retained-V12 executable evidence fields",
+                cli_retained_bad.returncode != 0 and not os.path.exists(bad_retained_manifest),
+                cli_retained_bad.stderr or cli_retained_bad.stdout,
             )
 
             mismatched_v13_objdump_path = os.path.join(tmp, "runner_v13_sidecar_bad.objdump")
@@ -3847,6 +4028,7 @@ if __name__ == "__main__":
 
     run_future_suite(gate, patcher)
     run_future_elf_suite(gate)
+    run_retained_v12_executable_real_probe_suite(gate)
     run_runner_record_wire_cli_suite(gate, patcher)
     run_scope_honesty_suite(gate)
     run_retained_runtime_suite(gate)

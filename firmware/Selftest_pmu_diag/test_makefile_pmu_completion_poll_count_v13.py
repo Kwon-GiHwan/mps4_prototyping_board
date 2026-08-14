@@ -42,14 +42,20 @@ def validate_makefile(text: str) -> None:
         text,
         "RUNNER_RECORD_WIRE_EVIDENCE := $(BUILD)/pmu_completion_poll_count_v13_runner_record_wire_evidence.json",
     )
+    require(
+        text,
+        "RETAINED_V12_EXECUTABLE_EVIDENCE := $(BUILD)/pmu_completion_poll_count_v13_retained_v12_executable_evidence.json",
+    )
     require(text, "all: bins preprocess check manifest")
-    require(text, "check: $(CROSS_ELF_EVIDENCE) $(RUNNER_RECORD_WIRE_EVIDENCE)")
+    require(text, "check: $(CROSS_ELF_EVIDENCE) $(RUNNER_RECORD_WIRE_EVIDENCE) $(RETAINED_V12_EXECUTABLE_EVIDENCE)")
     require(text, "manifest: $(MANIFEST)")
     require(text, "$(CROSS_ELF_EVIDENCE): $(TARGET).elf $(AUTHORITATIVE_V12_ELF) $(GATE)")
     require(text, "$(RUNNER_RECORD_WIRE_EVIDENCE): $(TARGET).elf $(GEN_RUNNER) $(GATE) $(V13_OBJDUMP) $(V13_NM) $(V13_DWARF)")
+    require(text, "$(RETAINED_V12_EXECUTABLE_EVIDENCE): $(TARGET).elf $(GEN_RUNNER) $(GEN_VENDOR) $(GATE) $(V13_OBJDUMP) $(V13_NM)")
     require(text, "$(V13_DWARF): $(TARGET).elf")
     require(text, "verify_cross_elf_contract(")
     require(text, "verify_runner_record_wire_contract(")
+    require(text, "verify_retained_v12_executable_contract(")
     require(text, "hashlib.sha256")
     require(text, "authoritative V12 ELF hash mismatch")
     require(text, "--debug-dump=info,loc")
@@ -71,8 +77,9 @@ def validate_makefile(text: str) -> None:
     require(text, "--readelf $(READELF)")
     require(text, "--cross-elf-evidence $(CROSS_ELF_EVIDENCE)")
     require(text, "--runner-record-wire-evidence $(RUNNER_RECORD_WIRE_EVIDENCE)")
+    require(text, "--retained-v12-executable-evidence $(RETAINED_V12_EXECUTABLE_EVIDENCE)")
     require(text, "--manifest-out $(MANIFEST)")
-    require(text, "$(MANIFEST): $(TARGET).elf $(GEN_RUNNER) $(GEN_VENDOR) $(GATE) bins $(CROSS_ELF_EVIDENCE) $(RUNNER_RECORD_WIRE_EVIDENCE) $(AUTHORITATIVE_V12_ELF) $(V12_OBJDUMP) $(V12_NM) $(V13_OBJDUMP) $(V13_NM) $(V13_DWARF)")
+    require(text, "$(MANIFEST): $(TARGET).elf $(GEN_RUNNER) $(GEN_VENDOR) $(GATE) bins $(CROSS_ELF_EVIDENCE) $(RUNNER_RECORD_WIRE_EVIDENCE) $(RETAINED_V12_EXECUTABLE_EVIDENCE) $(AUTHORITATIVE_V12_ELF) $(V12_OBJDUMP) $(V12_NM) $(V13_OBJDUMP) $(V13_NM) $(V13_DWARF)")
     require(text, "\t@test -s $(MANIFEST)\n")
 
     forbid(text, "--allow-synthetic-evidence")
@@ -127,15 +134,37 @@ def extract_runner_record_wire_python(text: str) -> str:
     return match.group(1)
 
 
+def extract_retained_v12_executable_python(text: str) -> str:
+    match = re.search(
+        r"\$\(RETAINED_V12_EXECUTABLE_EVIDENCE\):.*?\n\tpython3 -c '(.*?)'\n\n",
+        text,
+        re.DOTALL,
+    )
+    if match is None:
+        raise SystemExit("missing RETAINED_V12_EXECUTABLE_EVIDENCE python3 -c body")
+    return match.group(1)
+
+
 def main() -> int:
     text = MAKEFILE.read_text(encoding="utf-8")
     validate_makefile(text)
     compile(extract_cross_elf_python(text), str(MAKEFILE), "exec")
     compile(extract_runner_record_wire_python(text), str(MAKEFILE), "exec")
+    compile(extract_retained_v12_executable_python(text), str(MAKEFILE), "exec")
 
     expect_invalid(
-        text.replace("check: $(CROSS_ELF_EVIDENCE) $(RUNNER_RECORD_WIRE_EVIDENCE)", "check: $(CROSS_ELF_EVIDENCE)"),
+        text.replace(
+            "check: $(CROSS_ELF_EVIDENCE) $(RUNNER_RECORD_WIRE_EVIDENCE) $(RETAINED_V12_EXECUTABLE_EVIDENCE)",
+            "check: $(CROSS_ELF_EVIDENCE) $(RETAINED_V12_EXECUTABLE_EVIDENCE)",
+        ),
         "missing runner-record/wire dependency",
+    )
+    expect_invalid(
+        text.replace(
+            "check: $(CROSS_ELF_EVIDENCE) $(RUNNER_RECORD_WIRE_EVIDENCE) $(RETAINED_V12_EXECUTABLE_EVIDENCE)",
+            "check: $(CROSS_ELF_EVIDENCE) $(RUNNER_RECORD_WIRE_EVIDENCE)",
+        ),
+        "missing retained-V12 executable dependency",
     )
     expect_invalid(
         replace_once(
@@ -155,6 +184,13 @@ def main() -> int:
         "missing linked proof inputs",
     )
     expect_invalid(
+        text.replace(
+            "$(RETAINED_V12_EXECUTABLE_EVIDENCE): $(TARGET).elf $(GEN_RUNNER) $(GEN_VENDOR) $(GATE) $(V13_OBJDUMP) $(V13_NM)",
+            "$(RETAINED_V12_EXECUTABLE_EVIDENCE): $(TARGET).elf $(GEN_RUNNER) $(GATE)",
+        ),
+        "missing retained-V12 executable proof inputs",
+    )
+    expect_invalid(
         text.replace("\t@test -s $(MANIFEST)\n", ""),
         "missing manifest non-empty guard",
     )
@@ -165,6 +201,10 @@ def main() -> int:
     expect_invalid(
         text.replace("--runner-record-wire-evidence $(RUNNER_RECORD_WIRE_EVIDENCE) \\\n", ""),
         "missing runner-record/wire manifest binding",
+    )
+    expect_invalid(
+        text.replace("--retained-v12-executable-evidence $(RETAINED_V12_EXECUTABLE_EVIDENCE) \\\n", ""),
+        "missing retained-V12 executable manifest binding",
     )
 
     help_text = subprocess.run(

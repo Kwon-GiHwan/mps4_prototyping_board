@@ -178,13 +178,20 @@ build exhibits. If any location is missing, multi-range, non-singleton,
 register-only, producer-drifted, or otherwise broader than the exact forms the
 gate models, V13 fails rather than claiming a wider proof.
 
-## Retained V12 Whole-Image Proofs
+## Retained V12 Executable Subset
 
-The retained V12 executable proofs that need whole-image artifacts (stock
-vector table, NVIC hard-bypass, path-sensitive CMD/QREAD, PMU, H-PRINTF, golden
-output, terminal release) are **not yet qualified for the V13 image**. They will
-be re-run against it by the V13 build graph, which does not exist yet. Until
-then `check_pmu_completion_poll_count_v13` emits no manifest boolean for any of
-them; the single retained-V12 term it does enforce is a bounded static refusal
-of the NVIC enable forms listed above, under the stated limits. It is not a
-complete proof that the V13 image contains no NVIC enable.
+The V13 build graph re-runs the parameterized V12 real-trace verifier against
+the V13 linked image and emits the distinct, hash-bound
+`retained_v12_executable_evidence.json` artifact. At the frozen V13 addresses,
+that artifact proves the stock vector target, NVIC hard-bypass,
+STATUS/history provenance, path-sensitive CMD/QREAD ordering, P0/P1/P2
+publication, the H-PRINTF seam, and terminal release. The CLI recomputes the
+artifact from the canonical generated sources plus the exact V13 objdump/nm
+sidecars and refuses a missing, forged, stale, or hash-mismatched artifact.
+
+This is an exact retained subset, not a claim that all V12 qualification has
+moved to V13. In particular it does **not** qualify runtime golden output or
+the full base-PMU contract; those limitations are explicit false fields in the
+evidence. The separate generated-source NVIC screen remains a bounded static
+refusal of the enable forms listed above and is not a complete proof that the
+V13 image contains no NVIC enable.
