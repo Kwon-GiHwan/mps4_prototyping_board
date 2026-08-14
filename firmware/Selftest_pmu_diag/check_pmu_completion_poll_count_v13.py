@@ -8,15 +8,25 @@ The gate proves two independent properties:
    runner can only forward that value on the success path, because its single
    other write to the record field is the ``0U`` invalidation inside the
    ``poll_result != V13_POLL_SUCCESS`` gate that follows the copy; and
-2. the final V13 poll loop is structurally the V12 poll loop plus that single
-   post-P2 store, with the stored value flowing out of the register that the
-   failed-poll conditional back edge decrements.
+2. the V13 *per-iteration loop region* -- STATUS load, completion test, success
+   branch, failed-path decrements and back edge -- signs exactly as the V12 one
+   does, and the value the V13 helper publishes after P2 flows out of the
+   register that the failed-poll conditional back edge decrements.
+
+The two halves of property 2 are scoped differently, and the manifest says so:
+``v12_v13_poll_loop_semantically_equivalent`` is the cross-image half and covers
+that per-iteration loop region and nothing else, which is what the manifest's
+``v12_v13_poll_loop_equivalence_scope`` names. The post-P2 publication is the
+V13-only half -- V12 has no such store, so it is not a cross-image comparison
+at all but a CFG and dataflow proof over the V13 image alone. Cross-image
+equivalence of the helper prologue, of the success tail past the completion
+branch and of the epilogue is not claimed here: a V13 build whose prologue or
+success tail differs from V12's signs the same region and is accepted.
 
 Property 2 is derived from the instruction stream itself (basic-block edges,
 register definitions and uses), not from disassembly comments or fixed
 addresses, so a relabelled or relocated build is accepted while an extra
-per-iteration effect is not. The whole per-iteration region -- STATUS load,
-completion test, success branch, failed-path tail and back edge -- is closed:
+per-iteration effect is not. That per-iteration region is closed:
 it may contain those six instructions and nothing else, on either side of the
 completion test. Every pointer the helper uses is resolved through the Thumb
 literal-pool rule ``((addr + 4) & ~3) + imm`` and bound to the exact address
@@ -49,8 +59,11 @@ so reformatting the generated runner cannot change the verdict.
 Scope: this module gates generated sources and the helper poll loop of the two
 final ELFs. The retained V12 executable proofs that need whole-image artifacts
 (stock vector table, NVIC hard-bypass, path-sensitive CMD/QREAD, PMU, H-PRINTF,
-golden output, terminal release) stay in ``check_pmu_completion_poll_v12`` and
-are re-run against the V13 image by the V13 build graph. The only retained-V12
+golden output, terminal release) stay in ``check_pmu_completion_poll_v12``.
+They will be re-run against the V13 image by a V13 build graph that
+does not exist yet -- it and the V13 ELF it links are Task 5 -- so for the V13
+image those proofs are currently not qualified, and this module deliberately
+emits no manifest boolean for any of them. The only retained-V12
 proof enforced here is that the V13 image reintroduces no NVIC *enable*: neither
 an ``NVIC_EnableIRQ`` call site nor a direct NVIC->ISER write. The stock
 ``NVIC_SetVector`` and ``NVIC_ClearPendingIRQ`` call sites are required by that
@@ -235,6 +248,10 @@ _V12_RUNTIME_DRIFT_CALLEES = ("NVIC_EnableIRQ",)
 # STATUS load, completion test, success branch, two failed-path decrements and
 # the back edge -- the whole of what one poll iteration is allowed to execute.
 _CANONICAL_PER_ITERATION_INSTRUCTIONS = 6
+
+# The region the cross-ELF equivalence boolean covers, named in the manifest so
+# no consumer can read that boolean as whole-helper or whole-image equivalence.
+EQUIVALENCE_SCOPE = "per_iteration_loop_region"
 
 
 @dataclass(frozen=True)
@@ -1425,24 +1442,46 @@ def verify_cross_elf_contract(
     v13_disassembly_text: str,
     v13_nm_text: str,
 ) -> dict[str, object]:
+    """Cross-ELF gate over the per-iteration poll loop region only.
+
+    ``v12_v13_poll_loop_semantically_equivalent`` means exactly one thing: the
+    V12 and V13 helpers sign the same ``_region_signature`` over the region
+    that runs once per poll iteration -- STATUS load, completion test, success
+    branch, failed-path decrements and back edge -- with register names,
+    addresses and literal-pool layout normalized away. ``EQUIVALENCE_SCOPE``
+    carries that region name into the manifest so a reader cannot take the
+    boolean for whole-helper or whole-image equivalence: a V13 build whose
+    prologue, success tail or epilogue differs from V12's still signs the same
+    region and is accepted here, by design.
+
+    The post-P2 publication is *not* part of that comparison -- V12 has no such
+    store, so there is nothing to compare it against. It is proven separately by
+    ``prove_remaining_dataflow``, over the V13 image alone.
+    """
     v12_loop = extract_poll_loop(v12_disassembly_text, v12_nm_text)
     v13_loop = extract_poll_loop(v13_disassembly_text, v13_nm_text)
     if v12_loop.variant != "v12" or v13_loop.variant != "v13":
         raise fail("cross-ELF gate requires one V12 and one V13 helper")
-    if normalize_poll_loop(v12_loop) != normalize_poll_loop(v13_loop):
+    poll_loop_region_equivalent = normalize_poll_loop(v12_loop) == normalize_poll_loop(v13_loop)
+    if not poll_loop_region_equivalent:
         raise fail("V12/V13 normalized poll loop mismatch")
-    if v13_loop.extra_per_iteration_instruction_count != 0 or v13_loop.has_forbidden_loop_effect:
+    extra_per_iteration_instruction_count_zero = (
+        v13_loop.extra_per_iteration_instruction_count == 0
+        and not v13_loop.has_forbidden_loop_effect
+    )
+    if not extra_per_iteration_instruction_count_zero:
         raise fail("extra per-iteration instruction")
     proof = prove_remaining_dataflow(v13_disassembly_text, v13_nm_text)
     _check_retained_v12_runtime(v13_disassembly_text)
     return {
         "variant": VARIANT,
-        "v12_v13_poll_loop_semantically_equivalent": True,
-        "v13_extra_per_iteration_instruction_count_zero": True,
+        "v12_v13_poll_loop_semantically_equivalent": poll_loop_region_equivalent,
+        "v12_v13_poll_loop_equivalence_scope": EQUIVALENCE_SCOPE,
+        "v13_extra_per_iteration_instruction_count_zero": extra_per_iteration_instruction_count_zero,
         "remaining_store_after_p2_exactly_once": proof.remaining_store_after_p2_exactly_once,
         "remaining_from_back_edge_induction": proof.remaining_from_back_edge_induction,
         "remaining_store_timeout_unreachable": proof.remaining_store_timeout_unreachable,
         "helper_leaf_no_stack_access": proof.helper_leaf_no_stack_access,
         "remaining_induction_register": proof.induction_register,
-        "loop_equivalent": True,
+        "loop_equivalent": poll_loop_region_equivalent,
     }

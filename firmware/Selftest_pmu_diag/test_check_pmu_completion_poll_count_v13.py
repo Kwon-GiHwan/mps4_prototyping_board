@@ -1838,6 +1838,124 @@ def run_future_elf_suite(gate):
             check("live-out proof rejects %s" % name, payload["expected"] in str(exc), str(exc))
 
 
+# Names a whole-image retained-V12 proof would carry. This Task 4 module gates
+# generated sources and the helper poll loop only; the artifacts those proofs
+# need (stock vector table, path-sensitive CMD/QREAD, PMU, H-PRINTF, golden
+# output, terminal release) are produced by the Task 5 build graph, which does
+# not exist yet. Emitting a boolean under any of these names before then would
+# assert a qualification nothing has run.
+WHOLE_IMAGE_PROOF_WORDS = (
+    "vector",
+    "hard_bypass",
+    "cmd",
+    "qread",
+    "pmu_counter",
+    "hprintf",
+    "h_printf",
+    "golden",
+    "terminal",
+    "artifact",
+    "whole_image",
+)
+
+
+def run_scope_honesty_suite(gate):
+    """The cross-ELF manifest must claim exactly what it proved -- no more.
+
+    ``verify_cross_elf_contract`` compares only the per-iteration loop region
+    signature, so a V13 helper whose prologue or success tail differs from V12
+    still clears it. That is correct, but it means the equivalence boolean must
+    not be readable as whole-helper or whole-image equivalence.
+    """
+    evidence = gate.verify_cross_elf_contract(V12_OBJDUMP_OK, V12_NM_OK, V13_OBJDUMP_OK, V13_NM_OK)
+
+    check(
+        "manifest names the exact region its equivalence boolean covers",
+        evidence.get("v12_v13_poll_loop_equivalence_scope") == "per_iteration_loop_region",
+        str(evidence.get("v12_v13_poll_loop_equivalence_scope")),
+    )
+
+    offending = [
+        key
+        for key in evidence
+        if any(word in key.lower() for word in WHOLE_IMAGE_PROOF_WORDS)
+    ]
+    check(
+        "Task 4 manifest emits no retained whole-image V12 boolean",
+        offending == [],
+        str(offending),
+    )
+
+    with open(gate.__file__, "r", encoding="utf-8") as handle:
+        gate_source = handle.read()
+    literal_keys = [
+        key
+        for key in (
+            "v12_v13_poll_loop_semantically_equivalent",
+            "v13_extra_per_iteration_instruction_count_zero",
+            "loop_equivalent",
+        )
+        if '"%s": True' % key in gate_source
+    ]
+    check(
+        "cross-ELF verdict booleans are derived, not literal True assignments",
+        literal_keys == [],
+        str(literal_keys),
+    )
+
+    # Behavioural proof of the scope the tag claims: the compared region is the
+    # per-iteration loop, so drift strictly outside it is accepted. These two
+    # cases are why the boolean must never be read as whole-helper equivalence.
+    for label, rows in (
+        (
+            "prologue that differs from the V12 reference",
+            rows_before(v13_rows(), "loop", row("pro_extra", "mov     r3, #0", comment="V13_PROLOGUE_EXTRA")),
+        ),
+        (
+            "success tail that differs from the V12 reference",
+            rows_after(v13_rows(), "rem_store", row("tail_extra", "mov     r3, #0", comment="V13_TAIL_EXTRA")),
+        ),
+    ):
+        objdump, nm = v13_elf(rows=rows)
+        try:
+            outside = gate.verify_cross_elf_contract(V12_OBJDUMP_OK, V12_NM_OK, objdump, nm)
+            check(
+                "region-scoped equivalence still holds for a %s" % label,
+                outside.get("v12_v13_poll_loop_semantically_equivalent") is True
+                and outside.get("v12_v13_poll_loop_equivalence_scope") == "per_iteration_loop_region",
+                str(outside),
+            )
+        except Exception as exc:
+            check("region-scoped equivalence still holds for a %s" % label, False, str(exc))
+
+    doc = gate.__doc__ or ""
+    check(
+        "module docstring scopes the cross-image claim to the per-iteration loop region",
+        "per-iteration loop region" in doc,
+        doc[:0],
+    )
+    check(
+        "module docstring states the post-P2 publication is a V13-only proof",
+        "V13-only" in doc and "not a cross-image comparison" in doc,
+    )
+    check(
+        "module docstring disclaims prologue/success-tail/epilogue cross-image equivalence",
+        "prologue" in doc and "success tail" in doc and "epilogue" in doc and "is not claimed" in doc,
+    )
+    check(
+        "module docstring does not claim retained whole-image proofs already run against V13",
+        "are re-run against the V13 image" not in doc,
+    )
+    check(
+        "module docstring defers retained whole-image proofs to the Task 5 build graph",
+        "will be re-run" in doc and "does not exist yet" in doc,
+    )
+    check(
+        "module docstring states retained whole-image proofs are not qualified yet",
+        "not qualified" in doc,
+    )
+
+
 def run_generator_suite(patcher):
     real_runner_stock = load_real_runner_stock()
     check(
@@ -2088,6 +2206,7 @@ if __name__ == "__main__":
 
     run_future_suite(gate, patcher)
     run_future_elf_suite(gate)
+    run_scope_honesty_suite(gate)
     run_retained_runtime_suite(gate)
     run_real_image_nvic_suite(gate)
 
