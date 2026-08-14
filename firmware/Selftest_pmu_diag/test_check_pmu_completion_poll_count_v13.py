@@ -2685,6 +2685,17 @@ def run_future_elf_suite(gate):
     probe_dir = "/tmp/v13-arm-loop-probe-20260815T073000Z"
     probe_v12_objdump = os.path.join(probe_dir, "v12.objdump.txt")
     probe_v12_nm = os.path.join(probe_dir, "v12.nm.txt")
+    probe_runner_elf = os.path.join(probe_dir, "runner.elf")
+    probe_vendor_object = os.path.join(probe_dir, "vendor.o")
+    probe_preprocessed = os.path.join(probe_dir, "runner.i")
+    probe_interface_header = os.path.join(probe_dir, "interface.h")
+    probe_regs_header = os.path.join(probe_dir, "npu_pmu_regs.h")
+    probe_runner_sections = os.path.join(probe_dir, "runner.sections.txt")
+    probe_vendor_relocations = os.path.join(probe_dir, "vendor.relocations.txt")
+    probe_vendor_object_disassembly = os.path.join(
+        probe_dir, "vendor.test_commands.objdump.txt"
+    )
+    probe_vendor_sections = os.path.join(probe_dir, "vendor.sections.txt")
     probe_v13_objdump = os.path.join(probe_dir, "runner.objdump.txt")
     probe_v13_nm = os.path.join(probe_dir, "runner.nm.txt")
     if not all(os.path.exists(path) for path in (probe_v12_objdump, probe_v12_nm, probe_v13_objdump, probe_v13_nm)):
@@ -2882,6 +2893,78 @@ def run_retained_v12_executable_real_probe_suite(gate):
             check("retained V12 executable gate rejects %s drift" % label, expected in str(exc), str(exc))
 
 
+def run_retained_v12_base_pmu_real_probe_suite(gate):
+    print("=== actual ARM probe: retained V12 base PMU/H-PRINTF gate ===")
+    probe = "/tmp/v13-arm-loop-probe-20260815T073000Z"
+    paths = {
+        "disassembly_text": os.path.join(probe, "runner.objdump.txt"),
+        "nm_text": os.path.join(probe, "runner.nm.txt"),
+        "strings_text": os.path.join(probe, "runner.sections.txt"),
+        "relocation_text": os.path.join(probe, "vendor.relocations.txt"),
+        "object_disassembly_text": os.path.join(probe, "vendor.test_commands.objdump.txt"),
+        "object_sections_text": os.path.join(probe, "vendor.sections.txt"),
+        "vendor_text": os.path.join(probe, "generated_vendor.c"),
+        "interface_header_text": os.path.join(probe, "interface.h"),
+        "preprocessed_text": os.path.join(probe, "runner.i"),
+        "cfg_header_text": os.path.join(probe, "npu_pmu_regs.h"),
+    }
+    missing = [path for path in paths.values() if not os.path.exists(path)]
+    if missing:
+        check("retained V12 base PMU actual probe inputs are mandatory", False, str(missing))
+        return
+    inputs = {
+        key: open(path, "r", encoding="utf-8").read()
+        for key, path in paths.items()
+    }
+    inputs["compiler_flags"] = "-fno-builtin-printf"
+    try:
+        evidence = gate.verify_retained_v12_base_pmu_contract(**inputs)
+        check(
+            "retained V12 base PMU gate accepts the fresh linked V13 probe",
+            all(
+                evidence.get(key) is True
+                for key in (
+                    "retained_v12_hprintf_callsite_exact",
+                    "retained_v12_target_object_relocation_exact",
+                    "retained_v12_pmu_hook_order_exact",
+                    "retained_v12_no_pmccntr_cfg_write",
+                    "retained_v12_compiler_contract_exact",
+                    "golden_window_link_symbols_exact",
+                )
+            )
+            and evidence.get("runtime_golden_output_qualified") is False
+            and evidence.get("performance_qualified") is False
+            and evidence.get("golden_window_base") == "0x90020CC0"
+            and evidence.get("golden_window_len") == "0x00000100",
+            str(evidence),
+        )
+    except Exception as exc:
+        check("retained V12 base PMU gate accepts the fresh linked V13 probe", False, str(exc))
+
+    mutated_nm = inputs["nm_text"].replace(
+        "90020cc0 A __pmu_diag_golden_window_base__",
+        "90020cc4 A __pmu_diag_golden_window_base__",
+        1,
+    )
+    try:
+        gate.verify_retained_v12_base_pmu_contract(**dict(inputs, nm_text=mutated_nm))
+        check("retained V12 base PMU gate rejects golden-window address drift", False, "unexpected pass")
+    except Exception as exc:
+        check(
+            "retained V12 base PMU gate rejects golden-window address drift",
+            "golden-window symbol mismatch" in str(exc),
+            str(exc),
+        )
+
+    try:
+        gate.verify_retained_v12_base_pmu_contract(
+            **dict(inputs, compiler_flags="-flto -fno-builtin-printf")
+        )
+        check("retained V12 base PMU gate rejects LTO", False, "unexpected pass")
+    except Exception as exc:
+        check("retained V12 base PMU gate rejects LTO", "LTO is enabled" in str(exc), str(exc))
+
+
 def run_scope_honesty_suite(gate):
     """The cross-ELF manifest must claim exactly what it proved -- no more.
 
@@ -2987,8 +3070,10 @@ def run_scope_honesty_suite(gate):
         all(term in doc for term in ("stock", "hard-bypass", "STATUS/history", "CMD/QREAD", "P0/P1/P2", "H-PRINTF", "terminal")),
     )
     check(
-        "module docstring disclaims runtime golden and full base-PMU qualification",
-        "does not qualify runtime" in doc and "golden output" in doc and "full base-PMU contract" in doc,
+        "module docstring separates retained trace from the static base-PMU gate",
+        "trace subset does not itself qualify" in doc
+        and "complete static" in doc
+        and "golden-window link symbols" in doc,
     )
 
     # Prose the probes falsified. Each pair below pins the absolute claim as
@@ -3003,8 +3088,10 @@ def run_scope_honesty_suite(gate):
             "exact retained" in text and "hash-bound" in text,
         )
         check(
-            "%s disclaims runtime golden output and full base-PMU qualification" % label,
-            "runtime golden output" in text and "full base-PMU contract" in text,
+            "%s qualifies only static base-PMU/golden-window linkage" % label,
+            "runtime golden output" in text
+            and "static" in text
+            and "golden-window" in text,
         )
         check(
             "%s does not call writeback the only certified/touched address drift" % label,
@@ -3341,6 +3428,17 @@ def run_runner_record_wire_cli_suite(gate, patcher):
     probe_dwarf = os.path.join(probe_dir, "runner.dwarf.txt")
     probe_v12_objdump = os.path.join(probe_dir, "v12.objdump.txt")
     probe_v12_nm = os.path.join(probe_dir, "v12.nm.txt")
+    probe_runner_elf = os.path.join(probe_dir, "runner.elf")
+    probe_vendor_object = os.path.join(probe_dir, "vendor.o")
+    probe_preprocessed = os.path.join(probe_dir, "runner.i")
+    probe_interface_header = os.path.join(probe_dir, "interface.h")
+    probe_regs_header = os.path.join(probe_dir, "npu_pmu_regs.h")
+    probe_runner_sections = os.path.join(probe_dir, "runner.sections.txt")
+    probe_vendor_relocations = os.path.join(probe_dir, "vendor.relocations.txt")
+    probe_vendor_object_disassembly = os.path.join(
+        probe_dir, "vendor.test_commands.objdump.txt"
+    )
+    probe_vendor_sections = os.path.join(probe_dir, "vendor.sections.txt")
     probe_authoritative_v12_elf = "/tmp/v13-arm-dwarf-probe-20260814T213700Z/authoritative_v12.elf"
     probe_matches_current = False
     probe_evidence = None
@@ -3354,6 +3452,15 @@ def run_runner_record_wire_cli_suite(gate, patcher):
             probe_dwarf,
             probe_v12_objdump,
             probe_v12_nm,
+            probe_runner_elf,
+            probe_vendor_object,
+            probe_preprocessed,
+            probe_interface_header,
+            probe_regs_header,
+            probe_runner_sections,
+            probe_vendor_relocations,
+            probe_vendor_object_disassembly,
+            probe_vendor_sections,
             probe_authoritative_v12_elf,
         )
     ):
@@ -3418,6 +3525,11 @@ def run_runner_record_wire_cli_suite(gate, patcher):
         cross_path = os.path.join(tmp, "cross.json")
         runner_record_wire_path = os.path.join(tmp, "runner_record_wire.json")
         retained_v12_executable_path = os.path.join(tmp, "retained_v12_executable.json")
+        retained_v12_base_pmu_path = os.path.join(tmp, "retained_v12_base_pmu.json")
+        vendor_object_path = os.path.join(tmp, "vendor.o")
+        preprocessed_path = os.path.join(tmp, "runner.i")
+        interface_header_path = os.path.join(tmp, "interface.h")
+        regs_header_path = os.path.join(tmp, "npu_pmu_regs.h")
         objdump_path = os.path.join(tmp, "fake_objdump.py")
         nm_path = os.path.join(tmp, "fake_nm.py")
         readelf_path = os.path.join(tmp, "fake_readelf.py")
@@ -3430,12 +3542,16 @@ def run_runner_record_wire_cli_suite(gate, patcher):
             (v13_objdump_path, objdump_text),
             (v13_nm_path, nm_text),
             (v13_dwarf_path, RUNNER_RECORD_WIRE_DWARF_OK),
+            (preprocessed_path, open(probe_preprocessed, "r", encoding="utf-8").read()),
+            (interface_header_path, open(probe_interface_header, "r", encoding="utf-8").read()),
+            (regs_header_path, open(probe_regs_header, "r", encoding="utf-8").read()),
         ):
             with open(path, "w", encoding="utf-8") as handle:
                 handle.write(content)
         for path, payload in (
-            (elf_path, b"elf"),
+            (elf_path, open(probe_runner_elf, "rb").read()),
             (authoritative_v12_elf_path, open(probe_authoritative_v12_elf, "rb").read()),
+            (vendor_object_path, open(probe_vendor_object, "rb").read()),
             (app_bin, b"app"),
             (vectors_bin, b"vectors"),
             (ddr_bin, b"ddr"),
@@ -3447,14 +3563,29 @@ def run_runner_record_wire_cli_suite(gate, patcher):
                 "#!/usr/bin/env python3\n"
                 "import pathlib, sys\n"
                 "path = pathlib.Path(sys.argv[-1]).name\n"
-                "if sys.argv[1:] != ['-d', sys.argv[-1]]:\n"
-                "    raise SystemExit(2)\n"
-                "if path == 'authoritative_v12.elf':\n"
+                "args = sys.argv[1:-1]\n"
+                "if args == ['-d'] and path == 'authoritative_v12.elf':\n"
                 "    sys.stdout.write(pathlib.Path(%r).read_text(encoding='utf-8'))\n"
-                "elif path == 'runner.elf':\n"
+                "elif args == ['-d'] and path == 'runner.elf':\n"
+                "    sys.stdout.write(pathlib.Path(%r).read_text(encoding='utf-8'))\n"
+                "elif args == ['-s'] and path == 'runner.elf':\n"
+                "    sys.stdout.write(pathlib.Path(%r).read_text(encoding='utf-8'))\n"
+                "elif args == ['-r'] and path == 'vendor.o':\n"
+                "    sys.stdout.write(pathlib.Path(%r).read_text(encoding='utf-8'))\n"
+                "elif args == ['-drz', '--section=.text.test_commands'] and path == 'vendor.o':\n"
+                "    sys.stdout.write(pathlib.Path(%r).read_text(encoding='utf-8'))\n"
+                "elif args == ['-s'] and path == 'vendor.o':\n"
                 "    sys.stdout.write(pathlib.Path(%r).read_text(encoding='utf-8'))\n"
                 "else:\n"
-                "    raise SystemExit(2)\n" % (v12_objdump_path, v13_objdump_path)
+                "    raise SystemExit(2)\n"
+                % (
+                    v12_objdump_path,
+                    v13_objdump_path,
+                    probe_runner_sections,
+                    probe_vendor_relocations,
+                    probe_vendor_object_disassembly,
+                    probe_vendor_sections,
+                )
             )
         with open(nm_path, "w", encoding="utf-8") as handle:
             handle.write(
@@ -3475,7 +3606,7 @@ def run_runner_record_wire_cli_suite(gate, patcher):
                 "#!/usr/bin/env python3\n"
                 "import pathlib, sys\n"
                 "if sys.argv[1] == '-h':\n"
-                "    sys.stdout.write('ELF Header\\nType: EXEC (Executable file)\\nMachine: ARM\\n')\n"
+                "    sys.stdout.write('ELF Header\\n  Type:                              EXEC (Executable file)\\n  Machine:                           ARM\\n')\n"
                 "elif sys.argv[1] == '--debug-dump=info,loc':\n"
                 "    sys.stdout.write(pathlib.Path(%r).read_text(encoding='utf-8'))\n"
                 "else:\n"
@@ -3505,6 +3636,12 @@ def run_runner_record_wire_cli_suite(gate, patcher):
                 "--cross-elf-evidence",
                 "--runner-record-wire-evidence",
                 "--retained-v12-executable-evidence",
+                "--retained-v12-base-pmu-evidence",
+                "--vendor-object",
+                "--interface-header",
+                "--regs-header",
+                "--preprocessed",
+                "--cflags",
                 "--authoritative-v12-elf",
                 "--objdump-tool",
                 "--nm-tool",
@@ -3521,6 +3658,7 @@ def run_runner_record_wire_cli_suite(gate, patcher):
             cross_inputs = (V12_OBJDUMP_OK, V12_NM_OK, objdump_text, nm_text)
             current_runner_record_wire = evidence
             current_retained_v12_executable = None
+            current_retained_v12_base_pmu = None
             if probe_matches_current and probe_evidence is not None:
                 with open(v13_objdump_path, "w", encoding="utf-8") as handle:
                     handle.write(open(probe_objdump, "r", encoding="utf-8").read())
@@ -3545,6 +3683,23 @@ def run_runner_record_wire_cli_suite(gate, patcher):
                     open(probe_objdump, "r", encoding="utf-8").read(),
                     open(probe_nm, "r", encoding="utf-8").read(),
                 )
+                current_retained_v12_base_pmu = gate.verify_retained_v12_base_pmu_contract(
+                    disassembly_text=open(probe_objdump, "r", encoding="utf-8").read(),
+                    nm_text=open(probe_nm, "r", encoding="utf-8").read(),
+                    strings_text=open(probe_runner_sections, "r", encoding="utf-8").read(),
+                    relocation_text=open(probe_vendor_relocations, "r", encoding="utf-8").read(),
+                    object_disassembly_text=open(
+                        probe_vendor_object_disassembly, "r", encoding="utf-8"
+                    ).read(),
+                    object_sections_text=open(probe_vendor_sections, "r", encoding="utf-8").read(),
+                    vendor_text=canonical_vendor,
+                    interface_header_text=open(
+                        probe_interface_header, "r", encoding="utf-8"
+                    ).read(),
+                    compiler_flags="-fno-builtin-printf",
+                    preprocessed_text=open(probe_preprocessed, "r", encoding="utf-8").read(),
+                    cfg_header_text=open(probe_regs_header, "r", encoding="utf-8").read(),
+                )
             cross = gate.verify_cross_elf_contract(*cross_inputs)
             with open(cross_path, "w", encoding="utf-8") as handle:
                 json.dump(cross, handle, indent=2, sort_keys=True)
@@ -3552,6 +3707,8 @@ def run_runner_record_wire_cli_suite(gate, patcher):
                 json.dump(current_runner_record_wire, handle, indent=2, sort_keys=True)
             with open(retained_v12_executable_path, "w", encoding="utf-8") as handle:
                 json.dump(current_retained_v12_executable or {}, handle, indent=2, sort_keys=True)
+            with open(retained_v12_base_pmu_path, "w", encoding="utf-8") as handle:
+                json.dump(current_retained_v12_base_pmu or {}, handle, indent=2, sort_keys=True)
 
             help_result = subprocess.run(
                 [
@@ -3567,7 +3724,8 @@ def run_runner_record_wire_cli_suite(gate, patcher):
                 help_result.returncode == 0
                 and "--cross-elf-evidence" in help_result.stdout
                 and "--runner-record-wire-evidence" in help_result.stdout
-                and "--retained-v12-executable-evidence" in help_result.stdout,
+                and "--retained-v12-executable-evidence" in help_result.stdout
+                and "--retained-v12-base-pmu-evidence" in help_result.stdout,
                 help_result.stderr or help_result.stdout,
             )
 
@@ -3592,6 +3750,12 @@ def run_runner_record_wire_cli_suite(gate, patcher):
                 "--cross-elf-evidence", cross_path,
                 "--runner-record-wire-evidence", runner_record_wire_path,
                 "--retained-v12-executable-evidence", retained_v12_executable_path,
+                "--vendor-object", vendor_object_path,
+                "--interface-header", interface_header_path,
+                "--regs-header", regs_header_path,
+                "--preprocessed", preprocessed_path,
+                "--cflags=-fno-builtin-printf",
+                "--retained-v12-base-pmu-evidence", retained_v12_base_pmu_path,
                 "--manifest-out", manifest_path,
             ]
             cli_ok = subprocess.run(
@@ -3634,6 +3798,11 @@ def run_runner_record_wire_cli_suite(gate, patcher):
                     "cross_elf_evidence": sha256_path(cross_path),
                     "runner_record_wire_evidence": sha256_path(runner_record_wire_path),
                     "retained_v12_executable_evidence": sha256_path(retained_v12_executable_path),
+                    "vendor_object": sha256_path(vendor_object_path),
+                    "preprocessed_runner": sha256_path(preprocessed_path),
+                    "interface_header": sha256_path(interface_header_path),
+                    "regs_header": sha256_path(regs_header_path),
+                    "retained_v12_base_pmu_evidence": sha256_path(retained_v12_base_pmu_path),
                 }
                 expected_build_evidence = {
                     key: expected_artifacts[key]
@@ -3647,6 +3816,11 @@ def run_runner_record_wire_cli_suite(gate, patcher):
                         "cross_elf_evidence",
                         "runner_record_wire_evidence",
                         "retained_v12_executable_evidence",
+                        "vendor_object",
+                        "preprocessed_runner",
+                        "interface_header",
+                        "regs_header",
+                        "retained_v12_base_pmu_evidence",
                     )
                 }
                 try:
@@ -3657,12 +3831,14 @@ def run_runner_record_wire_cli_suite(gate, patcher):
                         expected_artifacts,
                         expected_build_evidence,
                         current_retained_v12_executable,
+                        current_retained_v12_base_pmu,
                     )
                     check(
                         "V13 manifest binds exact evidence JSON and artifact hashes",
                         manifest.get("cross_elf_evidence") == cross
                         and manifest.get("runner_record_wire_evidence") == current_runner_record_wire
                         and manifest.get("retained_v12_executable_evidence") == current_retained_v12_executable
+                        and manifest.get("retained_v12_base_pmu_evidence") == current_retained_v12_base_pmu
                         and manifest.get("runner_source_sha256") == RUNNER_GENERATED_SHA256
                         and manifest.get("vendor_source_sha256") == VENDOR_GENERATED_SHA256
                         and manifest.get("authoritative_v12_elf_sha256") == AUTHORITATIVE_V12_SHA256
@@ -3670,7 +3846,8 @@ def run_runner_record_wire_cli_suite(gate, patcher):
                         and manifest.get("build_evidence_sha256") == expected_build_evidence
                         and manifest.get("cross_elf_evidence_sha256") == sha256_text(json.dumps(cross, indent=2, sort_keys=True) + "\n")
                         and manifest.get("runner_record_wire_evidence_sha256") == sha256_text(json.dumps(current_runner_record_wire, indent=2, sort_keys=True) + "\n")
-                        and manifest.get("retained_v12_executable_evidence_sha256") == sha256_text(json.dumps(current_retained_v12_executable, indent=2, sort_keys=True) + "\n"),
+                        and manifest.get("retained_v12_executable_evidence_sha256") == sha256_text(json.dumps(current_retained_v12_executable, indent=2, sort_keys=True) + "\n")
+                        and manifest.get("retained_v12_base_pmu_evidence_sha256") == sha256_text(json.dumps(current_retained_v12_base_pmu, indent=2, sort_keys=True) + "\n"),
                     )
                 except Exception as exc:
                     check("V13 manifest binds exact evidence JSON and artifact hashes", False, str(exc))
@@ -3687,6 +3864,7 @@ def run_runner_record_wire_cli_suite(gate, patcher):
                             expected_artifacts,
                             expected_build_evidence,
                             current_retained_v12_executable,
+                            current_retained_v12_base_pmu,
                         )
                         check("V13 manifest rejects mutated artifact hash for %s" % key, False, "unexpected pass")
                     except Exception as exc:
@@ -3704,6 +3882,7 @@ def run_runner_record_wire_cli_suite(gate, patcher):
                             expected_artifacts,
                             expected_build_evidence,
                             current_retained_v12_executable,
+                            current_retained_v12_base_pmu,
                         )
                         check("V13 manifest rejects mutated build-evidence hash for %s" % key, False, "unexpected pass")
                     except Exception as exc:
@@ -4029,6 +4208,7 @@ if __name__ == "__main__":
     run_future_suite(gate, patcher)
     run_future_elf_suite(gate)
     run_retained_v12_executable_real_probe_suite(gate)
+    run_retained_v12_base_pmu_real_probe_suite(gate)
     run_runner_record_wire_cli_suite(gate, patcher)
     run_scope_honesty_suite(gate)
     run_retained_runtime_suite(gate)

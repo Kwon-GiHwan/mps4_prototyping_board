@@ -29,6 +29,7 @@ def validate_makefile(text: str) -> None:
     require(text, "BUILD  := build_pmu_completion_poll_count_v13")
     require(text, "PATCHER := patches/patch_pmu_completion_poll_count_v13.py")
     require(text, "GATE    := Selftest_pmu_diag/check_pmu_completion_poll_count_v13.py")
+    require(text, "BASE_PMU_GATE := Selftest_pmu_diag/check_pmu_qual.py")
     require(text, "-DPMU_QUAL_SCHEMA_V13")
     require(text, "-DPMU_QUAL_SCHEMA_V8")
     require(text, "-DPMU_COMPLETION_POLL_COUNT_DIAG_V13")
@@ -46,16 +47,22 @@ def validate_makefile(text: str) -> None:
         text,
         "RETAINED_V12_EXECUTABLE_EVIDENCE := $(BUILD)/pmu_completion_poll_count_v13_retained_v12_executable_evidence.json",
     )
+    require(
+        text,
+        "RETAINED_V12_BASE_PMU_EVIDENCE := $(BUILD)/pmu_completion_poll_count_v13_retained_v12_base_pmu_evidence.json",
+    )
     require(text, "all: bins preprocess check manifest")
-    require(text, "check: $(CROSS_ELF_EVIDENCE) $(RUNNER_RECORD_WIRE_EVIDENCE) $(RETAINED_V12_EXECUTABLE_EVIDENCE)")
+    require(text, "check: $(CROSS_ELF_EVIDENCE) $(RUNNER_RECORD_WIRE_EVIDENCE) $(RETAINED_V12_EXECUTABLE_EVIDENCE) $(RETAINED_V12_BASE_PMU_EVIDENCE)")
     require(text, "manifest: $(MANIFEST)")
     require(text, "$(CROSS_ELF_EVIDENCE): $(TARGET).elf $(AUTHORITATIVE_V12_ELF) $(GATE)")
     require(text, "$(RUNNER_RECORD_WIRE_EVIDENCE): $(TARGET).elf $(GEN_RUNNER) $(GATE) $(V13_OBJDUMP) $(V13_NM) $(V13_DWARF)")
     require(text, "$(RETAINED_V12_EXECUTABLE_EVIDENCE): $(TARGET).elf $(GEN_RUNNER) $(GEN_VENDOR) $(GATE) $(V13_OBJDUMP) $(V13_NM)")
+    require(text, "$(RETAINED_V12_BASE_PMU_EVIDENCE): $(TARGET).elf $(GEN_VENDOR) $(GEN_VENDOR_OBJ) $(PREPROCESSED) $(INTERFACE_HEADER) $(REGS_HEADER) $(GATE) $(BASE_PMU_GATE) $(V13_OBJDUMP) $(V13_NM)")
     require(text, "$(V13_DWARF): $(TARGET).elf")
     require(text, "verify_cross_elf_contract(")
     require(text, "verify_runner_record_wire_contract(")
     require(text, "verify_retained_v12_executable_contract(")
+    require(text, "verify_retained_v12_base_pmu_contract(")
     require(text, "hashlib.sha256")
     require(text, "authoritative V12 ELF hash mismatch")
     require(text, "--debug-dump=info,loc")
@@ -78,17 +85,18 @@ def validate_makefile(text: str) -> None:
     require(text, "--cross-elf-evidence $(CROSS_ELF_EVIDENCE)")
     require(text, "--runner-record-wire-evidence $(RUNNER_RECORD_WIRE_EVIDENCE)")
     require(text, "--retained-v12-executable-evidence $(RETAINED_V12_EXECUTABLE_EVIDENCE)")
+    require(text, "--retained-v12-base-pmu-evidence $(RETAINED_V12_BASE_PMU_EVIDENCE)")
+    require(text, "--vendor-object $(GEN_VENDOR_OBJ)")
+    require(text, "--interface-header $(INTERFACE_HEADER)")
+    require(text, "--regs-header $(REGS_HEADER)")
+    require(text, "--preprocessed $(PREPROCESSED)")
+    require(text, '--cflags="$(CFLAGS)"')
     require(text, "--manifest-out $(MANIFEST)")
-    require(text, "$(MANIFEST): $(TARGET).elf $(GEN_RUNNER) $(GEN_VENDOR) $(GATE) bins $(CROSS_ELF_EVIDENCE) $(RUNNER_RECORD_WIRE_EVIDENCE) $(RETAINED_V12_EXECUTABLE_EVIDENCE) $(AUTHORITATIVE_V12_ELF) $(V12_OBJDUMP) $(V12_NM) $(V13_OBJDUMP) $(V13_NM) $(V13_DWARF)")
+    require(text, "$(MANIFEST): $(TARGET).elf $(GEN_RUNNER) $(GEN_VENDOR) $(GEN_VENDOR_OBJ) $(PREPROCESSED) $(INTERFACE_HEADER) $(REGS_HEADER) $(GATE) $(BASE_PMU_GATE) bins")
     require(text, "\t@test -s $(MANIFEST)\n")
 
     forbid(text, "--allow-synthetic-evidence")
     forbid(text, "--vendor-src")
-    forbid(text, "--interface-header")
-    forbid(text, "--vendor-object")
-    forbid(text, "--regs-header")
-    forbid(text, "--preprocessed")
-    forbid(text, "--cflags")
     forbid(text, "build_pmu_completion_poll_v12")
     forbid(text, "pmu_interval")
     forbid(text, "entry.S")
@@ -145,26 +153,45 @@ def extract_retained_v12_executable_python(text: str) -> str:
     return match.group(1)
 
 
+def extract_retained_v12_base_pmu_python(text: str) -> str:
+    match = re.search(
+        r"\$\(RETAINED_V12_BASE_PMU_EVIDENCE\):.*?\n\tpython3 -c '(.*?)' \"\$\(CFLAGS\)\"\n\n",
+        text,
+        re.DOTALL,
+    )
+    if match is None:
+        raise SystemExit("missing RETAINED_V12_BASE_PMU_EVIDENCE python3 -c body")
+    return match.group(1)
+
+
 def main() -> int:
     text = MAKEFILE.read_text(encoding="utf-8")
     validate_makefile(text)
     compile(extract_cross_elf_python(text), str(MAKEFILE), "exec")
     compile(extract_runner_record_wire_python(text), str(MAKEFILE), "exec")
     compile(extract_retained_v12_executable_python(text), str(MAKEFILE), "exec")
+    compile(extract_retained_v12_base_pmu_python(text), str(MAKEFILE), "exec")
 
     expect_invalid(
         text.replace(
-            "check: $(CROSS_ELF_EVIDENCE) $(RUNNER_RECORD_WIRE_EVIDENCE) $(RETAINED_V12_EXECUTABLE_EVIDENCE)",
-            "check: $(CROSS_ELF_EVIDENCE) $(RETAINED_V12_EXECUTABLE_EVIDENCE)",
+            "check: $(CROSS_ELF_EVIDENCE) $(RUNNER_RECORD_WIRE_EVIDENCE) $(RETAINED_V12_EXECUTABLE_EVIDENCE) $(RETAINED_V12_BASE_PMU_EVIDENCE)",
+            "check: $(CROSS_ELF_EVIDENCE) $(RETAINED_V12_EXECUTABLE_EVIDENCE) $(RETAINED_V12_BASE_PMU_EVIDENCE)",
         ),
         "missing runner-record/wire dependency",
     )
     expect_invalid(
         text.replace(
-            "check: $(CROSS_ELF_EVIDENCE) $(RUNNER_RECORD_WIRE_EVIDENCE) $(RETAINED_V12_EXECUTABLE_EVIDENCE)",
-            "check: $(CROSS_ELF_EVIDENCE) $(RUNNER_RECORD_WIRE_EVIDENCE)",
+            "check: $(CROSS_ELF_EVIDENCE) $(RUNNER_RECORD_WIRE_EVIDENCE) $(RETAINED_V12_EXECUTABLE_EVIDENCE) $(RETAINED_V12_BASE_PMU_EVIDENCE)",
+            "check: $(CROSS_ELF_EVIDENCE) $(RUNNER_RECORD_WIRE_EVIDENCE) $(RETAINED_V12_BASE_PMU_EVIDENCE)",
         ),
         "missing retained-V12 executable dependency",
+    )
+    expect_invalid(
+        text.replace(
+            "check: $(CROSS_ELF_EVIDENCE) $(RUNNER_RECORD_WIRE_EVIDENCE) $(RETAINED_V12_EXECUTABLE_EVIDENCE) $(RETAINED_V12_BASE_PMU_EVIDENCE)",
+            "check: $(CROSS_ELF_EVIDENCE) $(RUNNER_RECORD_WIRE_EVIDENCE) $(RETAINED_V12_EXECUTABLE_EVIDENCE)",
+        ),
+        "missing retained-V12 base PMU dependency",
     )
     expect_invalid(
         replace_once(
@@ -205,6 +232,10 @@ def main() -> int:
     expect_invalid(
         text.replace("--retained-v12-executable-evidence $(RETAINED_V12_EXECUTABLE_EVIDENCE) \\\n", ""),
         "missing retained-V12 executable manifest binding",
+    )
+    expect_invalid(
+        text.replace("--retained-v12-base-pmu-evidence $(RETAINED_V12_BASE_PMU_EVIDENCE) \\\n", ""),
+        "missing retained-V12 base PMU manifest binding",
     )
 
     help_text = subprocess.run(

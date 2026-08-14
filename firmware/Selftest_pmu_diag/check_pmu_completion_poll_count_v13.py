@@ -118,9 +118,11 @@ V13 linked image through ``check_pmu_completion_poll_v12``'s parameterized
 real-trace verifier. A distinct, hash-bound evidence artifact proves the stock
 vector target, NVIC hard-bypass, STATUS/history provenance, path-sensitive
 CMD/QREAD ordering, P0/P1/P2 publication, the H-PRINTF seam and terminal
-release at the frozen V13 addresses. That subset does not qualify runtime
-golden output or the full base-PMU contract, and its evidence states both
-limitations explicitly. Separately, the generated-source screen enforces a
+release at the frozen V13 addresses. That trace subset does not itself qualify
+the base-PMU contract. A second hash-bound artifact replays the complete static
+Q1 H-PRINTF/PMU gate and proves the exact golden-window link symbols on the
+same V13 ELF/object/preprocessed inputs. Neither artifact qualifies runtime
+golden output or performance. Separately, the generated-source screen enforces a
 bounded refusal of the NVIC *enable* forms it enumerates -- an
 ``NVIC_EnableIRQ`` call site and a direct NVIC->ISER write -- not a complete
 proof that no enable exists. The stock
@@ -184,6 +186,20 @@ RETAINED_V12_EXECUTABLE_LIMITATIONS = (
     "CMD/QREAD ordering, P0/P1/P2, H-PRINTF seam, and terminal CMD=0xC. It does not "
     "qualify runtime golden output or the full base PMU contract."
 )
+RETAINED_V12_BASE_PMU_PROOF_SCOPE = (
+    "check_pmu_qual_q1_replayed_on_v13_plus_golden_window_link_symbols"
+)
+RETAINED_V12_BASE_PMU_LIMITATIONS = (
+    "Proves the static Q1 H-PRINTF/PMU hook, compiler/source contract, exact "
+    "golden-window link symbols, and build inputs for this V13 image. It does "
+    "not prove runtime golden output and is not a performance qualification."
+)
+V13_HPRINTF_CALLSITE_CONTRACT = qual_elf.CallsiteContract(
+    caller_symbol="test_commands",
+    object_text_section=".text.test_commands",
+)
+GOLDEN_WINDOW_BASE = 0x90020CC0
+GOLDEN_WINDOW_LEN = 0x100
 RETAINED_V12_EXECUTABLE_BOOLEAN_KEYS = (
     "retained_v12_stock_vector_exact",
     "retained_v12_nvic_hard_bypass_exact",
@@ -2523,6 +2539,103 @@ def verify_retained_v12_executable_contract(
     return evidence
 
 
+def verify_retained_v12_base_pmu_contract(
+    *,
+    disassembly_text: str,
+    nm_text: str,
+    strings_text: str,
+    relocation_text: str,
+    object_disassembly_text: str,
+    object_sections_text: str,
+    vendor_text: str,
+    interface_header_text: str,
+    compiler_flags: str,
+    preprocessed_text: str,
+    cfg_header_text: str,
+) -> dict[str, object]:
+    """Replay the complete static Q1 H-PRINTF/PMU gate on V13.
+
+    The V13 diagnostic moves the preserved release seam from ``test_u85`` to
+    ``test_commands``.  Everything else is evaluated by the same
+    ``check_pmu_qual`` implementation used by the earlier qualified images.
+    Golden output is a runtime board property and is deliberately not claimed;
+    this static gate proves only the exact linker-defined window consumed by
+    the runtime CRC contract.
+    """
+    try:
+        result = qual_elf.evaluate(
+            mode="Q1",
+            disassembly_text=_normalize_newlines(disassembly_text),
+            nm_text=_normalize_newlines(nm_text),
+            strings_text=_normalize_newlines(strings_text),
+            relocation_text=_normalize_newlines(relocation_text),
+            object_disassembly_text=_normalize_newlines(object_disassembly_text),
+            object_sections_text=_normalize_newlines(object_sections_text),
+            vendor_source_text=_normalize_newlines(vendor_text),
+            interface_header_text=_normalize_newlines(interface_header_text),
+            compiler_flags=compiler_flags,
+            preprocessed_text=_normalize_newlines(preprocessed_text),
+            cfg_header_text=_normalize_newlines(cfg_header_text),
+            callsite_contract=V13_HPRINTF_CALLSITE_CONTRACT,
+        )
+    except qual_elf.GateError as exc:
+        raise fail("retained V12 base PMU gate: %s" % exc)
+
+    def exact_absolute_symbol(name: str, expected: int) -> str:
+        hits = re.findall(
+            r"^([0-9A-Fa-f]+)\s+[Aa]\s+%s$" % re.escape(name),
+            _normalize_newlines(nm_text),
+            re.M,
+        )
+        if len(hits) != 1 or int(hits[0], 16) != expected:
+            raise fail("retained V12 golden-window symbol mismatch: %s" % name)
+        return "0x%08X" % expected
+
+    golden_base = exact_absolute_symbol(
+        "__pmu_diag_golden_window_base__", GOLDEN_WINDOW_BASE
+    )
+    golden_len = exact_absolute_symbol(
+        "__pmu_diag_golden_window_len__", GOLDEN_WINDOW_LEN
+    )
+    hook_keys = (
+        "hook_internal_pre_release_cycle_read_address",
+        "hook_pre_release_pmcr_address",
+        "hook_pre_release_pmcntenset_address",
+        "hook_pre_release_pmccntr_cfg_address",
+        "hook_pre_release_pmovsset_address",
+        "hook_pmu_disable_address",
+        "hook_dsb_address",
+        "hook_pmcr_readback_address",
+        "hook_internal_post_disable_capture_address",
+        "hook_snapshot_valid_latch_address",
+        "hook_return_address",
+    )
+    hook_addresses = [result.get(key) for key in hook_keys]
+    if not all(isinstance(value, int) for value in hook_addresses):
+        raise fail("retained V12 base PMU hook evidence incomplete")
+    if hook_addresses != sorted(hook_addresses) or len(set(hook_addresses)) != len(hook_addresses):
+        raise fail("retained V12 base PMU hook order violated")
+    if not isinstance(result.get("hook_wrapper_call_address"), int):
+        raise fail("retained V12 base PMU wrapper call evidence incomplete")
+
+    return {
+        "variant": VARIANT,
+        "retained_v12_base_pmu_proof_scope": RETAINED_V12_BASE_PMU_PROOF_SCOPE,
+        "retained_v12_base_pmu_limitations": RETAINED_V12_BASE_PMU_LIMITATIONS,
+        "retained_v12_hprintf_callsite_exact": True,
+        "retained_v12_target_object_relocation_exact": True,
+        "retained_v12_pmu_hook_order_exact": True,
+        "retained_v12_no_pmccntr_cfg_write": True,
+        "retained_v12_compiler_contract_exact": True,
+        "golden_window_link_symbols_exact": True,
+        "golden_window_base": golden_base,
+        "golden_window_len": golden_len,
+        "runtime_golden_output_qualified": False,
+        "performance_qualified": False,
+        "base_pmu_result": result,
+    }
+
+
 RUNNER_RECORD_WIRE_PROOF_SCOPE = "linked_image_dwarf_exact_locations"
 RUNNER_RECORD_WIRE_SCOPE_NOTE = (
     "Fails closed unless DWARF yields exact singleton locations for the inlined "
@@ -2942,6 +3055,11 @@ ARTIFACT_HASH_KEYS = (
     "cross_elf_evidence",
     "runner_record_wire_evidence",
     "retained_v12_executable_evidence",
+    "vendor_object",
+    "preprocessed_runner",
+    "interface_header",
+    "regs_header",
+    "retained_v12_base_pmu_evidence",
 )
 BUILD_EVIDENCE_HASH_KEYS = (
     "authoritative_v12_elf",
@@ -2953,6 +3071,11 @@ BUILD_EVIDENCE_HASH_KEYS = (
     "cross_elf_evidence",
     "runner_record_wire_evidence",
     "retained_v12_executable_evidence",
+    "vendor_object",
+    "preprocessed_runner",
+    "interface_header",
+    "regs_header",
+    "retained_v12_base_pmu_evidence",
 )
 
 
@@ -2973,6 +3096,7 @@ def validate_artifact_contract(
     artifact_hashes: dict[str, str] | None = None,
     build_evidence_hashes: dict[str, str] | None = None,
     retained_v12_executable_evidence: dict[str, object] | None = None,
+    retained_v12_base_pmu_evidence: dict[str, object] | None = None,
 ) -> dict[str, object]:
     doc = json.loads(manifest_json)
     exact = {
@@ -3003,10 +3127,33 @@ def validate_artifact_contract(
     if retained_doc.get("runtime_golden_output_qualified") is not False:
         raise fail("manifest must not qualify runtime golden output")
     if retained_doc.get("full_base_pmu_qualified") is not False:
-        raise fail("manifest must not qualify full base PMU")
+        raise fail("retained trace subset must not claim the separate base PMU gate")
     retained_hash = doc.get("retained_v12_executable_evidence_sha256")
     if retained_hash != _sha256_text(_json_bytes(retained_doc)):
         raise fail("manifest retained V12 executable evidence hash mismatch")
+    base_pmu_doc = doc.get("retained_v12_base_pmu_evidence")
+    if not isinstance(base_pmu_doc, dict):
+        raise fail("manifest retained V12 base PMU evidence malformed")
+    if base_pmu_doc.get("retained_v12_base_pmu_proof_scope") != RETAINED_V12_BASE_PMU_PROOF_SCOPE:
+        raise fail("manifest retained V12 base PMU evidence scope mismatch")
+    for key in (
+        "retained_v12_hprintf_callsite_exact",
+        "retained_v12_target_object_relocation_exact",
+        "retained_v12_pmu_hook_order_exact",
+        "retained_v12_no_pmccntr_cfg_write",
+        "retained_v12_compiler_contract_exact",
+        "golden_window_link_symbols_exact",
+    ):
+        if base_pmu_doc.get(key) is not True:
+            raise fail("manifest retained V12 base PMU boolean missing or false: %s" % key)
+    if base_pmu_doc.get("runtime_golden_output_qualified") is not False:
+        raise fail("manifest must not qualify runtime golden output")
+    if base_pmu_doc.get("performance_qualified") is not False:
+        raise fail("manifest must not qualify performance")
+    if doc.get("retained_v12_base_pmu_evidence_sha256") != _sha256_text(
+        _json_bytes(base_pmu_doc)
+    ):
+        raise fail("manifest retained V12 base PMU evidence hash mismatch")
     if doc.get("parser_sha256") != _parser_sha256():
         raise fail("manifest parser_sha256 mismatch")
     artifacts = doc.get("artifact_sha256")
@@ -3053,6 +3200,13 @@ def validate_artifact_contract(
             _json_bytes(retained_v12_executable_evidence)
         ):
             raise fail("manifest retained V12 executable evidence hash mismatch")
+    if retained_v12_base_pmu_evidence is not None:
+        if doc.get("retained_v12_base_pmu_evidence") != retained_v12_base_pmu_evidence:
+            raise fail("manifest retained V12 base PMU evidence mismatch")
+        if doc.get("retained_v12_base_pmu_evidence_sha256") != _sha256_text(
+            _json_bytes(retained_v12_base_pmu_evidence)
+        ):
+            raise fail("manifest retained V12 base PMU evidence hash mismatch")
     if artifact_hashes is not None:
         for key in ARTIFACT_HASH_KEYS:
             if artifacts.get(key) != artifact_hashes.get(key):
@@ -3094,6 +3248,12 @@ def _build_manifest(
     cross_elf_evidence_path: str,
     runner_record_wire_evidence_path: str,
     retained_v12_executable_evidence_path: str,
+    vendor_object_path: str,
+    interface_header_path: str,
+    regs_header_path: str,
+    preprocessed_path: str,
+    compiler_flags: str,
+    retained_v12_base_pmu_evidence_path: str,
 ) -> dict[str, object]:
     if build_id != "0x%08X" % BUILD_ID:
         raise fail("build id mismatch")
@@ -3109,10 +3269,14 @@ def _build_manifest(
         raise fail("vendor generated hash mismatch")
     verify_generated_sources(runner_text, vendor_text)
     header = _run_tool_normalized([readelf_tool, "-h", elf_path])
-    if "Type: EXEC" not in header or "Machine: ARM" not in header:
+    if not re.search(r"^\s*Type:\s+EXEC\b", header, re.M) or not re.search(
+        r"^\s*Machine:\s+ARM\b", header, re.M
+    ):
         raise fail("ELF header is not ARM EXEC")
     authoritative_v12_header = _run_tool_normalized([readelf_tool, "-h", authoritative_v12_elf_path])
-    if "Type: EXEC" not in authoritative_v12_header or "Machine: ARM" not in authoritative_v12_header:
+    if not re.search(r"^\s*Type:\s+EXEC\b", authoritative_v12_header, re.M) or not re.search(
+        r"^\s*Machine:\s+ARM\b", authoritative_v12_header, re.M
+    ):
         raise fail("authoritative V12 ELF header is not ARM EXEC")
     authoritative_v12_sha = _sha256_path(authoritative_v12_elf_path)
     if authoritative_v12_sha != AUTHORITATIVE_V12_SHA256:
@@ -3164,6 +3328,35 @@ def _build_manifest(
     )
     if retained_v12_executable_loaded != retained_v12_executable_expected:
         raise fail("retained V12 executable evidence mismatch")
+    with open(interface_header_path, "r", encoding="utf-8") as handle:
+        interface_header_text = _normalize_newlines(handle.read())
+    with open(regs_header_path, "r", encoding="utf-8") as handle:
+        regs_header_text = _normalize_newlines(handle.read())
+    with open(preprocessed_path, "r", encoding="utf-8") as handle:
+        preprocessed_text = _normalize_newlines(handle.read())
+    retained_v12_base_pmu_loaded = _load_json(retained_v12_base_pmu_evidence_path)
+    retained_v12_base_pmu_expected = verify_retained_v12_base_pmu_contract(
+        disassembly_text=v13_objdump_text,
+        nm_text=v13_nm_text,
+        strings_text=_run_tool_normalized([objdump_tool, "-s", elf_path]),
+        relocation_text=_run_tool_normalized([objdump_tool, "-r", vendor_object_path]),
+        object_disassembly_text=_run_tool_normalized(
+            [
+                objdump_tool,
+                "-drz",
+                "--section=" + V13_HPRINTF_CALLSITE_CONTRACT.object_text_section,
+                vendor_object_path,
+            ]
+        ),
+        object_sections_text=_run_tool_normalized([objdump_tool, "-s", vendor_object_path]),
+        vendor_text=vendor_text,
+        interface_header_text=interface_header_text,
+        compiler_flags=compiler_flags,
+        preprocessed_text=preprocessed_text,
+        cfg_header_text=regs_header_text,
+    )
+    if retained_v12_base_pmu_loaded != retained_v12_base_pmu_expected:
+        raise fail("retained V12 base PMU evidence mismatch")
     artifact_hashes = {
         "authoritative_v12_elf": authoritative_v12_sha,
         "elf": _sha256_path(elf_path),
@@ -3181,6 +3374,11 @@ def _build_manifest(
         "cross_elf_evidence": _sha256_path(cross_elf_evidence_path),
         "runner_record_wire_evidence": _sha256_path(runner_record_wire_evidence_path),
         "retained_v12_executable_evidence": _sha256_path(retained_v12_executable_evidence_path),
+        "vendor_object": _sha256_path(vendor_object_path),
+        "preprocessed_runner": _sha256_path(preprocessed_path),
+        "interface_header": _sha256_path(interface_header_path),
+        "regs_header": _sha256_path(regs_header_path),
+        "retained_v12_base_pmu_evidence": _sha256_path(retained_v12_base_pmu_evidence_path),
     }
     build_evidence_hashes = {
         key: artifact_hashes[key]
@@ -3211,6 +3409,12 @@ def _build_manifest(
         ),
         "retained_v12_executable_proof_scope": RETAINED_V12_EXECUTABLE_PROOF_SCOPE,
         "retained_v12_executable_limitations": RETAINED_V12_EXECUTABLE_LIMITATIONS,
+        "retained_v12_base_pmu_evidence": retained_v12_base_pmu_loaded,
+        "retained_v12_base_pmu_evidence_sha256": _sha256_text(
+            _json_bytes(retained_v12_base_pmu_loaded)
+        ),
+        "retained_v12_base_pmu_proof_scope": RETAINED_V12_BASE_PMU_PROOF_SCOPE,
+        "retained_v12_base_pmu_limitations": RETAINED_V12_BASE_PMU_LIMITATIONS,
     }
     manifest_seed = dict(doc)
     manifest_seed["manifest_sha256"] = "0" * 64
@@ -3222,6 +3426,7 @@ def _build_manifest(
         artifact_hashes,
         build_evidence_hashes,
         retained_v12_executable_loaded,
+        retained_v12_base_pmu_loaded,
     )
     return doc
 
@@ -3248,6 +3453,12 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument("--cross-elf-evidence", required=True)
     parser.add_argument("--runner-record-wire-evidence", required=True)
     parser.add_argument("--retained-v12-executable-evidence", required=True)
+    parser.add_argument("--vendor-object", required=True)
+    parser.add_argument("--interface-header", required=True)
+    parser.add_argument("--regs-header", required=True)
+    parser.add_argument("--preprocessed", required=True)
+    parser.add_argument("--cflags", required=True)
+    parser.add_argument("--retained-v12-base-pmu-evidence", required=True)
     parser.add_argument("--manifest-out", required=True)
     return parser
 
@@ -3279,6 +3490,12 @@ def main(argv: list[str] | None = None) -> int:
             cross_elf_evidence_path=args.cross_elf_evidence,
             runner_record_wire_evidence_path=args.runner_record_wire_evidence,
             retained_v12_executable_evidence_path=args.retained_v12_executable_evidence,
+            vendor_object_path=args.vendor_object,
+            interface_header_path=args.interface_header,
+            regs_header_path=args.regs_header,
+            preprocessed_path=args.preprocessed,
+            compiler_flags=args.cflags,
+            retained_v12_base_pmu_evidence_path=args.retained_v12_base_pmu_evidence,
         )
     except Exception as exc:
         raise SystemExit(str(exc))

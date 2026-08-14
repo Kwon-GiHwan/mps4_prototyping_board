@@ -189,9 +189,17 @@ publication, the H-PRINTF seam, and terminal release. The CLI recomputes the
 artifact from the canonical generated sources plus the exact V13 objdump/nm
 sidecars and refuses a missing, forged, stale, or hash-mismatched artifact.
 
-This is an exact retained subset, not a claim that all V12 qualification has
-moved to V13. In particular it does **not** qualify runtime golden output or
-the full base-PMU contract; those limitations are explicit false fields in the
-evidence. The separate generated-source NVIC screen remains a bounded static
+This trace artifact is an exact retained subset, not by itself a claim that all
+V12 qualification has moved to V13. Its `full_base_pmu_qualified=false` field
+describes that artifact's scope. The build graph separately emits and
+hash-binds `retained_v12_base_pmu_evidence.json`, which replays the complete
+static Q1 H-PRINTF/PMU gate on the V13 ELF, vendor object, generated vendor,
+preprocessed runner, interface/register headers, and exact compiler flags. It
+also proves the golden-window linker symbols
+`__pmu_diag_golden_window_base__=0x90020CC0` and
+`__pmu_diag_golden_window_len__=0x100`.
+
+Neither static artifact qualifies runtime golden output or performance; those
+remain explicit false fields. The separate generated-source NVIC screen remains a bounded static
 refusal of the enable forms listed above and is not a complete proof that the
 V13 image contains no NVIC enable.
