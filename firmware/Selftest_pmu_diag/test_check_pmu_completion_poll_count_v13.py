@@ -175,44 +175,60 @@ V12_NM_OK = """31002000 T v12_poll_completion
 
 V13_NM_OK = """32002040 T v13_poll_completion
 32003020 T u85_irq_handler
+32004200 T NVIC_EnableIRQ
 """
 
 V12_OBJDUMP_OK = """31002000 <v12_poll_completion>:
-31002000:   4b08        ldr     r3, [pc, #32]   ; V12_HELPER_STATUS_PTR
-31002002:   2210        movs    r2, #16
-31002004:   f8d3 4000   ldr.w   r4, [r3]        ; V12_HELPER_STATUS_READ
-31002008:   f014 0f02   tst.w   r4, #2          ; V12_HELPER_STATUS_TEST
-3100200c:   d105        bne.n   3100201a <v12_poll_completion+0x1a>
-3100200e:   3a01        subs    r2, #1
-31002010:   3901        subs    r1, #1
-31002012:   d1f7        bne.n   31002004 <v12_poll_completion+0x04>
-31002014:   2000        movs    r0, #0
-31002016:   4770        bx      lr
-3100201a:   4804        ldr     r0, [pc, #16]   ; V12_P1
-3100201c:   4904        ldr     r1, [pc, #16]   ; V12_P2
-3100201e:   4620        mov     r0, r4
-31002020:   4770        bx      lr
+31002000:   f242 7210   movw    r2, #10000      ; V12_FAILED_POLL_REMAINING_INIT
+31002004:   f242 7110   movw    r1, #10000      ; V12_TIMEOUT_INIT
+31002008:   4f0b        ldr     r7, [pc, #44]   ; V12_HELPER_STATUS_PTR
+3100200a:   bf00        nop
+3100200c:   f8d7 4000   ldr.w   r4, [r7]        ; V12_HELPER_STATUS_READ
+31002010:   f014 0f02   tst.w   r4, #2          ; V12_HELPER_STATUS_TEST
+31002014:   d105        bne.n   31002022 <v12_poll_completion+0x22>
+31002016:   3a01        subs    r2, #1          ; V12_FAILED_POLL_DECREMENT
+31002018:   3901        subs    r1, #1          ; V12_TIMEOUT_DECREMENT
+3100201a:   d1f7        bne.n   3100200c <v12_poll_completion+0x0c>
+3100201c:   2000        movs    r0, #0
+3100201e:   4770        bx      lr
+31002022:   4e08        ldr     r6, [pc, #32]   ; V12_DWT_CYCCNT_PTR
+31002024:   6830        ldr     r0, [r6]        ; V12_P1_DWT_READ
+31002026:   4d08        ldr     r5, [pc, #32]   ; V12_P1_STORE_PTR
+31002028:   6028        str     r0, [r5]        ; V12_P1_STORE
+3100202a:   6830        ldr     r0, [r6]        ; V12_P2_DWT_READ
+3100202c:   4d08        ldr     r5, [pc, #32]   ; V12_P2_STORE_PTR
+3100202e:   6028        str     r0, [r5]        ; V12_P2_STORE
+31002030:   4620        mov     r0, r4
+31002032:   4770        bx      lr
 
 31003000 <u85_irq_handler>:
 31003000:   4770        bx      lr
 """
 
 V13_OBJDUMP_OK = """32002040 <v13_poll_completion>:
-32002040:   4f09        ldr     r7, [pc, #36]   ; V13_HELPER_STATUS_PTR
-32002042:   2630        movs    r6, #48
-32002044:   f8d7 5000   ldr.w   r5, [r7]        ; V13_HELPER_STATUS_READ
-32002048:   f015 0f02   tst.w   r5, #2          ; V13_HELPER_STATUS_TEST
-3200204c:   d106        bne.n   3200205c <v13_poll_completion+0x1c>
-3200204e:   3e01        subs    r6, #1
-32002050:   3b01        subs    r3, #1
-32002052:   d1f7        bne.n   32002044 <v13_poll_completion+0x04>
-32002054:   2000        movs    r0, #0
-32002056:   4770        bx      lr
-3200205c:   4804        ldr     r0, [pc, #16]   ; V13_P1
-3200205e:   4904        ldr     r1, [pc, #16]   ; V13_P2
-32002060:   601e        str     r6, [r3]        ; V13_REMAINING_STORE
-32002062:   4628        mov     r0, r5
-32002064:   4770        bx      lr
+32002040:   f242 7210   movw    r2, #10000      ; V13_FAILED_POLL_REMAINING_INIT
+32002044:   f242 7110   movw    r1, #10000      ; V13_BACK_EDGE_INDUCTION_INIT
+32002048:   4f0c        ldr     r7, [pc, #48]   ; V13_HELPER_STATUS_PTR
+3200204a:   bf00        nop
+3200204c:   f8d7 4000   ldr.w   r4, [r7]        ; V13_HELPER_STATUS_READ
+32002050:   f014 0f02   tst.w   r4, #2          ; V13_HELPER_STATUS_TEST
+32002054:   d105        bne.n   32002062 <v13_poll_completion+0x22>
+32002056:   3a01        subs    r2, #1          ; V13_FAILED_POLL_SHADOW_DECREMENT
+32002058:   3901        subs    r1, #1          ; V13_BACK_EDGE_INDUCTION_DECREMENT
+3200205a:   d1f7        bne.n   3200204c <v13_poll_completion+0x0c>
+3200205c:   2000        movs    r0, #0
+3200205e:   4770        bx      lr
+32002062:   4e09        ldr     r6, [pc, #36]   ; V13_DWT_CYCCNT_PTR
+32002064:   6830        ldr     r0, [r6]        ; V13_P1_DWT_READ
+32002066:   4d09        ldr     r5, [pc, #36]   ; V13_P1_STORE_PTR
+32002068:   6028        str     r0, [r5]        ; V13_P1_STORE
+3200206a:   6830        ldr     r0, [r6]        ; V13_P2_DWT_READ
+3200206c:   4d09        ldr     r5, [pc, #36]   ; V13_P2_STORE_PTR
+3200206e:   6028        str     r0, [r5]        ; V13_P2_STORE
+32002070:   4d09        ldr     r5, [pc, #36]   ; V13_REMAINING_STORE_PTR
+32002072:   6029        str     r1, [r5]        ; V13_REMAINING_STORE
+32002074:   4620        mov     r0, r4
+32002076:   4770        bx      lr
 
 32003020 <u85_irq_handler>:
 32003020:   4770        bx      lr
@@ -225,44 +241,84 @@ def _replace_once_exact(text: str, old: str, new: str, label: str) -> str:
     return replace_once(text, old, new, label)
 
 
+def _replace_block(text: str, old: str, new: str, label: str) -> str:
+    return _replace_once_exact(text, old, new, label)
+
+
 def _elf_negative_fixtures() -> dict[str, dict[str, str]]:
     return {
         "extra_loop_mov": {
-            "objdump": _replace_once_exact(
+            "objdump": _replace_block(
                 V13_OBJDUMP_OK,
-                "3200204c:   d106        bne.n   3200205c <v13_poll_completion+0x1c>\n",
-                "3200204c:   d106        bne.n   3200205e <v13_poll_completion+0x1e>\n"
-                "3200204e:   4629        mov     r1, r5        ; V13_EXTRA_LOOP_MOV\n",
+                "32002054:   d105        bne.n   32002062 <v13_poll_completion+0x22>\n"
+                "32002056:   3a01        subs    r2, #1          ; V13_FAILED_POLL_SHADOW_DECREMENT\n"
+                "32002058:   3901        subs    r1, #1          ; V13_BACK_EDGE_INDUCTION_DECREMENT\n"
+                "3200205a:   d1f7        bne.n   3200204c <v13_poll_completion+0x0c>\n"
+                "3200205c:   2000        movs    r0, #0\n"
+                "3200205e:   4770        bx      lr\n"
+                "32002062:   4e09        ldr     r6, [pc, #36]   ; V13_DWT_CYCCNT_PTR\n",
+                "32002054:   d106        bne.n   32002064 <v13_poll_completion+0x24>\n"
+                "32002056:   4629        mov     r1, r5          ; V13_EXTRA_LOOP_MOV\n"
+                "32002058:   3a01        subs    r2, #1          ; V13_FAILED_POLL_SHADOW_DECREMENT\n"
+                "3200205a:   3901        subs    r1, #1          ; V13_BACK_EDGE_INDUCTION_DECREMENT\n"
+                "3200205c:   d1f6        bne.n   3200204c <v13_poll_completion+0x0c>\n"
+                "3200205e:   2000        movs    r0, #0\n"
+                "32002060:   4770        bx      lr\n"
+                "32002064:   4e09        ldr     r6, [pc, #36]   ; V13_DWT_CYCCNT_PTR\n",
                 "extra-loop-mov",
             ),
             "nm": V13_NM_OK,
             "expected": "extra per-iteration instruction",
         },
         "extra_loop_store": {
-            "objdump": _replace_once_exact(
+            "objdump": _replace_block(
                 V13_OBJDUMP_OK,
-                "3200204c:   d106        bne.n   3200205c <v13_poll_completion+0x1c>\n",
-                "3200204c:   d106        bne.n   3200205e <v13_poll_completion+0x1e>\n"
-                "3200204e:   6019        str     r1, [r3]      ; V13_EXTRA_LOOP_STORE\n",
+                "32002054:   d105        bne.n   32002062 <v13_poll_completion+0x22>\n"
+                "32002056:   3a01        subs    r2, #1          ; V13_FAILED_POLL_SHADOW_DECREMENT\n"
+                "32002058:   3901        subs    r1, #1          ; V13_BACK_EDGE_INDUCTION_DECREMENT\n"
+                "3200205a:   d1f7        bne.n   3200204c <v13_poll_completion+0x0c>\n"
+                "3200205c:   2000        movs    r0, #0\n"
+                "3200205e:   4770        bx      lr\n"
+                "32002062:   4e09        ldr     r6, [pc, #36]   ; V13_DWT_CYCCNT_PTR\n",
+                "32002054:   d106        bne.n   32002064 <v13_poll_completion+0x24>\n"
+                "32002056:   6019        str     r1, [r3]        ; V13_EXTRA_LOOP_STORE\n"
+                "32002058:   3a01        subs    r2, #1          ; V13_FAILED_POLL_SHADOW_DECREMENT\n"
+                "3200205a:   3901        subs    r1, #1          ; V13_BACK_EDGE_INDUCTION_DECREMENT\n"
+                "3200205c:   d1f6        bne.n   3200204c <v13_poll_completion+0x0c>\n"
+                "3200205e:   2000        movs    r0, #0\n"
+                "32002060:   4770        bx      lr\n"
+                "32002064:   4e09        ldr     r6, [pc, #36]   ; V13_DWT_CYCCNT_PTR\n",
                 "extra-loop-store",
             ),
             "nm": V13_NM_OK,
             "expected": "extra per-iteration store",
         },
         "extra_loop_call": {
-            "objdump": _replace_once_exact(
+            "objdump": _replace_block(
                 V13_OBJDUMP_OK,
-                "3200204c:   d106        bne.n   3200205c <v13_poll_completion+0x1c>\n",
-                "3200204c:   d106        bne.n   3200205e <v13_poll_completion+0x1e>\n"
-                "3200204e:   f7ff fffe   bl      32001000 <helper_bookkeeping> ; V13_EXTRA_LOOP_CALL\n",
+                "32002054:   d105        bne.n   32002062 <v13_poll_completion+0x22>\n"
+                "32002056:   3a01        subs    r2, #1          ; V13_FAILED_POLL_SHADOW_DECREMENT\n"
+                "32002058:   3901        subs    r1, #1          ; V13_BACK_EDGE_INDUCTION_DECREMENT\n"
+                "3200205a:   d1f7        bne.n   3200204c <v13_poll_completion+0x0c>\n"
+                "3200205c:   2000        movs    r0, #0\n"
+                "3200205e:   4770        bx      lr\n"
+                "32002062:   4e09        ldr     r6, [pc, #36]   ; V13_DWT_CYCCNT_PTR\n",
+                "32002054:   d106        bne.n   32002066 <v13_poll_completion+0x26>\n"
+                "32002056:   f7ff ffd3   bl      32002000 <helper_bookkeeping> ; V13_EXTRA_LOOP_CALL\n"
+                "3200205a:   3a01        subs    r2, #1          ; V13_FAILED_POLL_SHADOW_DECREMENT\n"
+                "3200205c:   3901        subs    r1, #1          ; V13_BACK_EDGE_INDUCTION_DECREMENT\n"
+                "3200205e:   d1f5        bne.n   3200204c <v13_poll_completion+0x0c>\n"
+                "32002060:   2000        movs    r0, #0\n"
+                "32002062:   4770        bx      lr\n"
+                "32002066:   4e09        ldr     r6, [pc, #36]   ; V13_DWT_CYCCNT_PTR\n",
                 "extra-loop-call",
             ),
-            "nm": V13_NM_OK + "32001000 T helper_bookkeeping\n",
+            "nm": V13_NM_OK + "32002000 T helper_bookkeeping\n",
             "expected": "extra per-iteration call",
         },
         "missing_failed_decrement": {
             "objdump": V13_OBJDUMP_OK.replace(
-                "32002050:   3b01        subs    r3, #1\n",
+                "32002056:   3a01        subs    r2, #1          ; V13_FAILED_POLL_SHADOW_DECREMENT\n",
                 "",
                 1,
             ),
@@ -272,9 +328,11 @@ def _elf_negative_fixtures() -> dict[str, dict[str, str]]:
         "third_failed_decrement": {
             "objdump": _replace_once_exact(
                 V13_OBJDUMP_OK,
-                "32002050:   3b01        subs    r3, #1\n",
-                "32002050:   3b01        subs    r3, #1\n"
-                "32002052:   3d01        subs    r5, #1        ; V13_THIRD_DECREMENT\n",
+                "32002056:   3a01        subs    r2, #1          ; V13_FAILED_POLL_SHADOW_DECREMENT\n"
+                "32002058:   3901        subs    r1, #1          ; V13_BACK_EDGE_INDUCTION_DECREMENT\n",
+                "32002056:   3a01        subs    r2, #1          ; V13_FAILED_POLL_SHADOW_DECREMENT\n"
+                "32002058:   3901        subs    r1, #1          ; V13_BACK_EDGE_INDUCTION_DECREMENT\n"
+                "3200205a:   3d01        subs    r5, #1          ; V13_THIRD_DECREMENT\n",
                 "third-decrement",
             ),
             "nm": V13_NM_OK,
@@ -282,19 +340,39 @@ def _elf_negative_fixtures() -> dict[str, dict[str, str]]:
         },
         "wrong_back_edge": {
             "objdump": V13_OBJDUMP_OK.replace(
-                "32002052:   d1f7        bne.n   32002044 <v13_poll_completion+0x04>\n",
-                "32002052:   d1f7        bne.n   32002040 <v13_poll_completion+0x00> ; V13_WRONG_BACK_EDGE\n",
+                "3200205a:   d1f7        bne.n   3200204c <v13_poll_completion+0x0c>\n",
+                "3200205a:   d1f7        bne.n   32002048 <v13_poll_completion+0x08> ; V13_WRONG_BACK_EDGE\n",
                 1,
             ),
             "nm": V13_NM_OK,
             "expected": "conditional loop back-edge",
         },
         "second_status_read": {
-            "objdump": _replace_once_exact(
+            "objdump": _replace_block(
                 V13_OBJDUMP_OK,
-                "3200205e:   4904        ldr     r1, [pc, #16]   ; V13_P2\n",
-                "3200205e:   4904        ldr     r1, [pc, #16]   ; V13_P2\n"
-                "32002060:   f8d7 4000   ldr.w   r4, [r7]        ; V13_SECOND_STATUS_READ\n",
+                "32002062:   4e09        ldr     r6, [pc, #36]   ; V13_DWT_CYCCNT_PTR\n"
+                "32002064:   6830        ldr     r0, [r6]        ; V13_P1_DWT_READ\n"
+                "32002066:   4d09        ldr     r5, [pc, #36]   ; V13_P1_STORE_PTR\n"
+                "32002068:   6028        str     r0, [r5]        ; V13_P1_STORE\n"
+                "3200206a:   6830        ldr     r0, [r6]        ; V13_P2_DWT_READ\n"
+                "3200206c:   4d09        ldr     r5, [pc, #36]   ; V13_P2_STORE_PTR\n"
+                "3200206e:   6028        str     r0, [r5]        ; V13_P2_STORE\n"
+                "32002070:   4d09        ldr     r5, [pc, #36]   ; V13_REMAINING_STORE_PTR\n"
+                "32002072:   6029        str     r1, [r5]        ; V13_REMAINING_STORE\n"
+                "32002074:   4620        mov     r0, r4\n"
+                "32002076:   4770        bx      lr\n",
+                "32002062:   4e09        ldr     r6, [pc, #36]   ; V13_DWT_CYCCNT_PTR\n"
+                "32002064:   6830        ldr     r0, [r6]        ; V13_P1_DWT_READ\n"
+                "32002066:   4d09        ldr     r5, [pc, #36]   ; V13_P1_STORE_PTR\n"
+                "32002068:   6028        str     r0, [r5]        ; V13_P1_STORE\n"
+                "3200206a:   6830        ldr     r0, [r6]        ; V13_P2_DWT_READ\n"
+                "3200206c:   4d09        ldr     r5, [pc, #36]   ; V13_P2_STORE_PTR\n"
+                "3200206e:   6028        str     r0, [r5]        ; V13_P2_STORE\n"
+                "32002070:   f8d7 4000   ldr.w   r4, [r7]        ; V13_SECOND_STATUS_READ\n"
+                "32002074:   4d09        ldr     r5, [pc, #36]   ; V13_REMAINING_STORE_PTR\n"
+                "32002076:   6029        str     r1, [r5]        ; V13_REMAINING_STORE\n"
+                "32002078:   4620        mov     r0, r4\n"
+                "3200207a:   4770        bx      lr\n",
                 "second-status-read",
             ),
             "nm": V13_NM_OK,
@@ -302,8 +380,8 @@ def _elf_negative_fixtures() -> dict[str, dict[str, str]]:
         },
         "wrong_status_address": {
             "objdump": V13_OBJDUMP_OK.replace(
-                "; V13_HELPER_STATUS_PTR",
-                "; V13_HELPER_WRONG_STATUS_PTR",
+                "32002048:   4f0c        ldr     r7, [pc, #48]   ; V13_HELPER_STATUS_PTR\n",
+                "32002048:   4f0c        ldr     r7, [pc, #48]   ; V13_HELPER_STATUS_PTR_WRONG_MMIO\n",
                 1,
             ),
             "nm": V13_NM_OK,
@@ -311,10 +389,16 @@ def _elf_negative_fixtures() -> dict[str, dict[str, str]]:
         },
         "store_before_p2": {
             "objdump": V13_OBJDUMP_OK.replace(
-                "3200205e:   4904        ldr     r1, [pc, #16]   ; V13_P2\n"
-                "32002060:   601e        str     r6, [r3]        ; V13_REMAINING_STORE\n",
-                "3200205e:   601e        str     r6, [r3]        ; V13_REMAINING_STORE\n"
-                "32002060:   4904        ldr     r1, [pc, #16]   ; V13_P2\n",
+                "3200206a:   6830        ldr     r0, [r6]        ; V13_P2_DWT_READ\n"
+                "3200206c:   4d09        ldr     r5, [pc, #36]   ; V13_P2_STORE_PTR\n"
+                "3200206e:   6028        str     r0, [r5]        ; V13_P2_STORE\n"
+                "32002070:   4d09        ldr     r5, [pc, #36]   ; V13_REMAINING_STORE_PTR\n"
+                "32002072:   6029        str     r1, [r5]        ; V13_REMAINING_STORE\n",
+                "3200206a:   4d09        ldr     r5, [pc, #36]   ; V13_REMAINING_STORE_PTR\n"
+                "3200206c:   6029        str     r1, [r5]        ; V13_REMAINING_STORE\n"
+                "3200206e:   6830        ldr     r0, [r6]        ; V13_P2_DWT_READ\n"
+                "32002070:   4d09        ldr     r5, [pc, #36]   ; V13_P2_STORE_PTR\n"
+                "32002072:   6028        str     r0, [r5]        ; V13_P2_STORE\n",
                 1,
             ),
             "nm": V13_NM_OK,
@@ -322,9 +406,11 @@ def _elf_negative_fixtures() -> dict[str, dict[str, str]]:
         },
         "constant_store": {
             "objdump": V13_OBJDUMP_OK.replace(
-                "32002060:   601e        str     r6, [r3]        ; V13_REMAINING_STORE\n",
-                "32002060:   2201        movs    r2, #1\n"
-                "32002062:   601a        str     r2, [r3]        ; V13_REMAINING_STORE_CONSTANT\n",
+                "32002070:   4d09        ldr     r5, [pc, #36]   ; V13_REMAINING_STORE_PTR\n"
+                "32002072:   6029        str     r1, [r5]        ; V13_REMAINING_STORE\n",
+                "32002070:   4d09        ldr     r5, [pc, #36]   ; V13_REMAINING_STORE_PTR\n"
+                "32002072:   2101        movs    r1, #1\n"
+                "32002074:   6029        str     r1, [r5]        ; V13_REMAINING_STORE_CONSTANT\n",
                 1,
             ),
             "nm": V13_NM_OK,
@@ -332,9 +418,11 @@ def _elf_negative_fixtures() -> dict[str, dict[str, str]]:
         },
         "recomputed_store": {
             "objdump": V13_OBJDUMP_OK.replace(
-                "32002060:   601e        str     r6, [r3]        ; V13_REMAINING_STORE\n",
-                "32002060:   f1c3 03ff   rsb     r3, r3, #0x2711 ; V13_RECOMPUTE\n"
-                "32002064:   601b        str     r3, [r3]        ; V13_REMAINING_STORE_RECOMPUTED\n",
+                "32002070:   4d09        ldr     r5, [pc, #36]   ; V13_REMAINING_STORE_PTR\n"
+                "32002072:   6029        str     r1, [r5]        ; V13_REMAINING_STORE\n",
+                "32002070:   f1c1 0120   sub.w   r1, r1, #32      ; V13_RECOMPUTE_REMAINING\n"
+                "32002074:   4d09        ldr     r5, [pc, #36]   ; V13_REMAINING_STORE_PTR\n"
+                "32002076:   6029        str     r1, [r5]        ; V13_REMAINING_STORE_RECOMPUTED\n",
                 1,
             ),
             "nm": V13_NM_OK,
@@ -342,11 +430,12 @@ def _elf_negative_fixtures() -> dict[str, dict[str, str]]:
         },
         "timeout_reaches_store": {
             "objdump": V13_OBJDUMP_OK.replace(
-                "32002054:   2000        movs    r0, #0\n"
-                "32002056:   4770        bx      lr\n",
-                "32002054:   601e        str     r6, [r3]        ; V13_TIMEOUT_STORE\n"
-                "32002056:   2000        movs    r0, #0\n"
-                "32002058:   4770        bx      lr\n",
+                "3200205c:   2000        movs    r0, #0\n"
+                "3200205e:   4770        bx      lr\n",
+                "3200205c:   4d09        ldr     r5, [pc, #36]   ; V13_REMAINING_STORE_PTR\n"
+                "3200205e:   6029        str     r1, [r5]        ; V13_TIMEOUT_STORE\n"
+                "32002060:   2000        movs    r0, #0\n"
+                "32002062:   4770        bx      lr\n",
                 1,
             ),
             "nm": V13_NM_OK,
@@ -354,9 +443,9 @@ def _elf_negative_fixtures() -> dict[str, dict[str, str]]:
         },
         "push_pop_stack_frame": {
             "objdump": V13_OBJDUMP_OK.replace(
-                "32002040:   4f09        ldr     r7, [pc, #36]   ; V13_HELPER_STATUS_PTR\n",
+                "32002040:   f242 7210   movw    r2, #10000      ; V13_FAILED_POLL_REMAINING_INIT\n",
                 "32002040:   b510        push    {r4, lr}        ; V13_PUSH\n"
-                "32002042:   4f09        ldr     r7, [pc, #36]   ; V13_HELPER_STATUS_PTR\n",
+                "32002042:   f242 7210   movw    r2, #10000      ; V13_FAILED_POLL_REMAINING_INIT\n",
                 1,
             ),
             "nm": V13_NM_OK,
@@ -634,11 +723,11 @@ def validate_local_fixtures():
     ):
         if marker not in V12_OBJDUMP_OK and marker not in V13_OBJDUMP_OK:
             raise fail("synthetic objdump fixture missing marker: %s" % marker)
-    if V12_OBJDUMP_OK.count("ldr.w   r4, [r3]        ; V12_HELPER_STATUS_READ") != 1:
+    if V12_OBJDUMP_OK.count("ldr.w   r4, [r7]        ; V12_HELPER_STATUS_READ") != 1:
         raise fail("V12 synthetic objdump must expose exactly one STATUS read site")
-    if V13_OBJDUMP_OK.count("ldr.w   r5, [r7]        ; V13_HELPER_STATUS_READ") != 1:
+    if V13_OBJDUMP_OK.count("ldr.w   r4, [r7]        ; V13_HELPER_STATUS_READ") != 1:
         raise fail("V13 synthetic objdump must expose exactly one STATUS read site")
-    if V13_OBJDUMP_OK.count("str     r6, [r3]        ; V13_REMAINING_STORE") != 1:
+    if V13_OBJDUMP_OK.count("str     r1, [r5]        ; V13_REMAINING_STORE") != 1:
         raise fail("V13 synthetic objdump must expose exactly one post-P2 remaining store")
     if V13_OBJDUMP_OK.find("V13_P2") > V13_OBJDUMP_OK.find("V13_REMAINING_STORE"):
         raise fail("V13 synthetic objdump must keep remaining store after P2")
