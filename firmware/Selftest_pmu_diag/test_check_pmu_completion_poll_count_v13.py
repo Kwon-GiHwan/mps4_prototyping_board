@@ -213,7 +213,8 @@ def _negative_vendor_fixtures() -> dict[str, dict[str, str]]:
         }
     }
 """
-    per_iteration_store = """        pmu_completion_poll_v13_t_poll_remaining_at_success = i;
+    per_iteration_store = """        ++i;
+        pmu_completion_poll_v13_t_poll_remaining_at_success = i;
         status = *status_reg;
 """
     return {
@@ -251,6 +252,26 @@ def _negative_vendor_fixtures() -> dict[str, dict[str, str]]:
         "recomputed_remaining": {
             "vendor": replace_once(
                 VENDOR_V13_OK,
+                "    uint32_t remaining = 10000U;\n"
+                "    uint32_t status;\n",
+                "    uint32_t remaining = 10000U;\n"
+                "    uint32_t i = 0U;\n"
+                "    uint32_t status;\n",
+                "recomputed-remaining-counter",
+            ),
+            "expected": "remaining must dataflow from failed-poll countdown live-out",
+        },
+        "recomputed_remaining_store": {
+            "vendor": replace_once(
+                replace_once(
+                    VENDOR_V13_OK,
+                    "    uint32_t remaining = 10000U;\n"
+                    "    uint32_t status;\n",
+                    "    uint32_t remaining = 10000U;\n"
+                    "    uint32_t i = 0U;\n"
+                    "    uint32_t status;\n",
+                    "recomputed-remaining-counter",
+                ),
                 "            pmu_completion_poll_v13_t_poll_remaining_at_success = remaining;\n",
                 "            pmu_completion_poll_v13_t_poll_remaining_at_success = (10000U - i);\n",
                 "recomputed-remaining",
@@ -298,7 +319,15 @@ def _negative_vendor_fixtures() -> dict[str, dict[str, str]]:
         },
         "per_iteration_increment_store": {
             "vendor": replace_once(
-                VENDOR_V13_OK,
+                replace_once(
+                    VENDOR_V13_OK,
+                    "    uint32_t remaining = 10000U;\n"
+                    "    uint32_t status;\n",
+                    "    uint32_t remaining = 10000U;\n"
+                    "    uint32_t i = 0U;\n"
+                    "    uint32_t status;\n",
+                    "per-iteration-counter",
+                ),
                 "        status = *status_reg;\n",
                 per_iteration_store,
                 "per-iteration-store",
