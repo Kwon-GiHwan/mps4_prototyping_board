@@ -81,8 +81,8 @@ static inline uint32_t wait_for_completion(void)
 }
 """
 
-RUNNER_SHA256 = sha256_text(RUNNER_RAW_STOCK)
-VENDOR_SHA256 = sha256_text(VENDOR_RAW_STOCK)
+RUNNER_SHA256 = "57b3028bc820825ce7e560e0979e36a4c10acd9cfff55408d2985132ca384b4c"
+VENDOR_SHA256 = "053d15bd81ce35f32b18d6d876ac501db41d97db141ab1fbe8fb7b70a564dceb"
 
 RUNNER_V12_GENERATED = """#if defined(PMU_QUAL_SCHEMA_V12)
 #define PMU_DIAG_SCHEMA_VERSION 12U
@@ -116,9 +116,11 @@ RUNNER_V13_OK = """#if defined(PMU_QUAL_SCHEMA_V13)
 #define PMU_COMPLETION_POLL_DIAG_V13_BUILD_ID 0x33314950U
 #define V13_POLL_SUCCESS 1U
 #define V13_POLL_TIMEOUT 2U
+#define PMU_DIAG_FIELD_COUNT 101U
 #endif
 
 static pmu_diag_snapshot_t pmu_qual_internal_post_disable;
+extern volatile uint32_t pmu_completion_poll_v13_t_poll_remaining_at_success;
 
 void test_entry(v13_t* d)
 {
@@ -126,6 +128,11 @@ void test_entry(v13_t* d)
     d->poll_result = V13_POLL_TIMEOUT;
     d->poll_status_at_success = 0U;
     d->poll_remaining_at_success = 0xFFFFFFFFU;
+}
+
+void emit_record(v13_t* d, uint32_t *out_words)
+{
+    out_words[100] = d->poll_remaining_at_success;
 }
 """
 
@@ -174,7 +181,7 @@ def _negative_vendor_fixtures() -> dict[str, dict[str, str]]:
             status = *status_reg;
             pmu_completion_poll_v13_t_poll_remaining_at_success = (10000U - i);
 """
-    extra_mmio = """        (void)NVIC_GetPendingIRQ(NPU0_IRQn);
+    extra_mmio = """        (void)*(volatile uint32_t *)(uintptr_t)(U85_BASE_ADDRESS + NPU_REG_CMD);
         status = *status_reg;
 """
     unrelated_counter = """    uint32_t remaining = 10000U;
@@ -318,8 +325,18 @@ def validate_local_fixtures():
         raise fail("positive vendor fixture must have exactly one helper loop")
     if required_suffix not in VENDOR_V13_OK:
         raise fail("positive vendor fixture lost V13 success suffix")
+    if sha256_text(RUNNER_RAW_STOCK) != RUNNER_SHA256:
+        raise fail("pinned runner raw SHA fixture drifted")
+    if sha256_text(VENDOR_RAW_STOCK) != VENDOR_SHA256:
+        raise fail("pinned vendor raw SHA fixture drifted")
     if RUNNER_V13_OK.count("poll_remaining_at_success = 0xFFFFFFFFU;") != 1:
         raise fail("runner fixture must reset invalid remaining sentinel exactly once")
+    if RUNNER_V13_OK.count("extern volatile uint32_t pmu_completion_poll_v13_t_poll_remaining_at_success;") != 1:
+        raise fail("runner fixture must declare remaining field exactly once")
+    if RUNNER_V13_OK.count("out_words[100] = d->poll_remaining_at_success;") != 1:
+        raise fail("runner fixture must serialize remaining wire word exactly once")
+    if RUNNER_V13_OK.count("#define PMU_DIAG_FIELD_COUNT 101U") != 1:
+        raise fail("runner fixture must pin field count for appended wire word exactly once")
     if RUNNER_V12_GENERATED.count("PMU_COMPLETION_POLL_DIAG_V12_BUILD_ID") != 1:
         raise fail("generated V12 raw-input rejection fixture malformed")
     for name, payload in NEGATIVE_VENDOR_FIXTURES.items():
@@ -335,7 +352,17 @@ def run_future_suite(gate, patcher):
     check("vendor patch returns replacements", isinstance(vendor_meta, dict) and bool(vendor_meta))
     check("runner patch sets schema 13", "#define PMU_DIAG_SCHEMA_VERSION 13U" in runner_out)
     check("runner patch pins build id 0x33314950", "#define PMU_COMPLETION_POLL_DIAG_V13_BUILD_ID 0x33314950U" in runner_out)
+    check(
+        "runner patch declares remaining record field exactly once",
+        runner_out.count("pmu_completion_poll_v13_t_poll_remaining_at_success") >= 1
+        and runner_out.count("extern volatile uint32_t pmu_completion_poll_v13_t_poll_remaining_at_success;") == 1,
+    )
     check("runner patch resets invalid remaining sentinel", "poll_remaining_at_success = 0xFFFFFFFFU;" in runner_out)
+    check(
+        "runner patch appends exactly one remaining wire word",
+        runner_out.count("out_words[100] = d->poll_remaining_at_success;") == 1
+        and runner_out.count("#define PMU_DIAG_FIELD_COUNT 101U") == 1,
+    )
     check("vendor patch emits V13 helper symbol", "v13_poll_completion" in vendor_out)
     check("vendor patch appends one remaining word", vendor_out.count("pmu_completion_poll_v13_t_poll_remaining_at_success") == 1)
     check(
@@ -412,8 +439,8 @@ if __name__ == "__main__":
 
     check("fixture schema version is 13", SCHEMA_VERSION == 13)
     check("fixture build id is 0x33314950", BUILD_ID == "0x33314950")
-    check("raw runner SHA fixture is frozen", len(RUNNER_SHA256) == 64)
-    check("raw vendor SHA fixture is frozen", len(VENDOR_SHA256) == 64)
+    check("raw runner SHA fixture is frozen", RUNNER_SHA256 == sha256_text(RUNNER_RAW_STOCK))
+    check("raw vendor SHA fixture is frozen", VENDOR_SHA256 == sha256_text(VENDOR_RAW_STOCK))
     check("positive vendor stores remaining exactly once", VENDOR_V13_OK.count("pmu_completion_poll_v13_t_poll_remaining_at_success") == 1)
     check("positive vendor timeout publishes no remaining", "return 0U;" in VENDOR_V13_OK and "pmu_completion_poll_v13_t_poll_remaining_at_success = 1U;" not in VENDOR_V13_OK)
     check("negative fixture count covers required drifts", len(NEGATIVE_VENDOR_FIXTURES) >= 11)
