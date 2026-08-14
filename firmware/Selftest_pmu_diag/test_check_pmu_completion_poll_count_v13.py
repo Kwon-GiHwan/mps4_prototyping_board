@@ -169,6 +169,209 @@ VENDOR_V13_OK = """uint32_t __attribute__((noinline)) v13_poll_completion(void)
 }
 """
 
+V12_NM_OK = """31002000 T v12_poll_completion
+31003000 T u85_irq_handler
+"""
+
+V13_NM_OK = """32002040 T v13_poll_completion
+32003020 T u85_irq_handler
+"""
+
+V12_OBJDUMP_OK = """31002000 <v12_poll_completion>:
+31002000:   4b08        ldr     r3, [pc, #32]   ; V12_HELPER_STATUS_PTR
+31002002:   2210        movs    r2, #16
+31002004:   f8d3 4000   ldr.w   r4, [r3]        ; V12_HELPER_STATUS_READ
+31002008:   f014 0f02   tst.w   r4, #2          ; V12_HELPER_STATUS_TEST
+3100200c:   d105        bne.n   3100201a <v12_poll_completion+0x1a>
+3100200e:   3a01        subs    r2, #1
+31002010:   3901        subs    r1, #1
+31002012:   d1f7        bne.n   31002004 <v12_poll_completion+0x04>
+31002014:   2000        movs    r0, #0
+31002016:   4770        bx      lr
+3100201a:   4804        ldr     r0, [pc, #16]   ; V12_P1
+3100201c:   4904        ldr     r1, [pc, #16]   ; V12_P2
+3100201e:   4620        mov     r0, r4
+31002020:   4770        bx      lr
+
+31003000 <u85_irq_handler>:
+31003000:   4770        bx      lr
+"""
+
+V13_OBJDUMP_OK = """32002040 <v13_poll_completion>:
+32002040:   4f09        ldr     r7, [pc, #36]   ; V13_HELPER_STATUS_PTR
+32002042:   2630        movs    r6, #48
+32002044:   f8d7 5000   ldr.w   r5, [r7]        ; V13_HELPER_STATUS_READ
+32002048:   f015 0f02   tst.w   r5, #2          ; V13_HELPER_STATUS_TEST
+3200204c:   d106        bne.n   3200205c <v13_poll_completion+0x1c>
+3200204e:   3e01        subs    r6, #1
+32002050:   3b01        subs    r3, #1
+32002052:   d1f7        bne.n   32002044 <v13_poll_completion+0x04>
+32002054:   2000        movs    r0, #0
+32002056:   4770        bx      lr
+3200205c:   4804        ldr     r0, [pc, #16]   ; V13_P1
+3200205e:   4904        ldr     r1, [pc, #16]   ; V13_P2
+32002060:   601e        str     r6, [r3]        ; V13_REMAINING_STORE
+32002062:   4628        mov     r0, r5
+32002064:   4770        bx      lr
+
+32003020 <u85_irq_handler>:
+32003020:   4770        bx      lr
+"""
+
+
+def _replace_once_exact(text: str, old: str, new: str, label: str) -> str:
+    if old not in text:
+        raise fail("%s old text missing" % label)
+    return replace_once(text, old, new, label)
+
+
+def _elf_negative_fixtures() -> dict[str, dict[str, str]]:
+    return {
+        "extra_loop_mov": {
+            "objdump": _replace_once_exact(
+                V13_OBJDUMP_OK,
+                "3200204c:   d106        bne.n   3200205c <v13_poll_completion+0x1c>\n",
+                "3200204c:   d106        bne.n   3200205e <v13_poll_completion+0x1e>\n"
+                "3200204e:   4629        mov     r1, r5        ; V13_EXTRA_LOOP_MOV\n",
+                "extra-loop-mov",
+            ),
+            "nm": V13_NM_OK,
+            "expected": "extra per-iteration instruction",
+        },
+        "extra_loop_store": {
+            "objdump": _replace_once_exact(
+                V13_OBJDUMP_OK,
+                "3200204c:   d106        bne.n   3200205c <v13_poll_completion+0x1c>\n",
+                "3200204c:   d106        bne.n   3200205e <v13_poll_completion+0x1e>\n"
+                "3200204e:   6019        str     r1, [r3]      ; V13_EXTRA_LOOP_STORE\n",
+                "extra-loop-store",
+            ),
+            "nm": V13_NM_OK,
+            "expected": "extra per-iteration store",
+        },
+        "extra_loop_call": {
+            "objdump": _replace_once_exact(
+                V13_OBJDUMP_OK,
+                "3200204c:   d106        bne.n   3200205c <v13_poll_completion+0x1c>\n",
+                "3200204c:   d106        bne.n   3200205e <v13_poll_completion+0x1e>\n"
+                "3200204e:   f7ff fffe   bl      32001000 <helper_bookkeeping> ; V13_EXTRA_LOOP_CALL\n",
+                "extra-loop-call",
+            ),
+            "nm": V13_NM_OK + "32001000 T helper_bookkeeping\n",
+            "expected": "extra per-iteration call",
+        },
+        "missing_failed_decrement": {
+            "objdump": V13_OBJDUMP_OK.replace(
+                "32002050:   3b01        subs    r3, #1\n",
+                "",
+                1,
+            ),
+            "nm": V13_NM_OK,
+            "expected": "failed-poll decrement count",
+        },
+        "third_failed_decrement": {
+            "objdump": _replace_once_exact(
+                V13_OBJDUMP_OK,
+                "32002050:   3b01        subs    r3, #1\n",
+                "32002050:   3b01        subs    r3, #1\n"
+                "32002052:   3d01        subs    r5, #1        ; V13_THIRD_DECREMENT\n",
+                "third-decrement",
+            ),
+            "nm": V13_NM_OK,
+            "expected": "failed-poll decrement count",
+        },
+        "wrong_back_edge": {
+            "objdump": V13_OBJDUMP_OK.replace(
+                "32002052:   d1f7        bne.n   32002044 <v13_poll_completion+0x04>\n",
+                "32002052:   d1f7        bne.n   32002040 <v13_poll_completion+0x00> ; V13_WRONG_BACK_EDGE\n",
+                1,
+            ),
+            "nm": V13_NM_OK,
+            "expected": "conditional loop back-edge",
+        },
+        "second_status_read": {
+            "objdump": _replace_once_exact(
+                V13_OBJDUMP_OK,
+                "3200205e:   4904        ldr     r1, [pc, #16]   ; V13_P2\n",
+                "3200205e:   4904        ldr     r1, [pc, #16]   ; V13_P2\n"
+                "32002060:   f8d7 4000   ldr.w   r4, [r7]        ; V13_SECOND_STATUS_READ\n",
+                "second-status-read",
+            ),
+            "nm": V13_NM_OK,
+            "expected": "helper STATUS read count != 1",
+        },
+        "wrong_status_address": {
+            "objdump": V13_OBJDUMP_OK.replace(
+                "; V13_HELPER_STATUS_PTR",
+                "; V13_HELPER_WRONG_STATUS_PTR",
+                1,
+            ),
+            "nm": V13_NM_OK,
+            "expected": "helper STATUS MMIO address",
+        },
+        "store_before_p2": {
+            "objdump": V13_OBJDUMP_OK.replace(
+                "3200205e:   4904        ldr     r1, [pc, #16]   ; V13_P2\n"
+                "32002060:   601e        str     r6, [r3]        ; V13_REMAINING_STORE\n",
+                "3200205e:   601e        str     r6, [r3]        ; V13_REMAINING_STORE\n"
+                "32002060:   4904        ldr     r1, [pc, #16]   ; V13_P2\n",
+                1,
+            ),
+            "nm": V13_NM_OK,
+            "expected": "remaining store must follow P2 exactly",
+        },
+        "constant_store": {
+            "objdump": V13_OBJDUMP_OK.replace(
+                "32002060:   601e        str     r6, [r3]        ; V13_REMAINING_STORE\n",
+                "32002060:   2201        movs    r2, #1\n"
+                "32002062:   601a        str     r2, [r3]        ; V13_REMAINING_STORE_CONSTANT\n",
+                1,
+            ),
+            "nm": V13_NM_OK,
+            "expected": "remaining must dataflow from failed-poll countdown live-out",
+        },
+        "recomputed_store": {
+            "objdump": V13_OBJDUMP_OK.replace(
+                "32002060:   601e        str     r6, [r3]        ; V13_REMAINING_STORE\n",
+                "32002060:   f1c3 03ff   rsb     r3, r3, #0x2711 ; V13_RECOMPUTE\n"
+                "32002064:   601b        str     r3, [r3]        ; V13_REMAINING_STORE_RECOMPUTED\n",
+                1,
+            ),
+            "nm": V13_NM_OK,
+            "expected": "remaining must dataflow from failed-poll countdown live-out",
+        },
+        "timeout_reaches_store": {
+            "objdump": V13_OBJDUMP_OK.replace(
+                "32002054:   2000        movs    r0, #0\n"
+                "32002056:   4770        bx      lr\n",
+                "32002054:   601e        str     r6, [r3]        ; V13_TIMEOUT_STORE\n"
+                "32002056:   2000        movs    r0, #0\n"
+                "32002058:   4770        bx      lr\n",
+                1,
+            ),
+            "nm": V13_NM_OK,
+            "expected": "timeout path must not publish remaining",
+        },
+        "push_pop_stack_frame": {
+            "objdump": V13_OBJDUMP_OK.replace(
+                "32002040:   4f09        ldr     r7, [pc, #36]   ; V13_HELPER_STATUS_PTR\n",
+                "32002040:   b510        push    {r4, lr}        ; V13_PUSH\n"
+                "32002042:   4f09        ldr     r7, [pc, #36]   ; V13_HELPER_STATUS_PTR\n",
+                1,
+            ),
+            "nm": V13_NM_OK,
+            "expected": "helper must remain a leaf without stack access",
+        },
+        "retained_v12_runtime_drift": {
+            "objdump": V13_OBJDUMP_OK + "\n32004000 <test_u85>:\n32004000:   4800        ldr     r0, [pc, #0]   ; V12_RUNTIME_ENABLE_DRIFT\n",
+            "nm": V13_NM_OK,
+            "expected": "retained V12 vector/NVIC/CMD/QREAD/PMU/release drift",
+        },
+    }
+
+
+ELF_NEGATIVE_FIXTURES = _elf_negative_fixtures()
+
 
 def _remaining_after(iteration_index: int) -> int:
     return POLL_LIMIT - iteration_index
@@ -416,6 +619,59 @@ def validate_local_fixtures():
     for name, payload in NEGATIVE_VENDOR_FIXTURES.items():
         if payload["vendor"] == VENDOR_V13_OK:
             raise fail("negative fixture is a no-op: %s" % name)
+    if V12_NM_OK.count("v12_poll_completion") != 1 or V13_NM_OK.count("v13_poll_completion") != 1:
+        raise fail("synthetic nm fixtures must define exactly one helper symbol each")
+    for marker in (
+        "V12_HELPER_STATUS_READ",
+        "V12_HELPER_STATUS_TEST",
+        "V12_P1",
+        "V12_P2",
+        "V13_HELPER_STATUS_READ",
+        "V13_HELPER_STATUS_TEST",
+        "V13_P1",
+        "V13_P2",
+        "V13_REMAINING_STORE",
+    ):
+        if marker not in V12_OBJDUMP_OK and marker not in V13_OBJDUMP_OK:
+            raise fail("synthetic objdump fixture missing marker: %s" % marker)
+    if V12_OBJDUMP_OK.count("ldr.w   r4, [r3]        ; V12_HELPER_STATUS_READ") != 1:
+        raise fail("V12 synthetic objdump must expose exactly one STATUS read site")
+    if V13_OBJDUMP_OK.count("ldr.w   r5, [r7]        ; V13_HELPER_STATUS_READ") != 1:
+        raise fail("V13 synthetic objdump must expose exactly one STATUS read site")
+    if V13_OBJDUMP_OK.count("str     r6, [r3]        ; V13_REMAINING_STORE") != 1:
+        raise fail("V13 synthetic objdump must expose exactly one post-P2 remaining store")
+    if V13_OBJDUMP_OK.find("V13_P2") > V13_OBJDUMP_OK.find("V13_REMAINING_STORE"):
+        raise fail("V13 synthetic objdump must keep remaining store after P2")
+    for name, payload in ELF_NEGATIVE_FIXTURES.items():
+        if payload["objdump"] == V13_OBJDUMP_OK:
+            raise fail("synthetic ELF negative fixture is a no-op: %s" % name)
+
+
+def run_future_elf_suite(gate):
+    v12_loop = gate.extract_poll_loop(V12_OBJDUMP_OK, V12_NM_OK)
+    v13_loop = gate.extract_poll_loop(V13_OBJDUMP_OK, V13_NM_OK)
+
+    check(
+        "future ELF gate normalizes V12 and V13 loop effects identically",
+        gate.normalize_poll_loop(v12_loop) == gate.normalize_poll_loop(v13_loop),
+    )
+
+    proof = gate.prove_remaining_dataflow(V13_OBJDUMP_OK, V13_NM_OK)
+    source = getattr(proof, "source", None) if not isinstance(proof, dict) else proof.get("source")
+    check(
+        "future ELF gate proves remaining live-out comes from back-edge induction",
+        source == "back_edge_induction",
+        str(proof),
+    )
+
+    for name, payload in ELF_NEGATIVE_FIXTURES.items():
+        try:
+            mutated = gate.extract_poll_loop(payload["objdump"], payload["nm"])
+            if gate.normalize_poll_loop(mutated) == gate.normalize_poll_loop(v12_loop):
+                gate.prove_remaining_dataflow(payload["objdump"], payload["nm"])
+            check("future ELF gate rejects %s" % name, False, "unexpected pass")
+        except Exception as exc:
+            check("future ELF gate rejects %s" % name, payload["expected"] in str(exc), str(exc))
 
 
 def run_future_suite(gate, patcher):
@@ -533,6 +789,7 @@ if __name__ == "__main__":
         and "#define PMU_DIAG_PAYLOAD_SIZE 436U" in RUNNER_V13_OK,
     )
     check("negative fixture count covers required drifts", len(NEGATIVE_VENDOR_FIXTURES) >= 13)
+    check("synthetic ELF negative fixture count covers required drifts", len(ELF_NEGATIVE_FIXTURES) >= 13)
     check(
         "boundary semantics cover first interior last and timeout invalid",
         [item["remaining"] for item in SEMANTIC_BOUNDARIES] == [10000, 5679, 1] and INVALID_REMAINING == 0,
@@ -542,6 +799,7 @@ if __name__ == "__main__":
     import patches.patch_pmu_completion_poll_count_v13 as patcher
 
     run_future_suite(gate, patcher)
+    run_future_elf_suite(gate)
 
     print()
     print("passed=%d failed=%d" % (passed, failed))
