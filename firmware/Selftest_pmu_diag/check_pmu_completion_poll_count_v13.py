@@ -2,9 +2,12 @@
 
 The gate proves two independent properties:
 
-1. the generated V13 sources publish ``poll_remaining_at_success`` exactly once,
-   on the success path only, immediately after P2, from the loop induction
-   variable; and
+1. the generated V13 sources publish ``poll_remaining_at_success`` exactly once
+   across the whole vendor translation unit -- on the helper success path only,
+   immediately after P2, from the loop induction variable -- and the generated
+   runner can only forward that value on the success path, because its single
+   other write to the record field is the ``0U`` invalidation inside the
+   ``poll_result != V13_POLL_SUCCESS`` gate that follows the copy; and
 2. the final V13 poll loop is structurally the V12 poll loop plus that single
    post-P2 store, with the stored value flowing out of the register that the
    failed-poll conditional back edge decrements.
@@ -12,15 +15,20 @@ The gate proves two independent properties:
 Property 2 is derived from the instruction stream itself (basic-block edges,
 register definitions and uses), not from disassembly comments or fixed
 addresses, so a relabelled or relocated build is accepted while an extra
-per-iteration effect is not.
+per-iteration effect is not. The runner half of property 1 is likewise derived
+from brace nesting and assignment right-hand sides, never from column alignment,
+so reformatting the generated runner cannot change the verdict.
 
 Scope: this module gates generated sources and the helper poll loop of the two
 final ELFs. The retained V12 executable proofs that need whole-image artifacts
 (stock vector table, NVIC hard-bypass, path-sensitive CMD/QREAD, PMU, H-PRINTF,
 golden output, terminal release) stay in ``check_pmu_completion_poll_v12`` and
-are re-run against the V13 image by the V13 build graph; the only retained-V12
-proof enforced here is that the V13 image reintroduces no NVIC enable/vector
-call site.
+are re-run against the V13 image by the V13 build graph. The only retained-V12
+proof enforced here is that the V13 image reintroduces no NVIC *enable*: neither
+an ``NVIC_EnableIRQ`` call site nor a direct NVIC->ISER write. The stock
+``NVIC_SetVector`` and ``NVIC_ClearPendingIRQ`` call sites are required by that
+retained contract, so their presence is not drift here; their operands and
+ordering are proven by the whole-image gate.
 """
 
 from __future__ import annotations
@@ -31,7 +39,6 @@ from dataclasses import dataclass
 
 from check_pmu_completion_poll_v12 import (
     _function_section,
-    count_once,
     fail,
     parse_functions,
 )
@@ -56,12 +63,38 @@ _RAW_RUNNER_GENERATED_MARKER = "PMU_COMPLETION_POLL_DIAG_V12_BUILD_ID"
 _RAW_VENDOR_GENERATED_MARKER = "v12_poll_completion(void)"
 
 _REMAINING_SYMBOL = "pmu_completion_poll_v13_t_poll_remaining_at_success"
+_REMAINING_FIELD = "poll_remaining_at_success"
+_VENDOR_HELPER_DEF_MARKER = "v13_poll_completion(void)"
 _P1_STATEMENT = "pmu_completion_poll_v13_t_status_completion_seen = DWT->CYCCNT;"
 _P2_STATEMENT = "pmu_completion_poll_v13_t_poll_exit = DWT->CYCCNT;"
 _LOOP_HEADER = "for (uint32_t i = 0U; i < %dU; ++i) {" % POLL_LIMIT
 _SUCCESS_GUARD = "if ((status & 0x%02XU) != 0U) {" % COMPLETION_MASK
 _STATUS_READ_STATEMENT = "status = *status_reg;"
 _REMAINING_RHS = "%dU - i" % POLL_LIMIT
+
+_RECORD_REMAINING_WRITE_RE = re.compile(
+    r"\bd\s*(?:\.|->)\s*%s\s*=\s*([^;]*);" % _REMAINING_FIELD
+)
+_RUNNER_TIMEOUT_GATE_RE = re.compile(
+    r"\bif\s*\(\s*d\s*(?:\.|->)\s*poll_result\s*!=\s*V13_POLL_SUCCESS\s*\)\s*\{"
+)
+_RUNNER_REMAINING_EXTERN_RE = re.compile(
+    r"\bextern\s+volatile\s+uint32_t\s+%s\s*;" % re.escape(_REMAINING_SYMBOL)
+)
+_RUNNER_REMAINING_MEMBER_RE = re.compile(r"\buint32_t\s+%s\s*;" % _REMAINING_FIELD)
+_RUNNER_REMAINING_GLOBAL_RESET_RE = re.compile(
+    r"\b%s\s*=\s*0U\s*;" % re.escape(_REMAINING_SYMBOL)
+)
+_RUNNER_REMAINING_SERIALIZE_RE = re.compile(
+    r"put32\s*\(\s*&\s*c\s*,\s*d\s*(?:\.|->)\s*%s\s*\)\s*;"
+    r"|out_words\s*\[\s*100\s*\]\s*=\s*d\s*(?:\.|->)\s*%s\s*;" % (_REMAINING_FIELD, _REMAINING_FIELD)
+)
+_REMAINING_WORD_RE = re.compile(
+    r"(?<![A-Za-z0-9_])%s(?![A-Za-z0-9_])" % re.escape(_REMAINING_SYMBOL)
+)
+_WRITE_OP_RE = re.compile(r"\s*(?:\+\+|--|<<=|>>=|[-+*/%&|^]=|=(?!=))")
+_PREFIX_WRITE_OP_RE = re.compile(r"(?:\+\+|--)\s*$")
+_NVIC_ISER_LITERAL_RE = re.compile(r"0x0*e000e100", re.IGNORECASE)
 
 _HEX_WORD_RE = re.compile(r"\.word\s+0x([0-9A-Fa-f]+)")
 _ENCODING_RE = re.compile(r"^(?:[0-9a-f]{8}|[0-9a-f]{4}(?:\s+[0-9a-f]{4})*)\s+(?=[a-z.])")
@@ -93,7 +126,7 @@ _COND_BRANCH_MNEMONICS = frozenset(
         "bhi", "bls", "bge", "blt", "bgt", "ble", "cbz", "cbnz",
     )
 )
-_V12_RUNTIME_DRIFT_CALLEES = ("NVIC_EnableIRQ", "NVIC_SetVector", "NVIC_ClearPendingIRQ")
+_V12_RUNTIME_DRIFT_CALLEES = ("NVIC_EnableIRQ",)
 
 
 @dataclass(frozen=True)
@@ -186,7 +219,7 @@ def _count_raw_inputs(text: str, anchor: str, generated_marker: str, kind: str) 
         raise fail("multiple raw %s targets" % kind)
 
 
-def _matching_brace(text: str, open_index: int) -> int:
+def _matching_brace(text: str, open_index: int, what: str) -> int:
     depth = 0
     for index in range(open_index, len(text)):
         char = text[index]
@@ -196,10 +229,20 @@ def _matching_brace(text: str, open_index: int) -> int:
             depth -= 1
             if depth == 0:
                 return index
-    raise fail("canonical V13 helper shape missing")
+    raise fail(what)
 
 
-def _extract_vendor_helper(vendor_text: str) -> str:
+def _normalize_spaces(text: str) -> str:
+    return " ".join(text.split())
+
+
+def _extract_vendor_helper(vendor_text: str) -> tuple[str, int]:
+    """Return the V13 poll helper body and its offset in the vendor TU."""
+    definitions = vendor_text.count(_VENDOR_HELPER_DEF_MARKER)
+    if definitions == 0:
+        raise fail("poll helper signature not found")
+    if definitions != 1:
+        raise fail("duplicate V13 poll helper definition: found %d" % definitions)
     starts = (
         "__attribute__((noinline))\nstatic uint32_t v13_poll_completion(void)",
         "uint32_t __attribute__((noinline)) v13_poll_completion(void)",
@@ -215,7 +258,57 @@ def _extract_vendor_helper(vendor_text: str) -> str:
     end = vendor_text.find("static int test_commands(", start)
     if end < 0:
         end = len(vendor_text)
-    return vendor_text[start:end]
+    return vendor_text[start:end], start
+
+
+def _remaining_write_positions(text: str) -> tuple[int, ...]:
+    """Offsets of every write to the V13 remaining global, reads excluded."""
+    positions = []
+    for hit in _REMAINING_WORD_RE.finditer(text):
+        if _PREFIX_WRITE_OP_RE.search(text[max(0, hit.start() - 4):hit.start()]):
+            positions.append(hit.start())
+        elif _WRITE_OP_RE.match(text, hit.end()):
+            positions.append(hit.start())
+    return tuple(positions)
+
+
+def _verify_vendor_tu_single_writer(vendor_text: str, canonical_position: int) -> None:
+    """The whole vendor TU may write the remaining global exactly once."""
+    positions = _remaining_write_positions(vendor_text)
+    if len(positions) != 1:
+        raise fail("vendor TU remaining write count != 1: found %d" % len(positions))
+    if positions[0] != canonical_position:
+        raise fail("vendor TU remaining write must be the canonical helper success assignment")
+
+
+def _verify_runner_remaining_gate(runner_text: str) -> None:
+    """Prove the runner can publish remaining only on the success path.
+
+    Structural, not textual: the two record writes are located by brace nesting
+    relative to the ``poll_result != V13_POLL_SUCCESS`` gate and classified by
+    their normalized right-hand side, so re-indenting or re-aligning the
+    generated runner cannot change the verdict.
+    """
+    gates = list(_RUNNER_TIMEOUT_GATE_RE.finditer(runner_text))
+    if len(gates) != 1:
+        raise fail("runner timeout gate: expected 1 match, found %d" % len(gates))
+    gate_open = runner_text.index("{", gates[0].start())
+    gate_end = _matching_brace(runner_text, gate_open, "runner timeout gate is unbalanced")
+
+    writes = [
+        (hit.start(), _normalize_spaces(hit.group(1)))
+        for hit in _RECORD_REMAINING_WRITE_RE.finditer(runner_text)
+    ]
+    inside = [item for item in writes if gate_open < item[0] < gate_end]
+    outside = [item for item in writes if not gate_open < item[0] < gate_end]
+    if len(inside) != 1 or inside[0][1] != "0U":
+        raise fail("runner timeout gate must reset remaining to 0U")
+    if len(writes) != 2:
+        raise fail("runner remaining write count != 2: found %d" % len(writes))
+    if len(outside) != 1 or outside[0][1] != _REMAINING_SYMBOL:
+        raise fail("runner success copy must read the V13 remaining global")
+    if outside[0][0] > gate_open:
+        raise fail("runner success copy must precede the timeout gate")
 
 
 def _verify_runner_source(runner_text: str) -> None:
@@ -223,9 +316,14 @@ def _verify_runner_source(runner_text: str) -> None:
         raise fail("runner schema marker missing")
     if "PMU_COMPLETION_POLL_DIAG_V13_BUILD_ID 0x%08XU" % BUILD_ID not in runner_text:
         raise fail("runner build id missing")
-    count_once(runner_text, "extern volatile uint32_t %s;" % _REMAINING_SYMBOL, "runner remaining extern")
-    count_once(runner_text, "uint32_t poll_remaining_at_success;", "runner remaining field")
-    count_once(runner_text, "poll_remaining_at_success = 0U;", "runner remaining reset")
+    for pattern, what in (
+        (_RUNNER_REMAINING_EXTERN_RE, "runner remaining extern"),
+        (_RUNNER_REMAINING_MEMBER_RE, "runner remaining field"),
+        (_RUNNER_REMAINING_GLOBAL_RESET_RE, "runner remaining global reset"),
+    ):
+        found = len(pattern.findall(runner_text))
+        if found != 1:
+            raise fail("%s: expected 1 match, found %d" % (what, found))
     for needle, what in (
         ("PMU_DIAG_FIELD_COUNT 101U", "runner field count"),
         ("PMU_DIAG_TOTAL_WORDS 109U", "runner total words"),
@@ -233,14 +331,13 @@ def _verify_runner_source(runner_text: str) -> None:
     ):
         if needle not in runner_text and needle.replace(" ", " == ") not in runner_text:
             raise fail("%s missing" % what)
-    if (
-        "put32(&c, d->poll_remaining_at_success);" not in runner_text
-        and "out_words[100] = d->poll_remaining_at_success;" not in runner_text
-    ):
+    if _RUNNER_REMAINING_SERIALIZE_RE.search(runner_text) is None:
         raise fail("runner remaining serialization missing")
+    _verify_runner_remaining_gate(runner_text)
 
 
-def _verify_vendor_helper_source(helper: str) -> None:
+def _verify_vendor_helper_source(helper: str) -> int:
+    """Gate the helper body and return the offset of its remaining assignment."""
     if helper.count("*status_reg") != 1 or helper.count(_STATUS_READ_STATEMENT) != 1:
         raise fail("helper STATUS read count != 1")
     if helper.count(_SUCCESS_GUARD) != 1:
@@ -259,12 +356,12 @@ def _verify_vendor_helper_source(helper: str) -> None:
     if helper.count(_LOOP_HEADER) != 1:
         raise fail("canonical V13 helper shape missing")
     loop_open = helper.index("{", helper.index(_LOOP_HEADER))
-    loop_end = _matching_brace(helper, loop_open)
+    loop_end = _matching_brace(helper, loop_open, "canonical V13 helper shape missing")
     guard_start = helper.find(_SUCCESS_GUARD, loop_open)
     if not loop_open < guard_start < loop_end:
         raise fail("canonical V13 helper shape missing")
     guard_open = helper.index("{", guard_start)
-    guard_end = _matching_brace(helper, guard_open)
+    guard_end = _matching_brace(helper, guard_open, "canonical V13 helper shape missing")
 
     assignments = [
         (hit.start(), hit.group(1).strip())
@@ -300,6 +397,7 @@ def _verify_vendor_helper_source(helper: str) -> None:
         raise fail("extra per-iteration source statement")
     if "return 0U;" not in helper[loop_end:]:
         raise fail("canonical V13 helper shape missing")
+    return remaining_position
 
 
 def verify_generated_sources(
@@ -311,23 +409,29 @@ def verify_generated_sources(
 ) -> dict[str, object]:
     """Gate the generated V13 runner/vendor sources.
 
-    When raw SHA-256 pins are supplied the arguments are treated as the frozen
-    *raw* generator inputs and only the frozen-input contract is enforced.
+    The two raw SHA-256 pins are a pair, never a single side: supplying both
+    means the arguments are the frozen *raw* generator inputs and both are held
+    to the frozen-input contract; supplying neither means they are the generated
+    outputs and both are held to the generated-source contract. A one-sided pin
+    would silently leave the other translation unit unvalidated, so it is
+    rejected outright.
     """
     runner_text = _normalize_newlines(runner_text)
     vendor_text = _normalize_newlines(vendor_text)
-    raw_validation_requested = raw_runner_sha256 is not None or raw_vendor_sha256 is not None
-    if raw_runner_sha256 is not None:
+    if (raw_runner_sha256 is None) != (raw_vendor_sha256 is None):
+        raise fail("raw runner and vendor sha pins must be supplied together")
+    if raw_runner_sha256 is not None and raw_vendor_sha256 is not None:
         _count_raw_inputs(runner_text, _RAW_RUNNER_ANCHOR, _RAW_RUNNER_GENERATED_MARKER, "runner")
         if _sha256_text(runner_text) != raw_runner_sha256:
             raise fail("runner hash mismatch")
-    if raw_vendor_sha256 is not None:
         _count_raw_inputs(vendor_text, _RAW_VENDOR_ANCHOR, _RAW_VENDOR_GENERATED_MARKER, "vendor")
         if _sha256_text(vendor_text) != raw_vendor_sha256:
             raise fail("vendor hash mismatch")
-    if not raw_validation_requested:
+    else:
         _verify_runner_source(runner_text)
-        _verify_vendor_helper_source(_extract_vendor_helper(vendor_text))
+        helper, helper_start = _extract_vendor_helper(vendor_text)
+        remaining_offset = _verify_vendor_helper_source(helper)
+        _verify_vendor_tu_single_writer(vendor_text, helper_start + remaining_offset)
 
     return {
         "variant": VARIANT,
@@ -344,10 +448,20 @@ def verify_generated_sources(
 
 def _helper_name_from_nm(nm_text: str) -> str:
     names = re.findall(r"^[0-9A-Fa-f]+\s+[Tt]\s+([A-Za-z0-9_]+)$", nm_text, re.M)
-    for candidate in ("v12_poll_completion", "v13_poll_completion"):
-        if names.count(candidate) == 1:
-            return candidate
-    raise fail("poll helper symbol in nm: expected 1 text symbol, found 0")
+    present = [
+        candidate
+        for candidate in ("v12_poll_completion", "v13_poll_completion")
+        if names.count(candidate) >= 1
+    ]
+    if not present:
+        raise fail("poll helper symbol in nm: expected 1 text symbol, found 0")
+    if len(present) > 1:
+        raise fail("duplicate poll helper symbol in nm: %s" % ", ".join(present))
+    candidate = present[0]
+    defined = names.count(candidate)
+    if defined != 1:
+        raise fail("duplicate poll helper symbol in nm: %s defined %d times" % (candidate, defined))
+    return candidate
 
 
 def _symbol_addr_from_nm(nm_text: str, symbol: str) -> int:
@@ -445,9 +559,14 @@ def _check_loop_body(loop_body: tuple[_Insn, ...]) -> tuple[str, ...]:
 def _analyze_helper(disassembly_text: str, nm_text: str) -> _HelperAnalysis:
     helper_name = _helper_name_from_nm(nm_text)
     helper_addr = _symbol_addr_from_nm(nm_text, helper_name)
+    sections = re.findall(
+        r"(?m)^[0-9a-fA-F]+\s+<%s>:\s*$" % re.escape(helper_name), disassembly_text
+    )
+    if len(sections) > 1:
+        raise fail("duplicate poll helper section in disassembly: found %d" % len(sections))
     functions = parse_functions(disassembly_text)
     insns = functions.get(helper_name)
-    if insns is None:
+    if insns is None or not sections:
         raise fail("helper function in disassembly: expected 1 match, found 0")
     if insns[0].addr != helper_addr:
         raise fail("helper symbol/address mismatch")
@@ -667,9 +786,19 @@ def prove_remaining_dataflow(disassembly_text: str, nm_text: str) -> RemainingDa
 
 
 def _check_retained_v12_runtime(disassembly_text: str) -> None:
+    """Refuse a re-introduced NVIC enable in the V13 image.
+
+    ``NVIC_SetVector`` and ``NVIC_ClearPendingIRQ`` call sites are required by
+    the retained V12 runtime contract, so their mere existence is not drift and
+    is not checked here; the whole-image gate proves their operands and order.
+    What must never come back is an interrupt *enable*, in either form: a call
+    to ``NVIC_EnableIRQ`` or a direct write through the NVIC->ISER literal.
+    """
     for callee in _V12_RUNTIME_DRIFT_CALLEES:
         if re.search(_CALL_TO_RE % re.escape(callee), disassembly_text):
-            raise fail("retained V12 vector/NVIC/CMD/QREAD/PMU/release drift")
+            raise fail("retained V12 NVIC enable drift: %s call site" % callee)
+    if _NVIC_ISER_LITERAL_RE.search(disassembly_text):
+        raise fail("direct NVIC ISER enable write remains reachable")
 
 
 def verify_cross_elf_contract(

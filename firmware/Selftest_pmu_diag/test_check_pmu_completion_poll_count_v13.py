@@ -42,6 +42,7 @@ INVALID_REMAINING = 0
 RUNNER_SHA256 = "69cab8c48a2248d0cc0b883a2bc651efa8eb8867c86369051ebc99cc5ee5a88b"
 VENDOR_SHA256 = "bcd877bbd42a35d83c8696d02b64d2ae4985a46fcce91b98102e08661b356bcf"
 EXPECTED_SOURCE_NEGATIVE_FIXTURES = {
+    "duplicate_helper_definition",
     "duplicate_store",
     "extra_mmio",
     "per_iteration_increment_store",
@@ -49,6 +50,8 @@ EXPECTED_SOURCE_NEGATIVE_FIXTURES = {
     "retained_v12_hard_bypass",
     "retained_v12_qread_release_drift",
     "second_status_read",
+    "second_writer_after_test_commands",
+    "second_writer_before_helper",
     "success_remaining_10001",
     "success_remaining_zero",
     "timeout_reachable_store",
@@ -222,17 +225,26 @@ RUNNER_V13_OK = """#if defined(PMU_QUAL_SCHEMA_V13)
 static pmu_diag_snapshot_t pmu_qual_internal_post_disable;
 typedef struct {
     uint32_t poll_result;
-    uint32_t poll_status_at_success;
+    uint32_t status_at_success;
     uint32_t poll_remaining_at_success;
-} v13_wire_tail_t;
+} v13_t;
 extern volatile uint32_t pmu_completion_poll_v13_t_poll_remaining_at_success;
 
-void test_entry(v13_t* d)
+void reset_globals(void)
 {
-    d->pmcr_readback_after_disable = 0U;
-    d->poll_result = V13_POLL_TIMEOUT;
-    d->poll_status_at_success = 0U;
-    d->poll_remaining_at_success = 0U;
+    pmu_completion_poll_v13_t_poll_status_at_success        = 0U;
+    pmu_completion_poll_v13_t_poll_remaining_at_success     = 0U;
+}
+
+void collect_record(v13_t d)
+{
+    d.poll_result                     = pmu_completion_poll_v13_t_poll_result;
+    d.status_at_success               = pmu_completion_poll_v13_t_poll_status_at_success;
+    d.poll_remaining_at_success       = pmu_completion_poll_v13_t_poll_remaining_at_success;
+    if (d.poll_result != V13_POLL_SUCCESS) {
+        d.status_at_success        = 0U;
+        d.poll_remaining_at_success = 0U;
+    }
 }
 
 void emit_record(v13_t* d, uint32_t *out_words)
@@ -260,6 +272,21 @@ VENDOR_V13_OK = """uint32_t __attribute__((noinline)) v13_poll_completion(void)
     }
 
     return 0U;
+}
+"""
+
+SECOND_WRITER_BEFORE_HELPER = """void v13_side_effect_before(void)
+{
+    pmu_completion_poll_v13_t_poll_remaining_at_success = 7U;
+}
+
+"""
+
+SECOND_WRITER_AFTER_TEST_COMMANDS = """
+static int test_commands(void)
+{
+    pmu_completion_poll_v13_t_poll_remaining_at_success = 9U;
+    return 0;
 }
 """
 
@@ -600,9 +627,54 @@ def _elf_negative_fixtures() -> dict[str, dict[str, str]]:
             + "\n32004000 <test_u85>:\n"
             + "32004000:   f7ff f8fe   bl      32004200 <NVIC_EnableIRQ> ; V12_RUNTIME_ENABLE_DRIFT\n",
             "nm": V13_NM_OK + "32004000 T test_u85\n",
-            "expected": "retained V12 vector/NVIC/CMD/QREAD/PMU/release drift",
+            "expected": "retained V12 NVIC enable drift",
+        },
+        "retained_v12_iser_direct_enable": {
+            "objdump": V13_OBJDUMP_OK
+            + "\n32004000 <test_u85>:\n"
+            + "32004000:   4b01        ldr     r3, [pc, #4]    ; V13_ISER_PTR\n"
+            + "32004002:   601a        str     r2, [r3]        ; V13_ISER_DIRECT_ENABLE\n"
+            + "32004004:   4770        bx      lr\n"
+            + "32004008:   .word   0xE000E100\n",
+            "nm": V13_NM_OK + "32004000 T test_u85\n",
+            "expected": "direct NVIC ISER enable write remains reachable",
+        },
+        "duplicate_helper_nm_symbol": {
+            "objdump": V13_OBJDUMP_OK,
+            "nm": V13_NM_OK + "32005000 T v13_poll_completion\n",
+            "expected": "duplicate poll helper symbol in nm",
+        },
+        "ambiguous_v12_and_v13_helper_nm_symbols": {
+            "objdump": V13_OBJDUMP_OK,
+            "nm": V13_NM_OK + "32006000 T v12_poll_completion\n",
+            "expected": "duplicate poll helper symbol in nm",
+        },
+        "duplicate_helper_disassembly_section": {
+            "objdump": V13_OBJDUMP_OK
+            + "\n32005000 <v13_poll_completion>:\n"
+            + "32005000:   4770        bx      lr\n",
+            "nm": V13_NM_OK,
+            "expected": "duplicate poll helper section in disassembly",
         },
     }
+
+
+# Retained-V12 runtime shape that the V13 image is *required* to keep: the
+# stock vector install and the pending clear. Neither is drift, so the gate
+# must accept an image that still calls them.
+V13_RETAINED_STOCK_OBJDUMP = V13_OBJDUMP_OK + """
+32004000 <test_u85>:
+32004000:   f7ff f97e   bl      32004300 <NVIC_SetVector> ; V13_RUNTIME_VECTOR_INSTALL
+32004004:   f7ff f9fc   bl      32004400 <NVIC_ClearPendingIRQ> ; V13_RUNTIME_CLEAR_PENDING
+32004008:   4770        bx      lr
+"""
+
+V13_RETAINED_STOCK_NM = (
+    V13_NM_OK
+    + "32004000 T test_u85\n"
+    + "32004300 T NVIC_SetVector\n"
+    + "32004400 T NVIC_ClearPendingIRQ\n"
+)
 
 
 ELF_NEGATIVE_FIXTURES = _elf_negative_fixtures()
@@ -740,6 +812,20 @@ def _negative_vendor_fixtures() -> dict[str, dict[str, str]]:
             ),
             "expected": "retained V12 hard-bypass/CMD/QREAD/release drift",
         },
+        # Whole-translation-unit uniqueness: a writer that sits outside the
+        # slice `_extract_vendor_helper` carves out must still be rejected.
+        "second_writer_before_helper": {
+            "vendor": SECOND_WRITER_BEFORE_HELPER + VENDOR_V13_OK,
+            "expected": "vendor TU remaining write count != 1",
+        },
+        "second_writer_after_test_commands": {
+            "vendor": VENDOR_V13_OK + SECOND_WRITER_AFTER_TEST_COMMANDS,
+            "expected": "vendor TU remaining write count != 1",
+        },
+        "duplicate_helper_definition": {
+            "vendor": VENDOR_V13_OK + "\n" + VENDOR_V13_OK,
+            "expected": "duplicate V13 poll helper definition",
+        },
     }
 
 
@@ -833,8 +919,12 @@ def validate_local_fixtures():
         raise fail("positive vendor fixture must preserve the V12 for-loop source shape")
     if RUNNER_V13_OK.count("uint32_t poll_remaining_at_success;") != 1:
         raise fail("runner fixture must declare remaining member exactly once")
-    if RUNNER_V13_OK.count("poll_remaining_at_success = 0U;") != 1:
-        raise fail("runner fixture must reset invalid remaining sentinel exactly once")
+    if RUNNER_V13_OK.count("if (d.poll_result != V13_POLL_SUCCESS) {") != 1:
+        raise fail("runner fixture must expose exactly one timeout gate")
+    if RUNNER_V13_OK.count("        d.poll_remaining_at_success = 0U;\n") != 1:
+        raise fail("runner fixture must invalidate remaining inside the timeout gate exactly once")
+    if RUNNER_V13_OK.count("    pmu_completion_poll_v13_t_poll_remaining_at_success     = 0U;\n") != 1:
+        raise fail("runner fixture must keep the column-aligned unrelated global clear reset")
     if RUNNER_V13_OK.count("extern volatile uint32_t pmu_completion_poll_v13_t_poll_remaining_at_success;") != 1:
         raise fail("runner fixture must declare remaining field exactly once")
     if RUNNER_V13_OK.count("out_words[100] = d->poll_remaining_at_success;") != 1:
@@ -880,8 +970,218 @@ def validate_local_fixtures():
     if V13_OBJDUMP_OK.find("V13_P2") > V13_OBJDUMP_OK.find("V13_REMAINING_STORE"):
         raise fail("V13 synthetic objdump must keep remaining store after P2")
     for name, payload in ELF_NEGATIVE_FIXTURES.items():
-        if payload["objdump"] == V13_OBJDUMP_OK:
+        if payload["objdump"] == V13_OBJDUMP_OK and payload["nm"] == V13_NM_OK:
             raise fail("synthetic ELF negative fixture is a no-op: %s" % name)
+
+
+def run_retained_runtime_suite(gate):
+    """Retained-V12 runtime callee list: only NVIC *enable* is drift."""
+    try:
+        evidence = gate.verify_cross_elf_contract(
+            V12_OBJDUMP_OK, V12_NM_OK, V13_RETAINED_STOCK_OBJDUMP, V13_RETAINED_STOCK_NM
+        )
+        check(
+            "retained runtime gate accepts stock NVIC_SetVector and NVIC_ClearPendingIRQ call sites",
+            evidence.get("loop_equivalent") is True,
+            str(evidence),
+        )
+    except Exception as exc:
+        check(
+            "retained runtime gate accepts stock NVIC_SetVector and NVIC_ClearPendingIRQ call sites",
+            False,
+            str(exc),
+        )
+
+    for label, text, expected in (
+        (
+            "stock vector install alone is not drift",
+            "32004000 <test_u85>:\n"
+            "32004000:   f7ff f97e   bl      32004300 <NVIC_SetVector> ; V13_RUNTIME_VECTOR_INSTALL\n",
+            None,
+        ),
+        (
+            "stock pending clear alone is not drift",
+            "32004000 <test_u85>:\n"
+            "32004000:   f7ff f9fc   bl      32004400 <NVIC_ClearPendingIRQ> ; V13_RUNTIME_CLEAR_PENDING\n",
+            None,
+        ),
+        (
+            "NVIC enable call site is drift",
+            "32004000 <test_u85>:\n"
+            "32004000:   f7ff f8fe   bl      32004200 <NVIC_EnableIRQ> ; V13_RUNTIME_ENABLE_DRIFT\n",
+            "retained V12 NVIC enable drift",
+        ),
+        (
+            "direct ISER enable literal is drift",
+            "32004000 <test_u85>:\n"
+            "32004000:   601a        str     r2, [r3]        ; V13_ISER_DIRECT_ENABLE\n"
+            "32004004:   .word   0xE000E100\n",
+            "direct NVIC ISER enable write remains reachable",
+        ),
+    ):
+        try:
+            gate._check_retained_v12_runtime(text)
+            check("retained runtime callee list: %s" % label, expected is None, "unexpected pass")
+        except Exception as exc:
+            check(
+                "retained runtime callee list: %s" % label,
+                expected is not None and expected in str(exc),
+                str(exc),
+            )
+
+
+def run_raw_provenance_suite(gate):
+    """Raw SHA pins are a pair: both frozen inputs are validated, or neither."""
+    runner_stock = load_real_runner_stock()
+    vendor_stock_sha = sha256_text(PATCH_VENDOR_STOCK)
+
+    try:
+        evidence = gate.verify_generated_sources(
+            runner_stock,
+            PATCH_VENDOR_STOCK,
+            raw_runner_sha256=RUNNER_SHA256,
+            raw_vendor_sha256=vendor_stock_sha,
+        )
+        check(
+            "raw provenance accepts both pins over both frozen inputs",
+            evidence.get("schema_version") == SCHEMA_VERSION,
+            str(evidence),
+        )
+    except Exception as exc:
+        check("raw provenance accepts both pins over both frozen inputs", False, str(exc))
+
+    # The whole-TU scan and the helper scan must agree on which assignment is
+    # canonical; a disagreement fails closed rather than silently accepting.
+    try:
+        gate._verify_vendor_tu_single_writer(VENDOR_V13_OK, 0)
+        check("raw provenance rejects non-canonical single TU writer", False, "unexpected pass")
+    except Exception as exc:
+        check(
+            "raw provenance rejects non-canonical single TU writer",
+            "vendor TU remaining write must be the canonical helper success assignment" in str(exc),
+            str(exc),
+        )
+
+    for label, kwargs in (
+        ("runner-only raw pin leaves the vendor input unvalidated", {"raw_runner_sha256": RUNNER_SHA256}),
+        ("vendor-only raw pin leaves the runner input unvalidated", {"raw_vendor_sha256": vendor_stock_sha}),
+    ):
+        try:
+            gate.verify_generated_sources(runner_stock, PATCH_VENDOR_STOCK, **kwargs)
+            check("raw provenance rejects %s" % label, False, "unexpected pass")
+        except Exception as exc:
+            check(
+                "raw provenance rejects %s" % label,
+                "raw runner and vendor sha pins must be supplied together" in str(exc),
+                str(exc),
+            )
+
+
+def run_runner_gate_suite(gate, runner_out, vendor_out):
+    """Timeout/success gate on the generated runner, independent of column alignment."""
+    timeout_reset = "            d.poll_remaining_at_success = 0U;\n"
+    aligned_clear = "    pmu_completion_poll_v13_t_poll_remaining_at_success     = 0U;\n"
+    tight_clear = "    pmu_completion_poll_v13_t_poll_remaining_at_success = 0U;\n"
+    copy_line = (
+        "        d.poll_remaining_at_success       = "
+        "pmu_completion_poll_v13_t_poll_remaining_at_success;\n"
+    )
+    gate_tail = timeout_reset + "        }\n"
+
+    # Reproduced defect: deleting the timeout invalidation while re-aligning the
+    # unrelated global clear keeps a naive substring count at exactly one.
+    reproduced = replace_once(runner_out, timeout_reset, "", "timeout-reset-delete")
+    reproduced = replace_once(reproduced, aligned_clear, tight_clear, "clear-reset-reformat")
+    check(
+        "reproduced drift keeps the naive single-match substring count",
+        reproduced.count("poll_remaining_at_success = 0U;") == 1,
+        "count=%d" % reproduced.count("poll_remaining_at_success = 0U;"),
+    )
+    try:
+        gate.verify_generated_sources(reproduced, vendor_out)
+        check("runner gate rejects deleted timeout reset with reformatted clear reset", False, "unexpected pass")
+    except Exception as exc:
+        check(
+            "runner gate rejects deleted timeout reset with reformatted clear reset",
+            "runner timeout gate must reset remaining to 0U" in str(exc),
+            str(exc),
+        )
+
+    for label, mutated, expected in (
+        (
+            "timeout reset moved outside the gate",
+            replace_once(
+                runner_out,
+                gate_tail,
+                "        }\n        d.poll_remaining_at_success = 0U;\n",
+                "reset-move",
+            ),
+            "runner timeout gate must reset remaining to 0U",
+        ),
+        (
+            "extra publishing write after the timeout gate",
+            replace_once(
+                runner_out,
+                gate_tail,
+                gate_tail
+                + "        d.poll_remaining_at_success = pmu_completion_poll_v13_t_poll_remaining_at_success;\n",
+                "extra-publish",
+            ),
+            "runner remaining write count != 2",
+        ),
+        (
+            "success copy replaced by a constant",
+            replace_once(runner_out, copy_line, "        d.poll_remaining_at_success = 1U;\n", "constant-copy"),
+            "runner success copy must read the V13 remaining global",
+        ),
+        (
+            "success copy sunk below the timeout gate",
+            replace_once(
+                replace_once(runner_out, copy_line, "", "copy-sink-delete"),
+                gate_tail,
+                gate_tail + copy_line,
+                "copy-sink-insert",
+            ),
+            "runner success copy must precede the timeout gate",
+        ),
+        (
+            "timeout gate removed entirely",
+            replace_once(
+                runner_out,
+                "        if (d.poll_result != V13_POLL_SUCCESS) {\n",
+                "        if (0) {\n",
+                "gate-removed",
+            ),
+            "runner timeout gate: expected 1 match",
+        ),
+    ):
+        try:
+            gate.verify_generated_sources(mutated, vendor_out)
+            check("runner gate rejects %s" % label, False, "unexpected pass")
+        except Exception as exc:
+            check("runner gate rejects %s" % label, expected in str(exc), str(exc))
+
+    for label, reformatted in (
+        ("re-aligned unrelated global clear reset", replace_once(runner_out, aligned_clear, tight_clear, "clear-realign")),
+        (
+            "re-aligned success copy",
+            replace_once(
+                runner_out,
+                copy_line,
+                "        d.poll_remaining_at_success = pmu_completion_poll_v13_t_poll_remaining_at_success;\n",
+                "copy-realign",
+            ),
+        ),
+        (
+            "re-indented timeout reset",
+            replace_once(runner_out, timeout_reset, "\t\t\td.poll_remaining_at_success  =  0U;\n", "reset-realign"),
+        ),
+    ):
+        try:
+            gate.verify_generated_sources(reformatted, vendor_out)
+            check("runner gate accepts %s" % label, True)
+        except Exception as exc:
+            check("runner gate accepts %s" % label, False, str(exc))
 
 
 def run_future_elf_suite(gate):
@@ -1048,6 +1348,9 @@ def run_future_suite(gate, patcher):
         except Exception as exc:
             check("future V13 gate rejects %s" % name, payload["expected"] in str(exc), str(exc))
 
+    run_raw_provenance_suite(gate)
+    run_runner_gate_suite(gate, runner_out, vendor_out)
+
     return evidence
 
 
@@ -1070,7 +1373,7 @@ if __name__ == "__main__":
         "source negative fixture set matches intended drift list",
         set(NEGATIVE_VENDOR_FIXTURES) == EXPECTED_SOURCE_NEGATIVE_FIXTURES,
     )
-    check("synthetic ELF negative fixture count covers required drifts", len(ELF_NEGATIVE_FIXTURES) >= 13)
+    check("synthetic ELF negative fixture count covers required drifts", len(ELF_NEGATIVE_FIXTURES) >= 18)
     check(
         "boundary semantics cover first interior last and timeout invalid",
         [item["remaining"] for item in SEMANTIC_BOUNDARIES] == [10000, 5679, 1] and INVALID_REMAINING == 0,
@@ -1085,6 +1388,7 @@ if __name__ == "__main__":
 
     run_future_suite(gate, patcher)
     run_future_elf_suite(gate)
+    run_retained_runtime_suite(gate)
 
     print()
     print("passed=%d failed=%d" % (passed, failed))
