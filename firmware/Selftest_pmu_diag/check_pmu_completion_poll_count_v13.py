@@ -170,7 +170,8 @@ VARIANT = "PMU_COMPLETION_POLL_COUNT_DIAG_V13"
 RUNNER_SHA256 = "69cab8c48a2248d0cc0b883a2bc651efa8eb8867c86369051ebc99cc5ee5a88b"
 VENDOR_SHA256 = "bcd877bbd42a35d83c8696d02b64d2ae4985a46fcce91b98102e08661b356bcf"
 RUNNER_GENERATED_SHA256 = "b66f49eee75f7bfbe6a8cd972f86449751cff25eb5ac98be392a46cbbfc50b8f"
-VENDOR_GENERATED_SHA256 = "d64cb32220dec26cff06d010c7fda87f166c5e692a8cf01976889b9c402067cd"
+VENDOR_GENERATED_SHA256 = "b8f007e5c7c13a728487a49d08828c91f60dd3af659e02eda8891ce296c9ff5f"
+AUTHORITATIVE_V12_SHA256 = "cd44ad3e5f370833b03fb3c664da2a8cb9320e38d97786d4c2af6ec1109cf401"
 # The MPS4 address map. Every peripheral literal a helper carries is a *base*;
 # the address an instruction touches is that base plus the displacement it
 # encodes, which is why the checks below resolve `literal + displacement` and
@@ -2669,6 +2670,7 @@ def _parser_sha256() -> str:
 
 
 ARTIFACT_HASH_KEYS = (
+    "authoritative_v12_elf",
     "elf",
     "map",
     "app_bin",
@@ -2685,6 +2687,7 @@ ARTIFACT_HASH_KEYS = (
     "runner_record_wire_evidence",
 )
 BUILD_EVIDENCE_HASH_KEYS = (
+    "authoritative_v12_elf",
     "authoritative_v12_objdump",
     "authoritative_v12_nm",
     "v13_objdump",
@@ -2719,6 +2722,7 @@ def validate_artifact_contract(
         "build_id": "0x%08X" % BUILD_ID,
         "runner_source_sha256": RUNNER_GENERATED_SHA256,
         "vendor_source_sha256": VENDOR_GENERATED_SHA256,
+        "authoritative_v12_elf_sha256": AUTHORITATIVE_V12_SHA256,
     }
     for key, expected in exact.items():
         if doc.get(key) != expected:
@@ -2787,6 +2791,7 @@ def _build_manifest(
     runner_generated: str,
     vendor_generated: str,
     elf_path: str,
+    authoritative_v12_elf_path: str,
     map_path: str,
     app_bin_path: str,
     vectors_bin_path: str,
@@ -2814,8 +2819,11 @@ def _build_manifest(
         raise fail("vendor generated hash mismatch")
     verify_generated_sources(runner_text, vendor_text)
     header = _run_tool([readelf_tool, "-h", elf_path])
-    if "Machine: ARM" not in header:
-        raise fail("ELF header is not ARM")
+    if "Type: EXEC" not in header or "Machine: ARM" not in header:
+        raise fail("ELF header is not ARM EXEC")
+    authoritative_v12_sha = _sha256_path(authoritative_v12_elf_path)
+    if authoritative_v12_sha != AUTHORITATIVE_V12_SHA256:
+        raise fail("authoritative V12 ELF hash mismatch")
     with open(v12_objdump_path, "r", encoding="utf-8") as handle:
         v12_objdump_text = _normalize_newlines(handle.read())
     with open(v12_nm_path, "r", encoding="utf-8") as handle:
@@ -2845,6 +2853,7 @@ def _build_manifest(
     if runner_record_wire_loaded != runner_record_wire_expected:
         raise fail("runner-record/wire evidence mismatch")
     artifact_hashes = {
+        "authoritative_v12_elf": authoritative_v12_sha,
         "elf": _sha256_path(elf_path),
         "map": _sha256_path(map_path),
         "app_bin": _sha256_path(app_bin_path),
@@ -2870,6 +2879,7 @@ def _build_manifest(
         "build_id": "0x%08X" % BUILD_ID,
         "runner_source_sha256": runner_generated_sha,
         "vendor_source_sha256": vendor_generated_sha,
+        "authoritative_v12_elf_sha256": authoritative_v12_sha,
         "artifact_sha256": artifact_hashes,
         "build_evidence_sha256": build_evidence_hashes,
         "artifact_bundle_sha256": _artifact_bundle_sha256(artifact_hashes),
@@ -2902,6 +2912,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument("--runner-generated", required=True)
     parser.add_argument("--vendor-generated", required=True)
     parser.add_argument("--elf", required=True)
+    parser.add_argument("--authoritative-v12-elf", required=True)
     parser.add_argument("--map", required=True)
     parser.add_argument("--app-bin", required=True)
     parser.add_argument("--vectors-bin", required=True)
@@ -2929,6 +2940,7 @@ def main(argv: list[str] | None = None) -> int:
             runner_generated=args.runner_generated,
             vendor_generated=args.vendor_generated,
             elf_path=args.elf,
+            authoritative_v12_elf_path=args.authoritative_v12_elf,
             map_path=args.map,
             app_bin_path=args.app_bin,
             vectors_bin_path=args.vectors_bin,

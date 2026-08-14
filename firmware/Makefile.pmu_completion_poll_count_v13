@@ -165,12 +165,13 @@ check: $(CROSS_ELF_EVIDENCE) $(RUNNER_RECORD_WIRE_EVIDENCE)
 
 manifest: $(MANIFEST)
 
-$(MANIFEST): $(TARGET).elf $(GEN_RUNNER) $(GEN_VENDOR) $(GATE) bins $(CROSS_ELF_EVIDENCE) $(RUNNER_RECORD_WIRE_EVIDENCE) $(V12_OBJDUMP) $(V12_NM) $(V13_OBJDUMP) $(V13_NM) $(V13_DWARF)
+$(MANIFEST): $(TARGET).elf $(GEN_RUNNER) $(GEN_VENDOR) $(GATE) bins $(CROSS_ELF_EVIDENCE) $(RUNNER_RECORD_WIRE_EVIDENCE) $(AUTHORITATIVE_V12_ELF) $(V12_OBJDUMP) $(V12_NM) $(V13_OBJDUMP) $(V13_NM) $(V13_DWARF)
 	python3 $(GATE) \
 	    --build-id $(BUILD_ID) \
 	    --runner-generated $(GEN_RUNNER) \
 	    --vendor-generated $(GEN_VENDOR) \
 	    --elf $(TARGET).elf \
+	    --authoritative-v12-elf $(AUTHORITATIVE_V12_ELF) \
 	    --map $(TARGET).map \
 	    --app-bin $(BUILD)/APP.BIN \
 	    --vectors-bin $(BUILD)/VECTORS.BIN \

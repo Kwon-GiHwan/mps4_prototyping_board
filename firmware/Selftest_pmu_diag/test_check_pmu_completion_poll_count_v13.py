@@ -49,7 +49,8 @@ INVALID_REMAINING = 0
 RUNNER_SHA256 = "69cab8c48a2248d0cc0b883a2bc651efa8eb8867c86369051ebc99cc5ee5a88b"
 VENDOR_SHA256 = "bcd877bbd42a35d83c8696d02b64d2ae4985a46fcce91b98102e08661b356bcf"
 RUNNER_GENERATED_SHA256 = "b66f49eee75f7bfbe6a8cd972f86449751cff25eb5ac98be392a46cbbfc50b8f"
-VENDOR_GENERATED_SHA256 = "d64cb32220dec26cff06d010c7fda87f166c5e692a8cf01976889b9c402067cd"
+VENDOR_GENERATED_SHA256 = "b8f007e5c7c13a728487a49d08828c91f60dd3af659e02eda8891ce296c9ff5f"
+AUTHORITATIVE_V12_SHA256 = "cd44ad3e5f370833b03fb3c664da2a8cb9320e38d97786d4c2af6ec1109cf401"
 EXPECTED_SOURCE_NEGATIVE_FIXTURES = {
     "duplicate_helper_definition",
     "duplicate_store",
@@ -3126,11 +3127,19 @@ def run_runner_record_wire_cli_suite(gate, patcher):
 
     probe_dir = "/tmp/v13-arm-dwarf-probe-20260814T213700Z"
     probe_runner = os.path.join(probe_dir, "generated_runner.c")
+    probe_vendor = os.path.join(probe_dir, "generated_vendor.c")
+    probe_authoritative_v12_elf = os.path.join(probe_dir, "authoritative_v12.elf")
     probe_objdump = os.path.join(probe_dir, "runner.objdump.txt")
     probe_nm = os.path.join(probe_dir, "runner.nm.txt")
     probe_dwarf = os.path.join(probe_dir, "runner.dwarf.txt")
-    if all(os.path.exists(path) for path in (probe_runner, probe_objdump, probe_nm, probe_dwarf)):
+    if all(os.path.exists(path) for path in (probe_runner, probe_vendor, probe_objdump, probe_nm, probe_dwarf)):
         try:
+            check(
+                "actual probe generated source hashes match canonical pins",
+                sha256_path(probe_runner) == RUNNER_GENERATED_SHA256
+                and sha256_path(probe_vendor) == VENDOR_GENERATED_SHA256,
+                "runner=%s vendor=%s" % (sha256_path(probe_runner), sha256_path(probe_vendor)),
+            )
             probe_evidence = gate.verify_runner_record_wire_contract(
                 open(probe_runner, "r", encoding="utf-8").read(),
                 open(probe_objdump, "r", encoding="utf-8").read(),
@@ -3161,11 +3170,12 @@ def run_runner_record_wire_cli_suite(gate, patcher):
             check("runner-record/wire gate rejects %s" % name, expected in str(exc), str(exc))
 
     with tempfile.TemporaryDirectory() as tmp:
-        canonical_runner, _ = patcher.patch_runner(load_real_runner_stock())
-        canonical_vendor, _ = patcher.patch_vendor(PATCH_VENDOR_STOCK)
+        canonical_runner = open(probe_runner, "r", encoding="utf-8").read()
+        canonical_vendor = open(probe_vendor, "r", encoding="utf-8").read()
         runner_path = os.path.join(tmp, "runner_generated.c")
         vendor_path = os.path.join(tmp, "vendor_generated.c")
         elf_path = os.path.join(tmp, "runner.elf")
+        authoritative_v12_elf_path = os.path.join(tmp, "authoritative_v12.elf")
         map_path = os.path.join(tmp, "runner.map")
         app_bin = os.path.join(tmp, "APP.BIN")
         vectors_bin = os.path.join(tmp, "VECTORS.BIN")
@@ -3193,6 +3203,7 @@ def run_runner_record_wire_cli_suite(gate, patcher):
                 handle.write(content)
         for path, payload in (
             (elf_path, b"elf"),
+            (authoritative_v12_elf_path, open(probe_authoritative_v12_elf, "rb").read()),
             (app_bin, b"app"),
             (vectors_bin, b"vectors"),
             (ddr_bin, b"ddr"),
@@ -3230,6 +3241,7 @@ def run_runner_record_wire_cli_suite(gate, patcher):
             {
                 "--cross-elf-evidence",
                 "--runner-record-wire-evidence",
+                "--authoritative-v12-elf",
                 "--v12-objdump",
                 "--v12-nm",
                 "--v13-objdump",
@@ -3268,6 +3280,7 @@ def run_runner_record_wire_cli_suite(gate, patcher):
                 "--runner-generated", runner_path,
                 "--vendor-generated", vendor_path,
                 "--elf", elf_path,
+                "--authoritative-v12-elf", authoritative_v12_elf_path,
                 "--map", map_path,
                 "--app-bin", app_bin,
                 "--vectors-bin", vectors_bin,
@@ -3292,7 +3305,7 @@ def run_runner_record_wire_cli_suite(gate, patcher):
                 text=True,
             )
             check(
-                "V13 checker CLI writes manifest for synthetic smoke inputs",
+                "V13 checker CLI writes manifest for actual probe source inputs",
                 cli_ok.returncode == 0 and os.path.exists(manifest_path) and os.path.getsize(manifest_path) > 0,
                 cli_ok.stderr or cli_ok.stdout,
             )
@@ -3300,6 +3313,7 @@ def run_runner_record_wire_cli_suite(gate, patcher):
                 with open(manifest_path, "r", encoding="utf-8") as handle:
                     manifest = json.load(handle)
                 expected_artifacts = {
+                    "authoritative_v12_elf": sha256_path(authoritative_v12_elf_path),
                     "elf": sha256_path(elf_path),
                     "map": sha256_path(map_path),
                     "app_bin": sha256_path(app_bin),
@@ -3318,6 +3332,7 @@ def run_runner_record_wire_cli_suite(gate, patcher):
                 expected_build_evidence = {
                     key: expected_artifacts[key]
                     for key in (
+                        "authoritative_v12_elf",
                         "authoritative_v12_objdump",
                         "authoritative_v12_nm",
                         "v13_objdump",
@@ -3341,6 +3356,7 @@ def run_runner_record_wire_cli_suite(gate, patcher):
                         and manifest.get("runner_record_wire_evidence") == evidence
                         and manifest.get("runner_source_sha256") == RUNNER_GENERATED_SHA256
                         and manifest.get("vendor_source_sha256") == VENDOR_GENERATED_SHA256
+                        and manifest.get("authoritative_v12_elf_sha256") == AUTHORITATIVE_V12_SHA256
                         and manifest.get("artifact_sha256") == expected_artifacts
                         and manifest.get("build_evidence_sha256") == expected_build_evidence
                         and manifest.get("cross_elf_evidence_sha256") == sha256_text(json.dumps(cross, indent=2, sort_keys=True) + "\n")
@@ -3423,6 +3439,34 @@ def run_runner_record_wire_cli_suite(gate, patcher):
                 "V13 checker CLI rejects forged cross-ELF evidence fields",
                 cli_cross_bad.returncode != 0 and not os.path.exists(bad_cross_manifest),
                 cli_cross_bad.stderr or cli_cross_bad.stdout,
+            )
+
+            bad_header_readelf = os.path.join(tmp, "fake_readelf_bad_header.py")
+            with open(bad_header_readelf, "w", encoding="utf-8") as handle:
+                handle.write(
+                    "#!/usr/bin/env python3\n"
+                    "import sys\n"
+                    "if sys.argv[1] == '-h':\n"
+                    "    sys.stdout.write('ELF Header\\nType: DYN (Shared object file)\\nMachine: ARM\\n')\n"
+                    "else:\n"
+                    "    raise SystemExit(2)\n"
+                )
+            os.chmod(bad_header_readelf, 0o755)
+            bad_header_manifest = os.path.join(tmp, "bad_header_manifest.json")
+            cli_bad_header = subprocess.run(
+                [
+                    sys.executable,
+                    os.path.join(os.path.dirname(__file__), "check_pmu_completion_poll_count_v13.py"),
+                    *(bad_header_readelf if arg == readelf_path else arg for arg in cli_args[:-1]),
+                    cli_args[-1].replace(manifest_path, bad_header_manifest),
+                ],
+                capture_output=True,
+                text=True,
+            )
+            check(
+                "V13 checker CLI rejects non-EXEC ELF header",
+                cli_bad_header.returncode != 0 and not os.path.exists(bad_header_manifest),
+                cli_bad_header.stderr or cli_bad_header.stdout,
             )
 
             noncanonical_runner_path = os.path.join(tmp, "runner_noncanonical.c")

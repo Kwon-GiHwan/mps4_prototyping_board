@@ -56,6 +56,7 @@ def validate_makefile(text: str) -> None:
     require(text, "--runner-generated $(GEN_RUNNER)")
     require(text, "--vendor-generated $(GEN_VENDOR)")
     require(text, "--elf $(TARGET).elf")
+    require(text, "--authoritative-v12-elf $(AUTHORITATIVE_V12_ELF)")
     require(text, "--map $(TARGET).map")
     require(text, "--app-bin $(BUILD)/APP.BIN")
     require(text, "--vectors-bin $(BUILD)/VECTORS.BIN")
@@ -69,7 +70,7 @@ def validate_makefile(text: str) -> None:
     require(text, "--cross-elf-evidence $(CROSS_ELF_EVIDENCE)")
     require(text, "--runner-record-wire-evidence $(RUNNER_RECORD_WIRE_EVIDENCE)")
     require(text, "--manifest-out $(MANIFEST)")
-    require(text, "$(MANIFEST): $(TARGET).elf $(GEN_RUNNER) $(GEN_VENDOR) $(GATE) bins $(CROSS_ELF_EVIDENCE) $(RUNNER_RECORD_WIRE_EVIDENCE) $(V12_OBJDUMP) $(V12_NM) $(V13_OBJDUMP) $(V13_NM) $(V13_DWARF)")
+    require(text, "$(MANIFEST): $(TARGET).elf $(GEN_RUNNER) $(GEN_VENDOR) $(GATE) bins $(CROSS_ELF_EVIDENCE) $(RUNNER_RECORD_WIRE_EVIDENCE) $(AUTHORITATIVE_V12_ELF) $(V12_OBJDUMP) $(V12_NM) $(V13_OBJDUMP) $(V13_NM) $(V13_DWARF)")
     require(text, "\t@test -s $(MANIFEST)\n")
 
     forbid(text, "--allow-synthetic-evidence")
