@@ -355,6 +355,22 @@ git commit -m "test(pmu-v13): prove loop equivalence and count dataflow"
 
 ## Chunk 3: Isolated ARM build and real-ELF qualification
 
+Task 4 UNIT/SYNTHETIC qualification is frozen at commit `70f3e4d` and tag
+`pmu-completion-poll-v13-task4-unit`. That gate proves the generated-source
+contract, the synthetic helper CFG/dataflow contract, and the bounded retained
+NVIC screen only. It does **not** prove the linked runner record or wire-buffer
+publication path.
+
+Task 5 must therefore make a distinct runner-record/wire dataflow proof a
+required build-graph output. The existing helper three-slot store lock is not
+that proof: its domain is only the code reachable from the V13 poll helper
+entry. The new proof must reject linked-image writes that can alter the
+`poll_remaining_at_success` record word or its serialized wire slot through an
+unnamed address, cast, inline assembly, or by-index access. Task 5 wires and
+tests the mandatory evidence path; Task 6 closes it against both clean ARM
+builds. Neither task may inherit a claim that Task 4 already covers these
+forms.
+
 ### Task 5: Add and test the isolated build graph
 
 **Files:**
@@ -383,7 +399,7 @@ Expected: fail because the Makefile is absent.
 codex-mark-used firmware/Makefile.pmu_completion_poll_count_v13
 ```
 
-Clone the V12 graph under V13 names. The final gate must receive both the frozen authoritative V12 ELF and the freshly linked V13 ELF; fail if the V12 ELF hash is not exactly the frozen SHA-256.
+Clone the V12 graph under V13 names. The final gate must receive both the frozen authoritative V12 ELF and the freshly linked V13 ELF; fail if the V12 ELF hash is not exactly the frozen SHA-256. The graph must also require the distinct linked-image runner-record/wire dataflow evidence described above; omitting or bypassing that evidence is a graph failure.
 
 - [ ] **Step 4: Run graph and firmware tests**
 
