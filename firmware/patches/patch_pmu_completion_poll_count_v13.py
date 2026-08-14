@@ -158,15 +158,16 @@ static uint32_t v13_poll_completion(void)
 {
     volatile uint32_t *const status_reg =
         (volatile uint32_t *)(uintptr_t)(U85_BASE_ADDRESS + NPU_REG_STATUS);
+    uint32_t remaining = 10000U;
     uint32_t status = 0U;
 
     pmu_completion_poll_v13_t_poll_entry = DWT->CYCCNT;
-    for (uint32_t i = 0U; i < 10000U; ++i) {
+    for (uint32_t i = 0U; remaining != 0U; ++i, --remaining) {
         status = *status_reg;
         if ((status & 0x02U) != 0U) {
             pmu_completion_poll_v13_t_status_completion_seen = DWT->CYCCNT;
             pmu_completion_poll_v13_t_poll_exit = DWT->CYCCNT;
-            pmu_completion_poll_v13_t_poll_remaining_at_success = 10000U - i;
+            pmu_completion_poll_v13_t_poll_remaining_at_success = remaining;
             return status;
         }
     }

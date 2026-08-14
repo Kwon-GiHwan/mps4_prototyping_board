@@ -49,7 +49,7 @@ INVALID_REMAINING = 0
 RUNNER_SHA256 = "69cab8c48a2248d0cc0b883a2bc651efa8eb8867c86369051ebc99cc5ee5a88b"
 VENDOR_SHA256 = "bcd877bbd42a35d83c8696d02b64d2ae4985a46fcce91b98102e08661b356bcf"
 RUNNER_GENERATED_SHA256 = "b66f49eee75f7bfbe6a8cd972f86449751cff25eb5ac98be392a46cbbfc50b8f"
-VENDOR_GENERATED_SHA256 = "b8f007e5c7c13a728487a49d08828c91f60dd3af659e02eda8891ce296c9ff5f"
+VENDOR_GENERATED_SHA256 = "2d86f78f3e8b0ee1f52bf1a74bbf07a4a8c2e43d2e262a50a36a9f8a5a02b4c9"
 AUTHORITATIVE_V12_SHA256 = "cd44ad3e5f370833b03fb3c664da2a8cb9320e38d97786d4c2af6ec1109cf401"
 EXPECTED_SOURCE_NEGATIVE_FIXTURES = {
     "duplicate_helper_definition",
@@ -63,6 +63,7 @@ EXPECTED_SOURCE_NEGATIVE_FIXTURES = {
     "second_writer_after_test_commands",
     "second_writer_before_helper",
     "success_remaining_10001",
+    "success_remaining_recomputed_from_i",
     "success_remaining_zero",
     "timeout_reachable_store",
     "vendor_memcpy_alias_publish",
@@ -279,16 +280,17 @@ VENDOR_V13_OK = """uint32_t __attribute__((noinline)) v13_poll_completion(void)
 {
     volatile uint32_t *const status_reg =
         (volatile uint32_t *)(uintptr_t)(U85_BASE_ADDRESS + NPU_REG_STATUS);
+    uint32_t remaining = 10000U;
     uint32_t status;
 
     pmu_completion_poll_v13_t_poll_entry = DWT->CYCCNT;
 
-    for (uint32_t i = 0U; i < 10000U; ++i) {
+    for (uint32_t i = 0U; remaining != 0U; ++i, --remaining) {
         status = *status_reg;
         if ((status & 0x02U) != 0U) {
             pmu_completion_poll_v13_t_status_completion_seen = DWT->CYCCNT;
             pmu_completion_poll_v13_t_poll_exit = DWT->CYCCNT;
-            pmu_completion_poll_v13_t_poll_remaining_at_success = 10000U - i;
+            pmu_completion_poll_v13_t_poll_remaining_at_success = remaining;
             return status;
         }
     }
@@ -759,13 +761,13 @@ def _elf_negative_fixtures() -> dict[str, dict[str, str]]:
     )
     fixtures["constant_store"] = _elf_case(
         v13_elf(rows=rows_before(v13_rows(), "rem_store", row("const", "movs    r1, #1"))),
-        "remaining must dataflow from failed-poll countdown live-out",
+        "remaining must dataflow from the synchronized failed-poll countdown pair",
     )
     fixtures["recomputed_store"] = _elf_case(
         v13_elf(
             rows=rows_before(v13_rows(), "rem_ptr", row("recompute", "sub.w   r1, r1, #32", size=4))
         ),
-        "remaining must dataflow from failed-poll countdown live-out",
+        "remaining must dataflow from the synchronized failed-poll countdown pair",
     )
     fixtures["timeout_reaches_store"] = _elf_case(
         v13_elf(
@@ -916,7 +918,7 @@ def _elf_negative_fixtures() -> dict[str, dict[str, str]]:
     )
     fixtures["remaining_register_redefined"] = _elf_case(
         v13_elf(rows=rows_before(v13_rows(), "rem_store", row("clobber", "mov     r1, r2"))),
-        "remaining must dataflow from failed-poll countdown live-out",
+        "remaining must dataflow from the synchronized failed-poll countdown pair",
     )
     fixtures["timeout_falls_through_to_success"] = _elf_case(
         v13_elf(rows=rows_without(v13_rows(), "timeout_return")), "timeout exit edge missing"
@@ -976,7 +978,7 @@ def _elf_negative_fixtures() -> dict[str, dict[str, str]]:
         (
             "modelled_move",
             row("detour", "mov     r1, r2"),
-            "remaining must dataflow from failed-poll countdown live-out",
+            "remaining must dataflow from the synchronized failed-poll countdown pair",
         ),
     ):
         fixtures["detour_%s_redefines_remaining_register" % label] = _elf_case(
@@ -1228,15 +1230,15 @@ SEMANTIC_BOUNDARIES = (
 
 
 def _negative_vendor_fixtures() -> dict[str, dict[str, str]]:
-    duplicate_store = """            pmu_completion_poll_v13_t_poll_remaining_at_success = 10000U - i;
-            pmu_completion_poll_v13_t_poll_remaining_at_success = 10000U - i;
+    duplicate_store = """            pmu_completion_poll_v13_t_poll_remaining_at_success = remaining;
+            pmu_completion_poll_v13_t_poll_remaining_at_success = remaining;
 """
     timeout_store = """    pmu_completion_poll_v13_t_poll_remaining_at_success = 1U;
     return 0U;
 """
     second_status_read = """            pmu_completion_poll_v13_t_poll_exit = DWT->CYCCNT;
             status = *status_reg;
-            pmu_completion_poll_v13_t_poll_remaining_at_success = 10000U - i;
+            pmu_completion_poll_v13_t_poll_remaining_at_success = remaining;
 """
     extra_mmio = """        (void)*(volatile uint32_t *)(uintptr_t)(U85_BASE_ADDRESS + NPU_REG_CMD);
         status = *status_reg;
@@ -1251,9 +1253,9 @@ def _negative_vendor_fixtures() -> dict[str, dict[str, str]]:
                 VENDOR_V13_OK,
                 "            pmu_completion_poll_v13_t_status_completion_seen = DWT->CYCCNT;\n"
                 "            pmu_completion_poll_v13_t_poll_exit = DWT->CYCCNT;\n"
-                "            pmu_completion_poll_v13_t_poll_remaining_at_success = 10000U - i;\n",
+                "            pmu_completion_poll_v13_t_poll_remaining_at_success = remaining;\n",
                 "            pmu_completion_poll_v13_t_status_completion_seen = DWT->CYCCNT;\n"
-                "            pmu_completion_poll_v13_t_poll_remaining_at_success = 10000U - i;\n"
+                "            pmu_completion_poll_v13_t_poll_remaining_at_success = remaining;\n"
                 "            pmu_completion_poll_v13_t_poll_exit = DWT->CYCCNT;\n",
                 "remaining-before-p2",
             ),
@@ -1262,7 +1264,7 @@ def _negative_vendor_fixtures() -> dict[str, dict[str, str]]:
         "duplicate_store": {
             "vendor": replace_once(
                 VENDOR_V13_OK,
-                "            pmu_completion_poll_v13_t_poll_remaining_at_success = 10000U - i;\n",
+                "            pmu_completion_poll_v13_t_poll_remaining_at_success = remaining;\n",
                 duplicate_store,
                 "duplicate-store",
             ),
@@ -1280,7 +1282,7 @@ def _negative_vendor_fixtures() -> dict[str, dict[str, str]]:
         "success_remaining_zero": {
             "vendor": replace_once(
                 VENDOR_V13_OK,
-                "            pmu_completion_poll_v13_t_poll_remaining_at_success = 10000U - i;\n",
+                "            pmu_completion_poll_v13_t_poll_remaining_at_success = remaining;\n",
                 "            pmu_completion_poll_v13_t_poll_remaining_at_success = 0U;\n",
                 "remaining-zero",
             ),
@@ -1289,7 +1291,7 @@ def _negative_vendor_fixtures() -> dict[str, dict[str, str]]:
         "success_remaining_10001": {
             "vendor": replace_once(
                 VENDOR_V13_OK,
-                "            pmu_completion_poll_v13_t_poll_remaining_at_success = 10000U - i;\n",
+                "            pmu_completion_poll_v13_t_poll_remaining_at_success = remaining;\n",
                 "            pmu_completion_poll_v13_t_poll_remaining_at_success = 10001U;\n",
                 "remaining-10001",
             ),
@@ -1314,11 +1316,20 @@ def _negative_vendor_fixtures() -> dict[str, dict[str, str]]:
             "vendor": replace_once(
                 VENDOR_V13_OK,
                 "            pmu_completion_poll_v13_t_poll_exit = DWT->CYCCNT;\n"
-                "            pmu_completion_poll_v13_t_poll_remaining_at_success = 10000U - i;\n",
+                "            pmu_completion_poll_v13_t_poll_remaining_at_success = remaining;\n",
                 second_status_read,
                 "second-status-read",
             ),
             "expected": "helper STATUS read count != 1",
+        },
+        "success_remaining_recomputed_from_i": {
+            "vendor": replace_once(
+                VENDOR_V13_OK,
+                "            pmu_completion_poll_v13_t_poll_remaining_at_success = remaining;\n",
+                "            pmu_completion_poll_v13_t_poll_remaining_at_success = 10000U - i;\n",
+                "remaining-from-i",
+            ),
+            "expected": "remaining must publish the failed-poll back-edge induction state",
         },
         "extra_mmio": {
             "vendor": replace_once(
@@ -1463,15 +1474,17 @@ def validate_local_fixtures():
     required_suffix = (
         "            pmu_completion_poll_v13_t_status_completion_seen = DWT->CYCCNT;\n"
         "            pmu_completion_poll_v13_t_poll_exit = DWT->CYCCNT;\n"
-        "            pmu_completion_poll_v13_t_poll_remaining_at_success = 10000U - i;\n"
+        "            pmu_completion_poll_v13_t_poll_remaining_at_success = remaining;\n"
         "            return status;\n"
     )
-    if VENDOR_V13_OK.count("for (uint32_t i = 0U; i < 10000U; ++i) {") != 1:
+    if VENDOR_V13_OK.count("for (uint32_t i = 0U; remaining != 0U; ++i, --remaining) {") != 1:
         raise fail("positive vendor fixture must have exactly one helper loop")
     if required_suffix not in VENDOR_V13_OK:
         raise fail("positive vendor fixture lost V13 success suffix")
-    if "uint32_t remaining = 10000U;" in VENDOR_V13_OK or "if (--remaining == 0U) {" in VENDOR_V13_OK:
-        raise fail("positive vendor fixture must preserve the V12 for-loop source shape")
+    if "uint32_t remaining = 10000U;" not in VENDOR_V13_OK:
+        raise fail("positive vendor fixture must declare the back-edge countdown state")
+    if "pmu_completion_poll_v13_t_poll_remaining_at_success = 10000U - i;" in VENDOR_V13_OK:
+        raise fail("positive vendor fixture must not recompute remaining from a separate i")
     if RUNNER_V13_OK.count("uint32_t poll_remaining_at_success;") != 1:
         raise fail("runner fixture must declare remaining member exactly once")
     if RUNNER_V13_OK.count("if (d.poll_result != V13_POLL_SUCCESS) {") != 1:
@@ -2584,11 +2597,24 @@ def run_future_elf_suite(gate):
     v13_labels = [item["label"] for item in v13_rows()]
     back_edge_decrement = v13_rows()[v13_labels.index("back_edge") - 1]["text"]
     expected_induction = re.match(r"subs\s+(r\d+),", back_edge_decrement).group(1)
-    reported = getattr(proof, "induction_register", None) if not isinstance(proof, dict) else proof.get("induction_register")
+    reported = (
+        getattr(proof, "back_edge_induction_register", None)
+        if not isinstance(proof, dict)
+        else proof.get("remaining_back_edge_induction_register")
+    )
     check(
         "proved induction register is the one the back edge branches on",
         reported == expected_induction,
         "reported=%s expected=%s" % (reported, expected_induction),
+    )
+    publication = getattr(proof, "publication_register", None)
+    expected_publication = re.match(
+        r"str\s+(r\d+),", v13_rows()[v13_labels.index("rem_store")]["text"]
+    ).group(1)
+    check(
+        "live-out proof records the publication register exactly",
+        publication == expected_publication,
+        "publication=%s expected=%s back_edge=%s" % (publication, expected_publication, reported),
     )
 
     # The two live-out booleans must record what the graph and the checks found,
@@ -2599,11 +2625,13 @@ def run_future_elf_suite(gate):
     check(
         "live-out proof booleans are derived, not literal True assignments",
         "remaining_from_back_edge_induction=True" not in gate_source
+        and "synchronized_induction_pair=True" not in gate_source
         and "helper_leaf_no_stack_access=True" not in gate_source,
     )
     check(
         "live-out proof booleans are reported True for the canonical helper",
         getattr(proof, "remaining_from_back_edge_induction", None) is True
+        and getattr(proof, "synchronized_induction_pair", None) is True
         and getattr(proof, "helper_leaf_no_stack_access", None) is True,
         str(proof),
     )
@@ -2654,7 +2682,40 @@ def run_future_elf_suite(gate):
                 str(exc),
             )
 
+    probe_dir = "/tmp/v13-arm-loop-probe-20260815T073000Z"
+    probe_v12_objdump = os.path.join(probe_dir, "v12.objdump.txt")
+    probe_v12_nm = os.path.join(probe_dir, "v12.nm.txt")
+    probe_v13_objdump = os.path.join(probe_dir, "runner.objdump.txt")
+    probe_v13_nm = os.path.join(probe_dir, "runner.nm.txt")
+    if not all(os.path.exists(path) for path in (probe_v12_objdump, probe_v12_nm, probe_v13_objdump, probe_v13_nm)):
+        check("fresh ARM loop probe is mandatory for real cross-ELF proof", False, probe_dir)
+    else:
+        try:
+            actual = gate.verify_cross_elf_contract(
+                open(probe_v12_objdump, "r", encoding="utf-8").read(),
+                open(probe_v12_nm, "r", encoding="utf-8").read(),
+                open(probe_v13_objdump, "r", encoding="utf-8").read(),
+                open(probe_v13_nm, "r", encoding="utf-8").read(),
+            )
+            check(
+                "fresh ARM loop probe proves exact synchronized induction-pair cross-ELF contract",
+                actual.get("v12_v13_poll_loop_semantically_equivalent") is True
+                and actual.get("remaining_from_back_edge_induction") is True
+                and actual.get("synchronized_induction_pair") is True
+                and actual.get("remaining_publication_register") == "r2"
+                and actual.get("remaining_back_edge_induction_register") == "r3",
+                str(actual),
+            )
+        except Exception as exc:
+            check(
+                "fresh ARM loop probe proves exact synchronized induction-pair cross-ELF contract",
+                False,
+                str(exc),
+            )
+
     for name, payload in ELF_NEGATIVE_FIXTURES.items():
+        if name.startswith("retained_v12_"):
+            continue
         try:
             gate.verify_cross_elf_contract(V12_OBJDUMP_OK, V12_NM_OK, payload["objdump"], payload["nm"])
             check("future ELF gate rejects %s" % name, False, "unexpected pass")
@@ -2909,22 +2970,30 @@ def run_generator_suite(patcher):
     check(
         "vendor patch appends one remaining word",
         vendor_out.count("pmu_completion_poll_v13_t_poll_remaining_at_success") == 2
-        and vendor_out.count("pmu_completion_poll_v13_t_poll_remaining_at_success = 10000U - i;") == 1,
+        and vendor_out.count("pmu_completion_poll_v13_t_poll_remaining_at_success = remaining;") == 1,
     )
     check(
-        "vendor patch emits exact success suffix",
+        "vendor patch emits same-state success publication",
         (
+            "    uint32_t remaining = 10000U;\n"
+            "    uint32_t status = 0U;\n"
+            "\n"
+            "    pmu_completion_poll_v13_t_poll_entry = DWT->CYCCNT;\n"
+            "    for (uint32_t i = 0U; remaining != 0U; ++i, --remaining) {\n"
+        ) in vendor_out
+        and (
             "pmu_completion_poll_v13_t_status_completion_seen = DWT->CYCCNT;\n"
             "            pmu_completion_poll_v13_t_poll_exit = DWT->CYCCNT;\n"
-            "            pmu_completion_poll_v13_t_poll_remaining_at_success = 10000U - i;\n"
+            "            pmu_completion_poll_v13_t_poll_remaining_at_success = remaining;\n"
             "            return status;"
-        ) in vendor_out,
+        ) in vendor_out
+        and "pmu_completion_poll_v13_t_poll_remaining_at_success = 10000U - i;" not in vendor_out,
     )
     check(
-        "vendor patch preserves V12 for-loop source with post-P2 publication",
-        "for (uint32_t i = 0U; i < 10000U; ++i) {" in vendor_out
-        and "pmu_completion_poll_v13_t_poll_remaining_at_success = 10000U - i;" in vendor_out
-        and "if (--remaining == 0U) {" not in vendor_out,
+        "vendor patch publishes the back-edge countdown state instead of recomputing from i",
+        "for (uint32_t i = 0U; remaining != 0U; ++i, --remaining) {" in vendor_out
+        and "pmu_completion_poll_v13_t_poll_remaining_at_success = remaining;" in vendor_out
+        and "pmu_completion_poll_v13_t_poll_remaining_at_success = 10000U - i;" not in vendor_out,
     )
     check(
         "vendor timeout path does not publish remaining",
@@ -3125,37 +3194,58 @@ def run_runner_record_wire_cli_suite(gate, patcher):
         check("runner-record/wire gate accepts synthetic linked-image fixture", False, str(exc))
         evidence = None
 
-    probe_dir = "/tmp/v13-arm-dwarf-probe-20260814T213700Z"
+    probe_dir = "/tmp/v13-arm-loop-probe-20260815T073000Z"
     probe_runner = os.path.join(probe_dir, "generated_runner.c")
     probe_vendor = os.path.join(probe_dir, "generated_vendor.c")
-    probe_authoritative_v12_elf = os.path.join(probe_dir, "authoritative_v12.elf")
     probe_objdump = os.path.join(probe_dir, "runner.objdump.txt")
     probe_nm = os.path.join(probe_dir, "runner.nm.txt")
     probe_dwarf = os.path.join(probe_dir, "runner.dwarf.txt")
-    if all(os.path.exists(path) for path in (probe_runner, probe_vendor, probe_objdump, probe_nm, probe_dwarf)):
-        try:
-            check(
-                "actual probe generated source hashes match canonical pins",
-                sha256_path(probe_runner) == RUNNER_GENERATED_SHA256
-                and sha256_path(probe_vendor) == VENDOR_GENERATED_SHA256,
-                "runner=%s vendor=%s" % (sha256_path(probe_runner), sha256_path(probe_vendor)),
-            )
-            probe_evidence = gate.verify_runner_record_wire_contract(
-                open(probe_runner, "r", encoding="utf-8").read(),
-                open(probe_objdump, "r", encoding="utf-8").read(),
-                open(probe_nm, "r", encoding="utf-8").read(),
-                open(probe_dwarf, "r", encoding="utf-8").read(),
-            )
-            check(
-                "runner-record/wire gate accepts real ARM probe exact-form evidence",
-                probe_evidence.get("evidence_source") == "arm_elf"
-                and probe_evidence.get("poll_remaining_field_offset_bytes") == 400
-                and probe_evidence.get("handle_run_pmu_diag_local_d_fbreg") == -1056
-                and probe_evidence.get("handle_run_pmu_diag_resp_fbreg") == -652
-                and probe_evidence.get("wire_word_index") == 100,
-            )
-        except Exception as exc:
-            check("runner-record/wire gate accepts real ARM probe exact-form evidence", False, str(exc))
+    probe_v12_objdump = os.path.join(probe_dir, "v12.objdump.txt")
+    probe_v12_nm = os.path.join(probe_dir, "v12.nm.txt")
+    probe_authoritative_v12_elf = "/tmp/v13-arm-dwarf-probe-20260814T213700Z/authoritative_v12.elf"
+    probe_matches_current = False
+    probe_evidence = None
+    if not all(
+        os.path.exists(path)
+        for path in (
+            probe_runner,
+            probe_vendor,
+            probe_objdump,
+            probe_nm,
+            probe_dwarf,
+            probe_v12_objdump,
+            probe_v12_nm,
+            probe_authoritative_v12_elf,
+        )
+    ):
+        check("fresh ARM loop probe is mandatory for V13 real-image tests", False, probe_dir)
+        return
+    try:
+        probe_matches_current = (
+            sha256_path(probe_runner) == RUNNER_GENERATED_SHA256
+            and sha256_path(probe_vendor) == VENDOR_GENERATED_SHA256
+        )
+        check(
+            "fresh ARM loop probe generated source hashes match canonical pins",
+            probe_matches_current,
+            "runner=%s vendor=%s" % (sha256_path(probe_runner), sha256_path(probe_vendor)),
+        )
+        probe_evidence = gate.verify_runner_record_wire_contract(
+            open(probe_runner, "r", encoding="utf-8").read(),
+            open(probe_objdump, "r", encoding="utf-8").read(),
+            open(probe_nm, "r", encoding="utf-8").read(),
+            open(probe_dwarf, "r", encoding="utf-8").read(),
+        )
+        check(
+            "runner-record/wire gate accepts fresh real ARM probe exact-form evidence",
+            probe_evidence.get("evidence_source") == "arm_elf"
+            and probe_evidence.get("poll_remaining_field_offset_bytes") == 400
+            and probe_evidence.get("handle_run_pmu_diag_local_d_fbreg") == -1056
+            and probe_evidence.get("handle_run_pmu_diag_resp_fbreg") == -652
+            and probe_evidence.get("wire_word_index") == 100,
+        )
+    except Exception as exc:
+        check("runner-record/wire gate accepts fresh real ARM probe exact-form evidence", False, str(exc))
 
     for name, (mutated_objdump, expected) in RUNNER_RECORD_WIRE_NEGATIVES.items():
         try:
@@ -3188,6 +3278,8 @@ def run_runner_record_wire_cli_suite(gate, patcher):
         manifest_path = os.path.join(tmp, "pmu_completion_poll_count_v13_manifest.json")
         cross_path = os.path.join(tmp, "cross.json")
         runner_record_wire_path = os.path.join(tmp, "runner_record_wire.json")
+        objdump_path = os.path.join(tmp, "fake_objdump.py")
+        nm_path = os.path.join(tmp, "fake_nm.py")
         readelf_path = os.path.join(tmp, "fake_readelf.py")
         for path, content in (
             (runner_path, canonical_runner),
@@ -3210,16 +3302,47 @@ def run_runner_record_wire_cli_suite(gate, patcher):
         ):
             with open(path, "wb") as handle:
                 handle.write(payload)
+        with open(objdump_path, "w", encoding="utf-8") as handle:
+            handle.write(
+                "#!/usr/bin/env python3\n"
+                "import pathlib, sys\n"
+                "path = pathlib.Path(sys.argv[-1]).name\n"
+                "if sys.argv[1:] != ['-d', sys.argv[-1]]:\n"
+                "    raise SystemExit(2)\n"
+                "if path == 'authoritative_v12.elf':\n"
+                "    sys.stdout.write(pathlib.Path(%r).read_text(encoding='utf-8'))\n"
+                "elif path == 'runner.elf':\n"
+                "    sys.stdout.write(pathlib.Path(%r).read_text(encoding='utf-8'))\n"
+                "else:\n"
+                "    raise SystemExit(2)\n" % (v12_objdump_path, v13_objdump_path)
+            )
+        with open(nm_path, "w", encoding="utf-8") as handle:
+            handle.write(
+                "#!/usr/bin/env python3\n"
+                "import pathlib, sys\n"
+                "path = pathlib.Path(sys.argv[-1]).name\n"
+                "if sys.argv[1:] != ['-n', sys.argv[-1]]:\n"
+                "    raise SystemExit(2)\n"
+                "if path == 'authoritative_v12.elf':\n"
+                "    sys.stdout.write(pathlib.Path(%r).read_text(encoding='utf-8'))\n"
+                "elif path == 'runner.elf':\n"
+                "    sys.stdout.write(pathlib.Path(%r).read_text(encoding='utf-8'))\n"
+                "else:\n"
+                "    raise SystemExit(2)\n" % (v12_nm_path, v13_nm_path)
+            )
         with open(readelf_path, "w", encoding="utf-8") as handle:
             handle.write(
                 "#!/usr/bin/env python3\n"
-                "import sys\n"
+                "import pathlib, sys\n"
                 "if sys.argv[1] == '-h':\n"
                 "    sys.stdout.write('ELF Header\\nType: EXEC (Executable file)\\nMachine: ARM\\n')\n"
+                "elif sys.argv[1] == '--debug-dump=info,loc':\n"
+                "    sys.stdout.write(pathlib.Path(%r).read_text(encoding='utf-8'))\n"
                 "else:\n"
                 "    raise SystemExit(2)\n"
+                % v13_dwarf_path
             )
-        for script in (readelf_path,):
+        for script in (objdump_path, nm_path, readelf_path):
             os.chmod(script, 0o755)
 
         if not hasattr(gate, "build_arg_parser"):
@@ -3242,6 +3365,8 @@ def run_runner_record_wire_cli_suite(gate, patcher):
                 "--cross-elf-evidence",
                 "--runner-record-wire-evidence",
                 "--authoritative-v12-elf",
+                "--objdump-tool",
+                "--nm-tool",
                 "--v12-objdump",
                 "--v12-nm",
                 "--v13-objdump",
@@ -3252,11 +3377,31 @@ def run_runner_record_wire_cli_suite(gate, patcher):
         )
 
         if evidence is not None:
-            cross = gate.verify_cross_elf_contract(V12_OBJDUMP_OK, V12_NM_OK, objdump_text, nm_text)
+            cross_inputs = (V12_OBJDUMP_OK, V12_NM_OK, objdump_text, nm_text)
+            current_runner_record_wire = evidence
+            if probe_matches_current and probe_evidence is not None:
+                with open(v13_objdump_path, "w", encoding="utf-8") as handle:
+                    handle.write(open(probe_objdump, "r", encoding="utf-8").read())
+                with open(v13_nm_path, "w", encoding="utf-8") as handle:
+                    handle.write(open(probe_nm, "r", encoding="utf-8").read())
+                with open(v13_dwarf_path, "w", encoding="utf-8") as handle:
+                    handle.write(open(probe_dwarf, "r", encoding="utf-8").read())
+                with open(v12_objdump_path, "w", encoding="utf-8") as handle:
+                    handle.write(open(probe_v12_objdump, "r", encoding="utf-8").read())
+                with open(v12_nm_path, "w", encoding="utf-8") as handle:
+                    handle.write(open(probe_v12_nm, "r", encoding="utf-8").read())
+                cross_inputs = (
+                    open(probe_v12_objdump, "r", encoding="utf-8").read(),
+                    open(probe_v12_nm, "r", encoding="utf-8").read(),
+                    open(probe_objdump, "r", encoding="utf-8").read(),
+                    open(probe_nm, "r", encoding="utf-8").read(),
+                )
+                current_runner_record_wire = probe_evidence
+            cross = gate.verify_cross_elf_contract(*cross_inputs)
             with open(cross_path, "w", encoding="utf-8") as handle:
                 json.dump(cross, handle, indent=2, sort_keys=True)
             with open(runner_record_wire_path, "w", encoding="utf-8") as handle:
-                json.dump(evidence, handle, indent=2, sort_keys=True)
+                json.dump(current_runner_record_wire, handle, indent=2, sort_keys=True)
 
             help_result = subprocess.run(
                 [
@@ -3281,6 +3426,8 @@ def run_runner_record_wire_cli_suite(gate, patcher):
                 "--vendor-generated", vendor_path,
                 "--elf", elf_path,
                 "--authoritative-v12-elf", authoritative_v12_elf_path,
+                "--objdump-tool", objdump_path,
+                "--nm-tool", nm_path,
                 "--map", map_path,
                 "--app-bin", app_bin,
                 "--vectors-bin", vectors_bin,
@@ -3305,8 +3452,14 @@ def run_runner_record_wire_cli_suite(gate, patcher):
                 text=True,
             )
             check(
-                "V13 checker CLI writes manifest for actual probe source inputs",
-                cli_ok.returncode == 0 and os.path.exists(manifest_path) and os.path.getsize(manifest_path) > 0,
+                "V13 checker CLI handles current-source runner/wire evidence honestly",
+                (
+                    cli_ok.returncode == 0
+                    and os.path.exists(manifest_path)
+                    and os.path.getsize(manifest_path) > 0
+                    if probe_matches_current
+                    else cli_ok.returncode != 0 and not os.path.exists(manifest_path)
+                ),
                 cli_ok.stderr or cli_ok.stdout,
             )
             if os.path.exists(manifest_path):
@@ -3346,21 +3499,21 @@ def run_runner_record_wire_cli_suite(gate, patcher):
                     gate.validate_artifact_contract(
                         json.dumps(manifest),
                         cross,
-                        evidence,
+                        current_runner_record_wire,
                         expected_artifacts,
                         expected_build_evidence,
                     )
                     check(
                         "V13 manifest binds exact evidence JSON and artifact hashes",
                         manifest.get("cross_elf_evidence") == cross
-                        and manifest.get("runner_record_wire_evidence") == evidence
+                        and manifest.get("runner_record_wire_evidence") == current_runner_record_wire
                         and manifest.get("runner_source_sha256") == RUNNER_GENERATED_SHA256
                         and manifest.get("vendor_source_sha256") == VENDOR_GENERATED_SHA256
                         and manifest.get("authoritative_v12_elf_sha256") == AUTHORITATIVE_V12_SHA256
                         and manifest.get("artifact_sha256") == expected_artifacts
                         and manifest.get("build_evidence_sha256") == expected_build_evidence
                         and manifest.get("cross_elf_evidence_sha256") == sha256_text(json.dumps(cross, indent=2, sort_keys=True) + "\n")
-                        and manifest.get("runner_record_wire_evidence_sha256") == sha256_text(json.dumps(evidence, indent=2, sort_keys=True) + "\n"),
+                        and manifest.get("runner_record_wire_evidence_sha256") == sha256_text(json.dumps(current_runner_record_wire, indent=2, sort_keys=True) + "\n"),
                     )
                 except Exception as exc:
                     check("V13 manifest binds exact evidence JSON and artifact hashes", False, str(exc))
@@ -3439,6 +3592,26 @@ def run_runner_record_wire_cli_suite(gate, patcher):
                 "V13 checker CLI rejects forged cross-ELF evidence fields",
                 cli_cross_bad.returncode != 0 and not os.path.exists(bad_cross_manifest),
                 cli_cross_bad.stderr or cli_cross_bad.stdout,
+            )
+
+            mismatched_v13_objdump_path = os.path.join(tmp, "runner_v13_sidecar_bad.objdump")
+            with open(mismatched_v13_objdump_path, "w", encoding="utf-8") as handle:
+                handle.write(objdump_text + "\n/* drift */\n")
+            mismatched_objdump_manifest = os.path.join(tmp, "objdump_bad_manifest.json")
+            cli_objdump_bad = subprocess.run(
+                [
+                    sys.executable,
+                    os.path.join(os.path.dirname(__file__), "check_pmu_completion_poll_count_v13.py"),
+                    *(mismatched_v13_objdump_path if arg == v13_objdump_path else arg for arg in cli_args[:-1]),
+                    cli_args[-1].replace(manifest_path, mismatched_objdump_manifest),
+                ],
+                capture_output=True,
+                text=True,
+            )
+            check(
+                "V13 checker CLI rejects V13 objdump sidecar drift from tool output",
+                cli_objdump_bad.returncode != 0 and not os.path.exists(mismatched_objdump_manifest),
+                cli_objdump_bad.stderr or cli_objdump_bad.stdout,
             )
 
             bad_header_readelf = os.path.join(tmp, "fake_readelf_bad_header.py")

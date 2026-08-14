@@ -57,6 +57,8 @@ def validate_makefile(text: str) -> None:
     require(text, "--vendor-generated $(GEN_VENDOR)")
     require(text, "--elf $(TARGET).elf")
     require(text, "--authoritative-v12-elf $(AUTHORITATIVE_V12_ELF)")
+    require(text, "--objdump-tool $(OBJDUMP)")
+    require(text, "--nm-tool $(NM)")
     require(text, "--map $(TARGET).map")
     require(text, "--app-bin $(BUILD)/APP.BIN")
     require(text, "--vectors-bin $(BUILD)/VECTORS.BIN")

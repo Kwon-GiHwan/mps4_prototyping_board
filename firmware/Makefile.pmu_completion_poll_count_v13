@@ -172,6 +172,8 @@ $(MANIFEST): $(TARGET).elf $(GEN_RUNNER) $(GEN_VENDOR) $(GATE) bins $(CROSS_ELF_
 	    --vendor-generated $(GEN_VENDOR) \
 	    --elf $(TARGET).elf \
 	    --authoritative-v12-elf $(AUTHORITATIVE_V12_ELF) \
+	    --objdump-tool $(OBJDUMP) \
+	    --nm-tool $(NM) \
 	    --map $(TARGET).map \
 	    --app-bin $(BUILD)/APP.BIN \
 	    --vectors-bin $(BUILD)/VECTORS.BIN \

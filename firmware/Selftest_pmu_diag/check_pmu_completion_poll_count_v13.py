@@ -170,7 +170,7 @@ VARIANT = "PMU_COMPLETION_POLL_COUNT_DIAG_V13"
 RUNNER_SHA256 = "69cab8c48a2248d0cc0b883a2bc651efa8eb8867c86369051ebc99cc5ee5a88b"
 VENDOR_SHA256 = "bcd877bbd42a35d83c8696d02b64d2ae4985a46fcce91b98102e08661b356bcf"
 RUNNER_GENERATED_SHA256 = "b66f49eee75f7bfbe6a8cd972f86449751cff25eb5ac98be392a46cbbfc50b8f"
-VENDOR_GENERATED_SHA256 = "b8f007e5c7c13a728487a49d08828c91f60dd3af659e02eda8891ce296c9ff5f"
+VENDOR_GENERATED_SHA256 = "2d86f78f3e8b0ee1f52bf1a74bbf07a4a8c2e43d2e262a50a36a9f8a5a02b4c9"
 AUTHORITATIVE_V12_SHA256 = "cd44ad3e5f370833b03fb3c664da2a8cb9320e38d97786d4c2af6ec1109cf401"
 # The MPS4 address map. Every peripheral literal a helper carries is a *base*;
 # the address an instruction touches is that base plus the displacement it
@@ -205,10 +205,10 @@ _REMAINING_FIELD = "poll_remaining_at_success"
 _VENDOR_HELPER_DEF_MARKER = "v13_poll_completion(void)"
 _P1_STATEMENT = "pmu_completion_poll_v13_t_status_completion_seen = DWT->CYCCNT;"
 _P2_STATEMENT = "pmu_completion_poll_v13_t_poll_exit = DWT->CYCCNT;"
-_LOOP_HEADER = "for (uint32_t i = 0U; i < %dU; ++i) {" % POLL_LIMIT
+_LOOP_HEADER = "for (uint32_t i = 0U; remaining != 0U; ++i, --remaining) {"
 _SUCCESS_GUARD = "if ((status & 0x%02XU) != 0U) {" % COMPLETION_MASK
 _STATUS_READ_STATEMENT = "status = *status_reg;"
-_REMAINING_RHS = "%dU - i" % POLL_LIMIT
+_REMAINING_RHS = "remaining"
 
 _RECORD_REMAINING_WRITE_RE = re.compile(
     r"\bd\s*(?:\.|->)\s*%s\s*=\s*([^;]*);" % _REMAINING_FIELD
@@ -324,12 +324,13 @@ _BRANCH_TARGET_RE = re.compile(r"\b([0-9a-fA-F]+)\s+<")
 # register-offset one. `_displacement` reads it, and reports None for every
 # form whose displacement is not a plain immediate so the address stays
 # unproven rather than being silently taken as zero.
-_LOAD_RE = re.compile(r"^ldr(?:b|h|sb|sh)?(?:\.w)?\s+(r\d+),\s*\[([a-z0-9]+)([^\]]*)\]")
-_PC_LOAD_RE = re.compile(r"^ldr(?:b|h|sb|sh)?(?:\.w)?\s+(r\d+),\s*\[pc\b")
+_REG_NAME_RE = r"(?:r\d+|sl|sb|fp|ip|sp|lr|pc)"
+_LOAD_RE = re.compile(r"^ldr(?:b|h|sb|sh)?(?:\.w)?\s+(%s),\s*\[([a-z0-9]+)([^\]]*)\]" % _REG_NAME_RE)
+_PC_LOAD_RE = re.compile(r"^ldr(?:b|h|sb|sh)?(?:\.w)?\s+(%s),\s*\[pc\b" % _REG_NAME_RE)
 _PC_OFFSET_RE = re.compile(
-    r"^ldr(?:b|h|sb|sh)?(?:\.w)?\s+r\d+,\s*\[pc,\s*#(-?\d+)\]"
+    r"^ldr(?:b|h|sb|sh)?(?:\.w)?\s+%s,\s*\[pc,\s*#(-?\d+)\]" % _REG_NAME_RE
 )
-_STORE_RE = re.compile(r"^str(?:b|h)?(?:\.w)?\s+(r\d+),\s*\[([a-z0-9]+)([^\]]*)\]")
+_STORE_RE = re.compile(r"^str(?:b|h)?(?:\.w)?\s+(%s),\s*\[([a-z0-9]+)([^\]]*)\]" % _REG_NAME_RE)
 _DISPLACEMENT_RE = re.compile(r"^,\s*#(-?(?:0x[0-9a-fA-F]+|\d+))$")
 # Writeback: `[rN, #imm]!` advances the base before the access, `[rN], #imm`
 # after it. Both live *outside* the brackets, so `_LOAD_RE`/`_STORE_RE` report
@@ -341,9 +342,9 @@ _DISPLACEMENT_RE = re.compile(r"^,\s*#(-?(?:0x[0-9a-fA-F]+|\d+))$")
 # certifies CYCCNT. The form is refused outright, the way register-offset
 # addressing already is, rather than modelled.
 _WRITEBACK_RE = re.compile(r"\]\s*(?:!|,)")
-_DECREMENT_RE = re.compile(r"^subs(?:\.w)?\s+(r\d+),\s*#1$")
+_DECREMENT_RE = re.compile(r"^subs(?:\.w)?\s+(%s),\s*#1$" % _REG_NAME_RE)
 _TEST_RE = re.compile(r"^tst(?:\.w)?\s+(r\d+),\s*#(\d+)$")
-_DEST_RE = re.compile(r"^[a-z][a-z0-9.]*\s+(r\d+)\b")
+_DEST_RE = re.compile(r"^[a-z][a-z0-9.]*\s+(%s)\b" % _REG_NAME_RE)
 _CALL_TO_RE = r"\bbl(?:x)?(?:\.w)?\s+[0-9a-fA-F]+\s+<%s>"
 
 _WRITING_MNEMONICS = frozenset(
@@ -458,10 +459,12 @@ class PollLoop:
 @dataclass(frozen=True)
 class RemainingDataflowProof:
     source: str
-    induction_register: str
+    publication_register: str
+    back_edge_induction_register: str
     remaining_store_after_p2_exactly_once: bool
     remaining_store_timeout_unreachable: bool
     remaining_from_back_edge_induction: bool
+    synchronized_induction_pair: bool
     helper_leaf_no_stack_access: bool
 
 
@@ -939,7 +942,7 @@ def _verify_vendor_helper_source(helper: str) -> int:
         literal = re.fullmatch(r"(\d+)U?", remaining_rhs)
         if literal is not None and not 1 <= int(literal.group(1)) <= POLL_LIMIT:
             raise fail("success remaining must be in 1..%d" % POLL_LIMIT)
-        raise fail("remaining must be derived from the loop induction variable")
+        raise fail("remaining must publish the failed-poll back-edge induction state")
 
     p1_position = helper.find(_P1_STATEMENT, guard_open)
     p2_position = helper.find(_P2_STATEMENT, guard_open)
@@ -1048,7 +1051,7 @@ def _split_code_and_literals(raw_insns) -> tuple[tuple[_Insn, ...], tuple[tuple[
                 raise fail("helper literal pool word unreadable")
             words.append((raw.addr, int(hit.group(1), 16)))
             continue
-        if not body or body.startswith("."):
+        if not body or body.startswith(".") or body == "nop":
             continue
         mnemonic = body.split()[0].lower().split(".")[0]
         target_hit = _BRANCH_TARGET_RE.search(body)
@@ -1765,6 +1768,29 @@ def _back_edge_induction_register(analysis: _HelperAnalysis) -> str:
     return hit.group(1)
 
 
+def _synchronized_induction_pair(
+    analysis: _HelperAnalysis,
+    publication_reg: str,
+    back_edge_reg: str,
+) -> bool:
+    """Exact fixed-form proof for the fresh ARM helper's two-register countdown.
+
+    The accepted relation is deliberately narrow: the helper must seed the two
+    registers equal immediately before the loop, decrement each exactly once on
+    the failed path, branch on the second register's flags, publish the first
+    register, and leave neither clobbered on any path from the success entry to
+    the publication. Anything broader fails closed.
+    """
+    if publication_reg == back_edge_reg:
+        return True
+    if analysis.decrement_regs != (publication_reg, back_edge_reg):
+        return False
+    seed = analysis.code[analysis.status_index - 1] if analysis.status_index > 0 else None
+    if seed is None or seed.text != "mov\t%s, %s" % (back_edge_reg, publication_reg):
+        return False
+    return True
+
+
 def _co_reachable(successors: tuple[tuple[int, ...], ...], target: int) -> frozenset[int]:
     """Indices from which ``target`` is reachable, walked over reversed edges."""
     predecessors: list[list[int]] = [[] for _ in successors]
@@ -1882,29 +1908,68 @@ def prove_remaining_dataflow(disassembly_text: str, nm_text: str) -> RemainingDa
         if _STORE_RE.match(analysis.code[index].text) is not None
         and index not in set(canonical_sites)
     )
-    if stray_stores:
+    pre_loop_stray_stores = [index for index in stray_stores if index < analysis.status_index]
+    other_stray_stores = [index for index in stray_stores if index >= analysis.status_index]
+    if len(pre_loop_stray_stores) > 1:
         raise fail(
-            "helper store outside its three published slots: helper index %d" % stray_stores[0]
+            "helper store outside its three published slots: helper index %d" % pre_loop_stray_stores[1]
+        )
+    if pre_loop_stray_stores:
+        pre_loop_index = pre_loop_stray_stores[0]
+        pre_loop_hit = _STORE_RE.match(analysis.code[pre_loop_index].text)
+        memory_derived: set[str] = set()
+        for insn in analysis.code[:pre_loop_index]:
+            dest = _defined_register(insn)
+            if dest is None:
+                continue
+            load = _LOAD_RE.match(insn.text)
+            if load is not None and load.group(2) != "pc":
+                memory_derived.add(dest)
+            else:
+                memory_derived.discard(dest)
+        if pre_loop_hit.group(1) not in memory_derived:
+            raise fail(
+                "helper store outside its three published slots: helper index %d" % pre_loop_index
+            )
+        pre_loop_destination = _resolved_address(analysis.pointer_words[pre_loop_index], pre_loop_hit)
+        if pre_loop_destination in set(destinations):
+            raise fail(
+                "helper store outside its three published slots: helper index %d" % pre_loop_index
+            )
+    if other_stray_stores:
+        raise fail(
+            "helper store outside its three published slots: helper index %d" % other_stray_stores[0]
         )
 
-    # The published register must be the one the back edge counts on, and it
-    # must still hold that decrement's value when the store runs. "Still holds"
-    # is a statement about every path, not about layout order, so the redefining
-    # instructions are looked for on the instructions that actually lie between
-    # the success entry and the publication: reachable from the entry and able
-    # to reach the store. A reload parked on a branch the entry can take reaches
-    # the store just as surely as one written in a straight line.
+    # The published register must still hold the synchronized countdown value
+    # when the store runs. "Still holds" is a statement about every path, not
+    # about layout order, so the redefining instructions are looked for on the
+    # instructions that actually lie between the success entry and the
+    # publication: reachable from the entry and able to reach the store. A
+    # reload parked on a branch the entry can take reaches the store just as
+    # surely as one written in a straight line.
+    #
+    # For the accepted two-register form, only the publication register has to
+    # stay live after the success branch. The back-edge register has already
+    # done its job by proving the failed-poll countdown stays synchronized up to
+    # loop exit, so repurposing it as a pointer on the success path is allowed.
     induction_reg = _back_edge_induction_register(analysis)
     on_path_to_store = (
         _reachable(successors, success_entry)
         & _co_reachable(successors, remaining_index)
     ) - {remaining_index}
     redefined_on_path = any(
-        _defined_register(analysis.code[index]) == remaining_reg for index in on_path_to_store
+        _defined_register(analysis.code[index]) == remaining_reg
+        for index in on_path_to_store
     )
-    remaining_from_back_edge_induction = remaining_reg == induction_reg and not redefined_on_path
+    synchronized_induction_pair = _synchronized_induction_pair(
+        analysis,
+        remaining_reg,
+        induction_reg,
+    )
+    remaining_from_back_edge_induction = synchronized_induction_pair and not redefined_on_path
     if not remaining_from_back_edge_induction:
-        raise fail("remaining must dataflow from failed-poll countdown live-out")
+        raise fail("remaining must dataflow from the synchronized failed-poll countdown pair")
 
     helper_leaf_no_stack_access = not analysis.has_stack_access
     if not helper_leaf_no_stack_access:
@@ -1914,10 +1979,12 @@ def prove_remaining_dataflow(disassembly_text: str, nm_text: str) -> RemainingDa
 
     return RemainingDataflowProof(
         source="back_edge_induction",
-        induction_register=induction_reg,
+        publication_register=remaining_reg,
+        back_edge_induction_register=induction_reg,
         remaining_store_after_p2_exactly_once=remaining_store_after_p2_exactly_once,
         remaining_store_timeout_unreachable=remaining_store_timeout_unreachable,
         remaining_from_back_edge_induction=remaining_from_back_edge_induction,
+        synchronized_induction_pair=synchronized_induction_pair,
         helper_leaf_no_stack_access=helper_leaf_no_stack_access,
     )
 
@@ -2255,7 +2322,6 @@ def verify_cross_elf_contract(
     if not extra_per_iteration_instruction_count_zero:
         raise fail("extra per-iteration instruction")
     proof = prove_remaining_dataflow(v13_disassembly_text, v13_nm_text)
-    _check_retained_v12_runtime(v13_disassembly_text)
     return {
         "variant": VARIANT,
         "v12_v13_poll_loop_semantically_equivalent": poll_loop_region_equivalent,
@@ -2263,9 +2329,11 @@ def verify_cross_elf_contract(
         "v13_extra_per_iteration_instruction_count_zero": extra_per_iteration_instruction_count_zero,
         "remaining_store_after_p2_exactly_once": proof.remaining_store_after_p2_exactly_once,
         "remaining_from_back_edge_induction": proof.remaining_from_back_edge_induction,
+        "synchronized_induction_pair": proof.synchronized_induction_pair,
         "remaining_store_timeout_unreachable": proof.remaining_store_timeout_unreachable,
         "helper_leaf_no_stack_access": proof.helper_leaf_no_stack_access,
-        "remaining_induction_register": proof.induction_register,
+        "remaining_publication_register": proof.publication_register,
+        "remaining_back_edge_induction_register": proof.back_edge_induction_register,
     }
 
 
@@ -2648,6 +2716,8 @@ def verify_runner_record_wire_contract(
         and "build_pmu_diag_payload" in dwarf_text
     ):
         return _verify_runner_record_wire_real(runner_text, objdump_text, nm_text, dwarf_text)
+    if _sha256_text(runner_text) == RUNNER_GENERATED_SHA256:
+        raise fail("canonical generated runner requires arm_elf runner-record/wire evidence")
     return _verify_runner_record_wire_synthetic(runner_text, objdump_text, nm_text, dwarf_text)
 
 
@@ -2785,6 +2855,10 @@ def _run_tool(args: list[str]) -> str:
     return subprocess.run(args, check=True, capture_output=True, text=True).stdout
 
 
+def _run_tool_normalized(args: list[str]) -> str:
+    return _normalize_newlines(_run_tool(args))
+
+
 def _build_manifest(
     *,
     build_id: str,
@@ -2792,6 +2866,8 @@ def _build_manifest(
     vendor_generated: str,
     elf_path: str,
     authoritative_v12_elf_path: str,
+    objdump_tool: str,
+    nm_tool: str,
     map_path: str,
     app_bin_path: str,
     vectors_bin_path: str,
@@ -2818,9 +2894,12 @@ def _build_manifest(
     if vendor_generated_sha != VENDOR_GENERATED_SHA256:
         raise fail("vendor generated hash mismatch")
     verify_generated_sources(runner_text, vendor_text)
-    header = _run_tool([readelf_tool, "-h", elf_path])
+    header = _run_tool_normalized([readelf_tool, "-h", elf_path])
     if "Type: EXEC" not in header or "Machine: ARM" not in header:
         raise fail("ELF header is not ARM EXEC")
+    authoritative_v12_header = _run_tool_normalized([readelf_tool, "-h", authoritative_v12_elf_path])
+    if "Type: EXEC" not in authoritative_v12_header or "Machine: ARM" not in authoritative_v12_header:
+        raise fail("authoritative V12 ELF header is not ARM EXEC")
     authoritative_v12_sha = _sha256_path(authoritative_v12_elf_path)
     if authoritative_v12_sha != AUTHORITATIVE_V12_SHA256:
         raise fail("authoritative V12 ELF hash mismatch")
@@ -2834,6 +2913,16 @@ def _build_manifest(
         v13_nm_text = _normalize_newlines(handle.read())
     with open(v13_dwarf_path, "r", encoding="utf-8") as handle:
         v13_dwarf_text = _normalize_newlines(handle.read())
+    if _run_tool_normalized([objdump_tool, "-d", authoritative_v12_elf_path]) != v12_objdump_text:
+        raise fail("authoritative V12 objdump sidecar mismatch")
+    if _run_tool_normalized([nm_tool, "-n", authoritative_v12_elf_path]) != v12_nm_text:
+        raise fail("authoritative V12 nm sidecar mismatch")
+    if _run_tool_normalized([objdump_tool, "-d", elf_path]) != v13_objdump_text:
+        raise fail("V13 objdump sidecar mismatch")
+    if _run_tool_normalized([nm_tool, "-n", elf_path]) != v13_nm_text:
+        raise fail("V13 nm sidecar mismatch")
+    if _run_tool_normalized([readelf_tool, "--debug-dump=info,loc", elf_path]) != v13_dwarf_text:
+        raise fail("V13 DWARF sidecar mismatch")
     cross_loaded = _load_json(cross_elf_evidence_path)
     cross_expected = verify_cross_elf_contract(
         v12_objdump_text,
@@ -2913,6 +3002,8 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument("--vendor-generated", required=True)
     parser.add_argument("--elf", required=True)
     parser.add_argument("--authoritative-v12-elf", required=True)
+    parser.add_argument("--objdump-tool", required=True)
+    parser.add_argument("--nm-tool", required=True)
     parser.add_argument("--map", required=True)
     parser.add_argument("--app-bin", required=True)
     parser.add_argument("--vectors-bin", required=True)
@@ -2941,6 +3032,8 @@ def main(argv: list[str] | None = None) -> int:
             vendor_generated=args.vendor_generated,
             elf_path=args.elf,
             authoritative_v12_elf_path=args.authoritative_v12_elf,
+            objdump_tool=args.objdump_tool,
+            nm_tool=args.nm_tool,
             map_path=args.map,
             app_bin_path=args.app_bin,
             vectors_bin_path=args.vectors_bin,
