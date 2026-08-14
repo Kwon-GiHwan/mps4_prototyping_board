@@ -156,7 +156,7 @@ def build_payload(
         0x10D0 if poll_result == v12.PMU_COMPLETION_POLL_V12_POLL_SUCCESS else 0,
         poll_result,
         0x00020002 if poll_result == v12.PMU_COMPLETION_POLL_V12_POLL_SUCCESS else 0,
-        int(manifest()["runtime_vector_target_address"], 16),
+        int(manifest()["runtime_vector_target_address"], 16) | 1,
         0,
         0,
         0,
@@ -336,7 +336,9 @@ def test_schema_and_manifest():
         expected_return_address=0x3100078C,
     )
     relocated_raw = build_payload(
-        appendix_overrides={"installed_vector": int(relocated["runtime_vector_target_address"], 16)}
+        appendix_overrides={
+            "installed_vector": int(relocated["runtime_vector_target_address"], 16) | 1
+        }
     )
     relocated_parsed = v12.parse_pmu_completion_poll_v12_payload(relocated_raw)
     relocated_derived = v12.classify_pmu_completion_poll_v12_payload(relocated_parsed, relocated)
@@ -347,6 +349,82 @@ def test_schema_and_manifest():
     check(
         "stale hardcoded vector address rejected",
         "runtime_vector_matches_manifest" in stale_derived["invalid_reasons"],
+    )
+
+
+def test_runtime_vector_thumb_identity():
+    expected = int(manifest()["runtime_vector_target_address"], 16)
+
+    thumb_raw = build_payload(
+        appendix_overrides={"installed_vector": expected | 1}
+    )
+    thumb_cls = v12.classify_pmu_completion_poll_v12_payload(
+        v12.parse_pmu_completion_poll_v12_payload(thumb_raw), manifest()
+    )
+    check("Thumb stock handler pointer accepted", thumb_cls["valid"] is True)
+    check(
+        "Thumb vector identity preserves raw and canonical evidence",
+        thumb_cls["vector_identity"] == {
+            "installed_vector_raw": expected | 1,
+            "installed_vector_canonical": expected,
+            "manifest_vector_symbol": "u85_irq_handler",
+            "manifest_vector_address": expected,
+            "manifest_vector_canonical": expected,
+            "runtime_vector_thumb_bit": 1,
+            "runtime_vector_matches_manifest": True,
+        },
+    )
+
+    missing_thumb = v12.classify_pmu_completion_poll_v12_payload(
+        v12.parse_pmu_completion_poll_v12_payload(
+            build_payload(appendix_overrides={"installed_vector": expected})
+        ),
+        manifest(),
+    )
+    check(
+        "missing Thumb bit rejected separately",
+        "runtime_vector_thumb_entry" in missing_thumb["invalid_reasons"],
+    )
+
+    for name, runtime in (
+        ("different odd handler", (expected + 0x100) | 1),
+        ("nearby odd address", (expected + 2) | 1),
+        ("arbitrary odd address", 0x2000F001),
+    ):
+        cls = v12.classify_pmu_completion_poll_v12_payload(
+            v12.parse_pmu_completion_poll_v12_payload(
+                build_payload(appendix_overrides={"installed_vector": runtime})
+            ),
+            manifest(),
+        )
+        check(
+            "%s rejected by canonical address" % name,
+            "runtime_vector_code_address_matches_manifest" in cls["invalid_reasons"],
+        )
+
+    fixture_path = os.path.join(
+        CURRENT_DIR,
+        "fixtures",
+        "pmu_completion_poll_v12_boot45_thumb_pointer.json",
+    )
+    with open(fixture_path, encoding="utf-8") as handle:
+        fixture = json.load(handle)
+    actual_raw = bytes.fromhex(fixture["payload_hex"])
+    check(
+        "preserved boot45 payload digest",
+        hashlib.sha256(actual_raw).hexdigest() == fixture["payload_sha256"],
+    )
+    actual_manifest = manifest(
+        runtime_vector_target_address=fixture["manifest_runtime_vector_target_address"],
+        expected_return_address=fixture["manifest_expected_return_address"],
+    )
+    actual_cls = v12.classify_pmu_completion_poll_v12_payload(
+        v12.parse_pmu_completion_poll_v12_payload(actual_raw), actual_manifest
+    )
+    check("preserved boot45 payload reclassifies valid", actual_cls["valid"] is True)
+    check(
+        "preserved boot45 payload remains non-campaign fixture",
+        fixture["formal_campaign_sample"] is False,
     )
 
 
@@ -599,6 +677,7 @@ def test_pretransport_fail_closed():
 
 def run_checks():
     test_schema_and_manifest()
+    test_runtime_vector_thumb_identity()
     test_collect_raw_and_timeout()
     test_transport_contract()
     test_campaign_state_stop_gate()

@@ -365,6 +365,23 @@ def classify_pmu_completion_poll_v12_payload(
     except ValueError:
         runtime_vector_target_int = None
 
+    installed_vector_raw = res.installed_vector
+    installed_vector_canonical = installed_vector_raw & ~1
+    runtime_vector_thumb_bit = installed_vector_raw & 1
+    manifest_vector_canonical = (
+        runtime_vector_target_int & ~1
+        if runtime_vector_target_int is not None
+        else None
+    )
+    runtime_vector_code_address_matches = (
+        manifest_vector_canonical is not None
+        and installed_vector_canonical == manifest_vector_canonical
+    )
+    runtime_vector_matches_manifest = (
+        runtime_vector_thumb_bit == 1
+        and runtime_vector_code_address_matches
+    )
+
     # Reuse the retained v8 sample-validity terms without laundering the V12
     # manifest identity. The inherited classifier sees the retained Q1 shape,
     # while V12-specific manifest identity is checked separately against the
@@ -402,10 +419,11 @@ def classify_pmu_completion_poll_v12_payload(
                 isinstance(expected_lr, int)
                 and res.hook_callsite_lr_observed == expected_lr
             ),
-            "runtime_vector_matches_manifest": (
-                runtime_vector_target_int is not None
-                and res.installed_vector == runtime_vector_target_int
+            "runtime_vector_thumb_entry": runtime_vector_thumb_bit == 1,
+            "runtime_vector_code_address_matches_manifest": (
+                runtime_vector_code_address_matches
             ),
+            "runtime_vector_matches_manifest": runtime_vector_matches_manifest,
             "nvic_disabled_before_submit": res.nvic_enabled_before_submit == 0,
             "nvic_pending_cleared_before_submit": (
                 res.nvic_pending_after_initial_clear == 0
@@ -480,5 +498,16 @@ def classify_pmu_completion_poll_v12_payload(
         "diagnostic_only": True,
         "derived": derived,
         "deltas_u32": {"d0": d0, "d1": d1, "d2": d2},
+        "vector_identity": {
+            "installed_vector_raw": installed_vector_raw,
+            "installed_vector_canonical": installed_vector_canonical,
+            "manifest_vector_symbol": expected_manifest.get(
+                "runtime_vector_target_symbol"
+            ),
+            "manifest_vector_address": runtime_vector_target_int,
+            "manifest_vector_canonical": manifest_vector_canonical,
+            "runtime_vector_thumb_bit": runtime_vector_thumb_bit,
+            "runtime_vector_matches_manifest": runtime_vector_matches_manifest,
+        },
         "valid": valid,
     }

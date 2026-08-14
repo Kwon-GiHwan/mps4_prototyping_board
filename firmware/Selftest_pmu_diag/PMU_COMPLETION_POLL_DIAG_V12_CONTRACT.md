@@ -124,3 +124,32 @@ Interpretation rules:
 - `u32((P0 - T2) + (P1 - P0)) == submit_to_status_completion_observed_cycles`
 - `u32((P0 - T2) + (P1 - P0) + (P2 - P1)) == u32(P2 - T2)`
 - This value is characterization-only and not numerically comparable to V11 absolute cycles.
+
+## Host-only Thumb vector binding qualification
+
+The board returns the raw Cortex-M vector-table entry. A valid Thumb handler
+therefore carries bit 0 set even though the ELF symbol address in the manifest
+is the canonical even code address. Host qualification keeps those two facts
+separate:
+
+- `runtime_vector_thumb_entry`: `installed_vector_raw & 1 == 1`
+- `runtime_vector_code_address_matches_manifest`:
+  `(installed_vector_raw & ~1) == (runtime_vector_target_address & ~1)`
+- `runtime_vector_matches_manifest`: the conjunction of those two terms
+
+The classifier preserves `installed_vector_raw`,
+`installed_vector_canonical`, the actual `manifest_vector_symbol`,
+`manifest_vector_address`, `manifest_vector_canonical`,
+`runtime_vector_thumb_bit`, and the aggregate verdict in `vector_identity`.
+An even runtime entry fails even when its code address matches. An odd entry
+for any other handler, including a nearby address, also fails.
+
+The preserved boot45 latch from the stopped first board attempt is a host
+regression fixture only. Its raw vector `0x3100238D` canonicalizes to the
+manifest's `u85_irq_handler` symbol `0x3100238C`, so it must reclassify valid
+under this host contract. It remains excluded from the formal 3 x 10 campaign.
+
+This is a host-only qualification change. The frozen firmware/ELF/BIN and
+manifest bytes above remain bound to commit `126ef064a3eff8b41429bb8a82c4756dc20fd000`
+and tag `pmu-completion-poll-v12-preboard`; they are not rebuilt or relabeled
+as products of the later host qualification anchor.
