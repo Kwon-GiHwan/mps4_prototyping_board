@@ -312,19 +312,37 @@ V12_HELPER_ADDR = 0x31002000
 V13_HELPER_ADDR = 0x32002040
 EXTERNAL_CALLEE = "helper_bookkeeping"
 
+# The MPS4 address map, pinned here from firmware evidence rather than imported
+# from the gate, so that a gate constant drifting away from the board is a test
+# failure instead of a silent agreement:
+#   * U85 base 0x50004000 -- firmware/Selftest_pmu/runner_pmu_main.c:274
+#     (`#define U85_BASE_ADDRESS 0x50004000U`, citing Drivers/u85_driver/u85.c)
+#   * helper STATUS 0x50004004 -- check_pmu_completion_poll_v12.py:104's emitted
+#     `helper_status_register_address`, reached as base + 4
+#   * DWT base 0xE0001000 with CYCCNT at displacement 4 -- the real MPS4 image
+#     transcribed in test_check_pmu_completion_poll_v12.py REAL_ARM_DISASSEMBLY
+#     (`31002378: .word 0xe0001000`, read back as `ldr r2, [r3, #4]`)
+#   * diagnostic globals in .bss around 0x31005xxx -- REAL_ARM_NM
+# Every literal below is therefore a *base*, and the address an instruction
+# touches is that base plus the displacement it carries.
+REAL_U85_BASE_ADDRESS = 0x50004000
+REAL_STATUS_ADDRESS = 0x50004004
+REAL_DWT_BASE_ADDRESS = 0xE0001000
+REAL_DWT_CYCCNT_ADDRESS = 0xE0001004
+
 V12_LITERALS = (
-    ("STATUS", 0x51000014),
-    ("DWT", 0xE0001004),
-    ("P1", 0x20001000),
-    ("P2", 0x20001004),
+    ("STATUS", REAL_U85_BASE_ADDRESS),
+    ("DWT", REAL_DWT_BASE_ADDRESS),
+    ("P1", 0x31005368),
+    ("P2", 0x3100536C),
 )
 
 V13_LITERALS = (
-    ("STATUS", 0x51000014),
-    ("DWT", 0xE0001004),
-    ("P1", 0x20002000),
-    ("P2", 0x20002004),
-    ("REMAINING", 0x20002008),
+    ("STATUS", REAL_U85_BASE_ADDRESS),
+    ("DWT", REAL_DWT_BASE_ADDRESS),
+    ("P1", 0x31005380),
+    ("P2", 0x31005384),
+    ("REMAINING", 0x31005388),
 )
 
 
@@ -439,7 +457,7 @@ def v12_rows():
         row("init_induction", "movw    r1, #10000", size=4, comment="V12_TIMEOUT_INIT"),
         row("status_ptr", "ldr     r7, [pc, {lit:STATUS}]", comment="V12_HELPER_STATUS_PTR"),
         row("pad", "nop", comment="V12_ALIGNMENT_PAD"),
-        row("loop", "ldr.w   r4, [r7]", size=4, comment="V12_HELPER_STATUS_READ"),
+        row("loop", "ldr.w   r4, [r7, #4]", size=4, comment="V12_HELPER_STATUS_READ"),
         row("test", "tst.w   r4, #2", size=4, comment="V12_HELPER_STATUS_TEST"),
         row("succ_branch", "bne.n   {to:success}", comment="V12_SUCCESS_BRANCH"),
         row("dec_shadow", "subs    r2, #1", comment="V12_FAILED_POLL_DECREMENT"),
@@ -448,10 +466,10 @@ def v12_rows():
         row("timeout_result", "movs    r0, #0", comment="V12_TIMEOUT_RESULT"),
         row("timeout_return", "bx      lr", comment="V12_TIMEOUT_RETURN"),
         row("success", "ldr     r6, [pc, {lit:DWT}]", comment="V12_DWT_CYCCNT_PTR"),
-        row("p1_read", "ldr     r0, [r6]", comment="V12_P1_DWT_READ"),
+        row("p1_read", "ldr     r0, [r6, #4]", comment="V12_P1_DWT_READ"),
         row("p1_ptr", "ldr     r5, [pc, {lit:P1}]", comment="V12_P1_STORE_PTR"),
-        row("p1_store", "str     r0, [r5]", comment="V12_P1_STORE"),
-        row("p2_read", "ldr     r0, [r6]", comment="V12_P2_DWT_READ"),
+        row("p1_store", "str     r0, [r5, #0]", comment="V12_P1_STORE"),
+        row("p2_read", "ldr     r0, [r6, #4]", comment="V12_P2_DWT_READ"),
         row("p2_ptr", "ldr     r5, [pc, {lit:P2}]", comment="V12_P2_STORE_PTR"),
         row("p2_store", "str     r0, [r5]", comment="V12_P2_STORE"),
         row("succ_result", "mov     r0, r4", comment="V12_SUCCESS_RESULT"),
@@ -537,7 +555,7 @@ V13_ACCEPTED_VARIANTS = (
         v13_elf(
             rows=rows_retext(
                 rows_retext(
-                    rows_retext(v13_rows(), "loop", "ldr     r4, [r7]"),
+                    rows_retext(v13_rows(), "loop", "ldr     r4, [r7, #4]"),
                     "test",
                     "tst     r4, #2",
                 ),
@@ -567,7 +585,7 @@ V13_ACCEPTED_VARIANTS = (
 V12_DRIFTED_REFERENCES = (
     (
         "halfword STATUS read",
-        v12_elf(rows=rows_retext(v12_rows(), "loop", "ldrh.w  r4, [r7]")),
+        v12_elf(rows=rows_retext(v12_rows(), "loop", "ldrh.w  r4, [r7, #4]")),
     ),
     (
         "success branch on the whole register instead of the masked flags",
@@ -637,7 +655,7 @@ def _elf_negative_fixtures() -> dict[str, dict[str, str]]:
         "failed-poll decrement clobbers the STATUS read",
     )
     fixtures["second_status_read"] = _elf_case(
-        v13_elf(rows=rows_after(v13_rows(), "p2_store", row("reread", "ldr.w   r4, [r7]", size=4))),
+        v13_elf(rows=rows_after(v13_rows(), "p2_store", row("reread", "ldr.w   r4, [r7, #4]", size=4))),
         "helper STATUS read count != 1",
     )
     fixtures["extra_non_status_load"] = _elf_case(
@@ -645,7 +663,7 @@ def _elf_negative_fixtures() -> dict[str, dict[str, str]]:
         "extra non-STATUS load",
     )
     fixtures["wrong_status_address"] = _elf_case(
-        v13_elf(literals=literals_set(V13_LITERALS, "STATUS", 0x51000018)),
+        v13_elf(literals=literals_set(V13_LITERALS, "STATUS", 0x50004018)),
         "helper STATUS MMIO address",
     )
     fixtures["store_before_p2"] = _elf_case(
@@ -681,11 +699,11 @@ def _elf_negative_fixtures() -> dict[str, dict[str, str]]:
     # Literal-pool binding: the pool must be exactly the slots the helper
     # reads, and each pointer must resolve to the address its role requires.
     fixtures["decoy_status_literal"] = _elf_case(
-        v13_elf(literals=literals_with(V13_LITERALS, ("DECOY_STATUS", 0x51000014))),
+        v13_elf(literals=literals_with(V13_LITERALS, ("DECOY_STATUS", REAL_U85_BASE_ADDRESS))),
         "unreferenced helper literal",
     )
     fixtures["decoy_dwt_literal"] = _elf_case(
-        v13_elf(literals=literals_with(V13_LITERALS, ("DECOY_DWT", 0xE0001004))),
+        v13_elf(literals=literals_with(V13_LITERALS, ("DECOY_DWT", REAL_DWT_BASE_ADDRESS))),
         "unreferenced helper literal",
     )
     fixtures["bogus_literal_offset"] = _elf_case(
@@ -701,9 +719,9 @@ def _elf_negative_fixtures() -> dict[str, dict[str, str]]:
                 "status_ptr",
                 "ldr     r7, [pc, {lit:SHADOW}]",
             ),
-            literals=literals_with(V13_LITERALS, ("SHADOW", 0x20003000)),
+            literals=literals_with(V13_LITERALS, ("SHADOW", 0x31006000)),
         ),
-        "helper STATUS pointer must resolve to 0x51000014",
+        "helper STATUS load must resolve to 0x%08X" % REAL_STATUS_ADDRESS,
     )
     fixtures["cycle_count_read_from_sram"] = _elf_case(
         v13_elf(
@@ -712,9 +730,9 @@ def _elf_negative_fixtures() -> dict[str, dict[str, str]]:
                 "success",
                 "ldr     r6, [pc, {lit:FAKE_CYCCNT}]",
             ),
-            literals=literals_with(V13_LITERALS, ("FAKE_CYCCNT", 0x20003100)),
+            literals=literals_with(V13_LITERALS, ("FAKE_CYCCNT", 0x31006100)),
         ),
-        "cycle-count read must resolve to DWT CYCCNT 0xE0001004",
+        "cycle-count read must resolve to DWT CYCCNT 0x%08X" % REAL_DWT_CYCCNT_ADDRESS,
     )
     fixtures["remaining_reuses_p2_destination"] = _elf_case(
         v13_elf(
@@ -728,6 +746,24 @@ def _elf_negative_fixtures() -> dict[str, dict[str, str]]:
             rows=rows_retext(v13_rows(), "p1_ptr", "ldr     r5, [pc, {lit:STATUS}]"),
             literals=literals_without(V13_LITERALS, "P1"),
         ),
+        "store destination must resolve to an SRAM literal slot",
+    )
+
+    # Displacement drifts. Each row below keeps the *base* register that every
+    # literal-binding check above already proves, and moves only the immediate
+    # displacement -- so a gate that resolves the base and discards the
+    # displacement accepts all three while the instruction touches a different
+    # address than its role allows.
+    fixtures["status_read_displaced_off_register"] = _elf_case(
+        v13_elf(rows=rows_retext(v13_rows(), "loop", "ldr.w   r4, [r7, #64]")),
+        "helper STATUS load must resolve to 0x%08X" % REAL_STATUS_ADDRESS,
+    )
+    fixtures["cycle_count_read_displaced_off_cyccnt"] = _elf_case(
+        v13_elf(rows=rows_retext(v13_rows(), "p1_read", "ldr     r0, [r6, #12]")),
+        "cycle-count read must resolve to DWT CYCCNT 0x%08X" % REAL_DWT_CYCCNT_ADDRESS,
+    )
+    fixtures["publication_displaced_off_slot"] = _elf_case(
+        v13_elf(rows=rows_retext(v13_rows(), "rem_store", "str     r1, [r5, #16]")),
         "store destination must resolve to an SRAM literal slot",
     )
 
@@ -754,7 +790,7 @@ def _elf_negative_fixtures() -> dict[str, dict[str, str]]:
                 row("x_ptr", "ldr     r5, [pc, {lit:EXTRA}]"),
                 row("x_store", "str     r1, [r5]"),
             ),
-            literals=literals_with(V13_LITERALS, ("EXTRA", 0x20002010)),
+            literals=literals_with(V13_LITERALS, ("EXTRA", 0x31005390)),
         ),
         "remaining store after P2 count != 1",
     )
@@ -1736,6 +1772,15 @@ if __name__ == "__main__":
             "status_pointer_into_sram",
             "cycle_count_read_from_sram",
             "remaining_reuses_p2_destination",
+        }
+        <= set(ELF_NEGATIVE_FIXTURES),
+    )
+    check(
+        "displacement drifts are covered on every resolved address",
+        {
+            "status_read_displaced_off_register",
+            "cycle_count_read_displaced_off_cyccnt",
+            "publication_displaced_off_slot",
         }
         <= set(ELF_NEGATIVE_FIXTURES),
     )

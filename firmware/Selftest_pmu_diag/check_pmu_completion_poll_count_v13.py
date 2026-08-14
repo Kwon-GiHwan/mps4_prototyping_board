@@ -69,14 +69,28 @@ BUILD_ID = 0x33314950
 VARIANT = "PMU_COMPLETION_POLL_COUNT_DIAG_V13"
 RUNNER_SHA256 = "69cab8c48a2248d0cc0b883a2bc651efa8eb8867c86369051ebc99cc5ee5a88b"
 VENDOR_SHA256 = "bcd877bbd42a35d83c8696d02b64d2ae4985a46fcce91b98102e08661b356bcf"
-STATUS_ADDRESS = 0x51000014
-DWT_CYCCNT_ADDRESS = 0xE0001004
+# The MPS4 address map. Every peripheral literal a helper carries is a *base*;
+# the address an instruction touches is that base plus the displacement it
+# encodes, which is why the checks below resolve `literal + displacement` and
+# never the literal alone.
+#   * U85 base -- firmware/Selftest_pmu/runner_pmu_main.c:274
+#     (`#define U85_BASE_ADDRESS 0x50004000U`, citing Drivers/u85_driver/u85.c)
+#   * helper STATUS -- U85 base + 4, the `helper_status_register_address` V12's
+#     own manifest emits (check_pmu_completion_poll_v12.py:104)
+#   * DWT base + CYCCNT displacement -- the real MPS4 image reaches CYCCNT as
+#     `.word 0xe0001000` loaded and read back through `[rN, #4]`
+#   * diagnostic globals live in the 0x3100_0000 SRAM image alongside .bss
+U85_BASE_ADDRESS = 0x50004000
+STATUS_ADDRESS = 0x50004004
+DWT_BASE_ADDRESS = 0xE0001000
+DWT_CYCCNT_DISPLACEMENT = 4
+DWT_CYCCNT_ADDRESS = DWT_BASE_ADDRESS + DWT_CYCCNT_DISPLACEMENT
 COMPLETION_MASK = 0x02
 POLL_LIMIT = 10000
-NPU_MMIO_BASE = 0x51000000
-NPU_MMIO_LIMIT = 0x51001000
-SRAM_BASE = 0x20000000
-SRAM_LIMIT = 0x30000000
+NPU_MMIO_BASE = 0x50004000
+NPU_MMIO_LIMIT = 0x50005000
+SRAM_BASE = 0x31000000
+SRAM_LIMIT = 0x32000000
 
 _RAW_RUNNER_ANCHOR = "static pmu_diag_snapshot_t pmu_qual_internal_post_disable;"
 _RAW_VENDOR_ANCHOR = "static int test_commands( const u85_eTest eTest,"
@@ -120,12 +134,18 @@ _NVIC_ISER_LITERAL_RE = re.compile(r"0x0*e000e100", re.IGNORECASE)
 _HEX_WORD_RE = re.compile(r"\.word\s+0x([0-9A-Fa-f]+)")
 _ENCODING_RE = re.compile(r"^(?:[0-9a-f]{8}|[0-9a-f]{4}(?:\s+[0-9a-f]{4})*)\s+(?=[a-z.])")
 _BRANCH_TARGET_RE = re.compile(r"\b([0-9a-fA-F]+)\s+<")
-_LOAD_RE = re.compile(r"^ldr(?:b|h|sb|sh)?(?:\.w)?\s+(r\d+),\s*\[([a-z0-9]+)")
+# Group 3 of a load/store is whatever else lives inside the brackets: empty for
+# `[r7]`, `, #4` for a displaced access, `, r2` or `, r2, lsl #1` for a
+# register-offset one. `_displacement` reads it, and reports None for every
+# form whose displacement is not a plain immediate so the address stays
+# unproven rather than being silently taken as zero.
+_LOAD_RE = re.compile(r"^ldr(?:b|h|sb|sh)?(?:\.w)?\s+(r\d+),\s*\[([a-z0-9]+)([^\]]*)\]")
 _PC_LOAD_RE = re.compile(r"^ldr(?:b|h|sb|sh)?(?:\.w)?\s+(r\d+),\s*\[pc\b")
 _PC_OFFSET_RE = re.compile(
     r"^ldr(?:b|h|sb|sh)?(?:\.w)?\s+r\d+,\s*\[pc,\s*#(-?\d+)\]"
 )
-_STORE_RE = re.compile(r"^str(?:b|h)?(?:\.w)?\s+(r\d+),\s*\[([a-z0-9]+)")
+_STORE_RE = re.compile(r"^str(?:b|h)?(?:\.w)?\s+(r\d+),\s*\[([a-z0-9]+)([^\]]*)\]")
+_DISPLACEMENT_RE = re.compile(r"^,\s*#(-?(?:0x[0-9a-fA-F]+|\d+))$")
 _DECREMENT_RE = re.compile(r"^subs(?:\.w)?\s+(r\d+),\s*#1$")
 _TEST_RE = re.compile(r"^tst(?:\.w)?\s+(r\d+),\s*#(\d+)$")
 _DEST_RE = re.compile(r"^[a-z][a-z0-9.]*\s+(r\d+)\b")
@@ -652,6 +672,36 @@ def _pointer_bindings(
     return tuple(states)
 
 
+def _displacement(hit: re.Match[str]) -> int | None:
+    """Immediate displacement of a matched load/store, or None when unproven.
+
+    A bare `[rN]` displaces by zero and an explicit `#imm` by that immediate.
+    Every other addressing mode -- register offset, shifted register, anything
+    the assembler renders inside the brackets that is not a plain immediate --
+    leaves the touched address dependent on a runtime value, so it is reported
+    as unproven and the caller refuses it.
+    """
+    rest = hit.group(3).strip()
+    if not rest:
+        return 0
+    imm = _DISPLACEMENT_RE.match(rest)
+    return int(imm.group(1), 0) if imm else None
+
+
+def _resolved_address(bindings: dict[str, int], hit: re.Match[str]) -> int | None:
+    """Address a matched load/store touches: bound literal + displacement.
+
+    None whenever either half is unproven, because a check that reasons about
+    the base register alone constrains which object is addressed but never
+    which word inside it -- the displacement is the other half of the address.
+    """
+    word = bindings.get(hit.group(2))
+    displacement = _displacement(hit)
+    if word is None or displacement is None:
+        return None
+    return word + displacement
+
+
 def _check_literal_pool(
     literals: tuple[tuple[int, int], ...], referenced: frozenset[int]
 ) -> None:
@@ -660,10 +710,10 @@ def _check_literal_pool(
             raise fail("unreferenced helper literal 0x%08X at 0x%08X" % (word, addr))
     words = [word for _, word in literals]
     npu_words = [word for word in words if NPU_MMIO_BASE <= word < NPU_MMIO_LIMIT]
-    if npu_words != [STATUS_ADDRESS]:
+    if npu_words != [U85_BASE_ADDRESS]:
         raise fail("helper STATUS MMIO address")
     for word in words:
-        if word in (STATUS_ADDRESS, DWT_CYCCNT_ADDRESS):
+        if word in (U85_BASE_ADDRESS, DWT_BASE_ADDRESS):
             continue
         if SRAM_BASE <= word < SRAM_LIMIT:
             continue
@@ -794,26 +844,36 @@ def _analyze_helper(disassembly_text: str, nm_text: str) -> _HelperAnalysis:
     _check_literal_pool(literals, frozenset(pc_targets.values()))
     pointer_words = _pointer_bindings(code, pc_targets, literals)
 
-    if pointer_words[status_index].get(status_base_reg) != STATUS_ADDRESS:
-        raise fail("helper STATUS pointer must resolve to 0x%08X" % STATUS_ADDRESS)
+    # Each address below is the literal the base register still holds plus the
+    # displacement the instruction encodes. Proving the base alone would leave
+    # every one of these free to touch a neighbouring word of the same object:
+    # a different NPU register, a different DWT register, a different global.
+    status_hit = _LOAD_RE.match(code[status_index].text)
+    if _resolved_address(pointer_words[status_index], status_hit) != STATUS_ADDRESS:
+        raise fail("helper STATUS load must resolve to 0x%08X" % STATUS_ADDRESS)
 
     has_extra_non_status_load = False
     for index, insn in enumerate(code):
         hit = _LOAD_RE.match(insn.text)
         if hit is None or hit.group(2) == "pc" or index == status_index:
             continue
-        word = pointer_words[index].get(hit.group(2))
-        if word is None:
+        if pointer_words[index].get(hit.group(2)) is None:
             has_extra_non_status_load = True
             break
-        if word != DWT_CYCCNT_ADDRESS:
+        if _resolved_address(pointer_words[index], hit) != DWT_CYCCNT_ADDRESS:
             raise fail("cycle-count read must resolve to DWT CYCCNT 0x%08X" % DWT_CYCCNT_ADDRESS)
+    # A publication must land on a slot the literal pool actually names. The
+    # SRAM window alone would admit a store displaced off the intended slot into
+    # whatever global happens to sit beside it, which is the failure the message
+    # has always described.
+    sram_slots = frozenset(
+        word for _, word in literals if SRAM_BASE <= word < SRAM_LIMIT
+    )
     for index, insn in enumerate(code):
         hit = _STORE_RE.match(insn.text)
         if hit is None:
             continue
-        word = pointer_words[index].get(hit.group(2))
-        if word is None or not SRAM_BASE <= word < SRAM_LIMIT:
+        if _resolved_address(pointer_words[index], hit) not in sram_slots:
             raise fail("store destination must resolve to an SRAM literal slot")
 
     return _HelperAnalysis(
@@ -1001,7 +1061,7 @@ def _stores_to(analysis: _HelperAnalysis, address: int) -> frozenset[int]:
         index
         for index, insn in enumerate(analysis.code)
         if (hit := _STORE_RE.match(insn.text)) is not None
-        and analysis.pointer_words[index].get(hit.group(2)) == address
+        and _resolved_address(analysis.pointer_words[index], hit) == address
     )
 
 
@@ -1138,9 +1198,10 @@ def prove_remaining_dataflow(disassembly_text: str, nm_text: str) -> RemainingDa
     # P2 destination would publish a cycle count where the record expects the
     # poll countdown, which no store-shape check alone can see.
     destinations = [
-        analysis.pointer_words[analysis.success_index + offset][
-            _STORE_RE.match(block[offset].text).group(2)
-        ]
+        _resolved_address(
+            analysis.pointer_words[analysis.success_index + offset],
+            _STORE_RE.match(block[offset].text),
+        )
         for offset in sorted(cyccnt_store_offsets + [remaining_offset])
     ]
     if len(set(destinations)) != len(destinations):
