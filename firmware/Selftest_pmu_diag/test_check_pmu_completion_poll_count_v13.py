@@ -827,7 +827,7 @@ def _elf_negative_fixtures() -> dict[str, dict[str, str]]:
         v13_elf(
             rows=rows_before(v13_rows(), "rem_store", row("ldrd", "ldrd    r1, r2, [r5]", size=4))
         ),
-        "multi-register transfer on the success path",
+        "multi-register transfer on an active helper path",
     )
     fixtures["it_block_predicates_remaining_register"] = _elf_case(
         v13_elf(
@@ -838,19 +838,100 @@ def _elf_negative_fixtures() -> dict[str, dict[str, str]]:
                 row("moveq", "moveq   r1, #5"),
             )
         ),
-        "predicated instruction on the success path",
+        # An IT header is refused by the CFG builder before the vocabulary lock
+        # runs, because an IT block turns a modelled unconditional edge into a
+        # conditional one; either refusal names the predication.
+        "predicated instruction",
     )
     fixtures["predicated_move_without_it_header"] = _elf_case(
         v13_elf(rows=rows_before(v13_rows(), "rem_store", row("moveq", "moveq   r1, #5"))),
-        "predicated instruction on the success path",
+        "predicated instruction on an active helper path",
     )
     fixtures["rrx_recomputes_remaining_register"] = _elf_case(
         v13_elf(rows=rows_before(v13_rows(), "rem_store", row("rrx", "rrx     r1, r1", size=4))),
-        "unmodelled success-path effect",
+        "unmodelled active-helper effect",
     )
     fixtures["unrelated_rrx_recompute"] = _elf_case(
         v13_elf(rows=rows_before(v13_rows(), "rem_store", row("rrx", "rrx     r3, r3", size=4))),
-        "unmodelled success-path effect",
+        "unmodelled active-helper effect",
+    )
+
+    # The vocabulary lock is a statement about what the helper *executes*, not
+    # about what lies between two indices. Each drift below parks its effect on
+    # a branch detour that runs between P2 and the publication but is laid out
+    # after the success return, so a slice from the success entry to the store
+    # never sees it while the CFG walk the gate already builds does.
+    for label, mutation, expected in (
+        ("rrx", row("detour", "rrx     r1, r1", size=4), "unmodelled active-helper effect"),
+        ("predicated_move", row("detour", "moveq   r1, #5"), "predicated instruction"),
+        ("ldrd", row("detour", "ldrd    r1, r2, [r5]", size=4), "multi-register transfer"),
+        ("mrs", row("detour", "mrs     r1, primask", size=4), "unmodelled active-helper effect"),
+        # Control: a mnemonic the proof already models was refused before this
+        # change too, which is what makes the hole above vocabulary-specific
+        # rather than a general blindness to the detour.
+        (
+            "modelled_move",
+            row("detour", "mov     r1, r2"),
+            "remaining must dataflow from failed-poll countdown live-out",
+        ),
+    ):
+        fixtures["detour_%s_redefines_remaining_register" % label] = _elf_case(
+            v13_elf(
+                rows=rows_after(
+                    rows_after(v13_rows(), "p2_store", row("detour_out", "b.n     {to:detour}")),
+                    "succ_return",
+                    mutation,
+                    row("detour_back", "b.n     {to:rem_ptr}"),
+                )
+            ),
+            expected,
+        )
+
+    # Effects outside the success block at all: the pre-loop prologue runs on
+    # every path the helper takes, the timeout exit included, and the tail after
+    # the publication runs on the success path. Neither region was constrained,
+    # so `cpsid i` could change the interrupt regime this diagnostic exists to
+    # characterize without the gate seeing it.
+    for label, mutation, anchor, placement in (
+        ("cpsid", row("mask", "cpsid   i"), "loop", rows_before),
+        ("wfi", row("wait", "wfi"), "loop", rows_before),
+        ("mrs", row("read_primask", "mrs     r3, primask", size=4), "loop", rows_before),
+        ("vldr", row("vector_load", "vldr    s0, [r7]", size=4), "loop", rows_before),
+        ("vmov", row("vector_move", "vmov    s0, r1", size=4), "rem_store", rows_after),
+    ):
+        fixtures["active_helper_%s_effect" % label] = _elf_case(
+            v13_elf(rows=placement(v13_rows(), anchor, mutation)),
+            "unmodelled active-helper effect",
+        )
+
+    # A published slot may be written once, by its canonical site, anywhere the
+    # helper can execute. A pre-loop store is reachable from neither the success
+    # entry nor the timeout entry, so both reachability checks miss it while it
+    # still pre-seeds the record -- and on a timeout it is the only value the
+    # host ever sees.
+    for slot in ("REMAINING", "P2", "P1"):
+        fixtures["pre_loop_%s_store" % slot.lower()] = _elf_case(
+            v13_elf(
+                rows=rows_before(
+                    v13_rows(),
+                    "loop",
+                    row("pre_ptr", "ldr     r5, [pc, {lit:%s}]" % slot),
+                    row("pre_store", "str     r2, [r5]"),
+                )
+            ),
+            "written away from its canonical site",
+        )
+    fixtures["timeout_detour_remaining_store"] = _elf_case(
+        v13_elf(
+            rows=rows_after(
+                rows_after(v13_rows(), "timeout_result", row("t_jump", "b.n     {to:t_pub}")),
+                "succ_return",
+                row("t_pub", "ldr     r5, [pc, {lit:REMAINING}]"),
+                row("t_store", "str     r2, [r5]"),
+                row("t_ret", "bx      lr"),
+            )
+        ),
+        "remaining store must be unreachable from the timeout path",
     )
 
 
@@ -1953,13 +2034,39 @@ if __name__ == "__main__":
         <= set(ELF_NEGATIVE_FIXTURES),
     )
     check(
-        "unmodelled success-path effects are covered",
+        "unmodelled active-helper effects are covered",
         {
             "ldrd_reloads_remaining_register",
             "it_block_predicates_remaining_register",
             "predicated_move_without_it_header",
             "rrx_recomputes_remaining_register",
             "unrelated_rrx_recompute",
+        }
+        <= set(ELF_NEGATIVE_FIXTURES),
+    )
+    check(
+        "the vocabulary and effect locks cover the executed helper, not a layout slice",
+        {
+            "detour_rrx_redefines_remaining_register",
+            "detour_predicated_move_redefines_remaining_register",
+            "detour_ldrd_redefines_remaining_register",
+            "detour_mrs_redefines_remaining_register",
+            "detour_modelled_move_redefines_remaining_register",
+            "active_helper_cpsid_effect",
+            "active_helper_wfi_effect",
+            "active_helper_mrs_effect",
+            "active_helper_vldr_effect",
+            "active_helper_vmov_effect",
+        }
+        <= set(ELF_NEGATIVE_FIXTURES),
+    )
+    check(
+        "every published slot is locked to its canonical site on every executed path",
+        {
+            "pre_loop_remaining_store",
+            "pre_loop_p2_store",
+            "pre_loop_p1_store",
+            "timeout_detour_remaining_store",
         }
         <= set(ELF_NEGATIVE_FIXTURES),
     )

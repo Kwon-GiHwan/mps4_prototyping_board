@@ -33,9 +33,15 @@ dependency -- the decrement whose flags the back edge branches on -- rather than
 off the position of a decrement in the loop body, and that register is proven
 undisturbed on every path from the success entry to the store, not merely in
 layout order. Because that proof can only see the register effects it models,
-the success path is held to the modelled instruction vocabulary: a multi-register
-``ldrd`` reload, a predicated ``moveq`` or an ``rrx`` recomputation is refused
-outright instead of being read as writing nothing.
+the modelled instruction vocabulary is enforced over every instruction the
+helper can *execute* -- the set reachable from its entry, not a slice between
+two indices -- so a multi-register ``ldrd`` reload, a predicated ``moveq`` or an
+``rrx`` recomputation is refused outright instead of being read as writing
+nothing, and so is a ``cpsid``, ``wfi`` or coprocessor effect anywhere on that
+set, including the pre-loop prologue and the tail past the publication. On the
+same footing, each of the three published slots must be written by its canonical
+site and by nothing else the helper can reach, which is what refuses a pre-loop
+store that pre-seeds the record ahead of both the success and timeout entries.
 The runner half of property 1 is likewise derived
 from brace nesting and assignment right-hand sides, never from column alignment,
 so reformatting the generated runner cannot change the verdict.
@@ -191,6 +197,9 @@ _COND_BRANCH_MNEMONICS = frozenset(
     )
 )
 _UNCONDITIONAL_BRANCH_MNEMONIC = "b"
+# The helper is entered at its first instruction; every "can the helper execute
+# this?" question is a reachability question anchored there.
+_HELPER_ENTRY_INDEX = 0
 _INDIRECT_BRANCH_MNEMONICS = frozenset(("bx", "blx", "tbb", "tbh"))
 _IT_RE = re.compile(r"^it[te]{0,3}$")
 _PC_DEST_RE = re.compile(r"^[a-z][a-z0-9.]*\s+pc\b")
@@ -1141,24 +1150,33 @@ def _is_predicated(mnemonic: str) -> bool:
     )
 
 
-def _reject_unmodelled_success_effects(block: tuple[_Insn, ...]) -> None:
-    """Fail closed on every success-path effect the live-out proof cannot read.
+def _reject_unmodelled_active_effects(
+    code: tuple[_Insn, ...], active: frozenset[int]
+) -> None:
+    """Fail closed on every effect the helper can execute but the proof cannot read.
 
     ``_defined_register`` answers "defines nothing" both for an instruction that
     really writes no register and for one whose mnemonic it has never heard of,
-    and the live-out proof cannot tell those two answers apart. So everything
-    between the success entry and the remaining store is held to the modelled
-    vocabulary: an ``ldrd`` pair reload, a predicated ``moveq`` and an ``rrx``
-    recomputation each redefine a register invisibly, and each is refused here
-    instead of being silently treated as a no-op.
+    and the live-out proof cannot tell those two answers apart. So an ``ldrd``
+    pair reload, a predicated ``moveq`` and an ``rrx`` recomputation each
+    redefine a register invisibly, and each is refused here instead of being
+    silently treated as a no-op.
+
+    The lock is applied to the instructions the helper can actually *execute*,
+    not to a slice between two indices. A slice from the success entry to the
+    publication misses a redefinition parked on a branch detour that runs
+    between them but is laid out after the success return, and it never looks at
+    the pre-loop prologue at all -- where a ``cpsid i`` would change the very
+    interrupt regime this diagnostic exists to characterize. Instructions the
+    helper cannot reach are left alone: they carry no effect to constrain.
     """
-    for insn in block:
+    for insn in (code[index] for index in sorted(active)):
         if _is_predicated(insn.mnemonic):
-            raise fail("predicated instruction on the success path: %s" % insn.text)
+            raise fail("predicated instruction on an active helper path: %s" % insn.text)
         if insn.mnemonic in _MULTI_REGISTER_TRANSFER_MNEMONICS:
-            raise fail("multi-register transfer on the success path: %s" % insn.text)
+            raise fail("multi-register transfer on an active helper path: %s" % insn.text)
         if insn.mnemonic not in _MODELLED_MNEMONICS:
-            raise fail("unmodelled success-path effect: %s" % insn.text)
+            raise fail("unmodelled active-helper effect: %s" % insn.text)
 
 
 def _back_edge_induction_register(analysis: _HelperAnalysis) -> str:
@@ -1209,28 +1227,35 @@ def prove_remaining_dataflow(disassembly_text: str, nm_text: str) -> RemainingDa
     if remaining_offset < max(cyccnt_store_offsets):
         raise fail("remaining store must follow P2 exactly")
 
+    # Reachability, walked over the helper's own branch edges. The store-shape
+    # checks above only see instructions in layout order, so they cannot tell
+    # that the publication is jumped over, jumped back to, duplicated at a
+    # second site or reached from the timeout exit; the graph can. The active
+    # set is everything the helper can execute from its entry, which is the
+    # domain every check below is really about.
+    successors = _build_helper_cfg(analysis.code)
+    active = _reachable(successors, _HELPER_ENTRY_INDEX)
+
     # Everything the live-out proof is about to read must be an effect it can
     # actually model, publication included.
-    _reject_unmodelled_success_effects(block[: remaining_offset + 1])
+    _reject_unmodelled_active_effects(analysis.code, active)
 
     # P1, P2 and remaining must land in three different SRAM slots. Reusing the
     # P2 destination would publish a cycle count where the record expects the
     # poll countdown, which no store-shape check alone can see.
+    canonical_sites = [
+        analysis.success_index + offset
+        for offset in sorted(cyccnt_store_offsets + [remaining_offset])
+    ]
     destinations = [
         _resolved_address(
-            analysis.pointer_words[analysis.success_index + offset],
-            _STORE_RE.match(block[offset].text),
+            analysis.pointer_words[index], _STORE_RE.match(analysis.code[index].text)
         )
-        for offset in sorted(cyccnt_store_offsets + [remaining_offset])
+        for index in canonical_sites
     ]
     if len(set(destinations)) != len(destinations):
         raise fail("P1/P2/remaining must target three distinct SRAM destinations")
 
-    # Reachability, walked over the helper's own branch edges. The store-shape
-    # checks above only see instructions in layout order, so they cannot tell
-    # that the publication is jumped over, jumped back to, duplicated at a
-    # second site or reached from the timeout exit; the graph can.
-    successors = _build_helper_cfg(analysis.code)
     remaining_index = analysis.success_index + remaining_offset
     publishers = _stores_to(analysis, destinations[-1])
     # The timeout exit is the failed-poll back edge's not-taken successor.
@@ -1245,6 +1270,19 @@ def prove_remaining_dataflow(disassembly_text: str, nm_text: str) -> RemainingDa
         raise fail("remaining store must be unreachable from the timeout path")
     if (publishers - {remaining_index}) & _reachable(successors, success_entry):
         raise fail("alternate remaining store reachable on the success path")
+
+    # Each of the three published slots may be written by its canonical site and
+    # by nothing else the helper can execute. The two reachability checks above
+    # are anchored at the success and timeout entries, so neither sees a store
+    # in the pre-loop prologue -- which runs ahead of both and would pre-seed
+    # the record, or on a timeout supply the only value the host ever reads.
+    for canonical_index, address in zip(canonical_sites, destinations):
+        duplicates = (_stores_to(analysis, address) & active) - {canonical_index}
+        if duplicates:
+            raise fail(
+                "published slot 0x%08X written away from its canonical site: helper index %d"
+                % (address, min(duplicates))
+            )
 
     return_counts = _return_publication_counts(successors, success_entry, remaining_index)
     remaining_store_after_p2_exactly_once = return_counts == frozenset((1,))
