@@ -126,7 +126,7 @@ STATUS_FAULT_MASK = 0x314
 
 # The suite is frozen at this many assertions. Adding a named fixture is a
 # deliberate act, so the count moves with it and never drifts silently.
-EXPECTED_PASS_COUNT = 371
+EXPECTED_PASS_COUNT = 420
 
 CHECKER_PATH = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
@@ -3667,6 +3667,728 @@ def run_fail_closed_cli_suite(patcher):
         )
 
 
+# ---------------------------------------------------------------------------
+# Structural matching: reformatting the source must not move a verdict.
+#
+# Every rule below used to be a literal substring, so a space between a callee
+# and its parenthesis, a newline inside an argument list, or a comment in the
+# middle of a call was a rule the source walked around. The accept fixtures
+# respell the canonical source and must still pass; the reject fixtures are the
+# same evasions carrying a forbidden construct and must still fail.
+# ---------------------------------------------------------------------------
+
+
+def respell(old, new):
+    return lambda vendor: replace_once(vendor, old, new, "respelling")
+
+
+WHITESPACE_RESPELLINGS = (
+    (
+        "a spaced pre-submit QSIZE read",
+        respell(
+            "qsize_expected = read_reg(NPU_REG_QSIZE);",
+            "qsize_expected = read_reg ( NPU_REG_QSIZE );",
+        ),
+    ),
+    (
+        "a pre-submit STATUS read split over three lines",
+        respell(
+            "pre_submit_status = read_reg(NPU_REG_STATUS);",
+            "pre_submit_status = read_reg(\n\t      NPU_REG_STATUS\n\t  );",
+        ),
+    ),
+    (
+        "a comment between the pre-program callee and its parenthesis",
+        respell(
+            "pre_program_status = read_reg(NPU_REG_STATUS);",
+            "pre_program_status = read_reg /* gate */ (NPU_REG_STATUS);",
+        ),
+    ),
+    (
+        "a spaced QSIZE programming write",
+        respell(
+            "write_reg(NPU_REG_QSIZE, u32CmdQueueSize);",
+            "write_reg ( NPU_REG_QSIZE , u32CmdQueueSize );",
+        ),
+    ),
+    (
+        "a submit write broken across two lines",
+        respell(
+            "write_reg(NPU_REG_CMD, read_val | 0x00000001);",
+            "write_reg( NPU_REG_CMD ,\n\t      read_val | 0x00000001 );",
+        ),
+    ),
+    (
+        "a comment inside the first cleanup CMD2",
+        respell(
+            "\t  write_reg(NPU_REG_CMD, 0x00000002);\n\t  read_val = read_reg(NPU_REG_QREAD);",
+            "\t  write_reg /* isr */ (NPU_REG_CMD, 0x00000002);\n\t  read_val = read_reg (NPU_REG_QREAD);",
+        ),
+    ),
+    (
+        "a spaced NVIC clear in the cleanup tail",
+        respell("\t  NVIC_ClearPendingIRQ(NPU0_IRQn);", "\t  NVIC_ClearPendingIRQ ( NPU0_IRQn );"),
+    ),
+    (
+        "a terminal CMD=0xC broken across two lines",
+        respell(
+            "write_reg(NPU_REG_CMD, 0x0000000C);",
+            "write_reg (\n\t        NPU_REG_CMD , 0x0000000C );",
+        ),
+    ),
+    (
+        "a spaced stop CMD=0",
+        respell(
+            "\t  write_reg(NPU_REG_CMD, 0x00000000);", "\t  write_reg( NPU_REG_CMD, 0x00000000 );"
+        ),
+    ),
+    (
+        "a spaced NVIC_SetVector install",
+        respell(
+            "NVIC_SetVector(NPU0_IRQn, (uint32_t)&u85_irq_handler);",
+            "NVIC_SetVector ( NPU0_IRQn , ( uint32_t ) & u85_irq_handler );",
+        ),
+    ),
+    (
+        "a respaced H-PRINTF seam marker",
+        respell("/* V12_HPRINTF_SEAM */", "/*   V12_HPRINTF_SEAM   */"),
+    ),
+)
+
+
+def nvic_enable_with_a_space(vendor):
+    return replace_once(
+        vendor,
+        "    NVIC_ClearPendingIRQ(NPU0_IRQn);\n\n    pmu_completion",
+        "    NVIC_ClearPendingIRQ(NPU0_IRQn);\n    NVIC_EnableIRQ (NPU0_IRQn);\n\n    pmu_completion",
+        "runtime setup",
+    )
+
+
+def nvic_enable_through_core_alias(vendor):
+    return replace_once(
+        vendor,
+        "    NVIC_ClearPendingIRQ(NPU0_IRQn);\n\n    pmu_completion",
+        "    NVIC_ClearPendingIRQ(NPU0_IRQn);\n    __NVIC_EnableIRQ(NPU0_IRQn);\n\n    pmu_completion",
+        "runtime setup",
+    )
+
+
+def spaced_second_qsize_read(vendor):
+    return replace_once(
+        vendor,
+        "\t  pre_submit_status = read_reg(NPU_REG_STATUS);",
+        "\t  qsize_expected = read_reg ( NPU_REG_QSIZE );\n\t  pre_submit_status = read_reg(NPU_REG_STATUS);",
+        "pre-submit status read",
+    )
+
+
+def spaced_cmd_write_before_programming(vendor):
+    return replace_once(
+        vendor,
+        "    write_reg(NPU_REG_QBASE,",
+        "    write_reg ( NPU_REG_CMD , 0x00000001 );\n    write_reg(NPU_REG_QBASE,",
+        "queue programming",
+    )
+
+
+WHITESPACE_EVASION_MUTATIONS = (
+    (
+        "nvic_enable_written_with_a_space",
+        nvic_enable_with_a_space,
+        "reachable NVIC_EnableIRQ",
+    ),
+    (
+        "nvic_enable_written_as_the_core_alias",
+        nvic_enable_through_core_alias,
+        "reachable NVIC_EnableIRQ",
+    ),
+    (
+        "second_qsize_read_written_with_spaces",
+        spaced_second_qsize_read,
+        "QSIZE is loaded more than once",
+    ),
+    (
+        "cmd_write_before_programming_written_with_spaces",
+        spaced_cmd_write_before_programming,
+        "state-transitioning CMD write between the pre-program gate and queue programming",
+    ),
+)
+
+
+# ---------------------------------------------------------------------------
+# MMIO provenance: a register is the register whatever name reaches it.
+# ---------------------------------------------------------------------------
+
+MMIO_BINDINGS = """    volatile uint32_t *const qread_reg =
+        (volatile uint32_t *)(uintptr_t)(U85_BASE_ADDRESS + NPU_REG_QREAD);
+    volatile uint32_t *const status_reg =
+        (volatile uint32_t *)(uintptr_t)(U85_BASE_ADDRESS + NPU_REG_STATUS);
+"""
+
+# The same binding block opens the primary helper and the convergence helper,
+# so each fixture anchors on the locals that follow the one it means.
+PRIMARY_LOCALS = "    uint32_t qread = 0U;\n    uint32_t status = 0U;\n\n"
+CONVERGE_LOCALS = "    uint32_t qread = 0U;\n    uint32_t status = 0U;\n    uint32_t result"
+RESET_GUARD = "        if ((status & V14_STATUS_RESET) != 0U) {\n"
+PRIMARY_RESET_TAIL = "            obs->t_first = V14_U32_INVALID;"
+CONVERGE_RESET_TAIL = "            result = V14_CONVERGENCE_RESET;"
+Q_LOOP_READ = "        qread = *qread_reg;\n        if (qread == qsize_expected) {"
+DUAL_LOOP_READS = {
+    "QS": "        qread = *qread_reg;\n        status = *status_reg;\n",
+    "SQ": "        status = *status_reg;\n        qread = *qread_reg;\n",
+}
+
+
+def bind_in_primary(vendor, declarations):
+    return replace_once(
+        vendor,
+        MMIO_BINDINGS + PRIMARY_LOCALS,
+        MMIO_BINDINGS + declarations + PRIMARY_LOCALS,
+        "primary bindings",
+    )
+
+
+def bind_in_converge(vendor, declarations):
+    return replace_once(
+        vendor,
+        MMIO_BINDINGS + CONVERGE_LOCALS,
+        MMIO_BINDINGS + declarations + CONVERGE_LOCALS,
+        "convergence bindings",
+    )
+
+
+def q_loop_reads(vendor, replacement):
+    return replace_once(vendor, Q_LOOP_READ, replacement, "Q primary loop read")
+
+
+def read_through(declarations, name):
+    def mutate(vendor):
+        return q_loop_reads(
+            bind_in_primary(vendor, declarations),
+            "        qread = *%s;\n        if (qread == qsize_expected) {" % name,
+        )
+
+    return mutate
+
+
+def bare_base_and_offsets(vendor):
+    """The frozen bindings respelled as the base plus the source's own offsets."""
+
+    text = replace_once(
+        vendor,
+        "#define V14_APPENDIX_WORDS 34U",
+        "#define V14_APPENDIX_WORDS 34U\n#define NPU_REG_QREAD 0x0018\n#define NPU_REG_STATUS 0x0004",
+        "appendix words define",
+    )
+    return replace_once(
+        text,
+        MMIO_BINDINGS + PRIMARY_LOCALS,
+        "    volatile uint32_t *const qread_reg =\n"
+        "        (volatile uint32_t *)(uintptr_t)(U85_BASE_ADDRESS + 0x0018);\n"
+        "    volatile uint32_t *const status_reg =\n"
+        "        (volatile uint32_t *)(uintptr_t)(U85_BASE_ADDRESS + 0x0004);\n" + PRIMARY_LOCALS,
+        "primary bindings",
+    )
+
+
+MMIO_RESPELLINGS = (
+    (
+        "a primary read through a copied pointer",
+        read_through("    volatile uint32_t *const qread_copy = qread_reg;\n", "qread_copy"),
+    ),
+    (
+        "a primary read through a chained alias",
+        read_through(
+            "    volatile uint32_t *const qread_one = qread_reg;\n"
+            "    volatile uint32_t *const qread_two = qread_one;\n",
+            "qread_two",
+        ),
+    ),
+    (
+        "a primary read through a cast of a bound pointer",
+        read_through(
+            "    volatile uint32_t *const qread_cast = (volatile uint32_t *)(uintptr_t)qread_reg;\n",
+            "qread_cast",
+        ),
+    ),
+    (
+        "a primary read through an address-of index",
+        read_through(
+            "    volatile uint32_t *const qread_index =\n"
+            "        &((volatile uint32_t *)(uintptr_t)(U85_BASE_ADDRESS))[NPU_REG_QREAD / 4];\n",
+            "qread_index",
+        ),
+    ),
+    (
+        "a primary read through the bare base plus the source's own offset",
+        bare_base_and_offsets,
+    ),
+)
+
+
+def unknown_region_pointer(vendor):
+    return q_loop_reads(
+        bind_in_primary(
+            vendor,
+            "    volatile uint32_t *const spare_reg =\n"
+            "        (volatile uint32_t *)(uintptr_t)(U85_BASE_ADDRESS + 0x40);\n",
+        ),
+        "        qread = *qread_reg;\n        status = *spare_reg;\n        if (qread == qsize_expected) {",
+    )
+
+
+def pointer_rebound_to_two_registers(vendor):
+    return q_loop_reads(
+        bind_in_primary(vendor, "    volatile uint32_t *both_reg = qread_reg;\n"),
+        "        both_reg = status_reg;\n        qread = *qread_reg;\n"
+        "        if (qread == qsize_expected) {",
+    )
+
+
+ALIAS_DECLARATIONS = (
+    "    volatile uint32_t *const qread_alias = qread_reg;\n"
+    "    volatile uint32_t *const status_alias = status_reg;\n"
+)
+
+
+def _dual_order_inverted(variant):
+    def mutate(vendor):
+        inverted = DUAL_LOOP_READS["SQ" if variant == "QS" else "QS"].replace(
+            "qread_reg", "qread_alias"
+        ).replace("status_reg", "status_alias")
+        return replace_once(
+            bind_in_primary(vendor, ALIAS_DECLARATIONS),
+            DUAL_LOOP_READS[variant] + RESET_GUARD + PRIMARY_RESET_TAIL,
+            inverted + RESET_GUARD + PRIMARY_RESET_TAIL,
+            "%s primary loop reads" % variant,
+        )
+
+    return mutate
+
+
+def converge_order_inverted_through_aliases(vendor):
+    return replace_once(
+        bind_in_converge(vendor, ALIAS_DECLARATIONS),
+        DUAL_LOOP_READS["QS"] + RESET_GUARD + CONVERGE_RESET_TAIL,
+        "        status = *status_alias;\n        qread = *qread_alias;\n"
+        + RESET_GUARD
+        + CONVERGE_RESET_TAIL,
+        "convergence loop reads",
+    )
+
+
+def converge_qsize_pointer(vendor):
+    return bind_in_converge(
+        vendor,
+        "    volatile uint32_t *const qsize_reg =\n"
+        "        (volatile uint32_t *)(uintptr_t)(U85_BASE_ADDRESS + NPU_REG_QSIZE);\n",
+    )
+
+
+def primary_qsize_read_through_raw_address(vendor):
+    return q_loop_reads(
+        vendor,
+        "        qread = *qread_reg;\n"
+        "        status = *(volatile uint32_t *)(uintptr_t)(U85_BASE_ADDRESS + NPU_REG_QSIZE);\n"
+        "        if (qread == qsize_expected) {",
+    )
+
+
+def running_qsize_through_raw_pointer(vendor):
+    return replace_once(
+        vendor,
+        "\t  pmu_completion_visibility_v14_mailbox[V14_MBOX_T_SUBMIT_AFTER_CMD] = DWT->CYCCNT;",
+        "\t  qsize_expected = *(volatile uint32_t *)(uintptr_t)(U85_BASE_ADDRESS + NPU_REG_QSIZE);\n"
+        "\t  pmu_completion_visibility_v14_mailbox[V14_MBOX_T_SUBMIT_AFTER_CMD] = DWT->CYCCNT;",
+        "submit timestamp",
+    )
+
+
+def raw_pointer_cmd_start_before_programming(vendor):
+    return replace_once(
+        vendor,
+        "    write_reg(NPU_REG_QBASE,",
+        "    *(volatile uint32_t *)(uintptr_t)(U85_BASE_ADDRESS + NPU_REG_CMD) = 0x00000001U;\n"
+        "    write_reg(NPU_REG_QBASE,",
+        "queue programming",
+    )
+
+
+def second_submit_as_a_bare_one(vendor):
+    return replace_once(
+        vendor,
+        "\t  pmu_completion_visibility_v14_mailbox[V14_MBOX_T_SUBMIT_AFTER_CMD] = DWT->CYCCNT;",
+        "\t  write_reg(NPU_REG_CMD, 1);\n"
+        "\t  pmu_completion_visibility_v14_mailbox[V14_MBOX_T_SUBMIT_AFTER_CMD] = DWT->CYCCNT;",
+        "submit timestamp",
+    )
+
+
+def failure_path_clears_cmd_through_raw_pointer(vendor):
+    return replace_once(
+        vendor,
+        "\t      v14_publish_failure(V14_PHASE_PRIMARY, V14_REASON_RESET_IN_PROGRESS, primary.qread, primary.status);",
+        "\t      v14_publish_failure(V14_PHASE_PRIMARY, V14_REASON_RESET_IN_PROGRESS, primary.qread, primary.status);\n"
+        "\t      *(volatile uint32_t *)(uintptr_t)(U85_BASE_ADDRESS + NPU_REG_CMD) = 0x00000000U;",
+        "primary reset failure path",
+    )
+
+
+def failure_path_prints_through_the_seam(vendor):
+    return replace_once(
+        vendor,
+        "\t      v14_publish_failure(V14_PHASE_PRIMARY, V14_REASON_HARDWARE_FAULT, primary.qread, primary.status);",
+        "\t      v14_publish_failure(V14_PHASE_PRIMARY, V14_REASON_HARDWARE_FAULT, primary.qread, primary.status);\n"
+        '\t      printf ("primary fault\\n");',
+        "primary fault failure path",
+    )
+
+
+def extra_cleanup_cmd2_as_a_bare_two(vendor):
+    return replace_once(
+        vendor,
+        "\t  pmu_completion_visibility_v14_mailbox[V14_MBOX_NVIC_PENDING_BEFORE_FINAL_CLEAR]",
+        "\t  write_reg(NPU_REG_CMD, 2);\n"
+        "\t  pmu_completion_visibility_v14_mailbox[V14_MBOX_NVIC_PENDING_BEFORE_FINAL_CLEAR]",
+        "final pending probe",
+    )
+
+
+# A second name for a bound register pointer is that register. Reading STATUS
+# through one used to be invisible: the read simply did not appear in the
+# ordered effect sequence, so a Q loop could read STATUS, and a dual loop or the
+# convergence tail could reload it, without any rule seeing it happen.
+STATUS_ALIAS_DECLARATION = "    volatile uint32_t *const status_alias = status_reg;\n"
+
+# The same holds for an address written as the base plus a bare offset: nothing
+# in it names a register, so a QSIZE pointer spelled this way used to bind to
+# nothing at all.
+BARE_QSIZE_OFFSET_DEFINE = (
+    "#define V14_APPENDIX_WORDS 34U",
+    "#define V14_APPENDIX_WORDS 34U\n#define NPU_REG_QSIZE 0x001C",
+)
+BARE_QSIZE_POINTER = (
+    "    volatile uint32_t *const spare_reg =\n"
+    "        (volatile uint32_t *)(uintptr_t)(U85_BASE_ADDRESS + 0x001C);\n"
+)
+
+
+def q_primary_status_read_through_alias(vendor):
+    return q_loop_reads(
+        bind_in_primary(vendor, STATUS_ALIAS_DECLARATION),
+        "        qread = *qread_reg;\n        status = *status_alias;\n"
+        "        if (qread == qsize_expected) {",
+    )
+
+
+def qs_primary_status_reload_through_alias(vendor):
+    return replace_once(
+        bind_in_primary(vendor, STATUS_ALIAS_DECLARATION),
+        DUAL_LOOP_READS["QS"] + RESET_GUARD + PRIMARY_RESET_TAIL,
+        DUAL_LOOP_READS["QS"]
+        + "        status = *status_alias;\n"
+        + RESET_GUARD
+        + PRIMARY_RESET_TAIL,
+        "QS primary loop reads",
+    )
+
+
+def converge_status_reload_through_alias(vendor):
+    return replace_once(
+        bind_in_converge(vendor, STATUS_ALIAS_DECLARATION),
+        DUAL_LOOP_READS["QS"] + RESET_GUARD + CONVERGE_RESET_TAIL,
+        DUAL_LOOP_READS["QS"]
+        + "        status = *status_alias;\n"
+        + RESET_GUARD
+        + CONVERGE_RESET_TAIL,
+        "convergence loop reads",
+    )
+
+
+def primary_qsize_read_through_bare_offset(vendor):
+    text = replace_once(vendor, *BARE_QSIZE_OFFSET_DEFINE, "appendix words define")
+    return q_loop_reads(
+        bind_in_primary(text, BARE_QSIZE_POINTER),
+        "        qread = *qread_reg;\n        status = *spare_reg;\n"
+        "        if (qread == qsize_expected) {",
+    )
+
+
+def converge_qsize_pointer_through_bare_offset(vendor):
+    text = replace_once(vendor, *BARE_QSIZE_OFFSET_DEFINE, "appendix words define")
+    return bind_in_converge(text, BARE_QSIZE_POINTER)
+
+
+MMIO_PROVENANCE_MUTATIONS = (
+    (
+        "q_primary_status_read_through_an_alias",
+        q_primary_status_read_through_alias,
+        "Q primary loop reads STATUS",
+    ),
+    (
+        "convergence_status_reload_through_an_alias",
+        converge_status_reload_through_alias,
+        "convergence loop reloads STATUS",
+    ),
+    (
+        "primary_qsize_read_through_a_bare_offset",
+        primary_qsize_read_through_bare_offset,
+        "QSIZE access reachable in a primary loop",
+    ),
+    (
+        "convergence_qsize_pointer_through_a_bare_offset",
+        converge_qsize_pointer_through_bare_offset,
+        "QSIZE access reachable in the convergence tail",
+    ),
+    (
+        "unknown_npu_region_pointer_in_the_primary_loop",
+        unknown_region_pointer,
+        "binds an NPU-region pointer this gate cannot resolve to one register",
+    ),
+    (
+        "primary_pointer_rebound_to_two_registers",
+        pointer_rebound_to_two_registers,
+        "binds an NPU-region pointer this gate cannot resolve to one register",
+    ),
+    (
+        "convergence_read_order_inverted_through_aliases",
+        converge_order_inverted_through_aliases,
+        "convergence read order is not QREAD then STATUS",
+    ),
+    (
+        "convergence_qsize_pointer_through_a_raw_address",
+        converge_qsize_pointer,
+        "QSIZE access reachable in the convergence tail",
+    ),
+    (
+        "primary_qsize_read_through_a_raw_address",
+        primary_qsize_read_through_raw_address,
+        "QSIZE access reachable in a primary loop",
+    ),
+    (
+        "running_qsize_read_through_a_raw_pointer",
+        running_qsize_through_raw_pointer,
+        "QSIZE is loaded more than once",
+    ),
+    (
+        "raw_pointer_cmd_start_between_gate_and_programming",
+        raw_pointer_cmd_start_before_programming,
+        "state-transitioning CMD write between the pre-program gate and queue programming",
+    ),
+    (
+        "second_submit_written_as_a_bare_one",
+        second_submit_as_a_bare_one,
+        "command path does not carry exactly one NPU submit write",
+    ),
+    (
+        "failure_path_clears_cmd_through_a_raw_pointer",
+        failure_path_clears_cmd_through_raw_pointer,
+        "failure path clears NPU state before serialization",
+    ),
+    (
+        "failure_path_prints_through_the_seam",
+        failure_path_prints_through_the_seam,
+        "failure path enters the H-PRINTF seam",
+    ),
+    (
+        "extra_cleanup_cmd2_written_as_a_bare_two",
+        extra_cleanup_cmd2_as_a_bare_two,
+        "success cleanup ordering drifted",
+    ),
+)
+
+
+def q_timeout_reset_and_fault_in_one_guard(vendor):
+    return replace_once(
+        vendor,
+        "    if ((status & V14_STATUS_RESET) != 0U) {\n"
+        "        obs->result = V14_PRIMARY_RESET;\n        return;\n    }\n"
+        "    if ((status & V14_STATUS_FAULT_MASK) != 0U) {\n"
+        "        obs->result = V14_PRIMARY_FAULT;\n        return;\n    }",
+        "    if (((status & V14_STATUS_RESET) != 0U) || ((status & V14_STATUS_FAULT_MASK) != 0U)) {\n"
+        "        obs->result = V14_PRIMARY_RESET;\n"
+        "        obs->iterations = V14_PRIMARY_FAULT;\n"
+        "        return;\n    }",
+        "Q timeout classification",
+    )
+
+
+ERROR_CONTRACT_MUTATIONS = (
+    (
+        "q_timeout_reset_and_fault_share_one_guard",
+        q_timeout_reset_and_fault_in_one_guard,
+        "Q timeout diagnostic does not classify reset from the diagnostic STATUS load",
+    ),
+)
+
+
+def run_structural_matching_suite(gate):
+    """Respelling the source keeps its verdict; respelling an evasion does not."""
+
+    runner = canonical_runner("Q")
+    vendor = canonical_vendor("Q")
+    for name, mutate in WHITESPACE_RESPELLINGS:
+        expect_accept(gate, "Q", runner, mutate(vendor), "%s is still accepted" % name)
+    run_vendor_mutations(gate, WHITESPACE_EVASION_MUTATIONS, "Q")
+
+
+def run_mmio_provenance_suite(gate):
+    """Every spelling of an NPU address resolves to the register it names."""
+
+    runner = canonical_runner("Q")
+    vendor = canonical_vendor("Q")
+    for name, mutate in MMIO_RESPELLINGS:
+        expect_accept(gate, "Q", runner, mutate(vendor), "%s is still accepted" % name)
+    run_vendor_mutations(gate, MMIO_PROVENANCE_MUTATIONS, "Q")
+    run_vendor_mutations(gate, ERROR_CONTRACT_MUTATIONS, "Q")
+
+    run_vendor_mutations(
+        gate,
+        (
+            (
+                "qs_primary_status_reload_through_an_alias",
+                qs_primary_status_reload_through_alias,
+                "primary loop reloads STATUS",
+            ),
+        ),
+        "QS",
+    )
+
+    for variant in ("QS", "SQ"):
+        name = "%s_read_order_inverted_through_aliases" % variant.lower()
+        REJECTED_FIXTURES.add(name)
+        expect_reject(
+            gate,
+            variant,
+            canonical_runner(variant),
+            _dual_order_inverted(variant)(canonical_vendor(variant)),
+            name,
+            "%s primary read order is not" % variant,
+        )
+
+
+# ---------------------------------------------------------------------------
+# Manifest evidence: a published boolean or count is what the verifier saw.
+# ---------------------------------------------------------------------------
+
+DERIVED_MANIFEST_FIELDS = (
+    "running_qsize_loads",
+    "failure_paths_clear_npu",
+    "failure_paths_enter_hprintf",
+    "reachable_nvic_enable_sites",
+    "success_cleanup_order",
+)
+
+# Each field paired with the fixture whose true value contradicts the canonical
+# claim. A rejection is the proof: the manifest is never written, so the false
+# claim cannot be published.
+DERIVED_FIELD_WITNESSES = (
+    ("running_qsize_loads", running_qsize_through_raw_pointer),
+    ("failure_paths_clear_npu", failure_path_clears_cmd_through_raw_pointer),
+    ("failure_paths_enter_hprintf", failure_path_prints_through_the_seam),
+    ("reachable_nvic_enable_sites", nvic_enable_with_a_space),
+    ("success_cleanup_order", extra_cleanup_cmd2_as_a_bare_two),
+)
+
+
+def run_manifest_evidence_suite(gate):
+    doc = expect_accept(
+        gate,
+        "Q",
+        canonical_runner("Q"),
+        canonical_vendor("Q"),
+        "the canonical Q manifest carries every derived field",
+    )
+    if doc is not None:
+        check(
+            "derived manifest fields report what the verifier observed",
+            doc["running_qsize_loads"] == 0
+            and doc["failure_paths_clear_npu"] is False
+            and doc["failure_paths_enter_hprintf"] is False
+            and doc["reachable_nvic_enable_sites"] == 0
+            and doc["success_cleanup_order"] == list(gate.SUCCESS_CLEANUP_ORDER),
+            repr({field: doc.get(field) for field in DERIVED_MANIFEST_FIELDS})[:70],
+        )
+
+    with open(CHECKER_PATH, "r", encoding="utf-8") as handle:
+        source = handle.read()
+    hardcoded = sorted(
+        field
+        for field in DERIVED_MANIFEST_FIELDS
+        if re.search(r'"%s":\s*(?:False|True|\d|\[\s*\])' % re.escape(field), source)
+    )
+    check(
+        "no derived manifest field is a literal in the gate",
+        not hardcoded,
+        repr(hardcoded),
+    )
+
+    for field, mutate in DERIVED_FIELD_WITNESSES:
+        name = "false_%s_claim" % field
+        REJECTED_FIXTURES.add(name)
+        try:
+            gate.verify_generated_sources(
+                canonical_runner("Q"), mutate(canonical_vendor("Q")), "Q"
+            )
+        except gate.GateError:
+            check("a false %s claim is refused, not published" % field, True)
+        except Exception as exc:  # pragma: no cover - a crash is not a rejection
+            check("a false %s claim is refused, not published" % field, False, "raised %r" % exc)
+        else:
+            check("a false %s claim is refused, not published" % field, False, "accepted")
+
+
+def run_encoding_cli_suite(patcher):
+    """A source that is not UTF-8 is a named FAIL line, never a traceback."""
+
+    with tempfile.TemporaryDirectory() as scratch:
+        runner_path = os.path.join(scratch, "runner.c")
+        vendor_path = os.path.join(scratch, "vendor.c")
+        with open(runner_path, "w", encoding="utf-8") as handle:
+            handle.write(canonical_runner("Q"))
+        with open(vendor_path, "wb") as handle:
+            handle.write(canonical_vendor("Q").encode("utf-8").replace(b"//Start NPU", b"//Start \xff\xfeNPU"))
+
+        result = run_checker(
+            [
+                "--allow-fixture",
+                "--variant",
+                "Q",
+                "--runner-generated",
+                runner_path,
+                "--vendor-generated",
+                vendor_path,
+                "--fixture-manifest-out",
+                os.path.join(scratch, "manifest.json"),
+            ]
+        )
+        combined = result.stdout + result.stderr
+        check(
+            "a non-UTF-8 vendor source is a named FAIL, not a traceback",
+            result.returncode == 1
+            and "FAIL generated vendor: is not UTF-8 text" in combined
+            and "Traceback" not in combined,
+            combined.strip()[:70],
+        )
+
+        # The generator hashes both inputs before it decodes either, so its CLI
+        # can never reach the decoder with the frozen sources. The contract is
+        # still the reader's, so it is proven where it lives.
+        try:
+            patcher._read_text(vendor_path)
+            verdict = "returned text"
+        except patcher.PatchError as error:
+            verdict = str(error)
+        except Exception as error:  # pragma: no cover - a crash is not a verdict
+            verdict = repr(error)
+        check(
+            "a non-UTF-8 generator input is a named FAIL, not a traceback",
+            "FAIL input is not UTF-8 text" in verdict,
+            verdict[:70],
+        )
+
+
 def run_coverage_suite():
     """The named negative fixtures the design demands are all present."""
 
@@ -3788,6 +4510,38 @@ def run_coverage_suite():
         # The terminal cleanup writes live in a preprocessor branch.
         "test_cpm_branch_compiled_out",
         "test_cpm_guard_removed_from_the_terminal_sequence",
+        # Reformatting is not a way past a rule.
+        "nvic_enable_written_with_a_space",
+        "nvic_enable_written_as_the_core_alias",
+        "second_qsize_read_written_with_spaces",
+        "cmd_write_before_programming_written_with_spaces",
+        # A register is the register whatever name reaches it.
+        "q_primary_status_read_through_an_alias",
+        "qs_primary_status_reload_through_an_alias",
+        "convergence_status_reload_through_an_alias",
+        "primary_qsize_read_through_a_bare_offset",
+        "convergence_qsize_pointer_through_a_bare_offset",
+        "unknown_npu_region_pointer_in_the_primary_loop",
+        "primary_pointer_rebound_to_two_registers",
+        "qs_read_order_inverted_through_aliases",
+        "sq_read_order_inverted_through_aliases",
+        "convergence_read_order_inverted_through_aliases",
+        "convergence_qsize_pointer_through_a_raw_address",
+        "primary_qsize_read_through_a_raw_address",
+        "running_qsize_read_through_a_raw_pointer",
+        "raw_pointer_cmd_start_between_gate_and_programming",
+        "second_submit_written_as_a_bare_one",
+        "failure_path_clears_cmd_through_a_raw_pointer",
+        "failure_path_prints_through_the_seam",
+        "extra_cleanup_cmd2_written_as_a_bare_two",
+        # A guard that cannot say what it found is a named rejection.
+        "q_timeout_reset_and_fault_share_one_guard",
+        # A manifest field is what the verifier saw, so a false one is refused.
+        "false_running_qsize_loads_claim",
+        "false_failure_paths_clear_npu_claim",
+        "false_failure_paths_enter_hprintf_claim",
+        "false_reachable_nvic_enable_sites_claim",
+        "false_success_cleanup_order_claim",
     }
     missing = sorted(required - REJECTED_FIXTURES)
     check("every design-mandated negative fixture is present", not missing, repr(missing))
@@ -3810,6 +4564,9 @@ if __name__ == "__main__":
         run_cross_variant_suite(gate)
         run_convergence_suite(gate)
         run_fail_open_suite(gate)
+        run_structural_matching_suite(gate)
+        run_mmio_provenance_suite(gate)
+        run_manifest_evidence_suite(gate)
         run_coverage_suite()
 
     try:
@@ -3821,6 +4578,7 @@ if __name__ == "__main__":
     if patcher is not None:
         run_generator_cli_suite()
         run_fail_closed_cli_suite(patcher)
+        run_encoding_cli_suite(patcher)
         if gate is not None:
             run_generator_suite(gate, patcher)
             run_generated_fixture_cli_suite(patcher)

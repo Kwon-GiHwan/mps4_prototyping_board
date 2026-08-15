@@ -25,6 +25,26 @@ proves that -- so it earns its exemption only by carrying nothing beyond the
 canonical result publication and its timestamp and by ending its iteration in a
 structurally proven ``break`` or ``return``.
 
+Two things carry that "structural, not textual" claim. Every construct this
+module looks for is compiled into a *token* pattern rather than a literal
+substring, so whitespace, a line break or a comment between a callee and its
+parenthesis is invisible to the rule and a name can never match a longer name
+that merely starts with it. And every MMIO access is resolved to the register it
+designates rather than to the spelling that reaches it: the vendor accessor
+call, a bound ``*const`` pointer, a pointer copied or cast from one, a chain of
+such copies, the address of an index into one, and a bare base-plus-offset
+address all resolve alike. An address that is provably inside the NPU register
+region but cannot be pinned to a single register is refused rather than ignored,
+because a pointer whose target nothing can name is a pointer no ordering rule
+covers. Register offsets come from the translation unit's own ``NPU_REG_*``
+table; this module pins none of its own, and says so in every manifest.
+
+Nothing the manifest publishes about what was *observed* -- the running-QSIZE
+count, whether a failure path clears CMD or enters the seam, the reachable NVIC
+enable count, the cleanup ordering -- is a constant in this file. Each is the
+verifier's own count or set, so a source that would make one of them true is a
+source that never reaches the manifest at all.
+
 Two limitations are load-bearing and are published in every manifest rather
 than left to be discovered. The frozen raw vendor translation unit is not
 tracked in this repository, so the vendor half of this contract runs against a
@@ -37,6 +57,7 @@ belongs to the later qualification chunk.
 from __future__ import annotations
 
 import argparse
+import functools
 import hashlib
 import json
 import re
@@ -166,6 +187,10 @@ RESIDUAL_LIMITATIONS = (
     "inside the #if(TEST_CPM==1) branch of a source that defines TEST_CPM to 1; this gate does "
     "not preprocess or compile, so whether the built image kept that branch is a "
     "build-configuration fact belonging to the later qualification chunk",
+    "register_offsets_read_from_the_source_only: an NPU address written as a bare "
+    "base-plus-offset resolves through the translation unit's own NPU_REG_* table; this gate "
+    "pins no offset of its own, so a source that omits that table has every such address "
+    "refused as unresolved rather than resolved from an assumed register map",
 )
 
 MAILBOX_SYMBOL = "pmu_completion_visibility_v14_mailbox"
@@ -354,25 +379,489 @@ def require_define(defines: dict[str, int], name: str, expected: int, what: str)
         raise fail("%s: %s is 0x%X, expected 0x%X" % (what, name, defines[name], expected))
 
 
-def positions(text: str, needle: str) -> tuple[int, ...]:
-    found = []
-    start = text.find(needle)
-    while start >= 0:
-        found.append(start)
-        start = text.find(needle, start + 1)
-    return tuple(found)
+# ---------------------------------------------------------------------------
+# Token-aware code matching
+#
+# A C construct is a token sequence, not a byte sequence. Recognising
+# ``read_reg(NPU_REG_STATUS)`` by literal substring means a source that writes
+# ``read_reg (NPU_REG_STATUS)``, or splits the call over two lines, or puts a
+# comment between the callee and its parenthesis, is a source the rule never
+# sees -- and reformatting a generated file would then change a verdict. Every
+# construct below is therefore compiled into a pattern that matches the same
+# tokens separated by any run of whitespace, with identifier boundaries so a
+# name can never match a longer name that merely starts with it.
+# ---------------------------------------------------------------------------
+
+_C_TOKEN_RE = re.compile(r"[A-Za-z_]\w*|(?:0[xX][0-9A-Fa-f]+|\d+)[uUlL]*|->|\S")
+
+
+def _token_atom(token: str, open_end: bool) -> str:
+    """One token, boundary-anchored on whichever side carries a name character."""
+
+    head = r"(?<![A-Za-z0-9_])" if (token[0].isalnum() or token[0] == "_") else ""
+    if open_end or not (token[-1].isalnum() or token[-1] == "_"):
+        tail = ""
+    else:
+        tail = r"(?![A-Za-z0-9_])"
+    return head + re.escape(token) + tail
+
+
+@functools.lru_cache(maxsize=None)
+def code_pattern(snippet: str, open_end: bool = False) -> re.Pattern[str]:
+    """Compile ``snippet`` into a whitespace-insensitive token matcher.
+
+    ``open_end`` leaves the final token unanchored on its right, which is what
+    a register *family* prefix such as ``write_reg(NPU_REG_QBASE`` needs: the
+    frozen vendor source spells that register ``NPU_REG_QBASE_LSB``, so the
+    prefix has to keep matching the longer name.
+    """
+
+    tokens = _C_TOKEN_RE.findall(snippet)
+    if not tokens:
+        raise fail("empty code pattern %r" % snippet)
+    last = len(tokens) - 1
+    parts = [_token_atom(tokens[0], open_end and last == 0)]
+    for index in range(1, len(tokens)):
+        parts.append(r"\s*")
+        parts.append(_token_atom(tokens[index], open_end and index == last))
+    return re.compile("".join(parts))
+
+
+def code_positions(text: str, snippet: str, open_end: bool = False) -> tuple[int, ...]:
+    """Every offset in ``text`` where ``snippet``'s token sequence starts."""
+
+    return tuple(match.start() for match in code_pattern(snippet, open_end).finditer(text))
+
+
+def code_find(text: str, snippet: str, open_end: bool = False) -> int:
+    """The first offset of ``snippet``'s token sequence, or ``-1``."""
+
+    match = code_pattern(snippet, open_end).search(text)
+    return -1 if match is None else match.start()
+
+
+def code_contains(text: str, snippet: str, open_end: bool = False) -> bool:
+    return code_pattern(snippet, open_end).search(text) is not None
+
+
+def names_identifier(text: str, name: str) -> bool:
+    """Whether ``name`` occurs in ``text`` as a whole identifier."""
+
+    return re.search(r"(?<![A-Za-z0-9_])%s(?![A-Za-z0-9_])" % re.escape(name), text) is not None
 
 
 def function_span(masked: str, name: str, what: str) -> tuple[int, int]:
     return extract_function_body(masked, name, what)
 
 
-_QSIZE_READ = "read_reg(NPU_REG_QSIZE)"
-_STATUS_READ = "read_reg(NPU_REG_STATUS)"
+# The queue-programming writes are matched as register *families*: the frozen
+# vendor source spells the queue base ``NPU_REG_QBASE_LSB``/``_MSB``, so the
+# prefix has to keep matching the longer name. Every other register access goes
+# through ``register_access_sites``, which sees the accessor call and every
+# pointer spelling alike.
 _QBASE_WRITE = "write_reg(NPU_REG_QBASE"
 _QSIZE_WRITE = "write_reg(NPU_REG_QSIZE"
-_CMD_WRITE = "write_reg(NPU_REG_CMD"
-_SUBMIT_WRITE = "write_reg(NPU_REG_CMD, read_val | 0x00000001)"
+
+# ---------------------------------------------------------------------------
+# MMIO address provenance
+#
+# A register access is an access whatever name it is reached through. The
+# frozen source spells one as ``read_reg(NPU_REG_STATUS)`` and another as a
+# ``*const`` pointer built from ``U85_BASE_ADDRESS + NPU_REG_STATUS``, but a
+# pointer copied out of that pointer, a cast of it, the address of an index
+# into it, and a bare base-plus-offset address all reach the same word. Every
+# one of those spellings is resolved here to the register it designates, and
+# an address that is provably in the NPU region but cannot be pinned to one
+# register resolves to ``UNRESOLVED`` -- which the callers refuse, because a
+# pointer whose target nothing can name is a pointer no ordering rule covers.
+# ---------------------------------------------------------------------------
+
+NPU_BASE_SYMBOLS = ("U85_BASE_ADDRESS",)
+UNRESOLVED_ROLE = "UNRESOLVED"
+
+# The lookbehind keeps the ``U`` of a ``0U`` literal from reading as a name.
+_IDENTIFIER_RE = re.compile(r"(?<![0-9A-Za-z_])[A-Za-z_]\w*")
+_NPU_REG_NAME_RE = re.compile(r"(?<![A-Za-z0-9_])NPU_REG_([A-Z][A-Z0-9_]*)")
+_NPU_REG_DEFINE_RE = re.compile(r"^NPU_REG_([A-Z][A-Z0-9_]*)$")
+_DECLARATOR_TYPES = frozenset(
+    (
+        "uint32_t",
+        "int32_t",
+        "uint64_t",
+        "uintptr_t",
+        "void",
+        "char",
+        "short",
+        "int",
+        "long",
+        "unsigned",
+        "signed",
+        "volatile",
+        "const",
+        "struct",
+    )
+)
+_CAST_RE = re.compile(
+    r"\(\s*(?:(?:volatile|const|unsigned|signed|uint32_t|int32_t|uint64_t|uintptr_t|void|char|short|int|long)"
+    r"(?![A-Za-z0-9_])\s*|\*\s*)+\)"
+)
+_INDEX_RE = re.compile(r"\[([^\[\]]*)\]")
+# ``*`` in value position: not a multiplication, not a declarator star.
+_DEREF_RE = re.compile(r"\*\s*(?=[A-Za-z_(])")
+_UNARY_DEREF_RE = re.compile(r"(?:^|[-+*/%&|^~!<>=(,?:])\s*\*\s*(?=[A-Za-z_(])")
+# An address is arithmetic. A predicate or a selection is not one, and reading
+# it as one would make an ordinary comparison an unresolvable NPU pointer.
+_NOT_AN_ADDRESS_RE = re.compile(r"==|!=|<=|>=|&&|\|\||\?|(?<![-<>])[<>](?![-<>])")
+# The declarator star sits directly against the name in ``uint32_t *p = ...``,
+# so the left boundary may only refuse another name character; a compound
+# assignment is already excluded because its operator sits between the name and
+# the ``=``, where ``\s*`` cannot reach it.
+_ASSIGNMENT_RE = re.compile(r"(?<![A-Za-z0-9_])([A-Za-z_]\w*)\s*=(?!=)\s*([^;]+);")
+
+# A word pointer displaces by four bytes per index step.
+_POINTER_WORD_BYTES = 4
+
+_EVAL_TOKEN_RE = re.compile(r"[A-Za-z_]\w*|(?:0[xX][0-9A-Fa-f]+|\d+)[uUlL]*|<<|>>|[-+*/()]|\S")
+
+
+def _evaluate_constant(
+    expr: str, defines: dict[str, int], zero_names: tuple[str, ...] = ()
+) -> int | None:
+    """The integer ``expr`` denotes, or ``None`` when any part of it is unknown.
+
+    ``zero_names`` are the symbols the caller wants treated as the origin, so
+    the same evaluator answers "what constant is this" and "how far past that
+    pointer is this".
+    """
+
+    tokens = _EVAL_TOKEN_RE.findall(expr)
+    cursor = [0]
+
+    def peek() -> str | None:
+        return tokens[cursor[0]] if cursor[0] < len(tokens) else None
+
+    def primary() -> int | None:
+        token = peek()
+        if token is None:
+            return None
+        cursor[0] += 1
+        if token == "(":
+            value = shift()
+            if peek() != ")":
+                return None
+            cursor[0] += 1
+            return value
+        if token in ("+", "-"):
+            value = primary()
+            return None if value is None else (value if token == "+" else -value)
+        if token[0].isdigit():
+            try:
+                return int(token.rstrip("uUlL"), 0)
+            except ValueError:
+                return None
+        if not (token[0].isalpha() or token[0] == "_"):
+            return None
+        if token in zero_names:
+            return 0
+        return defines.get(token)
+
+    def binary(next_level, operators) -> int | None:
+        value = next_level()
+        while value is not None and peek() in operators:
+            operator = tokens[cursor[0]]
+            cursor[0] += 1
+            right = next_level()
+            if right is None:
+                return None
+            if operator == "+":
+                value += right
+            elif operator == "-":
+                value -= right
+            elif operator == "*":
+                value *= right
+            elif operator == "/":
+                if right == 0:
+                    return None
+                value //= right
+            elif operator == "<<":
+                value <<= right
+            else:
+                value >>= right
+        return value
+
+    def term() -> int | None:
+        return binary(primary, ("*", "/"))
+
+    def additive() -> int | None:
+        return binary(term, ("+", "-"))
+
+    def shift() -> int | None:
+        return binary(additive, ("<<", ">>"))
+
+    value = shift()
+    return value if cursor[0] == len(tokens) else None
+
+
+def npu_register_offsets(defines: dict[str, int]) -> dict[int, str]:
+    """The source's own ``NPU_REG_*`` offset table, keyed by byte offset.
+
+    An offset two register names share is not a name, so it is dropped rather
+    than resolved to whichever one sorts first.
+    """
+
+    seen: dict[int, set[str]] = {}
+    for name, value in defines.items():
+        match = _NPU_REG_DEFINE_RE.match(name)
+        if match is not None:
+            seen.setdefault(value, set()).add(match.group(1))
+    return {offset: sorted(names)[0] for offset, names in seen.items() if len(names) == 1}
+
+
+def _role_at_offset(offset: int, defines: dict[str, int]) -> str:
+    return npu_register_offsets(defines).get(offset, UNRESOLVED_ROLE)
+
+
+def _has_unary_deref(expr: str) -> bool:
+    return _UNARY_DEREF_RE.search(expr) is not None
+
+
+def _flatten_address(expr: str) -> str:
+    """Drop casts and address-of, and turn an index into an additive offset."""
+
+    stripped = _CAST_RE.sub(" ", expr)
+    flattened = _INDEX_RE.sub(
+        lambda match: "+((%s)*%d)" % (match.group(1).strip() or "0", _POINTER_WORD_BYTES),
+        stripped,
+    )
+    return flattened.replace("&", " ")
+
+
+def resolve_address_role(expr: str, defines: dict[str, int], known: dict[str, str]) -> str | None:
+    """The register an address expression designates.
+
+    ``None`` means the expression is not an NPU address at all;
+    ``UNRESOLVED_ROLE`` means it provably is one and this gate cannot say which
+    register, which is the fail-closed answer rather than a silent pass.
+    """
+
+    if _has_unary_deref(expr) or _NOT_AN_ADDRESS_RE.search(expr) is not None:
+        return None
+    flat = _flatten_address(expr)
+    # A call *returns* a register value; it does not name the register's
+    # address, so ``x = read_reg(NPU_REG_STATUS)`` binds a word, not a pointer.
+    if _CALL_RE.search(flat) is not None:
+        return None
+    registers = sorted(set(_NPU_REG_NAME_RE.findall(flat)))
+    if len(registers) > 1:
+        return UNRESOLVED_ROLE
+    if len(registers) == 1:
+        return registers[0]
+
+    pointers = sorted({name for name in _IDENTIFIER_RE.findall(flat) if name in known})
+    if pointers:
+        if len(pointers) > 1:
+            return UNRESOLVED_ROLE
+        inherited = known[pointers[0]]
+        displacement = _evaluate_constant(flat, defines, (pointers[0],))
+        if displacement == 0:
+            return inherited
+        if displacement is None or inherited == UNRESOLVED_ROLE:
+            return UNRESOLVED_ROLE
+        anchor = defines.get("NPU_REG_" + inherited)
+        if anchor is None:
+            return UNRESOLVED_ROLE
+        return _role_at_offset(anchor + displacement, defines)
+
+    bases = [name for name in NPU_BASE_SYMBOLS if names_identifier(flat, name)]
+    if bases:
+        offset = _evaluate_constant(flat, defines, (bases[0],))
+        return UNRESOLVED_ROLE if offset is None else _role_at_offset(offset, defines)
+
+    # A bare numeric address is an NPU address only when the source itself says
+    # where the region starts and how far the named registers reach.
+    table = npu_register_offsets(defines)
+    base = defines.get(NPU_BASE_SYMBOLS[0])
+    if base is None or not table:
+        return None
+    value = _evaluate_constant(flat, defines)
+    if value is None or not base <= value <= base + max(table):
+        return None
+    return table.get(value - base, UNRESOLVED_ROLE)
+
+
+def pointer_roles(body: str, defines: dict[str, int]) -> dict[str, str]:
+    """Every name in ``body`` bound to an NPU register, transitively.
+
+    A pointer copied from a bound pointer is the same pointer, and a chain of
+    such copies is still that pointer, so the bindings are re-scanned until
+    nothing new resolves. A name bound twice to two different registers is
+    ``UNRESOLVED``: nothing here can say which binding a later dereference
+    reaches.
+    """
+
+    bindings = tuple(
+        (match.group(1), match.group(2)) for match in _ASSIGNMENT_RE.finditer(body)
+    )
+    observed: dict[str, set[str]] = {}
+    for _ in range(len(bindings) + 1):
+        known = {
+            name: (sorted(roles)[0] if len(roles) == 1 else UNRESOLVED_ROLE)
+            for name, roles in observed.items()
+        }
+        changed = False
+        for name, expr in bindings:
+            role = resolve_address_role(expr, defines, known)
+            if role is None:
+                continue
+            if role not in observed.setdefault(name, set()):
+                observed[name].add(role)
+                changed = True
+        if not changed:
+            break
+    return {
+        name: (sorted(roles)[0] if len(roles) == 1 else UNRESOLVED_ROLE)
+        for name, roles in observed.items()
+    }
+
+
+def unresolved_pointers(roles: dict[str, str]) -> tuple[str, ...]:
+    return tuple(sorted(name for name, role in roles.items() if role == UNRESOLVED_ROLE))
+
+
+def require_resolved_pointers(roles: dict[str, str], what: str) -> None:
+    unresolved = unresolved_pointers(roles)
+    if unresolved:
+        raise fail(
+            "%s binds an NPU-region pointer this gate cannot resolve to one register: %s"
+            % (what, ", ".join(unresolved))
+        )
+
+
+def _expression_after(text: str, start: int) -> str:
+    """The expression beginning at ``start``, up to its statement terminator."""
+
+    depth = 0
+    index = start
+    while index < len(text):
+        character = text[index]
+        if character in "([":
+            depth += 1
+        elif character in ")]":
+            if depth == 0:
+                break
+            depth -= 1
+        elif depth == 0:
+            if character in ";,":
+                break
+            if character == "=" and text[index + 1 : index + 2] != "=":
+                break
+        index += 1
+    return text[start:index]
+
+
+def _is_declarator_star(text: str, star_index: int) -> bool:
+    head = text[:star_index].rstrip()
+    match = re.search(r"([A-Za-z_]\w*)$", head)
+    if match is not None and match.group(1) in _DECLARATOR_TYPES:
+        return True
+    tail = text[star_index + 1 :].lstrip()
+    keyword = re.match(r"([A-Za-z_]\w*)", tail)
+    return keyword is not None and keyword.group(1) in _DECLARATOR_TYPES
+
+
+def dereference_sites(
+    text: str, defines: dict[str, int], roles: dict[str, str]
+) -> tuple[tuple[int, str, bool], ...]:
+    """``(offset, role, is_write)`` for every MMIO dereference in ``text``."""
+
+    found: list[tuple[int, str, bool]] = []
+    for match in _DEREF_RE.finditer(text):
+        if _is_declarator_star(text, match.start()):
+            continue
+        expression = _expression_after(text, match.end())
+        role = resolve_address_role(expression, defines, roles)
+        if role is None:
+            continue
+        tail = text[match.end() + len(expression) :].lstrip()
+        found.append((match.start(), role, tail.startswith("=") and not tail.startswith("==")))
+    return tuple(found)
+
+
+def register_access_sites(
+    text: str,
+    register: str,
+    defines: dict[str, int],
+    roles: dict[str, str] | None = None,
+    write: bool = False,
+) -> tuple[int, ...]:
+    """Every offset in ``text`` that reads or writes ``register``, any spelling."""
+
+    if roles is None:
+        roles = pointer_roles(text, defines)
+    verb = "write_reg" if write else "read_reg"
+    sites = set(
+        code_positions(text, "%s(NPU_REG_%s" % (verb, register), open_end=(register == "QBASE"))
+    )
+    for site, role, is_write in dereference_sites(text, defines, roles):
+        if role == register and is_write == write:
+            sites.add(site)
+    return tuple(sorted(sites))
+
+
+_CMD_VALUE_RE = re.compile(
+    r"(?<![A-Za-z0-9_])write_reg\s*\(\s*NPU_REG_CMD(?![A-Za-z0-9_])\s*,([^;]*?)\)\s*;"
+)
+
+
+def cmd_write_values(
+    text: str, defines: dict[str, int], roles: dict[str, str] | None = None
+) -> tuple[tuple[int, int | None], ...]:
+    """``(offset, value)`` for every CMD write; ``value`` is ``None`` when opaque.
+
+    The value is the OR of every constant term, because that is what decides
+    whether a write starts the NPU (bit 0), and a term this gate cannot read is
+    reported as opaque rather than assumed harmless.
+    """
+
+    if roles is None:
+        roles = pointer_roles(text, defines)
+    found: list[tuple[int, int | None]] = []
+    for match in _CMD_VALUE_RE.finditer(text):
+        found.append((match.start(), _or_terms(match.group(1), defines)))
+    for site, role, is_write in dereference_sites(text, defines, roles):
+        if role != "CMD" or not is_write:
+            continue
+        tail = text[site:]
+        assignment = re.search(r"=(?!=)([^;]*);", tail)
+        found.append((site, _or_terms(assignment.group(1), defines) if assignment else None))
+    return tuple(sorted(found))
+
+
+def _or_terms(value: str, defines: dict[str, int]) -> int | None:
+    resolved = 0
+    for term in _split_top_level(value, "|"):
+        part = _evaluate_constant(term, defines)
+        if part is None:
+            return None
+        resolved |= part
+    return resolved
+
+
+def submit_write_sites(
+    text: str, defines: dict[str, int], roles: dict[str, str] | None = None
+) -> tuple[int, ...]:
+    """Every CMD write that starts the NPU, whatever spelling sets bit 0."""
+
+    return tuple(
+        site for site, value in cmd_write_values(text, defines, roles) if value is None or value & 1
+    )
+
+
+def cmd_write_sites_with_value(
+    text: str, wanted: int, defines: dict[str, int], roles: dict[str, str] | None = None
+) -> tuple[int, ...]:
+    return tuple(site for site, value in cmd_write_values(text, defines, roles) if value == wanted)
+
 
 _PRE_SUBMIT_GATES = (
     ("V14_STATUS_STATE", "stopped"),
@@ -405,7 +894,7 @@ def _guard_blocks(block: str, subject: str) -> tuple[tuple[str, str], ...]:
             continue
         open_index = index + 1 + (len(tail) - len(stripped))
         close_index = _matching_brace(block, open_index, "guard body")
-        if subject in condition:
+        if names_identifier(condition, subject):
             found.append((condition, block[open_index + 1 : close_index]))
     return tuple(found)
 
@@ -428,7 +917,9 @@ def verify_pre_run_contract(vendor_masked: str, defines: dict[str, int]) -> dict
     # rather than on a function name, so the proof holds wherever the vendor
     # keeps its programming.
     spans = function_spans(vendor_masked)
-    programming_sites = positions(vendor_masked, _QBASE_WRITE) + positions(vendor_masked, _QSIZE_WRITE)
+    programming_sites = code_positions(vendor_masked, _QBASE_WRITE, open_end=True) + code_positions(
+        vendor_masked, _QSIZE_WRITE
+    )
     if not programming_sites:
         raise fail("pre-program STATUS gate does not dominate QBASE/QSIZE: no queue programming found")
     owners = {enclosing_function(spans, site) for site in programming_sites}
@@ -436,9 +927,13 @@ def verify_pre_run_contract(vendor_masked: str, defines: dict[str, int]) -> dict
         raise fail("queue programming is split across %d functions: %s" % (len(owners), sorted(owners)))
     setup_start, setup_stop = function_span(vendor_masked, sorted(owners)[0], "queue setup function")
     setup = vendor_masked[setup_start:setup_stop]
+    setup_roles = pointer_roles(setup, defines)
+    require_resolved_pointers(setup_roles, "queue setup function")
 
-    pre_program_reads = positions(setup, _STATUS_READ)
-    queue_accesses = positions(setup, _QBASE_WRITE) + positions(setup, _QSIZE_WRITE)
+    pre_program_reads = register_access_sites(setup, "STATUS", defines, setup_roles)
+    queue_accesses = code_positions(setup, _QBASE_WRITE, open_end=True) + code_positions(
+        setup, _QSIZE_WRITE
+    )
     if len(pre_program_reads) != 1 or pre_program_reads[0] > min(queue_accesses):
         raise fail(
             "pre-program STATUS gate does not dominate QBASE/QSIZE: %d gate loads, first queue access at %d"
@@ -456,41 +951,59 @@ def verify_pre_run_contract(vendor_masked: str, defines: dict[str, int]) -> dict
 
     # The design forbids a running transition *between* the gate and the
     # programming writes, not a CMD write anywhere in the setup function, so
-    # the window is exactly that span.
-    gate_to_programming = setup[pre_program_reads[0] : min(queue_accesses)]
-    if _CMD_WRITE in gate_to_programming:
+    # the window is exactly that span. A CMD write reached through a raw
+    # pointer transitions the state exactly as the vendor accessor does.
+    gate_start = pre_program_reads[0]
+    programming_start = min(queue_accesses)
+    if any(
+        gate_start <= site < programming_start
+        for site, _value in cmd_write_values(setup, defines, setup_roles)
+    ):
         raise fail(
             "state-transitioning CMD write between the pre-program gate and queue programming"
         )
 
-    qsize_writes = positions(setup, _QSIZE_WRITE)
+    qsize_writes = code_positions(setup, _QSIZE_WRITE)
     if not qsize_writes:
         raise fail(
             "queue programming does not write QSIZE: the setup function programs QBASE only"
         )
     final_qsize_write = max(qsize_writes)
-    for site in positions(setup, _QSIZE_READ):
+    for site in register_access_sites(setup, "QSIZE", defines, setup_roles):
         if site < final_qsize_write:
             raise fail("qsize snapshot precedes the final QSIZE programming write")
 
     command_start, command_stop = function_span(vendor_masked, "test_commands", "command function")
     command = vendor_masked[command_start:command_stop]
+    command_roles = pointer_roles(command, defines)
+    require_resolved_pointers(command_roles, "command function")
 
-    qsize_loads = positions(command, _QSIZE_READ)
+    qsize_loads = register_access_sites(command, "QSIZE", defines, command_roles)
     if len(qsize_loads) == 0:
         raise fail("qsize_expected snapshot is missing between final programming and submit")
     if len(qsize_loads) != 1:
         raise fail("QSIZE is loaded more than once: %d loads in the command path" % len(qsize_loads))
 
-    submits = positions(command, _SUBMIT_WRITE)
+    # A submit is a CMD write that sets bit 0, whichever spelling sets it, so a
+    # second start written as ``1`` rather than ``0x00000001`` -- or through a
+    # raw CMD pointer -- is counted here rather than walked around.
+    submits = submit_write_sites(command, defines, command_roles)
     if len(submits) != 1:
-        raise fail("command path does not carry exactly one NPU submit write")
-    if qsize_loads[0] > submits[0]:
+        raise fail(
+            "command path does not carry exactly one NPU submit write: %d submit writes"
+            % len(submits)
+        )
+    running_qsize_loads = tuple(site for site in qsize_loads if site > submits[0])
+    if running_qsize_loads:
         raise fail("running QSIZE reachable: the QSIZE load follows the submit write")
 
     # Only the window up to submit belongs to the pre-run gate; STATUS reads
     # after submit are the tail's business and are judged by the cleanup gate.
-    status_loads = tuple(site for site in positions(command, _STATUS_READ) if site < submits[0])
+    status_loads = tuple(
+        site
+        for site in register_access_sites(command, "STATUS", defines, command_roles)
+        if site < submits[0]
+    )
     if len(status_loads) != 1:
         raise fail(
             "post-program STATUS load is not distinct from the pre-program load: %d loads"
@@ -515,7 +1028,7 @@ def verify_pre_run_contract(vendor_masked: str, defines: dict[str, int]) -> dict
         "post_program_status_loads": len(status_loads),
         "qsize_loads": len(qsize_loads),
         "qsize_expected": "0x%08X" % QSIZE_EXPECTED,
-        "running_qsize_loads": 0,
+        "running_qsize_loads": len(running_qsize_loads),
     }
 
 
@@ -523,7 +1036,6 @@ def verify_pre_run_contract(vendor_masked: str, defines: dict[str, int]) -> dict
 # Statement-level effect model
 # ---------------------------------------------------------------------------
 
-_POINTER_BINDING_RE = re.compile(r"\*\s*const\s+([A-Za-z_]\w*)\s*=[^;]*?(NPU_REG_[A-Z_]+)")
 _CALL_RE = re.compile(r"(?<![A-Za-z0-9_])([A-Za-z_]\w*)\s*\(")
 _NON_CALL_KEYWORDS = frozenset(
     ("if", "for", "while", "switch", "return", "sizeof", "uint32_t", "int32_t", "volatile", "uintptr_t")
@@ -637,27 +1149,25 @@ def split_block(block: str) -> tuple[tuple[str, str, str], ...]:
     return tuple(items)
 
 
-def pointer_roles(body: str) -> dict[str, str]:
-    roles: dict[str, str] = {}
-    for name, register in _POINTER_BINDING_RE.findall(body):
-        roles[name] = register.replace("NPU_REG_", "")
-    return roles
-
-
 def statement_effects(
-    statement: str, roles: dict[str, str], store_re: re.Pattern[str] = _STORE_RE
+    statement: str,
+    roles: dict[str, str],
+    store_re: re.Pattern[str] = _STORE_RE,
+    defines: dict[str, int] | None = None,
 ) -> tuple[str, ...]:
     effects: list[str] = []
-    for name, role in roles.items():
-        if re.search(r"\*\s*%s(?![A-Za-z0-9_])" % re.escape(name), statement):
-            effects.append("load:%s" % role)
-    if "NPU_REG_QSIZE" in statement:
-        effects.append("qsize")
+    resolved = defines if defines is not None else {}
+    for _site, role, _is_write in dereference_sites(statement, resolved, roles):
+        effects.append("qsize" if role == "QSIZE" else "load:%s" % role)
     already_loaded = {effect.split(":", 1)[1] for effect in effects if effect.startswith("load:")}
     for register in _RAW_REGISTER_RE.findall(statement):
-        if register != "QSIZE" and register not in already_loaded:
+        if register == "QSIZE":
+            if "qsize" not in effects:
+                effects.append("qsize")
+        elif register not in already_loaded:
             effects.append("load:%s" % register)
-    if "DWT->CYCCNT" in statement:
+            already_loaded.add(register)
+    if code_contains(statement, "DWT->CYCCNT"):
         effects.append("timestamp")
     if store_re.search(statement):
         effects.append("store")
@@ -740,7 +1250,11 @@ def _split_top_level(text: str, separator: str) -> tuple[str, ...]:
 
 
 def verify_loop_header(
-    head: str, roles: dict[str, str], what: str, store_re: re.Pattern[str] = _STORE_RE
+    head: str,
+    roles: dict[str, str],
+    what: str,
+    store_re: re.Pattern[str] = _STORE_RE,
+    defines: dict[str, int] | None = None,
 ) -> None:
     """Reject a ``for`` head that carries anything but induction arithmetic."""
 
@@ -749,7 +1263,7 @@ def verify_loop_header(
         raise fail("%s: loop head is not a three-clause bounded for" % what)
     induction = set(_INDUCTION_DECL_RE.findall(clauses[0]))
     for clause in clauses:
-        effects = statement_effects(clause, roles, store_re)
+        effects = statement_effects(clause, roles, store_re, defines)
         if effects:
             raise fail(
                 "%s head carries a per-iteration effect: (%s) carries %s"
@@ -854,7 +1368,10 @@ _BACK_EDGE_RE = re.compile(r"(?<![A-Za-z0-9_])(continue|goto)(?![A-Za-z0-9_])")
 
 
 def subtree_effects(
-    body: str, roles: dict[str, str], store_re: re.Pattern[str] = _STORE_RE
+    body: str,
+    roles: dict[str, str],
+    store_re: re.Pattern[str] = _STORE_RE,
+    defines: dict[str, int] | None = None,
 ) -> tuple[str, ...]:
     """Return every effect carried anywhere inside ``body``, at any depth.
 
@@ -865,9 +1382,9 @@ def subtree_effects(
 
     effects: list[str] = []
     for kind, headline, nested in split_block(body):
-        effects.extend(statement_effects(headline, roles, store_re))
+        effects.extend(statement_effects(headline, roles, store_re, defines))
         if kind == "block":
-            effects.extend(subtree_effects(nested, roles, store_re))
+            effects.extend(subtree_effects(nested, roles, store_re, defines))
     return tuple(effects)
 
 
@@ -892,6 +1409,7 @@ def verify_guard_publication(
     roles: dict[str, str],
     what: str,
     store_re: re.Pattern[str] = _STORE_RE,
+    defines: dict[str, int] | None = None,
 ) -> None:
     """Reject a loop guard body that carries an effect it cannot own.
 
@@ -907,7 +1425,7 @@ def verify_guard_publication(
 
     carried = tuple(
         effect
-        for effect in subtree_effects(body, roles, store_re)
+        for effect in subtree_effects(body, roles, store_re, defines)
         if effect.startswith(_CARRIED_EFFECT_PREFIXES)
     )
     if not carried:
@@ -972,6 +1490,18 @@ def _q_timeout_classification(
         )
 
     guards = _guard_blocks(after_loop, targets[0])
+    # One guard that tests both the reset bit and the fault mask cannot report
+    # which of the two it found, so it is a contract rejection with a name --
+    # not an ordering question, and never a traceback out of ``index``.
+    if any(
+        names_identifier(condition, "V14_STATUS_RESET")
+        and names_identifier(condition, "V14_STATUS_FAULT_MASK")
+        for condition, _body in guards
+    ):
+        raise fail(
+            "Q timeout diagnostic does not classify reset from the diagnostic STATUS load: "
+            "one guard tests both the reset bit and the fault mask"
+        )
     reset = [c for c, b in guards if "V14_STATUS_RESET" in c and "V14_PRIMARY_RESET" in b]
     fault = [c for c, b in guards if "V14_STATUS_FAULT_MASK" in c and "V14_PRIMARY_FAULT" in b]
     if len(reset) != 1:
@@ -985,6 +1515,11 @@ def _q_timeout_classification(
             "STATUS load: %d guards test the pinned mask" % (defines["V14_STATUS_FAULT_MASK"], len(fault))
         )
     kinds = [_guard_kind(condition) for condition, _ in guards]
+    if "reset" not in kinds or "fault" not in kinds:
+        raise fail(
+            "Q timeout diagnostic does not classify reset from the diagnostic STATUS load: "
+            "the reset and fault tests are not two separate guards"
+        )
     if kinds.index("reset") > kinds.index("fault"):
         raise fail(
             "Q timeout diagnostic does not classify reset from the diagnostic STATUS load: "
@@ -1020,7 +1555,8 @@ def verify_primary_contract(
             raise fail("inactive primary helper is reachable: %s" % name)
 
     body = function_text(vendor_masked, wanted, "primary helper")
-    roles = pointer_roles(body)
+    roles = pointer_roles(body, defines)
+    require_resolved_pointers(roles, "primary helper")
     store_re = store_pattern(body)
     if "QSIZE" in roles.values():
         raise fail("QSIZE access reachable in a primary loop: a QSIZE pointer is bound")
@@ -1029,7 +1565,7 @@ def verify_primary_contract(
     if "V14_ITERATION_BOUND" not in head:
         raise fail("primary loop bound is not 10000: loop head does not use V14_ITERATION_BOUND")
     verify_single_bounded_loop(body, "primary helper")
-    verify_loop_header(head, roles, "primary loop", store_re)
+    verify_loop_header(head, roles, "primary loop", store_re, defines)
 
     items = flatten_loop(loop_body, "primary loop")
     read_order: list[str] = []
@@ -1038,7 +1574,7 @@ def verify_primary_contract(
     branched = False
     expected = ["QREAD"] if variant == "Q" else EXPECTED_PRIMARY_ORDER[variant]
     for depth, kind, head, guard_body in items:
-        effects = statement_effects(head, roles, store_re)
+        effects = statement_effects(head, roles, store_re, defines)
         if depth:
             # A guard body that has earned its exemption publishes the frozen
             # success tuple, so a store or a timestamp here is that tuple rather
@@ -1071,7 +1607,7 @@ def verify_primary_contract(
     # provably ends its iteration. Prove it rather than assume it -- after the
     # per-statement rules above, so each keeps its own rejection.
     for head, guard_body in guard_bodies:
-        verify_guard_publication(head, guard_body, roles, "primary loop", store_re)
+        verify_guard_publication(head, guard_body, roles, "primary loop", store_re, defines)
     verify_no_loop_back_edge(loop_body, "primary loop")
 
     if variant == "Q" and "STATUS" in read_order:
@@ -1144,9 +1680,9 @@ def verify_primary_contract(
     elif diagnostic_loads != 0:
         raise fail("%s primary helper reads STATUS outside its loop: %d loads" % (variant, diagnostic_loads))
 
-    if "DWT->CYCCNT" in after_loop:
+    if code_contains(after_loop, "DWT->CYCCNT"):
         raise fail("%s timeout path publishes a first-observation timestamp" % variant)
-    if CONVERGE_SYMBOL in body:
+    if names_identifier(body, CONVERGE_SYMBOL):
         raise fail("%s timeout path reaches the convergence tail" % variant)
 
     fault_bits = [bit for bit in (1 << shift for shift in range(32)) if defines["V14_STATUS_FAULT_MASK"] & bit]
@@ -1180,7 +1716,7 @@ def verify_hard_bypass_contract(vendor_masked: str) -> dict[str, object]:
     """Prove the retained V12/V13 stock vector and NVIC hard bypass."""
 
     install = "NVIC_SetVector(NPU0_IRQn, (uint32_t)&%s)" % STOCK_VECTOR_SYMBOL
-    install_sites = positions(vendor_masked, install)
+    install_sites = code_positions(vendor_masked, install)
     if len(install_sites) != 1:
         raise fail("runtime vector is not the exact stock u85_irq_handler")
 
@@ -1191,14 +1727,17 @@ def verify_hard_bypass_contract(vendor_masked: str) -> dict[str, object]:
     setup = vendor_masked[setup_start:setup_stop]
     observed = []
     for probe in HARD_BYPASS_PROBE_ORDER:
-        site = setup.find(probe + "(")
+        site = code_find(setup, probe + "(")
         if site >= 0:
             observed.append((site, probe))
     ordering = [probe for _, probe in sorted(observed)]
     if ordering != list(HARD_BYPASS_PROBE_ORDER):
         raise fail("NVIC hard-bypass probe ordering drifted: observed %s" % ordering)
 
-    if positions(vendor_masked, "NVIC_EnableIRQ("):
+    enable_sites = code_positions(vendor_masked, "NVIC_EnableIRQ(") + code_positions(
+        vendor_masked, "__NVIC_EnableIRQ("
+    )
+    if enable_sites:
         raise fail("reachable NVIC_EnableIRQ")
     if re.search(r"NVIC\s*->\s*ISER", vendor_masked):
         raise fail("direct NVIC ISER enable write is reachable")
@@ -1215,7 +1754,7 @@ def verify_hard_bypass_contract(vendor_masked: str) -> dict[str, object]:
         "installed_vector_symbol": STOCK_VECTOR_SYMBOL,
         "hard_bypass_probe_order": list(HARD_BYPASS_PROBE_ORDER),
         "irq_triggered_publication_sites": sorted(set(sites)),
-        "reachable_nvic_enable_sites": 0,
+        "reachable_nvic_enable_sites": len(enable_sites),
     }
 
 
@@ -1230,8 +1769,6 @@ _PREDICATE_TERMS = (
     "status & V14_STATUS_STATE",
 )
 _PREDICATE_IDENTIFIERS = frozenset(("qread", "status", "qsize_expected"))
-# The lookbehind keeps the ``U`` of a ``0U`` literal from reading as a name.
-_IDENTIFIER_RE = re.compile(r"(?<![0-9A-Za-z_])[A-Za-z_]\w*")
 
 
 def verify_convergence_contract(vendor_masked: str, defines: dict[str, int]) -> dict[str, object]:
@@ -1242,7 +1779,8 @@ def verify_convergence_contract(vendor_masked: str, defines: dict[str, int]) -> 
     except GateError:
         raise fail("common convergence helper %s is missing" % CONVERGE_SYMBOL)
 
-    roles = pointer_roles(body)
+    roles = pointer_roles(body, defines)
+    require_resolved_pointers(roles, "convergence helper")
     store_re = store_pattern(body)
     if "QSIZE" in roles.values():
         raise fail("QSIZE access reachable in the convergence tail: a QSIZE pointer is bound")
@@ -1251,7 +1789,7 @@ def verify_convergence_contract(vendor_masked: str, defines: dict[str, int]) -> 
     if "V14_ITERATION_BOUND" not in head:
         raise fail("convergence bound is not 10000: loop head does not use V14_ITERATION_BOUND")
     verify_single_bounded_loop(body, "convergence helper")
-    verify_loop_header(head, roles, "convergence loop", store_re)
+    verify_loop_header(head, roles, "convergence loop", store_re, defines)
 
     items = flatten_loop(loop_body, "convergence loop")
     read_order: list[str] = []
@@ -1259,7 +1797,7 @@ def verify_convergence_contract(vendor_masked: str, defines: dict[str, int]) -> 
     guard_bodies: list[tuple[str, str]] = []
     branched = False
     for depth, kind, head, guard_body in items:
-        effects = statement_effects(head, roles, store_re)
+        effects = statement_effects(head, roles, store_re, defines)
         for effect in effects:
             if effect == "qsize":
                 raise fail("QSIZE access reachable in the convergence tail")
@@ -1288,7 +1826,7 @@ def verify_convergence_contract(vendor_masked: str, defines: dict[str, int]) -> 
     # Same proof obligation as the primary loop: a guard only escapes the
     # per-iteration rule if it provably ends the iteration.
     for head, guard_body in guard_bodies:
-        verify_guard_publication(head, guard_body, roles, "convergence loop", store_re)
+        verify_guard_publication(head, guard_body, roles, "convergence loop", store_re, defines)
     verify_no_loop_back_edge(loop_body, "convergence loop")
 
     duplicates = _duplicate_roles(read_order)
@@ -1303,7 +1841,7 @@ def verify_convergence_contract(vendor_masked: str, defines: dict[str, int]) -> 
         raise fail("convergence read order is not QREAD then STATUS: observed %s" % (read_order or ["nothing"]))
 
     guards = [
-        ("success" if "V14_CONVERGENCE_SUCCESS" in body else _guard_kind(head), head, body)
+        ("success" if names_identifier(body, "V14_CONVERGENCE_SUCCESS") else _guard_kind(head), head, body)
         for depth, kind, head, body in items
         if depth == 0 and kind == "guard" and head.startswith("if")
     ]
@@ -1507,14 +2045,16 @@ def verify_mailbox_contract(vendor_masked: str, defines: dict[str, int]) -> dict
         raise fail("invalid sentinel is not 0xFFFFFFFF")
 
     reset = function_text(vendor_masked, MAILBOX_RESET_SYMBOL, "mailbox reset entry")
-    if "V14_U32_INVALID" not in reset or "V14_APPENDIX_WORDS" not in reset:
+    if not names_identifier(reset, "V14_U32_INVALID") or not names_identifier(
+        reset, "V14_APPENDIX_WORDS"
+    ):
         raise fail("mailbox reset does not invalidate every appendix field")
     reset_stores = _mailbox_stores(reset)
     if ("V14_MBOX_MAILBOX_VALID", "0U") not in reset_stores:
         raise fail("mailbox reset does not zero mailbox_valid")
     if reset_stores[-1] != ("V14_MBOX_MAILBOX_VALID", "0U"):
         raise fail("mailbox reset does not zero mailbox_valid last")
-    if "__DSB()" not in reset:
+    if not code_contains(reset, "__DSB()"):
         raise fail("mailbox reset does not issue a DSB")
 
     publish = function_text(vendor_masked, MAILBOX_PUBLISH_SYMBOL, "mailbox publication entry")
@@ -1522,7 +2062,7 @@ def verify_mailbox_contract(vendor_masked: str, defines: dict[str, int]) -> dict
     if publish_stores != (("V14_MBOX_MAILBOX_VALID", "V14_MAILBOX_VALID"),):
         raise fail("mailbox magic is not the final appendix store: publication stores %s" % (publish_stores,))
     magic_match = _MAILBOX_STORE_RE.search(publish)
-    if "__DSB()" not in publish[magic_match.end() :]:
+    if not code_contains(publish[magic_match.end() :], "__DSB()"):
         raise fail("mailbox publication does not issue a DSB")
 
     # The magic is what tells a reader the other 33 words are real, so it is
@@ -1611,6 +2151,15 @@ SUCCESS_CLEANUP_ORDER = (
     "CMD0xC",
 )
 
+# Every CMD write in the release window is named by the value it lands, so a
+# write this table does not know still appears in the observed ordering rather
+# than passing through it unseen.
+_CLEANUP_CMD_TOKENS = {0x2: "CMD2", 0x0: "CMD0", 0xC: "CMD0xC"}
+
+
+def _cmd_value_text(value: int | None) -> str:
+    return "opaque" if value is None else "0x%08X" % value
+
 
 def _hprintf_seam_site(cleanup: str, cleanup_raw: str, cmd0: int, terminal: int) -> int:
     """Return the offset of the one qualified H-PRINTF callsite in the window.
@@ -1622,8 +2171,13 @@ def _hprintf_seam_site(cleanup: str, cleanup_raw: str, cmd0: int, terminal: int)
     frozen V12 gate qualified.
     """
 
-    markers = [site for site in positions(cleanup_raw, HPRINTF_SEAM_MARKER) if cmd0 < site < terminal]
-    callsites = [site for site in positions(cleanup, "printf(") if cmd0 < site < terminal]
+    marker_spans = [
+        (match.start(), match.end())
+        for match in code_pattern(HPRINTF_SEAM_MARKER).finditer(cleanup_raw)
+        if cmd0 < match.start() < terminal
+    ]
+    markers = [start for start, _stop in marker_spans]
+    callsites = [site for site in code_positions(cleanup, "printf(") if cmd0 < site < terminal]
     if len(markers) != 1:
         raise fail(
             "cleanup H-PRINTF seam is not the qualified %s callsite: %d seam markers in the release window"
@@ -1634,7 +2188,7 @@ def _hprintf_seam_site(cleanup: str, cleanup_raw: str, cmd0: int, terminal: int)
             "cleanup H-PRINTF seam is not the qualified %s callsite: %d printf callsites in the release window"
             % (HPRINTF_SEAM_MARKER_NAME, len(callsites))
         )
-    between = cleanup_raw[markers[0] + len(HPRINTF_SEAM_MARKER) : callsites[0]]
+    between = cleanup_raw[marker_spans[0][1] : callsites[0]]
     if markers[0] > callsites[0] or between.strip():
         raise fail(
             "cleanup H-PRINTF seam is not the qualified %s callsite: the seam marker does not anchor it"
@@ -1679,49 +2233,64 @@ def verify_cleanup_contract(
     command = vendor_masked[command_start:command_stop]
     command_raw = vendor_text[command_start:command_stop]
 
-    primary_call = command.find(PRIMARY_SYMBOL[variant] + "(")
+    command_roles = pointer_roles(command, defines)
+    require_resolved_pointers(command_roles, "command function")
+
+    primary_call = code_find(command, PRIMARY_SYMBOL[variant] + "(")
     if primary_call < 0:
         raise fail("command path does not call the variant primary helper")
     tail = command[primary_call + len(PRIMARY_SYMBOL[variant]) :]
     if "v14_primary_" in tail:
         raise fail("variant-specific block between the primary freeze and the common cleanup")
 
-    for site in positions(command, "v14_publish_failure("):
-        window_end = command.find("return", site)
+    command_cmd_writes = tuple(site for site, _value in cmd_write_values(command, defines, command_roles))
+    command_prints = code_positions(command, "printf(")
+    failure_clears: list[int] = []
+    failure_prints: list[int] = []
+    for site in code_positions(command, "v14_publish_failure("):
+        window_end = code_find(command[site:], "return")
         if window_end < 0:
             raise fail("failure path does not return after publication")
-        window = command[site:window_end]
-        if _CMD_WRITE in window:
-            raise fail("failure path clears NPU state before serialization")
-        if "printf(" in window:
-            raise fail("failure path enters the H-PRINTF seam")
+        window_stop = site + window_end
+        failure_clears.extend(
+            offset for offset in command_cmd_writes if site <= offset < window_stop
+        )
+        failure_prints.extend(offset for offset in command_prints if site <= offset < window_stop)
+    if failure_clears:
+        raise fail("failure path clears NPU state before serialization")
+    if failure_prints:
+        raise fail("failure path enters the H-PRINTF seam")
 
     history = re.search(r"irq_history_mask\s*=\s*([^;]+);", command)
-    if history is None or "converged.status" not in history.group(1):
+    if history is None or not code_contains(history.group(1), "converged.status"):
         raise fail("irq_history_mask is derived from a post-convergence STATUS reread")
-    converge_call = command.find(CONVERGE_SYMBOL + "(")
+    converge_call = code_find(command, CONVERGE_SYMBOL + "(")
     if converge_call < 0:
         raise fail("command path does not call the common convergence helper")
-    if _STATUS_READ in command[converge_call:]:
+    if any(
+        site >= converge_call
+        for site in register_access_sites(command, "STATUS", defines, command_roles)
+    ):
         raise fail("irq_history_mask is derived from a post-convergence STATUS reread")
 
     cleanup = command[history.start() :]
     cleanup_raw = command_raw[history.start() :]
+    cleanup_roles = pointer_roles(cleanup, defines)
+    # The cleanup tail is judged by what each CMD write *does*, so a second
+    # ISR-equivalent written as ``2`` rather than ``0x00000002`` is the same
+    # marker and lands in the same ordering.
+    cleanup_cmd_writes = cmd_write_values(cleanup, defines, cleanup_roles)
     markers: list[tuple[int, str]] = []
-    for site in positions(cleanup, "write_reg(NPU_REG_CMD, 0x00000002)"):
-        markers.append((site, "CMD2"))
-    for site in positions(cleanup, "read_reg(NPU_REG_QREAD)"):
+    for site, value in cleanup_cmd_writes:
+        markers.append((site, _CLEANUP_CMD_TOKENS.get(value, "CMD=%s" % _cmd_value_text(value))))
+    for site in register_access_sites(cleanup, "QREAD", defines, cleanup_roles):
         markers.append((site, "QREAD"))
-    for site in positions(cleanup, "read_val == u32CmdQueueSize"):
+    for site in code_positions(cleanup, "read_val == u32CmdQueueSize"):
         markers.append((site, "QREAD_VERIFY"))
-    for site in positions(cleanup, "NVIC_ClearPendingIRQ("):
+    for site in code_positions(cleanup, "NVIC_ClearPendingIRQ("):
         markers.append((site, "NVIC"))
-    cmd0 = positions(cleanup, "write_reg(NPU_REG_CMD, 0x00000000)")
-    for site in cmd0:
-        markers.append((site, "CMD0"))
-    terminal = positions(cleanup, "write_reg(NPU_REG_CMD, 0x0000000C)")
-    for site in terminal:
-        markers.append((site, "CMD0xC"))
+    cmd0 = tuple(site for site, value in cleanup_cmd_writes if value == 0x0)
+    terminal = tuple(site for site, value in cleanup_cmd_writes if value == 0xC)
     seam_site = -1
     if cmd0 and terminal:
         seam_site = _hprintf_seam_site(cleanup, cleanup_raw, cmd0[0], terminal[0])
@@ -1743,9 +2312,9 @@ def verify_cleanup_contract(
         )
 
     return {
-        "success_cleanup_order": list(SUCCESS_CLEANUP_ORDER),
-        "failure_paths_clear_npu": False,
-        "failure_paths_enter_hprintf": False,
+        "success_cleanup_order": list(observed),
+        "failure_paths_clear_npu": bool(failure_clears),
+        "failure_paths_enter_hprintf": bool(failure_prints),
         "hprintf_seam_marker": HPRINTF_SEAM_MARKER_NAME,
         "hprintf_seam_wrap_symbol": HPRINTF_WRAP_SYMBOL,
         "hprintf_callsite_elf_qualified": False,
@@ -1805,7 +2374,7 @@ def verify_runner_contract(runner_masked: str) -> dict[str, object]:
         if assertion not in runner_masked:
             raise fail(reason)
 
-    record_end = runner_masked.find("} pmu_diag_record_t;")
+    record_end = code_find(runner_masked, "} pmu_diag_record_t;")
     record_start = runner_masked.rfind("typedef struct", 0, record_end) if record_end >= 0 else -1
     if record_start < 0:
         raise fail("runner record does not carry the 34 appendix fields in wire order: no record found")
@@ -1815,8 +2384,8 @@ def verify_runner_contract(runner_masked: str) -> dict[str, object]:
     if not _contiguous_appendix_run(_SERIALIZE_RE.findall(runner_masked)):
         raise fail("runner serialization order does not match the appendix table")
 
-    reset_site = runner_masked.find(MAILBOX_RESET_SYMBOL + "();")
-    driver_site = runner_masked.find(MEASURED_CALL, reset_site) if reset_site >= 0 else -1
+    reset_site = code_find(runner_masked, MAILBOX_RESET_SYMBOL + "();")
+    driver_site = code_find(runner_masked[reset_site:], MEASURED_CALL) if reset_site >= 0 else -1
     if reset_site < 0 or driver_site < 0:
         raise fail("runner does not reset the mailbox before the measured call")
 
@@ -1827,7 +2396,8 @@ def verify_runner_contract(runner_masked: str) -> dict[str, object]:
     )
     if magic_guard is None:
         raise fail("runner appendix copy is not dominated by the mailbox magic check")
-    else_site = runner_masked.find("else", magic_guard.end())
+    tail_after_guard = code_find(runner_masked[magic_guard.end() :], "else")
+    else_site = -1 if tail_after_guard < 0 else magic_guard.end() + tail_after_guard
     if else_site < 0:
         raise fail("runner appendix copy is not dominated by the mailbox magic check")
     open_index = runner_masked.find("{", else_site)
@@ -1884,9 +2454,21 @@ def build_arg_parser() -> argparse.ArgumentParser:
 
 
 def _read_text(path: str, what: str) -> str:
+    """Read a source file, reporting a bad byte as a verdict rather than a crash.
+
+    A translation unit that is not UTF-8 is not a translation unit this gate can
+    read, and "cannot read it" is a rejection with a name. Letting the decoder's
+    ``UnicodeDecodeError`` escape would print a traceback instead, which is not
+    a verdict a gate is allowed to emit.
+    """
+
     try:
         with open(path, "r", encoding="utf-8") as handle:
             return _normalize_newlines(handle.read())
+    except UnicodeDecodeError as exc:
+        raise fail(
+            "%s: is not UTF-8 text (byte 0x%02X at offset %d)" % (what, exc.object[exc.start], exc.start)
+        )
     except OSError as exc:
         raise fail("%s: unreadable (%s)" % (what, exc))
 
@@ -1961,7 +2543,7 @@ def verify_generated_sources(runner_text: str, vendor_text: str, variant: str) -
     converge_body = function_text(vendor_masked, CONVERGE_SYMBOL, "common convergence helper")
     command_start, command_stop = function_span(vendor_masked, "test_commands", "command function")
     command = vendor_masked[command_start:command_stop]
-    tail_start = command.find("v14_publish_primary(")
+    tail_start = code_find(command, "v14_publish_primary(")
     if tail_start < 0:
         raise fail("common tail does not start at the shared primary publication")
 

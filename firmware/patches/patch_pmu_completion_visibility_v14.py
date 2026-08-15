@@ -125,9 +125,16 @@ def _ensure_parent_dir(path: str) -> None:
 
 
 def _read_text(path: str) -> str:
+    """Read a source file; a byte that is not UTF-8 is a FAIL line, not a crash."""
+
     try:
         with open(path, "r", encoding="utf-8") as handle:
             return handle.read()
+    except UnicodeDecodeError as exc:
+        raise fail(
+            "input is not UTF-8 text: %s (byte 0x%02X at offset %d)"
+            % (path, exc.object[exc.start], exc.start)
+        )
     except OSError as exc:
         raise fail("input is unreadable: %s (%s)" % (path, exc))
 
