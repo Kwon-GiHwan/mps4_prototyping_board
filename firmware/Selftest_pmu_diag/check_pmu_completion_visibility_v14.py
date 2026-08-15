@@ -246,17 +246,24 @@ def normalized_digest(text: str) -> str:
 _DEFINE_RE = re.compile(r"(?m)^[ \t]*#[ \t]*define[ \t]+([A-Za-z_][A-Za-z0-9_]*)[ \t]+(\S+)[ \t]*$")
 
 
-def parse_defines(masked: str) -> dict[str, int]:
-    """Return the integer-valued object-like macros of a translation unit."""
+def parse_define_values(masked: str) -> dict[str, list[int]]:
+    """Return every integer value each object-like macro is given, in order."""
 
-    values: dict[str, int] = {}
+    values: dict[str, list[int]] = {}
     for match in _DEFINE_RE.finditer(masked):
         raw = match.group(2).rstrip("uU")
         try:
-            values[match.group(1)] = int(raw, 0)
+            parsed = int(raw, 0)
         except ValueError:
             continue
+        values.setdefault(match.group(1), []).append(parsed)
     return values
+
+
+def parse_defines(masked: str) -> dict[str, int]:
+    """Return the integer-valued object-like macros of a translation unit."""
+
+    return {name: seen[-1] for name, seen in parse_define_values(masked).items()}
 
 
 def require_define(defines: dict[str, int], name: str, expected: int, what: str) -> None:
@@ -383,14 +390,14 @@ def verify_pre_run_contract(vendor_masked: str, defines: dict[str, int]) -> dict
     if qsize_loads[0] > submits[0]:
         raise fail("running QSIZE reachable: the QSIZE load follows the submit write")
 
-    status_loads = positions(command, _STATUS_READ)
+    # Only the window up to submit belongs to the pre-run gate; STATUS reads
+    # after submit are the tail's business and are judged by the cleanup gate.
+    status_loads = tuple(site for site in positions(command, _STATUS_READ) if site < submits[0])
     if len(status_loads) != 1:
         raise fail(
             "post-program STATUS load is not distinct from the pre-program load: %d loads"
             % len(status_loads)
         )
-    if status_loads[0] > submits[0]:
-        raise fail("post-program STATUS gate follows the submit write")
 
     qsize_compare = _guard_blocks(command, "qsize_expected")
     if not any("V14_QSIZE_EXPECTED" in condition for condition, _ in qsize_compare):
@@ -747,6 +754,367 @@ def verify_hard_bypass_contract(vendor_masked: str) -> dict[str, object]:
     }
 
 
+# ---------------------------------------------------------------------------
+# Common convergence tail
+# ---------------------------------------------------------------------------
+
+_PREDICATE_TERMS = (
+    "qread == qsize_expected",
+    "status & V14_STATUS_CMD_END",
+    "status & V14_STATUS_IRQ_RAISED",
+    "status & V14_STATUS_STATE",
+)
+_PREDICATE_IDENTIFIERS = frozenset(("qread", "status", "qsize_expected"))
+# The lookbehind keeps the ``U`` of a ``0U`` literal from reading as a name.
+_IDENTIFIER_RE = re.compile(r"(?<![0-9A-Za-z_])[A-Za-z_]\w*")
+
+
+def verify_convergence_contract(vendor_masked: str, defines: dict[str, int]) -> dict[str, object]:
+    """Prove the one shared bounded convergence tail."""
+
+    try:
+        body = function_text(vendor_masked, CONVERGE_SYMBOL, "common convergence helper")
+    except GateError:
+        raise fail("common convergence helper %s is missing" % CONVERGE_SYMBOL)
+
+    roles = pointer_roles(body)
+    if "QSIZE" in roles.values():
+        raise fail("QSIZE access reachable in the convergence tail: a QSIZE pointer is bound")
+
+    head, loop_body, loop_start, loop_stop = extract_loop(body, "convergence loop")
+    if "V14_ITERATION_BOUND" not in head:
+        raise fail("convergence bound is not 10000: loop head does not use V14_ITERATION_BOUND")
+
+    items = split_block(loop_body)
+    read_order: list[str] = []
+    for kind, headline, _ in items:
+        if kind == "block":
+            break
+        for effect in statement_effects(headline, roles):
+            if effect == "qsize":
+                raise fail("QSIZE access reachable in the convergence tail")
+            if effect == "store":
+                raise fail("convergence evidence store occurs inside the loop")
+            if effect == "timestamp" or effect.startswith("call:"):
+                raise fail(
+                    "convergence loop carries a per-iteration store/call/timestamp: %s"
+                    % headline.strip()[:50]
+                )
+            if effect.startswith("load:"):
+                read_order.append(effect.split(":", 1)[1])
+    if read_order != ["QREAD", "STATUS"]:
+        raise fail("convergence read order is not QREAD then STATUS: observed %s" % (read_order or ["nothing"]))
+
+    guards: list[tuple[str, str, str]] = []
+    for kind, headline, nested in items:
+        if kind != "block" or not headline.startswith("if"):
+            continue
+        for effect in statement_effects(nested, roles):
+            if effect == "qsize":
+                raise fail("QSIZE access reachable in the convergence tail")
+            if effect == "store":
+                raise fail("convergence evidence store occurs inside the loop")
+            if effect.startswith("load:"):
+                raise fail("convergence predicate is satisfied by a reread rather than the loop tuple")
+        role = "success" if "V14_CONVERGENCE_SUCCESS" in nested else _guard_kind(headline)
+        guards.append((role, headline, nested))
+
+    kinds = [role for role, _, _ in guards]
+    if "success" not in kinds:
+        raise fail("convergence loop has no success predicate")
+    success_index = kinds.index("success")
+    for required in ("reset", "fault"):
+        if required not in kinds:
+            raise fail("convergence fault/reset check is delayed: %s guard is missing" % required)
+        if kinds.index(required) > success_index:
+            raise fail("convergence fault/reset check is delayed: %s guard follows the success predicate" % required)
+
+    predicate = guards[success_index][1]
+    for identifier in _IDENTIFIER_RE.findall(predicate):
+        if identifier in _PREDICATE_IDENTIFIERS or identifier.startswith("V14_") or identifier == "if":
+            continue
+        raise fail(
+            "convergence predicate accumulates across iterations: %s is not part of the same-iteration tuple"
+            % identifier
+        )
+    flattened = re.sub(r"\s+", " ", predicate)
+    for term in _PREDICATE_TERMS:
+        if term not in flattened:
+            raise fail("convergence predicate omits a required term: %s" % term)
+
+    if "obs" in body[:loop_start] and _STORE_RE.search(body[:loop_start]):
+        raise fail("convergence evidence store occurs before the loop")
+
+    return {
+        "convergence_helper": CONVERGE_SYMBOL,
+        "convergence_read_order": ["QREAD", "STATUS"],
+        "convergence_bound": ITERATION_BOUND,
+        "convergence_predicate_terms": list(_PREDICATE_TERMS),
+    }
+
+
+# ---------------------------------------------------------------------------
+# Failure mailbox and success cleanup
+# ---------------------------------------------------------------------------
+
+_MAILBOX_DECL_RE = re.compile(r"volatile\s+uint32_t\s+%s\s*\[\s*(\d+)\s*\]" % re.escape(MAILBOX_SYMBOL))
+_MAILBOX_STORE_RE = re.compile(r"%s\s*\[\s*([A-Za-z0-9_]+)\s*\]\s*=\s*([^;]+);" % re.escape(MAILBOX_SYMBOL))
+
+_CONVERGENCE_TUPLE = ("convergence_final_qread", "convergence_final_status")
+_FAILURE_TUPLE = ("failure_qread", "failure_status")
+_FIRST_TUPLE_FIELDS = (
+    "first_qread",
+    "first_status",
+    "first_q_done",
+    "first_cmd_end_reached",
+    "first_irq_raised",
+    "first_state",
+)
+
+
+def _mbox_macro(field: str) -> str:
+    return "V14_MBOX_" + field.upper()
+
+
+def _mailbox_stores(block: str) -> tuple[tuple[str, str], ...]:
+    return tuple((match.group(1), match.group(2).strip()) for match in _MAILBOX_STORE_RE.finditer(block))
+
+
+def verify_mailbox_contract(vendor_masked: str, defines: dict[str, int]) -> dict[str, object]:
+    """Prove the exact 34-word mailbox, its reset, and its magic-last publication."""
+
+    declarations = _MAILBOX_DECL_RE.findall(vendor_masked)
+    if declarations != [str(APPENDIX_WORDS)]:
+        raise fail("mailbox storage is not a 34-word array: found %s" % (declarations or ["no declaration"]))
+
+    for index, field in enumerate(APPENDIX_FIELDS):
+        macro = _mbox_macro(field)
+        if defines.get(macro) != index:
+            raise fail(
+                "appendix offset table does not match the schema-14 wire order: %s is %r, expected %d"
+                % (macro, defines.get(macro), index)
+            )
+    if defines.get("V14_APPENDIX_WORDS") != APPENDIX_WORDS:
+        raise fail("appendix offset table does not match the schema-14 wire order: V14_APPENDIX_WORDS drifted")
+    if defines.get("V14_MAILBOX_VALID") != MAILBOX_VALID:
+        raise fail("mailbox magic is not 0x5631344D")
+    if defines.get("V14_U32_INVALID") != U32_INVALID:
+        raise fail("invalid sentinel is not 0xFFFFFFFF")
+
+    reset = function_text(vendor_masked, MAILBOX_RESET_SYMBOL, "mailbox reset entry")
+    if "V14_U32_INVALID" not in reset or "V14_APPENDIX_WORDS" not in reset:
+        raise fail("mailbox reset does not invalidate every appendix field")
+    reset_stores = _mailbox_stores(reset)
+    if ("V14_MBOX_MAILBOX_VALID", "0U") not in reset_stores:
+        raise fail("mailbox reset does not zero mailbox_valid")
+    if reset_stores[-1] != ("V14_MBOX_MAILBOX_VALID", "0U"):
+        raise fail("mailbox reset does not zero mailbox_valid last")
+    if "__DSB()" not in reset:
+        raise fail("mailbox reset does not issue a DSB")
+
+    publish = function_text(vendor_masked, MAILBOX_PUBLISH_SYMBOL, "mailbox publication entry")
+    publish_stores = _mailbox_stores(publish)
+    if publish_stores != (("V14_MBOX_MAILBOX_VALID", "V14_MAILBOX_VALID"),):
+        raise fail("mailbox magic is not the final appendix store: publication stores %s" % (publish_stores,))
+    magic_site = publish.index("V14_MAILBOX_VALID;")
+    if "__DSB()" not in publish[magic_site:]:
+        raise fail("mailbox publication does not issue a DSB")
+
+    magic_publications = len(re.findall(r"=\s*V14_MAILBOX_VALID\s*;", vendor_masked))
+    if magic_publications != 1:
+        raise fail("mailbox_valid is published from more than one site: %d stores" % magic_publications)
+
+    failure = function_text(vendor_masked, "v14_publish_failure", "failure publication")
+    failure_stores = dict(_mailbox_stores(failure))
+    for field in _CONVERGENCE_TUPLE:
+        if failure_stores.get(_mbox_macro(field)) != "V14_U32_INVALID":
+            raise fail("success and failure tuples are both published as valid: %s survives a failure" % field)
+    for field in _FIRST_TUPLE_FIELDS:
+        if _mbox_macro(field) in failure_stores:
+            raise fail("convergence failure discards the retained first-observation tuple: %s" % field)
+
+    success = function_text(vendor_masked, "v14_publish_success", "success publication")
+    success_stores = dict(_mailbox_stores(success))
+    for field in _FAILURE_TUPLE:
+        if success_stores.get(_mbox_macro(field)) != "V14_U32_INVALID":
+            raise fail("success and failure tuples are both published as valid: %s survives a success" % field)
+    if success_stores.get(_mbox_macro("failure_phase")) != "V14_PHASE_NONE":
+        raise fail("success and failure tuples are both published as valid: failure_phase is not NONE")
+
+    cleanup = function_text(vendor_masked, "v14_publish_cleanup_failure", "cleanup publication")
+    cleanup_stores = dict(_mailbox_stores(cleanup))
+    if cleanup_stores.get(_mbox_macro("failure_phase")) != "V14_PHASE_CLEANUP":
+        raise fail("cleanup invariant is not recorded as failure_phase=CLEANUP")
+    for field in _CONVERGENCE_TUPLE:
+        if _mbox_macro(field) in cleanup_stores:
+            raise fail("cleanup invariant discards the convergence tuple: %s" % field)
+
+    spans = function_spans(vendor_masked)
+    for match in _MAILBOX_STORE_RE.finditer(vendor_masked):
+        macro = match.group(1)
+        if macro not in {_mbox_macro(field) for field in _FIRST_TUPLE_FIELDS}:
+            continue
+        owner = enclosing_function(spans, match.start())
+        if owner != "v14_publish_primary":
+            raise fail(
+                "first-observation STATUS fields are synthesized from convergence values: %s stored in %s"
+                % (macro, owner or "<file scope>")
+            )
+
+    return {
+        "mailbox_symbol": MAILBOX_SYMBOL,
+        "mailbox_words": APPENDIX_WORDS,
+        "mailbox_reset_entry": MAILBOX_RESET_SYMBOL,
+        "mailbox_magic_store_index": APPENDIX_FIELDS.index("mailbox_valid"),
+        "mailbox_magic": "0x%08X" % MAILBOX_VALID,
+        "failure_publication_invalidates": list(_CONVERGENCE_TUPLE),
+        "success_publication_invalidates": list(_FAILURE_TUPLE),
+        "cleanup_publication_retains": list(_CONVERGENCE_TUPLE),
+    }
+
+
+SUCCESS_CLEANUP_ORDER = (
+    "CMD2",
+    "QREAD",
+    "CMD2",
+    "QREAD_VERIFY",
+    "NVIC",
+    "CMD0",
+    "H-PRINTF",
+    "CMD0xC",
+)
+
+
+def verify_cleanup_contract(vendor_masked: str, variant: str) -> dict[str, object]:
+    """Prove failure isolation, history provenance and the stock success tail."""
+
+    command_start, command_stop = function_span(vendor_masked, "test_commands", "command function")
+    command = vendor_masked[command_start:command_stop]
+
+    primary_call = command.find(PRIMARY_SYMBOL[variant] + "(")
+    if primary_call < 0:
+        raise fail("command path does not call the variant primary helper")
+    tail = command[primary_call + len(PRIMARY_SYMBOL[variant]) :]
+    if "v14_primary_" in tail:
+        raise fail("variant-specific block between the primary freeze and the common cleanup")
+
+    for site in positions(command, "v14_publish_failure("):
+        window_end = command.find("return", site)
+        if window_end < 0:
+            raise fail("failure path does not return after publication")
+        window = command[site:window_end]
+        if _CMD_WRITE in window:
+            raise fail("failure path clears NPU state before serialization")
+        if "printf(" in window:
+            raise fail("failure path enters the H-PRINTF seam")
+
+    history = re.search(r"irq_history_mask\s*=\s*([^;]+);", command)
+    if history is None or "converged.status" not in history.group(1):
+        raise fail("irq_history_mask is derived from a post-convergence STATUS reread")
+    converge_call = command.find(CONVERGE_SYMBOL + "(")
+    if converge_call < 0:
+        raise fail("command path does not call the common convergence helper")
+    if _STATUS_READ in command[converge_call:]:
+        raise fail("irq_history_mask is derived from a post-convergence STATUS reread")
+
+    cleanup = command[history.start() :]
+    markers: list[tuple[int, str]] = []
+    for site in positions(cleanup, "write_reg(NPU_REG_CMD, 0x00000002)"):
+        markers.append((site, "CMD2"))
+    for site in positions(cleanup, "read_reg(NPU_REG_QREAD)"):
+        markers.append((site, "QREAD"))
+    for site in positions(cleanup, "read_val == u32CmdQueueSize"):
+        markers.append((site, "QREAD_VERIFY"))
+    for site in positions(cleanup, "NVIC_ClearPendingIRQ("):
+        markers.append((site, "NVIC"))
+    cmd0 = positions(cleanup, "write_reg(NPU_REG_CMD, 0x00000000)")
+    for site in cmd0:
+        markers.append((site, "CMD0"))
+    terminal = positions(cleanup, "write_reg(NPU_REG_CMD, 0x0000000C)")
+    for site in terminal:
+        markers.append((site, "CMD0xC"))
+    if cmd0 and terminal:
+        for site in positions(cleanup, "printf("):
+            if cmd0[0] < site < terminal[0]:
+                markers.append((site, "H-PRINTF"))
+    observed = tuple(token for _, token in sorted(markers))
+    if observed != SUCCESS_CLEANUP_ORDER:
+        raise fail("success cleanup ordering drifted: observed %s" % (list(observed),))
+
+    return {
+        "success_cleanup_order": list(SUCCESS_CLEANUP_ORDER),
+        "failure_paths_clear_npu": False,
+        "failure_paths_enter_hprintf": False,
+    }
+
+
+# ---------------------------------------------------------------------------
+# Runner wire contract
+# ---------------------------------------------------------------------------
+
+_RECORD_RE = re.compile(r"typedef\s+struct\s*\{(.*?)\}\s*pmu_diag_record_t\s*;", re.S)
+_RECORD_FIELD_RE = re.compile(r"uint32_t\s+([A-Za-z_]\w*)\s*;")
+_SERIALIZE_RE = re.compile(r"put32\s*\(\s*&c\s*,\s*d\s*->\s*([A-Za-z_]\w*)\s*\)")
+_COPY_RE = re.compile(r"d\.([A-Za-z_]\w*)\s*=\s*%s\s*\[" % re.escape(MAILBOX_SYMBOL))
+
+
+def verify_runner_contract(runner_masked: str) -> dict[str, object]:
+    """Prove the runner declares schema 14 and copies the mailbox fail-closed."""
+
+    # The runner keeps the frozen v7/v8 branches alongside the V14 one, so a
+    # name carries several values here; membership, not the last value, is the
+    # question.
+    declared = parse_define_values(runner_masked)
+    if SCHEMA_VERSION not in declared.get("PMU_DIAG_SCHEMA_VERSION", ()):
+        raise fail("runner does not declare schema 14")
+    if declared.get("PMU_COMPLETION_VISIBILITY_DIAG_V14_BUILD_ID") != [BUILD_ID]:
+        raise fail("runner does not declare build id 0x34314950")
+    for assertion, reason in (
+        ("PMU_DIAG_FIELD_COUNT == %dU" % BODY_WORDS, "runner does not statically assert 119 body words"),
+        ("PMU_DIAG_TOTAL_WORDS == %dU" % TOTAL_WORDS, "runner does not statically assert 127 frame words"),
+        ("PMU_DIAG_PAYLOAD_SIZE == %dU" % PAYLOAD_BYTES, "runner does not statically assert 508 payload bytes"),
+        ("PMU_DIAG_SCHEMA_VERSION == %dU" % SCHEMA_VERSION, "runner does not declare schema 14"),
+    ):
+        if assertion not in runner_masked:
+            raise fail(reason)
+
+    record = _RECORD_RE.search(runner_masked)
+    if record is None:
+        raise fail("runner record does not carry the 34 appendix fields in wire order: no record found")
+    if tuple(_RECORD_FIELD_RE.findall(record.group(1))) != APPENDIX_FIELDS:
+        raise fail("runner record does not carry the 34 appendix fields in wire order")
+
+    if tuple(_SERIALIZE_RE.findall(runner_masked)) != APPENDIX_FIELDS:
+        raise fail("runner serialization order does not match the appendix table")
+
+    reset_site = runner_masked.find(MAILBOX_RESET_SYMBOL + "();")
+    driver_site = runner_masked.find("pmu_diag_private_driver_call()")
+    if reset_site < 0 or driver_site < 0 or reset_site > driver_site:
+        raise fail("runner does not reset the mailbox before the measured call")
+
+    magic_guard = re.search(
+        r"if\s*\(\s*%s\s*\[\s*%d\s*\]\s*!=\s*V14_MAILBOX_VALID\s*\)"
+        % (re.escape(MAILBOX_SYMBOL), APPENDIX_FIELDS.index("mailbox_valid")),
+        runner_masked,
+    )
+    if magic_guard is None:
+        raise fail("runner appendix copy is not dominated by the mailbox magic check")
+    else_site = runner_masked.find("else", magic_guard.end())
+    if else_site < 0:
+        raise fail("runner appendix copy is not dominated by the mailbox magic check")
+    open_index = runner_masked.find("{", else_site)
+    close_index = _matching_brace(runner_masked, open_index, "runner magic else branch")
+    copies = tuple(_COPY_RE.findall(runner_masked[open_index:close_index]))
+    if copies != APPENDIX_FIELDS:
+        raise fail("runner appendix copy is not dominated by the mailbox magic check")
+
+    return {
+        "runner_serialized_words": TOTAL_WORDS,
+        "runner_payload_bytes": PAYLOAD_BYTES,
+        "runner_copy_dominated_by_magic": True,
+    }
+
+
 def build_arg_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="check_pmu_completion_visibility_v14.py",
@@ -827,6 +1195,10 @@ def verify_generated_sources(runner_text: str, vendor_text: str, variant: str) -
     pre_run = verify_pre_run_contract(vendor_masked, defines)
     primary = verify_primary_contract(vendor_masked, variant, defines)
     hard_bypass = verify_hard_bypass_contract(vendor_masked)
+    convergence = verify_convergence_contract(vendor_masked, defines)
+    mailbox = verify_mailbox_contract(vendor_masked, defines)
+    cleanup = verify_cleanup_contract(vendor_masked, variant)
+    runner = verify_runner_contract(mask_c_lexical(runner_text))
     converge_body = function_text(vendor_masked, CONVERGE_SYMBOL, "common convergence helper")
     command_start, command_stop = function_span(vendor_masked, "test_commands", "command function")
     command = vendor_masked[command_start:command_stop]
@@ -847,9 +1219,8 @@ def verify_generated_sources(runner_text: str, vendor_text: str, variant: str) -
         "common_convergence_source_sha256": normalized_digest(converge_body),
         "common_tail_source_sha256": normalized_digest(command[tail_start:]),
     }
-    doc.update(pre_run)
-    doc.update(primary)
-    doc.update(hard_bypass)
+    for section in (pre_run, primary, hard_bypass, convergence, mailbox, cleanup, runner):
+        doc.update(section)
     return doc
 
 

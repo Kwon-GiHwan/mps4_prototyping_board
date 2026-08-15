@@ -1433,6 +1433,478 @@ def run_primary_positive_suite(gate):
         )
 
 
+TEST_COMMANDS_MARKER = "\n__attribute__((noinline))\nstatic int test_commands("
+
+CONVERGE_PREDICATE = """        if ((qread == qsize_expected) &&
+            ((status & V14_STATUS_CMD_END) != 0U) &&
+            ((status & V14_STATUS_IRQ_RAISED) != 0U) &&
+            ((status & V14_STATUS_STATE) == 0U)) {
+            result = V14_CONVERGENCE_SUCCESS;
+            iterations = i;
+            break;
+        }
+"""
+
+CONVERGE_RESET_GUARD = """        if ((status & V14_STATUS_RESET) != 0U) {
+            result = V14_CONVERGENCE_RESET;
+            break;
+        }
+"""
+
+CONVERGE_FAULT_GUARD = """        if ((status & V14_STATUS_FAULT_MASK) != 0U) {
+            result = V14_CONVERGENCE_FAULT;
+            break;
+        }
+"""
+
+
+def mutate_converge(vendor, old, new, what):
+    start = vendor.index(CONVERGE_MARKER)
+    stop = vendor.index(TEST_COMMANDS_MARKER)
+    return vendor[:start] + replace_once(vendor[start:stop], old, new, what) + vendor[stop:]
+
+
+def _drop_predicate_term(term, replacement=""):
+    def mutate(vendor):
+        return mutate_converge(vendor, term, replacement, "convergence predicate term")
+
+    return mutate
+
+
+def converge_accumulates(vendor):
+    text = mutate_converge(
+        vendor,
+        "    uint32_t iterations = 0U;\n",
+        "    uint32_t iterations = 0U;\n    uint32_t seen_q = 0U;\n",
+        "convergence locals",
+    )
+    text = mutate_converge(
+        text,
+        "        if ((qread == qsize_expected) &&\n",
+        "        if (qread == qsize_expected) {\n            seen_q = 1U;\n        }\n"
+        "        if ((seen_q != 0U) &&\n",
+        "convergence predicate head",
+    )
+    return text
+
+
+def converge_reset_delayed(vendor):
+    text = mutate_converge(vendor, CONVERGE_RESET_GUARD, "", "convergence reset guard")
+    return mutate_converge(text, CONVERGE_PREDICATE, CONVERGE_PREDICATE + CONVERGE_RESET_GUARD, "convergence predicate")
+
+
+def converge_fault_delayed(vendor):
+    text = mutate_converge(vendor, CONVERGE_FAULT_GUARD, "", "convergence fault guard")
+    return mutate_converge(text, CONVERGE_PREDICATE, CONVERGE_PREDICATE + CONVERGE_FAULT_GUARD, "convergence predicate")
+
+
+def converge_order_swapped(vendor):
+    return mutate_converge(vendor, _DUAL_READS["QS"], _DUAL_READS["SQ"], "convergence reads")
+
+
+def converge_bound_drift(vendor):
+    return mutate_converge(
+        vendor,
+        "    for (uint32_t i = 1U; i <= V14_ITERATION_BOUND; ++i) {",
+        "    for (uint32_t i = 1U; i <= 9999U; ++i) {",
+        "convergence loop head",
+    )
+
+
+def _inject_into_converge_loop(statement):
+    def mutate(vendor):
+        return mutate_converge(
+            vendor, _DUAL_READS["QS"], _DUAL_READS["QS"] + "\n        " + statement, "convergence reads"
+        )
+
+    return mutate
+
+
+def converge_helper_variant_specific(vendor):
+    text = replace_once(vendor, "static void v14_converge(", "static void v14_converge_q(", "converge definition")
+    return replace_once(text, "\t  v14_converge(qsize_expected, &converged);", "\t  v14_converge_q(qsize_expected, &converged);", "converge call")
+
+
+def variant_block_in_common_tail(vendor):
+    return replace_once(
+        vendor,
+        "\t  v14_publish_primary(&primary, qsize_expected);\n",
+        "\t  v14_publish_primary(&primary, qsize_expected);\n\t  v14_primary_q(qsize_expected, &primary);\n",
+        "common tail head",
+    )
+
+
+CONVERGE_MUTATIONS = (
+    ("converge_cross_iteration_accumulation", converge_accumulates, "convergence predicate accumulates across iterations"),
+    (
+        "converge_predicate_missing_qread",
+        _drop_predicate_term("        if ((qread == qsize_expected) &&\n", "        if (\n"),
+        "convergence predicate omits a required term",
+    ),
+    (
+        "converge_predicate_missing_bit5",
+        _drop_predicate_term("            ((status & V14_STATUS_CMD_END) != 0U) &&\n"),
+        "convergence predicate omits a required term",
+    ),
+    (
+        "converge_predicate_missing_bit1",
+        _drop_predicate_term("            ((status & V14_STATUS_IRQ_RAISED) != 0U) &&\n"),
+        "convergence predicate omits a required term",
+    ),
+    (
+        "converge_predicate_missing_stopped",
+        _drop_predicate_term("            ((status & V14_STATUS_STATE) == 0U)"),
+        "convergence predicate omits a required term",
+    ),
+    ("converge_reset_delayed", converge_reset_delayed, "convergence fault/reset check is delayed"),
+    ("converge_fault_delayed", converge_fault_delayed, "convergence fault/reset check is delayed"),
+    ("converge_read_order_swapped", converge_order_swapped, "convergence read order is not QREAD then STATUS"),
+    ("converge_bound_not_10000", converge_bound_drift, "convergence bound is not 10000"),
+    (
+        "converge_per_loop_evidence_store",
+        _inject_into_converge_loop("pmu_completion_visibility_v14_mailbox[V14_MBOX_CONVERGENCE_ITERATIONS] = i;"),
+        "convergence evidence store occurs inside the loop",
+    ),
+    (
+        "converge_loop_qsize_read",
+        _inject_into_converge_loop("qsize_expected = read_reg(NPU_REG_QSIZE);"),
+        "QSIZE access reachable in the convergence tail",
+    ),
+    (
+        "converge_loop_call",
+        _inject_into_converge_loop("helper_bookkeeping();"),
+        "convergence loop carries a per-iteration store/call/timestamp",
+    ),
+    (
+        "variant_specific_convergence_helper",
+        converge_helper_variant_specific,
+        "common convergence helper v14_converge is missing",
+    ),
+    (
+        "variant_block_between_primary_and_cleanup",
+        variant_block_in_common_tail,
+        "variant-specific block between the primary freeze and the common cleanup",
+    ),
+)
+
+
+def mailbox_offsets_swapped(vendor):
+    first = "#define %s %d" % (mbox(APPENDIX_FIELDS[9]), 9)
+    second = "#define %s %d" % (mbox(APPENDIX_FIELDS[10]), 10)
+    text = replace_once(vendor, first + "U", "#define %s 10U" % mbox(APPENDIX_FIELDS[9]), "offset 9")
+    return replace_once(text, second + "U", "#define %s 9U" % mbox(APPENDIX_FIELDS[10]), "offset 10")
+
+
+def mailbox_wrong_size(vendor):
+    return replace_once(
+        vendor,
+        "volatile uint32_t pmu_completion_visibility_v14_mailbox[34];",
+        "volatile uint32_t pmu_completion_visibility_v14_mailbox[33];",
+        "mailbox storage",
+    )
+
+
+def mailbox_reset_no_invalid_fill(vendor):
+    return replace_once(
+        vendor,
+        "    for (uint32_t i = 0U; i < V14_APPENDIX_WORDS; ++i) {\n"
+        "        pmu_completion_visibility_v14_mailbox[i] = V14_U32_INVALID;\n"
+        "    }\n",
+        "",
+        "mailbox reset fill",
+    )
+
+
+def mailbox_reset_valid_not_zeroed(vendor):
+    return replace_once(
+        vendor,
+        "    pmu_completion_visibility_v14_mailbox[V14_MBOX_MAILBOX_VALID] = 0U;\n    __DSB();\n}",
+        "    __DSB();\n}",
+        "mailbox reset zero",
+    )
+
+
+def mailbox_reset_no_dsb(vendor):
+    return replace_once(
+        vendor,
+        "    pmu_completion_visibility_v14_mailbox[V14_MBOX_MAILBOX_VALID] = 0U;\n    __DSB();\n}",
+        "    pmu_completion_visibility_v14_mailbox[V14_MBOX_MAILBOX_VALID] = 0U;\n}",
+        "mailbox reset dsb",
+    )
+
+
+def mailbox_magic_not_last(vendor):
+    return replace_once(
+        vendor,
+        "    pmu_completion_visibility_v14_mailbox[V14_MBOX_MAILBOX_VALID] = V14_MAILBOX_VALID;\n    __DSB();\n}",
+        "    pmu_completion_visibility_v14_mailbox[V14_MBOX_MAILBOX_VALID] = V14_MAILBOX_VALID;\n"
+        "    pmu_completion_visibility_v14_mailbox[V14_MBOX_FAILURE_STATUS] = 0U;\n    __DSB();\n}",
+        "mailbox publish",
+    )
+
+
+def mailbox_publish_no_dsb(vendor):
+    return replace_once(
+        vendor,
+        "    pmu_completion_visibility_v14_mailbox[V14_MBOX_MAILBOX_VALID] = V14_MAILBOX_VALID;\n    __DSB();\n}",
+        "    pmu_completion_visibility_v14_mailbox[V14_MBOX_MAILBOX_VALID] = V14_MAILBOX_VALID;\n}",
+        "mailbox publish",
+    )
+
+
+def mailbox_second_magic_site(vendor):
+    return replace_once(
+        vendor,
+        "static void v14_publish_success(void)\n{\n",
+        "static void v14_publish_success(void)\n{\n"
+        "    pmu_completion_visibility_v14_mailbox[V14_MBOX_MAILBOX_VALID] = V14_MAILBOX_VALID;\n",
+        "success publication",
+    )
+
+
+def _inject_before_convergence_failure_return(statement):
+    def mutate(vendor):
+        return replace_once(
+            vendor,
+            "\t    v14_publish_failure(V14_PHASE_CONVERGENCE, V14_REASON_CONVERGENCE_TIMEOUT, converged.qread, converged.status);\n"
+            "\t    return V14_RET_CONVERGENCE_TIMEOUT;\n",
+            "\t    v14_publish_failure(V14_PHASE_CONVERGENCE, V14_REASON_CONVERGENCE_TIMEOUT, converged.qread, converged.status);\n"
+            "\t    " + statement + "\n"
+            "\t    return V14_RET_CONVERGENCE_TIMEOUT;\n",
+            "convergence timeout return",
+        )
+
+    return mutate
+
+
+def history_from_status_reread(vendor):
+    return replace_once(
+        vendor,
+        "\t  irq_history_mask = converged.status >> 16;",
+        "\t  irq_history_mask = read_reg(NPU_REG_STATUS) >> 16;",
+        "history assignment",
+    )
+
+
+def success_cleanup_order_drift(vendor):
+    return replace_once(
+        vendor,
+        "\t  write_reg(NPU_REG_CMD, 0x00000002);\n\t  read_val = read_reg(NPU_REG_QREAD);\n\t  write_reg(NPU_REG_CMD, 0x00000002);\n",
+        "\t  read_val = read_reg(NPU_REG_QREAD);\n\t  write_reg(NPU_REG_CMD, 0x00000002);\n\t  write_reg(NPU_REG_CMD, 0x00000002);\n",
+        "success cleanup",
+    )
+
+
+def success_publishes_failure_tuple(vendor):
+    return replace_once(
+        vendor,
+        "    pmu_completion_visibility_v14_mailbox[V14_MBOX_FAILURE_QREAD] = V14_U32_INVALID;\n"
+        "    pmu_completion_visibility_v14_mailbox[V14_MBOX_FAILURE_STATUS] = V14_U32_INVALID;\n"
+        "    v14_mailbox_publish();\n}",
+        "    v14_mailbox_publish();\n}",
+        "success publication",
+    )
+
+
+def convergence_failure_discards_first_tuple(vendor):
+    return replace_once(
+        vendor,
+        "    pmu_completion_visibility_v14_mailbox[V14_MBOX_CONVERGENCE_FINAL_QREAD] = V14_U32_INVALID;\n",
+        "    pmu_completion_visibility_v14_mailbox[V14_MBOX_FIRST_QREAD] = V14_U32_INVALID;\n"
+        "    pmu_completion_visibility_v14_mailbox[V14_MBOX_FIRST_STATUS] = V14_U32_INVALID;\n"
+        "    pmu_completion_visibility_v14_mailbox[V14_MBOX_CONVERGENCE_FINAL_QREAD] = V14_U32_INVALID;\n",
+        "failure publication",
+    )
+
+
+def q_first_status_from_convergence(vendor):
+    return replace_once(
+        vendor,
+        "\t  pmu_completion_visibility_v14_mailbox[V14_MBOX_CONVERGENCE_FINAL_STATUS] = converged.status;\n",
+        "\t  pmu_completion_visibility_v14_mailbox[V14_MBOX_CONVERGENCE_FINAL_STATUS] = converged.status;\n"
+        "\t  pmu_completion_visibility_v14_mailbox[V14_MBOX_FIRST_STATUS] = converged.status;\n",
+        "convergence tuple publication",
+    )
+
+
+def cleanup_invariant_mislabelled(vendor):
+    return replace_once(
+        vendor,
+        "    pmu_completion_visibility_v14_mailbox[V14_MBOX_FAILURE_PHASE] = V14_PHASE_CLEANUP;",
+        "    pmu_completion_visibility_v14_mailbox[V14_MBOX_FAILURE_PHASE] = V14_PHASE_CONVERGENCE;",
+        "cleanup publication",
+    )
+
+
+MAILBOX_MUTATIONS = (
+    ("mailbox_offset_table_swapped", mailbox_offsets_swapped, "appendix offset table does not match the schema-14 wire order"),
+    ("mailbox_not_34_words", mailbox_wrong_size, "mailbox storage is not a 34-word array"),
+    (
+        "mailbox_reset_missing_invalid_fill",
+        mailbox_reset_no_invalid_fill,
+        "mailbox reset does not invalidate every appendix field",
+    ),
+    ("mailbox_reset_valid_not_zeroed", mailbox_reset_valid_not_zeroed, "mailbox reset does not zero mailbox_valid"),
+    ("mailbox_reset_missing_dsb", mailbox_reset_no_dsb, "mailbox reset does not issue a DSB"),
+    ("mailbox_magic_not_last", mailbox_magic_not_last, "mailbox magic is not the final appendix store"),
+    ("mailbox_publish_missing_dsb", mailbox_publish_no_dsb, "mailbox publication does not issue a DSB"),
+    (
+        "mailbox_magic_published_from_second_site",
+        mailbox_second_magic_site,
+        "mailbox_valid is published from more than one site",
+    ),
+    (
+        "failure_path_clears_npu",
+        _inject_before_convergence_failure_return("write_reg(NPU_REG_CMD, 0x00000000);"),
+        "failure path clears NPU state before serialization",
+    ),
+    (
+        "failure_path_terminal_cmd0xc",
+        _inject_before_convergence_failure_return("write_reg(NPU_REG_CMD, 0x0000000C);"),
+        "failure path clears NPU state before serialization",
+    ),
+    (
+        "failure_path_enters_hprintf",
+        _inject_before_convergence_failure_return('printf("Testing CPM signals\\n");'),
+        "failure path enters the H-PRINTF seam",
+    ),
+    ("history_from_status_reread", history_from_status_reread, "irq_history_mask is derived from a post-convergence STATUS reread"),
+    ("success_cleanup_order_drift", success_cleanup_order_drift, "success cleanup ordering drifted"),
+    (
+        "success_publishes_failure_tuple",
+        success_publishes_failure_tuple,
+        "success and failure tuples are both published as valid",
+    ),
+    (
+        "convergence_failure_discards_first_tuple",
+        convergence_failure_discards_first_tuple,
+        "convergence failure discards the retained first-observation tuple",
+    ),
+    (
+        "q_first_status_synthesized_from_convergence",
+        q_first_status_from_convergence,
+        "first-observation STATUS fields are synthesized from convergence values",
+    ),
+    (
+        "cleanup_invariant_reported_as_convergence",
+        cleanup_invariant_mislabelled,
+        "cleanup invariant is not recorded as failure_phase=CLEANUP",
+    ),
+)
+
+
+def runner_copy_before_magic_check(runner):
+    text = replace_once(
+        runner,
+        "    if (pmu_completion_visibility_v14_mailbox[33] != V14_MAILBOX_VALID) {\n"
+        "        pmu_diag_v14_transport_valid = 0U;\n"
+        "    }\n    else {\n        pmu_diag_v14_transport_valid = 1U;\n",
+        "    pmu_diag_v14_transport_valid = 1U;\n    {\n",
+        "runner magic guard",
+    )
+    return text
+
+
+def runner_serialize_swapped(runner):
+    first = "    put32(&c, d->%s);\n" % APPENDIX_FIELDS[4]
+    second = "    put32(&c, d->%s);\n" % APPENDIX_FIELDS[5]
+    return replace_once(runner, first + second, second + first, "serialization order")
+
+
+def runner_record_field_dropped(runner):
+    return replace_once(runner, "    uint32_t first_irq_raised;\n", "", "record field")
+
+
+def runner_no_mailbox_reset(runner):
+    return replace_once(runner, "    v14_mailbox_reset();\n", "", "mailbox reset call")
+
+
+def runner_payload_assert_drift(runner):
+    return replace_once(runner, "PMU_DIAG_PAYLOAD_SIZE == 508U", "PMU_DIAG_PAYLOAD_SIZE == 436U", "payload assert")
+
+
+def runner_schema_drift(runner):
+    return replace_once(runner, "#define PMU_DIAG_SCHEMA_VERSION 14U", "#define PMU_DIAG_SCHEMA_VERSION 13U", "schema define")
+
+
+def runner_build_id_drift(runner):
+    return replace_once(
+        runner,
+        "#define PMU_COMPLETION_VISIBILITY_DIAG_V14_BUILD_ID 0x34314950U",
+        "#define PMU_COMPLETION_VISIBILITY_DIAG_V14_BUILD_ID 0x33314950U",
+        "build id define",
+    )
+
+
+RUNNER_MUTATIONS = (
+    (
+        "runner_copy_before_magic_check",
+        runner_copy_before_magic_check,
+        "runner appendix copy is not dominated by the mailbox magic check",
+    ),
+    ("runner_serialize_order_swapped", runner_serialize_swapped, "runner serialization order does not match the appendix table"),
+    (
+        "runner_record_field_missing",
+        runner_record_field_dropped,
+        "runner record does not carry the 34 appendix fields in wire order",
+    ),
+    ("runner_missing_mailbox_reset", runner_no_mailbox_reset, "runner does not reset the mailbox before the measured call"),
+    ("runner_payload_assert_drift", runner_payload_assert_drift, "runner does not statically assert 508 payload bytes"),
+    ("runner_schema_not_14", runner_schema_drift, "runner does not declare schema 14"),
+    ("runner_build_id_drift", runner_build_id_drift, "runner does not declare build id 0x34314950"),
+)
+
+
+def run_convergence_suite(gate):
+    run_vendor_mutations(gate, CONVERGE_MUTATIONS, "Q")
+    run_vendor_mutations(gate, MAILBOX_MUTATIONS, "Q")
+    run_runner_mutations(gate, RUNNER_MUTATIONS, "Q")
+
+
+def run_cross_variant_suite(gate):
+    docs = {}
+    for variant in ("Q", "QS", "SQ"):
+        try:
+            docs[variant] = gate.verify_generated_sources(
+                canonical_runner(variant), canonical_vendor(variant), variant
+            )
+        except Exception as exc:
+            check("cross-variant %s manifest" % variant, False, ("%s" % exc)[:70])
+            return
+    convergence = {doc.get("common_convergence_source_sha256") for doc in docs.values()}
+    tails = {doc.get("common_tail_source_sha256") for doc in docs.values()}
+    check("all variants share one convergence-helper source digest", len(convergence) == 1, repr(convergence))
+    check("all variants share one common-tail source digest", len(tails) == 1, repr(tails))
+    check(
+        "each variant still binds its own primary helper",
+        sorted(doc["primary_helper"] for doc in docs.values())
+        == ["v14_primary_q", "v14_primary_qs", "v14_primary_sq"],
+    )
+    for variant, doc in docs.items():
+        check("%s mailbox is the 34-word appendix" % variant, doc.get("mailbox_words") == APPENDIX_WORDS)
+        check("%s mailbox magic is the last stored word" % variant, doc.get("mailbox_magic_store_index") == 33)
+        check("%s runner serializes 127 words" % variant, doc.get("runner_serialized_words") == TOTAL_WORDS)
+        check(
+            "%s failure publication invalidates the convergence tuple" % variant,
+            doc.get("failure_publication_invalidates")
+            == ["convergence_final_qread", "convergence_final_status"],
+        )
+        check(
+            "%s success publication invalidates the failure tuple" % variant,
+            doc.get("success_publication_invalidates") == ["failure_qread", "failure_status"],
+        )
+        check(
+            "%s cleanup invariant retains the convergence tuple" % variant,
+            doc.get("cleanup_publication_retains")
+            == ["convergence_final_qread", "convergence_final_status"],
+        )
+        check(
+            "%s success cleanup keeps the frozen stock ordering" % variant,
+            doc.get("success_cleanup_order")
+            == ["CMD2", "QREAD", "CMD2", "QREAD_VERIFY", "NVIC", "CMD0", "H-PRINTF", "CMD0xC"],
+        )
+
+
 def run_canonical_suite(gate):
     for variant in ("Q", "QS", "SQ"):
         doc = expect_accept(
@@ -1477,6 +1949,8 @@ if __name__ == "__main__":
         run_pre_run_suite(gate)
         run_primary_positive_suite(gate)
         run_primary_suite(gate)
+        run_cross_variant_suite(gate)
+        run_convergence_suite(gate)
 
     print()
     print("passed=%d failed=%d" % (passed, failed))
