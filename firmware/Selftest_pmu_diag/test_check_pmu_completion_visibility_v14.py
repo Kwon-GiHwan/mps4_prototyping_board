@@ -126,7 +126,7 @@ STATUS_FAULT_MASK = 0x314
 
 # The suite is frozen at this many assertions. Adding a named fixture is a
 # deliberate act, so the count moves with it and never drifts silently.
-EXPECTED_PASS_COUNT = 356
+EXPECTED_PASS_COUNT = 366
 
 CHECKER_PATH = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
@@ -3421,6 +3421,87 @@ LEXICAL_RUNNER_MUTATIONS = (
 )
 
 
+# -- Fail-closed: a named rejection, never a traceback. ---------------------
+
+
+def queue_programming_without_qsize_write(vendor):
+    return replace_once(
+        vendor, "    write_reg(NPU_REG_QSIZE, u32CmdQueueSize);\n", "", "queue programming"
+    )
+
+
+def malformed_qsize_define(vendor):
+    return replace_once(
+        vendor,
+        "#define V14_QSIZE_EXPECTED 0x00000110U",
+        "#define V14_QSIZE_EXPECTED 0x0000011ZU",
+        "qsize define",
+    )
+
+
+def malformed_bound_define(vendor):
+    return replace_once(
+        vendor, "#define V14_ITERATION_BOUND 10000U", "#define V14_ITERATION_BOUND 10O00U", "bound define"
+    )
+
+
+def malformed_offset_define(vendor):
+    return replace_once(
+        vendor, "#define V14_MBOX_MAILBOX_VALID 33U", "#define V14_MBOX_MAILBOX_VALID 33QU", "offset define"
+    )
+
+
+def malformed_unread_return_define(vendor):
+    return replace_once(
+        vendor,
+        "#define V14_RET_CLEANUP_INVARIANT 7",
+        "#define V14_RET_CLEANUP_INVARIANT 7Z",
+        "vendor return define",
+    )
+
+
+FAIL_CLOSED_MUTATIONS = (
+    (
+        "queue_programming_without_a_qsize_write",
+        queue_programming_without_qsize_write,
+        "queue programming does not write QSIZE",
+    ),
+    (
+        # This one no rule reads, so a malformed value used to be dropped in
+        # silence -- which is the shape of the defect the other three only
+        # mis-name: the parse result is discarded and the source is judged as
+        # though the macro were never written.
+        "malformed_unread_v14_define",
+        malformed_unread_return_define,
+        "malformed numeric define: V14_RET_CLEANUP_INVARIANT",
+    ),
+    (
+        "malformed_qsize_expected_define",
+        malformed_qsize_define,
+        "malformed numeric define: V14_QSIZE_EXPECTED",
+    ),
+    (
+        "malformed_iteration_bound_define",
+        malformed_bound_define,
+        "malformed numeric define: V14_ITERATION_BOUND",
+    ),
+    (
+        "malformed_appendix_offset_define",
+        malformed_offset_define,
+        "malformed numeric define: V14_MBOX_MAILBOX_VALID",
+    ),
+)
+
+
+def magic_store_with_a_spaced_semicolon(vendor):
+    return replace_once(
+        vendor,
+        "    pmu_completion_visibility_v14_mailbox[V14_MBOX_MAILBOX_VALID] = V14_MAILBOX_VALID;\n",
+        "    pmu_completion_visibility_v14_mailbox[V14_MBOX_MAILBOX_VALID] = V14_MAILBOX_VALID ;\n",
+        "magic publication",
+    )
+
+
 def run_fail_open_suite(gate):
     run_vendor_mutations(gate, LEXICAL_VENDOR_MUTATIONS, "Q")
     run_vendor_mutations(gate, LOOP_STRUCTURE_MUTATIONS, "Q")
@@ -3430,6 +3511,7 @@ def run_fail_open_suite(gate):
     run_vendor_mutations(gate, MAGIC_SAFETY_MUTATIONS, "Q")
     run_runner_mutations(gate, RUNNER_DOMINANCE_MUTATIONS, "Q")
     run_runner_mutations(gate, LEXICAL_RUNNER_MUTATIONS, "Q")
+    run_vendor_mutations(gate, FAIL_CLOSED_MUTATIONS, "Q")
 
     # Every variant carries its own id, so the binding is proven per variant
     # rather than once on Q's behalf.
@@ -3449,6 +3531,103 @@ def run_fail_open_suite(gate):
                 "variant_id_define_is_%s_under_%s" % (other, variant),
                 "variant id define is not the selected variant",
             )
+
+    # A whitespace-only respelling of the frozen magic store is the same store.
+    # It used to reach a bare ``str.index`` and raise, which is a crash rather
+    # than a verdict; the gate has to survive it and still say PASS.
+    expect_accept(
+        gate,
+        "Q",
+        canonical_runner("Q"),
+        magic_store_with_a_spaced_semicolon(canonical_vendor("Q")),
+        "a whitespace respelling of the magic store is a verdict, not a crash",
+    )
+
+def run_fail_closed_cli_suite(patcher):
+    """Bad paths and bare relative filenames are FAIL lines, not tracebacks."""
+
+    check(
+        "generator tolerates a bare relative output filename",
+        patcher._ensure_parent_dir("v14_bare_output.c") is None,
+    )
+
+    with tempfile.TemporaryDirectory() as scratch:
+        runner_path = os.path.join(scratch, "runner.c")
+        vendor_path = os.path.join(scratch, "vendor.c")
+        with open(runner_path, "w", encoding="utf-8") as handle:
+            handle.write(canonical_runner("Q"))
+        with open(vendor_path, "w", encoding="utf-8") as handle:
+            handle.write(canonical_vendor("Q"))
+
+        result = run_checker(
+            [
+                "--allow-fixture",
+                "--variant",
+                "Q",
+                "--runner-generated",
+                runner_path,
+                "--vendor-generated",
+                vendor_path,
+                "--fixture-manifest-out",
+                os.path.join(scratch, "absent", "manifest.json"),
+            ]
+        )
+        combined = result.stdout + result.stderr
+        check(
+            "an unwritable manifest path is a named FAIL, not a traceback",
+            result.returncode == 1
+            and "FAIL fixture manifest is not writable" in combined
+            and "Traceback" not in combined,
+            combined.strip()[:70],
+        )
+
+        manifest_name = "bare_manifest.json"
+        result = subprocess.run(
+            [
+                sys.executable,
+                CHECKER_PATH,
+                "--allow-fixture",
+                "--variant",
+                "Q",
+                "--runner-generated",
+                runner_path,
+                "--vendor-generated",
+                vendor_path,
+                "--fixture-manifest-out",
+                manifest_name,
+            ],
+            capture_output=True,
+            text=True,
+            cwd=scratch,
+        )
+        check(
+            "the checker writes a bare relative manifest filename",
+            result.returncode == 0 and os.path.isfile(os.path.join(scratch, manifest_name)),
+            (result.stdout + result.stderr).strip()[:70],
+        )
+
+        result = run_generator(
+            [
+                "--variant",
+                "Q",
+                "--runner-in",
+                os.path.join(scratch, "absent_runner.c"),
+                "--vendor-in",
+                vendor_path,
+                "--runner-out",
+                os.path.join(scratch, "out_runner.c"),
+                "--vendor-out",
+                os.path.join(scratch, "out_vendor.c"),
+            ]
+        )
+        combined = result.stdout + result.stderr
+        check(
+            "a missing generator input is a named FAIL, not a traceback",
+            result.returncode != 0
+            and "FAIL input is unreadable" in combined
+            and "Traceback" not in combined,
+            combined.strip()[:70],
+        )
 
 
 def run_coverage_suite():
@@ -3563,6 +3742,12 @@ def run_coverage_suite():
         "runner_copy_in_the_magic_invalid_branch",
         "runner_copy_ahead_of_the_magic_guard",
         "lexical_string_hides_runner_copy",
+        # A named rejection, never a traceback.
+        "queue_programming_without_a_qsize_write",
+        "malformed_unread_v14_define",
+        "malformed_qsize_expected_define",
+        "malformed_iteration_bound_define",
+        "malformed_appendix_offset_define",
     }
     missing = sorted(required - REJECTED_FIXTURES)
     check("every design-mandated negative fixture is present", not missing, repr(missing))
@@ -3595,6 +3780,7 @@ if __name__ == "__main__":
 
     if patcher is not None:
         run_generator_cli_suite()
+        run_fail_closed_cli_suite(patcher)
         if gate is not None:
             run_generator_suite(gate, patcher)
             run_generated_fixture_cli_suite(patcher)

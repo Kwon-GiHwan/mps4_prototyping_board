@@ -39,7 +39,6 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
-import os
 import re
 import sys
 
@@ -312,16 +311,29 @@ _DEFINE_RE = re.compile(r"(?m)^[ \t]*#[ \t]*define[ \t]+([A-Za-z_][A-Za-z0-9_]*)
 
 
 def parse_define_values(masked: str) -> dict[str, list[int]]:
-    """Return every integer value each object-like macro is given, in order."""
+    """Return every integer value each object-like macro is given, in order.
+
+    A macro this contract owns -- anything in the ``V14_`` namespace -- has to
+    parse. Dropping a malformed one and reporting the macro as *undefined*
+    names the wrong defect, and a reader chasing "is not defined" against a
+    source that plainly defines it learns nothing. Macros outside the namespace
+    are the vendor's and are skipped when they are not integers.
+    """
 
     values: dict[str, list[int]] = {}
     for match in _DEFINE_RE.finditer(masked):
+        name = match.group(1)
         raw = match.group(2).rstrip("uU")
         try:
             parsed = int(raw, 0)
         except ValueError:
+            if name.startswith("V14_"):
+                raise fail(
+                    "malformed numeric define: %s is %r, which is not an integer literal"
+                    % (name, match.group(2))
+                )
             continue
-        values.setdefault(match.group(1), []).append(parsed)
+        values.setdefault(name, []).append(parsed)
     return values
 
 
@@ -447,7 +459,12 @@ def verify_pre_run_contract(vendor_masked: str, defines: dict[str, int]) -> dict
             "state-transitioning CMD write between the pre-program gate and queue programming"
         )
 
-    final_qsize_write = max(positions(setup, _QSIZE_WRITE))
+    qsize_writes = positions(setup, _QSIZE_WRITE)
+    if not qsize_writes:
+        raise fail(
+            "queue programming does not write QSIZE: the setup function programs QBASE only"
+        )
+    final_qsize_write = max(qsize_writes)
     for site in positions(setup, _QSIZE_READ):
         if site < final_qsize_write:
             raise fail("qsize snapshot precedes the final QSIZE programming write")
@@ -1500,8 +1517,8 @@ def verify_mailbox_contract(vendor_masked: str, defines: dict[str, int]) -> dict
     publish_stores = _mailbox_stores(publish)
     if publish_stores != (("V14_MBOX_MAILBOX_VALID", "V14_MAILBOX_VALID"),):
         raise fail("mailbox magic is not the final appendix store: publication stores %s" % (publish_stores,))
-    magic_site = publish.index("V14_MAILBOX_VALID;")
-    if "__DSB()" not in publish[magic_site:]:
+    magic_match = _MAILBOX_STORE_RE.search(publish)
+    if "__DSB()" not in publish[magic_match.end() :]:
         raise fail("mailbox publication does not issue a DSB")
 
     # The magic is what tells a reader the other 33 words are real, so it is
@@ -1828,9 +1845,20 @@ def _read_text(path: str, what: str) -> str:
 
 
 def _write_manifest(path: str, doc: dict[str, object]) -> None:
+    """Write the manifest, reporting a bad path as a named rejection.
+
+    A bare relative filename is a legitimate output path and needs no directory
+    handling at all; a path whose directory does not exist is an operator
+    mistake. Either way the caller gets a ``FAIL`` line, because a traceback on
+    stderr is not a verdict a gate is allowed to emit.
+    """
+
     payload = json.dumps(doc, sort_keys=True, separators=(",", ":"), allow_nan=False) + "\n"
-    with open(path, "w", encoding="utf-8") as handle:
-        handle.write(payload)
+    try:
+        with open(path, "w", encoding="utf-8") as handle:
+            handle.write(payload)
+    except OSError as exc:
+        raise fail("fixture manifest is not writable at %r (%s)" % (path, exc))
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -1856,11 +1884,11 @@ def main(argv: list[str] | None = None) -> int:
         runner_text = _read_text(args.runner_generated, "generated runner")
         vendor_text = _read_text(args.vendor_generated, "generated vendor")
         doc = verify_generated_sources(runner_text, vendor_text, args.variant)
+        _write_manifest(args.fixture_manifest_out, doc)
     except GateError as exc:
         print("FAIL %s" % exc)
         return 1
 
-    _write_manifest(args.fixture_manifest_out, doc)
     print("FIXTURE PASS %s variant=%s" % (VARIANT_FAMILY, args.variant))
     return 0
 

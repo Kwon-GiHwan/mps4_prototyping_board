@@ -103,8 +103,33 @@ def fail(message: str) -> PatchError:
 
 
 def _sha256(path: str) -> str:
-    with open(path, "rb") as handle:
-        return hashlib.sha256(handle.read()).hexdigest()
+    try:
+        with open(path, "rb") as handle:
+            return hashlib.sha256(handle.read()).hexdigest()
+    except OSError as exc:
+        raise fail("input is unreadable: %s (%s)" % (path, exc))
+
+
+def _ensure_parent_dir(path: str) -> None:
+    """Create the output file's directory, tolerating a bare relative name.
+
+    ``os.path.dirname("out.c")`` is the empty string, and ``os.makedirs("")``
+    raises -- so a perfectly ordinary "write it here" output path used to be a
+    traceback. There is no directory to create in that case, which is exactly
+    what "no directory part" means.
+    """
+
+    parent = os.path.dirname(path)
+    if parent:
+        os.makedirs(parent, exist_ok=True)
+
+
+def _read_text(path: str) -> str:
+    try:
+        with open(path, "r", encoding="utf-8") as handle:
+            return handle.read()
+    except OSError as exc:
+        raise fail("input is unreadable: %s (%s)" % (path, exc))
 
 
 def normalize_newlines(text: str) -> str:
@@ -802,20 +827,19 @@ def generate(
         raise fail("runner hash mismatch")
     if _sha256(vendor_src) != VENDOR_SHA256:
         raise fail("vendor hash mismatch")
-    with open(runner_src, "r", encoding="utf-8") as handle:
-        runner = handle.read()
-    with open(vendor_src, "r", encoding="utf-8") as handle:
-        vendor = handle.read()
+    runner = _read_text(runner_src)
+    vendor = _read_text(vendor_src)
 
     runner_out, runner_counts = patch_runner(runner, variant)
     vendor_out, vendor_counts = patch_vendor(vendor, variant)
 
-    os.makedirs(os.path.dirname(out_runner), exist_ok=True)
-    os.makedirs(os.path.dirname(out_vendor), exist_ok=True)
-    with open(out_runner, "w", encoding="utf-8") as handle:
-        handle.write(runner_out)
-    with open(out_vendor, "w", encoding="utf-8") as handle:
-        handle.write(vendor_out)
+    for path, payload in ((out_runner, runner_out), (out_vendor, vendor_out)):
+        _ensure_parent_dir(path)
+        try:
+            with open(path, "w", encoding="utf-8") as handle:
+                handle.write(payload)
+        except OSError as exc:
+            raise fail("output is not writable: %s (%s)" % (path, exc))
 
     return {
         "variant": variant,
