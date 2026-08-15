@@ -126,7 +126,7 @@ STATUS_FAULT_MASK = 0x314
 
 # The suite is frozen at this many assertions. Adding a named fixture is a
 # deliberate act, so the count moves with it and never drifts silently.
-EXPECTED_PASS_COUNT = 336
+EXPECTED_PASS_COUNT = 348
 
 CHECKER_PATH = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
@@ -2634,6 +2634,14 @@ def run_canonical_suite(gate):
             and doc.get("hprintf_seam_wrap_symbol") == "__wrap_printf"
             and doc.get("hprintf_callsite_elf_qualified") is False,
         )
+        check(
+            "%s manifest binds the variant id to appendix word 0" % variant,
+            doc.get("variant_id_word") == 0
+            and doc.get("variant_id_define") == VARIANTS[variant]
+            and doc.get("variant_id_publication")
+            == "pmu_completion_visibility_v14_mailbox[V14_MBOX_VARIANT_ID] = V14_VARIANT_ID",
+            repr(doc.get("variant_id_publication")),
+        )
 
 
 def run_pre_run_suite(gate):
@@ -3241,11 +3249,103 @@ ALIAS_MUTATIONS = (
 )
 
 
+# -- Variant identity: word 0 is what tells Q evidence from SQ evidence. ----
+
+VARIANT_ID_PUBLICATION = (
+    "    pmu_completion_visibility_v14_mailbox[V14_MBOX_VARIANT_ID] = V14_VARIANT_ID;\n"
+)
+
+
+def variant_id_define_wrong(vendor):
+    return replace_once(vendor, "#define V14_VARIANT_ID 1U", "#define V14_VARIANT_ID 2U", "variant id define")
+
+
+def variant_id_not_published(vendor):
+    return replace_once(vendor, VARIANT_ID_PUBLICATION, "", "variant id publication")
+
+
+def variant_id_hardcoded(vendor):
+    return replace_once(
+        vendor,
+        VARIANT_ID_PUBLICATION,
+        "    pmu_completion_visibility_v14_mailbox[V14_MBOX_VARIANT_ID] = 3U;\n",
+        "variant id publication",
+    )
+
+
+def variant_id_swapped_to_another_word(vendor):
+    return replace_once(
+        vendor,
+        VARIANT_ID_PUBLICATION,
+        "    pmu_completion_visibility_v14_mailbox[V14_MBOX_PRE_PROGRAM_STATUS] = V14_VARIANT_ID;\n",
+        "variant id publication",
+    )
+
+
+def variant_id_through_mailbox_alias(vendor):
+    return replace_once(
+        vendor,
+        VARIANT_ID_PUBLICATION,
+        "    volatile uint32_t *mb_alias = pmu_completion_visibility_v14_mailbox;\n"
+        "    mb_alias[V14_MBOX_VARIANT_ID] = V14_VARIANT_ID;\n",
+        "variant id publication",
+    )
+
+
+VARIANT_ID_MUTATIONS = (
+    (
+        "variant_id_define_is_another_variant",
+        variant_id_define_wrong,
+        "variant id define is not the selected variant",
+    ),
+    (
+        "variant_id_never_reaches_mailbox_word_0",
+        variant_id_not_published,
+        "variant id is not published to mailbox word 0",
+    ),
+    (
+        "variant_id_word_0_is_hardcoded",
+        variant_id_hardcoded,
+        "mailbox word 0 does not publish V14_VARIANT_ID",
+    ),
+    (
+        "variant_id_published_to_the_wrong_word",
+        variant_id_swapped_to_another_word,
+        "variant id is not published to mailbox word 0",
+    ),
+    (
+        "variant_id_published_through_a_mailbox_alias",
+        variant_id_through_mailbox_alias,
+        "variant id is published through a mailbox alias or a raw index",
+    ),
+)
+
+
 def run_fail_open_suite(gate):
     run_vendor_mutations(gate, LEXICAL_VENDOR_MUTATIONS, "Q")
     run_vendor_mutations(gate, LOOP_STRUCTURE_MUTATIONS, "Q")
     run_vendor_mutations(gate, JUMP_TOPOLOGY_MUTATIONS, "Q")
     run_vendor_mutations(gate, ALIAS_MUTATIONS, "Q")
+    run_vendor_mutations(gate, VARIANT_ID_MUTATIONS, "Q")
+
+    # Every variant carries its own id, so the binding is proven per variant
+    # rather than once on Q's behalf.
+    for variant in ("QS", "SQ"):
+        for other in sorted(set(VARIANTS) - {variant}):
+            REJECTED_FIXTURES.add("variant_id_define_is_%s_under_%s" % (other, variant))
+            expect_reject(
+                gate,
+                variant,
+                canonical_runner(variant),
+                replace_once(
+                    canonical_vendor(variant),
+                    "#define V14_VARIANT_ID %dU" % VARIANTS[variant],
+                    "#define V14_VARIANT_ID %dU" % VARIANTS[other],
+                    "variant id define",
+                ),
+                "variant_id_define_is_%s_under_%s" % (other, variant),
+                "variant id define is not the selected variant",
+            )
 
 
 def run_coverage_suite():
@@ -3348,6 +3448,12 @@ def run_coverage_suite():
         "primary_per_loop_store_through_an_obs_alias",
         "primary_status_read_through_a_raw_register_address",
         "first_tuple_stored_through_a_mailbox_alias",
+        # Word 0 is what attributes the frame to a variant.
+        "variant_id_define_is_another_variant",
+        "variant_id_never_reaches_mailbox_word_0",
+        "variant_id_word_0_is_hardcoded",
+        "variant_id_published_to_the_wrong_word",
+        "variant_id_published_through_a_mailbox_alias",
     }
     missing = sorted(required - REJECTED_FIXTURES)
     check("every design-mandated negative fixture is present", not missing, repr(missing))

@@ -1407,6 +1407,63 @@ def _resolved_mailbox_stores(
     return tuple(stores)
 
 
+def verify_variant_identity(
+    vendor_masked: str, defines: dict[str, int], variant: str
+) -> dict[str, object]:
+    """Bind ``V14_VARIANT_ID`` to the selected variant and to appendix word 0.
+
+    Word 0 is the only thing a decoder has to tell a Q frame from an SQ one, so
+    a frame that publishes the wrong id, no id, or an id that never reaches
+    word 0 is a frame whose every other field is attributed to the wrong
+    experiment. The publication is required in the frozen spelling: an alias
+    store is not refused because it would fail, but because nothing here can
+    prove it is the same array.
+    """
+
+    expected = VARIANTS[variant]
+    if defines.get("V14_VARIANT_ID") != expected:
+        raise fail(
+            "variant id define is not the selected variant: V14_VARIANT_ID is %s, expected %d"
+            % (
+                "undefined" if "V14_VARIANT_ID" not in defines else str(defines["V14_VARIANT_ID"]),
+                expected,
+            )
+        )
+
+    stores = _resolved_mailbox_stores(vendor_masked, defines)
+    word_zero = [store for store in stores if store[0] == 0]
+    misplaced = [store for store in stores if store[0] != 0 and store[2] == "V14_VARIANT_ID"]
+    if len(word_zero) != 1:
+        raise fail(
+            "variant id is not published to mailbox word 0: %d stores address word 0"
+            % len(word_zero)
+        )
+    word, index_token, value, _owner = word_zero[0]
+    if value != "V14_VARIANT_ID":
+        raise fail("mailbox word 0 does not publish V14_VARIANT_ID: it stores %s" % value)
+    if misplaced:
+        raise fail(
+            "variant id is published to appendix word %s rather than word 0" % (misplaced[0][0],)
+        )
+
+    direct = re.search(
+        r"(?<![A-Za-z0-9_])%s\s*\[\s*%s\s*\]\s*=\s*V14_VARIANT_ID\s*;"
+        % (re.escape(MAILBOX_SYMBOL), re.escape(_mbox_macro("variant_id"))),
+        vendor_masked,
+    )
+    if direct is None:
+        raise fail(
+            "variant id is published through a mailbox alias or a raw index rather than "
+            "%s[%s]" % (MAILBOX_SYMBOL, _mbox_macro("variant_id"))
+        )
+    return {
+        "variant_id_word": 0,
+        "variant_id_publication": "%s[%s] = V14_VARIANT_ID"
+        % (MAILBOX_SYMBOL, _mbox_macro("variant_id")),
+        "variant_id_define": defines["V14_VARIANT_ID"],
+    }
+
+
 def verify_mailbox_contract(vendor_masked: str, defines: dict[str, int]) -> dict[str, object]:
     """Prove the exact 34-word mailbox, its reset, and its magic-last publication."""
 
@@ -1773,6 +1830,7 @@ def verify_generated_sources(runner_text: str, vendor_text: str, variant: str) -
     hard_bypass = verify_hard_bypass_contract(vendor_masked)
     convergence = verify_convergence_contract(vendor_masked, defines)
     mailbox = verify_mailbox_contract(vendor_masked, defines)
+    identity = verify_variant_identity(vendor_masked, defines, variant)
     cleanup = verify_cleanup_contract(vendor_masked, vendor_text, variant)
     runner = verify_runner_contract(mask_c_lexical(runner_text))
     converge_body = function_text(vendor_masked, CONVERGE_SYMBOL, "common convergence helper")
@@ -1800,7 +1858,7 @@ def verify_generated_sources(runner_text: str, vendor_text: str, variant: str) -
         "common_convergence_source_sha256": normalized_digest(converge_body),
         "common_tail_source_sha256": normalized_digest(command[tail_start:]),
     }
-    for section in (pre_run, primary, hard_bypass, convergence, mailbox, cleanup, runner):
+    for section in (pre_run, primary, hard_bypass, convergence, mailbox, identity, cleanup, runner):
         doc.update(section)
     return doc
 
