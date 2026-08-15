@@ -1079,6 +1079,360 @@ PRE_RUN_MUTATIONS = (
 )
 
 
+Q_LOOP_READ = "        qread = *qread_reg;\n        if (qread == qsize_expected) {"
+Q_TIMEOUT_DIAGNOSTIC = "    status = *status_reg;\n    obs->t_first = V14_U32_INVALID;\n"
+DUAL_COMPLETION_GUARD = "        if ((qread == qsize_expected) || ((status & V14_STATUS_CMD_END) != 0U)) {"
+
+DUAL_RESET_GUARD = """        if ((status & V14_STATUS_RESET) != 0U) {
+            obs->t_first = V14_U32_INVALID;
+            obs->result = V14_PRIMARY_RESET;
+            obs->iterations = 0U;
+            obs->qread = qread;
+            obs->status = status;
+            return;
+        }
+"""
+
+DUAL_FAULT_GUARD = """        if ((status & V14_STATUS_FAULT_MASK) != 0U) {
+            obs->t_first = V14_U32_INVALID;
+            obs->result = V14_PRIMARY_FAULT;
+            obs->iterations = 0U;
+            obs->qread = qread;
+            obs->status = status;
+            return;
+        }
+"""
+
+
+CONVERGE_MARKER = "\n__attribute__((noinline))\nstatic void v14_converge("
+
+
+def mutate_primary(vendor, old, new, what):
+    """Apply a replacement inside the primary helper only.
+
+    The convergence helper shares the QREAD/STATUS read pair verbatim, which is
+    the point of the contract, so a primary-loop mutation has to be scoped or it
+    would land on the common tail instead.
+    """
+
+    split = vendor.index(CONVERGE_MARKER)
+    return replace_once(vendor[:split], old, new, what) + vendor[split:]
+
+
+def q_primary_reads_status(vendor):
+    return replace_once(
+        vendor,
+        Q_LOOP_READ,
+        "        qread = *qread_reg;\n        status = *status_reg;\n        if (qread == qsize_expected) {",
+        "Q loop read",
+    )
+
+
+def q_timeout_diagnostic_missing(vendor):
+    return replace_once(vendor, Q_TIMEOUT_DIAGNOSTIC, "    obs->t_first = V14_U32_INVALID;\n", "Q timeout tail")
+
+
+def q_timeout_diagnostic_duplicated(vendor):
+    return replace_once(
+        vendor,
+        Q_TIMEOUT_DIAGNOSTIC,
+        "    status = *status_reg;\n    status = *status_reg;\n    obs->t_first = V14_U32_INVALID;\n",
+        "Q timeout tail",
+    )
+
+
+def q_timeout_publishes_p1(vendor):
+    return replace_once(
+        vendor,
+        Q_TIMEOUT_DIAGNOSTIC,
+        "    status = *status_reg;\n    obs->t_first = DWT->CYCCNT;\n",
+        "Q timeout tail",
+    )
+
+
+def q_timeout_enters_convergence(vendor):
+    return replace_once(
+        vendor,
+        Q_TIMEOUT_DIAGNOSTIC,
+        "    status = *status_reg;\n    v14_converge(qsize_expected, obs);\n    obs->t_first = V14_U32_INVALID;\n",
+        "Q timeout tail",
+    )
+
+
+def _drop_second_read(variant):
+    def mutate(vendor):
+        return mutate_primary(vendor, _DUAL_READS[variant] + "\n", "        qread = *qread_reg;\n", "dual reads")
+
+    return mutate
+
+
+def _short_circuit_between_reads(variant):
+    first, second = _DUAL_READS[variant].split("\n")
+
+    def mutate(vendor):
+        return mutate_primary(
+            vendor,
+            _DUAL_READS[variant],
+            first
+            + "\n        if (qread == qsize_expected) {\n"
+            "            obs->result = V14_PRIMARY_OBSERVED;\n"
+            "            return;\n        }\n" + second,
+            "dual reads",
+        )
+
+    return mutate
+
+
+def sq_order_matches_qs(vendor):
+    return mutate_primary(vendor, _DUAL_READS["SQ"], _DUAL_READS["QS"], "SQ dual reads")
+
+
+def completion_uses_bit1(vendor):
+    return replace_once(
+        vendor,
+        DUAL_COMPLETION_GUARD,
+        "        if ((qread == qsize_expected) || ((status & V14_STATUS_IRQ_RAISED) != 0U)) {",
+        "completion guard",
+    )
+
+
+def success_tuple_reread(vendor):
+    return replace_once(
+        vendor,
+        "            obs->qread = qread;\n            obs->status = status;\n            return;\n        }\n    }\n\n    obs->t_first = V14_U32_INVALID;\n    obs->result = V14_PRIMARY_TIMEOUT;",
+        "            obs->qread = *qread_reg;\n            obs->status = *status_reg;\n            return;\n        }\n    }\n\n    obs->t_first = V14_U32_INVALID;\n    obs->result = V14_PRIMARY_TIMEOUT;",
+        "dual success tuple",
+    )
+
+
+def _inject_into_dual_loop(variant, statement):
+    def mutate(vendor):
+        return mutate_primary(
+            vendor, _DUAL_READS[variant], _DUAL_READS[variant] + "\n        " + statement, "dual reads"
+        )
+
+    return mutate
+
+
+DUAL_COMPLETION_BLOCK = """        if ((qread == qsize_expected) || ((status & V14_STATUS_CMD_END) != 0U)) {
+            obs->t_first = DWT->CYCCNT;
+            obs->result = V14_PRIMARY_OBSERVED;
+            obs->iterations = i;
+            obs->qread = qread;
+            obs->status = status;
+            return;
+        }
+"""
+
+
+def reset_priority_lost(vendor):
+    text = replace_once(vendor, DUAL_RESET_GUARD, "", "dual reset guard")
+    return replace_once(
+        text, DUAL_COMPLETION_BLOCK, DUAL_COMPLETION_BLOCK + DUAL_RESET_GUARD, "completion block"
+    )
+
+
+def fault_priority_lost(vendor):
+    text = replace_once(vendor, DUAL_FAULT_GUARD, "", "dual fault guard")
+    return replace_once(
+        text, DUAL_COMPLETION_BLOCK, DUAL_COMPLETION_BLOCK + DUAL_FAULT_GUARD, "completion block"
+    )
+
+
+def primary_bound_drift(vendor):
+    return replace_once(vendor, "#define V14_ITERATION_BOUND 10000U", "#define V14_ITERATION_BOUND 9999U", "bound")
+
+
+def inactive_primary_present(vendor):
+    extra = VENDOR_PRIMARY_DUAL % {"suffix": "qs", "reads": _DUAL_READS["QS"]}
+    return replace_once(vendor, VENDOR_CONVERGE, extra + VENDOR_CONVERGE, "converge helper")
+
+
+def primary_helper_renamed(vendor):
+    return replace_once(vendor, "static void v14_primary_q(", "static void v14_primary_x(", "Q helper name")
+
+
+def vector_not_stock(vendor):
+    return replace_once(
+        vendor,
+        "    NVIC_SetVector(NPU0_IRQn, (uint32_t)&u85_irq_handler);",
+        "    NVIC_SetVector(NPU0_IRQn, (uint32_t)&v14_shim_handler);",
+        "vector install",
+    )
+
+
+def nvic_probe_order_drift(vendor):
+    pending = "    pmu_completion_visibility_v14_mailbox[V14_MBOX_NVIC_PENDING_AFTER_INITIAL_CLEAR] = NVIC_GetPendingIRQ(NPU0_IRQn);\n"
+    active = "    pmu_completion_visibility_v14_mailbox[V14_MBOX_NVIC_ACTIVE_BEFORE_SUBMIT] = NVIC_GetActive(NPU0_IRQn);\n"
+    return replace_once(vendor, pending + active, active + pending, "nvic probes")
+
+
+def nvic_disable_missing(vendor):
+    return replace_once(vendor, "    NVIC_DisableIRQ(NPU0_IRQn);\n", "", "nvic disable")
+
+
+def nvic_enable_reachable(vendor):
+    return replace_once(
+        vendor,
+        "    NVIC_ClearPendingIRQ(NPU0_IRQn);\n\n    pmu_completion_visibility_v14_mailbox[V14_MBOX_VARIANT_ID]",
+        "    NVIC_ClearPendingIRQ(NPU0_IRQn);\n    NVIC_EnableIRQ(NPU0_IRQn);\n\n"
+        "    pmu_completion_visibility_v14_mailbox[V14_MBOX_VARIANT_ID]",
+        "nvic clear",
+    )
+
+
+def direct_iser_write(vendor):
+    return replace_once(
+        vendor,
+        "    NVIC_ClearPendingIRQ(NPU0_IRQn);\n\n    pmu_completion_visibility_v14_mailbox[V14_MBOX_VARIANT_ID]",
+        "    NVIC_ClearPendingIRQ(NPU0_IRQn);\n    NVIC->ISER[0] = 1UL;\n\n"
+        "    pmu_completion_visibility_v14_mailbox[V14_MBOX_VARIANT_ID]",
+        "nvic clear",
+    )
+
+
+def irq_triggered_published(vendor):
+    return replace_once(
+        vendor,
+        "\t  //Start NPU\n",
+        "\t  irq_triggered = true;\n\t  //Start NPU\n",
+        "submit comment",
+    )
+
+
+PRIMARY_Q_MUTATIONS = (
+    ("q_primary_status_read", q_primary_reads_status, "Q primary loop reads STATUS"),
+    (
+        "q_timeout_diagnostic_missing",
+        q_timeout_diagnostic_missing,
+        "Q timeout diagnostic STATUS read is missing or duplicated",
+    ),
+    (
+        "q_timeout_diagnostic_duplicated",
+        q_timeout_diagnostic_duplicated,
+        "Q timeout diagnostic STATUS read is missing or duplicated",
+    ),
+    ("q_timeout_publishes_p1", q_timeout_publishes_p1, "Q timeout path publishes a first-observation timestamp"),
+    ("q_timeout_enters_convergence", q_timeout_enters_convergence, "Q timeout path reaches the convergence tail"),
+    ("primary_helper_missing", primary_helper_renamed, "primary helper v14_primary_q is missing"),
+    ("inactive_primary_helper_present", inactive_primary_present, "inactive primary helper is reachable"),
+    ("primary_bound_not_10000", primary_bound_drift, "primary loop bound is not 10000"),
+)
+
+PRIMARY_QS_MUTATIONS = (
+    ("qs_second_read_dropped", _drop_second_read("QS"), "QS primary read order is not QREAD then STATUS"),
+    (
+        "qs_short_circuit_exit",
+        _short_circuit_between_reads("QS"),
+        "primary predicate is evaluated before both reads",
+    ),
+    ("primary_completion_uses_bit1", completion_uses_bit1, "primary completion predicate does not use cmd_end_reached bit5"),
+    ("primary_success_tuple_reread", success_tuple_reread, "primary success tuple is re-read rather than frozen"),
+    (
+        "primary_per_iteration_store",
+        _inject_into_dual_loop("QS", "obs->iterations = i;"),
+        "primary loop carries a per-iteration store/call/timestamp",
+    ),
+    (
+        "primary_per_iteration_timestamp",
+        _inject_into_dual_loop("QS", "obs->t_first = DWT->CYCCNT;"),
+        "primary loop carries a per-iteration store/call/timestamp",
+    ),
+    (
+        "primary_per_iteration_call",
+        _inject_into_dual_loop("QS", "helper_bookkeeping();"),
+        "primary loop carries a per-iteration store/call/timestamp",
+    ),
+    (
+        "primary_qsize_read",
+        _inject_into_dual_loop("QS", "qsize_expected = read_reg(NPU_REG_QSIZE);"),
+        "QSIZE access reachable in a primary loop",
+    ),
+    ("primary_reset_priority_lost", reset_priority_lost, "reset/fault check does not dominate the primary completion predicate"),
+    ("primary_fault_priority_lost", fault_priority_lost, "reset/fault check does not dominate the primary completion predicate"),
+)
+
+PRIMARY_SQ_MUTATIONS = (
+    ("sq_second_read_dropped", _drop_second_read("SQ"), "SQ primary read order is not STATUS then QREAD"),
+    (
+        "sq_short_circuit_exit",
+        _short_circuit_between_reads("SQ"),
+        "primary predicate is evaluated before both reads",
+    ),
+    ("sq_read_order_matches_qs", sq_order_matches_qs, "SQ primary read order is not STATUS then QREAD"),
+)
+
+HARD_BYPASS_MUTATIONS = (
+    ("vector_not_stock_handler", vector_not_stock, "runtime vector is not the exact stock u85_irq_handler"),
+    ("nvic_probe_order_drift", nvic_probe_order_drift, "NVIC hard-bypass probe ordering drifted"),
+    ("nvic_disable_missing", nvic_disable_missing, "NVIC hard-bypass probe ordering drifted"),
+    ("nvic_enable_reachable", nvic_enable_reachable, "reachable NVIC_EnableIRQ"),
+    ("direct_iser_enable_write", direct_iser_write, "direct NVIC ISER enable write is reachable"),
+    ("irq_triggered_publication", irq_triggered_published, "irq_triggered can become true on a measured path"),
+)
+
+
+def run_primary_suite(gate):
+    run_vendor_mutations(gate, PRIMARY_Q_MUTATIONS, "Q")
+    run_vendor_mutations(gate, PRIMARY_QS_MUTATIONS, "QS")
+    run_vendor_mutations(gate, PRIMARY_SQ_MUTATIONS, "SQ")
+    run_vendor_mutations(gate, HARD_BYPASS_MUTATIONS, "Q")
+
+
+EXPECTED_READ_ORDER = {"Q": ["QREAD"], "QS": ["QREAD", "STATUS"], "SQ": ["STATUS", "QREAD"]}
+EXPECTED_PROBE_ORDER = [
+    "NVIC_DisableIRQ",
+    "NVIC_ClearPendingIRQ",
+    "NVIC_GetVector",
+    "NVIC_GetEnableIRQ",
+    "NVIC_GetPendingIRQ",
+    "NVIC_GetActive",
+]
+
+
+def run_primary_positive_suite(gate):
+    for variant in ("Q", "QS", "SQ"):
+        doc = expect_accept(
+            gate,
+            variant,
+            canonical_runner(variant),
+            canonical_vendor(variant),
+            "%s primary contract is proven" % variant,
+        )
+        if doc is None:
+            continue
+        check(
+            "%s primary read order is %s" % (variant, "/".join(EXPECTED_READ_ORDER[variant])),
+            doc.get("primary_read_order") == EXPECTED_READ_ORDER[variant],
+            repr(doc.get("primary_read_order")),
+        )
+        check("%s primary bound is 10000" % variant, doc.get("primary_bound") == ITERATION_BOUND)
+        check("%s valid iteration range is 1..10000" % variant, doc.get("valid_iteration_range") == [1, ITERATION_BOUND])
+        check(
+            "%s gates every independent fault bit and reset" % variant,
+            doc.get("fault_bits_gated") == [0x004, 0x010, 0x100, 0x200]
+            and doc.get("reset_bit_gated") == 0x008,
+        )
+        check(
+            "%s Q-timeout diagnostic STATUS reads" % variant,
+            doc.get("q_timeout_diagnostic_status_loads") == (1 if variant == "Q" else 0),
+        )
+        check(
+            "%s first-observation categories" % variant,
+            doc.get("first_observation_categories")
+            == ([] if variant == "Q" else ["Q_FIRST", "S5_FIRST", "SAME_ITERATION"]),
+        )
+        check(
+            "%s retains the stock vector and hard-bypass probe order" % variant,
+            doc.get("installed_vector_symbol") == "u85_irq_handler"
+            and doc.get("hard_bypass_probe_order") == EXPECTED_PROBE_ORDER,
+        )
+        check(
+            "%s keeps irq_triggered false on every measured path" % variant,
+            doc.get("irq_triggered_publication_sites") == ["u85_irq_handler"],
+        )
+
+
 def run_canonical_suite(gate):
     for variant in ("Q", "QS", "SQ"):
         doc = expect_accept(
@@ -1121,6 +1475,8 @@ if __name__ == "__main__":
         run_cli_suite()
         run_canonical_suite(gate)
         run_pre_run_suite(gate)
+        run_primary_positive_suite(gate)
+        run_primary_suite(gate)
 
     print()
     print("passed=%d failed=%d" % (passed, failed))

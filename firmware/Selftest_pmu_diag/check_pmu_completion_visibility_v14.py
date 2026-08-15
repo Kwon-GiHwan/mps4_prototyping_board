@@ -414,6 +414,339 @@ def verify_pre_run_contract(vendor_masked: str, defines: dict[str, int]) -> dict
     }
 
 
+# ---------------------------------------------------------------------------
+# Statement-level effect model
+# ---------------------------------------------------------------------------
+
+_POINTER_BINDING_RE = re.compile(r"\*\s*const\s+([A-Za-z_]\w*)\s*=[^;]*?(NPU_REG_[A-Z_]+)")
+_CALL_RE = re.compile(r"(?<![A-Za-z0-9_])([A-Za-z_]\w*)\s*\(")
+_NON_CALL_KEYWORDS = frozenset(
+    ("if", "for", "while", "switch", "return", "sizeof", "uint32_t", "int32_t", "volatile", "uintptr_t")
+)
+_STORE_RE = re.compile(r"(?:obs\s*->|%s\s*\[)" % re.escape(MAILBOX_SYMBOL))
+
+
+def function_spans(masked: str) -> tuple[tuple[str, int, int], ...]:
+    """Return ``(name, body_start, body_stop)`` for every top-level brace block."""
+
+    spans: list[tuple[str, int, int]] = []
+    index = 0
+    declarator_start = 0
+    while index < len(masked):
+        character = masked[index]
+        if character == "{":
+            head = masked[declarator_start:index]
+            names = _CALL_RE.findall(head)
+            close = _matching_brace(masked, index, "top-level block")
+            spans.append((names[-1] if names else "", index + 1, close))
+            index = close + 1
+            declarator_start = index
+            continue
+        if character == ";":
+            declarator_start = index + 1
+        index += 1
+    return tuple(spans)
+
+
+def enclosing_function(spans: tuple[tuple[str, int, int], ...], position: int) -> str:
+    for name, start, stop in spans:
+        if start <= position < stop:
+            return name
+    return ""
+
+
+def split_block(block: str) -> tuple[tuple[str, str, str], ...]:
+    """Split a compound statement into ``(kind, head, body)`` items."""
+
+    items: list[tuple[str, str, str]] = []
+    buffer: list[str] = []
+    paren = 0
+    index = 0
+    while index < len(block):
+        character = block[index]
+        if character == "(":
+            paren += 1
+        elif character == ")":
+            paren -= 1
+        if paren == 0 and character == ";":
+            items.append(("stmt", "".join(buffer).strip(), ""))
+            buffer = []
+            index += 1
+            continue
+        if paren == 0 and character == "{":
+            close = _matching_brace(block, index, "nested block")
+            items.append(("block", "".join(buffer).strip(), block[index + 1 : close]))
+            buffer = []
+            index = close + 1
+            continue
+        buffer.append(character)
+        index += 1
+    trailing = "".join(buffer).strip()
+    if trailing:
+        items.append(("stmt", trailing, ""))
+    return tuple(items)
+
+
+def pointer_roles(body: str) -> dict[str, str]:
+    roles: dict[str, str] = {}
+    for name, register in _POINTER_BINDING_RE.findall(body):
+        roles[name] = register.replace("NPU_REG_", "")
+    return roles
+
+
+def statement_effects(statement: str, roles: dict[str, str]) -> tuple[str, ...]:
+    effects: list[str] = []
+    for name, role in roles.items():
+        if re.search(r"\*\s*%s(?![A-Za-z0-9_])" % re.escape(name), statement):
+            effects.append("load:%s" % role)
+    if "NPU_REG_QSIZE" in statement:
+        effects.append("qsize")
+    if "DWT->CYCCNT" in statement:
+        effects.append("timestamp")
+    if _STORE_RE.search(statement):
+        effects.append("store")
+    for callee in _CALL_RE.findall(statement):
+        if callee not in _NON_CALL_KEYWORDS and callee not in roles:
+            effects.append("call:%s" % callee)
+    return tuple(effects)
+
+
+def extract_loop(body: str, what: str) -> tuple[str, str, int, int]:
+    """Return ``(loop_head, loop_body, body_start, body_stop)`` of the single ``for``."""
+
+    heads = [match for match in re.finditer(r"(?<![A-Za-z0-9_])for\s*\(", body)]
+    if len(heads) != 1:
+        raise fail("%s: expected exactly one loop, found %d" % (what, len(heads)))
+    match = heads[0]
+    depth = 0
+    index = match.end() - 1
+    while index < len(body):
+        if body[index] == "(":
+            depth += 1
+        elif body[index] == ")":
+            depth -= 1
+            if depth == 0:
+                break
+        index += 1
+    head = body[match.end() : index]
+    tail = body[index + 1 :]
+    stripped = tail.lstrip()
+    if not stripped.startswith("{"):
+        raise fail("%s: loop body is not a compound statement" % what)
+    open_index = index + 1 + (len(tail) - len(stripped))
+    close_index = _matching_brace(body, open_index, what)
+    return head, body[open_index + 1 : close_index], open_index + 1, close_index
+
+
+def _all_loads(block: str, roles: dict[str, str]) -> list[str]:
+    """Every MMIO load in ``block``, in source order, regardless of nesting."""
+
+    found: list[tuple[int, str]] = []
+    for name, role in roles.items():
+        for match in re.finditer(r"\*\s*%s(?![A-Za-z0-9_])" % re.escape(name), block):
+            found.append((match.start(), role))
+    return [role for _, role in sorted(found)]
+
+
+def _guard_kind(condition: str) -> str:
+    if "V14_STATUS_RESET" in condition:
+        return "reset"
+    if "V14_STATUS_FAULT_MASK" in condition:
+        return "fault"
+    if "qsize_expected" in condition:
+        return "completion"
+    return "other"
+
+
+def verify_primary_contract(
+    vendor_masked: str, variant: str, defines: dict[str, int]
+) -> dict[str, object]:
+    """Prove the per-variant primary observation loop."""
+
+    if defines.get("V14_ITERATION_BOUND") != ITERATION_BOUND:
+        raise fail("primary loop bound is not 10000: V14_ITERATION_BOUND is %r" % defines.get("V14_ITERATION_BOUND"))
+
+    defined = []
+    for name in PRIMARY_SYMBOL.values():
+        try:
+            extract_function_body(vendor_masked, name, name)
+        except GateError:
+            continue
+        defined.append(name)
+    wanted = PRIMARY_SYMBOL[variant]
+    if wanted not in defined:
+        raise fail("primary helper %s is missing" % wanted)
+    for name in defined:
+        if name != wanted:
+            raise fail("inactive primary helper is reachable: %s" % name)
+
+    body = function_text(vendor_masked, wanted, "primary helper")
+    roles = pointer_roles(body)
+    if "QSIZE" in roles.values():
+        raise fail("QSIZE access reachable in a primary loop: a QSIZE pointer is bound")
+
+    head, loop_body, loop_start, loop_stop = extract_loop(body, "primary loop")
+    if "V14_ITERATION_BOUND" not in head:
+        raise fail("primary loop bound is not 10000: loop head does not use V14_ITERATION_BOUND")
+
+    items = split_block(loop_body)
+    read_order: list[str] = []
+    expected = ["QREAD"] if variant == "Q" else EXPECTED_PRIMARY_ORDER[variant]
+    for kind, headline, nested in items:
+        if kind == "block":
+            break
+        effects = statement_effects(headline, roles)
+        for effect in effects:
+            if effect == "qsize":
+                raise fail("QSIZE access reachable in a primary loop")
+        if any(effect in ("timestamp", "store") or effect.startswith("call:") for effect in effects):
+            raise fail(
+                "primary loop carries a per-iteration store/call/timestamp: %s" % headline.strip()[:50]
+            )
+        for effect in effects:
+            if effect.startswith("load:"):
+                read_order.append(effect.split(":", 1)[1])
+    if read_order != expected:
+        if variant == "Q" and "STATUS" in read_order:
+            raise fail("Q primary loop reads STATUS")
+        # A read that exists in the loop but only downstream of a branch is a
+        # short-circuit exit, not a missing read: the two cases need different
+        # names because they need different fixes.
+        if read_order == expected[: len(read_order)] and _all_loads(loop_body, roles)[: len(expected)] == expected:
+            raise fail("primary predicate is evaluated before both reads")
+        raise fail(
+            "%s primary read order is not %s: observed %s"
+            % (variant, " then ".join(expected), read_order or ["nothing"])
+        )
+
+    guards: list[tuple[str, str]] = []
+    for kind, headline, nested in items:
+        if kind != "block":
+            continue
+        if not headline.startswith("if"):
+            continue
+        effects = statement_effects(nested, roles)
+        for effect in effects:
+            if effect == "qsize":
+                raise fail("QSIZE access reachable in a primary loop")
+            if effect.startswith("load:"):
+                raise fail("primary success tuple is re-read rather than frozen")
+        guards.append((_guard_kind(headline), headline))
+
+    kinds = [kind for kind, _ in guards]
+    if "completion" not in kinds:
+        raise fail("primary loop has no completion predicate")
+    if variant == "Q":
+        if "STATUS" in "".join(condition for _, condition in guards):
+            raise fail("Q primary loop reads STATUS")
+    else:
+        for required in ("reset", "fault"):
+            if required not in kinds:
+                raise fail(
+                    "reset/fault check does not dominate the primary completion predicate: %s guard is missing"
+                    % required
+                )
+            if kinds.index(required) > kinds.index("completion"):
+                raise fail(
+                    "reset/fault check does not dominate the primary completion predicate: %s guard follows it"
+                    % required
+                )
+        completion = guards[kinds.index("completion")][1]
+        if "V14_STATUS_CMD_END" not in completion:
+            raise fail("primary completion predicate does not use cmd_end_reached bit5")
+        if "V14_STATUS_IRQ_RAISED" in completion:
+            raise fail("irq_raised bit1 is used as a primary exit predicate")
+
+    # Everything before the loop and everything after it is outside authoritative
+    # timing; only Q may touch STATUS there, and only once.
+    outside = body[:loop_start] + body[loop_stop:]
+    diagnostic_loads = len(
+        re.findall(
+            r"\*\s*(?:%s)(?![A-Za-z0-9_])"
+            % "|".join(re.escape(name) for name, role in roles.items() if role == "STATUS"),
+            outside,
+        )
+    )
+    if variant == "Q":
+        if diagnostic_loads != 1:
+            raise fail(
+                "Q timeout diagnostic STATUS read is missing or duplicated: %d loads" % diagnostic_loads
+            )
+    elif diagnostic_loads != 0:
+        raise fail("%s primary helper reads STATUS outside its loop: %d loads" % (variant, diagnostic_loads))
+
+    after_loop = body[loop_stop:]
+    if "DWT->CYCCNT" in after_loop:
+        raise fail("%s timeout path publishes a first-observation timestamp" % variant)
+    if CONVERGE_SYMBOL in body:
+        raise fail("%s timeout path reaches the convergence tail" % variant)
+
+    fault_bits = [bit for bit in (1 << shift for shift in range(32)) if defines["V14_STATUS_FAULT_MASK"] & bit]
+    return {
+        "primary_helper": wanted,
+        "primary_read_order": expected,
+        "primary_bound": ITERATION_BOUND,
+        "valid_iteration_range": [1, ITERATION_BOUND],
+        "fault_bits_gated": fault_bits,
+        "reset_bit_gated": defines["V14_STATUS_RESET"],
+        "q_timeout_diagnostic_status_loads": diagnostic_loads,
+        "first_observation_categories": [] if variant == "Q" else ["Q_FIRST", "S5_FIRST", "SAME_ITERATION"],
+    }
+
+
+EXPECTED_PRIMARY_ORDER = {"Q": ["QREAD"], "QS": ["QREAD", "STATUS"], "SQ": ["STATUS", "QREAD"]}
+
+STOCK_VECTOR_SYMBOL = "u85_irq_handler"
+HARD_BYPASS_PROBE_ORDER = (
+    "NVIC_DisableIRQ",
+    "NVIC_ClearPendingIRQ",
+    "NVIC_GetVector",
+    "NVIC_GetEnableIRQ",
+    "NVIC_GetPendingIRQ",
+    "NVIC_GetActive",
+)
+
+
+def verify_hard_bypass_contract(vendor_masked: str) -> dict[str, object]:
+    """Prove the retained V12/V13 stock vector and NVIC hard bypass."""
+
+    install = "NVIC_SetVector(NPU0_IRQn, (uint32_t)&%s)" % STOCK_VECTOR_SYMBOL
+    if len(positions(vendor_masked, install)) != 1:
+        raise fail("runtime vector is not the exact stock u85_irq_handler")
+
+    setup_start, setup_stop = function_span(vendor_masked, "test_u85", "queue setup function")
+    setup = vendor_masked[setup_start:setup_stop]
+    observed = []
+    for probe in HARD_BYPASS_PROBE_ORDER:
+        site = setup.find(probe + "(")
+        if site >= 0:
+            observed.append((site, probe))
+    ordering = [probe for _, probe in sorted(observed)]
+    if ordering != list(HARD_BYPASS_PROBE_ORDER):
+        raise fail("NVIC hard-bypass probe ordering drifted: observed %s" % ordering)
+
+    if positions(vendor_masked, "NVIC_EnableIRQ("):
+        raise fail("reachable NVIC_EnableIRQ")
+    if re.search(r"NVIC\s*->\s*ISER", vendor_masked):
+        raise fail("direct NVIC ISER enable write is reachable")
+
+    spans = function_spans(vendor_masked)
+    sites = []
+    for match in re.finditer(r"(?<![A-Za-z0-9_])irq_triggered\s*=\s*true", vendor_masked):
+        sites.append(enclosing_function(spans, match.start()))
+    if sorted(set(sites)) != [STOCK_VECTOR_SYMBOL]:
+        raise fail("irq_triggered can become true on a measured path: sites %s" % sorted(set(sites)))
+    if not re.search(r"(?<![A-Za-z0-9_])irq_triggered\s*=\s*false", setup):
+        raise fail("NVIC hard-bypass probe ordering drifted: irq_triggered is not cleared before the probes")
+
+    return {
+        "installed_vector_symbol": STOCK_VECTOR_SYMBOL,
+        "hard_bypass_probe_order": list(HARD_BYPASS_PROBE_ORDER),
+        "irq_triggered_publication_sites": sorted(set(sites)),
+        "reachable_nvic_enable_sites": 0,
+    }
+
+
 def build_arg_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="check_pmu_completion_visibility_v14.py",
@@ -492,6 +825,8 @@ def verify_generated_sources(runner_text: str, vendor_text: str, variant: str) -
     defines = parse_defines(vendor_masked)
 
     pre_run = verify_pre_run_contract(vendor_masked, defines)
+    primary = verify_primary_contract(vendor_masked, variant, defines)
+    hard_bypass = verify_hard_bypass_contract(vendor_masked)
     converge_body = function_text(vendor_masked, CONVERGE_SYMBOL, "common convergence helper")
     command_start, command_stop = function_span(vendor_masked, "test_commands", "command function")
     command = vendor_masked[command_start:command_stop]
@@ -513,6 +848,8 @@ def verify_generated_sources(runner_text: str, vendor_text: str, variant: str) -
         "common_tail_source_sha256": normalized_digest(command[tail_start:]),
     }
     doc.update(pre_run)
+    doc.update(primary)
+    doc.update(hard_bypass)
     return doc
 
 
