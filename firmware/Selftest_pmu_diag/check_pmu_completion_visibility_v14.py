@@ -373,7 +373,11 @@ def verify_pre_run_contract(vendor_masked: str, defines: dict[str, int]) -> dict
         if len(guards) != 1:
             raise fail("pre-program gate omits stopped/reset/fault: %s check is missing" % label)
 
-    if positions(setup, _CMD_WRITE):
+    # The design forbids a running transition *between* the gate and the
+    # programming writes, not a CMD write anywhere in the setup function, so
+    # the window is exactly that span.
+    gate_to_programming = setup[pre_program_reads[0] : min(queue_accesses)]
+    if _CMD_WRITE in gate_to_programming:
         raise fail(
             "state-transitioning CMD write between the pre-program gate and queue programming"
         )
