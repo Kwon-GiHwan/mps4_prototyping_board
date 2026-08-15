@@ -126,7 +126,7 @@ STATUS_FAULT_MASK = 0x314
 
 # The suite is frozen at this many assertions. Adding a named fixture is a
 # deliberate act, so the count moves with it and never drifts silently.
-EXPECTED_PASS_COUNT = 420
+EXPECTED_PASS_COUNT = 447
 
 CHECKER_PATH = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
@@ -3513,13 +3513,18 @@ def magic_store_with_a_spaced_semicolon(vendor):
 
 
 # -- TEST_CPM: the terminal cleanup writes live in a preprocessor branch. ---
+#
+# These are mutation builders, not tests. The ``test_`` prefix made pytest
+# collect them as test functions needing a ``vendor`` fixture, so running the
+# directory under pytest errored on this file even though the suite's own entry
+# point exercises them. The name says what they are instead.
 
 
-def test_cpm_compiled_out(vendor):
+def mutate_cpm_compiled_out(vendor):
     return replace_once(vendor, "#define TEST_CPM 1", "#define TEST_CPM 0", "TEST_CPM define")
 
 
-def test_cpm_guard_removed(vendor):
+def mutate_cpm_guard_removed(vendor):
     text = replace_once(vendor, "#if(TEST_CPM==1)\n", "", "TEST_CPM guard")
     return replace_once(text, "#endif\n", "", "TEST_CPM endif")
 
@@ -3527,12 +3532,12 @@ def test_cpm_guard_removed(vendor):
 TEST_CPM_MUTATIONS = (
     (
         "test_cpm_branch_compiled_out",
-        test_cpm_compiled_out,
+        mutate_cpm_compiled_out,
         "cleanup terminal sequence is compiled out: TEST_CPM is 0, not 1",
     ),
     (
         "test_cpm_guard_removed_from_the_terminal_sequence",
-        test_cpm_guard_removed,
+        mutate_cpm_guard_removed,
         "cleanup terminal sequence is not guarded by one #if(TEST_CPM==1)",
     ),
 )
@@ -4199,6 +4204,440 @@ MMIO_PROVENANCE_MUTATIONS = (
 )
 
 
+# ---------------------------------------------------------------------------
+# Predicate connectives: naming the terms is not deciding on them.
+# ---------------------------------------------------------------------------
+
+CONVERGENCE_CONJUNCTION = """        if ((qread == qsize_expected) &&
+            ((status & V14_STATUS_CMD_END) != 0U) &&
+            ((status & V14_STATUS_IRQ_RAISED) != 0U) &&
+            ((status & V14_STATUS_STATE) == 0U)) {"""
+PRIMARY_DISJUNCTION = (
+    "        if ((qread == qsize_expected) || ((status & V14_STATUS_CMD_END) != 0U)) {"
+)
+
+
+def convergence_predicate_disjoined(vendor):
+    """The four same-iteration terms joined with ``||`` instead of ``&&``.
+
+    Every required term is still spelled out, so a gate that greps for them
+    still finds all four -- while the branch now succeeds on a stopped bit
+    alone, with the queue undrained and bits 5 and 1 clear.
+    """
+
+    return replace_once(
+        vendor,
+        CONVERGENCE_CONJUNCTION,
+        CONVERGENCE_CONJUNCTION.replace("&&", "||"),
+        "convergence success predicate",
+    )
+
+
+def primary_completion_conjoined(vendor):
+    """The QS/SQ first-observation exit joined with ``&&`` instead of ``||``.
+
+    An AND-only exit can only ever report SAME_ITERATION: Q_FIRST and S5_FIRST
+    become unreachable, and the variant matrix measures one thing three times.
+    """
+
+    return replace_once(
+        vendor,
+        PRIMARY_DISJUNCTION,
+        PRIMARY_DISJUNCTION.replace("||", "&&"),
+        "primary completion predicate",
+    )
+
+
+def convergence_predicate_bit_value_inverted(vendor):
+    """``stopped`` tested for set rather than clear, with the term untouched."""
+
+    return replace_once(
+        vendor,
+        "((status & V14_STATUS_STATE) == 0U)) {",
+        "((status & V14_STATUS_STATE) != 0U)) {",
+        "convergence stopped term",
+    )
+
+
+# ---------------------------------------------------------------------------
+# Load-to-gate dataflow: a gate is credited for the load it actually consumes.
+# ---------------------------------------------------------------------------
+
+
+def pre_program_status_from_a_constant(vendor):
+    return replace_once(
+        vendor,
+        "    pre_program_status = read_reg(NPU_REG_STATUS);\n",
+        "    pre_program_status = 0U;\n    (void)read_reg(NPU_REG_STATUS);\n",
+        "pre-program STATUS load",
+    )
+
+
+def pre_submit_status_from_a_constant(vendor):
+    return replace_once(
+        vendor,
+        "\t  pre_submit_status = read_reg(NPU_REG_STATUS);\n",
+        "\t  pre_submit_status = 0U;\n\t  (void)read_reg(NPU_REG_STATUS);\n",
+        "post-program STATUS load",
+    )
+
+
+def qsize_expected_from_the_manifest_constant(vendor):
+    return replace_once(
+        vendor,
+        "\t  qsize_expected = read_reg(NPU_REG_QSIZE);\n",
+        "\t  qsize_expected = V14_QSIZE_EXPECTED;\n\t  (void)read_reg(NPU_REG_QSIZE);\n",
+        "QSIZE load",
+    )
+
+
+def qsize_expected_overwritten_after_its_gate(vendor):
+    return replace_once(
+        vendor,
+        "\t  //Start NPU\n",
+        "\t  qsize_expected = 0U;\n\t  //Start NPU\n",
+        "submit comment",
+    )
+
+
+QSIZE_REREAD_HELPER = """__attribute__((noinline))
+static uint32_t v14_reread_qsize(void)
+{
+    return read_reg(NPU_REG_QSIZE);
+}
+
+__attribute__((noinline))
+static void v14_converge("""
+
+
+def qsize_expected_reread_through_a_helper(vendor):
+    """The running re-read hidden in a helper the command path may call."""
+
+    text = replace_once(
+        vendor,
+        "__attribute__((noinline))\nstatic void v14_converge(",
+        QSIZE_REREAD_HELPER,
+        "convergence helper",
+    )
+    return replace_once(
+        text,
+        "\t  pmu_completion_visibility_v14_mailbox[V14_MBOX_T_SUBMIT_AFTER_CMD] = DWT->CYCCNT;",
+        "\t  qsize_expected = v14_reread_qsize();\n"
+        "\t  pmu_completion_visibility_v14_mailbox[V14_MBOX_T_SUBMIT_AFTER_CMD] = DWT->CYCCNT;",
+        "submit timestamp",
+    )
+
+
+# ---------------------------------------------------------------------------
+# Absolute MMIO addresses in a translation unit that pins no register map.
+#
+# The tracked fixtures define no NPU_REG_* table and no U85_BASE_ADDRESS, which
+# is exactly the configuration in which a numeric address can be pinned to
+# nothing. Ignoring it there is what let every rule below be walked around by
+# writing the number instead of the name.
+# ---------------------------------------------------------------------------
+
+
+def _numeric_mmio(word):
+    return "*(volatile uint32_t *)(uintptr_t)0x4810%02X04U" % word
+
+
+def primary_status_read_through_a_numeric_address(vendor):
+    return q_loop_reads(
+        vendor,
+        "        qread = *qread_reg;\n        status = %s;\n"
+        "        if (qread == qsize_expected) {" % _numeric_mmio(0x20),
+    )
+
+
+def running_qsize_read_through_a_numeric_address(vendor):
+    return replace_once(
+        vendor,
+        "\t  pmu_completion_visibility_v14_mailbox[V14_MBOX_T_SUBMIT_AFTER_CMD] = DWT->CYCCNT;",
+        "\t  qsize_expected = %s;\n"
+        "\t  pmu_completion_visibility_v14_mailbox[V14_MBOX_T_SUBMIT_AFTER_CMD] = DWT->CYCCNT;"
+        % _numeric_mmio(0x21),
+        "submit timestamp",
+    )
+
+
+def second_submit_through_a_numeric_address(vendor):
+    return replace_once(
+        vendor,
+        "\t  pmu_completion_visibility_v14_mailbox[V14_MBOX_T_SUBMIT_AFTER_CMD] = DWT->CYCCNT;",
+        "\t  %s = 1U;\n"
+        "\t  pmu_completion_visibility_v14_mailbox[V14_MBOX_T_SUBMIT_AFTER_CMD] = DWT->CYCCNT;"
+        % _numeric_mmio(0x22),
+        "submit timestamp",
+    )
+
+
+def failure_path_clears_cmd_through_a_numeric_address(vendor):
+    return replace_once(
+        vendor,
+        "\t      v14_publish_failure(V14_PHASE_PRIMARY, V14_REASON_RESET_IN_PROGRESS, primary.qread, primary.status);",
+        "\t      v14_publish_failure(V14_PHASE_PRIMARY, V14_REASON_RESET_IN_PROGRESS, primary.qread, primary.status);\n"
+        "\t      %s = 0U;" % _numeric_mmio(0x22),
+        "primary reset failure path",
+    )
+
+
+def convergence_status_load_through_a_numeric_address(vendor):
+    return replace_once(
+        vendor,
+        "        qread = *qread_reg;\n        status = *status_reg;\n" + RESET_GUARD,
+        "        qread = *qread_reg;\n        status = *status_reg;\n"
+        "        status = %s;\n" % _numeric_mmio(0x20) + RESET_GUARD,
+        "convergence loop reads",
+    )
+
+
+# ---------------------------------------------------------------------------
+# Mailbox lvalue provenance: the storage an lvalue names, not its spelling.
+# ---------------------------------------------------------------------------
+
+SUCCESS_PUBLICATION_HEAD = (
+    "    pmu_completion_visibility_v14_mailbox[V14_MBOX_FAILURE_PHASE] = V14_PHASE_NONE;"
+)
+FAILURE_PUBLICATION_HEAD = (
+    "    pmu_completion_visibility_v14_mailbox[V14_MBOX_FAILURE_PHASE] = phase;"
+)
+
+
+def _before_success_publication(statements):
+    def mutate(vendor):
+        return replace_once(
+            vendor,
+            SUCCESS_PUBLICATION_HEAD,
+            statements + SUCCESS_PUBLICATION_HEAD,
+            "success publication",
+        )
+
+    return mutate
+
+
+magic_through_pointer_arithmetic = _before_success_publication(
+    "    *(pmu_completion_visibility_v14_mailbox + 33) = V14_MAILBOX_VALID;\n"
+)
+magic_through_a_reversed_subscript = _before_success_publication(
+    "    33[pmu_completion_visibility_v14_mailbox] = V14_MAILBOX_VALID;\n"
+)
+magic_through_a_reversed_addition = _before_success_publication(
+    "    *(33 + pmu_completion_visibility_v14_mailbox) = V14_MAILBOX_VALID;\n"
+)
+magic_through_a_transitive_alias = _before_success_publication(
+    "    volatile uint32_t *mb_one = pmu_completion_visibility_v14_mailbox;\n"
+    "    volatile uint32_t *mb_two = (volatile uint32_t *)mb_one;\n"
+    "    *(mb_two + 33) = V14_MAILBOX_VALID;\n"
+)
+mailbox_alias_repointed_by_compound_assignment = _before_success_publication(
+    "    volatile uint32_t *mb_step = pmu_completion_visibility_v14_mailbox;\n"
+    "    mb_step += 33;\n"
+    "    *mb_step = V14_MAILBOX_VALID;\n"
+)
+mailbox_alias_repointed_by_an_increment = _before_success_publication(
+    "    volatile uint32_t *mb_inc = pmu_completion_visibility_v14_mailbox;\n"
+    "    ++mb_inc;\n"
+    "    *mb_inc = V14_MAILBOX_VALID;\n"
+)
+variant_id_relabelled_through_pointer_arithmetic = _before_success_publication(
+    "    *(pmu_completion_visibility_v14_mailbox + 0) = 3U;\n"
+)
+
+
+def failure_publication_forges_the_convergence_tuple(vendor):
+    """A second store to word 17, after the one that invalidated it."""
+
+    return replace_once(
+        vendor,
+        FAILURE_PUBLICATION_HEAD,
+        "    *(pmu_completion_visibility_v14_mailbox + 17) = qread;\n" + FAILURE_PUBLICATION_HEAD,
+        "failure publication",
+    )
+
+
+def primary_per_loop_store_through_pointer_arithmetic(vendor):
+    return q_loop_reads(
+        vendor,
+        "        qread = *qread_reg;\n"
+        "        *(pmu_completion_visibility_v14_mailbox + 7) = i;\n"
+        "        if (qread == qsize_expected) {",
+    )
+
+
+def runner_copy_ahead_of_the_guard_through_pointer_arithmetic(runner):
+    return replace_once(
+        runner,
+        "    if (pmu_completion_visibility_v14_mailbox[33] != V14_MAILBOX_VALID) {",
+        "    d.variant_id = *(pmu_completion_visibility_v14_mailbox + 0);\n"
+        "    if (pmu_completion_visibility_v14_mailbox[33] != V14_MAILBOX_VALID) {",
+        "runner magic guard",
+    )
+
+
+PREDICATE_STRUCTURE_MUTATIONS = (
+    (
+        "convergence_predicate_joined_with_or",
+        convergence_predicate_disjoined,
+        "the convergence success predicate does not join its terms with &&",
+    ),
+    (
+        "convergence_predicate_stopped_bit_inverted",
+        convergence_predicate_bit_value_inverted,
+        "the convergence success predicate is not the frozen tuple of observations",
+    ),
+)
+
+LOAD_PROVENANCE_MUTATIONS = (
+    (
+        "pre_program_status_gated_on_a_constant",
+        pre_program_status_from_a_constant,
+        "pre-program gate: pre_program_status is not bound to the STATUS load this gate counted",
+    ),
+    (
+        "post_program_status_gated_on_a_constant",
+        pre_submit_status_from_a_constant,
+        "post-program gate: pre_submit_status is not bound to the STATUS load this gate counted",
+    ),
+    (
+        "qsize_expected_taken_from_the_manifest_constant",
+        qsize_expected_from_the_manifest_constant,
+        "qsize_expected snapshot: qsize_expected is not bound to the QSIZE load this gate counted",
+    ),
+    (
+        "qsize_expected_overwritten_after_its_gate",
+        qsize_expected_overwritten_after_its_gate,
+        "qsize_expected snapshot: qsize_expected is reassigned after the QSIZE load",
+    ),
+    (
+        "qsize_expected_reread_through_a_helper",
+        qsize_expected_reread_through_a_helper,
+        "qsize_expected snapshot: qsize_expected is reassigned after the QSIZE load",
+    ),
+)
+
+NUMERIC_MMIO_MUTATIONS = (
+    (
+        "primary_status_read_through_a_numeric_address",
+        primary_status_read_through_a_numeric_address,
+        "the primary helper reaches an NPU-region address this gate cannot resolve",
+    ),
+    (
+        "running_qsize_read_through_a_numeric_address",
+        running_qsize_read_through_a_numeric_address,
+        "the command function reaches an NPU-region address this gate cannot resolve",
+    ),
+    (
+        "second_submit_through_a_numeric_address",
+        second_submit_through_a_numeric_address,
+        "the command function reaches an NPU-region address this gate cannot resolve",
+    ),
+    (
+        "failure_path_clears_cmd_through_a_numeric_address",
+        failure_path_clears_cmd_through_a_numeric_address,
+        "the command function reaches an NPU-region address this gate cannot resolve",
+    ),
+    (
+        "convergence_status_load_through_a_numeric_address",
+        convergence_status_load_through_a_numeric_address,
+        "the convergence helper reaches an NPU-region address this gate cannot resolve",
+    ),
+)
+
+MAILBOX_LVALUE_MUTATIONS = (
+    (
+        "magic_published_through_pointer_arithmetic",
+        magic_through_pointer_arithmetic,
+        "mailbox_valid is published from more than one site",
+    ),
+    (
+        "magic_published_through_a_reversed_subscript",
+        magic_through_a_reversed_subscript,
+        "mailbox_valid is published from more than one site",
+    ),
+    (
+        "magic_published_through_a_reversed_addition",
+        magic_through_a_reversed_addition,
+        "mailbox_valid is published from more than one site",
+    ),
+    (
+        "magic_published_through_a_transitive_mailbox_alias",
+        magic_through_a_transitive_alias,
+        "mailbox_valid is published from more than one site",
+    ),
+    (
+        "mailbox_alias_repointed_by_a_compound_assignment",
+        mailbox_alias_repointed_by_compound_assignment,
+        "re-points mailbox storage through a compound assignment or an increment",
+    ),
+    (
+        "mailbox_alias_repointed_by_an_increment",
+        mailbox_alias_repointed_by_an_increment,
+        "re-points mailbox storage through a compound assignment or an increment",
+    ),
+    (
+        "variant_id_relabelled_through_pointer_arithmetic",
+        variant_id_relabelled_through_pointer_arithmetic,
+        "variant id is not published to mailbox word 0",
+    ),
+    (
+        "failure_publication_forges_the_convergence_tuple",
+        failure_publication_forges_the_convergence_tuple,
+        "the failure publication publishes appendix word 17 from more than one store",
+    ),
+    (
+        "primary_per_loop_store_through_pointer_arithmetic",
+        primary_per_loop_store_through_pointer_arithmetic,
+        "primary loop carries a per-iteration store/call/timestamp",
+    ),
+)
+
+RUNNER_LVALUE_MUTATIONS = (
+    (
+        "runner_copy_ahead_of_the_guard_through_pointer_arithmetic",
+        runner_copy_ahead_of_the_guard_through_pointer_arithmetic,
+        "runner copies the appendix outside the mailbox-magic branch",
+    ),
+)
+
+
+def run_predicate_and_provenance_suite(gate):
+    """The connective, the load a gate consumes, and the storage an lvalue names."""
+
+    run_vendor_mutations(gate, PREDICATE_STRUCTURE_MUTATIONS, "Q")
+    run_vendor_mutations(gate, LOAD_PROVENANCE_MUTATIONS, "Q")
+    run_vendor_mutations(gate, NUMERIC_MMIO_MUTATIONS, "Q")
+    run_vendor_mutations(gate, MAILBOX_LVALUE_MUTATIONS, "Q")
+    run_runner_mutations(gate, RUNNER_LVALUE_MUTATIONS, "Q")
+
+    # The convergence tail is one shared helper, so the disjunction has to be
+    # refused in every variant that reaches it -- not only in the one the rest
+    # of this file mutates.
+    for variant in ("QS", "SQ"):
+        name = "%s_convergence_predicate_joined_with_or" % variant.lower()
+        REJECTED_FIXTURES.add(name)
+        expect_reject(
+            gate,
+            variant,
+            canonical_runner(variant),
+            convergence_predicate_disjoined(canonical_vendor(variant)),
+            name,
+            "the convergence success predicate does not join its terms with &&",
+        )
+
+    for variant in ("QS", "SQ"):
+        name = "%s_primary_completion_joined_with_and" % variant.lower()
+        REJECTED_FIXTURES.add(name)
+        expect_reject(
+            gate,
+            variant,
+            canonical_runner(variant),
+            primary_completion_conjoined(canonical_vendor(variant)),
+            name,
+            "the primary completion predicate does not join its terms with ||",
+        )
+
+
 def q_timeout_reset_and_fault_in_one_guard(vendor):
     return replace_once(
         vendor,
@@ -4278,6 +4717,13 @@ DERIVED_MANIFEST_FIELDS = (
     "failure_paths_enter_hprintf",
     "reachable_nvic_enable_sites",
     "success_cleanup_order",
+    # Each of these was a literal in the gate. A connective the gate spells out
+    # is a connective it did not read, and a category list it hardcodes is a
+    # claim rather than an observation.
+    "first_observation_categories",
+    "convergence_predicate_connective",
+    "primary_completion_predicate_connective",
+    "runner_copy_dominated_by_magic",
 )
 
 # Each field paired with the fixture whose true value contradicts the canonical
@@ -4309,6 +4755,20 @@ def run_manifest_evidence_suite(gate):
             and doc["reachable_nvic_enable_sites"] == 0
             and doc["success_cleanup_order"] == list(gate.SUCCESS_CLEANUP_ORDER),
             repr({field: doc.get(field) for field in DERIVED_MANIFEST_FIELDS})[:70],
+        )
+        check(
+            "the manifest reports the connectives the verifier parsed",
+            doc["convergence_predicate_connective"] == "&&"
+            and doc["primary_completion_predicate_connective"] == ""
+            and doc["convergence_predicate_bindings"]
+            == [
+                ["q_done", "=="],
+                ["cmd_end_reached", "!=", 0],
+                ["irq_raised", "!=", 0],
+                ["state", "==", 0],
+            ]
+            and doc["primary_completion_predicate_terms"] == [["q_done", "=="]],
+            repr(doc.get("convergence_predicate_bindings"))[:70],
         )
 
     with open(CHECKER_PATH, "r", encoding="utf-8") as handle:
@@ -4536,6 +4996,36 @@ def run_coverage_suite():
         "extra_cleanup_cmd2_written_as_a_bare_two",
         # A guard that cannot say what it found is a named rejection.
         "q_timeout_reset_and_fault_share_one_guard",
+        # Naming the terms of a predicate is not deciding on them.
+        "convergence_predicate_joined_with_or",
+        "qs_convergence_predicate_joined_with_or",
+        "sq_convergence_predicate_joined_with_or",
+        "qs_primary_completion_joined_with_and",
+        "sq_primary_completion_joined_with_and",
+        "convergence_predicate_stopped_bit_inverted",
+        # A gate is credited for the load it actually consumes.
+        "pre_program_status_gated_on_a_constant",
+        "post_program_status_gated_on_a_constant",
+        "qsize_expected_taken_from_the_manifest_constant",
+        "qsize_expected_overwritten_after_its_gate",
+        "qsize_expected_reread_through_a_helper",
+        # A source that pins no register map cannot write the number instead.
+        "primary_status_read_through_a_numeric_address",
+        "running_qsize_read_through_a_numeric_address",
+        "second_submit_through_a_numeric_address",
+        "failure_path_clears_cmd_through_a_numeric_address",
+        "convergence_status_load_through_a_numeric_address",
+        # A store is the storage its lvalue names, not the shape it is written in.
+        "magic_published_through_pointer_arithmetic",
+        "magic_published_through_a_reversed_subscript",
+        "magic_published_through_a_reversed_addition",
+        "magic_published_through_a_transitive_mailbox_alias",
+        "mailbox_alias_repointed_by_a_compound_assignment",
+        "mailbox_alias_repointed_by_an_increment",
+        "variant_id_relabelled_through_pointer_arithmetic",
+        "failure_publication_forges_the_convergence_tuple",
+        "primary_per_loop_store_through_pointer_arithmetic",
+        "runner_copy_ahead_of_the_guard_through_pointer_arithmetic",
         # A manifest field is what the verifier saw, so a false one is refused.
         "false_running_qsize_loads_claim",
         "false_failure_paths_clear_npu_claim",
@@ -4566,6 +5056,7 @@ if __name__ == "__main__":
         run_fail_open_suite(gate)
         run_structural_matching_suite(gate)
         run_mmio_provenance_suite(gate)
+        run_predicate_and_provenance_suite(gate)
         run_manifest_evidence_suite(gate)
         run_coverage_suite()
 

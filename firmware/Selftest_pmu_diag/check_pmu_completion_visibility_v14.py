@@ -32,18 +32,33 @@ parenthesis is invisible to the rule and a name can never match a longer name
 that merely starts with it. And every MMIO access is resolved to the register it
 designates rather than to the spelling that reaches it: the vendor accessor
 call, a bound ``*const`` pointer, a pointer copied or cast from one, a chain of
-such copies, the address of an index into one, and a bare base-plus-offset
-address all resolve alike. An address that is provably inside the NPU register
-region but cannot be pinned to a single register is refused rather than ignored,
+such copies, the address of an index into one, a bare base-plus-offset address
+and an absolute constant behind a pointer cast all resolve alike. An address
+this gate cannot pin to a single register is refused rather than ignored,
 because a pointer whose target nothing can name is a pointer no ordering rule
 covers. Register offsets come from the translation unit's own ``NPU_REG_*``
-table; this module pins none of its own, and says so in every manifest.
+table; this module pins none of its own, and says so in every manifest -- so a
+source that carries no such table has its absolute addresses refused, never
+resolved from an offset map this file invented. Mailbox and observation stores
+are resolved the same way: by the storage the lvalue designates, so the
+subscript, the reversed subscript C also accepts, a dereference of pointer
+arithmetic and a transitive alias all reach the same appendix word.
+
+Two things a predicate does are proven separately: which observations it names,
+and how it joins them. A conjunction and a disjunction of the same four terms
+decide opposite things, and a gate that only greps for the terms proves nothing
+about the branch -- so the connective is parsed, and each term is bound to the
+exact value its comparison lands on. The same holds for a value a gate is
+credited for: a guarded name has to hold the result of the very MMIO load this
+module counted, or the gate is a comparison against a constant.
 
 Nothing the manifest publishes about what was *observed* -- the running-QSIZE
 count, whether a failure path clears CMD or enters the seam, the reachable NVIC
-enable count, the cleanup ordering -- is a constant in this file. Each is the
-verifier's own count or set, so a source that would make one of them true is a
-source that never reaches the manifest at all.
+enable count, the cleanup ordering, the predicate connectives, the
+first-observation categories, whether the runner's appendix copy is dominated by
+the mailbox magic -- is a constant in this file. Each is the verifier's own
+count, set or parse, so a source that would make one of them true is a source
+that never reaches the manifest at all.
 
 Two limitations are load-bearing and are published in every manifest rather
 than left to be discovered. The frozen raw vendor translation unit is not
@@ -188,9 +203,15 @@ RESIDUAL_LIMITATIONS = (
     "not preprocess or compile, so whether the built image kept that branch is a "
     "build-configuration fact belonging to the later qualification chunk",
     "register_offsets_read_from_the_source_only: an NPU address written as a bare "
-    "base-plus-offset resolves through the translation unit's own NPU_REG_* table; this gate "
-    "pins no offset of its own, so a source that omits that table has every such address "
-    "refused as unresolved rather than resolved from an assumed register map",
+    "base-plus-offset or as an absolute constant resolves through the translation unit's own "
+    "NPU_REG_* table; this gate pins no offset of its own, so a source that omits that table "
+    "has every such address refused as unresolved rather than resolved from an assumed "
+    "register map",
+    "mmio_and_mailbox_analysis_is_intraprocedural: every ordering, counting and provenance "
+    "rule is proven inside the function that carries it, so a register read or a mailbox "
+    "store moved into a helper called from a path that permits calls is outside what these "
+    "verdicts cover; the measured loops permit no call at all, and each gated value is bound "
+    "to a load in its own function, but the general scope is a later contract",
 )
 
 MAILBOX_SYMBOL = "pmu_completion_visibility_v14_mailbox"
@@ -505,6 +526,14 @@ _CAST_RE = re.compile(
     r"\(\s*(?:(?:volatile|const|unsigned|signed|uint32_t|int32_t|uint64_t|uintptr_t|void|char|short|int|long)"
     r"(?![A-Za-z0-9_])\s*|\*\s*)+\)"
 )
+# A cast that produces a *pointer* is what separates an address expression from
+# an ordinary integer one. ``x = 0U`` is a word; ``(volatile uint32_t *)0x...``
+# is an address, and the difference decides whether an unnameable constant is
+# ignored or refused.
+_POINTER_CAST_RE = re.compile(
+    r"\(\s*(?:(?:volatile|const|unsigned|signed|uint32_t|int32_t|uint64_t|uintptr_t|void|char|short|int|long)"
+    r"(?![A-Za-z0-9_])\s*)+\*[\s*]*\)"
+)
 _INDEX_RE = re.compile(r"\[([^\[\]]*)\]")
 # ``*`` in value position: not a multiplication, not a declarator star.
 _DEREF_RE = re.compile(r"\*\s*(?=[A-Za-z_(])")
@@ -522,6 +551,14 @@ _ASSIGNMENT_RE = re.compile(r"(?<![A-Za-z0-9_])([A-Za-z_]\w*)\s*=(?!=)\s*([^;]+)
 _POINTER_WORD_BYTES = 4
 
 _EVAL_TOKEN_RE = re.compile(r"[A-Za-z_]\w*|(?:0[xX][0-9A-Fa-f]+|\d+)[uUlL]*|<<|>>|[-+*/()]|\S")
+
+# The evaluator reads an operator-supplied source, and a C integer constant that
+# does not fit a machine word is not one this gate needs to fold. Refusing the
+# magnitude rather than computing it keeps a written-down ``1 << 40000000`` from
+# turning a verdict into a multi-megabyte allocation; ``None`` is already the
+# fail-closed answer every caller handles.
+_EVAL_MAGNITUDE_LIMIT = 1 << 128
+_EVAL_SHIFT_LIMIT = 128
 
 
 def _evaluate_constant(
@@ -584,9 +621,15 @@ def _evaluate_constant(
                     return None
                 value //= right
             elif operator == "<<":
+                if not 0 <= right <= _EVAL_SHIFT_LIMIT:
+                    return None
                 value <<= right
             else:
+                if right < 0:
+                    return None
                 value >>= right
+            if abs(value) > _EVAL_MAGNITUDE_LIMIT:
+                return None
         return value
 
     def term() -> int | None:
@@ -677,14 +720,23 @@ def resolve_address_role(expr: str, defines: dict[str, int], known: dict[str, st
         offset = _evaluate_constant(flat, defines, (bases[0],))
         return UNRESOLVED_ROLE if offset is None else _role_at_offset(offset, defines)
 
-    # A bare numeric address is an NPU address only when the source itself says
-    # where the region starts and how far the named registers reach.
+    # What is left is an absolute address: a constant reached through a pointer
+    # cast. Nothing in it names a register, so whether it can be pinned depends
+    # entirely on the translation unit's own map.
+    value = _evaluate_constant(flat, defines)
+    if value is None or _POINTER_CAST_RE.search(expr) is None:
+        return None
     table = npu_register_offsets(defines)
     base = defines.get(NPU_BASE_SYMBOLS[0])
     if base is None or not table:
-        return None
-    value = _evaluate_constant(flat, defines)
-    if value is None or not base <= value <= base + max(table):
+        # The source pins no register map at all, so this gate cannot say which
+        # word -- or even which peripheral -- the address reaches. Ignoring it
+        # would let every ordering, counting and isolation rule below be walked
+        # around by writing the number instead of the name, so it is refused.
+        # Resolving it from an assumed map is the one thing this gate must not
+        # do: an offset table it invented is not the source's.
+        return UNRESOLVED_ROLE
+    if not base <= value <= base + max(table):
         return None
     return table.get(value - base, UNRESOLVED_ROLE)
 
@@ -735,6 +787,167 @@ def require_resolved_pointers(roles: dict[str, str], what: str) -> None:
             "%s binds an NPU-region pointer this gate cannot resolve to one register: %s"
             % (what, ", ".join(unresolved))
         )
+
+
+def require_resolved_dereferences(
+    text: str, defines: dict[str, int], roles: dict[str, str], what: str
+) -> None:
+    """Refuse an MMIO dereference this gate cannot pin to one register.
+
+    ``require_resolved_pointers`` covers an address that is *bound to a name*.
+    This covers the one that is not: an absolute address dereferenced where it
+    stands. Its role reaches every rule below as ``UNRESOLVED``, and a rule that
+    merely fails to recognise it is a rule the number walks around -- so the
+    access is named here rather than counted as nothing.
+    """
+
+    for site, role, is_write in dereference_sites(text, defines, roles):
+        if role == UNRESOLVED_ROLE:
+            raise fail(
+                "%s reaches an NPU-region address this gate cannot resolve to one register: "
+                "%s at offset %d" % (what, "write" if is_write else "read", site)
+            )
+
+
+# ---------------------------------------------------------------------------
+# Assignment structure
+#
+# A rule written over the *shape* of an lvalue is a rule every other spelling of
+# the same store walks around. Assignments are therefore recovered here as whole
+# statements -- delimited by the surrounding ``;``/``{``/``}`` rather than by a
+# pattern for what an lvalue may look like -- so the lvalue arrives intact and
+# can be resolved to the storage it designates.
+# ---------------------------------------------------------------------------
+
+_COMPOUND_ASSIGN_OPERATORS = ("<<=", ">>=", "+=", "-=", "*=", "/=", "%=", "&=", "|=", "^=")
+# The character before an ``=`` that makes it something other than a plain
+# assignment: the second half of a comparison, or the tail of a compound
+# operator whose target is read as well as written.
+_ASSIGNMENT_BOUNDARY = frozenset("=!<>+-*/%&|^")
+
+
+def _alternation(names: tuple[str, ...]) -> str:
+    return "|".join(re.escape(name) for name in names)
+
+
+def _statement_end(text: str, start: int) -> int:
+    depth = 0
+    for index in range(start, len(text)):
+        character = text[index]
+        if character in "([":
+            depth += 1
+        elif character in ")]":
+            depth -= 1
+        elif depth == 0 and character in ";{}":
+            return index
+    return len(text)
+
+
+def assignment_statements(text: str) -> tuple[tuple[int, str, str], ...]:
+    """``(start, lvalue, rvalue)`` for every simple assignment in ``text``."""
+
+    found: list[tuple[int, str, str]] = []
+    depth = 0
+    start = 0
+    for index, character in enumerate(text):
+        if character in "([":
+            depth += 1
+        elif character in ")]":
+            depth -= 1
+        elif depth == 0 and character in ";{}":
+            start = index + 1
+        elif (
+            depth == 0
+            and character == "="
+            and text[index + 1 : index + 2] != "="
+            and text[index - 1 : index] not in _ASSIGNMENT_BOUNDARY
+        ):
+            stop = _statement_end(text, index + 1)
+            found.append((start, text[start:index], text[index + 1 : stop]))
+    return tuple(found)
+
+
+def compound_assignment_targets(text: str, names: tuple[str, ...]) -> tuple[str, ...]:
+    """Every name in ``names`` that ``text`` compound-assigns or increments.
+
+    ``p += 1`` and ``++p`` re-point a pointer without ever writing a plain
+    assignment, so a provenance walk built on ``name = expr`` cannot see them.
+    Naming them here is what keeps that walk honest.
+    """
+
+    alternation = _alternation(names)
+    operators = "|".join(re.escape(operator) for operator in _COMPOUND_ASSIGN_OPERATORS)
+    compound = re.compile(
+        r"(?<![A-Za-z0-9_])(%s)(?![A-Za-z0-9_])\s*(?:%s)" % (alternation, operators)
+    )
+    step = re.compile(
+        r"(?:(?:\+\+|--)\s*(%s)(?![A-Za-z0-9_])"
+        r"|(?<![A-Za-z0-9_])(%s)(?![A-Za-z0-9_])\s*(?:\+\+|--))" % (alternation, alternation)
+    )
+    found = {match.group(1) for match in compound.finditer(text)}
+    for match in step.finditer(text):
+        found.add(match.group(1) or match.group(2))
+    return tuple(sorted(found))
+
+
+def _is_declaration(lvalue: str) -> bool:
+    match = re.match(r"\s*([A-Za-z_]\w*)", lvalue)
+    return match is not None and match.group(1) in _DECLARATOR_TYPES
+
+
+def _strip_leading_derefs(expr: str) -> tuple[int, str]:
+    stripped = expr.strip()
+    count = 0
+    while stripped.startswith("*"):
+        count += 1
+        stripped = stripped[1:].lstrip()
+    return count, stripped
+
+
+def _flatten_word_address(expr: str) -> str:
+    """Drop casts and address-of, and turn an index into a *word* offset.
+
+    ``_flatten_address`` answers the same question in bytes, because an MMIO
+    pointer displaces by four per step. The mailbox is addressed by appendix
+    word, so the same walk counts in words here.
+    """
+
+    stripped = _CAST_RE.sub(" ", expr)
+    flattened = _INDEX_RE.sub(
+        lambda match: "+(%s)" % (match.group(1).strip() or "0"), stripped
+    )
+    return flattened.replace("&", " ")
+
+
+def resolve_mailbox_word(expr: str, defines: dict[str, int], known: dict[str, object]) -> object:
+    """The appendix word an expression designates, over every spelling.
+
+    ``None`` means the expression does not reach the mailbox at all;
+    ``UNRESOLVED_ROLE`` means it provably does and this gate cannot say which
+    word, which is the fail-closed answer rather than a silent pass.
+    """
+
+    derefs, addressed = _strip_leading_derefs(expr)
+    flat = _flatten_word_address(addressed)
+    if _CALL_RE.search(flat) is not None:
+        return None
+    names = sorted(
+        {
+            name
+            for name in _IDENTIFIER_RE.findall(flat)
+            if name == MAILBOX_SYMBOL or name in known
+        }
+    )
+    if not names:
+        return None
+    if len(names) > 1 or derefs > 1:
+        return UNRESOLVED_ROLE
+    base = names[0]
+    inherited = 0 if base == MAILBOX_SYMBOL else known[base]
+    step = _evaluate_constant(flat, defines, (base,))
+    if inherited == UNRESOLVED_ROLE or step is None:
+        return UNRESOLVED_ROLE
+    return inherited + step
 
 
 def _expression_after(text: str, start: int) -> str:
@@ -899,6 +1112,49 @@ def _guard_blocks(block: str, subject: str) -> tuple[tuple[str, str], ...]:
     return tuple(found)
 
 
+def require_load_provenance(
+    body: str, name: str, load_sites: tuple[int, ...], register: str, what: str
+) -> None:
+    """Prove ``name`` holds the value the counted ``register`` load produced.
+
+    Counting the loads and grepping the guards for the mask macros proves the
+    two exist; it does not prove they are connected. ``pre_program_status = 0U``
+    beside a discarded ``read_reg(NPU_REG_STATUS)`` satisfies both counts and
+    turns a mandatory fail-closed gate into a comparison against a constant that
+    always passes. So the assignment that produced the guarded value has to
+    *be* one of the loads the gate counted, and nothing may overwrite it after.
+    """
+
+    stepped = compound_assignment_targets(body, (name,))
+    if stepped:
+        raise fail(
+            "%s: %s is compound-assigned rather than bound to the %s load it is gated on"
+            % (what, name, register)
+        )
+    assignments = [
+        (start, _statement_end(body, start), rvalue)
+        for start, lvalue, rvalue in assignment_statements(body)
+        if re.match(r"^\s*(?:[A-Za-z_]\w*\s+)*\*?\s*%s\s*$" % re.escape(name), lvalue)
+    ]
+    if not assignments:
+        raise fail("%s: %s is never assigned the %s load" % (what, name, register))
+    loading = [
+        assignment
+        for assignment in assignments
+        if any(assignment[0] <= site < assignment[1] for site in load_sites)
+    ]
+    if len(loading) != 1:
+        raise fail(
+            "%s: %s is not bound to the %s load this gate counted: %d of its %d assignments "
+            "read the register" % (what, name, register, len(loading), len(assignments))
+        )
+    if any(start > loading[0][0] for start, _stop, _rvalue in assignments):
+        raise fail(
+            "%s: %s is reassigned after the %s load its guards are credited for"
+            % (what, name, register)
+        )
+
+
 def verify_pre_run_contract(vendor_masked: str, defines: dict[str, int]) -> dict[str, object]:
     """Prove the stopped-state gate, the single QSIZE snapshot and fail-closed submit."""
 
@@ -929,6 +1185,7 @@ def verify_pre_run_contract(vendor_masked: str, defines: dict[str, int]) -> dict
     setup = vendor_masked[setup_start:setup_stop]
     setup_roles = pointer_roles(setup, defines)
     require_resolved_pointers(setup_roles, "queue setup function")
+    require_resolved_dereferences(setup, defines, setup_roles, "the queue setup function")
 
     pre_program_reads = register_access_sites(setup, "STATUS", defines, setup_roles)
     queue_accesses = code_positions(setup, _QBASE_WRITE, open_end=True) + code_positions(
@@ -948,6 +1205,10 @@ def verify_pre_run_contract(vendor_masked: str, defines: dict[str, int]) -> dict
         guards = [c for c, _ in _guard_blocks(setup, "pre_program_status") if mask in c]
         if len(guards) != 1:
             raise fail("pre-program gate omits stopped/reset/fault: %s check is missing" % label)
+
+    require_load_provenance(
+        setup, "pre_program_status", pre_program_reads, "STATUS", "pre-program gate"
+    )
 
     # The design forbids a running transition *between* the gate and the
     # programming writes, not a CMD write anywhere in the setup function, so
@@ -977,6 +1238,7 @@ def verify_pre_run_contract(vendor_masked: str, defines: dict[str, int]) -> dict
     command = vendor_masked[command_start:command_stop]
     command_roles = pointer_roles(command, defines)
     require_resolved_pointers(command_roles, "command function")
+    require_resolved_dereferences(command, defines, command_roles, "the command function")
 
     qsize_loads = register_access_sites(command, "QSIZE", defines, command_roles)
     if len(qsize_loads) == 0:
@@ -1023,6 +1285,15 @@ def verify_pre_run_contract(vendor_masked: str, defines: dict[str, int]) -> dict
         if "return" not in body:
             raise fail("pre-run failure reaches submit: guard (%s) does not return" % condition.strip()[:40])
 
+    # Both post-program gates are credited for a load; prove each consumes the
+    # one this gate counted rather than a constant beside a discarded read.
+    require_load_provenance(
+        command, "pre_submit_status", status_loads, "STATUS", "post-program gate"
+    )
+    require_load_provenance(
+        command, "qsize_expected", qsize_loads, "QSIZE", "qsize_expected snapshot"
+    )
+
     return {
         "pre_program_status_loads": len(pre_program_reads),
         "post_program_status_loads": len(status_loads),
@@ -1040,8 +1311,16 @@ _CALL_RE = re.compile(r"(?<![A-Za-z0-9_])([A-Za-z_]\w*)\s*\(")
 _NON_CALL_KEYWORDS = frozenset(
     ("if", "for", "while", "switch", "return", "sizeof", "uint32_t", "int32_t", "volatile", "uintptr_t")
 )
+# A store is recognised by the *storage its lvalue names*, never by the shape
+# the lvalue is written in. C's subscript is commutative, so ``33[mailbox]``
+# writes the same word as ``mailbox[33]``; ``*(mailbox + 33)`` writes it too,
+# and so does a second name bound to the array. Matching ``mailbox[`` alone
+# leaves each of those a way past every per-iteration, publication-site and
+# tuple-isolation rule below, so the recogniser names the symbol and its
+# aliases and lets ``resolve_mailbox_word`` say which word was reached.
 _STORE_RE = re.compile(
-    r"(?:(?<![A-Za-z0-9_])obs\s*->|(?<![A-Za-z0-9_])%s\s*\[)" % re.escape(MAILBOX_SYMBOL)
+    r"(?:(?<![A-Za-z0-9_])obs(?![A-Za-z0-9_])|(?<![A-Za-z0-9_])%s(?![A-Za-z0-9_]))"
+    % re.escape(MAILBOX_SYMBOL)
 )
 
 # A register touched through its raw address expression is the same observable
@@ -1050,42 +1329,102 @@ _STORE_RE = re.compile(
 # counts exactly as ``*status_reg`` does.
 _RAW_REGISTER_RE = re.compile(r"NPU_REG_([A-Z][A-Z0-9_]*)")
 
-# An alias is a second name for the same storage. ``obs_alias->result`` writes
-# the observation record and ``mb[33]`` writes the mailbox, so a rule that only
-# recognises the declared spelling is a rule an alias walks around.
-_OBS_ALIAS_RE = re.compile(r"([A-Za-z_]\w*)\s*=\s*obs\s*;")
-_MAILBOX_ALIAS_RE = re.compile(
-    r"([A-Za-z_]\w*)\s*=\s*%s(?![A-Za-z0-9_\[])" % re.escape(MAILBOX_SYMBOL)
-)
+# ---------------------------------------------------------------------------
+# Storage provenance
+#
+# An alias is a second name for the same storage, and a name reached through a
+# cast or a chain of copies is still that name. ``obs_alias->result`` writes the
+# observation record; ``mb[33]``, ``33[mb]`` and ``*(mb + 33)`` all write mailbox
+# word 33. Every rule below is expressed over the storage an lvalue designates,
+# so the bindings are resolved transitively here and the *word* is judged
+# separately from the *spelling* that reached it.
+# ---------------------------------------------------------------------------
+
+_MEMBER_ACCESS_RE = re.compile(r"->|\.")
+
+
+def _bindings(text: str) -> tuple[tuple[str, str], ...]:
+    return tuple((match.group(1), match.group(2)) for match in _ASSIGNMENT_RE.finditer(text))
+
+
+def _is_pointer_binding(expr: str) -> bool:
+    """Whether ``expr`` hands over the storage itself rather than a word of it.
+
+    ``p = mb`` and ``p = &mb[3]`` name the array; ``v = mb[3]`` names the value
+    in one of its words, and calling that an alias would make every reader of a
+    mailbox word a second name for the mailbox.
+    """
+
+    if "&" in expr:
+        return True
+    return "[" not in expr and not _has_unary_deref(expr)
 
 
 def obs_aliases(text: str) -> tuple[str, ...]:
-    """Every local name bound to the observation record pointer."""
+    """Every local name bound to the observation record pointer, transitively."""
 
-    return tuple(sorted({name for name in _OBS_ALIAS_RE.findall(text) if name != "obs"}))
+    bindings = _bindings(text)
+    names = {"obs"}
+    for _ in range(len(bindings) + 1):
+        changed = False
+        for name, expr in bindings:
+            if name in names or _MEMBER_ACCESS_RE.search(expr) is not None:
+                continue
+            stripped = _CAST_RE.sub(" ", expr).replace("&", " ")
+            if any(token in names for token in _IDENTIFIER_RE.findall(stripped)):
+                names.add(name)
+                changed = True
+        if not changed:
+            break
+    return tuple(sorted(names - {"obs"}))
+
+
+def mailbox_alias_words(text: str, defines: dict[str, int]) -> dict[str, object]:
+    """Every name bound to the mailbox array, with the word it starts at.
+
+    ``UNRESOLVED_ROLE`` is a displacement nothing here can evaluate -- a name
+    bound twice, or bound past the array by arithmetic this gate cannot read.
+    That is the fail-closed answer: a second name whose origin is unknown is a
+    name no word rule covers.
+    """
+
+    bindings = _bindings(text)
+    observed: dict[str, set[object]] = {}
+    for _ in range(len(bindings) + 1):
+        known = {
+            name: (sorted(words, key=repr)[0] if len(words) == 1 else UNRESOLVED_ROLE)
+            for name, words in observed.items()
+        }
+        changed = False
+        for name, expr in bindings:
+            if not _is_pointer_binding(expr):
+                continue
+            word = resolve_mailbox_word(expr, defines, known)
+            if word is None:
+                continue
+            if word not in observed.setdefault(name, set()):
+                observed[name].add(word)
+                changed = True
+        if not changed:
+            break
+    return {
+        name: (sorted(words, key=repr)[0] if len(words) == 1 else UNRESOLVED_ROLE)
+        for name, words in observed.items()
+        if name != MAILBOX_SYMBOL
+    }
 
 
 def mailbox_aliases(text: str) -> tuple[str, ...]:
     """Every local name bound to the failure mailbox array."""
 
-    return tuple(
-        sorted({name for name in _MAILBOX_ALIAS_RE.findall(text) if name != MAILBOX_SYMBOL})
-    )
-
-
-def _alternation(names: tuple[str, ...]) -> str:
-    return "|".join(re.escape(name) for name in names)
+    return tuple(sorted(mailbox_alias_words(text, {})))
 
 
 def store_pattern(text: str) -> re.Pattern[str]:
     """A store recogniser that also sees ``text``'s obs and mailbox aliases."""
 
-    arrows = ("obs",) + obs_aliases(text)
-    arrays = (MAILBOX_SYMBOL,) + mailbox_aliases(text)
-    return re.compile(
-        r"(?:(?<![A-Za-z0-9_])(?:%s)\s*->|(?<![A-Za-z0-9_])(?:%s)\s*\[)"
-        % (_alternation(arrows), _alternation(arrays))
-    )
+    names = ("obs",) + obs_aliases(text) + (MAILBOX_SYMBOL,) + mailbox_aliases(text)
+    return re.compile(r"(?<![A-Za-z0-9_])(?:%s)(?![A-Za-z0-9_])" % _alternation(names))
 
 
 def function_spans(masked: str) -> tuple[tuple[str, int, int], ...]:
@@ -1450,6 +1789,192 @@ def verify_guard_publication(
         )
 
 
+# ---------------------------------------------------------------------------
+# Predicate structure
+#
+# Which terms a predicate mentions is not what it decides. ``a && b && c && d``
+# and ``a || b || c || d`` mention the same four things and agree on nothing:
+# the first exits only on the same-iteration tuple the design requires, the
+# second exits on any one of them. A gate that greps for the terms therefore
+# proves nothing about the branch, so the connective is parsed here and each
+# term is bound to the exact value that drives it -- a mask compared against a
+# constant, not merely a mask that appears.
+# ---------------------------------------------------------------------------
+
+_STATUS_BOOLEAN_NAMES = {
+    STATUS_STATE: "state",
+    STATUS_IRQ_RAISED: "irq_raised",
+    STATUS_RESET: "reset",
+    STATUS_CMD_END: "cmd_end_reached",
+    STATUS_FAULT_MASK: "fault",
+}
+# The four same-iteration facts convergence succeeds on, each with the value its
+# comparison must land on. ``q_done`` compares two observations rather than a
+# constant, so it carries no value.
+CONVERGENCE_PREDICATE = (
+    ("q_done", "=="),
+    ("cmd_end_reached", "!=", 0),
+    ("irq_raised", "!=", 0),
+    ("state", "==", 0),
+)
+# The QS/SQ primary loop exits on *either* first observation. An ``&&`` here
+# would make ``Q_FIRST`` and ``S5_FIRST`` unreachable and leave the variant
+# matrix measuring one thing three times.
+PRIMARY_COMPLETION_PREDICATE = (("q_done", "=="), ("cmd_end_reached", "!=", 0))
+_FIRST_OBSERVATION_CATEGORY = {"q_done": "Q_FIRST", "cmd_end_reached": "S5_FIRST"}
+
+
+def _peel_parens(text: str) -> str:
+    """Strip parentheses that wrap the whole expression."""
+
+    stripped = text.strip()
+    while stripped.startswith("(") and stripped.endswith(")"):
+        depth = 0
+        for index, character in enumerate(stripped):
+            if character == "(":
+                depth += 1
+            elif character == ")":
+                depth -= 1
+                if depth == 0:
+                    break
+        if index != len(stripped) - 1:
+            break
+        stripped = stripped[1:-1].strip()
+    return stripped
+
+
+def _split_logical(text: str, operator: str) -> tuple[str, ...]:
+    """Split ``text`` on ``&&`` or ``||`` at paren depth zero."""
+
+    parts: list[str] = []
+    buffer: list[str] = []
+    depth = 0
+    index = 0
+    while index < len(text):
+        character = text[index]
+        if character in "([":
+            depth += 1
+        elif character in ")]":
+            depth -= 1
+        if depth == 0 and text[index : index + 2] == operator:
+            parts.append("".join(buffer))
+            buffer = []
+            index += 2
+            continue
+        buffer.append(character)
+        index += 1
+    parts.append("".join(buffer))
+    return tuple(parts)
+
+
+def logical_structure(condition: str) -> tuple[str, tuple[str, ...]]:
+    """``(connective, terms)`` at the outermost level of ``condition``.
+
+    ``&&`` binds tighter than ``||``, so a top-level ``||`` is the connective
+    even when conjunctions sit under it. A leaf comes back as ``("", (leaf,))``.
+    """
+
+    peeled = _peel_parens(condition)
+    disjuncts = _split_logical(peeled, "||")
+    if len(disjuncts) > 1:
+        return "||", disjuncts
+    conjuncts = _split_logical(peeled, "&&")
+    if len(conjuncts) > 1:
+        return "&&", conjuncts
+    return "", (peeled,)
+
+
+def guard_condition(head: str, what: str) -> str:
+    """The text inside a guard head's parentheses."""
+
+    open_index = head.find("(")
+    if open_index < 0:
+        raise fail("%s: guard head carries no condition: %s" % (what, head.strip()[:40]))
+    depth = 0
+    for index in range(open_index, len(head)):
+        if head[index] == "(":
+            depth += 1
+        elif head[index] == ")":
+            depth -= 1
+            if depth == 0:
+                return head[open_index + 1 : index]
+    raise fail("%s: guard head has unbalanced parentheses" % what)
+
+
+def _split_comparison(text: str) -> tuple[str, str, str] | None:
+    depth = 0
+    for index, character in enumerate(text):
+        if character in "([":
+            depth += 1
+        elif character in ")]":
+            depth -= 1
+        elif depth == 0 and character in "!=" and text[index + 1 : index + 2] == "=":
+            if character == "=" and text[index - 1 : index] in ("=", "!", "<", ">"):
+                continue
+            return text[:index], text[index : index + 2], text[index + 2 :]
+    return None
+
+
+def classify_predicate_leaf(leaf: str, defines: dict[str, int]) -> tuple[object, ...] | None:
+    """The named boolean a leaf computes, bound to the value that drives it.
+
+    ``None`` means the leaf is not one of the same-iteration observations this
+    contract knows, which every caller refuses rather than ignores: a term
+    nothing here can name is a term no exit rule covers.
+    """
+
+    parts = _split_comparison(_peel_parens(leaf))
+    if parts is None:
+        return None
+    left, operator, right = parts
+    left_tokens = tuple(_C_TOKEN_RE.findall(_peel_parens(left)))
+    if left_tokens == ("qread",):
+        if tuple(_C_TOKEN_RE.findall(_peel_parens(right))) != ("qsize_expected",):
+            return None
+        return ("q_done", operator)
+    if len(left_tokens) != 3 or left_tokens[0] != "status" or left_tokens[1] != "&":
+        return None
+    mask = defines.get(left_tokens[2])
+    value = _evaluate_constant(right, defines)
+    if mask is None or value is None or mask not in _STATUS_BOOLEAN_NAMES:
+        return None
+    return (_STATUS_BOOLEAN_NAMES[mask], operator, value)
+
+
+def verify_predicate_shape(
+    condition: str,
+    connective: str,
+    required: tuple[tuple[object, ...], ...],
+    defines: dict[str, int],
+    what: str,
+) -> tuple[tuple[object, ...], ...]:
+    """Prove ``condition`` joins exactly ``required`` with exactly ``connective``."""
+
+    observed_connective, terms = logical_structure(condition)
+    if observed_connective != connective:
+        raise fail(
+            "%s does not join its terms with %s: it uses %s"
+            % (what, connective, observed_connective or "a single term")
+        )
+    classified: list[tuple[object, ...]] = []
+    for term in terms:
+        if logical_structure(term)[0]:
+            raise fail("%s carries a nested boolean term: %s" % (what, term.strip()[:40]))
+        leaf = classify_predicate_leaf(term, defines)
+        if leaf is None:
+            raise fail(
+                "%s carries a term this gate cannot bind to an observed value: %s"
+                % (what, term.strip()[:40])
+            )
+        classified.append(leaf)
+    if sorted(classified, key=repr) != sorted(required, key=repr):
+        raise fail(
+            "%s is not the frozen tuple of observations: it decides on %s"
+            % (what, sorted(classified, key=repr))
+        )
+    return tuple(classified)
+
+
 def _duplicate_roles(read_order: list[str]) -> list[str]:
     return sorted({role for role in read_order if read_order.count(role) > 1})
 
@@ -1566,6 +2091,10 @@ def verify_primary_contract(
         raise fail("primary loop bound is not 10000: loop head does not use V14_ITERATION_BOUND")
     verify_single_bounded_loop(body, "primary helper")
     verify_loop_header(head, roles, "primary loop", store_re, defines)
+    # After the loop-shape rules, so each keeps its own rejection: what is left
+    # for this to name is an address written where it stands, which the ordered
+    # effect sequence below would otherwise carry as an unnamed load.
+    require_resolved_dereferences(body, defines, roles, "the primary helper")
 
     items = flatten_loop(loop_body, "primary loop")
     read_order: list[str] = []
@@ -1659,6 +2188,26 @@ def verify_primary_contract(
         if "V14_STATUS_IRQ_RAISED" in completion:
             raise fail("irq_raised bit1 is used as a primary exit predicate")
 
+    # Which terms the exit tests is not what it decides. ``q_done && s_done``
+    # names the same two observations as ``q_done || s_done`` and can only ever
+    # report SAME_ITERATION, so the connective is proven rather than assumed --
+    # and the categories the manifest publishes are read off that proof.
+    completion_condition = guard_condition(guards[kinds.index("completion")][1], "primary loop")
+    if variant == "Q":
+        completion_terms = verify_predicate_shape(
+            completion_condition, "", (("q_done", "=="),), defines,
+            "the Q primary completion predicate",
+        )
+    else:
+        completion_terms = verify_predicate_shape(
+            completion_condition, "||", PRIMARY_COMPLETION_PREDICATE, defines,
+            "the primary completion predicate",
+        )
+    categories: list[str] = []
+    if len(completion_terms) > 1:
+        categories = sorted(_FIRST_OBSERVATION_CATEGORY[name] for name, *_rest in completion_terms)
+        categories.append("SAME_ITERATION")
+
     # Everything before the loop and everything after it is outside authoritative
     # timing; only Q may touch STATUS there, and only once.
     after_loop = body[loop_stop:]
@@ -1695,7 +2244,9 @@ def verify_primary_contract(
         "reset_bit_gated": defines["V14_STATUS_RESET"],
         "q_timeout_classification": classification,
         "q_timeout_diagnostic_status_loads": diagnostic_loads,
-        "first_observation_categories": [] if variant == "Q" else ["Q_FIRST", "S5_FIRST", "SAME_ITERATION"],
+        "first_observation_categories": categories,
+        "primary_completion_predicate_connective": logical_structure(completion_condition)[0],
+        "primary_completion_predicate_terms": [list(term) for term in completion_terms],
     }
 
 
@@ -1790,6 +2341,7 @@ def verify_convergence_contract(vendor_masked: str, defines: dict[str, int]) -> 
         raise fail("convergence bound is not 10000: loop head does not use V14_ITERATION_BOUND")
     verify_single_bounded_loop(body, "convergence helper")
     verify_loop_header(head, roles, "convergence loop", store_re, defines)
+    require_resolved_dereferences(body, defines, roles, "the convergence helper")
 
     items = flatten_loop(loop_body, "convergence loop")
     read_order: list[str] = []
@@ -1869,6 +2421,20 @@ def verify_convergence_contract(vendor_masked: str, defines: dict[str, int]) -> 
         if term not in flattened:
             raise fail("convergence predicate omits a required term: %s" % term)
 
+    # Naming the four terms is not deciding on them. Written with ``||`` the
+    # same four succeed on ``(status & STATE) == 0`` alone -- with the queue
+    # undrained, bit5 clear and bit1 clear -- which is the one thing "one
+    # same-iteration tuple" was meant to rule out. So the connective is parsed,
+    # and each term is bound to the value its comparison lands on.
+    predicate_condition = guard_condition(predicate, "convergence loop")
+    predicate_terms = verify_predicate_shape(
+        predicate_condition,
+        "&&",
+        CONVERGENCE_PREDICATE,
+        defines,
+        "the convergence success predicate",
+    )
+
     if store_re.search(body[:loop_start]):
         raise fail("convergence evidence store occurs before the loop")
 
@@ -1877,6 +2443,8 @@ def verify_convergence_contract(vendor_masked: str, defines: dict[str, int]) -> 
         "convergence_read_order": ["QREAD", "STATUS"],
         "convergence_bound": ITERATION_BOUND,
         "convergence_predicate_terms": list(_PREDICATE_TERMS),
+        "convergence_predicate_connective": logical_structure(predicate_condition)[0],
+        "convergence_predicate_bindings": [list(term) for term in predicate_terms],
     }
 
 
@@ -1886,6 +2454,9 @@ def verify_convergence_contract(vendor_masked: str, defines: dict[str, int]) -> 
 
 _MAILBOX_DECL_RE = re.compile(r"volatile\s+uint32_t\s+%s\s*\[\s*(\d+)\s*\]" % re.escape(MAILBOX_SYMBOL))
 _MAILBOX_STORE_RE = re.compile(r"%s\s*\[\s*([A-Za-z0-9_]+)\s*\]\s*=\s*([^;]+);" % re.escape(MAILBOX_SYMBOL))
+_FROZEN_INDEX_RE = re.compile(
+    r"^\s*%s\s*\[\s*([A-Za-z0-9_]+)\s*\]\s*$" % re.escape(MAILBOX_SYMBOL)
+)
 
 _CONVERGENCE_TUPLE = ("convergence_final_qread", "convergence_final_status")
 _FAILURE_TUPLE = ("failure_qread", "failure_status")
@@ -1903,34 +2474,88 @@ def _mbox_macro(field: str) -> str:
     return "V14_MBOX_" + field.upper()
 
 
-def _mailbox_stores(block: str) -> tuple[tuple[str, str], ...]:
-    return tuple((match.group(1), match.group(2).strip()) for match in _MAILBOX_STORE_RE.finditer(block))
+def _word(field: str) -> int:
+    return APPENDIX_FIELDS.index(field)
 
 
-def mailbox_store_pattern(aliases: tuple[str, ...]) -> re.Pattern[str]:
-    """A mailbox-store recogniser that also sees the array's aliases."""
+def _mailbox_words_stored(
+    block: str, defines: dict[str, int], known: dict[str, object]
+) -> tuple[tuple[object, str], ...]:
+    """``(word, value)`` for every mailbox store in ``block``, in source order."""
 
-    return re.compile(
-        r"(?<![A-Za-z0-9_])(?:%s)\s*\[\s*([A-Za-z0-9_]+)\s*\]\s*=\s*([^;]+);"
-        % _alternation((MAILBOX_SYMBOL,) + aliases)
-    )
+    return tuple((word, value) for word, _token, value, _start in mailbox_stores(block, defines, known))
 
 
-def resolve_word(index_token: str, defines: dict[str, int]) -> int | None:
-    """The appendix word an index expression names, or ``None`` if it is not one.
+def _publication_words(
+    block: str, defines: dict[str, int], known: dict[str, object], what: str
+) -> dict[object, str]:
+    """The one value each appendix word receives in a publication helper.
 
-    An offset written as the frozen macro and the same offset written as its
-    numeric value address the same word. A rule that only recognises the macro
-    is a rule a bare ``[33]`` walks around, so both spellings resolve here and
-    the *spelling* is judged separately from the *word*.
+    A helper that writes the same word twice is refused rather than reduced to
+    whichever store the reader happens to look at: a second store is exactly how
+    a tuple the first store invalidated comes back as evidence.
     """
 
-    if index_token in defines:
-        return defines[index_token]
-    try:
-        return int(index_token.rstrip("uU"), 0)
-    except ValueError:
-        return None
+    resolved: dict[object, str] = {}
+    for word, _token, value, _start in mailbox_stores(block, defines, known):
+        if word == UNRESOLVED_ROLE:
+            raise fail("%s stores into the mailbox at an offset this gate cannot resolve" % what)
+        if word in resolved:
+            raise fail("%s publishes appendix word %s from more than one store" % (what, word))
+        resolved[word] = value
+    return resolved
+
+
+def mailbox_stores(
+    block: str, defines: dict[str, int], known: dict[str, object] | None = None
+) -> tuple[tuple[object, str, str, int], ...]:
+    """``(word, index_token, value, start)`` for every store into the mailbox.
+
+    The lvalue is resolved rather than pattern-matched, so the subscript, the
+    reversed subscript C also accepts, a dereference of pointer arithmetic and
+    an alias of the array all arrive at the same word. ``index_token`` is the
+    text between the brackets when -- and only when -- the store is written in
+    the frozen ``symbol[macro]`` spelling, so the *spelling* stays judged
+    separately from the *word* the callers below need.
+    """
+
+    resolved = mailbox_alias_words(block, defines) if known is None else known
+    stores: list[tuple[object, str, str, int]] = []
+    for start, lvalue, rvalue in assignment_statements(block):
+        if _is_declaration(lvalue):
+            continue
+        word = resolve_mailbox_word(lvalue, defines, resolved)
+        if word is None:
+            continue
+        frozen = _FROZEN_INDEX_RE.match(lvalue)
+        index_token = frozen.group(1) if frozen else re.sub(r"\s+", " ", lvalue.strip())
+        stores.append((word, index_token, rvalue.strip(), start))
+    return tuple(stores)
+
+
+def require_mailbox_provenance(text: str, defines: dict[str, int], what: str) -> dict[str, object]:
+    """Resolve the mailbox aliases of ``text``, refusing the ones nothing can pin.
+
+    A name whose displacement from the array is unknown, and a name the source
+    re-points with ``+=`` or ``++``, are both names no word rule covers. They
+    are refused here rather than resolved to whichever word they happened to
+    start at.
+    """
+
+    aliases = mailbox_alias_words(text, defines)
+    unresolved = sorted(name for name, word in aliases.items() if word == UNRESOLVED_ROLE)
+    if unresolved:
+        raise fail(
+            "%s binds a mailbox alias this gate cannot resolve to one appendix word: %s"
+            % (what, ", ".join(unresolved))
+        )
+    stepped = compound_assignment_targets(text, (MAILBOX_SYMBOL,) + tuple(sorted(aliases)))
+    if stepped:
+        raise fail(
+            "%s re-points mailbox storage through a compound assignment or an increment: %s"
+            % (what, ", ".join(stepped))
+        )
+    return aliases
 
 
 def is_magic_value(value: str, defines: dict[str, int]) -> bool:
@@ -1946,24 +2571,15 @@ def is_magic_value(value: str, defines: dict[str, int]) -> bool:
 
 
 def _resolved_mailbox_stores(
-    vendor_masked: str, defines: dict[str, int]
-) -> tuple[tuple[int | None, str, str, str], ...]:
+    vendor_masked: str, defines: dict[str, int], known: dict[str, object] | None = None
+) -> tuple[tuple[object, str, str, str], ...]:
     """``(word, index_token, value, owner)`` for every mailbox store, aliases included."""
 
     spans = function_spans(vendor_masked)
-    pattern = mailbox_store_pattern(mailbox_aliases(vendor_masked))
-    stores = []
-    for match in pattern.finditer(vendor_masked):
-        index_token = match.group(1)
-        stores.append(
-            (
-                resolve_word(index_token, defines),
-                index_token,
-                match.group(2).strip(),
-                enclosing_function(spans, match.start()),
-            )
-        )
-    return tuple(stores)
+    return tuple(
+        (word, index_token, value, enclosing_function(spans, start))
+        for word, index_token, value, start in mailbox_stores(vendor_masked, defines, known)
+    )
 
 
 def verify_variant_identity(
@@ -1989,7 +2605,8 @@ def verify_variant_identity(
             )
         )
 
-    stores = _resolved_mailbox_stores(vendor_masked, defines)
+    aliases = require_mailbox_provenance(vendor_masked, defines, "the vendor translation unit")
+    stores = _resolved_mailbox_stores(vendor_masked, defines, aliases)
     word_zero = [store for store in stores if store[0] == 0]
     misplaced = [store for store in stores if store[0] != 0 and store[2] == "V14_VARIANT_ID"]
     if len(word_zero) != 1:
@@ -2044,25 +2661,32 @@ def verify_mailbox_contract(vendor_masked: str, defines: dict[str, int]) -> dict
     if defines.get("V14_U32_INVALID") != U32_INVALID:
         raise fail("invalid sentinel is not 0xFFFFFFFF")
 
+    aliases = require_mailbox_provenance(vendor_masked, defines, "the vendor translation unit")
+
+    valid_word = APPENDIX_FIELDS.index("mailbox_valid")
     reset = function_text(vendor_masked, MAILBOX_RESET_SYMBOL, "mailbox reset entry")
     if not names_identifier(reset, "V14_U32_INVALID") or not names_identifier(
         reset, "V14_APPENDIX_WORDS"
     ):
         raise fail("mailbox reset does not invalidate every appendix field")
-    reset_stores = _mailbox_stores(reset)
-    if ("V14_MBOX_MAILBOX_VALID", "0U") not in reset_stores:
+    reset_stores = _mailbox_words_stored(reset, defines, aliases)
+    if (valid_word, "0U") not in reset_stores:
         raise fail("mailbox reset does not zero mailbox_valid")
-    if reset_stores[-1] != ("V14_MBOX_MAILBOX_VALID", "0U"):
+    if reset_stores[-1] != (valid_word, "0U"):
         raise fail("mailbox reset does not zero mailbox_valid last")
     if not code_contains(reset, "__DSB()"):
         raise fail("mailbox reset does not issue a DSB")
 
     publish = function_text(vendor_masked, MAILBOX_PUBLISH_SYMBOL, "mailbox publication entry")
-    publish_stores = _mailbox_stores(publish)
-    if publish_stores != (("V14_MBOX_MAILBOX_VALID", "V14_MAILBOX_VALID"),):
-        raise fail("mailbox magic is not the final appendix store: publication stores %s" % (publish_stores,))
-    magic_match = _MAILBOX_STORE_RE.search(publish)
-    if not code_contains(publish[magic_match.end() :], "__DSB()"):
+    publish_stores = mailbox_stores(publish, defines, aliases)
+    if len(publish_stores) != 1 or publish_stores[0][0] != valid_word or not is_magic_value(
+        publish_stores[0][2], defines
+    ):
+        raise fail(
+            "mailbox magic is not the final appendix store: publication stores %s"
+            % ([(store[0], store[2]) for store in publish_stores],)
+        )
+    if not code_contains(publish[publish_stores[0][3] :], "__DSB()"):
         raise fail("mailbox publication does not issue a DSB")
 
     # The magic is what tells a reader the other 33 words are real, so it is
@@ -2070,17 +2694,14 @@ def verify_mailbox_contract(vendor_masked: str, defines: dict[str, int]) -> dict
     # or the bare 0x5631344D, the frozen symbol or an alias of it, the offset
     # macro or its numeric 33. Counting the macro text alone leaves three ways
     # to publish a second, earlier, unearned magic.
-    magic_stores = [
-        store
-        for store in _resolved_mailbox_stores(vendor_masked, defines)
-        if is_magic_value(store[2], defines)
-    ]
+    resolved_stores = _resolved_mailbox_stores(vendor_masked, defines, aliases)
+    magic_stores = [store for store in resolved_stores if is_magic_value(store[2], defines)]
     if len(magic_stores) != 1:
         raise fail(
             "mailbox_valid is published from more than one site: %d stores" % len(magic_stores)
         )
     word, index_token, value, owner = magic_stores[0]
-    if word != APPENDIX_FIELDS.index("mailbox_valid"):
+    if word != valid_word:
         raise fail("mailbox magic is not stored at appendix word 33: it lands on word %s" % word)
     if owner != MAILBOX_PUBLISH_SYMBOL:
         raise fail(
@@ -2094,32 +2715,32 @@ def verify_mailbox_contract(vendor_masked: str, defines: dict[str, int]) -> dict
         )
 
     failure = function_text(vendor_masked, "v14_publish_failure", "failure publication")
-    failure_stores = dict(_mailbox_stores(failure))
+    failure_stores = _publication_words(failure, defines, aliases, "the failure publication")
     for field in _CONVERGENCE_TUPLE:
-        if failure_stores.get(_mbox_macro(field)) != "V14_U32_INVALID":
+        if failure_stores.get(_word(field)) != "V14_U32_INVALID":
             raise fail("success and failure tuples are both published as valid: %s survives a failure" % field)
     for field in _FIRST_TUPLE_FIELDS:
-        if _mbox_macro(field) in failure_stores:
+        if _word(field) in failure_stores:
             raise fail("convergence failure discards the retained first-observation tuple: %s" % field)
 
     success = function_text(vendor_masked, "v14_publish_success", "success publication")
-    success_stores = dict(_mailbox_stores(success))
+    success_stores = _publication_words(success, defines, aliases, "the success publication")
     for field in _FAILURE_TUPLE:
-        if success_stores.get(_mbox_macro(field)) != "V14_U32_INVALID":
+        if success_stores.get(_word(field)) != "V14_U32_INVALID":
             raise fail("success and failure tuples are both published as valid: %s survives a success" % field)
-    if success_stores.get(_mbox_macro("failure_phase")) != "V14_PHASE_NONE":
+    if success_stores.get(_word("failure_phase")) != "V14_PHASE_NONE":
         raise fail("success and failure tuples are both published as valid: failure_phase is not NONE")
 
     cleanup = function_text(vendor_masked, "v14_publish_cleanup_failure", "cleanup publication")
-    cleanup_stores = dict(_mailbox_stores(cleanup))
-    if cleanup_stores.get(_mbox_macro("failure_phase")) != "V14_PHASE_CLEANUP":
+    cleanup_stores = _publication_words(cleanup, defines, aliases, "the cleanup publication")
+    if cleanup_stores.get(_word("failure_phase")) != "V14_PHASE_CLEANUP":
         raise fail("cleanup invariant is not recorded as failure_phase=CLEANUP")
     for field in _CONVERGENCE_TUPLE:
-        if _mbox_macro(field) in cleanup_stores:
+        if _word(field) in cleanup_stores:
             raise fail("cleanup invariant discards the convergence tuple: %s" % field)
 
-    first_words = {APPENDIX_FIELDS.index(field) for field in _FIRST_TUPLE_FIELDS}
-    for word, index_token, _value, owner in _resolved_mailbox_stores(vendor_masked, defines):
+    first_words = {_word(field) for field in _FIRST_TUPLE_FIELDS}
+    for word, index_token, _value, owner in resolved_stores:
         if word not in first_words:
             continue
         if owner != "v14_publish_primary":
@@ -2235,6 +2856,7 @@ def verify_cleanup_contract(
 
     command_roles = pointer_roles(command, defines)
     require_resolved_pointers(command_roles, "command function")
+    require_resolved_dereferences(command, defines, command_roles, "the command function")
 
     primary_call = code_find(command, PRIMARY_SYMBOL[variant] + "(")
     if primary_call < 0:
@@ -2329,12 +2951,30 @@ def verify_cleanup_contract(
 
 _RECORD_FIELD_RE = re.compile(r"uint32_t\s+([A-Za-z_]\w*)\s*;")
 _SERIALIZE_RE = re.compile(r"put32\s*\(\s*&c\s*,\s*d\s*->\s*([A-Za-z_]\w*)\s*\)")
-def runner_copy_pattern(aliases: tuple[str, ...]) -> re.Pattern[str]:
-    """An appendix-copy recogniser that also sees the mailbox array's aliases."""
+_RECORD_TARGET_RE = re.compile(r"^\s*d\s*\.\s*([A-Za-z_]\w*)\s*$")
 
-    return re.compile(
-        r"d\.([A-Za-z_]\w*)\s*=\s*(?:%s)\s*\[" % _alternation((MAILBOX_SYMBOL,) + aliases)
-    )
+
+def runner_appendix_copies(
+    runner_masked: str, defines: dict[str, int], known: dict[str, object]
+) -> tuple[tuple[int, str], ...]:
+    """``(start, field)`` for every ``d.<field> = <a mailbox word>`` copy.
+
+    The right-hand side is resolved to the storage it reads rather than matched
+    as ``symbol[``, so a copy spelled with pointer arithmetic, a reversed
+    subscript or an alias is seen exactly where a subscript one is -- which is
+    what makes "the 34 are copied only inside the magic branch" a proof rather
+    than a claim about one spelling.
+    """
+
+    found: list[tuple[int, str]] = []
+    for start, lvalue, rvalue in assignment_statements(runner_masked):
+        if _is_declaration(lvalue):
+            continue
+        target = _RECORD_TARGET_RE.match(lvalue)
+        if target is None or resolve_mailbox_word(rvalue, defines, known) is None:
+            continue
+        found.append((start, target.group(1)))
+    return tuple(found)
 
 
 MEASURED_CALL = "run_fixed_inference()"
@@ -2361,6 +3001,7 @@ def verify_runner_contract(runner_masked: str) -> dict[str, object]:
     # name carries several values here; membership, not the last value, is the
     # question.
     declared = parse_define_values(runner_masked)
+    defines = {name: seen[-1] for name, seen in declared.items()}
     if SCHEMA_VERSION not in declared.get("PMU_DIAG_SCHEMA_VERSION", ()):
         raise fail("runner does not declare schema 14")
     if declared.get("PMU_COMPLETION_VISIBILITY_DIAG_V14_BUILD_ID") != [BUILD_ID]:
@@ -2404,8 +3045,11 @@ def verify_runner_contract(runner_masked: str) -> dict[str, object]:
     if open_index < 0:
         raise fail("runner appendix copy is not dominated by the mailbox magic check")
     close_index = _matching_brace(runner_masked, open_index, "runner magic else branch")
-    copy_re = runner_copy_pattern(mailbox_aliases(runner_masked))
-    copies = tuple(match.group(1) for match in copy_re.finditer(runner_masked[open_index:close_index]))
+    aliases = require_mailbox_provenance(runner_masked, defines, "the runner translation unit")
+    all_copies = runner_appendix_copies(runner_masked, defines, aliases)
+    copies = tuple(
+        field for start, field in all_copies if open_index <= start < close_index
+    )
     if copies != APPENDIX_FIELDS:
         raise fail("runner appendix copy is not dominated by the mailbox magic check")
 
@@ -2414,20 +3058,22 @@ def verify_runner_contract(runner_masked: str) -> dict[str, object]:
     # says, and a copy in the invalid branch publishes reset sentinels -- or
     # stale words from a previous run -- as if they were evidence.
     stray = [
-        match
-        for match in copy_re.finditer(runner_masked)
-        if not open_index <= match.start() < close_index
+        (start, field)
+        for start, field in all_copies
+        if not open_index <= start < close_index
     ]
     if stray:
         raise fail(
             "runner copies the appendix outside the mailbox-magic branch: %s copied at %d"
-            % (stray[0].group(1), stray[0].start())
+            % (stray[0][1], stray[0][0])
         )
 
     return {
         "runner_serialized_words": TOTAL_WORDS,
         "runner_payload_bytes": PAYLOAD_BYTES,
-        "runner_copy_dominated_by_magic": True,
+        # The verifier's own observation: every appendix copy it found sits
+        # inside the magic ``else`` branch, and none sits outside it.
+        "runner_copy_dominated_by_magic": len(copies) == len(all_copies) and not stray,
         "runner_appendix_copies": len(copies),
     }
 
