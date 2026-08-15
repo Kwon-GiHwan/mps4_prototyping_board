@@ -790,8 +790,11 @@ Expected: every command exits zero and each printed failure count is zero.
 
 - [ ] **Step 3: Prove the change allowlist**
 
-Run the exact allowlist against the V12 board-evidence fork. Any V12-or-earlier
-or Production path change is a STOP:
+Run the exact allowlist against the V12 board-evidence fork. The four shared
+checker/test paths below are admitted only for the parameterized V12
+real-trace and H-PRINTF-callsite verifiers reused by V13; frozen V12 firmware
+sources, generated images, board evidence, and every Production path remain a
+STOP if changed:
 
 ```bash
 git diff --name-only f7da7e85bb50431818fdd59f7784ffe1cbd43842..HEAD |
@@ -805,6 +808,10 @@ while IFS= read -r path; do
     firmware/Selftest_pmu_diag/check_pmu_completion_poll_count_v13.py|\
     firmware/Selftest_pmu_diag/test_check_pmu_completion_poll_count_v13.py|\
     firmware/Selftest_pmu_diag/test_makefile_pmu_completion_poll_count_v13.py|\
+    firmware/Selftest_pmu_diag/check_pmu_completion_poll_v12.py|\
+    firmware/Selftest_pmu_diag/test_check_pmu_completion_poll_v12.py|\
+    firmware/Selftest_pmu_diag/check_pmu_qual.py|\
+    firmware/Selftest_pmu_diag/test_check_pmu_qual.py|\
     host/runner_proto_pmu_completion_poll_count_v13.py|\
     host/run_pmu_completion_poll_count_v13.py|\
     host/analyze_pmu_completion_poll_count_v13.py|\
