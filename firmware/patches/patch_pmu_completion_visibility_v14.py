@@ -6,6 +6,13 @@ site that does not match exactly once is a hard failure. The three variants
 differ only in the primary observation helper they emit and call; the common
 convergence tail, the failure mailbox and the stock cleanup are byte-identical
 across them, which is what lets the checker compare their digests.
+
+The retained cleanup carries the frozen ``V12_HPRINTF_SEAM`` marker at its
+H-PRINTF callsite. That marker is the name V12 maps to the qualified
+``__wrap_printf`` callsite address between CMD=0 and the terminal CMD=0xC, so
+emitting it is what lets the V14 gate tell the qualified seam apart from any
+other vendor printf. It is a comment: the lowered instruction stream is
+unchanged.
 """
 
 from __future__ import annotations
@@ -568,6 +575,7 @@ _VENDOR_COMMAND_V14 = """\t  qsize_expected = read_reg(NPU_REG_QSIZE);
 \t  write_reg(NPU_REG_CMD, 0x00000000);
 \t  // Enable clock and power Q interfaces to ask for shutdown
 #if(TEST_CPM==1)
+\t    /* V12_HPRINTF_SEAM */
 \t    printf("Testing CPM signals\\n");
 \t    //Enable Program CLKQ and PWRQ interfaces
 \t    //Bit[2] enables CLKQ, and Bit[3] Enables PWRQ

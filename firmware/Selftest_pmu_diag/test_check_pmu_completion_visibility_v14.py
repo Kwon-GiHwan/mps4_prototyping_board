@@ -126,7 +126,7 @@ STATUS_FAULT_MASK = 0x314
 
 # The suite is frozen at this many assertions. Adding a named fixture is a
 # deliberate act, so the count moves with it and never drifts silently.
-EXPECTED_PASS_COUNT = 288
+EXPECTED_PASS_COUNT = 295
 
 CHECKER_PATH = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
@@ -613,6 +613,7 @@ static int test_commands( const u85_eTest eTest,
 \t  write_reg(NPU_REG_CMD, 0x00000000);
 \t  // Enable clock and power Q interfaces to ask for shutdown
 #if(TEST_CPM==1)
+\t    /* V12_HPRINTF_SEAM */
 \t    printf("Testing CPM signals\\n");
 \t    //Enable Program CLKQ and PWRQ interfaces
 \t    //Bit[2] enables CLKQ, and Bit[3] Enables PWRQ
@@ -770,6 +771,24 @@ def canonical_runner(variant):
     )
 
 
+def frozen_v12_hprintf_marker():
+    """The V12 marker name that maps to the qualified __wrap_printf callsite.
+
+    Read from the frozen V12 gate rather than transcribed, because the whole
+    point of the V14 seam contract is that it is *that* anchor and not a name
+    this suite invented.
+    """
+
+    import check_pmu_completion_poll_v12 as v12
+
+    names = [
+        name
+        for name, key in v12.MANIFEST_MARKER_KEYS.items()
+        if key == "hprintf_callsite_address"
+    ]
+    return names[0] if len(names) == 1 else None
+
+
 def run_identity_suite(gate):
     check("schema version is 14", gate.SCHEMA_VERSION == SCHEMA)
     check("build id is 0x34314950", gate.BUILD_ID == BUILD_ID)
@@ -811,6 +830,11 @@ def run_identity_suite(gate):
     check("reset is not folded into the fault mask", gate.STATUS_RESET & gate.STATUS_FAULT_MASK == 0)
     check("raw runner sha pin is frozen", gate.RUNNER_SHA256 == RUNNER_SHA256)
     check("raw vendor sha pin is frozen", gate.VENDOR_SHA256 == VENDOR_SHA256)
+    check(
+        "the H-PRINTF seam marker is the frozen V12 qualified callsite anchor",
+        gate.HPRINTF_SEAM_MARKER_NAME == frozen_v12_hprintf_marker(),
+        repr(frozen_v12_hprintf_marker()),
+    )
 
     for name, wrong in (
         ("schema", 13),
@@ -2072,6 +2096,35 @@ def q_first_status_from_convergence(vendor):
     )
 
 
+# The qualified seam is the frozen V12_HPRINTF_SEAM anchor, which V12 maps to
+# the single __wrap_printf callsite between CMD=0 and the terminal CMD=0xC. The
+# TEST_CPM debug print that sits there is not, by itself, that seam.
+HPRINTF_SEAM_BLOCK = '\t    /* V12_HPRINTF_SEAM */\n\t    printf("Testing CPM signals\\n");\n'
+HPRINTF_DEBUG_ONLY = '\t    printf("Testing CPM signals\\n");\n'
+
+
+def hprintf_seam_marker_missing(vendor):
+    return replace_once(vendor, HPRINTF_SEAM_BLOCK, HPRINTF_DEBUG_ONLY, "cleanup seam")
+
+
+def hprintf_seam_marker_detached(vendor):
+    return replace_once(
+        vendor,
+        HPRINTF_SEAM_BLOCK,
+        "\t    /* V12_HPRINTF_SEAM */\n\t    ret_code = ret_code;\n" + HPRINTF_DEBUG_ONLY,
+        "cleanup seam",
+    )
+
+
+def hprintf_second_unmarked_callsite(vendor):
+    return replace_once(
+        vendor,
+        HPRINTF_SEAM_BLOCK,
+        HPRINTF_SEAM_BLOCK + '\t    printf("CPM signals done\\n");\n',
+        "cleanup seam",
+    )
+
+
 def cleanup_invariant_mislabelled(vendor):
     return replace_once(
         vendor,
@@ -2134,6 +2187,21 @@ MAILBOX_MUTATIONS = (
         "cleanup_invariant_reported_as_convergence",
         cleanup_invariant_mislabelled,
         "cleanup invariant is not recorded as failure_phase=CLEANUP",
+    ),
+    (
+        "cleanup_hprintf_debug_printf_only",
+        hprintf_seam_marker_missing,
+        "0 seam markers in the release window",
+    ),
+    (
+        "cleanup_hprintf_seam_marker_detached",
+        hprintf_seam_marker_detached,
+        "the seam marker does not anchor it",
+    ),
+    (
+        "cleanup_hprintf_second_unmarked_callsite",
+        hprintf_second_unmarked_callsite,
+        "2 printf callsites in the release window",
     ),
 )
 
@@ -2287,6 +2355,12 @@ def run_canonical_suite(gate):
             "%s manifest publishes the common tail digest" % variant,
             isinstance(doc.get("common_tail_source_sha256"), str)
             and len(doc.get("common_tail_source_sha256", "")) == 64,
+        )
+        check(
+            "%s manifest names the seam without claiming the ELF callsite" % variant,
+            doc.get("hprintf_seam_marker") == "V12_HPRINTF_SEAM"
+            and doc.get("hprintf_seam_wrap_symbol") == "__wrap_printf"
+            and doc.get("hprintf_callsite_elf_qualified") is False,
         )
 
 
@@ -2587,6 +2661,10 @@ def run_coverage_suite():
         "q_timeout_fault_bit_cmd_parse_dropped",
         "q_timeout_fault_bit_ecc_dropped",
         "q_timeout_fault_bit_branch_dropped",
+        # The qualified H-PRINTF seam, not any vendor printf.
+        "cleanup_hprintf_debug_printf_only",
+        "cleanup_hprintf_seam_marker_detached",
+        "cleanup_hprintf_second_unmarked_callsite",
     }
     missing = sorted(required - REJECTED_FIXTURES)
     check("every design-mandated negative fixture is present", not missing, repr(missing))

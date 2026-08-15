@@ -132,6 +132,16 @@ STATUS_ECC = 0x100
 STATUS_BRANCH = 0x200
 STATUS_FAULT_MASK = STATUS_BUS | STATUS_CMD_PARSE | STATUS_ECC | STATUS_BRANCH
 
+# The frozen V12/V13 qualified H-PRINTF seam. ``V12_HPRINTF_SEAM`` is the marker
+# name ``check_pmu_completion_poll_v12.MANIFEST_MARKER_KEYS`` maps to
+# ``hprintf_callsite_address``, which that gate proves is the address of the one
+# ``__wrap_printf`` call between CMD=0 and the terminal CMD=0xC. Anchoring the
+# generated source on that marker is what makes the seam the qualified callsite
+# rather than whichever vendor printf happens to sit in the release window.
+HPRINTF_SEAM_MARKER_NAME = "V12_HPRINTF_SEAM"
+HPRINTF_SEAM_MARKER = "/* %s */" % HPRINTF_SEAM_MARKER_NAME
+HPRINTF_WRAP_SYMBOL = "__wrap_printf"
+
 MAILBOX_SYMBOL = "pmu_completion_visibility_v14_mailbox"
 MAILBOX_RESET_SYMBOL = "v14_mailbox_reset"
 MAILBOX_PUBLISH_SYMBOL = "v14_mailbox_publish"
@@ -1105,11 +1115,43 @@ SUCCESS_CLEANUP_ORDER = (
 )
 
 
-def verify_cleanup_contract(vendor_masked: str, variant: str) -> dict[str, object]:
+def _hprintf_seam_site(cleanup: str, cleanup_raw: str, cmd0: int, terminal: int) -> int:
+    """Return the offset of the one qualified H-PRINTF callsite in the window.
+
+    ``mask_c_lexical`` preserves byte offsets, so the marker can be located in
+    the raw text and compared against callsites found in the masked text. The
+    marker is what makes this the qualified seam: a bare vendor printf in the
+    release window is a debug print, not the ``__wrap_printf`` callsite the
+    frozen V12 gate qualified.
+    """
+
+    markers = [site for site in positions(cleanup_raw, HPRINTF_SEAM_MARKER) if cmd0 < site < terminal]
+    callsites = [site for site in positions(cleanup, "printf(") if cmd0 < site < terminal]
+    if len(markers) != 1:
+        raise fail(
+            "cleanup H-PRINTF seam is not the qualified %s callsite: %d seam markers in the release window"
+            % (HPRINTF_SEAM_MARKER_NAME, len(markers))
+        )
+    if len(callsites) != 1:
+        raise fail(
+            "cleanup H-PRINTF seam is not the qualified %s callsite: %d printf callsites in the release window"
+            % (HPRINTF_SEAM_MARKER_NAME, len(callsites))
+        )
+    between = cleanup_raw[markers[0] + len(HPRINTF_SEAM_MARKER) : callsites[0]]
+    if markers[0] > callsites[0] or between.strip():
+        raise fail(
+            "cleanup H-PRINTF seam is not the qualified %s callsite: the seam marker does not anchor it"
+            % HPRINTF_SEAM_MARKER_NAME
+        )
+    return callsites[0]
+
+
+def verify_cleanup_contract(vendor_masked: str, vendor_text: str, variant: str) -> dict[str, object]:
     """Prove failure isolation, history provenance and the stock success tail."""
 
     command_start, command_stop = function_span(vendor_masked, "test_commands", "command function")
     command = vendor_masked[command_start:command_stop]
+    command_raw = vendor_text[command_start:command_stop]
 
     primary_call = command.find(PRIMARY_SYMBOL[variant] + "(")
     if primary_call < 0:
@@ -1138,6 +1180,7 @@ def verify_cleanup_contract(vendor_masked: str, variant: str) -> dict[str, objec
         raise fail("irq_history_mask is derived from a post-convergence STATUS reread")
 
     cleanup = command[history.start() :]
+    cleanup_raw = command_raw[history.start() :]
     markers: list[tuple[int, str]] = []
     for site in positions(cleanup, "write_reg(NPU_REG_CMD, 0x00000002)"):
         markers.append((site, "CMD2"))
@@ -1154,9 +1197,7 @@ def verify_cleanup_contract(vendor_masked: str, variant: str) -> dict[str, objec
     for site in terminal:
         markers.append((site, "CMD0xC"))
     if cmd0 and terminal:
-        for site in positions(cleanup, "printf("):
-            if cmd0[0] < site < terminal[0]:
-                markers.append((site, "H-PRINTF"))
+        markers.append((_hprintf_seam_site(cleanup, cleanup_raw, cmd0[0], terminal[0]), "H-PRINTF"))
     observed = tuple(token for _, token in sorted(markers))
     if observed != SUCCESS_CLEANUP_ORDER:
         raise fail("success cleanup ordering drifted: observed %s" % (list(observed),))
@@ -1165,6 +1206,9 @@ def verify_cleanup_contract(vendor_masked: str, variant: str) -> dict[str, objec
         "success_cleanup_order": list(SUCCESS_CLEANUP_ORDER),
         "failure_paths_clear_npu": False,
         "failure_paths_enter_hprintf": False,
+        "hprintf_seam_marker": HPRINTF_SEAM_MARKER_NAME,
+        "hprintf_seam_wrap_symbol": HPRINTF_WRAP_SYMBOL,
+        "hprintf_callsite_elf_qualified": False,
     }
 
 
@@ -1334,7 +1378,7 @@ def verify_generated_sources(runner_text: str, vendor_text: str, variant: str) -
     hard_bypass = verify_hard_bypass_contract(vendor_masked)
     convergence = verify_convergence_contract(vendor_masked, defines)
     mailbox = verify_mailbox_contract(vendor_masked, defines)
-    cleanup = verify_cleanup_contract(vendor_masked, variant)
+    cleanup = verify_cleanup_contract(vendor_masked, vendor_text, variant)
     runner = verify_runner_contract(mask_c_lexical(runner_text))
     converge_body = function_text(vendor_masked, CONVERGE_SYMBOL, "common convergence helper")
     command_start, command_stop = function_span(vendor_masked, "test_commands", "command function")
