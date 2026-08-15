@@ -126,7 +126,7 @@ STATUS_FAULT_MASK = 0x314
 
 # The suite is frozen at this many assertions. Adding a named fixture is a
 # deliberate act, so the count moves with it and never drifts silently.
-EXPECTED_PASS_COUNT = 295
+EXPECTED_PASS_COUNT = 303
 
 CHECKER_PATH = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
@@ -771,6 +771,22 @@ def canonical_runner(variant):
     )
 
 
+DIAG_DIR = os.path.dirname(os.path.abspath(__file__))
+
+
+def tracked_sources_matching(digest):
+    """Tracked C sources in this directory whose contents hash to ``digest``."""
+
+    found = []
+    for name in sorted(os.listdir(DIAG_DIR)):
+        if not name.endswith(".c"):
+            continue
+        with open(os.path.join(DIAG_DIR, name), "rb") as handle:
+            if hashlib.sha256(handle.read()).hexdigest() == digest:
+                found.append(name)
+    return found
+
+
 def frozen_v12_hprintf_marker():
     """The V12 marker name that maps to the qualified __wrap_printf callsite.
 
@@ -834,6 +850,15 @@ def run_identity_suite(gate):
         "the H-PRINTF seam marker is the frozen V12 qualified callsite anchor",
         gate.HPRINTF_SEAM_MARKER_NAME == frozen_v12_hprintf_marker(),
         repr(frozen_v12_hprintf_marker()),
+    )
+    check(
+        "the frozen raw vendor translation unit is not tracked here",
+        not tracked_sources_matching(VENDOR_SHA256),
+        repr(tracked_sources_matching(VENDOR_SHA256)),
+    )
+    check(
+        "the tracked raw runner is, so the runner half is not fixture-only",
+        tracked_sources_matching(RUNNER_SHA256) == ["runner_pmu_diag_main.c"],
     )
 
     for name, wrong in (
@@ -2357,6 +2382,15 @@ def run_canonical_suite(gate):
             and len(doc.get("common_tail_source_sha256", "")) == 64,
         )
         check(
+            "%s manifest reports the vendor raw-source limitation" % variant,
+            doc.get("vendor_raw_source_verified") is False
+            and any(
+                item.startswith("vendor_raw_source_absent")
+                for item in doc.get("residual_limitations", [])
+            ),
+            repr(doc.get("residual_limitations")),
+        )
+        check(
             "%s manifest names the seam without claiming the ELF callsite" % variant,
             doc.get("hprintf_seam_marker") == "V12_HPRINTF_SEAM"
             and doc.get("hprintf_seam_wrap_symbol") == "__wrap_printf"
@@ -2600,6 +2634,15 @@ def run_generated_fixture_cli_suite(patcher):
             check(
                 "%s fixture manifest claims no real-ELF qualification" % variant,
                 doc["real_elf_qualified"] is False and doc["qualification"] == "UNIT-QUALIFIED",
+            )
+            check(
+                "%s fixture manifest hands Chunk 2 the unproven vendor half" % variant,
+                doc["vendor_raw_source_verified"] is False
+                and any(
+                    item.startswith("hprintf_callsite_not_elf_bound")
+                    for item in doc["residual_limitations"]
+                ),
+                repr(doc["residual_limitations"])[:70],
             )
             digests.append(doc["common_convergence_source_sha256"])
         check("generated variants share one convergence-helper digest", len(set(digests)) == 1, repr(set(digests)))

@@ -20,6 +20,14 @@ MMIO load of a bound register pointer, a timestamp read, a store, a call, a
 control branch). Gates are then expressed over the ordered effect sequence and
 over the branch topology, so reformatting the generated source cannot change a
 verdict while inserting a per-iteration effect anywhere in the loop can.
+
+Two limitations are load-bearing and are published in every manifest rather
+than left to be discovered. The frozen raw vendor translation unit is not
+tracked in this repository, so the vendor half of this contract runs against a
+stock fixture and is **not** proven against the frozen ``u85.c``. And the
+cleanup H-PRINTF seam is proven here only as the frozen ``V12_HPRINTF_SEAM``
+source anchor; the ``__wrap_printf`` callsite it maps to is an ELF contract that
+belongs to the later qualification chunk.
 """
 
 from __future__ import annotations
@@ -141,6 +149,17 @@ STATUS_FAULT_MASK = STATUS_BUS | STATUS_CMD_PARSE | STATUS_ECC | STATUS_BRANCH
 HPRINTF_SEAM_MARKER_NAME = "V12_HPRINTF_SEAM"
 HPRINTF_SEAM_MARKER = "/* %s */" % HPRINTF_SEAM_MARKER_NAME
 HPRINTF_WRAP_SYMBOL = "__wrap_printf"
+
+# Stated in every manifest so no reader has to infer what this chunk did not do.
+RESIDUAL_LIMITATIONS = (
+    "vendor_raw_source_absent: the frozen u85.c is not tracked here, so the vendor "
+    "half runs against a stock fixture and is not proven against the frozen "
+    "translation unit",
+    "hprintf_callsite_not_elf_bound: the cleanup seam is proven as the frozen "
+    "V12_HPRINTF_SEAM source anchor only; binding it to the qualified "
+    "__wrap_printf callsite address is an ELF contract",
+    "no_elf_disassembly_or_dwarf_evidence: every verdict here is source-structural",
+)
 
 MAILBOX_SYMBOL = "pmu_completion_visibility_v14_mailbox"
 MAILBOX_RESET_SYMBOL = "v14_mailbox_reset"
@@ -1395,6 +1414,11 @@ def verify_generated_sources(runner_text: str, vendor_text: str, variant: str) -
         "qualification": "UNIT-QUALIFIED",
         "proof_scope": "generated_source_and_fixture_only",
         "real_elf_qualified": False,
+        # The frozen u85.c is not tracked in this repository. The vendor half of
+        # this contract therefore runs against a stock fixture, and saying so is
+        # part of the verdict rather than a footnote to it.
+        "vendor_raw_source_verified": False,
+        "residual_limitations": list(RESIDUAL_LIMITATIONS),
         "generated_runner_sha256": _sha256_text(runner_text),
         "generated_vendor_sha256": _sha256_text(vendor_text),
         "common_convergence_source_sha256": normalized_digest(converge_body),
