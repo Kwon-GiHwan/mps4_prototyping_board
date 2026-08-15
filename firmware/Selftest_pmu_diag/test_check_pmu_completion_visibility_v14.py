@@ -127,7 +127,7 @@ STATUS_FAULT_MASK = 0x314
 
 # The suite is frozen at this many assertions. Adding a named fixture is a
 # deliberate act, so the count moves with it and never drifts silently.
-EXPECTED_PASS_COUNT = 582
+EXPECTED_PASS_COUNT = 653
 
 CHECKER_PATH = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
@@ -6470,6 +6470,797 @@ RUNNER_RECORD_ALIAS_MUTATIONS = (
 )
 
 
+# ---------------------------------------------------------------------------
+# Source-gate remediation fixtures.
+#
+# Each family below was ACCEPTED at 7456670 -- the real checker CLI answered
+# rc=0 over a mutated pair whose compiled semantics contradict the manifest it
+# wrote. They are grouped by the assumption the gate was making, because that
+# is what a reader has to re-check when the analyzer changes: not "is this still
+# rejected" but "is the reason it is rejected still the structural one".
+# ---------------------------------------------------------------------------
+
+QSIZE_ADDRESS = "(volatile uint32_t *)(uintptr_t)(U85_BASE_ADDRESS + NPU_REG_QSIZE)"
+STATUS_ADDRESS = "(volatile uint32_t *)(uintptr_t)(U85_BASE_ADDRESS + NPU_REG_STATUS)"
+CMD_ADDRESS = "(volatile uint32_t *)(uintptr_t)(U85_BASE_ADDRESS + NPU_REG_CMD)"
+PRIMARY_TIMEOUT_RESULT_STORE = "    obs->result = V14_PRIMARY_TIMEOUT;\n"
+# The dual-read primaries end with the same two stores, so the convergence tail
+# is anchored on the one store only it makes -- the local ``result`` it settled
+# in its loop.
+CONVERGE_OBSERVATION_TAIL = (
+    "    obs->result = result;\n"
+    "    obs->iterations = iterations;\n"
+    "    obs->qread = qread;\n"
+    "    obs->status = status;\n}"
+)
+CONVERGE_CALL = "\t  v14_converge(qsize_expected, &converged);\n"
+RUNNER_RECORD_RESET = "    memset(&d, 0, sizeof(d));\n"
+RUNNER_FIRST_APPENDIX_COPY = (
+    "            d.variant_id = pmu_completion_visibility_v14_mailbox[0];\n"
+)
+
+
+def _after_the_first_appendix_copy(statement):
+    """Put ``statement`` inside the magic branch, right under the first copy."""
+
+    return _append_after(
+        RUNNER_FIRST_APPENDIX_COPY, statement, "runner first appendix copy"
+    )
+
+
+def _at_file_scope(declaration):
+    """Put ``declaration`` at file scope, just above the command function."""
+
+    return lambda vendor: replace_once(
+        vendor,
+        COMMAND_FUNCTION_HEAD,
+        declaration + "\n" + COMMAND_FUNCTION_HEAD,
+        "command function head",
+    )
+
+
+def _read_in_the_q_loop(declaration, expression):
+    """Bind at file scope and read it once per primary iteration."""
+
+    def mutate(vendor):
+        return replace_once(
+            _at_file_scope(declaration)(vendor),
+            Q_LOOP_READ_AND_GUARD,
+            "        qread = *qread_reg;\n        (void)%s;\n"
+            "        if (qread == qsize_expected) {\n" % expression,
+            "q loop read and guard",
+        )
+
+    return mutate
+
+
+def _digraph_directive(directive):
+    """``%:<directive>`` -- C11 6.4.6 spells the ``#`` punctuator this way too."""
+
+    return "%:" + directive + "\n"
+
+
+def _trigraph_directive(directive):
+    """``??=<directive>`` -- C11 5.2.1.1, replaced in translation phase 1."""
+
+    return "??=" + directive + "\n"
+
+
+def _spliced_digraph_directive(directive):
+    """``%\\<newline>:<directive>`` -- the two digraph characters, spliced apart."""
+
+    return "%\\\n:" + directive + "\n"
+
+
+VENDOR_DEFINE_BLOCK_ANCHOR = "#define V14_PRIMARY_NOT_RUN 0U\n"
+
+
+def _repointed_for_the_translation_unit(spell, macro, value):
+    """Undefine and redefine ``macro`` at file scope, for the whole unit.
+
+    The directives sit inside the define block with no code near them, so
+    nothing but a directive scan can notice them at all. That is what makes this
+    the faithful reproduction: ``_repointed_around`` brackets a *use site*, and
+    the frozen-spelling rules then object to the lines it inserted rather than
+    to the redefinition. Here the compiler builds every use site at ``value``
+    while the gate keeps reading the frozen definition, and nothing else about
+    the source has changed.
+    """
+
+    return lambda vendor: replace_once(
+        vendor,
+        VENDOR_DEFINE_BLOCK_ANCHOR,
+        VENDOR_DEFINE_BLOCK_ANCHOR
+        + spell("undef " + macro)
+        + spell("define %s %s" % (macro, value)),
+        "vendor define block",
+    )
+
+
+# F1. Every directive scan in the gate anchored on the literal ``#``, and every
+# structural walk counted the literal braces and brackets. C spells all four
+# punctuators a second way, unconditionally and without a diagnostic, so the
+# whole ``#undef``/redefine class the contract-macro rule exists to prevent was
+# reachable again -- in both translation units, for every contract macro.
+ALTERNATE_TOKEN_SPELLING_MUTATIONS = (
+    (
+        "contract_macro_repointed_by_a_digraph_directive",
+        _repointed_for_the_translation_unit(_digraph_directive, "V14_MBOX_VARIANT_ID", "7U"),
+        "writes the digraph %:",
+    ),
+    (
+        "register_offset_macro_repointed_by_a_digraph_directive",
+        _repointed_for_the_translation_unit(_digraph_directive, "NPU_REG_STATUS", "0x0CU"),
+        "writes the digraph %:",
+    ),
+    (
+        "magic_macro_repointed_by_a_digraph_directive",
+        _repointed_for_the_translation_unit(_digraph_directive, "V14_MAILBOX_VALID", "0xDEADBEEFU"),
+        "writes the digraph %:",
+    ),
+    (
+        "contract_macro_repointed_by_a_trigraph_directive",
+        _repointed_for_the_translation_unit(_trigraph_directive, "V14_MBOX_VARIANT_ID", "7U"),
+        "writes the trigraph ??=",
+    ),
+    (
+        # The two digraph characters are one token to the compiler whether or
+        # not a phase-2 splice sits between them.
+        "digraph_directive_split_by_a_line_splice",
+        _repointed_for_the_translation_unit(
+            _spliced_digraph_directive, "V14_MBOX_VARIANT_ID", "7U"
+        ),
+        "writes the digraph %:",
+    ),
+    (
+        # ``<:``/``:>`` are the subscript brackets, so this is a second store to
+        # appendix word 0 that no bracket-counting walk in the gate can see.
+        "mailbox_word_rewritten_through_digraph_brackets",
+        _append_after(
+            PRIMARY_PUBLICATION_CALL,
+            "\t  pmu_completion_visibility_v14_mailbox<:V14_MBOX_VARIANT_ID:> = 7U;\n",
+            "primary publication call",
+        ),
+        "writes the digraph <:",
+    ),
+    (
+        # ``<%``/``%>`` are the braces, so this unbalances every structural walk
+        # in the gate at once while the compiler reads a well-formed block.
+        "block_braces_written_as_digraphs",
+        _append_after(
+            SUBMIT_WRITE,
+            "\t  if (read_val == 0) <% read_val = 0; %>\n",
+            "submit write",
+        ),
+        "writes the digraph <%",
+    ),
+)
+
+RUNNER_ALTERNATE_TOKEN_SPELLING_MUTATIONS = (
+    (
+        "runner_contract_macro_repointed_by_a_digraph_directive",
+        _prepend_before(
+            RUNNER_MAGIC_GUARD_LINE,
+            "%:undef V14_MAILBOX_VALID\n%:define V14_MAILBOX_VALID 0U\n",
+            "runner magic guard",
+        ),
+        "writes the digraph %:",
+    ),
+    (
+        "runner_contract_macro_repointed_by_a_trigraph_directive",
+        _prepend_before(
+            RUNNER_MAGIC_GUARD_LINE,
+            "??=undef V14_MAILBOX_VALID\n??=define V14_MAILBOX_VALID 0U\n",
+            "runner magic guard",
+        ),
+        "writes the trigraph ??=",
+    ),
+)
+
+# F2. The declarator rule recovered its initializer with a pattern whose body
+# could not contain a brace, and the assignment rule ran greedily to the
+# statement's ``;``. Both misses answer "not an NPU address at all" rather than
+# "unresolved", which is the one answer that makes an access invisible instead
+# of refused -- so every ordering, counting and isolation rule below was
+# reachable through one extra brace pair or one extra declarator.
+DECLARATOR_INITIALIZER_MUTATIONS = (
+    (
+        "running_qsize_read_through_a_nested_brace_pointer_array",
+        _read_in_the_q_loop(
+            "static volatile uint32_t *const rt_n1[1] = { { %s } };" % QSIZE_ADDRESS,
+            "*rt_n1[0]",
+        ),
+        "QSIZE",
+    ),
+    (
+        "running_qsize_read_through_a_two_dimensional_pointer_array",
+        _read_in_the_q_loop(
+            "static volatile uint32_t *const rt_n2[1][1] = {{ %s }};" % QSIZE_ADDRESS,
+            "*rt_n2[0][0]",
+        ),
+        "QSIZE",
+    ),
+    (
+        "running_qsize_read_through_a_three_dimensional_pointer_array",
+        _read_in_the_q_loop(
+            "static volatile uint32_t *const rt_n3[1][1][1] = {{{ %s }}};" % QSIZE_ADDRESS,
+            "*rt_n3[0][0][0]",
+        ),
+        "QSIZE",
+    ),
+    (
+        "running_qsize_read_through_a_designated_nested_initializer",
+        _read_in_the_q_loop(
+            "static volatile uint32_t *const rt_n4[1] = { [0] = { %s } };" % QSIZE_ADDRESS,
+            "*rt_n4[0]",
+        ),
+        "QSIZE",
+    ),
+    (
+        "running_qsize_read_through_a_comma_declarator_list",
+        _read_in_the_q_loop(
+            "static volatile uint32_t *const rt_c1 = %s, *const rt_c2 = rt_c1;" % QSIZE_ADDRESS,
+            "*rt_c2",
+        ),
+        "QSIZE",
+    ),
+    (
+        "running_qsize_read_through_a_three_declarator_comma_list",
+        _read_in_the_q_loop(
+            "static volatile uint32_t *const rt_c3 = %s, *const rt_c4 = rt_c3,"
+            " *const rt_c5 = rt_c4;" % QSIZE_ADDRESS,
+            "*rt_c5",
+        ),
+        "QSIZE",
+    ),
+    (
+        "primary_status_read_through_a_comma_declarator_list",
+        _read_in_the_q_loop(
+            "static volatile uint32_t *const rt_s1 = %s, *const rt_s2 = rt_s1;" % STATUS_ADDRESS,
+            "*rt_s2",
+        ),
+        "Q primary loop reads STATUS",
+    ),
+    (
+        "second_submit_through_a_two_dimensional_pointer_array",
+        _append_after(
+            SUBMIT_WRITE,
+            "\t  { volatile uint32_t *const rt_g2[1][1] = {{ %s }};\n"
+            "\t    *rt_g2[0][0] = 1U; }\n" % CMD_ADDRESS,
+            "submit write",
+        ),
+        "exactly one NPU submit write",
+    ),
+    (
+        "terminal_cmd_write_repeated_through_a_nested_brace_pointer_array",
+        _append_after(
+            TERMINAL_CMD_WRITE,
+            "\t    { volatile uint32_t *const rt_g3[1] = { { %s } };\n"
+            "\t      *rt_g3[0] = 0x0000000CU; }\n" % CMD_ADDRESS,
+            "terminal cmd write",
+        ),
+        "success cleanup ordering drifted",
+    ),
+    (
+        "mailbox_word_rewritten_through_a_two_dimensional_pointer_array",
+        _append_after(
+            PRIMARY_PUBLICATION_CALL,
+            "\t  { volatile uint32_t *const rt_g4[1][1] = {{ pmu_completion_visibility_v14_mailbox }};\n"
+            "\t    rt_g4[0][0][V14_MBOX_VARIANT_ID] = 7U; }\n",
+            "primary publication call",
+        ),
+        "variant id",
+    ),
+    (
+        # The queue-programming single-owner proof was built on the
+        # ``write_reg(NPU_REG_QSIZE`` call, and a write through a bound pointer
+        # carries no call for that scan to find.
+        "tail_qsize_write_through_a_two_dimensional_pointer_array",
+        _prepend_before(
+            STOP_NPU_WRITE,
+            "\t  { volatile uint32_t *const rt_q2[1][1] = {{ %s }};\n"
+            "\t    *rt_q2[0][0] = 1U; }\n" % QSIZE_ADDRESS,
+            "stop npu write",
+        ),
+        "queue programming is split across",
+    ),
+    (
+        "tail_qsize_write_through_a_comma_declarator_list",
+        _prepend_before(
+            STOP_NPU_WRITE,
+            "\t  { volatile uint32_t *const rt_q3 = %s, *const rt_q4 = rt_q3;\n"
+            "\t    *rt_q4 = 1U; }\n" % QSIZE_ADDRESS,
+            "stop npu write",
+        ),
+        "queue programming is split across",
+    ),
+    (
+        # A compound literal is a brace initializer with no declarator in front
+        # of it, so there is no name to bind and no name to follow -- the same
+        # defect with the name removed instead of the braces added.
+        # Bound in the primary helper's declarations, which is where the named
+        # array sibling is refused by the QSIZE-in-a-primary-loop rule.
+        "qsize_load_through_a_compound_literal_array",
+        lambda vendor: bind_in_primary(
+            vendor,
+            "    uint32_t rt_sneak = *((volatile uint32_t *const []){ %s })[0];\n"
+            "    (void)rt_sneak;\n" % QSIZE_ADDRESS,
+        ),
+        "writes a compound literal",
+    ),
+    (
+        "qsize_load_through_a_compound_literal_scalar",
+        lambda vendor: bind_in_primary(
+            vendor,
+            "    uint32_t rt_sneak = *(volatile uint32_t *const){ %s };\n"
+            "    (void)rt_sneak;\n" % QSIZE_ADDRESS,
+        ),
+        "writes a compound literal",
+    ),
+    (
+        # A unary ``&`` cannot introduce a call, so it cannot be read as the end
+        # of an operand here the way the address-of walk reads it.
+        "qsize_load_through_a_compound_literal_behind_an_address_of",
+        _append_after(
+            SUBMIT_WRITE,
+            "\t  read_val = (int)**&(volatile uint32_t *const){ %s };\n" % QSIZE_ADDRESS,
+            "submit write",
+        ),
+        "writes a compound literal",
+    ),
+    (
+        "compound_literal_nested_in_a_declarator_initializer",
+        _at_file_scope(
+            "static volatile uint32_t *const rt_u1[1] ="
+            " { (volatile uint32_t *)&(uint32_t){0} };"
+        ),
+        "writes a compound literal",
+    ),
+)
+
+# F3. The write-once proof over the serialized record reads lvalues, and an
+# lvalue is only resolved when its last token follows a ``.`` or a ``->``. A
+# write that names no member was therefore neither proven nor refused.
+RUNNER_RECORD_STORAGE_MUTATIONS = (
+    (
+        "runner_record_field_written_through_a_field_pointer",
+        _after_the_appendix_copy("    { uint32_t *rt_pf = &d.variant_id; *rt_pf = 3U; }\n"),
+        "takes the address of the appendix field variant_id",
+    ),
+    (
+        "runner_record_appendix_wiped_by_memset",
+        _after_the_appendix_copy("    memset(&d.variant_id, 0, 34U * 4U);\n"),
+        "takes the address of the appendix field variant_id",
+    ),
+    (
+        "runner_record_field_written_by_memcpy",
+        _after_the_appendix_copy(
+            "    { uint32_t rt_z = 3U; memcpy(&d.variant_id, &rt_z, sizeof rt_z); }\n"
+        ),
+        "takes the address of the appendix field variant_id",
+    ),
+    (
+        # Bound before the proven copy and written after it, so no rule that
+        # only looks inside the window can see the binding.
+        "runner_record_field_pointer_bound_before_the_copy",
+        lambda runner: _after_the_appendix_copy("    *rt_pg = 3U;\n")(
+            replace_once(
+                runner,
+                RUNNER_RECORD_RESET,
+                RUNNER_RECORD_RESET + "    uint32_t *rt_pg = &d.variant_id;\n",
+                "runner record reset",
+            )
+        ),
+        "takes the address of the appendix field variant_id",
+    ),
+    (
+        "runner_record_written_through_a_byte_pointer_alias",
+        lambda runner: _after_the_appendix_copy("    *(uint32_t *)rt_cp = 3U;\n")(
+            replace_once(
+                runner,
+                RUNNER_RECORD_RESET,
+                RUNNER_RECORD_RESET + "    uint8_t *rt_cp = (uint8_t *)&d;\n",
+                "runner record reset",
+            )
+        ),
+        "reaches the serialized record as whole storage",
+    ),
+    (
+        "runner_record_written_through_a_subscripted_address",
+        _after_the_appendix_copy("    ((uint32_t *)&d)[0] = 3U;\n"),
+        "reaches the serialized record as whole storage",
+    ),
+    (
+        "runner_record_handed_to_a_call_after_the_copy",
+        _after_the_appendix_copy("    memset(&d, 0, sizeof d);\n"),
+        "reaches the serialized record as whole storage",
+    ),
+    # A store is credited as a *copy* by its rvalue resolving to a mailbox word,
+    # and the "outside the branch" walk only looks at where a store sits. A
+    # second store to an already-copied field, inside the branch, from a
+    # constant, is therefore neither -- it rewrites a published field one line
+    # under the copy this gate proved.
+    (
+        "runner_record_field_forged_inside_the_magic_branch",
+        _after_the_first_appendix_copy("            d.variant_id = 0U;\n"),
+        "from something that is not its mailbox word",
+    ),
+    (
+        "runner_record_field_forged_in_the_branch_through_a_pointer_alias",
+        _after_the_first_appendix_copy(
+            "            { pmu_diag_record_t *rt_dp = &d; rt_dp->variant_id = 0U; }\n"
+        ),
+        "from something that is not its mailbox word",
+    ),
+    (
+        "runner_record_field_forged_in_the_branch_through_an_array_of_aliases",
+        _after_the_first_appendix_copy(
+            "            { pmu_diag_record_t *const rt_da[1][1] = {{ &d }};"
+            " rt_da[0][0]->variant_id = 0U; }\n"
+        ),
+        "from something that is not its mailbox word",
+    ),
+)
+
+# F4. The appendix words are copies of observation-record fields, so every
+# provenance, predicate and publishing-guard proof the gate makes about those
+# words was a proof about a record no rule constrained. One trailing store
+# republished a timed-out run as an observed one with the mailbox rules fully
+# satisfied and the manifest byte-identical.
+OBSERVATION_PRODUCER_MUTATIONS = (
+    (
+        "primary_result_overwritten_after_the_timeout_publication",
+        _append_after(
+            PRIMARY_TIMEOUT_RESULT_STORE,
+            "    obs->result = V14_PRIMARY_OBSERVED;\n",
+            "primary timeout result store",
+        ),
+        "not published by its authorized producers in v14_primary_q",
+    ),
+    (
+        "primary_qread_forged_before_the_result_overwrite",
+        _append_after(
+            PRIMARY_TIMEOUT_RESULT_STORE,
+            "    obs->qread = qsize_expected;\n    obs->result = V14_PRIMARY_OBSERVED;\n",
+            "primary timeout result store",
+        ),
+        "not published by its authorized producers in v14_primary_q",
+    ),
+    (
+        "observation_field_rewritten_through_an_obs_pointer_alias",
+        _append_after(
+            PRIMARY_TIMEOUT_RESULT_STORE,
+            "    { struct v14_observation_t *rt_o = obs;"
+            " rt_o->result = V14_PRIMARY_OBSERVED; }\n",
+            "primary timeout result store",
+        ),
+        "not published by its authorized producers in v14_primary_q",
+    ),
+    (
+        "observation_field_written_through_a_field_pointer",
+        _append_after(
+            PRIMARY_TIMEOUT_RESULT_STORE,
+            "    { uint32_t *rt_pr = &obs->result; *rt_pr = V14_PRIMARY_OBSERVED; }\n",
+            "primary timeout result store",
+        ),
+        "takes the address of the observation field result",
+    ),
+    (
+        "observation_field_written_by_memcpy",
+        _append_after(
+            PRIMARY_TIMEOUT_RESULT_STORE,
+            "    { uint32_t rt_z = V14_PRIMARY_OBSERVED;"
+            " memcpy(&obs->result, &rt_z, 4U); }\n",
+            "primary timeout result store",
+        ),
+        "takes the address of the observation field result",
+    ),
+    # A count closes the store that is *added*. This is the store that is
+    # *substituted*: one token, every count intact, and a timed-out run
+    # publishes OBSERVED into appendix word 7.
+    (
+        "primary_timeout_result_substituted_for_observed",
+        lambda vendor: replace_once(
+            vendor,
+            PRIMARY_TIMEOUT_RESULT_STORE,
+            "    obs->result = V14_PRIMARY_OBSERVED;\n",
+            "primary timeout result store",
+        ),
+        "not published by its authorized producers in v14_primary_q",
+    ),
+    (
+        # And the value is compared as the number it folds to, so respelling it
+        # is not a way around the table either.
+        "primary_timeout_result_substituted_by_a_folded_spelling",
+        lambda vendor: replace_once(
+            vendor,
+            PRIMARY_TIMEOUT_RESULT_STORE,
+            "    obs->result = V14_PRIMARY_OBSERVED + 0U;\n",
+            "primary timeout result store",
+        ),
+        "not published by its authorized producers in v14_primary_q",
+    ),
+    (
+        "observation_producer_deleted_from_the_primary",
+        lambda vendor: replace_once(
+            vendor, "    obs->iterations = 0U;\n", "", "primary timeout iterations store"
+        ),
+        "not published by its authorized producers in v14_primary_q",
+    ),
+    (
+        "observation_record_forged_by_an_added_helper",
+        lambda vendor: replace_once(
+            replace_once(
+                vendor,
+                CONVERGE_MARKER,
+                "\n__attribute__((noinline))\nstatic void v14_rt_forge(struct v14_observation_t *o)\n"
+                "{\n    o->result = V14_PRIMARY_OBSERVED;\n}\n" + CONVERGE_MARKER,
+                "converge marker",
+            ),
+            CONVERGE_CALL,
+            CONVERGE_CALL + "\t  v14_rt_forge(&converged);\n",
+            "converge call",
+        ),
+        "not published by its authorized producers in v14_rt_forge",
+    ),
+    (
+        "observation_record_copied_whole_by_memcpy",
+        _append_after(
+            CONVERGE_CALL,
+            "\t  { struct v14_observation_t rt_z = converged;"
+            " memcpy(&converged, &rt_z, sizeof rt_z); }\n",
+            "converge call",
+        ),
+        "reaches an observation record as whole storage",
+    ),
+    (
+        "observation_field_forged_in_the_command_function",
+        _append_after(
+            CONVERGE_CALL,
+            "\t  converged.result = V14_CONVERGENCE_SUCCESS;\n",
+            "converge call",
+        ),
+        "not published by its authorized producers in test_commands",
+    ),
+)
+
+# The convergence helper is shared by all three variants, so its half of the
+# producer table is proven on the whole matrix rather than on the Q image alone.
+CONVERGENCE_OBSERVATION_MUTATIONS = (
+    (
+        "convergence_result_overwritten_in_the_publication_tail",
+        lambda vendor: replace_once(
+            vendor,
+            CONVERGE_OBSERVATION_TAIL,
+            CONVERGE_OBSERVATION_TAIL[:-1]
+            + "    obs->result = V14_CONVERGENCE_SUCCESS;\n}",
+            "convergence observation tail",
+        ),
+        "not published by its authorized producers in v14_converge",
+    ),
+    (
+        "convergence_qread_forged_in_the_publication_tail",
+        lambda vendor: replace_once(
+            vendor,
+            CONVERGE_OBSERVATION_TAIL,
+            CONVERGE_OBSERVATION_TAIL[:-1]
+            + "    obs->qread = qsize_expected;\n}",
+            "convergence observation tail",
+        ),
+        "not published by its authorized producers in v14_converge",
+    ),
+    (
+        "convergence_result_substituted_for_success",
+        lambda vendor: replace_once(
+            vendor,
+            CONVERGE_OBSERVATION_TAIL,
+            CONVERGE_OBSERVATION_TAIL.replace(
+                "obs->result = result;", "obs->result = V14_CONVERGENCE_SUCCESS;"
+            ),
+            "convergence observation tail",
+        ),
+        "not published by its authorized producers in v14_converge",
+    ),
+)
+
+# A store is an operator and an lvalue, and the macro rule keyed on the
+# operator. A macro whose body is the *lvalue* carries no operator at all: the
+# ``=`` sits one token outside the replacement list, the invocation reads as an
+# assignment to the macro's own name, and the store is dropped in silence.
+CRITICAL_LVALUE_MACRO_MUTATIONS = (
+    (
+        "mailbox_word_rewritten_through_an_lvalue_macro",
+        _append_after(
+            PRIMARY_PUBLICATION_CALL,
+            "#define RT_CR_SLOT"
+            " pmu_completion_visibility_v14_mailbox[V14_MBOX_CONVERGENCE_RESULT]\n"
+            "\t  RT_CR_SLOT = V14_CONVERGENCE_SUCCESS;\n",
+            "primary publication call",
+        ),
+        "with contract storage in its replacement list",
+    ),
+    (
+        "mailbox_array_named_by_an_lvalue_macro",
+        _append_after(
+            PRIMARY_PUBLICATION_CALL,
+            "#define RT_MB_ARR pmu_completion_visibility_v14_mailbox\n"
+            "\t  RT_MB_ARR[V14_MBOX_CONVERGENCE_RESULT] = V14_CONVERGENCE_SUCCESS;\n",
+            "primary publication call",
+        ),
+        "with contract storage in its replacement list",
+    ),
+    (
+        "observation_field_named_by_an_lvalue_macro",
+        _prepend_before(
+            PRIMARY_TIMEOUT_RESULT_STORE,
+            "#define RT_OBS_RESULT obs->result\n",
+            "primary timeout result store",
+        ),
+        "with contract storage in its replacement list",
+    ),
+    (
+        "mailbox_word_named_by_a_function_like_macro",
+        _append_after(
+            PRIMARY_PUBLICATION_CALL,
+            "#define RT_MB_AT(i) pmu_completion_visibility_v14_mailbox[i]\n"
+            "\t  RT_MB_AT(V14_MBOX_CONVERGENCE_RESULT) = V14_CONVERGENCE_SUCCESS;\n",
+            "primary publication call",
+        ),
+        "with contract storage in its replacement list",
+    ),
+    (
+        "appendix_index_named_by_an_lvalue_macro",
+        _append_after(
+            PRIMARY_PUBLICATION_CALL,
+            "#define RT_CR_IDX [V14_MBOX_CONVERGENCE_RESULT]\n"
+            "\t  pmu_completion_visibility_v14_mailbox RT_CR_IDX = V14_CONVERGENCE_SUCCESS;\n",
+            "primary publication call",
+        ),
+        "with contract storage in its replacement list",
+    ),
+)
+
+RUNNER_CRITICAL_LVALUE_MACRO_MUTATIONS = (
+    (
+        "runner_record_field_named_by_an_lvalue_macro",
+        _after_the_appendix_copy("#define RT_VID d.variant_id\n    RT_VID = 3U;\n"),
+        "with contract storage in its replacement list",
+    ),
+)
+
+# Recovering the statements of a source costs one walk of a statement per
+# assignment in it, and flattening an initializer costs one read of it per
+# nesting level. Both are quadratic in a construct an operator controls, so both
+# carry a budget derived from the input -- and exceeding it is a named refusal,
+# never a truncated statement list or an unbound name.
+_BUDGET_DECLARATOR_CLAUSES = 200
+_BUDGET_INITIALIZER_ELEMENTS = 1200
+_BUDGET_INITIALIZER_DEPTH = 600
+
+ANALYSIS_BUDGET_MUTATIONS = (
+    (
+        "declarator_list_wider_than_the_statement_walk",
+        _at_file_scope(
+            "static volatile uint32_t *const rt_w0 = 0, "
+            + ", ".join(
+                "*const rt_w%d = rt_w%d" % (index, index - 1)
+                for index in range(1, _BUDGET_DECLARATOR_CLAUSES)
+            )
+            + ";"
+        ),
+        "did not settle within",
+    ),
+    (
+        "initializer_wider_than_the_declarator_walk",
+        _at_file_scope(
+            "static volatile uint32_t *const rt_wide[1] = { "
+            + ", ".join(["0"] * _BUDGET_INITIALIZER_ELEMENTS)
+            + " };"
+        ),
+        "cannot resolve to one register",
+    ),
+    (
+        "initializer_nested_deeper_than_the_declarator_walk",
+        _at_file_scope(
+            "static volatile uint32_t *const rt_deep[1] = "
+            + "{" * _BUDGET_INITIALIZER_DEPTH
+            + "0"
+            + "}" * _BUDGET_INITIALIZER_DEPTH
+            + ";"
+        ),
+        "cannot resolve to one register",
+    ),
+)
+
+# The controls. Every rule above refuses a *specific* structure, and a rule that
+# refuses the neighbouring legal one instead is a rule that has stopped saying
+# anything. Each of these is conforming C the frozen contract permits.
+REMEDIATION_CONTROLS = (
+    (
+        "a plain nested-brace pointer array bound to QREAD",
+        _at_file_scope(
+            "static volatile uint32_t *const rt_ok1[1][1] = {{"
+            " (volatile uint32_t *)(uintptr_t)(U85_BASE_ADDRESS + NPU_REG_QREAD) }};"
+        ),
+    ),
+    (
+        "a short comma declarator list that binds no register",
+        _at_file_scope("static uint32_t rt_ok2 = 0U, rt_ok3 = 1U, rt_ok4 = 2U;"),
+    ),
+    (
+        "an initializer nested inside the declarator walk's budget",
+        _at_file_scope("static const uint32_t rt_ok5[2][2] = {{0U, 1U}, {2U, 3U}};"),
+    ),
+    (
+        # The producer table compares a value by the number it folds to, so a
+        # respelling of the value the design already stores is still that value.
+        "an authorized observation value written in a folded spelling",
+        lambda vendor: replace_once(
+            vendor,
+            PRIMARY_TIMEOUT_RESULT_STORE,
+            "    obs->result = (V14_PRIMARY_TIMEOUT) + 0U;\n",
+            "primary timeout result store",
+        ),
+    ),
+)
+
+RUNNER_REMEDIATION_CONTROLS = (
+    (
+        "the address of a non-appendix record field after the copy",
+        _after_the_appendix_copy("    memset(&d.hook_pmu_mmio_read_count, 0, 4U);\n"),
+    ),
+)
+
+
+def run_source_gate_remediation_suite(gate):
+    """The 7456670 acceptance and red-team blockers, each reproduced first."""
+
+    run_vendor_mutations(gate, ALTERNATE_TOKEN_SPELLING_MUTATIONS, "Q")
+    run_runner_mutations(gate, RUNNER_ALTERNATE_TOKEN_SPELLING_MUTATIONS, "Q")
+    run_vendor_mutations(gate, DECLARATOR_INITIALIZER_MUTATIONS, "Q")
+    run_runner_mutations(gate, RUNNER_RECORD_STORAGE_MUTATIONS, "Q")
+    run_vendor_mutations(gate, OBSERVATION_PRODUCER_MUTATIONS, "Q")
+    run_vendor_mutations(gate, CRITICAL_LVALUE_MACRO_MUTATIONS, "Q")
+    run_runner_mutations(gate, RUNNER_CRITICAL_LVALUE_MACRO_MUTATIONS, "Q")
+    run_vendor_mutations(gate, ANALYSIS_BUDGET_MUTATIONS, "Q")
+
+    # The convergence helper and the digraph directive are variant-independent,
+    # so they are proven on the whole matrix rather than on the Q image alone.
+    for variant in ("Q", "QS", "SQ"):
+        for label, mutate, reason in CONVERGENCE_OBSERVATION_MUTATIONS:
+            name = "%s_%s" % (variant.lower(), label)
+            REJECTED_FIXTURES.add(name)
+            expect_reject(
+                gate, variant, canonical_runner(variant),
+                mutate(canonical_vendor(variant)), name, reason,
+            )
+    for variant in ("QS", "SQ"):
+        name = "%s_contract_macro_repointed_by_a_digraph_directive" % variant.lower()
+        REJECTED_FIXTURES.add(name)
+        expect_reject(
+            gate,
+            variant,
+            canonical_runner(variant),
+            _repointed_for_the_translation_unit(
+                _digraph_directive, "V14_MBOX_VARIANT_ID", "7U"
+            )(canonical_vendor(variant)),
+            name,
+            "writes the digraph %:",
+        )
+
+    # And the controls: the neighbouring legal spellings still pass.
+    for label, mutate in REMEDIATION_CONTROLS:
+        expect_accept(
+            gate, "Q", canonical_runner("Q"), mutate(canonical_vendor("Q")),
+            "accepts %s" % label,
+        )
+    for label, mutate in RUNNER_REMEDIATION_CONTROLS:
+        expect_accept(
+            gate, "Q", mutate(canonical_runner("Q")), canonical_vendor("Q"),
+            "accepts %s" % label,
+        )
+
+
 def run_acceptance_grammar_suite(gate):
     """The 96d5113 acceptance and red-team blockers, each reproduced first."""
 
@@ -6783,6 +7574,78 @@ def run_coverage_suite():
         "sq_second_magic_published_as_a_folded_sum",
         "qs_irq_triggered_aliased_through_a_cast_parenthesis",
         "sq_irq_triggered_aliased_through_a_cast_parenthesis",
+        # The 7456670 source-gate remediation. A punctuator has more than one
+        # spelling, a declarator initializer is brace-matched rather than
+        # pattern-matched, the observation record has the producer table the
+        # mailbox has, the serialized record's storage is bounded rather than
+        # only its lvalues, and a macro naming contract storage is refused on
+        # the same terms as one carrying a store.
+        "contract_macro_repointed_by_a_digraph_directive",
+        "register_offset_macro_repointed_by_a_digraph_directive",
+        "magic_macro_repointed_by_a_digraph_directive",
+        "contract_macro_repointed_by_a_trigraph_directive",
+        "digraph_directive_split_by_a_line_splice",
+        "mailbox_word_rewritten_through_digraph_brackets",
+        "block_braces_written_as_digraphs",
+        "runner_contract_macro_repointed_by_a_digraph_directive",
+        "runner_contract_macro_repointed_by_a_trigraph_directive",
+        "qs_contract_macro_repointed_by_a_digraph_directive",
+        "sq_contract_macro_repointed_by_a_digraph_directive",
+        "running_qsize_read_through_a_nested_brace_pointer_array",
+        "running_qsize_read_through_a_two_dimensional_pointer_array",
+        "running_qsize_read_through_a_three_dimensional_pointer_array",
+        "running_qsize_read_through_a_designated_nested_initializer",
+        "running_qsize_read_through_a_comma_declarator_list",
+        "running_qsize_read_through_a_three_declarator_comma_list",
+        "primary_status_read_through_a_comma_declarator_list",
+        "second_submit_through_a_two_dimensional_pointer_array",
+        "terminal_cmd_write_repeated_through_a_nested_brace_pointer_array",
+        "mailbox_word_rewritten_through_a_two_dimensional_pointer_array",
+        "tail_qsize_write_through_a_two_dimensional_pointer_array",
+        "tail_qsize_write_through_a_comma_declarator_list",
+        "qsize_load_through_a_compound_literal_array",
+        "qsize_load_through_a_compound_literal_scalar",
+        "qsize_load_through_a_compound_literal_behind_an_address_of",
+        "compound_literal_nested_in_a_declarator_initializer",
+        "runner_record_field_written_through_a_field_pointer",
+        "runner_record_appendix_wiped_by_memset",
+        "runner_record_field_written_by_memcpy",
+        "runner_record_field_pointer_bound_before_the_copy",
+        "runner_record_written_through_a_byte_pointer_alias",
+        "runner_record_written_through_a_subscripted_address",
+        "runner_record_handed_to_a_call_after_the_copy",
+        "runner_record_field_forged_inside_the_magic_branch",
+        "runner_record_field_forged_in_the_branch_through_a_pointer_alias",
+        "runner_record_field_forged_in_the_branch_through_an_array_of_aliases",
+        "primary_result_overwritten_after_the_timeout_publication",
+        "primary_qread_forged_before_the_result_overwrite",
+        "primary_timeout_result_substituted_for_observed",
+        "primary_timeout_result_substituted_by_a_folded_spelling",
+        "q_convergence_result_substituted_for_success",
+        "qs_convergence_result_substituted_for_success",
+        "sq_convergence_result_substituted_for_success",
+        "observation_field_rewritten_through_an_obs_pointer_alias",
+        "observation_field_written_through_a_field_pointer",
+        "observation_field_written_by_memcpy",
+        "observation_producer_deleted_from_the_primary",
+        "observation_record_forged_by_an_added_helper",
+        "observation_record_copied_whole_by_memcpy",
+        "observation_field_forged_in_the_command_function",
+        "q_convergence_result_overwritten_in_the_publication_tail",
+        "qs_convergence_result_overwritten_in_the_publication_tail",
+        "sq_convergence_result_overwritten_in_the_publication_tail",
+        "q_convergence_qread_forged_in_the_publication_tail",
+        "qs_convergence_qread_forged_in_the_publication_tail",
+        "sq_convergence_qread_forged_in_the_publication_tail",
+        "mailbox_word_rewritten_through_an_lvalue_macro",
+        "mailbox_array_named_by_an_lvalue_macro",
+        "observation_field_named_by_an_lvalue_macro",
+        "mailbox_word_named_by_a_function_like_macro",
+        "appendix_index_named_by_an_lvalue_macro",
+        "runner_record_field_named_by_an_lvalue_macro",
+        "declarator_list_wider_than_the_statement_walk",
+        "initializer_wider_than_the_declarator_walk",
+        "initializer_nested_deeper_than_the_declarator_walk",
     }
     missing = sorted(required - REJECTED_FIXTURES)
     check("every design-mandated negative fixture is present", not missing, repr(missing))
@@ -6812,6 +7675,7 @@ if __name__ == "__main__":
         run_reviewer_blocker_suite(gate)
         run_final_blocker_suite(gate)
         run_acceptance_grammar_suite(gate)
+        run_source_gate_remediation_suite(gate)
         run_coverage_suite()
 
     try:
