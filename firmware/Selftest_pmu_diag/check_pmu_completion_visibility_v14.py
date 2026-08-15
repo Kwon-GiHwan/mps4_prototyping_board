@@ -624,6 +624,124 @@ def extract_loop(body: str, what: str) -> tuple[str, str, int, int]:
 
 _GUARD_HEAD_RE = re.compile(r"^(?:else\s+if\b|if\b|else\b)")
 
+# The loop head runs on every iteration exactly as the body does. An MMIO load
+# in the increment, a mailbox store in the initialiser or a call in the
+# condition is a per-iteration effect that happens to be written outside the
+# braces, so the head is held to the same rule the body is: the only thing it
+# may compute is the register-local induction arithmetic.
+_INDUCTION_ALLOWED = frozenset(
+    ("uint32_t", "int32_t", "uintptr_t", "unsigned", "int", "V14_ITERATION_BOUND")
+)
+_INDUCTION_DECL_RE = re.compile(
+    r"(?<![A-Za-z0-9_])(?:uint32_t|int32_t|unsigned|int)\s+([A-Za-z_]\w*)"
+)
+
+# A second loop is a second polling site, whatever keyword opens it, and a
+# ``goto`` or a label is a back-edge the brace structure does not show. The
+# bounded ``for`` this contract proves is only a bound if it is the only way
+# round.
+_EXTRA_LOOP_RE = re.compile(r"(?<![A-Za-z0-9_])(while|do)(?![A-Za-z0-9_])")
+_GOTO_RE = re.compile(r"(?<![A-Za-z0-9_])goto(?![A-Za-z0-9_])")
+_CONTINUE_RE = re.compile(r"(?<![A-Za-z0-9_])continue(?![A-Za-z0-9_])")
+_LABEL_RE = re.compile(r"^([A-Za-z_]\w*)\s*:(?!:)")
+_LABEL_KEYWORDS = frozenset(("case", "default"))
+
+
+def _split_top_level(text: str, separator: str) -> tuple[str, ...]:
+    """Split ``text`` on ``separator`` at paren depth zero."""
+
+    parts: list[str] = []
+    buffer: list[str] = []
+    depth = 0
+    for character in text:
+        if character in "([":
+            depth += 1
+        elif character in ")]":
+            depth -= 1
+        if depth == 0 and character == separator:
+            parts.append("".join(buffer))
+            buffer = []
+            continue
+        buffer.append(character)
+    parts.append("".join(buffer))
+    return tuple(parts)
+
+
+def verify_loop_header(head: str, roles: dict[str, str], what: str) -> None:
+    """Reject a ``for`` head that carries anything but induction arithmetic."""
+
+    clauses = _split_top_level(head, ";")
+    if len(clauses) != 3:
+        raise fail("%s: loop head is not a three-clause bounded for" % what)
+    induction = set(_INDUCTION_DECL_RE.findall(clauses[0]))
+    for clause in clauses:
+        effects = statement_effects(clause, roles)
+        if effects:
+            raise fail(
+                "%s head carries a per-iteration effect: (%s) carries %s"
+                % (what, re.sub(r"\s+", " ", head.strip())[:60], ", ".join(sorted(set(effects))))
+            )
+        for identifier in _IDENTIFIER_RE.findall(clause):
+            if identifier in induction or identifier in _INDUCTION_ALLOWED:
+                continue
+            raise fail(
+                "%s head observes %s outside the induction variable: (%s)"
+                % (what, identifier, re.sub(r"\s+", " ", head.strip())[:60])
+            )
+
+
+def _label_statements(block: str) -> tuple[str, ...]:
+    """Every statement in ``block``, at any depth, that opens with a label."""
+
+    found: list[str] = []
+    for kind, headline, nested in split_block(block):
+        match = _LABEL_RE.match(headline.strip())
+        if match is not None and match.group(1) not in _LABEL_KEYWORDS:
+            found.append(match.group(1))
+        if kind == "block":
+            found.extend(_label_statements(nested))
+    return tuple(found)
+
+
+def verify_single_bounded_loop(body: str, what: str) -> None:
+    """Reject any polling construct other than the one bounded ``for``.
+
+    ``extract_loop`` already refuses a second ``for``, braceless or not. This
+    adds the constructs brace matching does not see as loops at all: a ``while``
+    or ``do`` anywhere in the helper -- before the bounded loop, after it, or
+    nested inside it -- and a ``goto``/label pair, which can both re-enter the
+    loop and jump *into* the middle of a guard whose exemption was granted on
+    the assumption that its condition is the only way in.
+    """
+
+    extra = _EXTRA_LOOP_RE.search(body)
+    if extra is not None:
+        raise fail(
+            "%s: an unbounded %s polling loop is reachable beside the bounded for"
+            % (what, extra.group(1))
+        )
+    if _GOTO_RE.search(body) is not None:
+        raise fail("%s: a goto back-edge is reachable beside the bounded for" % what)
+    labels = _label_statements(body)
+    if labels:
+        raise fail(
+            "%s: label %s makes the loop or a guard body multi-entry" % (what, labels[0])
+        )
+
+
+def verify_no_loop_back_edge(loop_body: str, what: str) -> None:
+    """Reject a ``continue`` path back to the loop head.
+
+    ``verify_guard_publication`` already refuses one inside an effect-carrying
+    guard, where it is the mechanism that turns a published tuple into a
+    per-iteration store. This refuses the rest of them: the canonical loop
+    leaves by ``break`` or ``return`` and by nothing else, so a ``continue``
+    anywhere in it is a control path the ordered-effect model does not describe.
+    """
+
+    if _CONTINUE_RE.search(loop_body) is not None:
+        raise fail("%s: a continue statement reaches the loop back-edge" % what)
+
 
 def flatten_loop(block: str, what: str) -> tuple[tuple[int, str, str, str], ...]:
     """Return every reachable item of a loop body as ``(depth, kind, head, body)``.
@@ -827,6 +945,8 @@ def verify_primary_contract(
     head, loop_body, loop_start, loop_stop = extract_loop(body, "primary loop")
     if "V14_ITERATION_BOUND" not in head:
         raise fail("primary loop bound is not 10000: loop head does not use V14_ITERATION_BOUND")
+    verify_single_bounded_loop(body, "primary helper")
+    verify_loop_header(head, roles, "primary loop")
 
     items = flatten_loop(loop_body, "primary loop")
     read_order: list[str] = []
@@ -869,6 +989,7 @@ def verify_primary_contract(
     # per-statement rules above, so each keeps its own rejection.
     for head, guard_body in guard_bodies:
         verify_guard_publication(head, guard_body, roles, "primary loop")
+    verify_no_loop_back_edge(loop_body, "primary loop")
 
     if variant == "Q" and "STATUS" in read_order:
         raise fail("Q primary loop reads STATUS")
@@ -1045,6 +1166,8 @@ def verify_convergence_contract(vendor_masked: str, defines: dict[str, int]) -> 
     head, loop_body, loop_start, loop_stop = extract_loop(body, "convergence loop")
     if "V14_ITERATION_BOUND" not in head:
         raise fail("convergence bound is not 10000: loop head does not use V14_ITERATION_BOUND")
+    verify_single_bounded_loop(body, "convergence helper")
+    verify_loop_header(head, roles, "convergence loop")
 
     items = flatten_loop(loop_body, "convergence loop")
     read_order: list[str] = []
@@ -1082,6 +1205,7 @@ def verify_convergence_contract(vendor_masked: str, defines: dict[str, int]) -> 
     # per-iteration rule if it provably ends the iteration.
     for head, guard_body in guard_bodies:
         verify_guard_publication(head, guard_body, roles, "convergence loop")
+    verify_no_loop_back_edge(loop_body, "convergence loop")
 
     duplicates = _duplicate_roles(read_order)
     if duplicates:

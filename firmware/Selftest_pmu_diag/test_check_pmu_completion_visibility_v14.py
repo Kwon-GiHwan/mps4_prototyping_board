@@ -126,7 +126,7 @@ STATUS_FAULT_MASK = 0x314
 
 # The suite is frozen at this many assertions. Adding a named fixture is a
 # deliberate act, so the count moves with it and never drifts silently.
-EXPECTED_PASS_COUNT = 322
+EXPECTED_PASS_COUNT = 333
 
 CHECKER_PATH = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
@@ -2973,8 +2973,219 @@ LEXICAL_VENDOR_MUTATIONS = (
     ),
 )
 
+# -- Loop structure: the head runs per iteration, and the for must be alone. --
+
+
+def primary_head_carries_load(vendor):
+    return replace_once(
+        vendor,
+        Q_LOOP_HEAD,
+        Q_LOOP_HEAD_DECLS
+        + "    for (uint32_t i = 1U; i <= V14_ITERATION_BOUND; i += ((*qread_reg != 0U) ? 1U : 1U)) {\n"
+        "        qread = *qread_reg;\n",
+        "q loop head",
+    )
+
+
+def primary_head_carries_store(vendor):
+    return replace_once(
+        vendor,
+        Q_LOOP_HEAD,
+        Q_LOOP_HEAD_DECLS
+        + "    for (uint32_t i = 1U; i <= V14_ITERATION_BOUND; obs->iterations = ++i) {\n"
+        "        qread = *qread_reg;\n",
+        "q loop head",
+    )
+
+
+def primary_head_carries_qsize(vendor):
+    return replace_once(
+        vendor,
+        Q_LOOP_HEAD,
+        Q_LOOP_HEAD_DECLS
+        + "    for (uint32_t i = (read_reg(NPU_REG_QSIZE) != 0U) ? 1U : 1U; i <= V14_ITERATION_BOUND; ++i) {\n"
+        "        qread = *qread_reg;\n",
+        "q loop head",
+    )
+
+
+def primary_head_observes_extra_state(vendor):
+    return replace_once(
+        vendor,
+        Q_LOOP_HEAD,
+        Q_LOOP_HEAD_DECLS
+        + "    for (uint32_t i = 1U; (i <= V14_ITERATION_BOUND) && (qsize_expected != 0U); ++i) {\n"
+        "        qread = *qread_reg;\n",
+        "q loop head",
+    )
+
+
+def primary_extra_while_after_loop(vendor):
+    return replace_once(
+        vendor,
+        Q_LOOP_TAIL,
+        Q_LOOP_TAIL + "    while (*qread_reg != qsize_expected) { break; }\n",
+        "q loop tail",
+    )
+
+
+def primary_braceless_while_before_loop(vendor):
+    return replace_once(
+        vendor,
+        Q_LOOP_HEAD,
+        Q_LOOP_HEAD_DECLS
+        + "    while (*qread_reg == 0U);\n"
+        + Q_LOOP_HEAD[len(Q_LOOP_HEAD_DECLS) :],
+        "q loop head",
+    )
+
+
+CONVERGE_PUBLICATION = """    obs->t_first = V14_U32_INVALID;
+    obs->result = result;
+"""
+
+
+def converge_goto_back_edge(vendor):
+    return replace_once(
+        vendor,
+        CONVERGE_PUBLICATION,
+        "v14_retry:\n    ;\n    if (result == V14_CONVERGENCE_NOT_RUN) { goto v14_retry; }\n"
+        + CONVERGE_PUBLICATION,
+        "converge publication",
+    )
+
+
+def converge_head_carries_load(vendor):
+    return replace_once(
+        vendor,
+        "    for (uint32_t i = 1U; i <= V14_ITERATION_BOUND; ++i) {\n"
+        "        qread = *qread_reg;\n        status = *status_reg;\n",
+        "    for (uint32_t i = 1U; i <= V14_ITERATION_BOUND; i += ((*qread_reg != 0U) ? 1U : 1U)) {\n"
+        "        qread = *qread_reg;\n        status = *status_reg;\n",
+        "converge loop head",
+    )
+
+
+LOOP_STRUCTURE_MUTATIONS = (
+    (
+        "primary_loop_head_carries_a_load",
+        primary_head_carries_load,
+        "primary loop head carries a per-iteration effect",
+    ),
+    (
+        "primary_loop_head_carries_a_store",
+        primary_head_carries_store,
+        "primary loop head carries a per-iteration effect",
+    ),
+    (
+        "primary_loop_head_carries_qsize",
+        primary_head_carries_qsize,
+        "primary loop head carries a per-iteration effect",
+    ),
+    (
+        "primary_loop_head_observes_extra_state",
+        primary_head_observes_extra_state,
+        "primary loop head observes qsize_expected outside the induction variable",
+    ),
+    (
+        "primary_extra_while_loop_after_the_bounded_for",
+        primary_extra_while_after_loop,
+        "primary helper: an unbounded while polling loop is reachable beside the bounded for",
+    ),
+    (
+        "primary_braceless_while_loop_before_the_bounded_for",
+        primary_braceless_while_before_loop,
+        "primary helper: an unbounded while polling loop is reachable beside the bounded for",
+    ),
+    (
+        "converge_loop_head_carries_a_load",
+        converge_head_carries_load,
+        "convergence loop head carries a per-iteration effect",
+    ),
+    (
+        "converge_goto_back_edge_after_the_bounded_for",
+        converge_goto_back_edge,
+        "convergence helper: a goto back-edge is reachable beside the bounded for",
+    ),
+)
+
+
+# -- Jump topology: an exempt guard has to be single-entry and terminating. --
+
+
+def primary_depth0_continue(vendor):
+    return replace_once(
+        vendor,
+        Q_LOOP_TAIL,
+        """            obs->status = V14_U32_INVALID;
+            return;
+        }
+        if (qread == 0U) { continue; }
+    }
+""",
+        "q loop tail",
+    )
+
+
+def primary_goto_into_terminating_guard(vendor):
+    text = replace_once(
+        vendor,
+        "        if (qread == qsize_expected) {\n            obs->t_first = DWT->CYCCNT;\n",
+        "        if (qread == qsize_expected) {\nv14_publish_entry:\n            obs->t_first = DWT->CYCCNT;\n",
+        "q completion guard",
+    )
+    return replace_once(
+        text,
+        "            return;\n        }\n    }\n",
+        "            return;\n        }\n        if (qread == 0U) { goto v14_publish_entry; }\n    }\n",
+        "q loop back edge",
+    )
+
+
+def converge_goto_out_of_terminating_guard(vendor):
+    return replace_once(
+        vendor,
+        """            result = V14_CONVERGENCE_SUCCESS;
+            iterations = i;
+            break;
+        }
+    }
+""",
+        """            result = V14_CONVERGENCE_SUCCESS;
+            iterations = i;
+            goto v14_done;
+        }
+    }
+v14_done:
+    ;
+""",
+        "converge success guard",
+    )
+
+
+JUMP_TOPOLOGY_MUTATIONS = (
+    (
+        "primary_depth0_continue_reaches_the_back_edge",
+        primary_depth0_continue,
+        "primary loop: a continue statement reaches the loop back-edge",
+    ),
+    (
+        "primary_goto_enters_the_terminating_guard",
+        primary_goto_into_terminating_guard,
+        "primary helper: a goto back-edge is reachable beside the bounded for",
+    ),
+    (
+        "converge_goto_leaves_the_terminating_guard",
+        converge_goto_out_of_terminating_guard,
+        "convergence helper: a goto back-edge is reachable beside the bounded for",
+    ),
+)
+
+
 def run_fail_open_suite(gate):
     run_vendor_mutations(gate, LEXICAL_VENDOR_MUTATIONS, "Q")
+    run_vendor_mutations(gate, LOOP_STRUCTURE_MUTATIONS, "Q")
+    run_vendor_mutations(gate, JUMP_TOPOLOGY_MUTATIONS, "Q")
 
 
 def run_coverage_suite():
@@ -3060,6 +3271,19 @@ def run_coverage_suite():
         "lexical_string_hides_nvic_enable",
         "lexical_string_hides_qsize_read",
         "lexical_string_hides_second_magic_store",
+        # The loop head runs per iteration, and the bounded for must be alone.
+        "primary_loop_head_carries_a_load",
+        "primary_loop_head_carries_a_store",
+        "primary_loop_head_carries_qsize",
+        "primary_loop_head_observes_extra_state",
+        "primary_extra_while_loop_after_the_bounded_for",
+        "primary_braceless_while_loop_before_the_bounded_for",
+        "converge_loop_head_carries_a_load",
+        "converge_goto_back_edge_after_the_bounded_for",
+        # An exempt guard has to be single-entry and structurally terminating.
+        "primary_depth0_continue_reaches_the_back_edge",
+        "primary_goto_enters_the_terminating_guard",
+        "converge_goto_leaves_the_terminating_guard",
     }
     missing = sorted(required - REJECTED_FIXTURES)
     check("every design-mandated negative fixture is present", not missing, repr(missing))
