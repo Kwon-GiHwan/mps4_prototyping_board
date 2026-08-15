@@ -126,7 +126,7 @@ STATUS_FAULT_MASK = 0x314
 
 # The suite is frozen at this many assertions. Adding a named fixture is a
 # deliberate act, so the count moves with it and never drifts silently.
-EXPECTED_PASS_COUNT = 333
+EXPECTED_PASS_COUNT = 336
 
 CHECKER_PATH = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
@@ -3182,10 +3182,70 @@ JUMP_TOPOLOGY_MUTATIONS = (
 )
 
 
+# -- Aliases: a second name for the same storage is the same storage. -------
+
+
+def primary_obs_alias_store(vendor):
+    return replace_once(
+        vendor,
+        Q_LOOP_HEAD,
+        Q_LOOP_HEAD_DECLS
+        + "    struct v14_observation_t *obs_alias = obs;\n"
+        + Q_LOOP_HEAD[len(Q_LOOP_HEAD_DECLS) :]
+        + "        obs_alias->iterations = i;\n",
+        "q loop head",
+    )
+
+
+def primary_raw_register_status_read(vendor):
+    return replace_once(
+        vendor,
+        Q_LOOP_TAIL,
+        """            obs->status = V14_U32_INVALID;
+            return;
+        }
+        status = *(volatile uint32_t *)(uintptr_t)(U85_BASE_ADDRESS + NPU_REG_STATUS);
+    }
+""",
+        "q loop tail",
+    )
+
+
+def first_tuple_through_mailbox_alias(vendor):
+    return replace_once(
+        vendor,
+        "\t  irq_history_mask = converged.status >> 16;\n",
+        "\t  volatile uint32_t *mb_alias = pmu_completion_visibility_v14_mailbox;\n"
+        "\t  mb_alias[V14_MBOX_FIRST_QREAD] = converged.qread;\n"
+        "\t  irq_history_mask = converged.status >> 16;\n",
+        "cleanup seam",
+    )
+
+
+ALIAS_MUTATIONS = (
+    (
+        "primary_per_loop_store_through_an_obs_alias",
+        primary_obs_alias_store,
+        "primary loop carries a per-iteration store/call/timestamp",
+    ),
+    (
+        "primary_status_read_through_a_raw_register_address",
+        primary_raw_register_status_read,
+        "Q primary loop reads STATUS",
+    ),
+    (
+        "first_tuple_stored_through_a_mailbox_alias",
+        first_tuple_through_mailbox_alias,
+        "first-observation STATUS fields are synthesized from convergence values",
+    ),
+)
+
+
 def run_fail_open_suite(gate):
     run_vendor_mutations(gate, LEXICAL_VENDOR_MUTATIONS, "Q")
     run_vendor_mutations(gate, LOOP_STRUCTURE_MUTATIONS, "Q")
     run_vendor_mutations(gate, JUMP_TOPOLOGY_MUTATIONS, "Q")
+    run_vendor_mutations(gate, ALIAS_MUTATIONS, "Q")
 
 
 def run_coverage_suite():
@@ -3284,6 +3344,10 @@ def run_coverage_suite():
         "primary_depth0_continue_reaches_the_back_edge",
         "primary_goto_enters_the_terminating_guard",
         "converge_goto_leaves_the_terminating_guard",
+        # A second name for the same storage is the same storage.
+        "primary_per_loop_store_through_an_obs_alias",
+        "primary_status_read_through_a_raw_register_address",
+        "first_tuple_stored_through_a_mailbox_alias",
     }
     missing = sorted(required - REJECTED_FIXTURES)
     check("every design-mandated negative fixture is present", not missing, repr(missing))

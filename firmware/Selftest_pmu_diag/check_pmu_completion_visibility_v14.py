@@ -507,7 +507,52 @@ _CALL_RE = re.compile(r"(?<![A-Za-z0-9_])([A-Za-z_]\w*)\s*\(")
 _NON_CALL_KEYWORDS = frozenset(
     ("if", "for", "while", "switch", "return", "sizeof", "uint32_t", "int32_t", "volatile", "uintptr_t")
 )
-_STORE_RE = re.compile(r"(?:obs\s*->|%s\s*\[)" % re.escape(MAILBOX_SYMBOL))
+_STORE_RE = re.compile(
+    r"(?:(?<![A-Za-z0-9_])obs\s*->|(?<![A-Za-z0-9_])%s\s*\[)" % re.escape(MAILBOX_SYMBOL)
+)
+
+# A register touched through its raw address expression is the same observable
+# as one touched through a bound pointer; only the spelling differs. Naming the
+# register is what makes it an access, so ``NPU_REG_STATUS`` written inline
+# counts exactly as ``*status_reg`` does.
+_RAW_REGISTER_RE = re.compile(r"NPU_REG_([A-Z][A-Z0-9_]*)")
+
+# An alias is a second name for the same storage. ``obs_alias->result`` writes
+# the observation record and ``mb[33]`` writes the mailbox, so a rule that only
+# recognises the declared spelling is a rule an alias walks around.
+_OBS_ALIAS_RE = re.compile(r"([A-Za-z_]\w*)\s*=\s*obs\s*;")
+_MAILBOX_ALIAS_RE = re.compile(
+    r"([A-Za-z_]\w*)\s*=\s*%s(?![A-Za-z0-9_\[])" % re.escape(MAILBOX_SYMBOL)
+)
+
+
+def obs_aliases(text: str) -> tuple[str, ...]:
+    """Every local name bound to the observation record pointer."""
+
+    return tuple(sorted({name for name in _OBS_ALIAS_RE.findall(text) if name != "obs"}))
+
+
+def mailbox_aliases(text: str) -> tuple[str, ...]:
+    """Every local name bound to the failure mailbox array."""
+
+    return tuple(
+        sorted({name for name in _MAILBOX_ALIAS_RE.findall(text) if name != MAILBOX_SYMBOL})
+    )
+
+
+def _alternation(names: tuple[str, ...]) -> str:
+    return "|".join(re.escape(name) for name in names)
+
+
+def store_pattern(text: str) -> re.Pattern[str]:
+    """A store recogniser that also sees ``text``'s obs and mailbox aliases."""
+
+    arrows = ("obs",) + obs_aliases(text)
+    arrays = (MAILBOX_SYMBOL,) + mailbox_aliases(text)
+    return re.compile(
+        r"(?:(?<![A-Za-z0-9_])(?:%s)\s*->|(?<![A-Za-z0-9_])(?:%s)\s*\[)"
+        % (_alternation(arrows), _alternation(arrays))
+    )
 
 
 def function_spans(masked: str) -> tuple[tuple[str, int, int], ...]:
@@ -578,16 +623,22 @@ def pointer_roles(body: str) -> dict[str, str]:
     return roles
 
 
-def statement_effects(statement: str, roles: dict[str, str]) -> tuple[str, ...]:
+def statement_effects(
+    statement: str, roles: dict[str, str], store_re: re.Pattern[str] = _STORE_RE
+) -> tuple[str, ...]:
     effects: list[str] = []
     for name, role in roles.items():
         if re.search(r"\*\s*%s(?![A-Za-z0-9_])" % re.escape(name), statement):
             effects.append("load:%s" % role)
     if "NPU_REG_QSIZE" in statement:
         effects.append("qsize")
+    already_loaded = {effect.split(":", 1)[1] for effect in effects if effect.startswith("load:")}
+    for register in _RAW_REGISTER_RE.findall(statement):
+        if register != "QSIZE" and register not in already_loaded:
+            effects.append("load:%s" % register)
     if "DWT->CYCCNT" in statement:
         effects.append("timestamp")
-    if _STORE_RE.search(statement):
+    if store_re.search(statement):
         effects.append("store")
     for callee in _CALL_RE.findall(statement):
         if callee not in _NON_CALL_KEYWORDS and callee not in roles:
@@ -667,7 +718,9 @@ def _split_top_level(text: str, separator: str) -> tuple[str, ...]:
     return tuple(parts)
 
 
-def verify_loop_header(head: str, roles: dict[str, str], what: str) -> None:
+def verify_loop_header(
+    head: str, roles: dict[str, str], what: str, store_re: re.Pattern[str] = _STORE_RE
+) -> None:
     """Reject a ``for`` head that carries anything but induction arithmetic."""
 
     clauses = _split_top_level(head, ";")
@@ -675,7 +728,7 @@ def verify_loop_header(head: str, roles: dict[str, str], what: str) -> None:
         raise fail("%s: loop head is not a three-clause bounded for" % what)
     induction = set(_INDUCTION_DECL_RE.findall(clauses[0]))
     for clause in clauses:
-        effects = statement_effects(clause, roles)
+        effects = statement_effects(clause, roles, store_re)
         if effects:
             raise fail(
                 "%s head carries a per-iteration effect: (%s) carries %s"
@@ -779,7 +832,9 @@ _TERMINATOR_RE = re.compile(r"^(?:break|return)(?![A-Za-z0-9_])")
 _BACK_EDGE_RE = re.compile(r"(?<![A-Za-z0-9_])(continue|goto)(?![A-Za-z0-9_])")
 
 
-def subtree_effects(body: str, roles: dict[str, str]) -> tuple[str, ...]:
+def subtree_effects(
+    body: str, roles: dict[str, str], store_re: re.Pattern[str] = _STORE_RE
+) -> tuple[str, ...]:
     """Return every effect carried anywhere inside ``body``, at any depth.
 
     ``split_block`` keeps a braceless ``if`` inside its own statement text, so
@@ -789,9 +844,9 @@ def subtree_effects(body: str, roles: dict[str, str]) -> tuple[str, ...]:
 
     effects: list[str] = []
     for kind, headline, nested in split_block(body):
-        effects.extend(statement_effects(headline, roles))
+        effects.extend(statement_effects(headline, roles, store_re))
         if kind == "block":
-            effects.extend(subtree_effects(nested, roles))
+            effects.extend(subtree_effects(nested, roles, store_re))
     return tuple(effects)
 
 
@@ -810,7 +865,13 @@ def terminates_iteration(body: str) -> bool:
     return kind == "stmt" and _TERMINATOR_RE.match(headline.strip()) is not None
 
 
-def verify_guard_publication(head: str, body: str, roles: dict[str, str], what: str) -> None:
+def verify_guard_publication(
+    head: str,
+    body: str,
+    roles: dict[str, str],
+    what: str,
+    store_re: re.Pattern[str] = _STORE_RE,
+) -> None:
     """Reject a loop guard body that carries an effect it cannot own.
 
     A guard body runs only on the iteration that takes its branch -- but that
@@ -825,7 +886,7 @@ def verify_guard_publication(head: str, body: str, roles: dict[str, str], what: 
 
     carried = tuple(
         effect
-        for effect in subtree_effects(body, roles)
+        for effect in subtree_effects(body, roles, store_re)
         if effect.startswith(_CARRIED_EFFECT_PREFIXES)
     )
     if not carried:
@@ -939,6 +1000,7 @@ def verify_primary_contract(
 
     body = function_text(vendor_masked, wanted, "primary helper")
     roles = pointer_roles(body)
+    store_re = store_pattern(body)
     if "QSIZE" in roles.values():
         raise fail("QSIZE access reachable in a primary loop: a QSIZE pointer is bound")
 
@@ -946,7 +1008,7 @@ def verify_primary_contract(
     if "V14_ITERATION_BOUND" not in head:
         raise fail("primary loop bound is not 10000: loop head does not use V14_ITERATION_BOUND")
     verify_single_bounded_loop(body, "primary helper")
-    verify_loop_header(head, roles, "primary loop")
+    verify_loop_header(head, roles, "primary loop", store_re)
 
     items = flatten_loop(loop_body, "primary loop")
     read_order: list[str] = []
@@ -955,7 +1017,7 @@ def verify_primary_contract(
     branched = False
     expected = ["QREAD"] if variant == "Q" else EXPECTED_PRIMARY_ORDER[variant]
     for depth, kind, head, guard_body in items:
-        effects = statement_effects(head, roles)
+        effects = statement_effects(head, roles, store_re)
         if depth:
             # A guard body that has earned its exemption publishes the frozen
             # success tuple, so a store or a timestamp here is that tuple rather
@@ -988,7 +1050,7 @@ def verify_primary_contract(
     # provably ends its iteration. Prove it rather than assume it -- after the
     # per-statement rules above, so each keeps its own rejection.
     for head, guard_body in guard_bodies:
-        verify_guard_publication(head, guard_body, roles, "primary loop")
+        verify_guard_publication(head, guard_body, roles, "primary loop", store_re)
     verify_no_loop_back_edge(loop_body, "primary loop")
 
     if variant == "Q" and "STATUS" in read_order:
@@ -1160,6 +1222,7 @@ def verify_convergence_contract(vendor_masked: str, defines: dict[str, int]) -> 
         raise fail("common convergence helper %s is missing" % CONVERGE_SYMBOL)
 
     roles = pointer_roles(body)
+    store_re = store_pattern(body)
     if "QSIZE" in roles.values():
         raise fail("QSIZE access reachable in the convergence tail: a QSIZE pointer is bound")
 
@@ -1167,7 +1230,7 @@ def verify_convergence_contract(vendor_masked: str, defines: dict[str, int]) -> 
     if "V14_ITERATION_BOUND" not in head:
         raise fail("convergence bound is not 10000: loop head does not use V14_ITERATION_BOUND")
     verify_single_bounded_loop(body, "convergence helper")
-    verify_loop_header(head, roles, "convergence loop")
+    verify_loop_header(head, roles, "convergence loop", store_re)
 
     items = flatten_loop(loop_body, "convergence loop")
     read_order: list[str] = []
@@ -1175,7 +1238,7 @@ def verify_convergence_contract(vendor_masked: str, defines: dict[str, int]) -> 
     guard_bodies: list[tuple[str, str]] = []
     branched = False
     for depth, kind, head, guard_body in items:
-        effects = statement_effects(head, roles)
+        effects = statement_effects(head, roles, store_re)
         for effect in effects:
             if effect == "qsize":
                 raise fail("QSIZE access reachable in the convergence tail")
@@ -1204,7 +1267,7 @@ def verify_convergence_contract(vendor_masked: str, defines: dict[str, int]) -> 
     # Same proof obligation as the primary loop: a guard only escapes the
     # per-iteration rule if it provably ends the iteration.
     for head, guard_body in guard_bodies:
-        verify_guard_publication(head, guard_body, roles, "convergence loop")
+        verify_guard_publication(head, guard_body, roles, "convergence loop", store_re)
     verify_no_loop_back_edge(loop_body, "convergence loop")
 
     duplicates = _duplicate_roles(read_order)
@@ -1247,7 +1310,7 @@ def verify_convergence_contract(vendor_masked: str, defines: dict[str, int]) -> 
         if term not in flattened:
             raise fail("convergence predicate omits a required term: %s" % term)
 
-    if "obs" in body[:loop_start] and _STORE_RE.search(body[:loop_start]):
+    if store_re.search(body[:loop_start]):
         raise fail("convergence evidence store occurs before the loop")
 
     return {
@@ -1283,6 +1346,65 @@ def _mbox_macro(field: str) -> str:
 
 def _mailbox_stores(block: str) -> tuple[tuple[str, str], ...]:
     return tuple((match.group(1), match.group(2).strip()) for match in _MAILBOX_STORE_RE.finditer(block))
+
+
+def mailbox_store_pattern(aliases: tuple[str, ...]) -> re.Pattern[str]:
+    """A mailbox-store recogniser that also sees the array's aliases."""
+
+    return re.compile(
+        r"(?<![A-Za-z0-9_])(?:%s)\s*\[\s*([A-Za-z0-9_]+)\s*\]\s*=\s*([^;]+);"
+        % _alternation((MAILBOX_SYMBOL,) + aliases)
+    )
+
+
+def resolve_word(index_token: str, defines: dict[str, int]) -> int | None:
+    """The appendix word an index expression names, or ``None`` if it is not one.
+
+    An offset written as the frozen macro and the same offset written as its
+    numeric value address the same word. A rule that only recognises the macro
+    is a rule a bare ``[33]`` walks around, so both spellings resolve here and
+    the *spelling* is judged separately from the *word*.
+    """
+
+    if index_token in defines:
+        return defines[index_token]
+    try:
+        return int(index_token.rstrip("uU"), 0)
+    except ValueError:
+        return None
+
+
+def is_magic_value(value: str, defines: dict[str, int]) -> bool:
+    """Whether a stored value is the 0x5631344D magic, macro or literal."""
+
+    token = value.strip()
+    if token in defines:
+        return defines[token] == MAILBOX_VALID
+    try:
+        return int(token.rstrip("uU"), 0) == MAILBOX_VALID
+    except ValueError:
+        return False
+
+
+def _resolved_mailbox_stores(
+    vendor_masked: str, defines: dict[str, int]
+) -> tuple[tuple[int | None, str, str, str], ...]:
+    """``(word, index_token, value, owner)`` for every mailbox store, aliases included."""
+
+    spans = function_spans(vendor_masked)
+    pattern = mailbox_store_pattern(mailbox_aliases(vendor_masked))
+    stores = []
+    for match in pattern.finditer(vendor_masked):
+        index_token = match.group(1)
+        stores.append(
+            (
+                resolve_word(index_token, defines),
+                index_token,
+                match.group(2).strip(),
+                enclosing_function(spans, match.start()),
+            )
+        )
+    return tuple(stores)
 
 
 def verify_mailbox_contract(vendor_masked: str, defines: dict[str, int]) -> dict[str, object]:
@@ -1354,16 +1476,14 @@ def verify_mailbox_contract(vendor_masked: str, defines: dict[str, int]) -> dict
         if _mbox_macro(field) in cleanup_stores:
             raise fail("cleanup invariant discards the convergence tuple: %s" % field)
 
-    spans = function_spans(vendor_masked)
-    for match in _MAILBOX_STORE_RE.finditer(vendor_masked):
-        macro = match.group(1)
-        if macro not in {_mbox_macro(field) for field in _FIRST_TUPLE_FIELDS}:
+    first_words = {APPENDIX_FIELDS.index(field) for field in _FIRST_TUPLE_FIELDS}
+    for word, index_token, _value, owner in _resolved_mailbox_stores(vendor_masked, defines):
+        if word not in first_words:
             continue
-        owner = enclosing_function(spans, match.start())
         if owner != "v14_publish_primary":
             raise fail(
                 "first-observation STATUS fields are synthesized from convergence values: %s stored in %s"
-                % (macro, owner or "<file scope>")
+                % (index_token, owner or "<file scope>")
             )
 
     return {
