@@ -126,7 +126,7 @@ STATUS_FAULT_MASK = 0x314
 
 # The suite is frozen at this many assertions. Adding a named fixture is a
 # deliberate act, so the count moves with it and never drifts silently.
-EXPECTED_PASS_COUNT = 279
+EXPECTED_PASS_COUNT = 288
 
 CHECKER_PATH = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
@@ -1281,6 +1281,43 @@ def q_timeout_enters_convergence(vendor):
     )
 
 
+Q_TIMEOUT_RESET_BLOCK = """    if ((status & V14_STATUS_RESET) != 0U) {
+        obs->result = V14_PRIMARY_RESET;
+        return;
+    }
+"""
+
+Q_TIMEOUT_FAULT_BLOCK = """    if ((status & V14_STATUS_FAULT_MASK) != 0U) {
+        obs->result = V14_PRIMARY_FAULT;
+        return;
+    }
+"""
+
+
+def q_timeout_reset_classification_missing(vendor):
+    return replace_once(vendor, Q_TIMEOUT_RESET_BLOCK, "", "Q timeout reset classification")
+
+
+def q_timeout_fault_classification_missing(vendor):
+    return replace_once(vendor, Q_TIMEOUT_FAULT_BLOCK, "", "Q timeout fault classification")
+
+
+def _q_timeout_fault_bit_dropped(bit):
+    """Classify the timeout with every fault bit but ``bit``."""
+
+    partial = "0x%03XU" % (STATUS_FAULT_MASK & ~bit)
+
+    def mutate(vendor):
+        return replace_once(
+            vendor,
+            Q_TIMEOUT_FAULT_BLOCK,
+            Q_TIMEOUT_FAULT_BLOCK.replace("V14_STATUS_FAULT_MASK", partial),
+            "Q timeout fault classification",
+        )
+
+    return mutate
+
+
 def _drop_second_read(variant):
     def mutate(vendor):
         return mutate_primary(vendor, _DUAL_READS[variant] + "\n", "        qread = *qread_reg;\n", "dual reads")
@@ -1473,6 +1510,36 @@ PRIMARY_Q_MUTATIONS = (
     ("inactive_primary_helper_present", inactive_primary_present, "inactive primary helper is reachable"),
     ("primary_bound_not_10000", primary_bound_drift, "primary loop bound is not 10000"),
     (
+        "q_timeout_reset_classification_missing",
+        q_timeout_reset_classification_missing,
+        "Q timeout diagnostic does not classify reset from the diagnostic STATUS load",
+    ),
+    (
+        "q_timeout_fault_classification_missing",
+        q_timeout_fault_classification_missing,
+        "Q timeout diagnostic does not classify every 0x314 fault bit from the diagnostic STATUS load",
+    ),
+    (
+        "q_timeout_fault_bit_bus_dropped",
+        _q_timeout_fault_bit_dropped(0x004),
+        "Q timeout diagnostic does not classify every 0x314 fault bit from the diagnostic STATUS load",
+    ),
+    (
+        "q_timeout_fault_bit_cmd_parse_dropped",
+        _q_timeout_fault_bit_dropped(0x010),
+        "Q timeout diagnostic does not classify every 0x314 fault bit from the diagnostic STATUS load",
+    ),
+    (
+        "q_timeout_fault_bit_ecc_dropped",
+        _q_timeout_fault_bit_dropped(0x100),
+        "Q timeout diagnostic does not classify every 0x314 fault bit from the diagnostic STATUS load",
+    ),
+    (
+        "q_timeout_fault_bit_branch_dropped",
+        _q_timeout_fault_bit_dropped(0x200),
+        "Q timeout diagnostic does not classify every 0x314 fault bit from the diagnostic STATUS load",
+    ),
+    (
         "q_primary_status_read_after_guard",
         _inject_after_q_guard("status = *status_reg;"),
         "Q primary loop reads STATUS",
@@ -1585,6 +1652,16 @@ def run_primary_suite(gate):
 
 
 EXPECTED_READ_ORDER = {"Q": ["QREAD"], "QS": ["QREAD", "STATUS"], "SQ": ["STATUS", "QREAD"]}
+# Q never reads STATUS inside its loop, so the one post-timeout diagnostic load
+# is the only evidence of why the queue never drained: it has to separate reset
+# from a fault and cover the whole 0x314 mask, bit by bit.
+Q_TIMEOUT_CLASSIFICATION = [
+    "reset:0x%03X" % STATUS_RESET,
+    "fault:0x004",
+    "fault:0x010",
+    "fault:0x100",
+    "fault:0x200",
+]
 EXPECTED_PROBE_ORDER = [
     "NVIC_DisableIRQ",
     "NVIC_ClearPendingIRQ",
@@ -1621,6 +1698,12 @@ def run_primary_positive_suite(gate):
         check(
             "%s Q-timeout diagnostic STATUS reads" % variant,
             doc.get("q_timeout_diagnostic_status_loads") == (1 if variant == "Q" else 0),
+        )
+        check(
+            "%s Q-timeout diagnostic classifies reset and every 0x314 fault bit" % variant,
+            doc.get("q_timeout_classification")
+            == (Q_TIMEOUT_CLASSIFICATION if variant == "Q" else []),
+            repr(doc.get("q_timeout_classification")),
         )
         check(
             "%s first-observation categories" % variant,
@@ -2497,6 +2580,13 @@ def run_coverage_suite():
         "converge_call_after_guard",
         "converge_evidence_store_after_guard",
         "converge_short_circuit_between_reads",
+        # The Q post-timeout diagnostic classification, bit by bit.
+        "q_timeout_reset_classification_missing",
+        "q_timeout_fault_classification_missing",
+        "q_timeout_fault_bit_bus_dropped",
+        "q_timeout_fault_bit_cmd_parse_dropped",
+        "q_timeout_fault_bit_ecc_dropped",
+        "q_timeout_fault_bit_branch_dropped",
     }
     missing = sorted(required - REJECTED_FIXTURES)
     check("every design-mandated negative fixture is present", not missing, repr(missing))

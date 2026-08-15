@@ -601,6 +601,57 @@ def _guard_kind(condition: str) -> str:
     return "other"
 
 
+def _q_timeout_classification(
+    after_loop: str, roles: dict[str, str], defines: dict[str, int]
+) -> list[str]:
+    """Prove the one post-timeout STATUS load classifies reset and every fault bit.
+
+    Q's loop never reads STATUS, so the timeout tail's single diagnostic load is
+    the only evidence there is about *why* the queue never drained. It has to
+    separate reset from a hardware fault, and it has to test the whole pinned
+    0x314 mask rather than a subset, or a fault bit silently reports as a plain
+    timeout.
+    """
+
+    status_pointers = [name for name, role in roles.items() if role == "STATUS"]
+    if not status_pointers:
+        raise fail("Q timeout diagnostic STATUS read is missing or duplicated: 0 named loads")
+    targets = re.findall(
+        r"([A-Za-z_]\w*)\s*=\s*\*\s*(?:%s)(?![A-Za-z0-9_])"
+        % "|".join(re.escape(name) for name in status_pointers),
+        after_loop,
+    )
+    if len(targets) != 1:
+        raise fail(
+            "Q timeout diagnostic STATUS read is missing or duplicated: %d named loads" % len(targets)
+        )
+
+    guards = _guard_blocks(after_loop, targets[0])
+    reset = [c for c, b in guards if "V14_STATUS_RESET" in c and "V14_PRIMARY_RESET" in b]
+    fault = [c for c, b in guards if "V14_STATUS_FAULT_MASK" in c and "V14_PRIMARY_FAULT" in b]
+    if len(reset) != 1:
+        raise fail(
+            "Q timeout diagnostic does not classify reset from the diagnostic STATUS load: %d guards"
+            % len(reset)
+        )
+    if len(fault) != 1:
+        raise fail(
+            "Q timeout diagnostic does not classify every 0x%03X fault bit from the diagnostic "
+            "STATUS load: %d guards test the pinned mask" % (defines["V14_STATUS_FAULT_MASK"], len(fault))
+        )
+    kinds = [_guard_kind(condition) for condition, _ in guards]
+    if kinds.index("reset") > kinds.index("fault"):
+        raise fail(
+            "Q timeout diagnostic does not classify reset from the diagnostic STATUS load: "
+            "the fault test comes first"
+        )
+    return ["reset:0x%03X" % defines["V14_STATUS_RESET"]] + [
+        "fault:0x%03X" % bit
+        for bit in (1 << shift for shift in range(32))
+        if defines["V14_STATUS_FAULT_MASK"] & bit
+    ]
+
+
 def verify_primary_contract(
     vendor_masked: str, variant: str, defines: dict[str, int]
 ) -> dict[str, object]:
@@ -716,7 +767,8 @@ def verify_primary_contract(
 
     # Everything before the loop and everything after it is outside authoritative
     # timing; only Q may touch STATUS there, and only once.
-    outside = body[:loop_start] + body[loop_stop:]
+    after_loop = body[loop_stop:]
+    outside = body[:loop_start] + after_loop
     diagnostic_loads = len(
         re.findall(
             r"\*\s*(?:%s)(?![A-Za-z0-9_])"
@@ -724,15 +776,16 @@ def verify_primary_contract(
             outside,
         )
     )
+    classification: list[str] = []
     if variant == "Q":
         if diagnostic_loads != 1:
             raise fail(
                 "Q timeout diagnostic STATUS read is missing or duplicated: %d loads" % diagnostic_loads
             )
+        classification = _q_timeout_classification(after_loop, roles, defines)
     elif diagnostic_loads != 0:
         raise fail("%s primary helper reads STATUS outside its loop: %d loads" % (variant, diagnostic_loads))
 
-    after_loop = body[loop_stop:]
     if "DWT->CYCCNT" in after_loop:
         raise fail("%s timeout path publishes a first-observation timestamp" % variant)
     if CONVERGE_SYMBOL in body:
@@ -746,6 +799,7 @@ def verify_primary_contract(
         "valid_iteration_range": [1, ITERATION_BOUND],
         "fault_bits_gated": fault_bits,
         "reset_bit_gated": defines["V14_STATUS_RESET"],
+        "q_timeout_classification": classification,
         "q_timeout_diagnostic_status_loads": diagnostic_loads,
         "first_observation_categories": [] if variant == "Q" else ["Q_FIRST", "S5_FIRST", "SAME_ITERATION"],
     }
