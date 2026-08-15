@@ -343,13 +343,21 @@ def verify_pre_run_contract(vendor_masked: str, defines: dict[str, int]) -> dict
     require_define(defines, "V14_STATUS_CMD_END", STATUS_CMD_END, "status mask contract")
     require_define(defines, "V14_STATUS_FAULT_MASK", STATUS_FAULT_MASK, "status mask contract")
 
-    setup_start, setup_stop = function_span(vendor_masked, "test_u85", "queue setup function")
+    # The gate is anchored on whichever function actually programs the queue,
+    # rather than on a function name, so the proof holds wherever the vendor
+    # keeps its programming.
+    spans = function_spans(vendor_masked)
+    programming_sites = positions(vendor_masked, _QBASE_WRITE) + positions(vendor_masked, _QSIZE_WRITE)
+    if not programming_sites:
+        raise fail("pre-program STATUS gate does not dominate QBASE/QSIZE: no queue programming found")
+    owners = {enclosing_function(spans, site) for site in programming_sites}
+    if len(owners) != 1:
+        raise fail("queue programming is split across %d functions: %s" % (len(owners), sorted(owners)))
+    setup_start, setup_stop = function_span(vendor_masked, sorted(owners)[0], "queue setup function")
     setup = vendor_masked[setup_start:setup_stop]
 
     pre_program_reads = positions(setup, _STATUS_READ)
     queue_accesses = positions(setup, _QBASE_WRITE) + positions(setup, _QSIZE_WRITE)
-    if not queue_accesses:
-        raise fail("pre-program STATUS gate does not dominate QBASE/QSIZE: no queue programming found")
     if len(pre_program_reads) != 1 or pre_program_reads[0] > min(queue_accesses):
         raise fail(
             "pre-program STATUS gate does not dominate QBASE/QSIZE: %d gate loads, first queue access at %d"
@@ -718,10 +726,14 @@ def verify_hard_bypass_contract(vendor_masked: str) -> dict[str, object]:
     """Prove the retained V12/V13 stock vector and NVIC hard bypass."""
 
     install = "NVIC_SetVector(NPU0_IRQn, (uint32_t)&%s)" % STOCK_VECTOR_SYMBOL
-    if len(positions(vendor_masked, install)) != 1:
+    install_sites = positions(vendor_masked, install)
+    if len(install_sites) != 1:
         raise fail("runtime vector is not the exact stock u85_irq_handler")
 
-    setup_start, setup_stop = function_span(vendor_masked, "test_u85", "queue setup function")
+    spans = function_spans(vendor_masked)
+    setup_start, setup_stop = function_span(
+        vendor_masked, enclosing_function(spans, install_sites[0]), "runtime setup function"
+    )
     setup = vendor_masked[setup_start:setup_stop]
     observed = []
     for probe in HARD_BYPASS_PROBE_ORDER:
@@ -737,7 +749,6 @@ def verify_hard_bypass_contract(vendor_masked: str) -> dict[str, object]:
     if re.search(r"NVIC\s*->\s*ISER", vendor_masked):
         raise fail("direct NVIC ISER enable write is reachable")
 
-    spans = function_spans(vendor_masked)
     sites = []
     for match in re.finditer(r"(?<![A-Za-z0-9_])irq_triggered\s*=\s*true", vendor_masked):
         sites.append(enclosing_function(spans, match.start()))
@@ -1052,10 +1063,26 @@ def verify_cleanup_contract(vendor_masked: str, variant: str) -> dict[str, objec
 # Runner wire contract
 # ---------------------------------------------------------------------------
 
-_RECORD_RE = re.compile(r"typedef\s+struct\s*\{(.*?)\}\s*pmu_diag_record_t\s*;", re.S)
 _RECORD_FIELD_RE = re.compile(r"uint32_t\s+([A-Za-z_]\w*)\s*;")
 _SERIALIZE_RE = re.compile(r"put32\s*\(\s*&c\s*,\s*d\s*->\s*([A-Za-z_]\w*)\s*\)")
 _COPY_RE = re.compile(r"d\.([A-Za-z_]\w*)\s*=\s*%s\s*\[" % re.escape(MAILBOX_SYMBOL))
+
+
+MEASURED_CALL = "run_fixed_inference()"
+
+
+def _contiguous_appendix_run(names: list[str]) -> bool:
+    """True when the 34 appendix names form one ordered, non-repeating run.
+
+    The runner keeps its frozen v8 fields around the appendix, so the contract
+    is that the appendix words sit together in wire order -- not that they are
+    the only fields present.
+    """
+
+    if any(names.count(field) != 1 for field in APPENDIX_FIELDS):
+        return False
+    start = names.index(APPENDIX_FIELDS[0])
+    return tuple(names[start : start + APPENDIX_WORDS]) == APPENDIX_FIELDS
 
 
 def verify_runner_contract(runner_masked: str) -> dict[str, object]:
@@ -1078,18 +1105,19 @@ def verify_runner_contract(runner_masked: str) -> dict[str, object]:
         if assertion not in runner_masked:
             raise fail(reason)
 
-    record = _RECORD_RE.search(runner_masked)
-    if record is None:
+    record_end = runner_masked.find("} pmu_diag_record_t;")
+    record_start = runner_masked.rfind("typedef struct", 0, record_end) if record_end >= 0 else -1
+    if record_start < 0:
         raise fail("runner record does not carry the 34 appendix fields in wire order: no record found")
-    if tuple(_RECORD_FIELD_RE.findall(record.group(1))) != APPENDIX_FIELDS:
+    if not _contiguous_appendix_run(_RECORD_FIELD_RE.findall(runner_masked[record_start:record_end])):
         raise fail("runner record does not carry the 34 appendix fields in wire order")
 
-    if tuple(_SERIALIZE_RE.findall(runner_masked)) != APPENDIX_FIELDS:
+    if not _contiguous_appendix_run(_SERIALIZE_RE.findall(runner_masked)):
         raise fail("runner serialization order does not match the appendix table")
 
     reset_site = runner_masked.find(MAILBOX_RESET_SYMBOL + "();")
-    driver_site = runner_masked.find("pmu_diag_private_driver_call()")
-    if reset_site < 0 or driver_site < 0 or reset_site > driver_site:
+    driver_site = runner_masked.find(MEASURED_CALL, reset_site) if reset_site >= 0 else -1
+    if reset_site < 0 or driver_site < 0:
         raise fail("runner does not reset the mailbox before the measured call")
 
     magic_guard = re.search(

@@ -690,9 +690,15 @@ extern void v14_mailbox_reset(void);
 """
 
 
+# The frozen v8 fields the appendix is appended to. They are retained verbatim
+# so the contiguity rule is exercised rather than trivially satisfied.
+RUNNER_STOCK_FIELDS = ("hook_pmu_mmio_read_count", "hook_pmu_mmio_write_count")
+
+
 def runner_record_block():
+    stock = "\n".join("    uint32_t %s;" % field for field in RUNNER_STOCK_FIELDS)
     body = "\n".join("    uint32_t %s;" % field for field in APPENDIX_FIELDS)
-    return "typedef struct {\n%s\n} pmu_diag_record_t;\n" % body
+    return "typedef struct {\n%s\n%s\n} pmu_diag_record_t;\n" % (stock, body)
 
 
 def runner_reset_block():
@@ -700,6 +706,7 @@ def runner_reset_block():
 void pmu_diag_reset_v14_state(void)
 {
     v14_mailbox_reset();
+    pmu_diag_v14_transport_valid = 0U;
 }
 """
 
@@ -716,7 +723,9 @@ void pmu_diag_collect_v14(pmu_diag_record_t *out)
 
     memset(&d, 0, sizeof(d));
     pmu_diag_reset_v14_state();
-    pmu_diag_private_driver_call();
+    rc = run_fixed_inference();
+    d.hook_pmu_mmio_read_count = pmu_qual_hook_pmu_reads;
+    d.hook_pmu_mmio_write_count = pmu_qual_hook_pmu_writes;
     if (pmu_completion_visibility_v14_mailbox[33] != V14_MAILBOX_VALID) {
         pmu_diag_v14_transport_valid = 0U;
     }
@@ -730,13 +739,15 @@ void pmu_diag_collect_v14(pmu_diag_record_t *out)
 
 
 def runner_serialize_block():
+    stock = "\n".join("    put32(&c, d->%s);" % field for field in RUNNER_STOCK_FIELDS)
     lines = "\n".join("    put32(&c, d->%s);" % field for field in APPENDIX_FIELDS)
     return """
 void pmu_diag_serialize_v14(const pmu_diag_record_t *d, uint8_t *c)
 {
 %s
+%s
 }
-""" % lines
+""" % (stock, lines)
 
 
 def canonical_runner(variant):
@@ -1836,7 +1847,21 @@ def runner_build_id_drift(runner):
     )
 
 
+def runner_appendix_not_contiguous(runner):
+    return replace_once(
+        runner,
+        "    put32(&c, d->first_qread);\n",
+        "    put32(&c, d->hook_armed);\n    put32(&c, d->first_qread);\n",
+        "serialization run",
+    )
+
+
 RUNNER_MUTATIONS = (
+    (
+        "runner_appendix_words_not_contiguous",
+        runner_appendix_not_contiguous,
+        "runner serialization order does not match the appendix table",
+    ),
     (
         "runner_copy_before_magic_check",
         runner_copy_before_magic_check,
