@@ -127,7 +127,7 @@ STATUS_FAULT_MASK = 0x314
 
 # The suite is frozen at this many assertions. Adding a named fixture is a
 # deliberate act, so the count moves with it and never drifts silently.
-EXPECTED_PASS_COUNT = 493
+EXPECTED_PASS_COUNT = 545
 
 CHECKER_PATH = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
@@ -5292,6 +5292,627 @@ RUNNER_TRANSPORT_MUTATIONS = (
 )
 
 
+# ---------------------------------------------------------------------------
+# Final-gate blockers: every one of these was ACCEPT at d07f0d6, reproduced
+# against that exact tree before the fix, and is kept here so it stays closed.
+# ---------------------------------------------------------------------------
+
+# C 6.5.2.1 defines ``E1[E2]`` as ``(*((E1)+(E2)))``, so a subscript is a
+# dereference and the subscript is commutative. Enumerating only the ``*``
+# spelling left each of these invisible to every MMIO rule at once.
+SUBSCRIPT_MMIO_MUTATIONS = (
+    (
+        "q_primary_status_read_through_a_subscript",
+        _inject_into_q_loop("        status = status_reg[0];\n"),
+        "Q primary loop reads STATUS",
+    ),
+    (
+        "q_primary_status_read_through_a_reversed_subscript",
+        _inject_into_q_loop("        status = 0[status_reg];\n"),
+        "Q primary loop reads STATUS",
+    ),
+    (
+        "q_primary_status_read_through_a_parenthesised_subscript_base",
+        _inject_into_q_loop("        status = (status_reg)[0];\n"),
+        "Q primary loop reads STATUS",
+    ),
+    (
+        # A discarded load binds no name, so nothing but the access enumerator
+        # can see it -- which is what makes it the sharpest test of the fix.
+        "q_primary_status_read_through_a_discarded_subscript",
+        _inject_into_q_loop("        (void)status_reg[0];\n"),
+        "Q primary loop reads STATUS",
+    ),
+    (
+        "primary_status_read_through_a_discarded_numeric_subscript_base",
+        _inject_into_q_loop(
+            "        (void)((volatile uint32_t *)(uintptr_t)0x48000014U)[0];\n"
+        ),
+        "the primary helper reaches an NPU-region address this gate cannot resolve",
+    ),
+    (
+        "second_submit_through_a_subscript",
+        _append_after(
+            SUBMIT_WRITE,
+            "\t  ((volatile uint32_t *)(uintptr_t)0x48000000U)[0] = 1U;\n",
+            "submit write",
+        ),
+        "the command function reaches an NPU-region address this gate cannot resolve",
+    ),
+    (
+        "running_qsize_read_through_a_discarded_reversed_subscript",
+        _append_after(
+            SUBMIT_WRITE,
+            "\t  (void)0[(volatile uint32_t *)(uintptr_t)0x48000010U];\n",
+            "submit write",
+        ),
+        "the command function reaches an NPU-region address this gate cannot resolve",
+    ),
+)
+
+# A pointer cast says "this is an address". An identifier the evaluator cannot
+# fold is then evidence that nothing here can say *which* address -- not
+# evidence that it is not one. ``0x50004004U & V14_U32_INVALID`` needs no new
+# macro: the sentinel is already 0xFFFFFFFF in every generated vendor.
+UNFOLDABLE_ADDRESS_MUTATIONS = (
+    (
+        "primary_status_read_through_an_and_masked_sentinel_address",
+        _inject_into_q_loop(
+            "        status = *(volatile uint32_t *)(uintptr_t)"
+            "(0x50004004U & V14_U32_INVALID);\n"
+        ),
+        "the primary helper reaches an NPU-region address this gate cannot resolve",
+    ),
+    (
+        "second_submit_through_an_and_masked_sentinel_address",
+        _append_after(
+            SUBMIT_WRITE,
+            "\t  *(volatile uint32_t *)(uintptr_t)(0x50004008U & V14_U32_INVALID) = 1U;\n",
+            "submit write",
+        ),
+        "the command function reaches an NPU-region address this gate cannot resolve",
+    ),
+    (
+        "running_qsize_read_through_an_and_masked_sentinel_address",
+        _append_after(
+            SUBMIT_WRITE,
+            "\t  (void)*(volatile uint32_t *)(uintptr_t)(0x50004014U & V14_U32_INVALID);\n",
+            "submit write",
+        ),
+        "the command function reaches an NPU-region address this gate cannot resolve",
+    ),
+    (
+        "primary_status_read_through_an_undefined_mask_identifier",
+        _inject_into_q_loop(
+            "        status = *(volatile uint32_t *)(uintptr_t)(0x50004004U & addr_mask_g);\n"
+        ),
+        "the primary helper reaches an NPU-region address this gate cannot resolve",
+    ),
+    (
+        "primary_status_read_through_an_unfoldable_additive_identifier",
+        _inject_into_q_loop(
+            "        status = *(volatile uint32_t *)(uintptr_t)(0x50004004U + zero_off_g);\n"
+        ),
+        "the primary helper reaches an NPU-region address this gate cannot resolve",
+    ),
+    (
+        "primary_status_read_through_an_unfoldable_struct_member_mask",
+        _inject_into_q_loop(
+            "        status = *(volatile uint32_t *)(uintptr_t)(0x50004004U & cfg_g.mask);\n"
+        ),
+        "the primary helper reaches an NPU-region address this gate cannot resolve",
+    ),
+    (
+        # Both halves of B1 in one spelling: the subscript hides the access from
+        # the enumerator and the AND-masked identifier hides the address from
+        # the resolver.
+        "and_masked_address_reached_through_a_subscript",
+        _inject_into_q_loop(
+            "        (void)((volatile uint32_t *)(uintptr_t)"
+            "(0x50004004U & V14_U32_INVALID))[0];\n"
+        ),
+        "the primary helper reaches an NPU-region address this gate cannot resolve",
+    ),
+)
+
+# C truncates a quotient toward zero (6.5.5p6); Python floors. ``(0-3)/2`` is -1
+# to a compiler and -2 to a floor-dividing evaluator, and 0xFFFFFFFF has bit 0
+# set where -2 does not -- so the gate reads "not a submit" where the built image
+# starts the NPU a second time.
+C_ARITHMETIC_FOLDING_MUTATIONS = (
+    (
+        "hidden_cmd_start_through_a_truncating_division",
+        _append_after(SUBMIT_WRITE, "\t  write_reg(NPU_REG_CMD, (0-3)/2);\n", "submit write"),
+        "command path does not carry exactly one NPU submit write",
+    ),
+    (
+        "hidden_cmd_start_through_a_truncating_modulo",
+        _append_after(SUBMIT_WRITE, "\t  write_reg(NPU_REG_CMD, (0-4)%3);\n", "submit write"),
+        "command path does not carry exactly one NPU submit write",
+    ),
+)
+
+# ``#undef`` plus a redefinition is warning-free, conforming C11 (6.10.3.5) and
+# leaves the frozen spelling of the store untouched, so the image publishes into
+# a different appendix word than the one the gate reads.
+PREPROCESSING_HISTORY_MUTATIONS = (
+    (
+        "appendix_word_repointed_by_undef_and_redefine",
+        lambda vendor: replace_once(
+            vendor,
+            VARIANT_ID_STORE,
+            "#undef V14_MBOX_VARIANT_ID\n#define V14_MBOX_VARIANT_ID 7U\n"
+            + VARIANT_ID_STORE
+            + "#undef V14_MBOX_VARIANT_ID\n#define V14_MBOX_VARIANT_ID 0U\n",
+            "variant id store",
+        ),
+        "undefines a contract macro",
+    ),
+    (
+        "register_offset_macro_undefined_mid_source",
+        _prepend_before(
+            SUBMIT_WRITE, "#undef NPU_REG_CMD\n#define NPU_REG_CMD 0x10\n", "submit write"
+        ),
+        "undefines a contract macro",
+    ),
+    (
+        # Not a fresh bypass -- d07f0d6 already refused this one, because
+        # ``parse_defines`` keeps the last value and the appendix offset table
+        # then fails to match. It is kept as the negative control for the pair
+        # above: only ``#undef`` plus a *restoring* redefinition evaded that,
+        # and this pins the plain-redefinition half to a named rule of its own.
+        "contract_macro_redefined_with_a_second_value",
+        _prepend_before(
+            VARIANT_ID_STORE, "#define V14_MBOX_VARIANT_ID 7U\n", "variant id store"
+        ),
+        "defines the contract macro V14_MBOX_VARIANT_ID with more than one value",
+    ),
+)
+
+RUNNER_PREPROCESSING_MUTATIONS = (
+    (
+        "runner_contract_macro_undefined_before_the_guard",
+        _prepend_before(
+            RUNNER_MAGIC_GUARD_LINE,
+            "#undef V14_MAILBOX_VALID\n#define V14_MAILBOX_VALID 0x5631344D\n",
+            "runner magic guard",
+        ),
+        "undefines a contract macro",
+    ),
+)
+
+# The record is ordinary memory between the proven copy and ``put32``. Proving
+# where the 34 words came *from* does not bound what is serialized.
+RUNNER_RECORD_CLOSURE_ANCHOR = "    }\n    *out = d;\n"
+
+
+def _after_the_appendix_copy(statement):
+    return _prepend_before(
+        RUNNER_RECORD_CLOSURE_ANCHOR,
+        "    }\n" + statement,
+        "runner appendix copy tail",
+    )
+
+
+RUNNER_RECORD_CLOSURE_MUTATIONS = (
+    (
+        "runner_record_field_overwritten_after_the_copy",
+        _after_the_appendix_copy("    d.variant_id = 3U;\n"),
+        "runner rewrites a copied appendix field outside the mailbox-magic branch",
+    ),
+    (
+        "runner_record_field_read_modify_written_after_the_copy",
+        _after_the_appendix_copy("    d.first_qread |= 0x80000000U;\n"),
+        "runner rewrites a copied appendix field through a read-modify-write",
+    ),
+    (
+        "runner_record_field_incremented_after_the_copy",
+        _after_the_appendix_copy("    ++d.primary_iterations;\n"),
+        "runner rewrites a copied appendix field through a read-modify-write",
+    ),
+    (
+        "runner_record_fields_swapped_after_the_copy",
+        _after_the_appendix_copy(
+            "    { uint32_t swap_tmp = d.first_qread;\n"
+            "      d.first_qread = d.first_status;\n"
+            "      d.first_status = swap_tmp; }\n"
+        ),
+        "runner rewrites a copied appendix field outside the mailbox-magic branch",
+    ),
+    (
+        "runner_record_field_zeroed_before_serialization",
+        _after_the_appendix_copy("    d.mailbox_valid = 0U;\n"),
+        "runner rewrites a copied appendix field outside the mailbox-magic branch",
+    ),
+)
+
+# The literal scan only ever refused the ISER address written as one number.
+# A helper called from ``test_commands`` is outside all four functions that get
+# dereference resolution, which is where the computed address went.
+NVIC_COMPUTED_ADDRESS_MUTATIONS = (
+    (
+        "computed_nvic_iser_enable_in_an_uninspected_helper",
+        lambda vendor: replace_once(
+            replace_once(
+                replace_once(
+                    vendor,
+                    "#define V14_U32_INVALID",
+                    "#define V14_NVIC_LO 0xE000E000U\n#define V14_U32_INVALID",
+                    "invalid sentinel define",
+                ),
+                "int test_commands(",
+                "static void v14_extra_setup(void)\n{\n"
+                "    *(volatile uint32_t *)(uintptr_t)(V14_NVIC_LO + 0x100U) = (1UL << 20);\n"
+                "}\n\nint test_commands(",
+                "command function head",
+            ),
+            SUBMIT_WRITE,
+            SUBMIT_WRITE + "\t  v14_extra_setup();\n",
+            "submit write",
+        ),
+        "direct NVIC ISER enable write is reachable",
+    ),
+    (
+        "computed_nvic_iser_enable_through_a_subscript",
+        lambda vendor: replace_once(
+            replace_once(
+                replace_once(
+                    vendor,
+                    "#define V14_U32_INVALID",
+                    "#define V14_NVIC_LO 0xE000E000U\n#define V14_U32_INVALID",
+                    "invalid sentinel define",
+                ),
+                "int test_commands(",
+                "static void v14_extra_enable(void)\n{\n"
+                "    ((volatile uint32_t *)(uintptr_t)(V14_NVIC_LO + 0x100U))[0] = 1UL;\n"
+                "}\n\nint test_commands(",
+                "command function head",
+            ),
+            SUBMIT_WRITE,
+            SUBMIT_WRITE + "\t  v14_extra_enable();\n",
+            "submit write",
+        ),
+        "direct NVIC ISER enable write is reachable",
+    ),
+)
+
+# ``*trig_alias = true`` never spells the flag on the left of an ``=``, so the
+# publication-site walk kept reporting the handler as its only writer.
+IRQ_TRIGGERED_ALIAS_MUTATIONS = (
+    (
+        "irq_triggered_set_true_through_an_alias",
+        _append_after(
+            SUBMIT_WRITE,
+            "\t  { volatile bool *trig_alias = &irq_triggered; *trig_alias = true; }\n",
+            "submit write",
+        ),
+        "irq_triggered can become true on a measured path",
+    ),
+    (
+        "irq_triggered_address_taken_through_a_parenthesised_alias",
+        _append_after(
+            SUBMIT_WRITE,
+            "\t  { volatile bool *trig_alias = &(irq_triggered); trig_alias[0] = true; }\n",
+            "submit write",
+        ),
+        "irq_triggered can become true on a measured path",
+    ),
+    (
+        "irq_triggered_address_passed_to_a_call",
+        _append_after(
+            SUBMIT_WRITE, "\t  v14_touch_flag(&irq_triggered);\n", "submit write"
+        ),
+        "irq_triggered can become true on a measured path",
+    ),
+)
+
+
+def _appendix_store_line(vendor, macro_word):
+    head = "\t  pmu_completion_visibility_v14_mailbox[V14_MBOX_%s] = " % macro_word
+    for candidate in vendor.split("\n"):
+        if candidate.startswith(head):
+            return candidate
+    raise AssertionError("no success-path store found for %s" % macro_word)
+
+
+def _appendix_store_deleted(macro_word):
+    """Delete the one success-path store of an appendix word outright."""
+
+    def mutate(vendor):
+        line = _appendix_store_line(vendor, macro_word)
+        return vendor.replace(line + "\n", "", 1)
+
+    return mutate
+
+
+def _comment_out_appendix_store(vendor, macro_word):
+    line = _appendix_store_line(vendor, macro_word)
+    return vendor.replace(line + "\n", "\t  /* %s */\n" % line.strip(), 1)
+
+
+def _splice_out_appendix_store(vendor, macro_word):
+    """Delete the store with a ``/\\<newline>*`` opener the compiler honours."""
+
+    line = _appendix_store_line(vendor, macro_word)
+    return vendor.replace(line + "\n", "\t  /\\\n*\n" + line + "\n\t  */\n", 1)
+
+
+# A word no store ever reaches carries the reset sentinel into the frame. Every
+# other rule is written over the stores that *do* exist, so an outright deletion
+# left the gate with nothing to object to -- fail-silent, but still a manifest
+# that asserts an observation the image never made.
+APPENDIX_PRODUCER_MUTATIONS = (
+    (
+        "appendix_word_with_no_success_path_store",
+        _appendix_store_deleted("NVIC_PENDING_AFTER_FINAL_CLEAR"),
+        "appendix word 30 (nvic_pending_after_final_clear) has no store outside the mailbox reset",
+    ),
+    (
+        "appendix_word_producer_commented_out",
+        lambda vendor: _comment_out_appendix_store(vendor, "NVIC_ACTIVE_AFTER_CLEANUP"),
+        "appendix word 31 (nvic_active_after_cleanup) has no store outside the mailbox reset",
+    ),
+    (
+        "appendix_word_producer_deleted_by_a_spliced_comment",
+        lambda vendor: _splice_out_appendix_store(vendor, "IRQ_TRIGGERED_AFTER_CLEANUP"),
+        "appendix word 32 (irq_triggered_after_cleanup) has no store outside the mailbox reset",
+    ),
+)
+
+
+def run_final_blocker_suite(gate):
+    """The d07f0d6 acceptance blockers, each reproduced before it was closed."""
+
+    run_vendor_mutations(gate, SUBSCRIPT_MMIO_MUTATIONS, "Q")
+    run_vendor_mutations(gate, UNFOLDABLE_ADDRESS_MUTATIONS, "Q")
+    run_vendor_mutations(gate, C_ARITHMETIC_FOLDING_MUTATIONS, "Q")
+    run_vendor_mutations(gate, PREPROCESSING_HISTORY_MUTATIONS, "Q")
+    run_vendor_mutations(gate, NVIC_COMPUTED_ADDRESS_MUTATIONS, "Q")
+    run_vendor_mutations(gate, IRQ_TRIGGERED_ALIAS_MUTATIONS, "Q")
+    run_vendor_mutations(gate, APPENDIX_PRODUCER_MUTATIONS, "Q")
+    run_runner_mutations(gate, RUNNER_RECORD_CLOSURE_MUTATIONS, "Q")
+    run_runner_mutations(gate, RUNNER_PREPROCESSING_MUTATIONS, "Q")
+
+    # The subscript rule has to see the *variant matrix* too, not only the Q
+    # loop it was reported against.
+    for variant in ("QS", "SQ"):
+        name = "%s_running_qsize_read_through_a_subscript" % variant.lower()
+        REJECTED_FIXTURES.add(name)
+        expect_reject(
+            gate,
+            variant,
+            canonical_runner(variant),
+            _append_after(
+                SUBMIT_WRITE,
+                "\t  (void)((volatile uint32_t *)(uintptr_t)0x48000010U)[0];\n",
+                "submit write",
+            )(canonical_vendor(variant)),
+            name,
+            "the command function reaches an NPU-region address this gate cannot resolve",
+        )
+
+    _check_c_integer_folding(gate)
+    _check_address_of_is_not_bitwise_and(gate)
+    _check_alias_resolution_is_bounded(gate)
+
+
+def _check_c_integer_folding(gate):
+    """The evaluator answers what a C compiler answers, sign included."""
+
+    cases = (
+        ("(0-3)/2", -1),
+        ("(0-3)%2", -1),
+        ("(0-4)%3", -1),
+        ("(0-4)/3", -1),
+        ("3/(0-2)", -1),
+        ("3%(0-2)", 1),
+        ("(0-7)/2", -3),
+        ("(0-7)%2", -1),
+        ("7/2", 3),
+        ("7%2", 1),
+    )
+    wrong = [
+        (expr, gate._evaluate_constant(expr, {}), expected)
+        for expr, expected in cases
+        if gate._evaluate_constant(expr, {}) != expected
+    ]
+    check(
+        "integer division and modulo truncate toward zero as C does",
+        not wrong,
+        repr(wrong)[:80],
+    )
+    # The identity C guarantees: ``(a/b)*b + a%b == a`` for every folded pair.
+    broken = []
+    for left in (-7, -4, -3, 3, 4, 7):
+        for right in (-3, -2, 2, 3):
+            expr = "(0%+d)/(0%+d)" % (left, right)
+            rest = "(0%+d)%%(0%+d)" % (left, right)
+            quotient = gate._evaluate_constant(expr, {})
+            remainder = gate._evaluate_constant(rest, {})
+            if quotient * right + remainder != left:
+                broken.append((left, right, quotient, remainder))
+    check("the folded quotient and remainder satisfy C's identity", not broken, repr(broken)[:80])
+
+
+def _check_address_of_is_not_bitwise_and(gate):
+    """``&`` as an operator survives flattening; ``&`` as address-of does not.
+
+    The negative controls matter as much as the rejections above: a rule that
+    refused *every* AND-masked address would be indistinguishable from one that
+    still could not read them.
+    """
+
+    defines = {
+        "U85_BASE_ADDRESS": 0x48000000,
+        "NPU_REG_STATUS": 0x14,
+        "NPU_REG_CMD": 0x00,
+        "V14_ADDR_MASK": 0xFFFFFFFF,
+    }
+    folded = gate.resolve_address_role(
+        "(volatile uint32_t *)(uintptr_t)(0x48000014U & V14_ADDR_MASK)", defines, {}
+    )
+    check(
+        "an AND-masked address folds to the register it names",
+        folded == "STATUS",
+        repr(folded),
+    )
+    check(
+        "address-of is still stripped from a flattened address",
+        gate._flatten_address("&mailbox[3]").strip().startswith("mailbox"),
+        repr(gate._flatten_address("&mailbox[3]")),
+    )
+    check(
+        "a bitwise AND survives flattening",
+        "&" in gate._flatten_address("(0x48000014U & V14_ADDR_MASK)"),
+        repr(gate._flatten_address("(0x48000014U & V14_ADDR_MASK)")),
+    )
+    unfoldable = gate.resolve_address_role(
+        "(volatile uint32_t *)(uintptr_t)(0x48000014U & runtime_mask)", defines, {}
+    )
+    check(
+        "an address this gate cannot fold is UNRESOLVED, never ignored",
+        unfoldable == gate.UNRESOLVED_ROLE,
+        repr(unfoldable),
+    )
+
+
+def _check_alias_resolution_is_bounded(gate):
+    """A several-thousand-link copy chain settles in work linear in its length.
+
+    The assertion is a *call count*, not a wall clock: the defect was the shape
+    of the walk, and a deterministic budget says so without depending on how
+    fast the machine running the suite happens to be. A quadratic walk over
+    4000 links costs about eight million resolutions; the bound below is 40
+    thousand. A wall-clock check follows only as a coarse backstop.
+    """
+
+    defines = {"U85_BASE_ADDRESS": 0x48000000, "NPU_REG_QREAD": 0x10}
+
+    def chain_body(links):
+        head = "    volatile uint32_t *p0 = (volatile uint32_t *)(U85_BASE_ADDRESS + NPU_REG_QREAD);\n"
+        return head + "".join(
+            "    volatile uint32_t *p%d = p%d;\n" % (index, index - 1)
+            for index in range(1, links)
+        )
+
+    def resolutions_for(links):
+        original = gate.resolve_address_role
+        calls = [0]
+
+        def counted(expr, defs, known):
+            calls[0] += 1
+            return original(expr, defs, known)
+
+        gate.resolve_address_role = counted
+        try:
+            started = time.time()
+            roles = gate.pointer_roles(chain_body(links), defines)
+            return calls[0], roles, time.time() - started
+        finally:
+            gate.resolve_address_role = original
+
+    links = 4000
+    calls, roles, elapsed = resolutions_for(links)
+    half_calls, _half_roles, _half_elapsed = resolutions_for(links // 2)
+
+    check(
+        "a %d-link alias chain resolves in work linear in its length" % links,
+        calls <= 10 * links,
+        "%d resolutions for %d links" % (calls, links),
+    )
+    # Doubling the chain may not more than roughly double the work. This is the
+    # deterministic form of the claim -- a quadratic walk quadruples here, and no
+    # wall clock is involved, so the assertion cannot flake on a busy machine.
+    check(
+        "doubling the alias chain does not more than double the work",
+        calls <= 3 * half_calls,
+        "%d resolutions at %d links vs %d at %d" % (calls, links, half_calls, links // 2),
+    )
+    # Non-vacuity: a bounded walk that resolved nothing would also be cheap.
+    check(
+        "every link of the chain still resolves to the register it copies",
+        len(roles) == links and set(roles.values()) == {"QREAD"},
+        "%d names, roles=%s" % (len(roles), sorted(set(roles.values()))),
+    )
+    check(
+        "the bounded alias walk finishes well inside a coarse wall-clock bound",
+        elapsed < 30.0,
+        "%.2fs for %d links" % (elapsed, links),
+    )
+    # The stepped-name walk is driven by the operator set, not by an alternation
+    # rebuilt from the candidate names, so a large name set costs no rescan.
+    stepped_text = chain_body(2000) + "    p1999 += 4;\n"
+    many = tuple("p%d" % index for index in range(2000))
+    check(
+        "the stepped-name walk answers the same over a large name set",
+        gate.compound_assignment_targets(stepped_text, many) == ("p1999",)
+        and gate.compound_assignment_targets(stepped_text, ("p1999",)) == ("p1999",)
+        and gate.compound_assignment_targets(stepped_text, ("p0",)) == (),
+        repr(gate.compound_assignment_targets(stepped_text, many))[:60],
+    )
+
+    # The same chain through the whole gate is a verdict, never a hang and never
+    # a traceback.
+    chain = "".join(
+        "    volatile uint32_t *c%d = %s;\n" % (index, "qread_reg" if index == 0 else "c%d" % (index - 1))
+        for index in range(2000)
+    )
+    started = time.time()
+    try:
+        gate.verify_generated_sources(
+            canonical_runner("Q"),
+            replace_once(
+                canonical_vendor("Q"),
+                Q_LOOP_PROLOGUE,
+                chain + Q_LOOP_PROLOGUE,
+                "Q primary loop prologue",
+            ),
+            "Q",
+        )
+        outcome = "accepted"
+    except gate.GateError as exc:
+        outcome = "FAIL %s" % exc
+    except RecursionError as exc:  # pragma: no cover - the defect this guards
+        outcome = "RecursionError %r" % exc
+    check(
+        "a 2000-link chain through the whole gate is a verdict, not a hang",
+        not outcome.startswith("RecursionError") and time.time() - started < 60.0,
+        "%s in %.2fs" % (outcome[:40], time.time() - started),
+    )
+
+    # The access enumerator and the address-of stripper both walk raw operator
+    # runs. A source made of nothing but openers, stars or ampersands is a named
+    # verdict rather than a traceback -- the same guarantee ``_MAX_SOURCE_BYTES``
+    # and ``_MAX_NESTING_DEPTH`` already carry for the constructs they bound.
+    # Appended to a *valid* vendor so the run actually reaches the enumerator
+    # rather than stopping at the first define check. Either verdict is fine
+    # here -- the assertion is that one is reached, bounded and traceback-free.
+    hostile = {
+        "20k open subscripts": "\nint hostile_q = " + "a[" * 20000 + "0;\n",
+        "20k unary stars": "\nint hostile_s = " + "*" * 20000 + "p;\n",
+        "20k address-of": "\nint hostile_w = " + "&" * 20000 + "p;\n",
+        "6000 deep parens": "\nint hostile_z = " + "(" * 6000 + "1" + ")" * 6000 + ";\n",
+        "20k balanced subscripts": "\nint hostile_b = " + "a[0]" * 20000 + ";\n",
+    }
+    for label, tail in hostile.items():
+        started = time.time()
+        try:
+            gate.verify_generated_sources(
+                canonical_runner("Q"), canonical_vendor("Q") + tail, "Q"
+            )
+            verdict = "accepted"
+        except gate.GateError as exc:
+            verdict = "FAIL %s" % exc
+        except RecursionError as exc:  # pragma: no cover - the defect this guards
+            verdict = "RecursionError %r" % exc
+        elapsed = time.time() - started
+        check(
+            "a vendor carrying %s is a bounded verdict, not a traceback" % label,
+            (verdict == "accepted" or verdict.startswith("FAIL ")) and elapsed < 30.0,
+            "%s in %.2fs" % (verdict[:40], elapsed),
+        )
+
+
 def run_reviewer_blocker_suite(gate):
     """Every acceptance and red-team blocker, as a fixture that once passed."""
 
@@ -5708,6 +6329,7 @@ if __name__ == "__main__":
         run_predicate_and_provenance_suite(gate)
         run_manifest_evidence_suite(gate)
         run_reviewer_blocker_suite(gate)
+        run_final_blocker_suite(gate)
         run_coverage_suite()
 
     try:
