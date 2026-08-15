@@ -126,7 +126,7 @@ STATUS_FAULT_MASK = 0x314
 
 # The suite is frozen at this many assertions. Adding a named fixture is a
 # deliberate act, so the count moves with it and never drifts silently.
-EXPECTED_PASS_COUNT = 366
+EXPECTED_PASS_COUNT = 371
 
 CHECKER_PATH = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
@@ -2643,6 +2643,16 @@ def run_canonical_suite(gate):
             repr(doc.get("variant_id_publication")),
         )
         check(
+            "%s manifest reports the terminal cleanup as TEST_CPM-conditional" % variant,
+            doc.get("cleanup_terminal_conditional_on") == "TEST_CPM==1"
+            and doc.get("cleanup_terminal_branch_compiled_proof") is False
+            and any(
+                item.startswith("test_cpm_branch_not_preprocessed")
+                for item in doc.get("residual_limitations", [])
+            ),
+            repr(doc.get("cleanup_terminal_conditional_on")),
+        )
+        check(
             "%s manifest counts all 34 appendix copies in the magic branch" % variant,
             doc.get("runner_appendix_copies") == APPENDIX_WORDS
             and doc.get("runner_copy_dominated_by_magic") is True,
@@ -3502,6 +3512,32 @@ def magic_store_with_a_spaced_semicolon(vendor):
     )
 
 
+# -- TEST_CPM: the terminal cleanup writes live in a preprocessor branch. ---
+
+
+def test_cpm_compiled_out(vendor):
+    return replace_once(vendor, "#define TEST_CPM 1", "#define TEST_CPM 0", "TEST_CPM define")
+
+
+def test_cpm_guard_removed(vendor):
+    text = replace_once(vendor, "#if(TEST_CPM==1)\n", "", "TEST_CPM guard")
+    return replace_once(text, "#endif\n", "", "TEST_CPM endif")
+
+
+TEST_CPM_MUTATIONS = (
+    (
+        "test_cpm_branch_compiled_out",
+        test_cpm_compiled_out,
+        "cleanup terminal sequence is compiled out: TEST_CPM is 0, not 1",
+    ),
+    (
+        "test_cpm_guard_removed_from_the_terminal_sequence",
+        test_cpm_guard_removed,
+        "cleanup terminal sequence is not guarded by one #if(TEST_CPM==1)",
+    ),
+)
+
+
 def run_fail_open_suite(gate):
     run_vendor_mutations(gate, LEXICAL_VENDOR_MUTATIONS, "Q")
     run_vendor_mutations(gate, LOOP_STRUCTURE_MUTATIONS, "Q")
@@ -3512,6 +3548,7 @@ def run_fail_open_suite(gate):
     run_runner_mutations(gate, RUNNER_DOMINANCE_MUTATIONS, "Q")
     run_runner_mutations(gate, LEXICAL_RUNNER_MUTATIONS, "Q")
     run_vendor_mutations(gate, FAIL_CLOSED_MUTATIONS, "Q")
+    run_vendor_mutations(gate, TEST_CPM_MUTATIONS, "Q")
 
     # Every variant carries its own id, so the binding is proven per variant
     # rather than once on Q's behalf.
@@ -3748,6 +3785,9 @@ def run_coverage_suite():
         "malformed_qsize_expected_define",
         "malformed_iteration_bound_define",
         "malformed_appendix_offset_define",
+        # The terminal cleanup writes live in a preprocessor branch.
+        "test_cpm_branch_compiled_out",
+        "test_cpm_guard_removed_from_the_terminal_sequence",
     }
     missing = sorted(required - REJECTED_FIXTURES)
     check("every design-mandated negative fixture is present", not missing, repr(missing))

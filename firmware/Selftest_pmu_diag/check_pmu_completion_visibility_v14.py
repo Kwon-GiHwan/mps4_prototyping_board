@@ -162,6 +162,10 @@ RESIDUAL_LIMITATIONS = (
     "V12_HPRINTF_SEAM source anchor only; binding it to the qualified "
     "__wrap_printf callsite address is an ELF contract",
     "no_elf_disassembly_or_dwarf_evidence: every verdict here is source-structural",
+    "test_cpm_branch_not_preprocessed: the H-PRINTF seam and the terminal CMD=0xC are proven "
+    "inside the #if(TEST_CPM==1) branch of a source that defines TEST_CPM to 1; this gate does "
+    "not preprocess or compile, so whether the built image kept that branch is a "
+    "build-configuration fact belonging to the later qualification chunk",
 )
 
 MAILBOX_SYMBOL = "pmu_completion_visibility_v14_mailbox"
@@ -1639,7 +1643,36 @@ def _hprintf_seam_site(cleanup: str, cleanup_raw: str, cmd0: int, terminal: int)
     return callsites[0]
 
 
-def verify_cleanup_contract(vendor_masked: str, vendor_text: str, variant: str) -> dict[str, object]:
+_TEST_CPM_IF_RE = re.compile(r"#[ \t]*if[ \t]*\(?[ \t]*TEST_CPM[ \t]*==[ \t]*1[ \t]*\)?")
+_TEST_CPM_ENDIF_RE = re.compile(r"(?m)^[ \t]*#[ \t]*endif")
+
+
+def _test_cpm_region(cleanup: str) -> tuple[int, int]:
+    """The ``#if(TEST_CPM==1)`` span the terminal cleanup writes live in.
+
+    The seam and the terminal ``CMD=0xC`` are inside a preprocessor branch, and
+    this gate reads source rather than a translation unit. What it can prove is
+    that the branch is the ``TEST_CPM==1`` one and that ``TEST_CPM`` is defined
+    to 1 in the same source; what it cannot prove is that the build actually
+    compiled it, which is why the manifest publishes that as a limitation
+    rather than implying the writes are unconditionally reachable.
+    """
+
+    opens = [match.end() for match in _TEST_CPM_IF_RE.finditer(cleanup)]
+    if len(opens) != 1:
+        raise fail(
+            "cleanup terminal sequence is not guarded by one #if(TEST_CPM==1): %d guards"
+            % len(opens)
+        )
+    close = _TEST_CPM_ENDIF_RE.search(cleanup, opens[0])
+    if close is None:
+        raise fail("cleanup terminal sequence is not guarded by one #if(TEST_CPM==1): no #endif")
+    return opens[0], close.start()
+
+
+def verify_cleanup_contract(
+    vendor_masked: str, vendor_text: str, variant: str, defines: dict[str, int]
+) -> dict[str, object]:
     """Prove failure isolation, history provenance and the stock success tail."""
 
     command_start, command_stop = function_span(vendor_masked, "test_commands", "command function")
@@ -1689,11 +1722,25 @@ def verify_cleanup_contract(vendor_masked: str, vendor_text: str, variant: str) 
     terminal = positions(cleanup, "write_reg(NPU_REG_CMD, 0x0000000C)")
     for site in terminal:
         markers.append((site, "CMD0xC"))
+    seam_site = -1
     if cmd0 and terminal:
-        markers.append((_hprintf_seam_site(cleanup, cleanup_raw, cmd0[0], terminal[0]), "H-PRINTF"))
+        seam_site = _hprintf_seam_site(cleanup, cleanup_raw, cmd0[0], terminal[0])
+        markers.append((seam_site, "H-PRINTF"))
     observed = tuple(token for _, token in sorted(markers))
     if observed != SUCCESS_CLEANUP_ORDER:
         raise fail("success cleanup ordering drifted: observed %s" % (list(observed),))
+
+    region_start, region_stop = _test_cpm_region(cleanup_raw)
+    if not region_start < seam_site < terminal[0] < region_stop:
+        raise fail(
+            "cleanup terminal sequence is not guarded by one #if(TEST_CPM==1): the seam and the "
+            "terminal CMD=0xC are not both inside it"
+        )
+    if defines.get("TEST_CPM") != 1:
+        raise fail(
+            "cleanup terminal sequence is compiled out: TEST_CPM is %s, not 1"
+            % ("undefined" if "TEST_CPM" not in defines else defines["TEST_CPM"])
+        )
 
     return {
         "success_cleanup_order": list(SUCCESS_CLEANUP_ORDER),
@@ -1702,6 +1749,8 @@ def verify_cleanup_contract(vendor_masked: str, vendor_text: str, variant: str) 
         "hprintf_seam_marker": HPRINTF_SEAM_MARKER_NAME,
         "hprintf_seam_wrap_symbol": HPRINTF_WRAP_SYMBOL,
         "hprintf_callsite_elf_qualified": False,
+        "cleanup_terminal_conditional_on": "TEST_CPM==1",
+        "cleanup_terminal_branch_compiled_proof": False,
     }
 
 
@@ -1711,8 +1760,6 @@ def verify_cleanup_contract(vendor_masked: str, vendor_text: str, variant: str) 
 
 _RECORD_FIELD_RE = re.compile(r"uint32_t\s+([A-Za-z_]\w*)\s*;")
 _SERIALIZE_RE = re.compile(r"put32\s*\(\s*&c\s*,\s*d\s*->\s*([A-Za-z_]\w*)\s*\)")
-
-
 def runner_copy_pattern(aliases: tuple[str, ...]) -> re.Pattern[str]:
     """An appendix-copy recogniser that also sees the mailbox array's aliases."""
 
@@ -1909,7 +1956,7 @@ def verify_generated_sources(runner_text: str, vendor_text: str, variant: str) -
     convergence = verify_convergence_contract(vendor_masked, defines)
     mailbox = verify_mailbox_contract(vendor_masked, defines)
     identity = verify_variant_identity(vendor_masked, defines, variant)
-    cleanup = verify_cleanup_contract(vendor_masked, vendor_text, variant)
+    cleanup = verify_cleanup_contract(vendor_masked, vendor_text, variant, defines)
     runner = verify_runner_contract(mask_c_lexical(runner_text))
     converge_body = function_text(vendor_masked, CONVERGE_SYMBOL, "common convergence helper")
     command_start, command_stop = function_span(vendor_masked, "test_commands", "command function")
