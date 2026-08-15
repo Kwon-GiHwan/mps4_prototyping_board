@@ -126,7 +126,7 @@ STATUS_FAULT_MASK = 0x314
 
 # The suite is frozen at this many assertions. Adding a named fixture is a
 # deliberate act, so the count moves with it and never drifts silently.
-EXPECTED_PASS_COUNT = 348
+EXPECTED_PASS_COUNT = 356
 
 CHECKER_PATH = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
@@ -2642,6 +2642,11 @@ def run_canonical_suite(gate):
             == "pmu_completion_visibility_v14_mailbox[V14_MBOX_VARIANT_ID] = V14_VARIANT_ID",
             repr(doc.get("variant_id_publication")),
         )
+        check(
+            "%s manifest counts all 34 appendix copies in the magic branch" % variant,
+            doc.get("runner_appendix_copies") == APPENDIX_WORDS
+            and doc.get("runner_copy_dominated_by_magic") is True,
+        )
 
 
 def run_pre_run_suite(gate):
@@ -3321,12 +3326,110 @@ VARIANT_ID_MUTATIONS = (
 )
 
 
+# -- Magic safety: one publication, at word 33, in the frozen spelling. -----
+
+
+def magic_stored_by_numeric_index_and_literal(vendor):
+    return replace_once(
+        vendor,
+        "\t  irq_history_mask = converged.status >> 16;\n",
+        "\t  pmu_completion_visibility_v14_mailbox[33] = 0x5631344DU;\n"
+        "\t  irq_history_mask = converged.status >> 16;\n",
+        "cleanup seam",
+    )
+
+
+def magic_stored_through_mailbox_alias(vendor):
+    return replace_once(
+        vendor,
+        "\t  irq_history_mask = converged.status >> 16;\n",
+        "\t  volatile uint32_t *mb_alias = pmu_completion_visibility_v14_mailbox;\n"
+        "\t  mb_alias[33] = 0x5631344DU;\n"
+        "\t  irq_history_mask = converged.status >> 16;\n",
+        "cleanup seam",
+    )
+
+
+MAGIC_SAFETY_MUTATIONS = (
+    (
+        "magic_published_by_numeric_index_and_literal",
+        magic_stored_by_numeric_index_and_literal,
+        "mailbox_valid is published from more than one site",
+    ),
+    (
+        "magic_published_through_a_mailbox_alias",
+        magic_stored_through_mailbox_alias,
+        "mailbox_valid is published from more than one site",
+    ),
+)
+
+
+RUNNER_MAGIC_GUARD = "    if (pmu_completion_visibility_v14_mailbox[33] != V14_MAILBOX_VALID) {\n"
+
+
+def runner_copy_in_invalid_branch(runner):
+    return replace_once(
+        runner,
+        "        pmu_diag_v14_transport_valid = 0U;\n    }\n",
+        "        pmu_diag_v14_transport_valid = 0U;\n"
+        "        d.first_qread = pmu_completion_visibility_v14_mailbox[9];\n    }\n",
+        "runner invalid branch",
+    )
+
+
+def runner_copy_ahead_of_the_guard(runner):
+    return replace_once(
+        runner,
+        RUNNER_MAGIC_GUARD,
+        "    d.first_status = pmu_completion_visibility_v14_mailbox[10];\n" + RUNNER_MAGIC_GUARD,
+        "runner magic guard",
+    )
+
+
+RUNNER_DOMINANCE_MUTATIONS = (
+    (
+        "runner_copy_in_the_magic_invalid_branch",
+        runner_copy_in_invalid_branch,
+        "runner copies the appendix outside the mailbox-magic branch",
+    ),
+    (
+        "runner_copy_ahead_of_the_magic_guard",
+        runner_copy_ahead_of_the_guard,
+        "runner copies the appendix outside the mailbox-magic branch",
+    ),
+)
+
+
+def lexical_hides_runner_copy(runner):
+    return replace_once(
+        runner,
+        "        pmu_diag_v14_transport_valid = 0U;\n    }\n",
+        "        pmu_diag_v14_transport_valid = 0U;\n"
+        '        const char *v14_lex_open = "/*";\n'
+        "        d.first_qread = pmu_completion_visibility_v14_mailbox[9];\n"
+        '        const char *v14_lex_close = "*/";\n    }\n',
+        "runner invalid branch",
+    )
+
+
+LEXICAL_RUNNER_MUTATIONS = (
+    (
+        "lexical_string_hides_runner_copy",
+        lexical_hides_runner_copy,
+        "runner copies the appendix outside the mailbox-magic branch",
+    ),
+)
+
+
 def run_fail_open_suite(gate):
     run_vendor_mutations(gate, LEXICAL_VENDOR_MUTATIONS, "Q")
     run_vendor_mutations(gate, LOOP_STRUCTURE_MUTATIONS, "Q")
     run_vendor_mutations(gate, JUMP_TOPOLOGY_MUTATIONS, "Q")
     run_vendor_mutations(gate, ALIAS_MUTATIONS, "Q")
     run_vendor_mutations(gate, VARIANT_ID_MUTATIONS, "Q")
+    run_vendor_mutations(gate, MAGIC_SAFETY_MUTATIONS, "Q")
+    run_runner_mutations(gate, RUNNER_DOMINANCE_MUTATIONS, "Q")
+    run_runner_mutations(gate, LEXICAL_RUNNER_MUTATIONS, "Q")
 
     # Every variant carries its own id, so the binding is proven per variant
     # rather than once on Q's behalf.
@@ -3454,6 +3557,12 @@ def run_coverage_suite():
         "variant_id_word_0_is_hardcoded",
         "variant_id_published_to_the_wrong_word",
         "variant_id_published_through_a_mailbox_alias",
+        # One magic publication, at word 33, in the frozen spelling.
+        "magic_published_by_numeric_index_and_literal",
+        "magic_published_through_a_mailbox_alias",
+        "runner_copy_in_the_magic_invalid_branch",
+        "runner_copy_ahead_of_the_magic_guard",
+        "lexical_string_hides_runner_copy",
     }
     missing = sorted(required - REJECTED_FIXTURES)
     check("every design-mandated negative fixture is present", not missing, repr(missing))

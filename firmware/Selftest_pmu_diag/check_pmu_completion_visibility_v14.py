@@ -1504,9 +1504,33 @@ def verify_mailbox_contract(vendor_masked: str, defines: dict[str, int]) -> dict
     if "__DSB()" not in publish[magic_site:]:
         raise fail("mailbox publication does not issue a DSB")
 
-    magic_publications = len(re.findall(r"=\s*V14_MAILBOX_VALID\s*;", vendor_masked))
-    if magic_publications != 1:
-        raise fail("mailbox_valid is published from more than one site: %d stores" % magic_publications)
+    # The magic is what tells a reader the other 33 words are real, so it is
+    # counted by *value* over every spelling a store can take: the frozen macro
+    # or the bare 0x5631344D, the frozen symbol or an alias of it, the offset
+    # macro or its numeric 33. Counting the macro text alone leaves three ways
+    # to publish a second, earlier, unearned magic.
+    magic_stores = [
+        store
+        for store in _resolved_mailbox_stores(vendor_masked, defines)
+        if is_magic_value(store[2], defines)
+    ]
+    if len(magic_stores) != 1:
+        raise fail(
+            "mailbox_valid is published from more than one site: %d stores" % len(magic_stores)
+        )
+    word, index_token, value, owner = magic_stores[0]
+    if word != APPENDIX_FIELDS.index("mailbox_valid"):
+        raise fail("mailbox magic is not stored at appendix word 33: it lands on word %s" % word)
+    if owner != MAILBOX_PUBLISH_SYMBOL:
+        raise fail(
+            "mailbox magic is published outside %s: stored in %s"
+            % (MAILBOX_PUBLISH_SYMBOL, owner or "<file scope>")
+        )
+    if (index_token, value) != (_mbox_macro("mailbox_valid"), "V14_MAILBOX_VALID"):
+        raise fail(
+            "mailbox magic is published through an alias or a raw index rather than "
+            "%s[%s] = V14_MAILBOX_VALID" % (MAILBOX_SYMBOL, _mbox_macro("mailbox_valid"))
+        )
 
     failure = function_text(vendor_masked, "v14_publish_failure", "failure publication")
     failure_stores = dict(_mailbox_stores(failure))
@@ -1670,7 +1694,14 @@ def verify_cleanup_contract(vendor_masked: str, vendor_text: str, variant: str) 
 
 _RECORD_FIELD_RE = re.compile(r"uint32_t\s+([A-Za-z_]\w*)\s*;")
 _SERIALIZE_RE = re.compile(r"put32\s*\(\s*&c\s*,\s*d\s*->\s*([A-Za-z_]\w*)\s*\)")
-_COPY_RE = re.compile(r"d\.([A-Za-z_]\w*)\s*=\s*%s\s*\[" % re.escape(MAILBOX_SYMBOL))
+
+
+def runner_copy_pattern(aliases: tuple[str, ...]) -> re.Pattern[str]:
+    """An appendix-copy recogniser that also sees the mailbox array's aliases."""
+
+    return re.compile(
+        r"d\.([A-Za-z_]\w*)\s*=\s*(?:%s)\s*\[" % _alternation((MAILBOX_SYMBOL,) + aliases)
+    )
 
 
 MEASURED_CALL = "run_fixed_inference()"
@@ -1736,15 +1767,34 @@ def verify_runner_contract(runner_masked: str) -> dict[str, object]:
     if else_site < 0:
         raise fail("runner appendix copy is not dominated by the mailbox magic check")
     open_index = runner_masked.find("{", else_site)
+    if open_index < 0:
+        raise fail("runner appendix copy is not dominated by the mailbox magic check")
     close_index = _matching_brace(runner_masked, open_index, "runner magic else branch")
-    copies = tuple(_COPY_RE.findall(runner_masked[open_index:close_index]))
+    copy_re = runner_copy_pattern(mailbox_aliases(runner_masked))
+    copies = tuple(match.group(1) for match in copy_re.finditer(runner_masked[open_index:close_index]))
     if copies != APPENDIX_FIELDS:
         raise fail("runner appendix copy is not dominated by the mailbox magic check")
+
+    # Dominance is not "the valid branch copies all 34"; it is "the 34 are
+    # copied *only* there". A copy before the guard runs whatever the magic
+    # says, and a copy in the invalid branch publishes reset sentinels -- or
+    # stale words from a previous run -- as if they were evidence.
+    stray = [
+        match
+        for match in copy_re.finditer(runner_masked)
+        if not open_index <= match.start() < close_index
+    ]
+    if stray:
+        raise fail(
+            "runner copies the appendix outside the mailbox-magic branch: %s copied at %d"
+            % (stray[0].group(1), stray[0].start())
+        )
 
     return {
         "runner_serialized_words": TOTAL_WORDS,
         "runner_payload_bytes": PAYLOAD_BYTES,
         "runner_copy_dominated_by_magic": True,
+        "runner_appendix_copies": len(copies),
     }
 
 
