@@ -52,15 +52,49 @@ splice keeps crediting code the compiler removed. A
 preprocessor directive is not a statement and carries no terminator, so its line
 is blanked before statements are split, or the directive folds into the next
 statement's lvalue and hides the store from every lvalue rule. And a macro is
-never expanded: a function-like macro whose body dereferences a pointer cast is
-an MMIO access this gate cannot pin, so it is refused in every contract-critical
-function rather than counted as an ordinary call.
+never expanded: a macro whose replacement list reaches a register is an MMIO
+access this gate cannot pin, so it is refused in every contract-critical
+function rather than counted as an ordinary call, and one whose replacement
+list carries a store is refused outright -- ``blank_directives`` removes the
+definition and the invocation site names no storage at all, so such a body is a
+store no rule in this file can see.
 
-Storage that is published is written once. A read-modify-write on an appendix
-word or an observation field -- ``+=``, ``|=``, ``++``, through an alias, a
-reversed subscript or pointer arithmetic -- rewrites a value after the store
-this gate proved, so the image publishes one number and the manifest reports
-another. Every such operator is resolved to the storage it names and refused.
+A directive is also a *logical* line, and both halves of that are load-bearing.
+The mask keeps every byte at its original offset, which every ordering and
+dominance rule below compares against; the directive patterns run over a view
+that joins the splices instead, so ``#``-backslash-newline-``undef`` is the
+``#undef`` the compiler reads rather than two lines neither pattern matches.
+Directive whitespace is all six characters C spells it with, a form feed
+included, and not the four a hand-written class remembers.
+
+An address is likewise the storage it designates and not the declarator that
+bound it. ``name = expr`` is one way to bind a pointer and
+``T *const regs[1] = { expr }`` is another, so both are resolved by the same
+walk -- an initializer element the walk cannot see leaves every dereference of
+that name resolving to "not an address at all", which is the one answer that
+makes an access invisible rather than refused. The walk reads file scope with
+the function body for the same reason: a register pointer a function inherits is
+a register pointer it uses. The runner's record is closed the same way, by the
+field its lvalue designates rather than by the ``d.<field>`` spelling, so
+``(&d)->``, an alias, an array of aliases and a macro body all arrive at the
+same word; a write to an appendix field this gate cannot bind to that record is
+refused rather than passed over.
+
+Storage that is published is written once, and it is written where the design
+writes it. A read-modify-write on an appendix word or an observation field --
+``+=``, ``|=``, ``++``, through an alias, a reversed subscript or pointer
+arithmetic -- rewrites a value after the store this gate proved, so the image
+publishes one number and the manifest reports another. Every such operator is
+resolved to the storage it names and refused. A second *plain* store is the same
+defect reached from the other end, and it defeats more: every provenance,
+predicate and publishing-guard proof this file makes about a word is bypassed by
+one unconditional assignment to that word downstream of the proof. So each
+appendix word's producers are held to the sites and the counts the design gives
+it, which is also what makes deleting one of three stores of a word -- the one
+that carries the measurement -- a rejection rather than a word that still has
+two sentinel producers left. And the magic that declares the other 33 words real
+is counted by the value the compiler folds, not by the text that produces it:
+``V14_MAILBOX_VALID + 0U`` publishes it exactly as the bare macro does.
 The runner's half of the same contract is a mapping, not a count: each of the 34
 copies is bound to the appendix word its field is published in, so 34 copies
 that all read word 0, read the appendix backwards, or read outside it are
@@ -240,15 +274,19 @@ RESIDUAL_LIMITATIONS = (
     "has every such address refused as unresolved rather than resolved from an assumed "
     "register map",
     "macros_are_not_expanded: this gate reads translation-unit text, so an object-like macro "
-    "is resolved only through the source's own #define table and a function-like macro is never "
-    "expanded at all; a function-like macro whose body dereferences a pointer cast is refused as "
-    "unresolved MMIO in every contract-critical function rather than read through, and C line "
-    "splicing is applied before comment recognition so a spliced comment opener deletes the same "
-    "text the compiler deletes. Because a macro is read as one value for the whole translation "
-    "unit, a source that undefines or redefines a V14_/NPU_REG_ macro is refused rather than "
-    "modelled at whichever value happened to be last. None of this makes the gate equivalent to "
-    "a C preprocessor: the general question of what the preprocessor produces belongs to a "
-    "build that compiles",
+    "is resolved only through the source's own #define table and a macro with a parameter list "
+    "is never expanded at all; a macro whose replacement list dereferences a pointer cast or "
+    "names an NPU_REG_ register is refused as unresolved MMIO in every contract-critical "
+    "function rather than read through, and one whose replacement list carries a store is "
+    "refused outright, because the directive line is blanked before statements are split and "
+    "the invocation site then names no storage at all. C line splicing is applied before comment "
+    "recognition so a spliced comment opener deletes the same text the compiler deletes, and the "
+    "directive patterns run over a splice-joined logical-line view so a directive written across "
+    "two physical lines is the one directive the compiler reads. Because a macro is read as one "
+    "value for the whole translation unit, a source that undefines or redefines a "
+    "V14_/NPU_REG_ macro is refused rather than modelled at whichever value happened to be last. "
+    "None of this makes the gate equivalent to a C preprocessor: the general question of what "
+    "the preprocessor produces belongs to a build that compiles",
     "mmio_and_mailbox_analysis_is_intraprocedural: every ordering, counting and provenance "
     "rule is proven inside the function that carries it, so a register read or a mailbox "
     "store moved into a helper called from a path that permits calls is outside what these "
@@ -501,7 +539,42 @@ def normalized_digest(text: str) -> str:
     return _sha256_text(re.sub(r"\s+", " ", text).strip())
 
 
-_DEFINE_RE = re.compile(r"(?m)^[ \t]*#[ \t]*define[ \t]+([A-Za-z_][A-Za-z0-9_]*)[ \t]+(\S+)[ \t]*$")
+# The whitespace a preprocessor directive may be written with. A form feed and a
+# vertical tab are whitespace to the compiler exactly as a space is, so a class
+# spelled ``[ \t]`` is not "directive whitespace" -- it is four of the six
+# characters that spell it, and the other two are a rule this gate never sees.
+_DIRECTIVE_SPACE = r"[ \t\f\v]"
+
+
+@functools.lru_cache(maxsize=4)
+def directive_view(masked: str) -> str:
+    """``masked`` with every logical line joined, byte offsets preserved.
+
+    A preprocessor directive is a *logical* line. Translation phase 2 deletes
+    each ``\\``-newline before phase 4 recognises the ``#``, so
+    ``#\\``-newline-``undef X`` *is* ``#undef X`` to the compiler --  and
+    ``mask_c_lexical`` deliberately puts the backslash and the newline back at
+    their original offsets, because every offset-comparing rule below depends on
+    that. The two requirements are answered separately rather than traded off:
+    the mask keeps the offsets, and this view keeps the *lines*. Blanking the
+    splice to as many spaces as it occupied leaves the logical line reading as
+    one physical line at the source's own offsets, which is what the directive
+    patterns below are written over.
+
+    Without it a directive split by a splice is invisible to every ``(?m)^``
+    anchored scan while ``blank_directives`` still removes it from the statement
+    stream -- so a source can undefine and redefine a contract macro at a single
+    use site, in conforming warning-free C, and this gate models the macro at a
+    value the compiler never uses there.
+    """
+
+    return _LINE_SPLICE_RE.sub(lambda match: " " * (match.end() - match.start()), masked)
+
+
+_DEFINE_RE = re.compile(
+    r"(?m)^%(sp)s*#%(sp)s*define%(sp)s+([A-Za-z_][A-Za-z0-9_]*)%(sp)s+(\S+)%(sp)s*$"
+    % {"sp": _DIRECTIVE_SPACE}
+)
 
 
 def parse_define_values(masked: str) -> dict[str, list[int]]:
@@ -515,7 +588,7 @@ def parse_define_values(masked: str) -> dict[str, list[int]]:
     """
 
     values: dict[str, list[int]] = {}
-    for match in _DEFINE_RE.finditer(masked):
+    for match in _DEFINE_RE.finditer(directive_view(masked)):
         name = match.group(1)
         raw = match.group(2).rstrip("uU")
         try:
@@ -537,7 +610,9 @@ def parse_defines(masked: str) -> dict[str, int]:
     return {name: seen[-1] for name, seen in parse_define_values(masked).items()}
 
 
-_UNDEF_RE = re.compile(r"(?m)^[ \t]*#[ \t]*undef[ \t]+([A-Za-z_][A-Za-z0-9_]*)")
+_UNDEF_RE = re.compile(
+    r"(?m)^%(sp)s*#%(sp)s*undef%(sp)s+([A-Za-z_][A-Za-z0-9_]*)" % {"sp": _DIRECTIVE_SPACE}
+)
 # The names whose value this gate reads and then reasons about. A macro outside
 # these families belongs to the vendor and may be redefined freely.
 _CONTRACT_DEFINE_PREFIXES = ("V14_", "NPU_REG_")
@@ -569,7 +644,7 @@ def require_stable_contract_defines(masked: str, what: str) -> None:
     the source rather than to model it wrongly.
     """
 
-    for match in _UNDEF_RE.finditer(masked):
+    for match in _UNDEF_RE.finditer(directive_view(masked)):
         if _is_contract_define(match.group(1)):
             raise fail(
                 "%s undefines a contract macro at offset %d: %s -- its value at a use site is "
@@ -956,7 +1031,13 @@ def resolve_address_role(expr: str, defines: dict[str, int], known: dict[str, st
     register, which is the fail-closed answer rather than a silent pass.
     """
 
-    if _has_unary_deref(expr):
+    # The deref test runs over the cast-stripped text, because a cast's closing
+    # parenthesis is not an operator: ``(int)*p`` reads the word ``p`` points at
+    # exactly as ``*p`` does, and reading it as an address instead leaves the
+    # leading ``*`` in the evaluator's hands, which answers ``UNRESOLVED`` and
+    # refuses an ordinary value binding. The load itself is not lost -- the
+    # ``*`` is its own access site in ``access_expressions``.
+    if _has_unary_deref(expr) or _has_unary_deref(_CAST_RE.sub(" ", expr)):
         return None
     if _NOT_AN_ADDRESS_RE.search(expr) is not None:
         # A predicate or a selection is not an address, and reading one as an
@@ -1112,8 +1193,33 @@ def _alias_fixpoint(bindings, resolve, collapse, what: str) -> dict[str, object]
     return known
 
 
-def pointer_roles(body: str, defines: dict[str, int]) -> dict[str, str]:
+def file_scope_text(masked: str) -> str:
+    """``masked`` with every top-level function body blanked, offsets preserved.
+
+    What is left is the declarations a function inherits rather than binds. A
+    per-function pointer walk that cannot see them reports a dereference of a
+    file-scope register pointer as an access to nothing at all, which is how a
+    running-QSIZE read moved out of the function that performs it.
+    """
+
+    out = list(masked)
+    for _name, start, stop in function_spans(masked):
+        # A function body's ``{`` follows its parameter list; a brace
+        # initializer's follows an ``=``. Only the first is a body, and blanking
+        # the second would delete the very declaration this view exists to keep.
+        head = masked[: start - 1].rstrip()
+        if head.endswith(")"):
+            _blank_span(out, masked, start, stop)
+    return "".join(out)
+
+
+def pointer_roles(body: str, defines: dict[str, int], scope: str = "") -> dict[str, str]:
     """Every name in ``body`` bound to an NPU register, transitively.
+
+    ``scope`` is the enclosing declaration text -- the translation unit's file
+    scope -- whose bindings the body inherits. It is resolved in the same
+    fixpoint rather than beside it, so a file-scope pointer copied into a local
+    one is the same pointer here too.
 
     A pointer copied from a bound pointer is the same pointer, and a chain of
     such copies is still that pointer, so the bindings are re-scanned until
@@ -1129,16 +1235,14 @@ def pointer_roles(body: str, defines: dict[str, int]) -> dict[str, str]:
     ``UNRESOLVED`` here, and refused by ``require_resolved_pointers``.
     """
 
-    bindings = tuple(
-        (match.group(1), match.group(2)) for match in _ASSIGNMENT_RE.finditer(body)
-    )
+    bindings = _bindings(scope) + _bindings(body)
     resolved = _alias_fixpoint(
         bindings,
         lambda expr, known: resolve_address_role(expr, defines, known),
         lambda roles: sorted(roles)[0] if len(roles) == 1 else UNRESOLVED_ROLE,
         "an NPU-region pointer",
     )
-    for name in compound_assignment_targets(body, tuple(sorted(resolved))):
+    for name in compound_assignment_targets(scope + body, tuple(sorted(resolved))):
         resolved[name] = UNRESOLVED_ROLE
     return resolved
 
@@ -1156,13 +1260,30 @@ def require_resolved_pointers(roles: dict[str, str], what: str) -> None:
         )
 
 
-_FUNCTION_MACRO_RE = re.compile(
-    r"(?m)^[ \t]*#[ \t]*define[ \t]+([A-Za-z_]\w*)\([^)\n]*\)[ \t]*(.*)$"
+# One pattern for every ``#define``, because "object-like" and "function-like"
+# are the same construct with and without a parameter list, and a rule that
+# knows only one of them is a rule the other spelling walks around.
+_MACRO_DEFINITION_RE = re.compile(
+    r"(?m)^%(sp)s*#%(sp)s*define%(sp)s+([A-Za-z_]\w*)(\([^)\n]*\))?%(sp)s*(.*)$"
+    % {"sp": _DIRECTIVE_SPACE}
 )
 
 
+def macro_definitions(masked: str) -> tuple[tuple[str, str, str], ...]:
+    """``(name, parameter list, replacement list)`` for every ``#define``.
+
+    Read over ``directive_view`` so a definition split across physical lines is
+    the one logical line the compiler sees.
+    """
+
+    return tuple(
+        (match.group(1), match.group(2) or "", match.group(3))
+        for match in _MACRO_DEFINITION_RE.finditer(directive_view(masked))
+    )
+
+
 def mmio_macro_names(masked: str) -> tuple[str, ...]:
-    """Every function-like macro whose body dereferences a pointer cast.
+    """Every macro whose replacement list carries an MMIO access.
 
     ``#define REG32(a) (*(volatile uint32_t *)(a))`` turns an MMIO access into
     what reads here as an ordinary call, so the address never reaches
@@ -1170,21 +1291,34 @@ def mmio_macro_names(masked: str) -> tuple[str, ...]:
     does not preprocess, so it cannot say which register such a call names --
     which makes it exactly the unresolved access every rule in this file
     refuses rather than ignores.
+
+    An object-like macro is the same construct without a parameter list, and its
+    invocation site carries no parentheses at all: ``#define POKE
+    write_reg(NPU_REG_CMD, 1U)`` invoked as ``POKE;`` is a submit write that no
+    call, effect or CMD-value rule here can see. A replacement list that names a
+    register this gate counts is therefore refused on the same terms, whichever
+    of the two forms carries it.
     """
 
     found = set()
-    for match in _FUNCTION_MACRO_RE.finditer(masked):
-        body = match.group(2)
-        if _POINTER_CAST_RE.search(body) is not None and _DEREF_RE.search(body) is not None:
-            found.add(match.group(1))
+    for name, _parameters, body in macro_definitions(masked):
+        if _RAW_REGISTER_RE.search(body) is not None:
+            found.add(name)
+        elif _POINTER_CAST_RE.search(body) is not None and _DEREF_RE.search(body) is not None:
+            found.add(name)
     return tuple(sorted(found))
 
 
 def require_no_macro_mmio(text: str, macros: tuple[str, ...], what: str) -> None:
-    """Refuse an MMIO access made through a macro this gate cannot expand."""
+    """Refuse an MMIO access made through a macro this gate cannot expand.
+
+    The invocation is looked for as a *name* rather than as ``name(``, because
+    an object-like macro is invoked by naming it and a rule that insists on the
+    parenthesis sees only half of the construct.
+    """
 
     for name in macros:
-        if code_contains(text, name + "("):
+        if names_identifier(text, name):
             raise fail(
                 "%s reaches an NPU-region address this gate cannot resolve to one register: "
                 "the macro %s expands to an unexpanded MMIO dereference" % (what, name)
@@ -1259,7 +1393,9 @@ def _statement_end(text: str, start: int) -> int:
 # A directive is a *logical* line, so a backslash continuation carries it on.
 # Blanking only the first physical line of a continued ``#define`` deletes the
 # parentheses it opened and leaves the ones its continuation closes.
-_DIRECTIVE_LINE_RE = re.compile(r"(?m)^[ \t]*#(?:\\[ \t]*\n|[^\n])*")
+_DIRECTIVE_LINE_RE = re.compile(
+    r"(?m)^%s*#(?:\\[ \t]*\n|[^\n])*" % _DIRECTIVE_SPACE
+)
 
 
 def blank_directives(text: str) -> str:
@@ -1376,6 +1512,81 @@ def compound_assignment_targets(text: str, names: tuple[str, ...]) -> tuple[str,
         if name in wanted
     }
     return tuple(sorted(found))
+
+
+# An operator that *stores*. The comparisons are excluded by construction: the
+# character before an ``=`` that makes it something other than a plain
+# assignment is the same set ``assignment_statements`` already reads.
+_MACRO_STORE_RE = re.compile(
+    r"(?<![=!<>+\-*/%%&|^])=(?!=)|\+\+|--|(?:%s)"
+    % "|".join(re.escape(operator) for operator in _COMPOUND_ASSIGN_OPERATORS)
+)
+
+
+def statement_macro_names(masked: str) -> tuple[str, ...]:
+    """Every macro whose replacement list carries a store rather than a value."""
+
+    return tuple(
+        sorted(
+            {
+                name
+                for name, _parameters, body in macro_definitions(masked)
+                if _MACRO_STORE_RE.search(body) is not None
+            }
+        )
+    )
+
+
+def require_no_statement_macro(masked: str, what: str) -> None:
+    """Refuse a source that hides a store inside a macro replacement list.
+
+    ``blank_directives`` removes the ``#define`` line from the statement stream
+    -- it has to, or the directive folds into the next statement's lvalue -- and
+    the invocation site is then only ``NAME;``, which names no storage at all.
+    So ``#define POKE mailbox[V14_MBOX_VARIANT_ID] = 7U`` is a store that exists
+    for the compiler and for no rule in this file: not for
+    ``assignment_statements``, not for ``mailbox_stores``, not for the
+    ``irq_triggered`` site walk, and not for the runner's record closure.
+
+    This gate does not expand macros, which is stated in every manifest, so it
+    cannot model where such a body lands. The fail-closed answer is to refuse the
+    definition rather than to analyse a translation unit whose stores it cannot
+    see; the frozen sources define no such macro, so the refusal costs the
+    contract nothing.
+    """
+
+    names = statement_macro_names(masked)
+    if names:
+        raise fail(
+            "%s defines %s with a statement in its replacement list: this gate does not "
+            "expand macros, so a store written there is a store no rule here can see"
+            % (what, names[0])
+        )
+
+
+# A declarator binds an address without ever writing ``name = expr``:
+# ``volatile uint32_t *const regs[1] = { A }`` is a binding of ``regs`` that the
+# assignment pattern cannot match, so every dereference of it reached
+# ``resolve_address_role`` with nothing to resolve and came back as "not an NPU
+# address at all" -- the one answer that makes an access invisible rather than
+# refused. Each initializer element is bound to the name, so a name whose
+# elements designate two registers collapses to ``UNRESOLVED`` exactly as a name
+# assigned twice does.
+_BRACE_INITIALIZER_RE = re.compile(
+    r"(?<![A-Za-z0-9_])([A-Za-z_]\w*)\s*(?:\[[^\[\];{}]*\])+\s*=\s*\{([^{}]*)\}"
+)
+
+
+def _declarator_bindings(text: str) -> tuple[tuple[str, str], ...]:
+    """``(name, element)`` for every array declarator initialized with a brace list."""
+
+    found: list[tuple[str, str]] = []
+    for match in _BRACE_INITIALIZER_RE.finditer(text):
+        for element in _split_top_level(match.group(2), ","):
+            stripped = element.strip()
+            if stripped:
+                found.append((match.group(1), stripped))
+    return tuple(found)
 
 
 def _is_declaration(lvalue: str) -> bool:
@@ -1506,6 +1717,42 @@ def _is_declarator_star(text: str, star_index: int) -> bool:
     return _token_after(text, star_index + 1) in _DECLARATOR_TYPES
 
 
+_TYPE_NAME_TOKEN_RE = re.compile(r"^[A-Za-z_]\w*$")
+
+
+def _is_cast_parenthesis(text: str, open_index: int, close_index: int) -> bool:
+    """Whether ``text[open_index:close_index]`` is a cast rather than an operand.
+
+    A cast's ``)`` and a call's ``)`` are the same character, which is why a rule
+    that reads "the previous character is ``)``" as "an operand ended here"
+    resolves ``(bool *)&flag`` the same way it resolves ``f() & flag`` -- and
+    resolves it in the fail-open direction, because the first one takes an
+    address and the second one reads a value.
+
+    The two are separable without a symbol table. A cast encloses a type name and
+    nothing else -- identifiers and ``*``, no literal, no operator, no comma --
+    and nothing that can end an operand may precede its ``(``, or the parentheses
+    are a call's argument list or a subscripted expression instead. A
+    parenthesised single identifier is ambiguous in C itself; it is read here as a
+    cast, which is the direction that refuses rather than credits.
+    """
+
+    tokens = _C_TOKEN_RE.findall(text[open_index + 1 : close_index])
+    if not tokens:
+        return False
+    for token in tokens:
+        if token != "*" and _TYPE_NAME_TOKEN_RE.match(token) is None:
+            return False
+    cursor = open_index - 1
+    while cursor >= 0 and text[cursor] in _INLINE_SPACE:
+        cursor -= 1
+    if cursor < 0:
+        return True
+    return not (
+        _NAME_CHARACTER_RE.match(text[cursor]) or text[cursor] in _OPERAND_END_CHARACTERS
+    )
+
+
 _BRACKET_OPENERS = {")": "(", "]": "["}
 
 
@@ -1564,6 +1811,26 @@ def _subscript_expression(
     return start, text[start : close + 1], close + 1
 
 
+def _is_declarator_subscript(text: str, base_start: int) -> bool:
+    """Whether the name at ``base_start`` is being *declared* as an array.
+
+    ``volatile uint32_t *const regs[1] = { ... }`` gives the array its extent;
+    it does not read one of its elements. Counting the declarator's brackets as
+    an access invents a load at ``regs + 1`` that the image never performs --
+    and once the name is bound to a register, that invented load resolves to
+    whatever sits one word past it, which is a rejection with the wrong name.
+    """
+
+    cursor = base_start - 1
+    while cursor >= 0 and text[cursor] in _INLINE_SPACE:
+        cursor -= 1
+    if cursor < 0:
+        return False
+    if text[cursor] == "*":
+        return _is_declarator_star(text, cursor)
+    return _token_before(text, cursor + 1)[1] in _DECLARATOR_TYPES
+
+
 def _assigns_at(text: str, stop: int) -> bool:
     """Whether an assignment operator, not a comparison, follows ``stop``."""
 
@@ -1602,6 +1869,8 @@ def access_expressions(text: str) -> tuple[tuple[int, str, bool], ...]:
         if recovered is None:
             continue
         start, expression, stop = recovered
+        if _is_declarator_subscript(text, start):
+            continue
         # A ``*`` in front of the base already entered this access above, and
         # counting it twice would turn one load into two.
         cursor = start - 1
@@ -1821,6 +2090,7 @@ def verify_pre_run_contract(vendor_masked: str, defines: dict[str, int]) -> dict
     # rather than on a function name, so the proof holds wherever the vendor
     # keeps its programming.
     mmio_macros = mmio_macro_names(vendor_masked)
+    scope = file_scope_text(vendor_masked)
     spans = function_spans(vendor_masked)
     programming_sites = code_positions(vendor_masked, _QBASE_WRITE, open_end=True) + code_positions(
         vendor_masked, _QSIZE_WRITE
@@ -1832,7 +2102,7 @@ def verify_pre_run_contract(vendor_masked: str, defines: dict[str, int]) -> dict
         raise fail("queue programming is split across %d functions: %s" % (len(owners), sorted(owners)))
     setup_start, setup_stop = function_span(vendor_masked, sorted(owners)[0], "queue setup function")
     setup = vendor_masked[setup_start:setup_stop]
-    setup_roles = pointer_roles(setup, defines)
+    setup_roles = pointer_roles(setup, defines, scope)
     require_resolved_pointers(setup_roles, "queue setup function")
     require_resolved_dereferences(setup, defines, setup_roles, "the queue setup function")
     require_no_macro_mmio(setup, mmio_macros, "the queue setup function")
@@ -1886,7 +2156,7 @@ def verify_pre_run_contract(vendor_masked: str, defines: dict[str, int]) -> dict
 
     command_start, command_stop = function_span(vendor_masked, "test_commands", "command function")
     command = vendor_masked[command_start:command_stop]
-    command_roles = pointer_roles(command, defines)
+    command_roles = pointer_roles(command, defines, scope)
     require_resolved_pointers(command_roles, "command function")
     require_resolved_dereferences(command, defines, command_roles, "the command function")
     require_no_macro_mmio(command, mmio_macros, "the command function")
@@ -1995,7 +2265,16 @@ _MEMBER_ACCESS_RE = re.compile(r"->|\.")
 
 
 def _bindings(text: str) -> tuple[tuple[str, str], ...]:
-    return tuple((match.group(1), match.group(2)) for match in _ASSIGNMENT_RE.finditer(text))
+    """Every ``name = expr`` and every array declarator element in ``text``.
+
+    Both forms hand a name an address, and a walk that knows only the first one
+    resolves a dereference of the second to nothing rather than to a register.
+    """
+
+    return (
+        tuple((match.group(1), match.group(2)) for match in _ASSIGNMENT_RE.finditer(text))
+        + _declarator_bindings(text)
+    )
 
 
 def _is_pointer_binding(expr: str) -> bool:
@@ -2845,7 +3124,7 @@ def verify_primary_contract(
             raise fail("inactive primary helper is reachable: %s" % name)
 
     body = function_text(vendor_masked, wanted, "primary helper")
-    roles = pointer_roles(body, defines)
+    roles = pointer_roles(body, defines, file_scope_text(vendor_masked))
     require_resolved_pointers(roles, "primary helper")
     store_re = store_pattern(body)
     if "QSIZE" in roles.values():
@@ -3132,7 +3411,21 @@ def verify_hard_bypass_contract(vendor_masked: str) -> dict[str, object]:
     # covers four functions, and a helper called from ``test_commands`` is
     # neither of them -- which is exactly where the computed address went.
     defines = parse_defines(vendor_masked)
-    for site, expression, _is_write in access_expressions(vendor_masked):
+    # An address *bound* in a declarator never appears as an access expression:
+    # ``*const iser[1] = { (volatile uint32_t *)(0xE000E000UL + 0x100UL) }`` puts
+    # the cast in the initializer and leaves the write spelled ``*iser[0]``,
+    # which carries no cast for this fold to recognise. The bindings are folded
+    # here for the same reason the accesses are -- the register is reached
+    # either way, and only the spelling differs.
+    candidates = [
+        (site, expression) for site, expression, _is_write in access_expressions(vendor_masked)
+    ]
+    for match in _ASSIGNMENT_RE.finditer(vendor_masked):
+        candidates.append((match.start(2), match.group(2)))
+    for match in _BRACE_INITIALIZER_RE.finditer(vendor_masked):
+        for element in _split_top_level(match.group(2), ","):
+            candidates.append((match.start(2), element))
+    for site, expression in candidates:
         if _POINTER_CAST_RE.search(expression) is None:
             continue
         value = _evaluate_constant(_flatten_address(expression), defines)
@@ -3157,14 +3450,24 @@ def verify_hard_bypass_contract(vendor_masked: str) -> dict[str, object]:
     # the flag gets the same treatment. The stock handler assigns it directly
     # and needs no pointer to it, so refusing every ``&irq_triggered`` costs the
     # contract nothing and closes the alias for good.
+    _open_of = _bracket_pairs(vendor_masked)[1]
     for match in re.finditer(r"&\s*(?:\(\s*)*irq_triggered(?![A-Za-z0-9_])", vendor_masked):
         # ``mask & irq_triggered`` reads the flag; only address-of aliases it.
         previous = _token_before(vendor_masked, match.start())[1]
         cursor = match.start() - 1
         while cursor >= 0 and vendor_masked[cursor] in _INLINE_SPACE:
             cursor -= 1
-        if previous or (cursor >= 0 and vendor_masked[cursor] in _OPERAND_END_CHARACTERS):
+        if previous:
             continue
+        if cursor >= 0 and vendor_masked[cursor] in _OPERAND_END_CHARACTERS:
+            # A cast's closing parenthesis is not the end of an operand, so
+            # ``(bool *)&irq_triggered`` takes the address the same way a bare
+            # ``&irq_triggered`` does. Reading the two alike is what let the
+            # alias be bound and the flag set through it, with the manifest still
+            # publishing the stock handler as the flag's only writer.
+            opening = _open_of.get(cursor) if vendor_masked[cursor] == ")" else None
+            if opening is None or not _is_cast_parenthesis(vendor_masked, opening, cursor):
+                continue
         raise fail(
             "irq_triggered can become true on a measured path: sites ['<address taken at offset %d>']"
             % match.start()
@@ -3210,7 +3513,7 @@ def verify_convergence_contract(vendor_masked: str, defines: dict[str, int]) -> 
     except GateError:
         raise fail("common convergence helper %s is missing" % CONVERGE_SYMBOL)
 
-    roles = pointer_roles(body, defines)
+    roles = pointer_roles(body, defines, file_scope_text(vendor_masked))
     require_resolved_pointers(roles, "convergence helper")
     store_re = store_pattern(body)
     if "QSIZE" in roles.values():
@@ -3496,7 +3799,19 @@ def require_no_record_read_modify_write(masked: str, what: str) -> None:
 
 
 def is_magic_value(value: str, defines: dict[str, int]) -> bool:
-    """Whether a stored value is the 0x5631344D magic, macro or literal."""
+    """Whether a stored value *is* the 0x5631344D magic, over every spelling.
+
+    The magic is what tells a reader the other 33 words are real, so what
+    matters is the number the compiler stores and not the text that produces it.
+    ``V14_MAILBOX_VALID + 0U``, ``(V14_MAILBOX_VALID)`` and ``0x5631344DU | 0U``
+    all store it, and a count keyed on the bare macro or the bare literal misses
+    each of them -- which leaves the "published from more than one site"
+    rejection unreachable and lets a second, earlier, unearned magic hand the
+    runner a valid-looking frame full of reset sentinels.
+
+    The evaluator this file already trusts for CMD values and NVIC addresses is
+    the one that answers here. The two text cases are kept as the fast path.
+    """
 
     token = value.strip()
     if token in defines:
@@ -3504,7 +3819,9 @@ def is_magic_value(value: str, defines: dict[str, int]) -> bool:
     try:
         return int(token.rstrip("uU"), 0) == MAILBOX_VALID
     except ValueError:
-        return False
+        pass
+    folded = _evaluate_constant(token, defines)
+    return folded is not None and (folded & 0xFFFFFFFF) == MAILBOX_VALID
 
 
 def _resolved_mailbox_stores(
@@ -3731,6 +4048,133 @@ def require_every_appendix_word_produced(vendor_masked: str, defines: dict[str, 
     return len(produced)
 
 
+# The sites the design gives each appendix word, and the number of stores each
+# of them carries. It is a contract table, not an observation: the manifest
+# publishes what this gate *found*, and this is what it is allowed to find.
+#
+# "Every word has a producer" is a weaker claim than it reads as. The gate
+# proves a great deal about how each value is produced -- ``require_load_provenance``
+# binds ``pre_submit_status`` to the counted STATUS load, ``verify_predicate_shape``
+# binds every convergence term to the value its comparison lands on,
+# ``verify_publishing_guards`` makes each publishing guard earn its exit -- and
+# one unconditional store to the word *downstream* of all that proof bypasses
+# every bit of it. Only three words carried independent protection: word 0 by
+# its store count, words 9..14 by their owner, word 33 by the magic count. For
+# the other twenty-six, ``mailbox[V14_MBOX_CONVERGENCE_RESULT] = V14_CONVERGENCE_SUCCESS``
+# written after the convergence tail serialized SUCCESS on a run that timed out.
+#
+# The counts matter as much as the owners: they are what makes deleting one of
+# ``v14_publish_primary``'s three ``first_state`` stores -- the observed one, the
+# only one that carries a measurement -- a rejection rather than a word that
+# still has two sentinel producers left.
+APPENDIX_PRODUCERS = {
+    0: (("test_u85", 1),),
+    1: (("test_commands", 1),),
+    2: (("test_u85", 1),),
+    3: (("test_commands", 1),),
+    4: (("test_commands", 1),),
+    5: (("test_commands", 1),),
+    6: (("v14_publish_primary", 1),),
+    7: (("v14_publish_primary", 1),),
+    8: (("v14_publish_primary", 1),),
+    9: (("v14_publish_primary", 2),),
+    10: (("v14_publish_primary", 2),),
+    11: (("v14_publish_primary", 2),),
+    12: (("v14_publish_primary", 3),),
+    13: (("v14_publish_primary", 3),),
+    14: (("v14_publish_primary", 3),),
+    15: (("test_commands", 1),),
+    16: (("test_commands", 1),),
+    17: (("test_commands", 1), ("v14_publish_failure", 1)),
+    18: (("test_commands", 1), ("v14_publish_failure", 1)),
+    19: (("test_commands", 1),),
+    20: (
+        ("v14_publish_cleanup_failure", 1),
+        ("v14_publish_failure", 1),
+        ("v14_publish_success", 1),
+    ),
+    21: (
+        ("v14_publish_cleanup_failure", 1),
+        ("v14_publish_failure", 1),
+        ("v14_publish_success", 1),
+    ),
+    22: (
+        ("v14_publish_cleanup_failure", 1),
+        ("v14_publish_failure", 1),
+        ("v14_publish_success", 1),
+    ),
+    23: (
+        ("v14_publish_cleanup_failure", 1),
+        ("v14_publish_failure", 1),
+        ("v14_publish_success", 1),
+    ),
+    24: (("test_u85", 1),),
+    25: (("test_u85", 1),),
+    26: (("test_u85", 1),),
+    27: (("test_u85", 1),),
+    28: (("test_u85", 1),),
+    29: (("test_commands", 1),),
+    30: (("test_commands", 1),),
+    31: (("test_commands", 1),),
+    32: (("test_commands", 1),),
+    33: (("v14_mailbox_publish", 1),),
+}
+
+
+def _producer_text(producers: dict[str, int]) -> str:
+    return ", ".join("%s x%d" % (owner, count) for owner, count in sorted(producers.items()))
+
+
+def require_authorized_appendix_producers(
+    vendor_masked: str, defines: dict[str, int]
+) -> int:
+    """Refuse an appendix word written anywhere the design does not write it.
+
+    ``require_every_appendix_word_produced`` answers "does this word have a
+    producer at all", which is the fail-silent direction. This answers "are its
+    producers the ones the design gives it", which is the fail-*open* one: a word
+    can carry every proof this file makes about it and still be overwritten by a
+    second store one line later.
+
+    The mailbox reset is excluded because it writes the sentinel to every word
+    rather than an observation. A store this gate cannot pin to a word is refused
+    outright: the reset's loop-indexed sentinel store is the only one the frozen
+    sources carry, and it is the reset's.
+    """
+
+    aliases = mailbox_alias_words(vendor_masked, defines)
+    observed: dict[object, dict[str, int]] = {}
+    for word, _token, _value, owner in _resolved_mailbox_stores(
+        vendor_masked, defines, aliases
+    ):
+        if owner == MAILBOX_RESET_SYMBOL:
+            continue
+        counts = observed.setdefault(word, {})
+        counts[owner] = counts.get(owner, 0) + 1
+    for word, counts in sorted(observed.items(), key=repr):
+        if isinstance(word, int) and 0 <= word < APPENDIX_WORDS:
+            continue
+        raise fail(
+            "the vendor translation unit stores outside the 34-word appendix at word %s: %s"
+            % (word, _producer_text(counts))
+        )
+    for index in range(APPENDIX_WORDS):
+        authorized = dict(APPENDIX_PRODUCERS[index])
+        found = observed.get(index, {})
+        if found != authorized:
+            raise fail(
+                "appendix word %d (%s) is not published by its authorized producers: found "
+                "%s, expected %s"
+                % (
+                    index,
+                    APPENDIX_FIELDS[index],
+                    _producer_text(found) or "no store outside the mailbox reset",
+                    _producer_text(authorized),
+                )
+            )
+    return sum(sum(counts.values()) for counts in observed.values())
+
+
 SUCCESS_CLEANUP_ORDER = (
     "CMD2",
     "QREAD",
@@ -3824,7 +4268,8 @@ def verify_cleanup_contract(
     command = vendor_masked[command_start:command_stop]
     command_raw = vendor_text[command_start:command_stop]
 
-    command_roles = pointer_roles(command, defines)
+    scope = file_scope_text(vendor_masked)
+    command_roles = pointer_roles(command, defines, scope)
     require_resolved_pointers(command_roles, "command function")
     require_resolved_dereferences(command, defines, command_roles, "the command function")
     require_no_macro_mmio(command, mmio_macro_names(vendor_masked), "the command function")
@@ -3876,7 +4321,7 @@ def verify_cleanup_contract(
 
     cleanup = command[history.start() :]
     cleanup_raw = command_raw[history.start() :]
-    cleanup_roles = pointer_roles(cleanup, defines)
+    cleanup_roles = pointer_roles(cleanup, defines, scope)
     # The cleanup tail is judged by what each CMD write *does*, so a second
     # ISR-equivalent written as ``2`` rather than ``0x00000002`` is the same
     # marker and lands in the same ordering.
@@ -3930,7 +4375,98 @@ def verify_cleanup_contract(
 
 _RECORD_FIELD_RE = re.compile(r"uint32_t\s+([A-Za-z_]\w*)\s*;")
 _SERIALIZE_RE = re.compile(r"put32\s*\(\s*&c\s*,\s*d\s*->\s*([A-Za-z_]\w*)\s*\)")
-_RECORD_TARGET_RE = re.compile(r"^\s*d\s*\.\s*([A-Za-z_]\w*)\s*$")
+RECORD_SYMBOL = "d"
+
+
+def _record_member(lvalue: str) -> tuple[str, str] | None:
+    """``(base, field)`` for the last member access an lvalue makes, or ``None``.
+
+    ``d.variant_id``, ``(&d)->variant_id``, ``alias->variant_id`` and
+    ``array[0]->variant_id`` all designate one field of one record, and a rule
+    written over the ``d.<field>`` spelling holds for exactly the first of them.
+    Read as a bounded scan back from the end rather than as a backtracking
+    pattern, because an lvalue is a whole statement's worth of text here and a
+    non-greedy head would try every split point in it.
+    """
+
+    tail = lvalue.rstrip()
+    stop = len(tail)
+    cursor = stop
+    while cursor > 0 and _NAME_CHARACTER_RE.match(tail[cursor - 1]):
+        cursor -= 1
+    field = tail[cursor:stop]
+    if not field or field[0].isdigit():
+        return None
+    head = tail[:cursor].rstrip()
+    if head.endswith("->"):
+        return head[:-2], field
+    if head.endswith(".") and not head.endswith(".."):
+        return head[:-1], field
+    return None
+
+
+@functools.lru_cache(maxsize=4)
+def record_aliases(runner_masked: str) -> tuple[str, ...]:
+    """Every name transitively bound to the address of the serialized record.
+
+    A name is an alias when its binding takes the record's address, or when it
+    copies a name that already is one. ``last_pmu_diag = d`` is neither -- it is
+    a copy of the *value*, and writing through it reaches other storage -- so it
+    is not one here either.
+    """
+
+    bindings = _bindings(runner_masked)
+    dependents, edges = _binding_dependents(bindings)
+    budget = _ALIAS_BUDGET_FACTOR * (len(bindings) + edges) + _ALIAS_BUDGET_FLOOR
+    aliases: set[str] = set()
+    pending = collections.deque(dependents.get(RECORD_SYMBOL, ()))
+    queued = set(pending)
+    steps = 0
+    while pending:
+        index = pending.popleft()
+        queued.discard(index)
+        steps += 1
+        if steps > budget:
+            raise fail(
+                "resolving a record alias did not settle within %d steps: the source binds "
+                "more aliases than this gate walks" % budget
+            )
+        name, expr = bindings[index]
+        if name == RECORD_SYMBOL or name in aliases:
+            continue
+        if _MEMBER_ACCESS_RE.search(expr) is not None:
+            continue
+        stripped = _CAST_RE.sub(" ", expr)
+        mentioned = set(_IDENTIFIER_RE.findall(stripped))
+        takes_address = "&" in stripped and RECORD_SYMBOL in mentioned
+        if not (takes_address or mentioned & aliases):
+            continue
+        aliases.add(name)
+        for dependent in dependents.get(name, ()):
+            if dependent not in queued:
+                pending.append(dependent)
+                queued.add(dependent)
+    return tuple(sorted(aliases))
+
+
+def _record_field_target(lvalue: str, aliases: frozenset) -> str | None:
+    """The record field ``lvalue`` designates, or ``None`` when it names another.
+
+    The base is reduced the way every other lvalue in this file is reduced -- the
+    casts, the address-of and the subscripts come off -- so what is left is the
+    names it reaches. It designates the record exactly when those names are the
+    record and its aliases and nothing else.
+    """
+
+    member = _record_member(lvalue)
+    if member is None:
+        return None
+    head, field = member
+    base = _INDEX_RE.sub(" ", _strip_address_of(_CAST_RE.sub(" ", head)))
+    names = set(_IDENTIFIER_RE.findall(base))
+    if not names or names - {RECORD_SYMBOL} - aliases:
+        return None
+    return field
 
 
 def runner_appendix_copies(
@@ -3972,15 +4508,45 @@ def runner_record_stores(
     hold the appendix fields closed between the copy and ``put32``.
     """
 
+    aliases = frozenset(record_aliases(runner_masked))
     found: list[tuple[int, str, object]] = []
     for start, lvalue, rvalue in assignment_statements(runner_masked):
         if _is_declaration(lvalue):
             continue
-        target = _RECORD_TARGET_RE.match(lvalue)
-        if target is None:
+        field = _record_field_target(lvalue, aliases)
+        if field is None:
             continue
-        found.append((start, target.group(1), resolve_mailbox_word(rvalue, defines, known)))
+        found.append((start, field, resolve_mailbox_word(rvalue, defines, known)))
     return tuple(found)
+
+
+def require_bindable_record_writes(runner_masked: str) -> None:
+    """Refuse a write to an appendix-named field this gate cannot bind to the record.
+
+    ``runner_record_stores`` resolves the lvalues that *do* designate the record.
+    This names the ones that do not: a field the appendix owns, written through a
+    base nothing here resolves, is either a second name for the record that this
+    walk cannot follow or a different object carrying the same field name. Both
+    are outside what the write-once proof below covers, so both are refused
+    rather than passed over.
+    """
+
+    aliases = frozenset(record_aliases(runner_masked))
+    appendix = frozenset(APPENDIX_FIELDS)
+    lvalues = [(start, lvalue) for start, lvalue, _rvalue in assignment_statements(runner_masked)]
+    lvalues.extend(compound_assignment_lvalues(runner_masked))
+    for start, lvalue in lvalues:
+        if _is_declaration(lvalue):
+            continue
+        member = _record_member(lvalue)
+        if member is None or member[1] not in appendix:
+            continue
+        if _record_field_target(lvalue, aliases) is None:
+            raise fail(
+                "the runner writes the appendix field %s through an lvalue this gate cannot "
+                "bind to the serialized record at offset %d: %s"
+                % (member[1], start, re.sub(r"\s+", " ", lvalue.strip())[:40])
+            )
 
 
 MEASURED_CALL = "run_fixed_inference()"
@@ -4052,6 +4618,7 @@ def verify_runner_contract(runner_masked: str) -> dict[str, object]:
         raise fail("runner appendix copy is not dominated by the mailbox magic check")
     close_index = _matching_brace(runner_masked, open_index, "runner magic else branch")
     aliases = require_mailbox_provenance(runner_masked, defines, "the runner translation unit")
+    require_bindable_record_writes(runner_masked)
     record_stores = runner_record_stores(runner_masked, defines, aliases)
     all_copies = tuple(
         (start, field, word) for start, field, word in record_stores if word is not None
@@ -4121,16 +4688,15 @@ def verify_runner_contract(runner_masked: str) -> dict[str, object]:
             "%s assigned at %d" % (outside[0][1], outside[0][0])
         )
     # An increment writes the field without ever spelling ``d.<field> =``, and
-    # it can be written prefix or postfix, so the lvalue is read for the names
-    # it mentions rather than matched against one shape.
+    # it can be written prefix or postfix, so the lvalue is resolved to the
+    # storage it designates rather than matched against one shape.
+    record_names = frozenset(record_aliases(runner_masked))
     for offset, lvalue in compound_assignment_lvalues(runner_masked):
-        if not names_identifier(lvalue, "d"):
-            continue
-        touched = [field for field in APPENDIX_FIELDS if names_identifier(lvalue, field)]
-        if touched:
+        field = _record_field_target(lvalue, record_names)
+        if field in appendix_fields:
             raise fail(
                 "runner rewrites a copied appendix field through a read-modify-write: "
-                "%s at offset %d" % (touched[0], offset)
+                "%s at offset %d" % (field, offset)
             )
 
     return {
@@ -4257,6 +4823,11 @@ def verify_generated_sources(runner_text: str, vendor_text: str, variant: str) -
     # history is settled before anything is derived from it.
     require_stable_contract_defines(vendor_masked, "the vendor translation unit")
     require_stable_contract_defines(runner_masked, "the runner translation unit")
+    # A macro body is code this gate never expands, so a store written in one is
+    # a store no rule below can see. Settled here, with the rest of the
+    # preprocessing history, rather than left to each rule to miss separately.
+    require_no_statement_macro(vendor_masked, "the vendor translation unit")
+    require_no_statement_macro(runner_masked, "the runner translation unit")
     defines = parse_defines(vendor_masked)
 
     pre_run = verify_pre_run_contract(vendor_masked, defines)
@@ -4270,6 +4841,10 @@ def verify_generated_sources(runner_text: str, vendor_text: str, variant: str) -
     # Last, so a source that breaks a named rule is reported by that rule rather
     # than by the absence its breakage happens to leave behind.
     produced_words = require_every_appendix_word_produced(vendor_masked, defines)
+    # Having *a* producer is the fail-silent half. Having only the producers the
+    # design gives it is the fail-open one, and it runs after the specific rules
+    # so a source that breaks one of them is still named by that rule.
+    appendix_stores = require_authorized_appendix_producers(vendor_masked, defines)
     converge_body = function_text(vendor_masked, CONVERGE_SYMBOL, "common convergence helper")
     command_start, command_stop = function_span(vendor_masked, "test_commands", "command function")
     command = vendor_masked[command_start:command_stop]
@@ -4297,6 +4872,10 @@ def verify_generated_sources(runner_text: str, vendor_text: str, variant: str) -
         # The verifier's own count of appendix words it found a producer for.
         # It equals the appendix width or the verdict was a refusal.
         "appendix_words_with_a_producer": produced_words,
+        # And its own count of the stores that produced them, outside the reset.
+        # A word written twice, or written where the design does not write it,
+        # is a refusal rather than a larger number here.
+        "appendix_stores_outside_the_reset": appendix_stores,
     }
     for section in (pre_run, primary, hard_bypass, convergence, mailbox, identity, cleanup, runner):
         doc.update(section)

@@ -127,7 +127,7 @@ STATUS_FAULT_MASK = 0x314
 
 # The suite is frozen at this many assertions. Adding a named fixture is a
 # deliberate act, so the count moves with it and never drifts silently.
-EXPECTED_PASS_COUNT = 545
+EXPECTED_PASS_COUNT = 582
 
 CHECKER_PATH = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
@@ -6077,6 +6077,447 @@ def run_encoding_cli_suite(patcher):
         )
 
 
+# ---------------------------------------------------------------------------
+# The acceptance grammar: what an accepted source is allowed to be written as
+#
+# Every fixture below was accepted by 96d5113 and publishes a manifest field
+# that is false for the image the compiler builds. They are grouped by the
+# *shape* that reached past a rule rather than by the rule, because each one is
+# another spelling of a construct the gate already models -- which is what a
+# grammar, and not one more spelling exception, has to answer.
+# ---------------------------------------------------------------------------
+
+TERMINAL_CMD_WRITE = "\t    write_reg(NPU_REG_CMD, 0x0000000C);\n"
+ISR_TRIGGER_SET = "        irq_triggered = true;\n"
+PRIMARY_PUBLICATION_CALL = "\t  v14_publish_primary(&primary, qsize_expected);\n"
+FIRST_STATE_OBSERVED_STORE = (
+    "    pmu_completion_visibility_v14_mailbox[V14_MBOX_FIRST_STATE]"
+    " = (obs->status & V14_STATUS_STATE);\n"
+)
+COMMAND_FUNCTION_HEAD = "static int test_commands("
+
+
+def _spliced_directive(directive):
+    """``#\\<newline> <directive>`` -- one logical directive line to the compiler.
+
+    Translation phase 2 deletes the backslash and the newline before phase 4
+    recognises the directive, so this is exactly ``#<directive>``.
+    """
+
+    return "#\\\n " + directive + "\n"
+
+
+def _form_feed_directive(directive):
+    """``#\\f<directive>`` -- a form feed is directive whitespace in C."""
+
+    return "#\014" + directive + "\n"
+
+
+def _repointed_around(anchor, spell, macro, hidden, restored, what):
+    """Repoint ``macro`` at ``anchor`` only, and restore it straight after."""
+
+    def mutate(vendor):
+        return replace_once(
+            vendor,
+            anchor,
+            spell("undef " + macro)
+            + spell("define %s %s" % (macro, hidden))
+            + anchor
+            + spell("undef " + macro)
+            + spell("define %s %s" % (macro, restored)),
+            what,
+        )
+
+    return mutate
+
+
+LOGICAL_DIRECTIVE_LINE_MUTATIONS = (
+    (
+        "contract_macro_repointed_by_a_spliced_directive",
+        _repointed_around(
+            VARIANT_ID_STORE, _spliced_directive, "V14_MBOX_VARIANT_ID", "7U", "0U",
+            "variant id store",
+        ),
+        "undefines a contract macro",
+    ),
+    (
+        "contract_macro_repointed_by_a_form_feed_directive",
+        _repointed_around(
+            VARIANT_ID_STORE, _form_feed_directive, "V14_MBOX_VARIANT_ID", "7U", "0U",
+            "variant id store",
+        ),
+        "undefines a contract macro",
+    ),
+    (
+        "register_offset_macro_repointed_by_a_spliced_directive",
+        _repointed_around(
+            PRE_PROGRAM_STATUS_READ, _spliced_directive, "NPU_REG_STATUS", "0x0CU",
+            "0x14U", "pre-program status read",
+        ),
+        "undefines a contract macro",
+    ),
+    (
+        "variant_id_macro_repointed_by_a_spliced_directive",
+        _repointed_around(
+            VARIANT_ID_STORE, _spliced_directive, "V14_VARIANT_ID", "3U", "1U",
+            "variant id store",
+        ),
+        "undefines a contract macro",
+    ),
+)
+
+# An array declarator binds an address without ever writing ``name = expr``, so
+# every alias walk built on the assignment form reported the dereference as
+# "not an NPU address at all" and dropped the access entirely.
+POINTER_ARRAY_ALIAS_MUTATIONS = (
+    (
+        "running_qsize_read_through_a_pointer_array_alias",
+        _append_after(
+            SUBMIT_WRITE,
+            "\t  { volatile uint32_t *const rt_regs[1] = {\n"
+            "\t        (volatile uint32_t *)(uintptr_t)(U85_BASE_ADDRESS + NPU_REG_QSIZE) };\n"
+            "\t    read_val = (int)*rt_regs[0]; }\n",
+            "submit write",
+        ),
+        "QSIZE",
+    ),
+    (
+        "running_qsize_read_through_a_file_scope_pointer_array",
+        lambda vendor: replace_once(
+            replace_once(
+                vendor,
+                COMMAND_FUNCTION_HEAD,
+                "static volatile uint32_t *const rt_gregs[1] = {\n"
+                "    (volatile uint32_t *)(uintptr_t)(U85_BASE_ADDRESS + NPU_REG_QSIZE) };\n\n"
+                + COMMAND_FUNCTION_HEAD,
+                "command function head",
+            ),
+            SUBMIT_WRITE,
+            SUBMIT_WRITE + "\t  read_val = (int)*rt_gregs[0];\n",
+            "submit write",
+        ),
+        "QSIZE",
+    ),
+    (
+        "second_submit_through_a_pointer_array_alias",
+        _append_after(
+            SUBMIT_WRITE,
+            "\t  { volatile uint32_t *const rt_cmd[1] = {\n"
+            "\t        (volatile uint32_t *)(uintptr_t)(U85_BASE_ADDRESS + NPU_REG_CMD) };\n"
+            "\t    *rt_cmd[0] = 1U; }\n",
+            "submit write",
+        ),
+        "exactly one NPU submit write",
+    ),
+    (
+        # In a helper none of the four inspected functions is, so the file-wide
+        # ISER fold is what has to name it rather than the local pointer rule.
+        "nvic_iser_enable_through_a_pointer_array_alias",
+        lambda vendor: replace_once(
+            replace_once(
+                vendor,
+                COMMAND_FUNCTION_HEAD,
+                "static void v14_rt_iser_poke(void)\n{\n"
+                "    volatile uint32_t *const rt_iser[1] = {\n"
+                "        (volatile uint32_t *)(0xE000E000UL + 0x100UL) };\n"
+                "    *rt_iser[0] = 1UL;\n}\n\n" + COMMAND_FUNCTION_HEAD,
+                "command function head",
+            ),
+            SUBMIT_WRITE,
+            SUBMIT_WRITE + "\t  v14_rt_iser_poke();\n",
+            "submit write",
+        ),
+        "direct NVIC ISER enable write is reachable",
+    ),
+    (
+        "terminal_cmd_write_repeated_through_a_pointer_array_alias",
+        _append_after(
+            TERMINAL_CMD_WRITE,
+            "\t    { volatile uint32_t *const rt_cmd[1] = {\n"
+            "\t          (volatile uint32_t *)(uintptr_t)(U85_BASE_ADDRESS + NPU_REG_CMD) };\n"
+            "\t      *rt_cmd[0] = 0x0000000CU; }\n",
+            "terminal cmd write",
+        ),
+        "success cleanup ordering drifted",
+    ),
+    (
+        "mailbox_word_rewritten_through_a_pointer_array_alias",
+        _append_after(
+            PRIMARY_PUBLICATION_CALL,
+            "\t  { volatile uint32_t *const rt_mb[1] = { pmu_completion_visibility_v14_mailbox };\n"
+            "\t    rt_mb[0][V14_MBOX_VARIANT_ID] = 7U; }\n",
+            "primary publication call",
+        ),
+        "variant id",
+    ),
+)
+
+# ``blank_directives`` removes the ``#define`` line from the statement stream and
+# the invocation site is only ``NAME;``, so an object-like macro whose body is a
+# whole statement was a store no lvalue rule ever saw.
+STATEMENT_MACRO_MUTATIONS = (
+    (
+        "irq_triggered_set_through_a_statement_macro",
+        lambda vendor: replace_once(
+            replace_once(
+                vendor,
+                ISR_TRIGGER_SET,
+                ISR_TRIGGER_SET + "#define V14_RT_SET_TRIG irq_triggered = true\n",
+                "stock handler trigger set",
+            ),
+            SUBMIT_WRITE,
+            SUBMIT_WRITE + "\t  V14_RT_SET_TRIG;\n",
+            "submit write",
+        ),
+        "statement",
+    ),
+    (
+        "mailbox_word_rewritten_through_a_statement_macro",
+        lambda vendor: replace_once(
+            replace_once(
+                vendor,
+                ISR_TRIGGER_SET,
+                ISR_TRIGGER_SET
+                + "#define V14_RT_POKE"
+                " pmu_completion_visibility_v14_mailbox[V14_MBOX_VARIANT_ID] = 7U\n",
+                "stock handler trigger set",
+            ),
+            PRIMARY_PUBLICATION_CALL,
+            PRIMARY_PUBLICATION_CALL + "\t  V14_RT_POKE;\n",
+            "primary publication call",
+        ),
+        "statement",
+    ),
+    (
+        "mmio_written_through_a_statement_macro",
+        lambda vendor: replace_once(
+            replace_once(
+                vendor,
+                ISR_TRIGGER_SET,
+                ISR_TRIGGER_SET
+                + "#define V14_RT_CMD write_reg(NPU_REG_CMD, 1U)\n",
+                "stock handler trigger set",
+            ),
+            SUBMIT_WRITE,
+            SUBMIT_WRITE + "\t  V14_RT_CMD;\n",
+            "submit write",
+        ),
+        "the macro V14_RT_CMD",
+    ),
+)
+
+# A cast's closing parenthesis and a call's are the same character, and the
+# address-of scan resolved that ambiguity in the fail-open direction.
+def _irq_alias_in_an_uncovered_helper(declaration, store):
+    """Bind the alias in a helper none of the four inspected functions is.
+
+    Inside ``test_commands`` a pointer cast the register resolver cannot pin is
+    refused incidentally, which proves nothing about the address-of scan. The
+    helper is where the acceptance review measured all three cast types being
+    accepted, so it is where the rule has to name them.
+    """
+
+    def mutate(vendor):
+        return replace_once(
+            replace_once(
+                vendor,
+                COMMAND_FUNCTION_HEAD,
+                "static void v14_rt_arm_flag(void)\n{\n    %s\n    %s\n}\n\n"
+                % (declaration, store)
+                + COMMAND_FUNCTION_HEAD,
+                "command function head",
+            ),
+            SUBMIT_WRITE,
+            SUBMIT_WRITE + "\t  v14_rt_arm_flag();\n",
+            "submit write",
+        )
+
+    return mutate
+
+
+IRQ_TRIGGERED_CAST_ALIAS_MUTATIONS = (
+    (
+        "irq_triggered_aliased_through_a_cast_parenthesis",
+        _append_after(
+            SUBMIT_WRITE,
+            "\t  { bool *trig_alias = (bool *)&irq_triggered; *trig_alias = true; }\n",
+            "submit write",
+        ),
+        "irq_triggered can become true on a measured path",
+    ),
+    (
+        "irq_triggered_aliased_through_a_void_cast_parenthesis",
+        _irq_alias_in_an_uncovered_helper(
+            "void *trig_alias = (void *)&irq_triggered;", "*(bool *)trig_alias = true;"
+        ),
+        "irq_triggered can become true on a measured path",
+    ),
+    (
+        "irq_triggered_aliased_through_a_cast_in_an_uncovered_helper",
+        _irq_alias_in_an_uncovered_helper(
+            "bool *trig_alias = (bool *)&irq_triggered;", "*trig_alias = true;"
+        ),
+        "irq_triggered can become true on a measured path",
+    ),
+)
+
+# The magic is what declares the other 33 words real, and it was counted by the
+# text of the stored value rather than by the value the compiler folds.
+SECOND_MAGIC_MUTATIONS = tuple(
+    (
+        "second_magic_published_as_%s" % label,
+        _prepend_before(
+            VARIANT_ID_STORE,
+            "    pmu_completion_visibility_v14_mailbox[V14_MBOX_MAILBOX_VALID] = %s;\n"
+            % spelling,
+            "variant id store",
+        ),
+        "mailbox_valid is published from more than one site",
+    )
+    for label, spelling in (
+        ("a_folded_sum", "V14_MAILBOX_VALID + 0U"),
+        ("a_parenthesised_macro", "(V14_MAILBOX_VALID)"),
+        ("a_folded_disjunction", "0x5631344DU | 0U"),
+        ("a_folded_product", "V14_MAILBOX_VALID * 1U"),
+    )
+)
+
+# Every appendix word is published by the sites the design gives it. Proving a
+# word has *a* producer left every other rule in this file -- provenance,
+# predicate shape, publishing guards -- bypassable by one unconditional store
+# downstream of the proof.
+APPENDIX_AUTHORIZED_PRODUCER_MUTATIONS = tuple(
+    (
+        "%s_forged_from_a_second_store" % field,
+        _append_after(
+            PRIMARY_PUBLICATION_CALL,
+            "\t  pmu_completion_visibility_v14_mailbox[V14_MBOX_%s] = %s;\n"
+            % (field.upper(), value),
+            "primary publication call",
+        ),
+        "appendix word %d (%s)" % (APPENDIX_FIELDS.index(field), field),
+    )
+    for field, value in (
+        ("convergence_result", "V14_CONVERGENCE_SUCCESS"),
+        ("pre_submit_status", "0U"),
+        ("primary_result", "V14_PRIMARY_OBSERVED"),
+        ("failure_phase", "V14_PHASE_NONE"),
+        ("installed_vector", "0xDEADBEEFU"),
+        ("convergence_timeout", "0U"),
+    )
+) + (
+    (
+        "first_state_producer_deleted_by_a_spliced_comment",
+        lambda vendor: replace_once(
+            vendor,
+            FIRST_STATE_OBSERVED_STORE,
+            "    /\\\n*\n" + FIRST_STATE_OBSERVED_STORE + "    */\n",
+            "first_state observed store",
+        ),
+        "appendix word 14 (first_state)",
+    ),
+    (
+        "appendix_word_published_from_an_unauthorized_function",
+        lambda vendor: replace_once(
+            vendor,
+            PRIMARY_RESULT_PUBLICATION,
+            PRIMARY_RESULT_PUBLICATION
+            + "    pmu_completion_visibility_v14_mailbox[V14_MBOX_QSIZE_EXPECTED]"
+            " = qsize_expected;\n",
+            "primary result publication",
+        ),
+        "appendix word 1 (qsize_expected)",
+    ),
+)
+
+# The runner record is the transport. It was closed against the literal
+# ``d.<field>`` spelling only, so every other lvalue that designates the same
+# storage rewrote a published field after the copy this gate proved.
+RUNNER_RECORD_ALIAS_MUTATIONS = (
+    (
+        "runner_record_rewritten_through_a_parenthesised_address_of",
+        _after_the_appendix_copy("    (&d)->variant_id = 3U;\n"),
+        "runner rewrites a copied appendix field",
+    ),
+    (
+        "runner_record_rewritten_through_a_record_pointer_alias",
+        _after_the_appendix_copy(
+            "    { pmu_diag_record_t *rt_rd = &d; rt_rd->variant_id = 3U; }\n"
+        ),
+        "runner rewrites a copied appendix field",
+    ),
+    (
+        "runner_record_read_modify_written_through_a_record_pointer_alias",
+        _after_the_appendix_copy(
+            "    { pmu_diag_record_t *rt_rd = &d; rt_rd->first_qread |= 0x80000000U; }\n"
+        ),
+        "runner rewrites a copied appendix field",
+    ),
+    (
+        "runner_record_rewritten_through_an_array_of_record_pointers",
+        _after_the_appendix_copy(
+            "    { pmu_diag_record_t *const rt_a[1] = {&d}; rt_a[0]->variant_id = 3U; }\n"
+        ),
+        "runner rewrites a copied appendix field",
+    ),
+    (
+        "runner_record_rewritten_through_a_statement_macro",
+        _after_the_appendix_copy(
+            "#define V14_RT_RD d.variant_id = 3U\n    V14_RT_RD;\n"
+        ),
+        "statement",
+    ),
+)
+
+
+def run_acceptance_grammar_suite(gate):
+    """The 96d5113 acceptance and red-team blockers, each reproduced first."""
+
+    run_vendor_mutations(gate, LOGICAL_DIRECTIVE_LINE_MUTATIONS, "Q")
+    run_vendor_mutations(gate, POINTER_ARRAY_ALIAS_MUTATIONS, "Q")
+    run_vendor_mutations(gate, STATEMENT_MACRO_MUTATIONS, "Q")
+    run_vendor_mutations(gate, IRQ_TRIGGERED_CAST_ALIAS_MUTATIONS, "Q")
+    run_vendor_mutations(gate, SECOND_MAGIC_MUTATIONS, "Q")
+    run_vendor_mutations(gate, APPENDIX_AUTHORIZED_PRODUCER_MUTATIONS, "Q")
+    run_runner_mutations(gate, RUNNER_RECORD_ALIAS_MUTATIONS, "Q")
+
+    # The two blockers that falsify a manifest key outright are proven on the
+    # whole variant matrix, not only on the Q image they were reported against.
+    for variant in ("QS", "SQ"):
+        for label, mutate, reason in (
+            (
+                "second_magic_published_as_a_folded_sum",
+                _prepend_before(
+                    VARIANT_ID_STORE,
+                    "    pmu_completion_visibility_v14_mailbox[V14_MBOX_MAILBOX_VALID]"
+                    " = V14_MAILBOX_VALID + 0U;\n",
+                    "variant id store",
+                ),
+                "mailbox_valid is published from more than one site",
+            ),
+            (
+                "irq_triggered_aliased_through_a_cast_parenthesis",
+                _append_after(
+                    SUBMIT_WRITE,
+                    "\t  { bool *trig_alias = (bool *)&irq_triggered;"
+                    " *trig_alias = true; }\n",
+                    "submit write",
+                ),
+                "irq_triggered can become true on a measured path",
+            ),
+        ):
+            name = "%s_%s" % (variant.lower(), label)
+            REJECTED_FIXTURES.add(name)
+            expect_reject(
+                gate,
+                variant,
+                canonical_runner(variant),
+                mutate(canonical_vendor(variant)),
+                name,
+                reason,
+            )
+
+
 def run_coverage_suite():
     """The named negative fixtures the design demands are all present."""
 
@@ -6302,6 +6743,46 @@ def run_coverage_suite():
         "raw_nvic_iser_enable_write",
         "irq_triggered_set_to_one_on_a_measured_path",
         "guard_nesting_deeper_than_the_gate_walks",
+        # The acceptance grammar. A directive is a logical line, an address is
+        # the storage it designates whatever declarator bound it, a macro body
+        # is code, and every appendix word has the producers the design gives it.
+        "contract_macro_repointed_by_a_spliced_directive",
+        "contract_macro_repointed_by_a_form_feed_directive",
+        "register_offset_macro_repointed_by_a_spliced_directive",
+        "variant_id_macro_repointed_by_a_spliced_directive",
+        "running_qsize_read_through_a_pointer_array_alias",
+        "running_qsize_read_through_a_file_scope_pointer_array",
+        "second_submit_through_a_pointer_array_alias",
+        "nvic_iser_enable_through_a_pointer_array_alias",
+        "terminal_cmd_write_repeated_through_a_pointer_array_alias",
+        "mailbox_word_rewritten_through_a_pointer_array_alias",
+        "irq_triggered_set_through_a_statement_macro",
+        "mailbox_word_rewritten_through_a_statement_macro",
+        "mmio_written_through_a_statement_macro",
+        "irq_triggered_aliased_through_a_cast_parenthesis",
+        "irq_triggered_aliased_through_a_void_cast_parenthesis",
+        "irq_triggered_aliased_through_a_cast_in_an_uncovered_helper",
+        "second_magic_published_as_a_folded_sum",
+        "second_magic_published_as_a_parenthesised_macro",
+        "second_magic_published_as_a_folded_disjunction",
+        "second_magic_published_as_a_folded_product",
+        "convergence_result_forged_from_a_second_store",
+        "pre_submit_status_forged_from_a_second_store",
+        "primary_result_forged_from_a_second_store",
+        "failure_phase_forged_from_a_second_store",
+        "installed_vector_forged_from_a_second_store",
+        "convergence_timeout_forged_from_a_second_store",
+        "first_state_producer_deleted_by_a_spliced_comment",
+        "appendix_word_published_from_an_unauthorized_function",
+        "runner_record_rewritten_through_a_parenthesised_address_of",
+        "runner_record_rewritten_through_a_record_pointer_alias",
+        "runner_record_read_modify_written_through_a_record_pointer_alias",
+        "runner_record_rewritten_through_an_array_of_record_pointers",
+        "runner_record_rewritten_through_a_statement_macro",
+        "qs_second_magic_published_as_a_folded_sum",
+        "sq_second_magic_published_as_a_folded_sum",
+        "qs_irq_triggered_aliased_through_a_cast_parenthesis",
+        "sq_irq_triggered_aliased_through_a_cast_parenthesis",
     }
     missing = sorted(required - REJECTED_FIXTURES)
     check("every design-mandated negative fixture is present", not missing, repr(missing))
@@ -6330,6 +6811,7 @@ if __name__ == "__main__":
         run_manifest_evidence_suite(gate)
         run_reviewer_blocker_suite(gate)
         run_final_blocker_suite(gate)
+        run_acceptance_grammar_suite(gate)
         run_coverage_suite()
 
     try:
