@@ -13,6 +13,7 @@ import re
 import subprocess
 import sys
 import tempfile
+import time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
@@ -126,7 +127,7 @@ STATUS_FAULT_MASK = 0x314
 
 # The suite is frozen at this many assertions. Adding a named fixture is a
 # deliberate act, so the count moves with it and never drifts silently.
-EXPECTED_PASS_COUNT = 447
+EXPECTED_PASS_COUNT = 493
 
 CHECKER_PATH = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
@@ -4724,6 +4725,9 @@ DERIVED_MANIFEST_FIELDS = (
     "convergence_predicate_connective",
     "primary_completion_predicate_connective",
     "runner_copy_dominated_by_magic",
+    # The mailbox word each runner copy was resolved to. A count of 34 is not a
+    # mapping, so the mapping itself is what the manifest publishes.
+    "runner_appendix_source_words",
 )
 
 # Each field paired with the fixture whose true value contradicts the canonical
@@ -4753,7 +4757,8 @@ def run_manifest_evidence_suite(gate):
             and doc["failure_paths_clear_npu"] is False
             and doc["failure_paths_enter_hprintf"] is False
             and doc["reachable_nvic_enable_sites"] == 0
-            and doc["success_cleanup_order"] == list(gate.SUCCESS_CLEANUP_ORDER),
+            and doc["success_cleanup_order"] == list(gate.SUCCESS_CLEANUP_ORDER)
+            and doc["runner_appendix_source_words"] == list(range(APPENDIX_WORDS)),
             repr({field: doc.get(field) for field in DERIVED_MANIFEST_FIELDS})[:70],
         )
         check(
@@ -4797,6 +4802,608 @@ def run_manifest_evidence_suite(gate):
             check("a false %s claim is refused, not published" % field, False, "raised %r" % exc)
         else:
             check("a false %s claim is refused, not published" % field, False, "accepted")
+
+
+# ---------------------------------------------------------------------------
+# Post-store mutation, transport binding, failure-path window, address folding,
+# pointer re-pointing, line splicing, publishing guards, directive lines and
+# storage aliasing.
+#
+# Each fixture below was accepted by the gate before the rule that names it
+# existed, so each one is a proof that the rule is load-bearing rather than a
+# restatement of what the canonical source happens to do.
+# ---------------------------------------------------------------------------
+
+VARIANT_ID_STORE = (
+    "    pmu_completion_visibility_v14_mailbox[V14_MBOX_VARIANT_ID] = V14_VARIANT_ID;\n"
+)
+MAGIC_PUBLICATION = (
+    "    pmu_completion_visibility_v14_mailbox[V14_MBOX_MAILBOX_VALID] = V14_MAILBOX_VALID;\n"
+    "    __DSB();\n"
+)
+CONVERGENCE_QREAD_STORE = (
+    "\t  pmu_completion_visibility_v14_mailbox[V14_MBOX_CONVERGENCE_FINAL_QREAD] = converged.qread;\n"
+)
+PRIMARY_RESULT_PUBLICATION = (
+    "    pmu_completion_visibility_v14_mailbox[V14_MBOX_PRIMARY_RESULT] = obs->result;\n"
+)
+PRIMARY_TIMEOUT_PUBLICATION = (
+    "\t    v14_publish_failure(V14_PHASE_PRIMARY, V14_REASON_PRIMARY_TIMEOUT,"
+    " primary.qread, primary.status);\n"
+)
+SUBMIT_WRITE = "\t  write_reg(NPU_REG_CMD, read_val | 0x00000001);\n"
+STOP_NPU_WRITE = "\t  write_reg(NPU_REG_CMD, 0x00000000);\n"
+CLEANUP_NVIC_CLEAR = "\t  NVIC_ClearPendingIRQ(NPU0_IRQn);\n"
+PRE_SUBMIT_STATUS_READ = "\t  pre_submit_status = read_reg(NPU_REG_STATUS);\n"
+PRE_PROGRAM_STATUS_READ = "    pre_program_status = read_reg(NPU_REG_STATUS);\n"
+Q_LOOP_READ_AND_GUARD = (
+    "        qread = *qread_reg;\n        if (qread == qsize_expected) {\n"
+)
+Q_LOOP_PROLOGUE = (
+    "    uint32_t qread = 0U;\n    uint32_t status = 0U;\n\n"
+    "    for (uint32_t i = 1U; i <= V14_ITERATION_BOUND; ++i) {\n"
+    "        qread = *qread_reg;\n"
+)
+RUNNER_MAGIC_GUARD_LINE = (
+    "    if (pmu_completion_visibility_v14_mailbox[33] != V14_MAILBOX_VALID) {\n"
+)
+
+
+def _append_after(anchor, statement, what):
+    def mutate(text):
+        return replace_once(text, anchor, anchor + statement, what)
+
+    return mutate
+
+
+def _prepend_before(anchor, statement, what):
+    def mutate(text):
+        return replace_once(text, anchor, statement + anchor, what)
+
+    return mutate
+
+
+def _inject_into_q_loop(statement):
+    def mutate(vendor):
+        return replace_once(
+            vendor,
+            Q_LOOP_READ_AND_GUARD,
+            "        qread = *qread_reg;\n"
+            + statement
+            + "        if (qread == qsize_expected) {\n",
+            "Q primary loop read",
+        )
+
+    return mutate
+
+
+def _q_pointer_stepped(step):
+    def mutate(vendor):
+        return replace_once(
+            vendor,
+            Q_LOOP_PROLOGUE,
+            "    uint32_t qread = 0U;\n    uint32_t status = 0U;\n"
+            "    volatile uint32_t *stepped_reg = qread_reg;\n"
+            "%s\n"
+            "    for (uint32_t i = 1U; i <= V14_ITERATION_BOUND; ++i) {\n"
+            "        qread = *stepped_reg;\n" % step,
+            "Q primary loop prologue",
+        )
+
+    return mutate
+
+
+def _spliced_comment_around(anchor, what):
+    """Delete ``anchor`` from the built image with a ``/\\<newline>*`` opener."""
+
+    def mutate(vendor):
+        return replace_once(
+            vendor, anchor, "\t  /\\\n*\n" + anchor + "\t  */\n", what
+        )
+
+    return mutate
+
+
+def deeply_nested_primary_guards(vendor):
+    depth = 1500
+    return replace_once(
+        vendor,
+        Q_LOOP_READ_AND_GUARD,
+        "        qread = *qread_reg;\n"
+        + "        if (i != 0U) {\n" * depth
+        + "        }\n" * depth
+        + "        if (qread == qsize_expected) {\n",
+        "Q primary loop read",
+    )
+
+
+PUBLISHING_COMPLETION_GUARD = """        if ((qread == qsize_expected) || ((status & V14_STATUS_CMD_END) != 0U)) {
+            obs->t_first = DWT->CYCCNT;
+            obs->result = V14_PRIMARY_OBSERVED;
+            obs->iterations = i;
+            obs->qread = qread;
+            obs->status = status;
+            return;
+        }
+"""
+FABRICATED_OBSERVED_GUARD = """        if (i > 5U) {
+            obs->t_first = DWT->CYCCNT;
+            obs->result = V14_PRIMARY_OBSERVED;
+            obs->iterations = i;
+            obs->qread = qread;
+            obs->status = status;
+            return;
+        }
+"""
+DUAL_RESET_GUARD_OPENING = (
+    "        if ((status & V14_STATUS_RESET) != 0U) {\n"
+    "            obs->t_first = V14_U32_INVALID;\n"
+    "            obs->result = V14_PRIMARY_RESET;\n"
+)
+
+
+def dual_reset_guard_publishes_observed(vendor):
+    return replace_once(
+        vendor,
+        DUAL_RESET_GUARD_OPENING,
+        "        if (((status & V14_STATUS_RESET) != 0U) || (i > 5U)) {\n"
+        "            obs->t_first = DWT->CYCCNT;\n"
+        "            obs->result = V14_PRIMARY_OBSERVED;\n",
+        "dual reset guard",
+    )
+
+
+MMIO_FOLDING_MUTATIONS = (
+    (
+        "primary_status_read_through_an_or_folded_address",
+        _inject_into_q_loop(
+            "        status = *(volatile uint32_t *)(uintptr_t)(0x48000014U | 0U);\n"
+        ),
+        "the primary helper reaches an NPU-region address this gate cannot resolve",
+    ),
+    (
+        "primary_status_read_through_an_and_masked_address",
+        _inject_into_q_loop(
+            "        status = *(volatile uint32_t *)(uintptr_t)(0x48000014U & 0xFFFFFFFFU);\n"
+        ),
+        "the primary helper reaches an NPU-region address this gate cannot resolve",
+    ),
+    (
+        "primary_status_read_through_a_modulo_address",
+        _inject_into_q_loop(
+            "        status = *(volatile uint32_t *)(uintptr_t)(0x48000014U % 0x100000000U);\n"
+        ),
+        "the primary helper reaches an NPU-region address this gate cannot resolve",
+    ),
+    (
+        "primary_qsize_read_through_an_xor_address",
+        _inject_into_q_loop(
+            "        status = *(volatile uint32_t *)(uintptr_t)(0x48000010U ^ 0U);\n"
+        ),
+        "the primary helper reaches an NPU-region address this gate cannot resolve",
+    ),
+    (
+        "second_submit_through_an_or_folded_address",
+        _append_after(
+            SUBMIT_WRITE,
+            "\t  *(volatile uint32_t *)(uintptr_t)(0x48000000U | 0U) = 1U;\n",
+            "submit write",
+        ),
+        "the command function reaches an NPU-region address this gate cannot resolve",
+    ),
+    (
+        "numeric_npu_address_this_gate_cannot_fold",
+        _inject_into_q_loop(
+            "        status = *(volatile uint32_t *)(uintptr_t)(0x48000014U / 0U);\n"
+        ),
+        "the primary helper reaches an NPU-region address this gate cannot resolve",
+    ),
+    (
+        "npu_address_written_as_a_complement",
+        _inject_into_q_loop(
+            "        status = *(volatile uint32_t *)(uintptr_t)(~0xB7FFFFEBU);\n"
+        ),
+        "the primary helper reaches an NPU-region address this gate cannot resolve",
+    ),
+    (
+        "npu_address_selected_by_a_ternary",
+        _inject_into_q_loop(
+            "        status = *(volatile uint32_t *)(uintptr_t)((1U > 0U) ? 0x48000014U : 0U);\n"
+        ),
+        "the primary helper reaches an NPU-region address this gate cannot resolve",
+    ),
+    (
+        "npu_address_written_as_a_comparison",
+        _inject_into_q_loop(
+            "        status = *(volatile uint32_t *)(uintptr_t)(0x48000014U == 0U);\n"
+        ),
+        "the primary helper reaches an NPU-region address this gate cannot resolve",
+    ),
+    (
+        "macro_wrapped_mmio_in_the_command_path",
+        lambda vendor: replace_once(
+            replace_once(
+                vendor,
+                "\t  irq_history_mask = converged.status >> 16;\n",
+                "\t  irq_history_mask = converged.status >> 16;\n"
+                "\t  read_val = (int)V14_REG32(0x48000014U);\n",
+                "irq history assignment",
+            ),
+            "#define V14_APPENDIX_WORDS 34U",
+            "#define V14_APPENDIX_WORDS 34U\n#define V14_REG32(a) (*(volatile uint32_t *)(a))",
+            "appendix words define",
+        ),
+        "the macro V14_REG32 expands to an unexpanded MMIO dereference",
+    ),
+)
+
+MMIO_POINTER_STEP_MUTATIONS = (
+    (
+        "mmio_pointer_repointed_by_a_compound_assignment",
+        _q_pointer_stepped("    stepped_reg += 4;"),
+        "primary helper binds an NPU-region pointer this gate cannot resolve to one register",
+    ),
+    (
+        "mmio_pointer_repointed_by_an_increment",
+        _q_pointer_stepped("    ++stepped_reg;"),
+        "primary helper binds an NPU-region pointer this gate cannot resolve to one register",
+    ),
+)
+
+POST_STORE_MUTATION_MUTATIONS = (
+    (
+        "mailbox_word_incremented_after_its_store",
+        _append_after(
+            VARIANT_ID_STORE,
+            "    pmu_completion_visibility_v14_mailbox[V14_MBOX_VARIANT_ID] += 2U;\n",
+            "variant id store",
+        ),
+        "mutates a published mailbox word through a read-modify-write",
+    ),
+    (
+        "mailbox_magic_cleared_after_publication",
+        _append_after(
+            MAGIC_PUBLICATION,
+            "    pmu_completion_visibility_v14_mailbox[V14_MBOX_MAILBOX_VALID] &= 0U;\n",
+            "magic publication",
+        ),
+        "mutates a published mailbox word through a read-modify-write",
+    ),
+    (
+        "mailbox_data_word_or_masked_after_its_store",
+        _append_after(
+            CONVERGENCE_QREAD_STORE,
+            "\t  pmu_completion_visibility_v14_mailbox[V14_MBOX_CONVERGENCE_FINAL_QREAD] |="
+            " 0xFFFF0000U;\n",
+            "convergence final qread store",
+        ),
+        "mutates a published mailbox word through a read-modify-write",
+    ),
+    (
+        "mailbox_word_incremented_through_an_alias",
+        lambda vendor: replace_once(
+            vendor,
+            VARIANT_ID_STORE,
+            "    volatile uint32_t *mailbox_alias = pmu_completion_visibility_v14_mailbox;\n"
+            + VARIANT_ID_STORE
+            + "    mailbox_alias[0]++;\n",
+            "variant id store",
+        ),
+        "mutates a published mailbox word through a read-modify-write",
+    ),
+    (
+        "mailbox_word_mutated_through_a_reversed_subscript",
+        _append_after(
+            VARIANT_ID_STORE,
+            "    0[pmu_completion_visibility_v14_mailbox] += 2U;\n",
+            "variant id store",
+        ),
+        "mutates a published mailbox word through a read-modify-write",
+    ),
+    (
+        "observation_field_or_masked_before_publication",
+        _prepend_before(
+            PRIMARY_RESULT_PUBLICATION, "    obs->result |= 1U;\n", "primary result publication"
+        ),
+        "mutates a frozen observation field through a read-modify-write",
+    ),
+)
+
+FAILURE_WINDOW_MUTATIONS = (
+    (
+        "failure_path_clears_cmd_immediately_before_publication",
+        _prepend_before(
+            PRIMARY_TIMEOUT_PUBLICATION,
+            "\t    write_reg(NPU_REG_CMD, 0x00000000);\n",
+            "primary timeout publication",
+        ),
+        "failure path clears NPU state before serialization",
+    ),
+    (
+        "failure_path_prints_immediately_before_publication",
+        _prepend_before(
+            PRIMARY_TIMEOUT_PUBLICATION,
+            '\t    printf("primary timeout\\n");\n',
+            "primary timeout publication",
+        ),
+        "failure path enters the H-PRINTF seam",
+    ),
+)
+
+LINE_SPLICING_MUTATIONS = (
+    (
+        "terminal_cmd_write_deleted_by_a_spliced_comment",
+        _spliced_comment_around(STOP_NPU_WRITE, "stop NPU write"),
+        "success cleanup ordering drifted",
+    ),
+    (
+        "cleanup_nvic_clear_deleted_by_a_spliced_comment",
+        _spliced_comment_around(CLEANUP_NVIC_CLEAR, "cleanup NVIC clear"),
+        "success cleanup ordering drifted",
+    ),
+)
+
+STORAGE_ALIAS_MUTATIONS = (
+    (
+        "pre_submit_status_overwritten_through_a_dereferenced_lvalue",
+        _append_after(
+            PRE_SUBMIT_STATUS_READ,
+            "\t  *(&pre_submit_status) = 0U;\n",
+            "pre-submit status read",
+        ),
+        "post-program gate: pre_submit_status is written through an lvalue this gate cannot bind",
+    ),
+    (
+        "pre_program_status_overwritten_through_a_dereferenced_lvalue",
+        _append_after(
+            PRE_PROGRAM_STATUS_READ,
+            "    *(&pre_program_status) = 0U;\n",
+            "pre-program status read",
+        ),
+        "pre-program gate: pre_program_status is written through an lvalue this gate cannot bind",
+    ),
+)
+
+NVIC_ISOLATION_MUTATIONS = (
+    (
+        "raw_nvic_iser_enable_write",
+        _append_after(
+            "    NVIC_ClearPendingIRQ(NPU0_IRQn);\n\n",
+            "    ((NVIC_Type *)0xE000E100UL)->ISER[0] = 1UL;\n",
+            "runtime setup NVIC clear",
+        ),
+        "direct NVIC ISER enable write is reachable",
+    ),
+    (
+        "irq_triggered_set_to_one_on_a_measured_path",
+        _append_after(SUBMIT_WRITE, "\t  irq_triggered = 1;\n", "submit write"),
+        "irq_triggered can become true on a measured path",
+    ),
+)
+
+BOUNDED_ANALYSIS_MUTATIONS = (
+    (
+        "guard_nesting_deeper_than_the_gate_walks",
+        deeply_nested_primary_guards,
+        "nesting is deeper than the 128 levels this gate walks",
+    ),
+)
+
+PUBLISHING_GUARD_MUTATIONS = (
+    (
+        "extra_publishing_guard_after_the_completion_guard",
+        _append_after(
+            PUBLISHING_COMPLETION_GUARD, FABRICATED_OBSERVED_GUARD, "dual completion guard"
+        ),
+        "publishes from a guard whose condition is not a contract predicate",
+    ),
+    (
+        "extra_publishing_guard_before_the_completion_guard",
+        _prepend_before(
+            PUBLISHING_COMPLETION_GUARD, FABRICATED_OBSERVED_GUARD, "dual completion guard"
+        ),
+        "publishes from a guard whose condition is not a contract predicate",
+    ),
+    (
+        "extra_publishing_guard_spelled_else_if",
+        _append_after(
+            PUBLISHING_COMPLETION_GUARD,
+            "        else " + FABRICATED_OBSERVED_GUARD.lstrip(" "),
+            "dual completion guard",
+        ),
+        "publishes from a guard whose condition is not a contract predicate",
+    ),
+    (
+        "reset_guard_repurposed_to_publish_observed",
+        dual_reset_guard_publishes_observed,
+        "the primary reset predicate does not join its terms with a single term",
+    ),
+)
+
+
+def _runner_copies_from_one_word(runner):
+    out = runner
+    for index, field in enumerate(APPENDIX_FIELDS):
+        out = replace_once(
+            out,
+            "            d.%s = pmu_completion_visibility_v14_mailbox[%d];" % (field, index),
+            "            d.%s = pmu_completion_visibility_v14_mailbox[0];" % field,
+            "runner copy of %s" % field,
+        )
+    return out
+
+
+def _runner_copies_in_reverse_word_order(runner):
+    out = runner
+    for index, field in enumerate(APPENDIX_FIELDS):
+        out = replace_once(
+            out,
+            "            d.%s = pmu_completion_visibility_v14_mailbox[%d];" % (field, index),
+            "            d.%s = pmu_completion_visibility_v14_mailbox[@%d@];" % (field, index),
+            "runner copy of %s" % field,
+        )
+    for index in range(len(APPENDIX_FIELDS)):
+        out = out.replace("@%d@" % index, str(len(APPENDIX_FIELDS) - 1 - index))
+    return out
+
+
+def _runner_copy_index(new_index):
+    def mutate(runner):
+        return replace_once(
+            runner,
+            "            d.qsize_expected = pmu_completion_visibility_v14_mailbox[1];",
+            "            d.qsize_expected = pmu_completion_visibility_v14_mailbox[%s];" % new_index,
+            "runner qsize_expected copy",
+        )
+
+    return mutate
+
+
+RUNNER_TRANSPORT_MUTATIONS = (
+    (
+        "runner_copies_every_appendix_field_from_word_zero",
+        _runner_copies_from_one_word,
+        "runner appendix copy does not read the word its field is published in",
+    ),
+    (
+        "runner_copies_the_appendix_in_reverse_word_order",
+        _runner_copies_in_reverse_word_order,
+        "runner appendix copy does not read the word its field is published in",
+    ),
+    (
+        "runner_copies_a_field_from_an_out_of_range_word",
+        _runner_copy_index("99"),
+        "runner copies qsize_expected from outside the 34-word appendix",
+    ),
+    (
+        "runner_copies_a_field_from_an_unresolvable_word",
+        _runner_copy_index("rt_index"),
+        "runner copies qsize_expected from a mailbox offset this gate cannot resolve",
+    ),
+    (
+        "runner_copy_hidden_behind_a_preprocessor_directive",
+        _prepend_before(
+            RUNNER_MAGIC_GUARD_LINE,
+            "#line 1\n    d.variant_id = pmu_completion_visibility_v14_mailbox[0];\n",
+            "runner magic guard",
+        ),
+        "runner copies the appendix outside the mailbox-magic branch",
+    ),
+)
+
+
+def run_reviewer_blocker_suite(gate):
+    """Every acceptance and red-team blocker, as a fixture that once passed."""
+
+    run_vendor_mutations(gate, POST_STORE_MUTATION_MUTATIONS, "Q")
+    run_vendor_mutations(gate, FAILURE_WINDOW_MUTATIONS, "Q")
+    run_vendor_mutations(gate, MMIO_FOLDING_MUTATIONS, "Q")
+    run_vendor_mutations(gate, MMIO_POINTER_STEP_MUTATIONS, "Q")
+    run_vendor_mutations(gate, LINE_SPLICING_MUTATIONS, "Q")
+    run_vendor_mutations(gate, STORAGE_ALIAS_MUTATIONS, "Q")
+    run_vendor_mutations(gate, NVIC_ISOLATION_MUTATIONS, "Q")
+    run_vendor_mutations(gate, BOUNDED_ANALYSIS_MUTATIONS, "Q")
+    run_runner_mutations(gate, RUNNER_TRANSPORT_MUTATIONS, "Q")
+
+    # The publishing-guard rules are about the two-observation loops, so they are
+    # proven in both of the variants that have one.
+    for variant in ("QS", "SQ"):
+        for name, mutate, reason in PUBLISHING_GUARD_MUTATIONS:
+            scoped = "%s_%s" % (variant.lower(), name)
+            REJECTED_FIXTURES.add(scoped)
+            expect_reject(
+                gate,
+                variant,
+                canonical_runner(variant),
+                mutate(canonical_vendor(variant)),
+                scoped,
+                reason,
+            )
+
+    # A splice inside a token is refused rather than analysed under a
+    # tokenisation the built image does not share.
+    try:
+        gate.mask_c_lexical("int f(void){ int abc = 1; return a\\\nbc; }")
+    except gate.GateError as exc:
+        check("a line splice inside a token is a named rejection", "inside a token" in str(exc))
+    else:
+        check("a line splice inside a token is a named rejection", False, "accepted")
+
+    # A spliced comment opener really does delete the enclosed text.
+    original = "int x = 1;\n/\\\n*\nx = 999;\n*/\nint y = 2;\n"
+    spliced = gate.mask_c_lexical(original)
+    check(
+        "a spliced comment opener blanks the code it encloses",
+        "999" not in spliced
+        and "int x = 1;" in spliced
+        and "int y = 2;" in spliced
+        and len(spliced) == len(original),
+        repr(spliced)[:70],
+    )
+
+    # A continued preprocessor directive is one logical line, so blanking it
+    # cannot unbalance the statement scan below it.
+    continued = gate.blank_directives("#define M(a) ((a) \\\n  | (a))\nd.x = m[0];\n")
+    check(
+        "a continued preprocessor directive is blanked whole",
+        continued.strip() == "d.x = m[0];" and continued.count("(") == 0,
+        repr(continued)[:70],
+    )
+
+    verdict = _mask_rejection(gate, "/*" * ((4 << 20) // 2 + 8))
+    check(
+        "a source past the scan bound is a named rejection",
+        verdict.startswith("source is larger than"),
+        verdict[:70],
+    )
+
+    started = time.time()
+    gate.mask_c_lexical("/*x" * 40000)
+    elapsed = time.time() - started
+    check(
+        "unterminated block-comment openers stay linear",
+        elapsed < 1.0,
+        "%.2fs for 120 KB" % elapsed,
+    )
+
+    # The bound is structural, so the CLI reports it as a verdict. A traceback
+    # on stderr is what commit 194d2db exists to keep out of this gate.
+    with tempfile.TemporaryDirectory() as scratch:
+        runner_path = os.path.join(scratch, "runner.c")
+        vendor_path = os.path.join(scratch, "vendor.c")
+        with open(runner_path, "w", encoding="utf-8") as handle:
+            handle.write(canonical_runner("Q"))
+        with open(vendor_path, "w", encoding="utf-8") as handle:
+            handle.write(deeply_nested_primary_guards(canonical_vendor("Q")))
+        result = run_checker(
+            [
+                "--allow-fixture",
+                "--variant",
+                "Q",
+                "--runner-generated",
+                runner_path,
+                "--vendor-generated",
+                vendor_path,
+                "--fixture-manifest-out",
+                os.path.join(scratch, "manifest.json"),
+            ]
+        )
+        combined = result.stdout + result.stderr
+        check(
+            "pathological guard nesting is a named FAIL, not a traceback",
+            result.returncode == 1
+            and combined.startswith("FAIL ")
+            and "Traceback" not in combined,
+            combined.strip()[:70],
+        )
+
+
+def _mask_rejection(gate, text):
+    try:
+        gate.mask_c_lexical(text)
+    except gate.GateError as exc:
+        return str(exc)
+    return "accepted"
 
 
 def run_encoding_cli_suite(patcher):
@@ -5032,6 +5639,48 @@ def run_coverage_suite():
         "false_failure_paths_enter_hprintf_claim",
         "false_reachable_nvic_enable_sites_claim",
         "false_success_cleanup_order_claim",
+        # The acceptance and red-team blockers. Each one was accepted before the
+        # rule that names it existed.
+        "mailbox_word_incremented_after_its_store",
+        "mailbox_magic_cleared_after_publication",
+        "mailbox_data_word_or_masked_after_its_store",
+        "mailbox_word_incremented_through_an_alias",
+        "mailbox_word_mutated_through_a_reversed_subscript",
+        "observation_field_or_masked_before_publication",
+        "runner_copies_every_appendix_field_from_word_zero",
+        "runner_copies_the_appendix_in_reverse_word_order",
+        "runner_copies_a_field_from_an_out_of_range_word",
+        "runner_copies_a_field_from_an_unresolvable_word",
+        "runner_copy_hidden_behind_a_preprocessor_directive",
+        "failure_path_clears_cmd_immediately_before_publication",
+        "failure_path_prints_immediately_before_publication",
+        "primary_status_read_through_an_or_folded_address",
+        "primary_status_read_through_an_and_masked_address",
+        "primary_status_read_through_a_modulo_address",
+        "primary_qsize_read_through_an_xor_address",
+        "second_submit_through_an_or_folded_address",
+        "numeric_npu_address_this_gate_cannot_fold",
+        "npu_address_written_as_a_complement",
+        "npu_address_selected_by_a_ternary",
+        "npu_address_written_as_a_comparison",
+        "macro_wrapped_mmio_in_the_command_path",
+        "mmio_pointer_repointed_by_a_compound_assignment",
+        "mmio_pointer_repointed_by_an_increment",
+        "terminal_cmd_write_deleted_by_a_spliced_comment",
+        "cleanup_nvic_clear_deleted_by_a_spliced_comment",
+        "qs_extra_publishing_guard_after_the_completion_guard",
+        "qs_extra_publishing_guard_before_the_completion_guard",
+        "qs_extra_publishing_guard_spelled_else_if",
+        "qs_reset_guard_repurposed_to_publish_observed",
+        "sq_extra_publishing_guard_after_the_completion_guard",
+        "sq_extra_publishing_guard_before_the_completion_guard",
+        "sq_extra_publishing_guard_spelled_else_if",
+        "sq_reset_guard_repurposed_to_publish_observed",
+        "pre_submit_status_overwritten_through_a_dereferenced_lvalue",
+        "pre_program_status_overwritten_through_a_dereferenced_lvalue",
+        "raw_nvic_iser_enable_write",
+        "irq_triggered_set_to_one_on_a_measured_path",
+        "guard_nesting_deeper_than_the_gate_walks",
     }
     missing = sorted(required - REJECTED_FIXTURES)
     check("every design-mandated negative fixture is present", not missing, repr(missing))
@@ -5058,6 +5707,7 @@ if __name__ == "__main__":
         run_mmio_provenance_suite(gate)
         run_predicate_and_provenance_suite(gate)
         run_manifest_evidence_suite(gate)
+        run_reviewer_blocker_suite(gate)
         run_coverage_suite()
 
     try:
