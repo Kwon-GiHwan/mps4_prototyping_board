@@ -6,9 +6,13 @@ the gate, so a gate constant drifting away from the design is a test failure
 instead of a silent agreement.
 """
 
+import hashlib
+import json
 import os
+import re
 import subprocess
 import sys
+import tempfile
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
@@ -119,6 +123,10 @@ STATUS_IRQ_RAISED = 0x002
 STATUS_RESET = 0x008
 STATUS_CMD_END = 0x020
 STATUS_FAULT_MASK = 0x314
+
+# The suite is frozen at this many assertions. Adding a named fixture is a
+# deliberate act, so the count moves with it and never drifts silently.
+EXPECTED_PASS_COUNT = 263
 
 CHECKER_PATH = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
@@ -885,6 +893,109 @@ def run_cli_suite():
 
     result = run_checker(["--allow-fixture", "--variant", "Q"])
     check("fixture mode without inputs is refused", result.returncode != 0)
+
+
+# ---------------------------------------------------------------------------
+# Frozen raw inputs for the generator.
+#
+# The raw runner is tracked in this repository at its frozen digest, so the
+# generator's runner half runs against the real thing. The raw vendor
+# translation unit is not tracked here, so its half runs against a stock
+# fixture that carries the five frozen V12 anchors verbatim. That is a real
+# limitation of this chunk and is reported as one.
+# ---------------------------------------------------------------------------
+
+REAL_RUNNER_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "runner_pmu_diag_main.c")
+
+PATCH_VENDOR_STOCK = """#define BUSY_SLEEP
+#define VERIFY_OUTPUT 1
+#define TEST_CPM 1
+#define BUSY_SLEEP_TIMEOUT 10000
+
+void u85_irq_handler(void)
+{
+    int32_t status_register = 0;
+    status_register = read_reg(NPU_REG_STATUS);
+    irq_history_mask = status_register >> 16;
+    if ((status_register & 0x02)){
+        printf("Got IRQ, History_mask is %x status_register is %x\\n", irq_history_mask, status_register);
+        irq_triggered = true;
+        write_reg(NPU_REG_CMD, 2);
+    }
+}
+
+static inline void wait_for_irq(void)
+{
+    while (false == irq_triggered) {
+      sleep();
+      if (!irq_triggered) {
+        irq_never_triggered = true;
+        printf("TEST FAILED: IRQ not triggered after timeout, Status reg is %x\\n", read_reg(NPU_REG_STATUS));
+        break;
+      }
+    }
+    irq_triggered = false;
+}
+
+static int test_commands( const u85_eTest eTest,
+\t\t                  const uint32_t u32CmdQueueSize,
+\t\t                  struct u85_warp_data_t *pu85_warp_data_st)
+{
+\tint ret_code;
+    int read_val;
+
+\t/* Init locals */
+\tret_code =0;
+\tread_val =0;
+
+\t  //Start NPU
+\t  read_val = read_reg(NPU_REG_CMD);
+\t  write_reg(NPU_REG_CMD, read_val | 0x00000001);
+\t  //Clear IRQ
+\t  wait_for_irq();
+\t  // Read QREAD register
+\t  read_val = read_reg(NPU_REG_QREAD);
+\t  write_reg(NPU_REG_CMD, 0x00000002);
+\t  if(read_val == u32CmdQueueSize) {
+\t    printf("Read match at address: NPU_REG_QREAD, Expected Read Value: 0x%x \\n",u32CmdQueueSize);
+\t  }
+\t  else {
+\t    printf("ERROR: Read mismatch at address: NPU_REG_QREAD, Expected Read Value: 0x%x, Read Value : 0x%x\\n",u32CmdQueueSize, read_val);
+\t    ret_code = 1;
+\t  }
+\t  //Stop NPU
+\t  write_reg(NPU_REG_CMD, 0x00000000);
+\t  // Enable clock and power Q interfaces to ask for shutdown
+#if(TEST_CPM==1)
+\t    printf("Testing CPM signals\\n");
+\t    //Enable Program CLKQ and PWRQ interfaces
+\t    //Bit[2] enables CLKQ, and Bit[3] Enables PWRQ
+\t    write_reg(NPU_REG_CMD, 0x0000000C);
+#endif
+\treturn ret_code;
+}
+
+int test_u85( const u85_eTest eTest,
+              const uint32_t u32ExpectedIRQMask,
+              const uint32_t u32OutputSize,
+              const uint32_t u32CmdQueueSize,
+              struct u85_warp_data_t *pu85_warp_data_st )
+{
+    int ret_code = 0;
+
+    NVIC_SetVector(NPU0_IRQn, (uint32_t)&u85_irq_handler);
+    NVIC_EnableIRQ(NPU0_IRQn);
+    write_reg(NPU_REG_QBASE, (uint32_t)pu85_warp_data_st->pu32CmdStream);
+    write_reg(NPU_REG_QSIZE, u32CmdQueueSize);
+    ret_code = test_commands(eTest, u32CmdQueueSize, pu85_warp_data_st);
+    return ret_code;
+}
+"""
+
+
+def load_real_runner_stock():
+    with open(REAL_RUNNER_PATH, "r", encoding="utf-8") as handle:
+        return handle.read().replace("\r\n", "\n").replace("\r", "\n")
 
 
 def expect_accept(gate, variant, runner, vendor, name):
@@ -1960,6 +2071,280 @@ def run_pre_run_suite(gate):
     run_vendor_mutations(gate, PRE_RUN_MUTATIONS)
 
 
+GENERATOR_PATH = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    "patches",
+    "patch_pmu_completion_visibility_v14.py",
+)
+
+EXPECTED_RUNNER_COUNT_KEYS = (
+    "schema_version_branch",
+    "extern_v14_globals",
+    "record_append_fields",
+    "field_count_block",
+    "static_asserts",
+    "private_driver_seam_exemption",
+    "private_driver_v8_exemption",
+    "reset_v14_globals",
+    "copy_v14_values",
+    "serialize_v14_values",
+)
+
+EXPECTED_VENDOR_COUNT_KEYS = (
+    "global_defs",
+    "helper_insert",
+    "command_locals",
+    "runtime_enable_site",
+    "command_wait_block",
+)
+
+
+def run_generator(args):
+    return subprocess.run(
+        [sys.executable, GENERATOR_PATH] + list(args),
+        capture_output=True,
+        text=True,
+    )
+
+
+def run_generator_suite(gate, patcher):
+    check("generator pins the frozen raw runner sha", patcher.RUNNER_SHA256 == RUNNER_SHA256)
+    check("generator pins the frozen raw vendor sha", patcher.VENDOR_SHA256 == VENDOR_SHA256)
+    check("generator declares schema 14", patcher.SCHEMA_VERSION == SCHEMA)
+    check("generator declares build id 0x34314950", patcher.BUILD_ID == BUILD_ID)
+    check("generator accepts exactly Q, QS and SQ", patcher.VARIANTS == VARIANTS)
+    check("generator freezes the vendor return mapping", patcher.VENDOR_RETURN == VENDOR_RETURN)
+
+    runner_stock = load_real_runner_stock()
+    check(
+        "the tracked raw runner still hashes to the frozen pin",
+        hashlib.sha256(runner_stock.encode("utf-8")).hexdigest() == RUNNER_SHA256,
+    )
+
+    for variant in ("Q", "QS", "SQ"):
+        try:
+            runner_out, runner_counts = patcher.patch_runner(runner_stock, variant)
+            vendor_out, vendor_counts = patcher.patch_vendor(PATCH_VENDOR_STOCK, variant)
+        except (Exception, SystemExit) as exc:
+            check("generator emits %s sources" % variant, False, ("%s" % exc)[:80])
+            continue
+        check("generator emits %s sources" % variant, True)
+        check(
+            "%s runner replacement counts are all exactly one" % variant,
+            tuple(sorted(runner_counts)) == tuple(sorted(EXPECTED_RUNNER_COUNT_KEYS))
+            and set(runner_counts.values()) == {1},
+            repr(runner_counts),
+        )
+        check(
+            "%s vendor replacement counts are all exactly one" % variant,
+            tuple(sorted(vendor_counts)) == tuple(sorted(EXPECTED_VENDOR_COUNT_KEYS))
+            and set(vendor_counts.values()) == {1},
+            repr(vendor_counts),
+        )
+        check(
+            "%s emits the frozen mailbox and tail symbols" % variant,
+            all(
+                symbol in vendor_out
+                for symbol in (
+                    "pmu_completion_visibility_v14_mailbox",
+                    "v14_mailbox_reset",
+                    "v14_converge",
+                    "v14_primary_" + variant.lower(),
+                )
+            ),
+        )
+        inactive = [
+            "v14_primary_" + other.lower() for other in ("Q", "QS", "SQ") if other != variant
+        ]
+        check(
+            "%s leaves every inactive primary helper out of the image" % variant,
+            not any(re.search(r"(?<![A-Za-z0-9_])%s\s*\(" % symbol, vendor_out) for symbol in inactive),
+        )
+        check(
+            "%s carries the frozen return mapping" % variant,
+            all(
+                "#define V14_RET_%s %d" % (name, value) in vendor_out
+                for name, value in VENDOR_RETURN.items()
+            ),
+        )
+        expect_accept(gate, variant, runner_out, vendor_out, "generated %s sources pass the gate" % variant)
+
+        repeat_runner, _ = patcher.patch_runner(runner_stock, variant)
+        repeat_vendor, _ = patcher.patch_vendor(PATCH_VENDOR_STOCK, variant)
+        check(
+            "%s generation is deterministic for the same inputs" % variant,
+            repeat_runner == runner_out and repeat_vendor == vendor_out,
+        )
+
+    for bad in ("q", "QSQ", "", "S5"):
+        try:
+            patcher.patch_vendor(PATCH_VENDOR_STOCK, bad)
+        except (Exception, SystemExit):
+            check("generator refuses variant %r" % bad, True)
+        else:
+            check("generator refuses variant %r" % bad, False, "accepted")
+
+    already = patcher.patch_vendor(PATCH_VENDOR_STOCK, "Q")[0]
+    for name, candidate in (
+        ("generated vendor output", already),
+        ("a V12-generated vendor input", PATCH_VENDOR_STOCK + "\nstatic uint32_t v12_poll_completion(void) { return 0U; }\n"),
+        ("a V13-generated vendor input", PATCH_VENDOR_STOCK + "\nstatic uint32_t v13_poll_completion(void) { return 0U; }\n"),
+    ):
+        try:
+            patcher.patch_vendor(candidate, "Q")
+        except (Exception, SystemExit) as exc:
+            check("%s is refused as raw input" % name, "already carries" in str(exc), str(exc)[:60])
+        else:
+            check("%s is refused as raw input" % name, False, "accepted")
+
+
+def run_generator_cli_suite():
+    result = run_generator(["--help"])
+    check("generator --help exits zero", result.returncode == 0)
+    for option in ("--variant", "--runner-in", "--vendor-in", "--runner-out", "--vendor-out"):
+        check("generator --help documents %s" % option, option in result.stdout)
+    for forbidden in ("--expect-runner-sha256", "--expect-vendor-sha256"):
+        check("generator has no %s escape hatch" % forbidden, forbidden not in result.stdout)
+
+    result = run_generator([])
+    check("generator refuses an empty command line", result.returncode != 0)
+
+    with tempfile.TemporaryDirectory() as scratch:
+        runner_in = os.path.join(scratch, "runner.c")
+        vendor_in = os.path.join(scratch, "u85.c")
+        with open(runner_in, "w", encoding="utf-8") as handle:
+            handle.write(load_real_runner_stock())
+        with open(vendor_in, "w", encoding="utf-8") as handle:
+            handle.write(PATCH_VENDOR_STOCK)
+        result = run_generator(
+            [
+                "--variant",
+                "Q",
+                "--runner-in",
+                runner_in,
+                "--vendor-in",
+                vendor_in,
+                "--runner-out",
+                os.path.join(scratch, "out_runner.c"),
+                "--vendor-out",
+                os.path.join(scratch, "out_vendor.c"),
+            ]
+        )
+        check(
+            "generator refuses a vendor input that is not the frozen digest",
+            result.returncode != 0 and "vendor hash mismatch" in (result.stdout + result.stderr),
+            (result.stdout + result.stderr).strip()[:70],
+        )
+
+        result = run_generator(
+            [
+                "--variant",
+                "QQ",
+                "--runner-in",
+                runner_in,
+                "--vendor-in",
+                vendor_in,
+                "--runner-out",
+                os.path.join(scratch, "out_runner.c"),
+                "--vendor-out",
+                os.path.join(scratch, "out_vendor.c"),
+            ]
+        )
+        check("generator CLI refuses an unknown variant", result.returncode != 0)
+
+
+def run_generated_fixture_cli_suite(patcher):
+    """Drive the real checker CLI over real generator output."""
+
+    runner_stock = load_real_runner_stock()
+    with tempfile.TemporaryDirectory() as scratch:
+        digests = []
+        for variant in ("Q", "QS", "SQ"):
+            runner_out, _ = patcher.patch_runner(runner_stock, variant)
+            vendor_out, _ = patcher.patch_vendor(PATCH_VENDOR_STOCK, variant)
+            runner_path = os.path.join(scratch, "%s_runner.c" % variant)
+            vendor_path = os.path.join(scratch, "%s_vendor.c" % variant)
+            manifest_path = os.path.join(scratch, "%s_manifest.json" % variant)
+            with open(runner_path, "w", encoding="utf-8") as handle:
+                handle.write(runner_out)
+            with open(vendor_path, "w", encoding="utf-8") as handle:
+                handle.write(vendor_out)
+            result = run_checker(
+                [
+                    "--allow-fixture",
+                    "--variant",
+                    variant,
+                    "--runner-generated",
+                    runner_path,
+                    "--vendor-generated",
+                    vendor_path,
+                    "--fixture-manifest-out",
+                    manifest_path,
+                ]
+            )
+            check(
+                "checker CLI passes generated %s sources" % variant,
+                result.returncode == 0,
+                (result.stdout + result.stderr).strip()[:70],
+            )
+            if result.returncode != 0:
+                continue
+            with open(manifest_path, "r", encoding="utf-8") as handle:
+                raw = handle.read()
+            doc = json.loads(raw)
+            check(
+                "%s fixture manifest is canonical JSON" % variant,
+                raw == json.dumps(doc, sort_keys=True, separators=(",", ":"), allow_nan=False) + "\n",
+            )
+            check(
+                "%s fixture manifest binds the generated vendor digest" % variant,
+                doc["generated_vendor_sha256"] == hashlib.sha256(vendor_out.encode("utf-8")).hexdigest(),
+            )
+            check(
+                "%s fixture manifest claims no real-ELF qualification" % variant,
+                doc["real_elf_qualified"] is False and doc["qualification"] == "UNIT-QUALIFIED",
+            )
+            digests.append(doc["common_convergence_source_sha256"])
+        check("generated variants share one convergence-helper digest", len(set(digests)) == 1, repr(set(digests)))
+
+
+def run_coverage_suite():
+    """The named negative fixtures the design demands are all present."""
+
+    required = {
+        "qsize_read_after_submit",
+        "qsize_snapshot_before_final_programming",
+        "pre_program_gate_missing",
+        "pre_run_failure_reaches_submit",
+        "q_primary_status_read",
+        "qs_second_read_dropped",
+        "sq_read_order_matches_qs",
+        "primary_completion_uses_bit1",
+        "primary_success_tuple_reread",
+        "converge_cross_iteration_accumulation",
+        "converge_predicate_missing_bit1",
+        "converge_reset_delayed",
+        "variant_specific_convergence_helper",
+        "converge_per_loop_evidence_store",
+        "failure_path_clears_npu",
+        "history_from_status_reread",
+        "success_cleanup_order_drift",
+        "q_first_status_synthesized_from_convergence",
+        "mailbox_magic_not_last",
+        "mailbox_reset_valid_not_zeroed",
+        "mailbox_magic_published_from_second_site",
+        "runner_copy_before_magic_check",
+        "cleanup_invariant_reported_as_convergence",
+        "post_program_stale_cmd_end_gate_missing",
+        "q_timeout_diagnostic_missing",
+        "q_timeout_diagnostic_duplicated",
+        "convergence_failure_discards_first_tuple",
+        "success_publishes_failure_tuple",
+    }
+    missing = sorted(required - REJECTED_FIXTURES)
+    check("every design-mandated negative fixture is present", not missing, repr(missing))
+
+
 if __name__ == "__main__":
     try:
         import check_pmu_completion_visibility_v14 as gate
@@ -1976,6 +2361,25 @@ if __name__ == "__main__":
         run_primary_suite(gate)
         run_cross_variant_suite(gate)
         run_convergence_suite(gate)
+        run_coverage_suite()
+
+    try:
+        import patches.patch_pmu_completion_visibility_v14 as patcher
+    except Exception as exc:  # pragma: no cover - RED path
+        check("generator module not found", False, repr(exc))
+        patcher = None
+
+    if patcher is not None:
+        run_generator_cli_suite()
+        if gate is not None:
+            run_generator_suite(gate, patcher)
+            run_generated_fixture_cli_suite(patcher)
+
+    check(
+        "the frozen fixture count is unchanged",
+        passed + 1 == EXPECTED_PASS_COUNT,
+        "passed=%d expected=%d" % (passed + 1, EXPECTED_PASS_COUNT),
+    )
 
     print()
     print("passed=%d failed=%d" % (passed, failed))
