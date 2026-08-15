@@ -1,10 +1,12 @@
 """PMU completion-poll count V13 host-contract unit fixture."""
 
+import copy
 import hashlib
 import json
 import math
 import os
 import struct
+import subprocess
 import sys
 import tempfile
 import zlib
@@ -21,6 +23,9 @@ if HOST_ROOT not in sys.path:
 
 import host.runner_proto as v8
 import host.runner_proto_pmu_completion_poll_v12 as v12
+import host.runner_proto_pmu_interval_v9 as v9
+import host.runner_proto_pmu_interval_v10 as v10
+import host.runner_proto_pmu_interval_v11a as v11a
 
 passed = 0
 failed = 0
@@ -70,8 +75,37 @@ def hex64(ch):
     return ch * 64
 
 
+def seal_manifest(doc):
+    nested = (
+        ("cross_elf_evidence", "cross_elf_evidence_sha256"),
+        ("retained_v12_base_pmu_evidence", "retained_v12_base_pmu_evidence_sha256"),
+        ("retained_v12_executable_evidence", "retained_v12_executable_evidence_sha256"),
+        ("runner_record_wire_evidence", "runner_record_wire_evidence_sha256"),
+    )
+    for object_key, digest_key in nested:
+        digest = hashlib.sha256(
+            (json.dumps(doc[object_key], indent=2, sort_keys=True) + "\n").encode("utf-8")
+        ).hexdigest()
+        doc[digest_key] = digest
+        doc["artifact_sha256"][object_key] = digest
+    doc["build_evidence_sha256"] = {
+        key: doc["artifact_sha256"][key]
+        for key in doc["build_evidence_sha256"]
+    }
+    doc["runner_source_sha256"] = doc["artifact_sha256"]["runner_generated"]
+    doc["vendor_source_sha256"] = doc["artifact_sha256"]["vendor_generated"]
+    doc["artifact_bundle_sha256"] = hashlib.sha256(
+        json.dumps(doc["artifact_sha256"], sort_keys=True).encode("utf-8")
+    ).hexdigest()
+    doc["manifest_sha256"] = "0" * 64
+    doc["manifest_sha256"] = hashlib.sha256(
+        (json.dumps(doc, indent=2, sort_keys=True) + "\n").encode("utf-8")
+    ).hexdigest()
+    return doc
+
+
 def fallback_manifest():
-    return {
+    doc = {
         "artifact_bundle_sha256": hex64("0"),
         "artifact_sha256": {
             "app_bin": hex64("1"),
@@ -133,9 +167,9 @@ def fallback_manifest():
         "parser_sha256": hex64("4"),
         "retained_v12_base_pmu_evidence": {
             "base_pmu_result": {
-                "expected_return_address": 0x3100078C,
+                "expected_return_address": 0x3100254C,
                 "qualification_mode": "Q1",
-                "release_immediate_address": 0x3100078C,
+                "release_immediate_address": 0x3100254C,
                 "ok": True,
             },
             "golden_window_base": "0x90020CC0",
@@ -166,6 +200,7 @@ def fallback_manifest():
             "helper_status_register_address": "0x50004004",
             "helper_status_test_address": "0x3100237A",
             "helper_symbol": "v13_poll_completion",
+            "full_base_pmu_qualified": False,
             "history_mask_from_success_status": True,
             "hprintf_callsite_address": "0x31002548",
             "irq_triggered_true_reachable_false": True,
@@ -232,6 +267,7 @@ def fallback_manifest():
         "variant": "PMU_COMPLETION_POLL_COUNT_DIAG_V13",
         "vendor_source_sha256": hex64("9"),
     }
+    return seal_manifest(doc)
 
 
 def manifest():
@@ -271,7 +307,16 @@ def build_payload(
         v8.PMU_DIAG_GOLDEN_WINDOW_BASE, v8.PMU_DIAG_GOLDEN_WINDOW_LEN,
         v8.GOLDEN_WINDOW_CRC,
     ]
-    hook = [1, 1, 1, 1, 1, 1, 0x3100078C, 0x1000, 0x1090, 0, 0, 3, 1]
+    hook_return_address = (
+        int(
+            manifest()["retained_v12_executable_evidence"][
+                "hprintf_callsite_address"
+            ],
+            16,
+        )
+        + 4
+    )
+    hook = [1, 1, 1, 1, 1, 1, hook_return_address, 0x1000, 0x1090, 0, 0, 3, 1]
     appendix = [
         0x1000,
         0x1080,
@@ -427,6 +472,125 @@ def test_schema_and_manifest_contract():
         "v12 parser rejects v13 payload",
         lambda: v12.parse_pmu_completion_poll_v12_payload(raw),
     )
+    rejects("v9 parser rejects v13 payload", lambda: v9.parse_pmu_interval_diag_v9_payload(raw))
+    rejects("v10 parser rejects v13 payload", lambda: v10.parse_pmu_interval_diag_v10_payload(raw))
+    rejects("v11a parser rejects v13 payload", lambda: v11a.parse_pmu_interval_diag_v11a_payload(raw))
+    rejects(
+        "v13 truncation rejected",
+        lambda: v13.parse_pmu_completion_poll_count_v13_payload(raw[:-4]),
+    )
+    rejects(
+        "v13 extension rejected",
+        lambda: v13.parse_pmu_completion_poll_count_v13_payload(raw + b"\0\0\0\0"),
+    )
+
+
+def test_manifest_fail_closed_contract():
+    _, rv13, v13 = require_v13_modules()
+    man = manifest()
+
+    def mutated(path, value, *, reseal=False):
+        doc = copy.deepcopy(man)
+        cursor = doc
+        for key in path[:-1]:
+            cursor = cursor[key]
+        cursor[path[-1]] = value
+        return seal_manifest(doc) if reseal else doc
+
+    rejects(
+        "manifest nested runtime vector drift rejected",
+        lambda: v13.verify_manifest_identity(
+            mutated(
+                ("retained_v12_executable_evidence", "runtime_vector_target_address"),
+                "0x310023BE",
+            ),
+            "runtime-vector-drift",
+        ),
+    )
+    rejects(
+        "manifest nested P0 drift rejected",
+        lambda: v13.verify_manifest_identity(
+            mutated(
+                ("retained_v12_executable_evidence", "poll_helper_p0_address"),
+                "0x31002370",
+            ),
+            "p0-drift",
+        ),
+    )
+    rejects(
+        "manifest nested content hash mismatch rejected",
+        lambda: v13.verify_manifest_identity(
+            mutated(("cross_elf_evidence", "remaining_publication_register"), "r7"),
+            "cross-evidence-drift",
+        ),
+    )
+    rejects(
+        "manifest semantic H-PRINTF drift rejected after reseal",
+        lambda: v13.verify_manifest_identity(
+            mutated(
+                ("retained_v12_executable_evidence", "hprintf_callsite_address"),
+                "0x3100254A",
+                reseal=True,
+            ),
+            "hprintf-drift",
+        ),
+    )
+    rejects(
+        "manifest false retained proof rejected after reseal",
+        lambda: v13.verify_manifest_identity(
+            mutated(
+                (
+                    "retained_v12_executable_evidence",
+                    "retained_v12_stock_vector_exact",
+                ),
+                False,
+                reseal=True,
+            ),
+            "false-proof",
+        ),
+    )
+    rejects(
+        "manifest artifact/build evidence mismatch rejected",
+        lambda: v13.verify_manifest_identity(
+            mutated(("build_evidence_sha256", "v13_objdump"), hex64("f")),
+            "artifact-build-drift",
+        ),
+    )
+    rejects(
+        "manifest authoritative V12 ELF binding rejected",
+        lambda: v13.verify_manifest_identity(
+            mutated(("authoritative_v12_elf_sha256",), hex64("a")),
+            "v12-elf-drift",
+        ),
+    )
+    rejects(
+        "manifest self hash mismatch rejected",
+        lambda: v13.verify_manifest_identity(
+            mutated(("manifest_sha256",), hex64("0")),
+            "manifest-self-drift",
+        ),
+    )
+
+    with tempfile.TemporaryDirectory() as tempdir:
+        fixture = fallback_manifest()
+        for filename, key, content in (
+            ("APP.BIN", "app_bin", b"app-v13"),
+            ("VECTORS.BIN", "vectors_bin", b"vectors-v13"),
+            ("DDR.BIN", "ddr_bin", b"ddr-v13"),
+        ):
+            with open(os.path.join(tempdir, filename), "wb") as handle:
+                handle.write(content)
+            fixture["artifact_sha256"][key] = hashlib.sha256(content).hexdigest()
+        seal_manifest(fixture)
+        v13.verify_manifest_identity(fixture, "local-bin-fixture")
+        observed = rv13.verify_local_bins(fixture, tempdir)
+        check("collector local BIN hashes bind full manifest", observed == fixture["artifact_sha256"])
+        with open(os.path.join(tempdir, "APP.BIN"), "ab") as handle:
+            handle.write(b"drift")
+        rejects(
+            "collector rejects deployed BIN hash drift",
+            lambda: rv13.verify_local_bins(fixture, tempdir),
+        )
 
 
 def test_success_and_timeout_derivation():
@@ -435,6 +599,13 @@ def test_success_and_timeout_derivation():
     success = v13.classify_pmu_completion_poll_count_v13_payload(
         v13.parse_pmu_completion_poll_count_v13_payload(build_payload(remaining=10000)),
         man,
+    )
+    retained_terms = success["retained_v12"]["terms"]
+    check(
+        "all retained V12 terms preserved without laundering",
+        retained_terms
+        and all(success["terms"].get("retained_v12_" + key) == value for key, value in retained_terms.items())
+        and all(retained_terms.values()),
     )
     check("first observed poll remaining boundary", success["derived"]["poll_remaining_at_success"] == 10000)
     check("first observed poll iterations boundary", success["derived"]["poll_iterations"] == 1)
@@ -461,6 +632,19 @@ def test_success_and_timeout_derivation():
         "timeout emits no remaining/iterations/poll cycle/ratio",
         timeout["derived"] is None,
     )
+    for remaining in (0, 10001):
+        invalid = v13.classify_pmu_completion_poll_count_v13_payload(
+            v13.parse_pmu_completion_poll_count_v13_payload(
+                build_payload(remaining=remaining)
+            ),
+            man,
+        )
+        check(
+            "success remaining %d rejected" % remaining,
+            invalid["valid"] is False
+            and invalid["archive_write"] is False
+            and invalid["derived"] is None,
+        )
     with tempfile.TemporaryDirectory() as tempdir:
         out = os.path.join(tempdir, "timeout.json")
         collected = rv13.collect_one(
@@ -501,26 +685,35 @@ def test_collector_campaign_stop_and_identity():
         )
         check("collector aborts on reread mismatch", mismatch["campaign_abort"] is True)
         check("collector never writes invalid record", mismatch["archive_write"] is False and not os.path.exists(bad_path))
+        rejects(
+            "same boot refused after reread mismatch",
+            lambda: rv13.collect_one(
+                raw=build_payload(run_sequence=3, remaining=9995),
+                manifest=man,
+                host_boot_index=9,
+                campaign_state=state,
+            ),
+        )
         timeout = rv13.collect_one(
-            raw=build_payload(run_sequence=3, poll_result=2),
+            raw=build_payload(run_sequence=1, poll_result=2),
             manifest=man,
-            host_boot_index=9,
+            host_boot_index=10,
             campaign_state=state,
         )
         check("timeout blocks rest of boot", timeout["fresh_boot_required"] is True)
         rejects(
             "same boot refused after timeout",
             lambda: rv13.collect_one(
-                raw=build_payload(run_sequence=4, remaining=9994),
+                raw=build_payload(run_sequence=2, remaining=9994),
                 manifest=man,
-                host_boot_index=9,
+                host_boot_index=10,
                 campaign_state=state,
             ),
         )
         resumed = rv13.collect_one(
             raw=build_payload(run_sequence=1, remaining=9999),
             manifest=man,
-            host_boot_index=10,
+            host_boot_index=11,
             campaign_state=state,
         )
         check("fresh boot resumes at run1", resumed["valid"] is True)
@@ -587,6 +780,41 @@ def test_analyzer_contract():
             "analyzer floor/excursion counts",
             analysis["hard_floor_count"] + analysis["excursion_count"] == 30,
         )
+        check(
+            "analyzer floor/excursion per-boot distributions",
+            sorted(analysis["hard_floor_distribution"]) == ["1", "2", "3"]
+            and sorted(analysis["excursion_distribution"]) == ["1", "2", "3"]
+            and sum(analysis["hard_floor_distribution"].values())
+            == analysis["hard_floor_count"]
+            and sum(analysis["excursion_distribution"].values())
+            == analysis["excursion_count"],
+        )
+        check(
+            "analyzer reports ratio summary and raw causal points",
+            analysis["average_cycles_per_observed_poll"]["count"] == 30
+            and all(
+                "poll_remaining_at_success" in row
+                and "submit_to_status_completion_observed_cycles" in row
+                and "average_cycles_per_observed_poll" in row
+                for row in analysis["residuals"]
+            ),
+        )
+        cli_analysis = json.loads(
+            subprocess.run(
+                [
+                    sys.executable,
+                    os.path.join(HOST_ROOT, "analyze_pmu_completion_poll_count_v13.py"),
+                    *paths,
+                ],
+                check=True,
+                capture_output=True,
+                text=True,
+            ).stdout
+        )
+        check(
+            "analyzer CLI emits the same 3x10 report",
+            cli_analysis == analysis,
+        )
         constant_paths = []
         for boot in (1, 2, 3):
             for run in range(1, 11):
@@ -616,6 +844,7 @@ def test_analyzer_contract():
 
 def main():
     test_schema_and_manifest_contract()
+    test_manifest_fail_closed_contract()
     test_success_and_timeout_derivation()
     test_collector_campaign_stop_and_identity()
     test_analyzer_contract()

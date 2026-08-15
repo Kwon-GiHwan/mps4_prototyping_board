@@ -6,6 +6,7 @@ T_npu, performance, production evidence, or MLEK data.
 
 from __future__ import annotations
 
+import argparse
 from collections import Counter
 import hashlib
 import json
@@ -195,10 +196,14 @@ def _shape_errors(rows: list[dict]) -> list[str]:
     errors = []
     if len(rows) != CAMPAIGN_TOTAL_SAMPLES:
         errors.append("sample_count != %d" % CAMPAIGN_TOTAL_SAMPLES)
-    boots = sorted({row["host_boot_index"] for row in rows})
-    if any(not isinstance(boot, int) or isinstance(boot, bool) or boot <= 0 for boot in boots):
+    raw_boots = [row["host_boot_index"] for row in rows]
+    if any(
+        not isinstance(boot, int) or isinstance(boot, bool) or boot <= 0
+        for boot in raw_boots
+    ):
         errors.append("host_boot_index must be a positive integer")
         return errors
+    boots = sorted(set(raw_boots))
     if len(boots) != CAMPAIGN_BOOT_COUNT:
         errors.append("boot_count != %d" % CAMPAIGN_BOOT_COUNT)
         return errors
@@ -253,10 +258,16 @@ def analyze_3x10(paths: list[str]) -> dict:
         row["derived"]["derived"]["submit_to_status_completion_observed_cycles"]
         for row in rows
     ]
+    ratios = [
+        row["derived"]["derived"]["average_cycles_per_observed_poll"]
+        for row in rows
+    ]
     rho, ols_fit = _fit_summary(iterations, poll_cycles)
 
     residuals = []
-    for row, iteration, cycle in zip(rows, iterations, poll_cycles):
+    for row, iteration, cycle, observed, ratio in zip(
+        rows, iterations, poll_cycles, observed_cycles, ratios
+    ):
         residual = None
         if ols_fit is not None:
             residual = cycle - (ols_fit["alpha"] + (ols_fit["beta"] * iteration))
@@ -264,8 +275,11 @@ def analyze_3x10(paths: list[str]) -> dict:
             {
                 "host_boot_index": row["host_boot_index"],
                 "run_sequence": row["parsed"].run_sequence,
+                "poll_remaining_at_success": row["parsed"].poll_remaining_at_success,
                 "poll_iterations": iteration,
                 "poll_observation_cycles": cycle,
+                "submit_to_status_completion_observed_cycles": observed,
+                "average_cycles_per_observed_poll": ratio,
                 "residual": residual,
             }
         )
@@ -314,6 +328,7 @@ def analyze_3x10(paths: list[str]) -> dict:
         "poll_iterations": _stats(iterations),
         "poll_observation_cycles": _stats(poll_cycles),
         "submit_to_status_completion_observed_cycles": _stats(observed_cycles),
+        "average_cycles_per_observed_poll": _stats(ratios),
         "spearman_rho_iterations_vs_poll_observation_cycles": rho,
         "ols_fit_iterations_to_poll_observation_cycles": ols_fit,
         "residuals": residuals,
@@ -344,3 +359,14 @@ def analyze_3x10(paths: list[str]) -> dict:
         },
         "modes": _mode_summary(poll_cycles),
     }
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("archives", nargs="+", help="exactly 30 accepted V13 sample archives")
+    args = parser.parse_args()
+    print(json.dumps(analyze_3x10(args.archives), indent=2, sort_keys=True))
+
+
+if __name__ == "__main__":
+    main()

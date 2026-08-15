@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import hashlib
+import json
 import re
 import struct
 import zlib
@@ -184,6 +186,19 @@ def _require_exact_digest_map(doc: dict, key: str, keys: tuple[str, ...], where:
     return value
 
 
+def _canonical_json_bytes(doc: dict) -> bytes:
+    return (json.dumps(doc, indent=2, sort_keys=True) + "\n").encode("utf-8")
+
+
+def _json_sha256(doc: dict) -> str:
+    return hashlib.sha256(_canonical_json_bytes(doc)).hexdigest()
+
+
+def _artifact_bundle_sha256(artifacts: dict) -> str:
+    payload = json.dumps(artifacts, sort_keys=True).encode("utf-8")
+    return hashlib.sha256(payload).hexdigest()
+
+
 def verify_manifest_identity(doc: dict, where: str) -> None:
     if not isinstance(doc, dict):
         raise SystemExit("FAIL %s: manifest is not a JSON object" % where)
@@ -243,6 +258,26 @@ def verify_manifest_identity(doc: dict, where: str) -> None:
             raise SystemExit("FAIL %s: artifact_sha256[%s] != %s" % (where, object_key, digest_key))
         if build_evidence.get(object_key) != digest:
             raise SystemExit("FAIL %s: build_evidence_sha256[%s] != %s" % (where, object_key, digest_key))
+        if _json_sha256(nested) != digest:
+            raise SystemExit("FAIL %s: %s content hash != %s" % (where, object_key, digest_key))
+
+    for key in PMU_COMPLETION_POLL_COUNT_V13_REQUIRED_BUILD_EVIDENCE_KEYS:
+        if build_evidence[key] != artifacts[key]:
+            raise SystemExit(
+                "FAIL %s: build_evidence_sha256[%s] != artifact_sha256[%s]"
+                % (where, key, key)
+            )
+    if doc["runner_source_sha256"] != artifacts["runner_generated"]:
+        raise SystemExit("FAIL %s: runner_source_sha256 does not bind runner_generated" % where)
+    if doc["vendor_source_sha256"] != artifacts["vendor_generated"]:
+        raise SystemExit("FAIL %s: vendor_source_sha256 does not bind vendor_generated" % where)
+    if doc["artifact_bundle_sha256"] != _artifact_bundle_sha256(artifacts):
+        raise SystemExit("FAIL %s: artifact_bundle_sha256 mismatch" % where)
+    manifest_seed = dict(doc)
+    claimed_manifest_sha = manifest_seed["manifest_sha256"]
+    manifest_seed["manifest_sha256"] = "0" * 64
+    if claimed_manifest_sha != _json_sha256(manifest_seed):
+        raise SystemExit("FAIL %s: manifest_sha256 mismatch" % where)
 
     executable = doc["retained_v12_executable_evidence"]
     if executable.get("variant") not in (None, PMU_COMPLETION_POLL_COUNT_V13_NAME):
@@ -297,6 +332,18 @@ def verify_manifest_identity(doc: dict, where: str) -> None:
     ):
         if executable.get(key) is not True:
             raise SystemExit("FAIL %s: retained_v12_executable_evidence.%s=%r, expected true" % (where, key, executable.get(key)))
+    if executable.get("runtime_golden_output_qualified") is not False:
+        raise SystemExit("FAIL %s: retained executable evidence must not qualify runtime golden output" % where)
+    if executable.get("full_base_pmu_qualified") is not False:
+        raise SystemExit("FAIL %s: retained executable evidence must not qualify the full base PMU gate" % where)
+    if doc.get("retained_v12_executable_proof_scope") != executable.get(
+        "retained_v12_executable_proof_scope"
+    ):
+        raise SystemExit("FAIL %s: retained executable proof scope binding mismatch" % where)
+    if doc.get("retained_v12_executable_limitations") != executable.get(
+        "retained_v12_executable_limitations"
+    ):
+        raise SystemExit("FAIL %s: retained executable limitations binding mismatch" % where)
 
     base_pmu = doc["retained_v12_base_pmu_evidence"]
     if base_pmu.get("variant") != PMU_COMPLETION_POLL_COUNT_V13_NAME:
@@ -316,6 +363,23 @@ def verify_manifest_identity(doc: dict, where: str) -> None:
         raise SystemExit("FAIL %s: retained_v12_base_pmu_evidence.base_pmu_result.qualification_mode drift" % where)
     if not isinstance(result.get("expected_return_address"), int):
         raise SystemExit("FAIL %s: retained_v12_base_pmu_evidence.base_pmu_result.expected_return_address missing" % where)
+    expected_return_address = int(executable["hprintf_callsite_address"], 16) + 4
+    if result["expected_return_address"] != expected_return_address:
+        raise SystemExit("FAIL %s: retained base PMU return address does not bind H-PRINTF+4" % where)
+    if result.get("release_immediate_address") != expected_return_address:
+        raise SystemExit("FAIL %s: retained base PMU release immediate does not bind H-PRINTF+4" % where)
+    if base_pmu.get("runtime_golden_output_qualified") is not False:
+        raise SystemExit("FAIL %s: retained base PMU evidence must not qualify runtime golden output" % where)
+    if base_pmu.get("performance_qualified") is not False:
+        raise SystemExit("FAIL %s: retained base PMU evidence must not qualify performance" % where)
+    if doc.get("retained_v12_base_pmu_proof_scope") != base_pmu.get(
+        "retained_v12_base_pmu_proof_scope"
+    ):
+        raise SystemExit("FAIL %s: retained base PMU proof scope binding mismatch" % where)
+    if doc.get("retained_v12_base_pmu_limitations") != base_pmu.get(
+        "retained_v12_base_pmu_limitations"
+    ):
+        raise SystemExit("FAIL %s: retained base PMU limitations binding mismatch" % where)
 
     wire = doc["runner_record_wire_evidence"]
     if wire.get("variant") != PMU_COMPLETION_POLL_COUNT_V13_NAME:
@@ -328,6 +392,13 @@ def verify_manifest_identity(doc: dict, where: str) -> None:
         raise SystemExit("FAIL %s: runner_record_wire_evidence.poll_remaining_field_offset_bytes drift" % where)
     if wire.get("wire_word_index") != PMU_COMPLETION_POLL_COUNT_V13_WIRE_WORD_INDEX:
         raise SystemExit("FAIL %s: runner_record_wire_evidence.wire_word_index drift" % where)
+    for key in (
+        "runner_record_wire_proof_scope",
+        "runner_record_wire_scope_statement",
+        "runner_record_wire_limitations",
+    ):
+        if doc.get(key) != wire.get(key):
+            raise SystemExit("FAIL %s: %s binding mismatch" % (where, key))
 
     cross_elf = doc["cross_elf_evidence"]
     if cross_elf.get("variant") != PMU_COMPLETION_POLL_COUNT_V13_NAME:
@@ -343,6 +414,10 @@ def verify_manifest_identity(doc: dict, where: str) -> None:
     ):
         if cross_elf.get(key) is not True:
             raise SystemExit("FAIL %s: cross_elf_evidence.%s=%r, expected true" % (where, key, cross_elf.get(key)))
+    if doc.get("cross_elf_evidence_proof_scope") != cross_elf.get(
+        "v12_v13_poll_loop_equivalence_scope"
+    ):
+        raise SystemExit("FAIL %s: cross-ELF proof scope binding mismatch" % where)
 
 
 def _v12_manifest_view(doc: dict) -> dict:

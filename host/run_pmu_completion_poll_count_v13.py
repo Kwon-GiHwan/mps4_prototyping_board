@@ -13,7 +13,6 @@ import time
 try:
     import host.run_pmu_qual as rq
     import host.runner_proto_pmu_completion_poll_count_v13 as v13mod
-    import host.runner_proto_pmu_completion_poll_v12 as v12mod
     from host.runner_proto import (
         CMD_GET_PMU_DIAG_RESULT,
         CMD_PMU_DIAG_COMPLETE,
@@ -28,7 +27,6 @@ try:
 except ModuleNotFoundError:  # pragma: no cover - direct script fallback
     import run_pmu_qual as rq
     import runner_proto_pmu_completion_poll_count_v13 as v13mod
-    import runner_proto_pmu_completion_poll_v12 as v12mod
     from runner_proto import (
         CMD_GET_PMU_DIAG_RESULT,
         CMD_PMU_DIAG_COMPLETE,
@@ -48,104 +46,6 @@ target_fields = v13mod.target_fields
 verify_manifest_identity = v13mod.verify_manifest_identity
 
 
-def _u32(delta: int) -> int:
-    return delta & 0xFFFFFFFF
-
-
-_ORIG_PARSE_V13 = v13mod.parse_pmu_completion_poll_count_v13_payload
-_ORIG_CLASSIFY_V13 = v13mod.classify_pmu_completion_poll_count_v13_payload
-
-
-def _patch_v13_parse(payload: bytes):
-    res = _ORIG_PARSE_V13(payload)
-    if res.schema_version != v13mod.PMU_COMPLETION_POLL_COUNT_V13_SCHEMA_VERSION:
-        object.__setattr__(
-            res.v12_result.base,
-            "schema_version",
-            v13mod.PMU_COMPLETION_POLL_COUNT_V13_SCHEMA_VERSION,
-        )
-    return res
-
-
-def _patch_v13_classify(res, expected_manifest: dict) -> dict:
-    classified = _ORIG_CLASSIFY_V13(res, expected_manifest)
-    success = res.poll_result == v13mod.PMU_COMPLETION_POLL_COUNT_V13_POLL_SUCCESS
-    timeout = res.poll_result == v13mod.PMU_COMPLETION_POLL_COUNT_V13_POLL_TIMEOUT
-
-    retained = dict(classified["retained_v12"])
-    retained_terms = dict(retained["terms"])
-    for key in (
-        "build_id_is_v12",
-        "hook_callsite_lr_matches_manifest",
-        "v8_hook_callsite_lr_matches_manifest",
-    ):
-        if key in retained_terms:
-            retained_terms[key] = True
-    d0 = _u32(res.t_poll_entry - res.t_submit_after_cmd)
-    d1 = _u32(res.t_status_completion_seen - res.t_poll_entry)
-    d2 = _u32(res.t_poll_exit - res.t_status_completion_seen)
-    retained_valid = all(retained_terms.values()) and success
-    retained["terms"] = retained_terms
-    retained["invalid_reasons"] = sorted(key for key, ok in retained_terms.items() if not ok)
-    retained["valid"] = retained_valid
-    retained["archive_write"] = bool(retained_valid)
-    retained["campaign_abort"] = timeout
-    retained["fresh_boot_required"] = timeout
-    if retained_valid:
-        retained["derived"] = {
-            "d0": d0,
-            "d1": d1,
-            "d2": d2,
-            "submit_to_status_completion_observed_cycles": _u32(
-                res.t_status_completion_seen - res.t_submit_after_cmd
-            ),
-            "submit_to_poll_exit_cycles": _u32(res.t_poll_exit - res.t_submit_after_cmd),
-        }
-    else:
-        retained["derived"] = None
-
-    terms = dict(classified["terms"])
-    for key in (
-        "retained_v12_build_id_is_v12",
-        "retained_v12_hook_callsite_lr_matches_manifest",
-        "retained_v12_v8_hook_callsite_lr_matches_manifest",
-    ):
-        if key in terms:
-            terms[key] = True
-    remaining = res.poll_remaining_at_success
-    remaining_valid = (
-        v13mod.PMU_COMPLETION_POLL_COUNT_V13_MIN_REMAINING
-        <= remaining
-        <= v13mod.PMU_COMPLETION_POLL_COUNT_V13_MAX_REMAINING
-    )
-    iterations = 10001 - remaining if remaining_valid else None
-    poll_cycles = _u32(res.t_status_completion_seen - res.t_poll_entry)
-    valid = all(terms.values()) and success
-    derived = None
-    if valid:
-        derived = dict(retained["derived"])
-        derived.update(
-            {
-                "poll_remaining_at_success": remaining,
-                "poll_iterations": iterations,
-                "poll_observation_cycles": poll_cycles,
-                "average_cycles_per_observed_poll": poll_cycles / iterations,
-            }
-        )
-
-    classified["retained_v12"] = retained
-    classified["terms"] = terms
-    classified["invalid_reasons"] = sorted(key for key, ok in terms.items() if not ok)
-    classified["archive_write"] = bool(valid)
-    classified["campaign_abort"] = timeout
-    classified["fresh_boot_required"] = timeout
-    classified["derived"] = derived
-    classified["valid"] = valid
-    return classified
-
-
-v13mod.parse_pmu_completion_poll_count_v13_payload = _patch_v13_parse
-v13mod.classify_pmu_completion_poll_count_v13_payload = _patch_v13_classify
 parse_pmu_completion_poll_count_v13_payload = v13mod.parse_pmu_completion_poll_count_v13_payload
 classify_pmu_completion_poll_count_v13_payload = (
     v13mod.classify_pmu_completion_poll_count_v13_payload
@@ -201,6 +101,30 @@ def read_manifest(path: str) -> tuple[dict, bytes]:
     doc, blob = rq.read_manifest_document(path)
     verify_manifest_identity(doc, path)
     return doc, blob
+
+
+def verify_local_bins(manifest: dict, bins_dir: str) -> dict:
+    """Verify the three deployable BINs while preserving the full V13 identity map."""
+    artifacts = manifest["artifact_sha256"]
+    names = {
+        "APP.BIN": "app_bin",
+        "VECTORS.BIN": "vectors_bin",
+        "DDR.BIN": "ddr_bin",
+    }
+    for filename, manifest_key in names.items():
+        path = os.path.join(bins_dir, filename)
+        try:
+            observed = rq.sha256_file(path)
+        except OSError as exc:
+            raise SystemExit("FAIL cannot hash %s: %s" % (path, exc))
+        expected = artifacts[manifest_key]
+        if observed != expected:
+            raise SystemExit(
+                "FAIL %s\n  manifest %s\n  local    %s\n"
+                "  the deployed artifact is not the V13 artifact this manifest attests"
+                % (path, expected, observed)
+            )
+    return dict(artifacts)
 
 
 def verify_record_identity(res, manifest: dict) -> None:
@@ -512,7 +436,7 @@ def main() -> None:
         raise SystemExit("FAIL refusing to overwrite existing sample %s" % args.out)
 
     manifest, manifest_blob = read_manifest(args.manifest)
-    artifacts = rq.verify_local_bins(manifest, args.bins_dir)
+    artifacts = verify_local_bins(manifest, args.bins_dir)
     link = rq.PmuQualLink(args.port)
     try:
         link.ping()
