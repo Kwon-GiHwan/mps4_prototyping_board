@@ -243,6 +243,177 @@ def normalized_digest(text: str) -> str:
     return _sha256_text(re.sub(r"\s+", " ", text).strip())
 
 
+_DEFINE_RE = re.compile(r"(?m)^[ \t]*#[ \t]*define[ \t]+([A-Za-z_][A-Za-z0-9_]*)[ \t]+(\S+)[ \t]*$")
+
+
+def parse_defines(masked: str) -> dict[str, int]:
+    """Return the integer-valued object-like macros of a translation unit."""
+
+    values: dict[str, int] = {}
+    for match in _DEFINE_RE.finditer(masked):
+        raw = match.group(2).rstrip("uU")
+        try:
+            values[match.group(1)] = int(raw, 0)
+        except ValueError:
+            continue
+    return values
+
+
+def require_define(defines: dict[str, int], name: str, expected: int, what: str) -> None:
+    if name not in defines:
+        raise fail("%s: %s is not defined" % (what, name))
+    if defines[name] != expected:
+        raise fail("%s: %s is 0x%X, expected 0x%X" % (what, name, defines[name], expected))
+
+
+def positions(text: str, needle: str) -> tuple[int, ...]:
+    found = []
+    start = text.find(needle)
+    while start >= 0:
+        found.append(start)
+        start = text.find(needle, start + 1)
+    return tuple(found)
+
+
+def function_span(masked: str, name: str, what: str) -> tuple[int, int]:
+    return extract_function_body(masked, name, what)
+
+
+_QSIZE_READ = "read_reg(NPU_REG_QSIZE)"
+_STATUS_READ = "read_reg(NPU_REG_STATUS)"
+_QBASE_WRITE = "write_reg(NPU_REG_QBASE"
+_QSIZE_WRITE = "write_reg(NPU_REG_QSIZE"
+_CMD_WRITE = "write_reg(NPU_REG_CMD"
+_SUBMIT_WRITE = "write_reg(NPU_REG_CMD, read_val | 0x00000001)"
+
+_PRE_SUBMIT_GATES = (
+    ("V14_STATUS_STATE", "stopped"),
+    ("V14_STATUS_IRQ_RAISED", "stale irq_raised"),
+    ("V14_STATUS_RESET", "reset_status"),
+    ("V14_STATUS_CMD_END", "stale cmd_end_reached"),
+    ("V14_STATUS_FAULT_MASK", "vendor fault"),
+)
+
+
+def _guard_blocks(block: str, subject: str) -> tuple[tuple[str, str], ...]:
+    """Return ``(condition, body)`` for every ``if`` whose condition names ``subject``."""
+
+    found = []
+    for match in re.finditer(r"(?<![A-Za-z0-9_])if\s*\(", block):
+        depth = 0
+        index = match.end() - 1
+        while index < len(block):
+            if block[index] == "(":
+                depth += 1
+            elif block[index] == ")":
+                depth -= 1
+                if depth == 0:
+                    break
+            index += 1
+        condition = block[match.end() : index]
+        tail = block[index + 1 :]
+        stripped = tail.lstrip()
+        if not stripped.startswith("{"):
+            continue
+        open_index = index + 1 + (len(tail) - len(stripped))
+        close_index = _matching_brace(block, open_index, "guard body")
+        if subject in condition:
+            found.append((condition, block[open_index + 1 : close_index]))
+    return tuple(found)
+
+
+def verify_pre_run_contract(vendor_masked: str, defines: dict[str, int]) -> dict[str, object]:
+    """Prove the stopped-state gate, the single QSIZE snapshot and fail-closed submit."""
+
+    if defines.get("V14_QSIZE_EXPECTED") != QSIZE_EXPECTED:
+        raise fail(
+            "qsize_expected is not manifest 0x110: V14_QSIZE_EXPECTED is %s"
+            % ("undefined" if "V14_QSIZE_EXPECTED" not in defines else "0x%X" % defines["V14_QSIZE_EXPECTED"])
+        )
+    require_define(defines, "V14_STATUS_STATE", STATUS_STATE, "status mask contract")
+    require_define(defines, "V14_STATUS_IRQ_RAISED", STATUS_IRQ_RAISED, "status mask contract")
+    require_define(defines, "V14_STATUS_RESET", STATUS_RESET, "status mask contract")
+    require_define(defines, "V14_STATUS_CMD_END", STATUS_CMD_END, "status mask contract")
+    require_define(defines, "V14_STATUS_FAULT_MASK", STATUS_FAULT_MASK, "status mask contract")
+
+    setup_start, setup_stop = function_span(vendor_masked, "test_u85", "queue setup function")
+    setup = vendor_masked[setup_start:setup_stop]
+
+    pre_program_reads = positions(setup, _STATUS_READ)
+    queue_accesses = positions(setup, _QBASE_WRITE) + positions(setup, _QSIZE_WRITE)
+    if not queue_accesses:
+        raise fail("pre-program STATUS gate does not dominate QBASE/QSIZE: no queue programming found")
+    if len(pre_program_reads) != 1 or pre_program_reads[0] > min(queue_accesses):
+        raise fail(
+            "pre-program STATUS gate does not dominate QBASE/QSIZE: %d gate loads, first queue access at %d"
+            % (len(pre_program_reads), min(queue_accesses))
+        )
+
+    for mask, label in (
+        ("V14_STATUS_STATE", "stopped"),
+        ("V14_STATUS_RESET", "reset_status"),
+        ("V14_STATUS_FAULT_MASK", "vendor fault"),
+    ):
+        guards = [c for c, _ in _guard_blocks(setup, "pre_program_status") if mask in c]
+        if len(guards) != 1:
+            raise fail("pre-program gate omits stopped/reset/fault: %s check is missing" % label)
+
+    if positions(setup, _CMD_WRITE):
+        raise fail(
+            "state-transitioning CMD write between the pre-program gate and queue programming"
+        )
+
+    final_qsize_write = max(positions(setup, _QSIZE_WRITE))
+    for site in positions(setup, _QSIZE_READ):
+        if site < final_qsize_write:
+            raise fail("qsize snapshot precedes the final QSIZE programming write")
+
+    command_start, command_stop = function_span(vendor_masked, "test_commands", "command function")
+    command = vendor_masked[command_start:command_stop]
+
+    qsize_loads = positions(command, _QSIZE_READ)
+    if len(qsize_loads) == 0:
+        raise fail("qsize_expected snapshot is missing between final programming and submit")
+    if len(qsize_loads) != 1:
+        raise fail("QSIZE is loaded more than once: %d loads in the command path" % len(qsize_loads))
+
+    submits = positions(command, _SUBMIT_WRITE)
+    if len(submits) != 1:
+        raise fail("command path does not carry exactly one NPU submit write")
+    if qsize_loads[0] > submits[0]:
+        raise fail("running QSIZE reachable: the QSIZE load follows the submit write")
+
+    status_loads = positions(command, _STATUS_READ)
+    if len(status_loads) != 1:
+        raise fail(
+            "post-program STATUS load is not distinct from the pre-program load: %d loads"
+            % len(status_loads)
+        )
+    if status_loads[0] > submits[0]:
+        raise fail("post-program STATUS gate follows the submit write")
+
+    qsize_compare = _guard_blocks(command, "qsize_expected")
+    if not any("V14_QSIZE_EXPECTED" in condition for condition, _ in qsize_compare):
+        raise fail("qsize_expected is not manifest 0x110: no compare against V14_QSIZE_EXPECTED")
+
+    pre_submit_guards = _guard_blocks(command, "pre_submit_status")
+    for mask, label in _PRE_SUBMIT_GATES:
+        if not any(mask in condition for condition, _ in pre_submit_guards):
+            raise fail("post-program stale/reset/fault gate is incomplete: %s check is missing" % label)
+
+    for condition, body in tuple(qsize_compare) + pre_submit_guards:
+        if "return" not in body:
+            raise fail("pre-run failure reaches submit: guard (%s) does not return" % condition.strip()[:40])
+
+    return {
+        "pre_program_status_loads": len(pre_program_reads),
+        "post_program_status_loads": len(status_loads),
+        "qsize_loads": len(qsize_loads),
+        "qsize_expected": "0x%08X" % QSIZE_EXPECTED,
+        "running_qsize_loads": 0,
+    }
+
+
 def build_arg_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="check_pmu_completion_visibility_v14.py",
@@ -317,15 +488,32 @@ def verify_generated_sources(runner_text: str, vendor_text: str, variant: str) -
         raise fail("unknown variant %r" % variant)
     runner_text = _normalize_newlines(runner_text)
     vendor_text = _normalize_newlines(vendor_text)
-    return {
+    vendor_masked = mask_c_lexical(vendor_text)
+    defines = parse_defines(vendor_masked)
+
+    pre_run = verify_pre_run_contract(vendor_masked, defines)
+    converge_body = function_text(vendor_masked, CONVERGE_SYMBOL, "common convergence helper")
+    command_start, command_stop = function_span(vendor_masked, "test_commands", "command function")
+    command = vendor_masked[command_start:command_stop]
+    tail_start = command.find("v14_publish_primary(")
+    if tail_start < 0:
+        raise fail("common tail does not start at the shared primary publication")
+
+    doc: dict[str, object] = {
         "variant": variant,
         "variant_id": VARIANTS[variant],
         "schema_version": SCHEMA_VERSION,
         "build_id": "0x%08X" % BUILD_ID,
         "qualification": "UNIT-QUALIFIED",
+        "proof_scope": "generated_source_and_fixture_only",
+        "real_elf_qualified": False,
         "generated_runner_sha256": _sha256_text(runner_text),
         "generated_vendor_sha256": _sha256_text(vendor_text),
+        "common_convergence_source_sha256": normalized_digest(converge_body),
+        "common_tail_source_sha256": normalized_digest(command[tail_start:]),
     }
+    doc.update(pre_run)
+    return doc
 
 
 if __name__ == "__main__":

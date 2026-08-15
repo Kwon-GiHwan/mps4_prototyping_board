@@ -134,6 +134,623 @@ def run_checker(args):
     )
 
 
+def replace_once(text, old, new, what):
+    count = text.count(old)
+    if count != 1:
+        raise AssertionError("%s: expected 1 match, found %d" % (what, count))
+    return text.replace(old, new, 1)
+
+
+def mbox(field):
+    return "V14_MBOX_" + field.upper()
+
+
+# ---------------------------------------------------------------------------
+# Canonical generated-source fixtures.
+#
+# These are transcribed from the approved design, not imported from the gate or
+# the generator, so a drift on either side is a test failure. Every negative
+# fixture below is one named mutation of this text.
+# ---------------------------------------------------------------------------
+
+VENDOR_DEFS = """#define BUSY_SLEEP
+#define VERIFY_OUTPUT 1
+#define TEST_CPM 1
+#define BUSY_SLEEP_TIMEOUT 10000
+
+#define V14_VARIANT_ID %(variant_id)uU
+#define V14_U32_INVALID 0xFFFFFFFFU
+#define V14_MAILBOX_VALID 0x5631344DU
+#define V14_QSIZE_EXPECTED 0x00000110U
+#define V14_ITERATION_BOUND 10000U
+#define V14_APPENDIX_WORDS 34U
+
+#define V14_STATUS_STATE 0x001U
+#define V14_STATUS_IRQ_RAISED 0x002U
+#define V14_STATUS_RESET 0x008U
+#define V14_STATUS_CMD_END 0x020U
+#define V14_STATUS_FAULT_MASK 0x314U
+
+%(offsets)s
+
+#define V14_PRIMARY_NOT_RUN 0U
+#define V14_PRIMARY_OBSERVED 1U
+#define V14_PRIMARY_TIMEOUT 2U
+#define V14_PRIMARY_RESET 3U
+#define V14_PRIMARY_FAULT 4U
+
+#define V14_CONVERGENCE_NOT_RUN 0U
+#define V14_CONVERGENCE_SUCCESS 1U
+#define V14_CONVERGENCE_TIMEOUT 2U
+#define V14_CONVERGENCE_RESET 3U
+#define V14_CONVERGENCE_FAULT 4U
+
+#define V14_PHASE_NONE 0U
+#define V14_PHASE_PRE_PROGRAM 1U
+#define V14_PHASE_PRE_SUBMIT 2U
+#define V14_PHASE_PRIMARY 3U
+#define V14_PHASE_CONVERGENCE 4U
+#define V14_PHASE_CLEANUP 5U
+
+#define V14_REASON_NONE 0U
+#define V14_REASON_STATE_RUNNING 1U
+#define V14_REASON_RESET_IN_PROGRESS 2U
+#define V14_REASON_HARDWARE_FAULT 3U
+#define V14_REASON_STALE_IRQ 4U
+#define V14_REASON_STALE_CMD_END 5U
+#define V14_REASON_QSIZE_MISMATCH 6U
+#define V14_REASON_PRIMARY_TIMEOUT 7U
+#define V14_REASON_CONVERGENCE_TIMEOUT 8U
+#define V14_REASON_CLEANUP_INVARIANT 9U
+
+#define V14_RET_SUCCESS 0
+#define V14_RET_PRE_PROGRAM_FAILURE 1
+#define V14_RET_PRE_SUBMIT_FAILURE 2
+#define V14_RET_PRIMARY_TIMEOUT 3
+#define V14_RET_RESET_IN_PROGRESS 4
+#define V14_RET_HARDWARE_FAULT 5
+#define V14_RET_CONVERGENCE_TIMEOUT 6
+#define V14_RET_CLEANUP_INVARIANT 7
+
+volatile uint32_t pmu_completion_visibility_v14_mailbox[34];
+
+struct v14_observation_t {
+    uint32_t result;
+    uint32_t iterations;
+    uint32_t qread;
+    uint32_t status;
+    uint32_t t_first;
+};
+"""
+
+VENDOR_STOCK_ISR = """
+void u85_irq_handler(void)
+{
+    int32_t status_register = 0;
+    status_register = read_reg(NPU_REG_STATUS);
+    irq_history_mask = status_register >> 16;
+    if ((status_register & 0x02)){
+        irq_triggered = true;
+        write_reg(NPU_REG_CMD, 2);
+    }
+}
+"""
+
+VENDOR_MAILBOX_HELPERS = """
+__attribute__((noinline))
+void v14_mailbox_reset(void)
+{
+    for (uint32_t i = 0U; i < V14_APPENDIX_WORDS; ++i) {
+        pmu_completion_visibility_v14_mailbox[i] = V14_U32_INVALID;
+    }
+    pmu_completion_visibility_v14_mailbox[V14_MBOX_MAILBOX_VALID] = 0U;
+    __DSB();
+}
+
+__attribute__((noinline))
+static void v14_mailbox_publish(void)
+{
+    __DSB();
+    pmu_completion_visibility_v14_mailbox[V14_MBOX_MAILBOX_VALID] = V14_MAILBOX_VALID;
+    __DSB();
+}
+
+__attribute__((noinline))
+static void v14_publish_failure(uint32_t phase, uint32_t reason, uint32_t qread, uint32_t status)
+{
+    pmu_completion_visibility_v14_mailbox[V14_MBOX_CONVERGENCE_FINAL_QREAD] = V14_U32_INVALID;
+    pmu_completion_visibility_v14_mailbox[V14_MBOX_CONVERGENCE_FINAL_STATUS] = V14_U32_INVALID;
+    pmu_completion_visibility_v14_mailbox[V14_MBOX_FAILURE_PHASE] = phase;
+    pmu_completion_visibility_v14_mailbox[V14_MBOX_FAILURE_REASON] = reason;
+    pmu_completion_visibility_v14_mailbox[V14_MBOX_FAILURE_QREAD] = qread;
+    pmu_completion_visibility_v14_mailbox[V14_MBOX_FAILURE_STATUS] = status;
+    v14_mailbox_publish();
+}
+
+__attribute__((noinline))
+static void v14_publish_cleanup_failure(uint32_t qread, uint32_t status)
+{
+    pmu_completion_visibility_v14_mailbox[V14_MBOX_FAILURE_PHASE] = V14_PHASE_CLEANUP;
+    pmu_completion_visibility_v14_mailbox[V14_MBOX_FAILURE_REASON] = V14_REASON_CLEANUP_INVARIANT;
+    pmu_completion_visibility_v14_mailbox[V14_MBOX_FAILURE_QREAD] = qread;
+    pmu_completion_visibility_v14_mailbox[V14_MBOX_FAILURE_STATUS] = status;
+    v14_mailbox_publish();
+}
+
+__attribute__((noinline))
+static void v14_publish_success(void)
+{
+    pmu_completion_visibility_v14_mailbox[V14_MBOX_FAILURE_PHASE] = V14_PHASE_NONE;
+    pmu_completion_visibility_v14_mailbox[V14_MBOX_FAILURE_REASON] = V14_REASON_NONE;
+    pmu_completion_visibility_v14_mailbox[V14_MBOX_FAILURE_QREAD] = V14_U32_INVALID;
+    pmu_completion_visibility_v14_mailbox[V14_MBOX_FAILURE_STATUS] = V14_U32_INVALID;
+    v14_mailbox_publish();
+}
+
+__attribute__((noinline))
+static void v14_publish_primary(const struct v14_observation_t *obs, uint32_t qsize_expected)
+{
+    pmu_completion_visibility_v14_mailbox[V14_MBOX_PRIMARY_RESULT] = obs->result;
+    pmu_completion_visibility_v14_mailbox[V14_MBOX_PRIMARY_ITERATIONS] = obs->iterations;
+    pmu_completion_visibility_v14_mailbox[V14_MBOX_T_FIRST_OBSERVATION] = obs->t_first;
+    if (obs->result != V14_PRIMARY_OBSERVED) {
+        pmu_completion_visibility_v14_mailbox[V14_MBOX_FIRST_QREAD] = V14_U32_INVALID;
+        pmu_completion_visibility_v14_mailbox[V14_MBOX_FIRST_STATUS] = V14_U32_INVALID;
+        pmu_completion_visibility_v14_mailbox[V14_MBOX_FIRST_Q_DONE] = V14_U32_INVALID;
+        pmu_completion_visibility_v14_mailbox[V14_MBOX_FIRST_CMD_END_REACHED] = V14_U32_INVALID;
+        pmu_completion_visibility_v14_mailbox[V14_MBOX_FIRST_IRQ_RAISED] = V14_U32_INVALID;
+        pmu_completion_visibility_v14_mailbox[V14_MBOX_FIRST_STATE] = V14_U32_INVALID;
+        return;
+    }
+    pmu_completion_visibility_v14_mailbox[V14_MBOX_FIRST_QREAD] = obs->qread;
+    pmu_completion_visibility_v14_mailbox[V14_MBOX_FIRST_STATUS] = obs->status;
+    pmu_completion_visibility_v14_mailbox[V14_MBOX_FIRST_Q_DONE] = (obs->qread == qsize_expected) ? 1U : 0U;
+    if (obs->status == V14_U32_INVALID) {
+        pmu_completion_visibility_v14_mailbox[V14_MBOX_FIRST_CMD_END_REACHED] = V14_U32_INVALID;
+        pmu_completion_visibility_v14_mailbox[V14_MBOX_FIRST_IRQ_RAISED] = V14_U32_INVALID;
+        pmu_completion_visibility_v14_mailbox[V14_MBOX_FIRST_STATE] = V14_U32_INVALID;
+        return;
+    }
+    pmu_completion_visibility_v14_mailbox[V14_MBOX_FIRST_CMD_END_REACHED] = ((obs->status & V14_STATUS_CMD_END) != 0U) ? 1U : 0U;
+    pmu_completion_visibility_v14_mailbox[V14_MBOX_FIRST_IRQ_RAISED] = ((obs->status & V14_STATUS_IRQ_RAISED) != 0U) ? 1U : 0U;
+    pmu_completion_visibility_v14_mailbox[V14_MBOX_FIRST_STATE] = (obs->status & V14_STATUS_STATE);
+}
+"""
+
+VENDOR_PRIMARY_Q = """
+__attribute__((noinline))
+static void v14_primary_q(uint32_t qsize_expected, struct v14_observation_t *obs)
+{
+    volatile uint32_t *const qread_reg =
+        (volatile uint32_t *)(uintptr_t)(U85_BASE_ADDRESS + NPU_REG_QREAD);
+    volatile uint32_t *const status_reg =
+        (volatile uint32_t *)(uintptr_t)(U85_BASE_ADDRESS + NPU_REG_STATUS);
+    uint32_t qread = 0U;
+    uint32_t status = 0U;
+
+    for (uint32_t i = 1U; i <= V14_ITERATION_BOUND; ++i) {
+        qread = *qread_reg;
+        if (qread == qsize_expected) {
+            obs->t_first = DWT->CYCCNT;
+            obs->result = V14_PRIMARY_OBSERVED;
+            obs->iterations = i;
+            obs->qread = qread;
+            obs->status = V14_U32_INVALID;
+            return;
+        }
+    }
+
+    status = *status_reg;
+    obs->t_first = V14_U32_INVALID;
+    obs->iterations = 0U;
+    obs->qread = qread;
+    obs->status = status;
+    if ((status & V14_STATUS_RESET) != 0U) {
+        obs->result = V14_PRIMARY_RESET;
+        return;
+    }
+    if ((status & V14_STATUS_FAULT_MASK) != 0U) {
+        obs->result = V14_PRIMARY_FAULT;
+        return;
+    }
+    obs->result = V14_PRIMARY_TIMEOUT;
+}
+"""
+
+VENDOR_PRIMARY_DUAL = """
+__attribute__((noinline))
+static void v14_primary_%(suffix)s(uint32_t qsize_expected, struct v14_observation_t *obs)
+{
+    volatile uint32_t *const qread_reg =
+        (volatile uint32_t *)(uintptr_t)(U85_BASE_ADDRESS + NPU_REG_QREAD);
+    volatile uint32_t *const status_reg =
+        (volatile uint32_t *)(uintptr_t)(U85_BASE_ADDRESS + NPU_REG_STATUS);
+    uint32_t qread = 0U;
+    uint32_t status = 0U;
+
+    for (uint32_t i = 1U; i <= V14_ITERATION_BOUND; ++i) {
+%(reads)s
+        if ((status & V14_STATUS_RESET) != 0U) {
+            obs->t_first = V14_U32_INVALID;
+            obs->result = V14_PRIMARY_RESET;
+            obs->iterations = 0U;
+            obs->qread = qread;
+            obs->status = status;
+            return;
+        }
+        if ((status & V14_STATUS_FAULT_MASK) != 0U) {
+            obs->t_first = V14_U32_INVALID;
+            obs->result = V14_PRIMARY_FAULT;
+            obs->iterations = 0U;
+            obs->qread = qread;
+            obs->status = status;
+            return;
+        }
+        if ((qread == qsize_expected) || ((status & V14_STATUS_CMD_END) != 0U)) {
+            obs->t_first = DWT->CYCCNT;
+            obs->result = V14_PRIMARY_OBSERVED;
+            obs->iterations = i;
+            obs->qread = qread;
+            obs->status = status;
+            return;
+        }
+    }
+
+    obs->t_first = V14_U32_INVALID;
+    obs->result = V14_PRIMARY_TIMEOUT;
+    obs->iterations = 0U;
+    obs->qread = qread;
+    obs->status = status;
+}
+"""
+
+VENDOR_CONVERGE = """
+__attribute__((noinline))
+static void v14_converge(uint32_t qsize_expected, struct v14_observation_t *obs)
+{
+    volatile uint32_t *const qread_reg =
+        (volatile uint32_t *)(uintptr_t)(U85_BASE_ADDRESS + NPU_REG_QREAD);
+    volatile uint32_t *const status_reg =
+        (volatile uint32_t *)(uintptr_t)(U85_BASE_ADDRESS + NPU_REG_STATUS);
+    uint32_t qread = 0U;
+    uint32_t status = 0U;
+    uint32_t result = V14_CONVERGENCE_TIMEOUT;
+    uint32_t iterations = 0U;
+
+    for (uint32_t i = 1U; i <= V14_ITERATION_BOUND; ++i) {
+        qread = *qread_reg;
+        status = *status_reg;
+        if ((status & V14_STATUS_RESET) != 0U) {
+            result = V14_CONVERGENCE_RESET;
+            break;
+        }
+        if ((status & V14_STATUS_FAULT_MASK) != 0U) {
+            result = V14_CONVERGENCE_FAULT;
+            break;
+        }
+        if ((qread == qsize_expected) &&
+            ((status & V14_STATUS_CMD_END) != 0U) &&
+            ((status & V14_STATUS_IRQ_RAISED) != 0U) &&
+            ((status & V14_STATUS_STATE) == 0U)) {
+            result = V14_CONVERGENCE_SUCCESS;
+            iterations = i;
+            break;
+        }
+    }
+
+    obs->t_first = V14_U32_INVALID;
+    obs->result = result;
+    obs->iterations = iterations;
+    obs->qread = qread;
+    obs->status = status;
+}
+"""
+
+VENDOR_TEST_U85 = """
+int test_u85( const u85_eTest eTest,
+              const uint32_t u32ExpectedIRQMask,
+              const uint32_t u32OutputSize,
+              const uint32_t u32CmdQueueSize,
+              struct u85_warp_data_t *pu85_warp_data_st )
+{
+    int ret_code = 0;
+    uint32_t pre_program_status = 0U;
+
+    NVIC_SetVector(NPU0_IRQn, (uint32_t)&u85_irq_handler);
+    irq_triggered = false;
+    NVIC_DisableIRQ(NPU0_IRQn);
+    NVIC_ClearPendingIRQ(NPU0_IRQn);
+
+    pmu_completion_visibility_v14_mailbox[V14_MBOX_VARIANT_ID] = V14_VARIANT_ID;
+    pmu_completion_visibility_v14_mailbox[V14_MBOX_INSTALLED_VECTOR] = NVIC_GetVector(NPU0_IRQn);
+    pmu_completion_visibility_v14_mailbox[V14_MBOX_NVIC_ENABLED_BEFORE_SUBMIT] = NVIC_GetEnableIRQ(NPU0_IRQn);
+    pmu_completion_visibility_v14_mailbox[V14_MBOX_NVIC_PENDING_AFTER_INITIAL_CLEAR] = NVIC_GetPendingIRQ(NPU0_IRQn);
+    pmu_completion_visibility_v14_mailbox[V14_MBOX_NVIC_ACTIVE_BEFORE_SUBMIT] = NVIC_GetActive(NPU0_IRQn);
+    pmu_completion_visibility_v14_mailbox[V14_MBOX_IRQ_TRIGGERED_BEFORE_SUBMIT] = irq_triggered ? 1U : 0U;
+
+    if ((pmu_completion_visibility_v14_mailbox[V14_MBOX_INSTALLED_VECTOR] != (uint32_t)&u85_irq_handler) ||
+        (pmu_completion_visibility_v14_mailbox[V14_MBOX_NVIC_ENABLED_BEFORE_SUBMIT] != 0U) ||
+        (pmu_completion_visibility_v14_mailbox[V14_MBOX_NVIC_PENDING_AFTER_INITIAL_CLEAR] != 0U) ||
+        (pmu_completion_visibility_v14_mailbox[V14_MBOX_NVIC_ACTIVE_BEFORE_SUBMIT] != 0U) ||
+        (pmu_completion_visibility_v14_mailbox[V14_MBOX_IRQ_TRIGGERED_BEFORE_SUBMIT] != 0U)) {
+        v14_publish_failure(V14_PHASE_PRE_PROGRAM, V14_REASON_STATE_RUNNING, V14_U32_INVALID, V14_U32_INVALID);
+        return V14_RET_PRE_PROGRAM_FAILURE;
+    }
+
+    pre_program_status = read_reg(NPU_REG_STATUS);
+    pmu_completion_visibility_v14_mailbox[V14_MBOX_PRE_PROGRAM_STATUS] = pre_program_status;
+    if ((pre_program_status & V14_STATUS_STATE) != 0U) {
+        v14_publish_failure(V14_PHASE_PRE_PROGRAM, V14_REASON_STATE_RUNNING, V14_U32_INVALID, pre_program_status);
+        return V14_RET_PRE_PROGRAM_FAILURE;
+    }
+    if ((pre_program_status & V14_STATUS_RESET) != 0U) {
+        v14_publish_failure(V14_PHASE_PRE_PROGRAM, V14_REASON_RESET_IN_PROGRESS, V14_U32_INVALID, pre_program_status);
+        return V14_RET_RESET_IN_PROGRESS;
+    }
+    if ((pre_program_status & V14_STATUS_FAULT_MASK) != 0U) {
+        v14_publish_failure(V14_PHASE_PRE_PROGRAM, V14_REASON_HARDWARE_FAULT, V14_U32_INVALID, pre_program_status);
+        return V14_RET_HARDWARE_FAULT;
+    }
+
+    write_reg(NPU_REG_QBASE, (uint32_t)pu85_warp_data_st->pu32CmdStream);
+    write_reg(NPU_REG_QSIZE, u32CmdQueueSize);
+
+    ret_code = test_commands(eTest, u32CmdQueueSize, pu85_warp_data_st);
+    return ret_code;
+}
+"""
+
+VENDOR_TEST_COMMANDS = """
+__attribute__((noinline))
+static int test_commands( const u85_eTest eTest,
+\t\t                  const uint32_t u32CmdQueueSize,
+\t\t                  struct u85_warp_data_t *pu85_warp_data_st)
+{
+\tint ret_code;
+    int read_val;
+    uint32_t qsize_expected;
+    uint32_t pre_submit_status;
+    struct v14_observation_t primary;
+    struct v14_observation_t converged;
+
+\t/* Init locals */
+\tret_code =0;
+\tread_val =0;
+    qsize_expected = 0U;
+    pre_submit_status = 0U;
+
+\t  qsize_expected = read_reg(NPU_REG_QSIZE);
+\t  pmu_completion_visibility_v14_mailbox[V14_MBOX_QSIZE_EXPECTED] = qsize_expected;
+\t  pre_submit_status = read_reg(NPU_REG_STATUS);
+\t  pmu_completion_visibility_v14_mailbox[V14_MBOX_PRE_SUBMIT_STATUS] = pre_submit_status;
+\t  if (qsize_expected != V14_QSIZE_EXPECTED) {
+\t    v14_publish_failure(V14_PHASE_PRE_SUBMIT, V14_REASON_QSIZE_MISMATCH, V14_U32_INVALID, pre_submit_status);
+\t    return V14_RET_PRE_SUBMIT_FAILURE;
+\t  }
+\t  if ((pre_submit_status & V14_STATUS_STATE) != 0U) {
+\t    v14_publish_failure(V14_PHASE_PRE_SUBMIT, V14_REASON_STATE_RUNNING, V14_U32_INVALID, pre_submit_status);
+\t    return V14_RET_PRE_SUBMIT_FAILURE;
+\t  }
+\t  if ((pre_submit_status & V14_STATUS_RESET) != 0U) {
+\t    v14_publish_failure(V14_PHASE_PRE_SUBMIT, V14_REASON_RESET_IN_PROGRESS, V14_U32_INVALID, pre_submit_status);
+\t    return V14_RET_RESET_IN_PROGRESS;
+\t  }
+\t  if ((pre_submit_status & V14_STATUS_FAULT_MASK) != 0U) {
+\t    v14_publish_failure(V14_PHASE_PRE_SUBMIT, V14_REASON_HARDWARE_FAULT, V14_U32_INVALID, pre_submit_status);
+\t    return V14_RET_HARDWARE_FAULT;
+\t  }
+\t  if ((pre_submit_status & V14_STATUS_IRQ_RAISED) != 0U) {
+\t    v14_publish_failure(V14_PHASE_PRE_SUBMIT, V14_REASON_STALE_IRQ, V14_U32_INVALID, pre_submit_status);
+\t    return V14_RET_PRE_SUBMIT_FAILURE;
+\t  }
+\t  if ((pre_submit_status & V14_STATUS_CMD_END) != 0U) {
+\t    v14_publish_failure(V14_PHASE_PRE_SUBMIT, V14_REASON_STALE_CMD_END, V14_U32_INVALID, pre_submit_status);
+\t    return V14_RET_PRE_SUBMIT_FAILURE;
+\t  }
+\t  //Start NPU
+\t  read_val = read_reg(NPU_REG_CMD);
+\t  write_reg(NPU_REG_CMD, read_val | 0x00000001);
+\t  pmu_completion_visibility_v14_mailbox[V14_MBOX_T_SUBMIT_AFTER_CMD] = DWT->CYCCNT;
+\t  pmu_completion_visibility_v14_mailbox[V14_MBOX_T_PRIMARY_ENTRY] = DWT->CYCCNT;
+\t  %(primary_call)s(qsize_expected, &primary);
+\t  v14_publish_primary(&primary, qsize_expected);
+\t  if (primary.result != V14_PRIMARY_OBSERVED) {
+\t    if (primary.result == V14_PRIMARY_RESET) {
+\t      v14_publish_failure(V14_PHASE_PRIMARY, V14_REASON_RESET_IN_PROGRESS, primary.qread, primary.status);
+\t      return V14_RET_RESET_IN_PROGRESS;
+\t    }
+\t    if (primary.result == V14_PRIMARY_FAULT) {
+\t      v14_publish_failure(V14_PHASE_PRIMARY, V14_REASON_HARDWARE_FAULT, primary.qread, primary.status);
+\t      return V14_RET_HARDWARE_FAULT;
+\t    }
+\t    v14_publish_failure(V14_PHASE_PRIMARY, V14_REASON_PRIMARY_TIMEOUT, primary.qread, primary.status);
+\t    return V14_RET_PRIMARY_TIMEOUT;
+\t  }
+\t  v14_converge(qsize_expected, &converged);
+\t  pmu_completion_visibility_v14_mailbox[V14_MBOX_CONVERGENCE_RESULT] = converged.result;
+\t  pmu_completion_visibility_v14_mailbox[V14_MBOX_CONVERGENCE_ITERATIONS] = converged.iterations;
+\t  pmu_completion_visibility_v14_mailbox[V14_MBOX_CONVERGENCE_TIMEOUT] =
+\t      (converged.result == V14_CONVERGENCE_TIMEOUT) ? 1U : 0U;
+\t  if (converged.result != V14_CONVERGENCE_SUCCESS) {
+\t    if (converged.result == V14_CONVERGENCE_RESET) {
+\t      v14_publish_failure(V14_PHASE_CONVERGENCE, V14_REASON_RESET_IN_PROGRESS, converged.qread, converged.status);
+\t      return V14_RET_RESET_IN_PROGRESS;
+\t    }
+\t    if (converged.result == V14_CONVERGENCE_FAULT) {
+\t      v14_publish_failure(V14_PHASE_CONVERGENCE, V14_REASON_HARDWARE_FAULT, converged.qread, converged.status);
+\t      return V14_RET_HARDWARE_FAULT;
+\t    }
+\t    v14_publish_failure(V14_PHASE_CONVERGENCE, V14_REASON_CONVERGENCE_TIMEOUT, converged.qread, converged.status);
+\t    return V14_RET_CONVERGENCE_TIMEOUT;
+\t  }
+\t  pmu_completion_visibility_v14_mailbox[V14_MBOX_CONVERGENCE_FINAL_QREAD] = converged.qread;
+\t  pmu_completion_visibility_v14_mailbox[V14_MBOX_CONVERGENCE_FINAL_STATUS] = converged.status;
+\t  irq_history_mask = converged.status >> 16;
+\t  write_reg(NPU_REG_CMD, 0x00000002);
+\t  read_val = read_reg(NPU_REG_QREAD);
+\t  write_reg(NPU_REG_CMD, 0x00000002);
+\t  if(read_val == u32CmdQueueSize) {
+\t    printf("Read match at address: NPU_REG_QREAD, Expected Read Value: 0x%x \\n",u32CmdQueueSize);
+\t  }
+\t  else {
+\t    printf("ERROR: Read mismatch at address: NPU_REG_QREAD, Expected Read Value: 0x%x, Read Value : 0x%x\\n",u32CmdQueueSize, read_val);
+\t    ret_code = 1;
+\t  }
+\t  pmu_completion_visibility_v14_mailbox[V14_MBOX_NVIC_PENDING_BEFORE_FINAL_CLEAR] = NVIC_GetPendingIRQ(NPU0_IRQn);
+\t  NVIC_ClearPendingIRQ(NPU0_IRQn);
+\t  pmu_completion_visibility_v14_mailbox[V14_MBOX_NVIC_PENDING_AFTER_FINAL_CLEAR] = NVIC_GetPendingIRQ(NPU0_IRQn);
+\t  pmu_completion_visibility_v14_mailbox[V14_MBOX_NVIC_ACTIVE_AFTER_CLEANUP] = NVIC_GetActive(NPU0_IRQn);
+\t  pmu_completion_visibility_v14_mailbox[V14_MBOX_IRQ_TRIGGERED_AFTER_CLEANUP] = irq_triggered ? 1U : 0U;
+\t  //Stop NPU
+\t  write_reg(NPU_REG_CMD, 0x00000000);
+\t  // Enable clock and power Q interfaces to ask for shutdown
+#if(TEST_CPM==1)
+\t    printf("Testing CPM signals\\n");
+\t    //Enable Program CLKQ and PWRQ interfaces
+\t    //Bit[2] enables CLKQ, and Bit[3] Enables PWRQ
+\t    write_reg(NPU_REG_CMD, 0x0000000C);
+#endif
+\t  if (ret_code != 0) {
+\t    v14_publish_cleanup_failure((uint32_t)read_val, converged.status);
+\t    ret_code = V14_RET_CLEANUP_INVARIANT;
+\t  }
+\t  else {
+\t    v14_publish_success();
+\t    ret_code = V14_RET_SUCCESS;
+\t  }
+\treturn ret_code;
+}
+"""
+
+_DUAL_READS = {
+    "QS": "        qread = *qread_reg;\n        status = *status_reg;",
+    "SQ": "        status = *status_reg;\n        qread = *qread_reg;",
+}
+
+
+def vendor_offsets_block():
+    return "\n".join(
+        "#define %s %dU" % (mbox(field), index) for index, field in enumerate(APPENDIX_FIELDS)
+    )
+
+
+def canonical_vendor(variant):
+    if variant == "Q":
+        primary = VENDOR_PRIMARY_Q
+    else:
+        primary = VENDOR_PRIMARY_DUAL % {
+            "suffix": variant.lower(),
+            "reads": _DUAL_READS[variant],
+        }
+    return "".join(
+        (
+            VENDOR_DEFS % {"variant_id": VARIANTS[variant], "offsets": vendor_offsets_block()},
+            VENDOR_STOCK_ISR,
+            VENDOR_MAILBOX_HELPERS,
+            primary,
+            VENDOR_CONVERGE,
+            VENDOR_TEST_COMMANDS.replace("%(primary_call)s", "v14_primary_" + variant.lower()),
+            VENDOR_TEST_U85,
+        )
+    )
+
+
+RUNNER_HEAD = """#if defined(PMU_QUAL_SCHEMA_V14)
+#define PMU_DIAG_SCHEMA_VERSION 14U
+#define PMU_COMPLETION_VISIBILITY_DIAG_V14_BUILD_ID 0x34314950U
+#define V14_MAILBOX_VALID 0x5631344DU
+#define V14_APPENDIX_WORDS 34U
+#elif defined(PMU_QUAL_SCHEMA_V8)
+#define PMU_DIAG_SCHEMA_VERSION 8U
+#else
+#define PMU_DIAG_SCHEMA_VERSION 7U
+#endif
+
+#if defined(PMU_QUAL_SCHEMA_V14)
+#define PMU_DIAG_FIELD_COUNT (40U + 13U + (4U * PMU_DIAG_SNAPSHOT_WORDS) + 34U)
+#elif defined(PMU_QUAL_SCHEMA_V8)
+#define PMU_DIAG_FIELD_COUNT (40U + 13U + (4U * PMU_DIAG_SNAPSHOT_WORDS))
+#endif
+
+#if defined(PMU_QUAL_SCHEMA_V14)
+_Static_assert(PMU_DIAG_FIELD_COUNT == 119U,
+               "PMU_COMPLETION_VISIBILITY_DIAG_V14: v8 body plus the 34-word appendix");
+_Static_assert(PMU_DIAG_TOTAL_WORDS == 127U,
+               "PMU_COMPLETION_VISIBILITY_DIAG_V14: 8 header plus 119 body");
+_Static_assert(PMU_DIAG_PAYLOAD_SIZE == 508U,
+               "PMU_COMPLETION_VISIBILITY_DIAG_V14: payload is 127 * 4 bytes");
+_Static_assert(PMU_DIAG_SCHEMA_VERSION == 14U,
+               "PMU_COMPLETION_VISIBILITY_DIAG_V14: schema must be 14");
+_Static_assert(RUNNER_FIRMWARE_BUILD_ID == PMU_COMPLETION_VISIBILITY_DIAG_V14_BUILD_ID,
+               "PMU_COMPLETION_VISIBILITY_DIAG_V14: build id must be 0x34314950");
+#endif
+
+extern volatile uint32_t pmu_completion_visibility_v14_mailbox[34];
+extern void v14_mailbox_reset(void);
+"""
+
+
+def runner_record_block():
+    body = "\n".join("    uint32_t %s;" % field for field in APPENDIX_FIELDS)
+    return "typedef struct {\n%s\n} pmu_diag_record_t;\n" % body
+
+
+def runner_reset_block():
+    return """
+void pmu_diag_reset_v14_state(void)
+{
+    v14_mailbox_reset();
+}
+"""
+
+
+def runner_copy_block():
+    lines = "\n".join(
+        "            d.%s = pmu_completion_visibility_v14_mailbox[%d];" % (field, index)
+        for index, field in enumerate(APPENDIX_FIELDS)
+    )
+    return """
+void pmu_diag_collect_v14(pmu_diag_record_t *out)
+{
+    pmu_diag_record_t d;
+
+    memset(&d, 0, sizeof(d));
+    pmu_diag_reset_v14_state();
+    pmu_diag_private_driver_call();
+    if (pmu_completion_visibility_v14_mailbox[33] != V14_MAILBOX_VALID) {
+        pmu_diag_v14_transport_valid = 0U;
+    }
+    else {
+        pmu_diag_v14_transport_valid = 1U;
+%s
+    }
+    *out = d;
+}
+""" % lines
+
+
+def runner_serialize_block():
+    lines = "\n".join("    put32(&c, d->%s);" % field for field in APPENDIX_FIELDS)
+    return """
+void pmu_diag_serialize_v14(const pmu_diag_record_t *d, uint8_t *c)
+{
+%s
+}
+""" % lines
+
+
+def canonical_runner(variant):
+    return "".join(
+        (
+            RUNNER_HEAD,
+            runner_record_block(),
+            runner_reset_block(),
+            runner_copy_block(),
+            runner_serialize_block(),
+        )
+    )
+
+
 def run_identity_suite(gate):
     check("schema version is 14", gate.SCHEMA_VERSION == SCHEMA)
     check("build id is 0x34314950", gate.BUILD_ID == BUILD_ID)
@@ -259,6 +876,239 @@ def run_cli_suite():
     check("fixture mode without inputs is refused", result.returncode != 0)
 
 
+def expect_accept(gate, variant, runner, vendor, name):
+    try:
+        doc = gate.verify_generated_sources(runner, vendor, variant)
+    except Exception as exc:
+        check(name, False, ("%s" % exc)[:80])
+        return None
+    check(name, True)
+    return doc
+
+
+def expect_reject(gate, variant, runner, vendor, name, reason):
+    try:
+        gate.verify_generated_sources(runner, vendor, variant)
+    except gate.GateError as exc:
+        check("rejects %s" % name, reason in str(exc), ("%s" % exc)[:80])
+        return
+    except Exception as exc:  # pragma: no cover - a crash is not a rejection
+        check("rejects %s" % name, False, "raised %r" % exc)
+        return
+    check("rejects %s" % name, False, "accepted")
+
+
+REJECTED_FIXTURES = set()
+
+
+def run_vendor_mutations(gate, mutations, variant="Q"):
+    runner = canonical_runner(variant)
+    vendor = canonical_vendor(variant)
+    for name, mutate, reason in mutations:
+        REJECTED_FIXTURES.add(name)
+        expect_reject(gate, variant, runner, mutate(vendor), name, reason)
+
+
+def run_runner_mutations(gate, mutations, variant="Q"):
+    runner = canonical_runner(variant)
+    vendor = canonical_vendor(variant)
+    for name, mutate, reason in mutations:
+        REJECTED_FIXTURES.add(name)
+        expect_reject(gate, variant, mutate(runner), vendor, name, reason)
+
+
+PRE_PROGRAM_GATE = """    pre_program_status = read_reg(NPU_REG_STATUS);
+    pmu_completion_visibility_v14_mailbox[V14_MBOX_PRE_PROGRAM_STATUS] = pre_program_status;
+    if ((pre_program_status & V14_STATUS_STATE) != 0U) {
+        v14_publish_failure(V14_PHASE_PRE_PROGRAM, V14_REASON_STATE_RUNNING, V14_U32_INVALID, pre_program_status);
+        return V14_RET_PRE_PROGRAM_FAILURE;
+    }
+    if ((pre_program_status & V14_STATUS_RESET) != 0U) {
+        v14_publish_failure(V14_PHASE_PRE_PROGRAM, V14_REASON_RESET_IN_PROGRESS, V14_U32_INVALID, pre_program_status);
+        return V14_RET_RESET_IN_PROGRESS;
+    }
+    if ((pre_program_status & V14_STATUS_FAULT_MASK) != 0U) {
+        v14_publish_failure(V14_PHASE_PRE_PROGRAM, V14_REASON_HARDWARE_FAULT, V14_U32_INVALID, pre_program_status);
+        return V14_RET_HARDWARE_FAULT;
+    }
+
+"""
+
+QUEUE_PROGRAMMING = """    write_reg(NPU_REG_QBASE, (uint32_t)pu85_warp_data_st->pu32CmdStream);
+    write_reg(NPU_REG_QSIZE, u32CmdQueueSize);
+"""
+
+
+def drop_pre_program_gate(vendor):
+    return replace_once(vendor, PRE_PROGRAM_GATE, "", "pre-program gate")
+
+
+def move_pre_program_gate_after_programming(vendor):
+    text = replace_once(vendor, PRE_PROGRAM_GATE, "", "pre-program gate")
+    return replace_once(text, QUEUE_PROGRAMMING, QUEUE_PROGRAMMING + "\n" + PRE_PROGRAM_GATE, "queue programming")
+
+
+def insert_running_transition(vendor):
+    return replace_once(
+        vendor,
+        QUEUE_PROGRAMMING,
+        "    write_reg(NPU_REG_CMD, 0x00000001);\n" + QUEUE_PROGRAMMING,
+        "queue programming",
+    )
+
+
+def snapshot_qsize_before_final_programming(vendor):
+    return replace_once(
+        vendor,
+        QUEUE_PROGRAMMING,
+        "    write_reg(NPU_REG_QBASE, (uint32_t)pu85_warp_data_st->pu32CmdStream);\n"
+        "    pmu_completion_visibility_v14_mailbox[V14_MBOX_QSIZE_EXPECTED] = read_reg(NPU_REG_QSIZE);\n"
+        "    write_reg(NPU_REG_QSIZE, u32CmdQueueSize);\n",
+        "queue programming",
+    )
+
+
+def qsize_compare_off_manifest(vendor):
+    return replace_once(vendor, "#define V14_QSIZE_EXPECTED 0x00000110U", "#define V14_QSIZE_EXPECTED 0x00000108U", "qsize define")
+
+
+def add_second_qsize_read(vendor):
+    return replace_once(
+        vendor,
+        "\t  pre_submit_status = read_reg(NPU_REG_STATUS);",
+        "\t  qsize_expected = read_reg(NPU_REG_QSIZE);\n\t  pre_submit_status = read_reg(NPU_REG_STATUS);",
+        "pre-submit status read",
+    )
+
+
+def move_qsize_read_after_submit(vendor):
+    text = replace_once(vendor, "\t  qsize_expected = read_reg(NPU_REG_QSIZE);\n", "", "qsize read")
+    return replace_once(
+        text,
+        "\t  pmu_completion_visibility_v14_mailbox[V14_MBOX_T_SUBMIT_AFTER_CMD] = DWT->CYCCNT;",
+        "\t  qsize_expected = read_reg(NPU_REG_QSIZE);\n"
+        "\t  pmu_completion_visibility_v14_mailbox[V14_MBOX_T_SUBMIT_AFTER_CMD] = DWT->CYCCNT;",
+        "submit timestamp",
+    )
+
+
+def _drop_pre_submit_gate(mask_macro, reason_macro, ret_macro):
+    block = (
+        "\t  if ((pre_submit_status & %s) != 0U) {\n"
+        "\t    v14_publish_failure(V14_PHASE_PRE_SUBMIT, %s, V14_U32_INVALID, pre_submit_status);\n"
+        "\t    return %s;\n"
+        "\t  }\n" % (mask_macro, reason_macro, ret_macro)
+    )
+
+    def mutate(vendor):
+        return replace_once(vendor, block, "", "pre-submit %s gate" % mask_macro)
+
+    return mutate
+
+
+def pre_run_failure_falls_through(vendor):
+    return replace_once(
+        vendor,
+        "\t    v14_publish_failure(V14_PHASE_PRE_SUBMIT, V14_REASON_QSIZE_MISMATCH, V14_U32_INVALID, pre_submit_status);\n"
+        "\t    return V14_RET_PRE_SUBMIT_FAILURE;\n",
+        "\t    v14_publish_failure(V14_PHASE_PRE_SUBMIT, V14_REASON_QSIZE_MISMATCH, V14_U32_INVALID, pre_submit_status);\n",
+        "qsize mismatch return",
+    )
+
+
+def reuse_pre_program_status_after_programming(vendor):
+    return replace_once(
+        vendor,
+        "\t  pre_submit_status = read_reg(NPU_REG_STATUS);\n",
+        "\t  pre_submit_status = pmu_completion_visibility_v14_mailbox[V14_MBOX_PRE_PROGRAM_STATUS];\n",
+        "pre-submit status read",
+    )
+
+
+PRE_RUN_MUTATIONS = (
+    ("pre_program_gate_missing", drop_pre_program_gate, "pre-program STATUS gate does not dominate QBASE/QSIZE"),
+    (
+        "pre_program_gate_after_programming",
+        move_pre_program_gate_after_programming,
+        "pre-program STATUS gate does not dominate QBASE/QSIZE",
+    ),
+    (
+        "running_transition_between_gate_and_programming",
+        insert_running_transition,
+        "state-transitioning CMD write between the pre-program gate and queue programming",
+    ),
+    (
+        "qsize_snapshot_before_final_programming",
+        snapshot_qsize_before_final_programming,
+        "qsize snapshot precedes the final QSIZE programming write",
+    ),
+    ("qsize_compare_not_manifest", qsize_compare_off_manifest, "qsize_expected is not manifest 0x110"),
+    ("second_qsize_read", add_second_qsize_read, "QSIZE is loaded more than once"),
+    ("qsize_read_after_submit", move_qsize_read_after_submit, "running QSIZE reachable"),
+    (
+        "post_program_stale_irq_gate_missing",
+        _drop_pre_submit_gate("V14_STATUS_IRQ_RAISED", "V14_REASON_STALE_IRQ", "V14_RET_PRE_SUBMIT_FAILURE"),
+        "post-program stale/reset/fault gate is incomplete",
+    ),
+    (
+        "post_program_stale_cmd_end_gate_missing",
+        _drop_pre_submit_gate("V14_STATUS_CMD_END", "V14_REASON_STALE_CMD_END", "V14_RET_PRE_SUBMIT_FAILURE"),
+        "post-program stale/reset/fault gate is incomplete",
+    ),
+    (
+        "post_program_reset_gate_missing",
+        _drop_pre_submit_gate("V14_STATUS_RESET", "V14_REASON_RESET_IN_PROGRESS", "V14_RET_RESET_IN_PROGRESS"),
+        "post-program stale/reset/fault gate is incomplete",
+    ),
+    (
+        "post_program_fault_gate_missing",
+        _drop_pre_submit_gate("V14_STATUS_FAULT_MASK", "V14_REASON_HARDWARE_FAULT", "V14_RET_HARDWARE_FAULT"),
+        "post-program stale/reset/fault gate is incomplete",
+    ),
+    (
+        "post_program_stopped_gate_missing",
+        _drop_pre_submit_gate("V14_STATUS_STATE", "V14_REASON_STATE_RUNNING", "V14_RET_PRE_SUBMIT_FAILURE"),
+        "post-program stale/reset/fault gate is incomplete",
+    ),
+    ("pre_run_failure_reaches_submit", pre_run_failure_falls_through, "pre-run failure reaches submit"),
+    (
+        "post_program_status_reused_from_pre_program",
+        reuse_pre_program_status_after_programming,
+        "post-program STATUS load is not distinct from the pre-program load",
+    ),
+)
+
+
+def run_canonical_suite(gate):
+    for variant in ("Q", "QS", "SQ"):
+        doc = expect_accept(
+            gate,
+            variant,
+            canonical_runner(variant),
+            canonical_vendor(variant),
+            "canonical %s sources pass" % variant,
+        )
+        if doc is None:
+            continue
+        check("%s manifest reports its variant id" % variant, doc.get("variant_id") == VARIANTS[variant])
+        check("%s manifest claims only UNIT-QUALIFIED" % variant, doc.get("qualification") == "UNIT-QUALIFIED")
+        check("%s manifest binds qsize 0x110" % variant, doc.get("qsize_expected") == "0x00000110")
+        check(
+            "%s manifest publishes the common convergence digest" % variant,
+            isinstance(doc.get("common_convergence_source_sha256"), str)
+            and len(doc.get("common_convergence_source_sha256", "")) == 64,
+        )
+        check(
+            "%s manifest publishes the common tail digest" % variant,
+            isinstance(doc.get("common_tail_source_sha256"), str)
+            and len(doc.get("common_tail_source_sha256", "")) == 64,
+        )
+
+
+def run_pre_run_suite(gate):
+    run_vendor_mutations(gate, PRE_RUN_MUTATIONS)
+
+
 if __name__ == "__main__":
     try:
         import check_pmu_completion_visibility_v14 as gate
@@ -269,6 +1119,8 @@ if __name__ == "__main__":
     if gate is not None:
         run_identity_suite(gate)
         run_cli_suite()
+        run_canonical_suite(gate)
+        run_pre_run_suite(gate)
 
     print()
     print("passed=%d failed=%d" % (passed, failed))
