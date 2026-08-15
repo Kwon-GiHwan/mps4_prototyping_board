@@ -126,7 +126,7 @@ STATUS_FAULT_MASK = 0x314
 
 # The suite is frozen at this many assertions. Adding a named fixture is a
 # deliberate act, so the count moves with it and never drifts silently.
-EXPECTED_PASS_COUNT = 303
+EXPECTED_PASS_COUNT = 319
 
 CHECKER_PATH = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
@@ -1455,6 +1455,90 @@ def _inject_after_dual_guard(statement):
     return mutate
 
 
+# Depth alone proves nothing. A guard body runs only on the iteration that takes
+# its branch, but no condition tells the scanner how many iterations there are:
+# ``if (i != 0U)`` is true on every one of them, and a body that simply falls out
+# of its braces runs again on the next. Both shapes put a store, a call or a
+# timestamp on every iteration exactly as a depth-0 statement would, so every
+# forbidden effect gets a fixture *inside* a guard as well as after one, in the
+# braced and the braceless spelling.
+ALWAYS_TRUE_CONDITION = "if (i != 0U)"
+BRACELESS_NESTED_CALL = "            if (i != 0U) helper_bookkeeping();\n"
+DUAL_RESET_GUARD_HEAD = "        if ((status & V14_STATUS_RESET) != 0U) {\n"
+
+
+def _always_true_guard(statement):
+    return "        %s {\n            %s\n        }" % (ALWAYS_TRUE_CONDITION, statement)
+
+
+def _inject_guard_into_q_loop(statement):
+    def mutate(vendor):
+        return mutate_primary(
+            vendor,
+            Q_LOOP_READ,
+            "        qread = *qread_reg;\n"
+            + _always_true_guard(statement)
+            + "\n        if (qread == qsize_expected) {",
+            "Q loop read",
+        )
+
+    return mutate
+
+
+def _inject_guard_into_dual_loop(statement):
+    def mutate(vendor):
+        return mutate_primary(
+            vendor,
+            _DUAL_READS["QS"],
+            _DUAL_READS["QS"] + "\n" + _always_true_guard(statement),
+            "dual reads",
+        )
+
+    return mutate
+
+
+def q_primary_braceless_call_in_guard(vendor):
+    return mutate_primary(
+        vendor, Q_LOOP_READ, Q_LOOP_READ + "\n" + BRACELESS_NESTED_CALL.rstrip("\n"), "Q loop read"
+    )
+
+
+def primary_braceless_call_in_reset_guard(vendor):
+    return mutate_primary(
+        vendor,
+        DUAL_RESET_GUARD_HEAD,
+        DUAL_RESET_GUARD_HEAD + BRACELESS_NESTED_CALL,
+        "dual reset guard head",
+    )
+
+
+def q_primary_guard_reaches_back_edge(vendor):
+    return mutate_primary(
+        vendor,
+        Q_LOOP_READ + "\n            obs->t_first = DWT->CYCCNT;\n",
+        Q_LOOP_READ + "\n"
+        "            obs->qread = qread;\n"
+        "            if (i == 0U) {\n"
+        "                continue;\n"
+        "            }\n"
+        "            obs->t_first = DWT->CYCCNT;\n",
+        "Q completion guard",
+    )
+
+
+def primary_guard_reaches_back_edge(vendor):
+    return mutate_primary(
+        vendor,
+        DUAL_RESET_GUARD_HEAD + "            obs->t_first = V14_U32_INVALID;\n",
+        DUAL_RESET_GUARD_HEAD + "            obs->qread = qread;\n"
+        "            if (i == 0U) {\n"
+        "                continue;\n"
+        "            }\n"
+        "            obs->t_first = V14_U32_INVALID;\n",
+        "dual reset guard",
+    )
+
+
 DUAL_COMPLETION_BLOCK = """        if ((qread == qsize_expected) || ((status & V14_STATUS_CMD_END) != 0U)) {
             obs->t_first = DWT->CYCCNT;
             obs->result = V14_PRIMARY_OBSERVED;
@@ -1613,6 +1697,36 @@ PRIMARY_Q_MUTATIONS = (
         _inject_after_q_guard("pmu_completion_visibility_v14_mailbox[V14_MBOX_PRIMARY_ITERATIONS] = i;"),
         "primary loop carries a per-iteration store/call/timestamp",
     ),
+    (
+        "q_primary_always_true_guard_call",
+        _inject_guard_into_q_loop("helper_bookkeeping();"),
+        "primary loop guard body carries a non-publication effect: (%s) carries call:helper_bookkeeping"
+        % ALWAYS_TRUE_CONDITION,
+    ),
+    (
+        "q_primary_always_true_guard_timestamp",
+        _inject_guard_into_q_loop("obs->t_first = DWT->CYCCNT;"),
+        "primary loop guard body carries a per-iteration effect: (%s) does not end the iteration "
+        "with a break or a return" % ALWAYS_TRUE_CONDITION,
+    ),
+    (
+        "q_primary_always_true_guard_evidence_store",
+        _inject_guard_into_q_loop("pmu_completion_visibility_v14_mailbox[V14_MBOX_PRIMARY_ITERATIONS] = i;"),
+        "primary loop guard body carries a per-iteration effect: (%s) does not end the iteration "
+        "with a break or a return" % ALWAYS_TRUE_CONDITION,
+    ),
+    (
+        "q_primary_braceless_nested_call_in_guard",
+        q_primary_braceless_call_in_guard,
+        "primary loop guard body carries a non-publication effect: (if (qread == qsize_expected)) "
+        "carries call:helper_bookkeeping",
+    ),
+    (
+        "q_primary_guard_reaches_back_edge",
+        q_primary_guard_reaches_back_edge,
+        "primary loop guard body carries a per-iteration effect: (if (qread == qsize_expected)) "
+        "reaches the loop back-edge through continue",
+    ),
 )
 
 PRIMARY_QS_MUTATIONS = (
@@ -1670,6 +1784,36 @@ PRIMARY_QS_MUTATIONS = (
         "primary_evidence_store_after_guard",
         _inject_after_dual_guard("pmu_completion_visibility_v14_mailbox[V14_MBOX_PRIMARY_ITERATIONS] = i;"),
         "primary loop carries a per-iteration store/call/timestamp",
+    ),
+    (
+        "primary_always_true_guard_call",
+        _inject_guard_into_dual_loop("helper_bookkeeping();"),
+        "primary loop guard body carries a non-publication effect: (%s) carries call:helper_bookkeeping"
+        % ALWAYS_TRUE_CONDITION,
+    ),
+    (
+        "primary_always_true_guard_timestamp",
+        _inject_guard_into_dual_loop("obs->t_first = DWT->CYCCNT;"),
+        "primary loop guard body carries a per-iteration effect: (%s) does not end the iteration "
+        "with a break or a return" % ALWAYS_TRUE_CONDITION,
+    ),
+    (
+        "primary_always_true_guard_evidence_store",
+        _inject_guard_into_dual_loop("pmu_completion_visibility_v14_mailbox[V14_MBOX_PRIMARY_ITERATIONS] = i;"),
+        "primary loop guard body carries a per-iteration effect: (%s) does not end the iteration "
+        "with a break or a return" % ALWAYS_TRUE_CONDITION,
+    ),
+    (
+        "primary_braceless_nested_call_in_guard",
+        primary_braceless_call_in_reset_guard,
+        "primary loop guard body carries a non-publication effect: "
+        "(if ((status & V14_STATUS_RESET) != 0U)) carries call:helper_bookkeeping",
+    ),
+    (
+        "primary_guard_reaches_back_edge",
+        primary_guard_reaches_back_edge,
+        "primary loop guard body carries a per-iteration effect: "
+        "(if ((status & V14_STATUS_RESET) != 0U)) reaches the loop back-edge through continue",
     ),
 )
 
@@ -1869,6 +2013,62 @@ def _inject_after_converge_guard(statement):
     return mutate
 
 
+CONVERGE_RESET_GUARD_HEAD = "        if ((status & V14_STATUS_RESET) != 0U) {\n"
+
+
+def _inject_guard_into_converge_loop(statement):
+    def mutate(vendor):
+        return mutate_converge(
+            vendor,
+            _DUAL_READS["QS"],
+            _DUAL_READS["QS"] + "\n" + _always_true_guard(statement),
+            "convergence reads",
+        )
+
+    return mutate
+
+
+def converge_braceless_call_in_guard(vendor):
+    return mutate_converge(
+        vendor,
+        CONVERGE_RESET_GUARD_HEAD,
+        CONVERGE_RESET_GUARD_HEAD + BRACELESS_NESTED_CALL,
+        "convergence reset guard head",
+    )
+
+
+def converge_guard_reaches_back_edge(vendor):
+    return mutate_converge(
+        vendor,
+        CONVERGE_RESET_GUARD,
+        CONVERGE_RESET_GUARD_HEAD + "            iterations = DWT->CYCCNT;\n"
+        "            if (i == 0U) {\n"
+        "                continue;\n"
+        "            }\n"
+        "            result = V14_CONVERGENCE_RESET;\n"
+        "            break;\n"
+        "        }\n",
+        "convergence reset guard",
+    )
+
+
+def converge_terminating_guard_evidence_store(vendor):
+    """A guard that *does* end its iteration still may not store evidence.
+
+    The new exemption is about how many iterations an effect can run on; it is
+    not a licence for the convergence tail to publish from inside its loop, so
+    the all-depth store ban has to survive it.
+    """
+
+    return mutate_converge(
+        vendor,
+        CONVERGE_RESET_GUARD_HEAD,
+        CONVERGE_RESET_GUARD_HEAD
+        + "            pmu_completion_visibility_v14_mailbox[V14_MBOX_CONVERGENCE_ITERATIONS] = i;\n",
+        "convergence reset guard head",
+    )
+
+
 def converge_short_circuit_between_reads(vendor):
     first, second = _DUAL_READS["QS"].split("\n")
     return mutate_converge(
@@ -1968,6 +2168,44 @@ CONVERGE_MUTATIONS = (
             "pmu_completion_visibility_v14_mailbox[V14_MBOX_CONVERGENCE_ITERATIONS] = i;"
         ),
         "convergence evidence store occurs inside the loop",
+    ),
+    (
+        "converge_always_true_guard_call",
+        _inject_guard_into_converge_loop("helper_bookkeeping();"),
+        "convergence loop guard body carries a non-publication effect: (%s) carries "
+        "call:helper_bookkeeping" % ALWAYS_TRUE_CONDITION,
+    ),
+    (
+        "converge_always_true_guard_timestamp",
+        _inject_guard_into_converge_loop("iterations = DWT->CYCCNT;"),
+        "convergence loop guard body carries a per-iteration effect: (%s) does not end the "
+        "iteration with a break or a return" % ALWAYS_TRUE_CONDITION,
+    ),
+    (
+        "converge_always_true_guard_evidence_store",
+        _inject_guard_into_converge_loop(
+            "pmu_completion_visibility_v14_mailbox[V14_MBOX_CONVERGENCE_ITERATIONS] = i;"
+        ),
+        # The convergence tail bans an evidence store at every depth, so this
+        # one is owned by that older rule rather than by the guard rule.
+        "convergence evidence store occurs inside the loop",
+    ),
+    (
+        "converge_braceless_nested_call_in_guard",
+        converge_braceless_call_in_guard,
+        "convergence loop guard body carries a non-publication effect: "
+        "(if ((status & V14_STATUS_RESET) != 0U)) carries call:helper_bookkeeping",
+    ),
+    (
+        "converge_terminating_guard_evidence_store",
+        converge_terminating_guard_evidence_store,
+        "convergence evidence store occurs inside the loop",
+    ),
+    (
+        "converge_guard_reaches_back_edge",
+        converge_guard_reaches_back_edge,
+        "convergence loop guard body carries a per-iteration effect: "
+        "(if ((status & V14_STATUS_RESET) != 0U)) reaches the loop back-edge through continue",
     ),
     (
         "variant_specific_convergence_helper",
@@ -2697,6 +2935,24 @@ def run_coverage_suite():
         "converge_call_after_guard",
         "converge_evidence_store_after_guard",
         "converge_short_circuit_between_reads",
+        # ...and every forbidden effect hidden *inside* a guard, where depth
+        # alone used to buy an exemption no condition had earned.
+        "q_primary_always_true_guard_call",
+        "q_primary_always_true_guard_timestamp",
+        "q_primary_always_true_guard_evidence_store",
+        "q_primary_braceless_nested_call_in_guard",
+        "q_primary_guard_reaches_back_edge",
+        "primary_always_true_guard_call",
+        "primary_always_true_guard_timestamp",
+        "primary_always_true_guard_evidence_store",
+        "primary_braceless_nested_call_in_guard",
+        "primary_guard_reaches_back_edge",
+        "converge_always_true_guard_call",
+        "converge_always_true_guard_timestamp",
+        "converge_always_true_guard_evidence_store",
+        "converge_terminating_guard_evidence_store",
+        "converge_braceless_nested_call_in_guard",
+        "converge_guard_reaches_back_edge",
         # The Q post-timeout diagnostic classification, bit by bit.
         "q_timeout_reset_classification_missing",
         "q_timeout_fault_classification_missing",

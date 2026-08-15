@@ -19,7 +19,11 @@ every nesting depth, and each statement is classified into a semantic effect (an
 MMIO load of a bound register pointer, a timestamp read, a store, a call, a
 control branch). Gates are then expressed over the ordered effect sequence and
 over the branch topology, so reformatting the generated source cannot change a
-verdict while inserting a per-iteration effect anywhere in the loop can.
+verdict while inserting a per-iteration effect anywhere in the loop can. A guard
+inside a loop is not assumed to run on the exiting iteration -- no condition
+proves that -- so it earns its exemption only by carrying nothing beyond the
+canonical result publication and its timestamp and by ending its iteration in a
+structurally proven ``break`` or ``return``.
 
 Two limitations are load-bearing and are published in every manifest rather
 than left to be discovered. The frozen raw vendor translation unit is not
@@ -616,6 +620,86 @@ def flatten_loop(block: str, what: str) -> tuple[tuple[int, str, str, str], ...]
     return tuple(items)
 
 
+# A guard body may publish the frozen result tuple and its first-observation
+# timestamp. Anything else it carries -- a call above all -- is an effect the
+# guard cannot own, whatever its condition turns out to be.
+_CANONICAL_GUARD_EFFECTS = frozenset(("store", "timestamp"))
+_CARRIED_EFFECT_PREFIXES = ("store", "timestamp", "call:")
+_TERMINATOR_RE = re.compile(r"^(?:break|return)(?![A-Za-z0-9_])")
+_BACK_EDGE_RE = re.compile(r"(?<![A-Za-z0-9_])(continue|goto)(?![A-Za-z0-9_])")
+
+
+def subtree_effects(body: str, roles: dict[str, str]) -> tuple[str, ...]:
+    """Return every effect carried anywhere inside ``body``, at any depth.
+
+    ``split_block`` keeps a braceless ``if`` inside its own statement text, so
+    scanning both the statement text and every nested block reaches an effect
+    however it is written.
+    """
+
+    effects: list[str] = []
+    for kind, headline, nested in split_block(body):
+        effects.extend(statement_effects(headline, roles))
+        if kind == "block":
+            effects.extend(subtree_effects(nested, roles))
+    return tuple(effects)
+
+
+def terminates_iteration(body: str) -> bool:
+    """True when control cannot fall off the end of ``body`` into the back-edge.
+
+    The proof is structural: the last statement of the body is a ``break`` or a
+    ``return``, so every path that runs to the end of the guard leaves the loop
+    rather than starting another iteration.
+    """
+
+    items = split_block(body)
+    if not items:
+        return False
+    kind, headline, _ = items[-1]
+    return kind == "stmt" and _TERMINATOR_RE.match(headline.strip()) is not None
+
+
+def verify_guard_publication(head: str, body: str, roles: dict[str, str], what: str) -> None:
+    """Reject a loop guard body that carries an effect it cannot own.
+
+    A guard body runs only on the iteration that takes its branch -- but that
+    says nothing about *how many* iterations there are. An always-true guard,
+    or one whose body simply falls through to the back-edge, runs its body on
+    every iteration and so carries a per-iteration store, call or timestamp
+    exactly as a depth-0 statement would. The exemption therefore has to be
+    earned rather than assumed: the effects the body carries must be the
+    canonical result publication and its timestamp, and the iteration must end
+    in a ``break`` or a ``return`` before any path can reach the back-edge.
+    """
+
+    carried = tuple(
+        effect
+        for effect in subtree_effects(body, roles)
+        if effect.startswith(_CARRIED_EFFECT_PREFIXES)
+    )
+    if not carried:
+        return
+    condition = re.sub(r"\s+", " ", head.strip())[:60]
+    foreign = sorted({effect for effect in carried if effect not in _CANONICAL_GUARD_EFFECTS})
+    if foreign:
+        raise fail(
+            "%s guard body carries a non-publication effect: (%s) carries %s"
+            % (what, condition, ", ".join(foreign))
+        )
+    back_edge = _BACK_EDGE_RE.search(body)
+    if back_edge is not None:
+        raise fail(
+            "%s guard body carries a per-iteration effect: (%s) reaches the loop back-edge "
+            "through %s" % (what, condition, back_edge.group(1))
+        )
+    if not terminates_iteration(body):
+        raise fail(
+            "%s guard body carries a per-iteration effect: (%s) does not end the iteration "
+            "with a break or a return" % (what, condition)
+        )
+
+
 def _duplicate_roles(read_order: list[str]) -> list[str]:
     return sorted({role for role in read_order if read_order.count(role) > 1})
 
@@ -715,14 +799,16 @@ def verify_primary_contract(
     items = flatten_loop(loop_body, "primary loop")
     read_order: list[str] = []
     loads_after_branch: list[str] = []
+    guard_bodies: list[tuple[str, str]] = []
     branched = False
     expected = ["QREAD"] if variant == "Q" else EXPECTED_PRIMARY_ORDER[variant]
-    for depth, kind, head, _ in items:
+    for depth, kind, head, guard_body in items:
         effects = statement_effects(head, roles)
         if depth:
-            # A guard body runs only on the iteration that exits, so a store or
-            # a timestamp there is the frozen success tuple, not a per-iteration
-            # effect. A reload is still forbidden: it would unfreeze the tuple.
+            # A guard body that has earned its exemption publishes the frozen
+            # success tuple, so a store or a timestamp here is that tuple rather
+            # than a per-iteration effect. A reload is still forbidden: it would
+            # unfreeze the tuple.
             for effect in effects:
                 if effect == "qsize":
                     raise fail("QSIZE access reachable in a primary loop")
@@ -743,7 +829,14 @@ def verify_primary_contract(
                 if branched:
                     loads_after_branch.append(role)
         if kind == "guard":
+            guard_bodies.append((head, guard_body))
             branched = True
+
+    # The exemption the depth check above grants is only sound for a guard that
+    # provably ends its iteration. Prove it rather than assume it -- after the
+    # per-statement rules above, so each keeps its own rejection.
+    for head, guard_body in guard_bodies:
+        verify_guard_publication(head, guard_body, roles, "primary loop")
 
     if variant == "Q" and "STATUS" in read_order:
         raise fail("Q primary loop reads STATUS")
@@ -924,8 +1017,9 @@ def verify_convergence_contract(vendor_masked: str, defines: dict[str, int]) -> 
     items = flatten_loop(loop_body, "convergence loop")
     read_order: list[str] = []
     loads_after_branch: list[str] = []
+    guard_bodies: list[tuple[str, str]] = []
     branched = False
-    for depth, kind, head, _ in items:
+    for depth, kind, head, guard_body in items:
         effects = statement_effects(head, roles)
         for effect in effects:
             if effect == "qsize":
@@ -949,7 +1043,13 @@ def verify_convergence_contract(vendor_masked: str, defines: dict[str, int]) -> 
                 if branched:
                     loads_after_branch.append(role)
         if kind == "guard":
+            guard_bodies.append((head, guard_body))
             branched = True
+
+    # Same proof obligation as the primary loop: a guard only escapes the
+    # per-iteration rule if it provably ends the iteration.
+    for head, guard_body in guard_bodies:
+        verify_guard_publication(head, guard_body, roles, "convergence loop")
 
     duplicates = _duplicate_roles(read_order)
     if duplicates:
