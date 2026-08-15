@@ -126,7 +126,7 @@ STATUS_FAULT_MASK = 0x314
 
 # The suite is frozen at this many assertions. Adding a named fixture is a
 # deliberate act, so the count moves with it and never drifts silently.
-EXPECTED_PASS_COUNT = 263
+EXPECTED_PASS_COUNT = 279
 
 CHECKER_PATH = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
@@ -1336,6 +1336,39 @@ def _inject_into_dual_loop(variant, statement):
     return mutate
 
 
+# The first structural scanner stopped at the first nested block, so an effect
+# placed *after* a guard was invisible. Every forbidden effect therefore has a
+# fixture that hides behind the first guard rather than sitting between the
+# reads, and a normal guard body still has to read as a guard body.
+Q_LOOP_GUARD_TAIL = (
+    "            obs->status = V14_U32_INVALID;\n            return;\n        }\n"
+)
+
+
+def _inject_after_q_guard(statement):
+    def mutate(vendor):
+        return replace_once(
+            vendor,
+            Q_LOOP_GUARD_TAIL,
+            Q_LOOP_GUARD_TAIL + "        " + statement + "\n",
+            "Q loop guard tail",
+        )
+
+    return mutate
+
+
+def _inject_after_dual_guard(statement):
+    def mutate(vendor):
+        return mutate_primary(
+            vendor,
+            DUAL_RESET_GUARD,
+            DUAL_RESET_GUARD + "        " + statement + "\n",
+            "dual reset guard",
+        )
+
+    return mutate
+
+
 DUAL_COMPLETION_BLOCK = """        if ((qread == qsize_expected) || ((status & V14_STATUS_CMD_END) != 0U)) {
             obs->t_first = DWT->CYCCNT;
             obs->result = V14_PRIMARY_OBSERVED;
@@ -1439,6 +1472,31 @@ PRIMARY_Q_MUTATIONS = (
     ("primary_helper_missing", primary_helper_renamed, "primary helper v14_primary_q is missing"),
     ("inactive_primary_helper_present", inactive_primary_present, "inactive primary helper is reachable"),
     ("primary_bound_not_10000", primary_bound_drift, "primary loop bound is not 10000"),
+    (
+        "q_primary_status_read_after_guard",
+        _inject_after_q_guard("status = *status_reg;"),
+        "Q primary loop reads STATUS",
+    ),
+    (
+        "q_primary_qsize_read_after_guard",
+        _inject_after_q_guard("qsize_expected = read_reg(NPU_REG_QSIZE);"),
+        "QSIZE access reachable in a primary loop",
+    ),
+    (
+        "q_primary_timestamp_after_guard",
+        _inject_after_q_guard("obs->t_first = DWT->CYCCNT;"),
+        "primary loop carries a per-iteration store/call/timestamp",
+    ),
+    (
+        "q_primary_call_after_guard",
+        _inject_after_q_guard("helper_bookkeeping();"),
+        "primary loop carries a per-iteration store/call/timestamp",
+    ),
+    (
+        "q_primary_evidence_store_after_guard",
+        _inject_after_q_guard("pmu_completion_visibility_v14_mailbox[V14_MBOX_PRIMARY_ITERATIONS] = i;"),
+        "primary loop carries a per-iteration store/call/timestamp",
+    ),
 )
 
 PRIMARY_QS_MUTATIONS = (
@@ -1472,6 +1530,31 @@ PRIMARY_QS_MUTATIONS = (
     ),
     ("primary_reset_priority_lost", reset_priority_lost, "reset/fault check does not dominate the primary completion predicate"),
     ("primary_fault_priority_lost", fault_priority_lost, "reset/fault check does not dominate the primary completion predicate"),
+    (
+        "primary_status_reload_after_guard",
+        _inject_after_dual_guard("status = *status_reg;"),
+        "primary loop reloads STATUS",
+    ),
+    (
+        "primary_qsize_read_after_guard",
+        _inject_after_dual_guard("qsize_expected = read_reg(NPU_REG_QSIZE);"),
+        "QSIZE access reachable in a primary loop",
+    ),
+    (
+        "primary_timestamp_after_guard",
+        _inject_after_dual_guard("obs->t_first = DWT->CYCCNT;"),
+        "primary loop carries a per-iteration store/call/timestamp",
+    ),
+    (
+        "primary_call_after_guard",
+        _inject_after_dual_guard("helper_bookkeeping();"),
+        "primary loop carries a per-iteration store/call/timestamp",
+    ),
+    (
+        "primary_evidence_store_after_guard",
+        _inject_after_dual_guard("pmu_completion_visibility_v14_mailbox[V14_MBOX_PRIMARY_ITERATIONS] = i;"),
+        "primary loop carries a per-iteration store/call/timestamp",
+    ),
 )
 
 PRIMARY_SQ_MUTATIONS = (
@@ -1642,6 +1725,31 @@ def _inject_into_converge_loop(statement):
     return mutate
 
 
+def _inject_after_converge_guard(statement):
+    def mutate(vendor):
+        return mutate_converge(
+            vendor,
+            CONVERGE_RESET_GUARD,
+            CONVERGE_RESET_GUARD + "        " + statement + "\n",
+            "convergence reset guard",
+        )
+
+    return mutate
+
+
+def converge_short_circuit_between_reads(vendor):
+    first, second = _DUAL_READS["QS"].split("\n")
+    return mutate_converge(
+        vendor,
+        _DUAL_READS["QS"],
+        first
+        + "\n        if (qread == qsize_expected) {\n"
+        "            result = V14_CONVERGENCE_SUCCESS;\n"
+        "            break;\n        }\n" + second,
+        "convergence reads",
+    )
+
+
 def converge_helper_variant_specific(vendor):
     text = replace_once(vendor, "static void v14_converge(", "static void v14_converge_q(", "converge definition")
     return replace_once(text, "\t  v14_converge(qsize_expected, &converged);", "\t  v14_converge_q(qsize_expected, &converged);", "converge call")
@@ -1696,6 +1804,38 @@ CONVERGE_MUTATIONS = (
         "converge_loop_call",
         _inject_into_converge_loop("helper_bookkeeping();"),
         "convergence loop carries a per-iteration store/call/timestamp",
+    ),
+    (
+        "converge_short_circuit_between_reads",
+        converge_short_circuit_between_reads,
+        "convergence predicate is evaluated before both reads",
+    ),
+    (
+        "converge_status_reload_after_guard",
+        _inject_after_converge_guard("status = *status_reg;"),
+        "convergence loop reloads STATUS",
+    ),
+    (
+        "converge_qsize_read_after_guard",
+        _inject_after_converge_guard("qsize_expected = read_reg(NPU_REG_QSIZE);"),
+        "QSIZE access reachable in the convergence tail",
+    ),
+    (
+        "converge_timestamp_after_guard",
+        _inject_after_converge_guard("iterations = DWT->CYCCNT;"),
+        "convergence loop carries a per-iteration store/call/timestamp",
+    ),
+    (
+        "converge_call_after_guard",
+        _inject_after_converge_guard("helper_bookkeeping();"),
+        "convergence loop carries a per-iteration store/call/timestamp",
+    ),
+    (
+        "converge_evidence_store_after_guard",
+        _inject_after_converge_guard(
+            "pmu_completion_visibility_v14_mailbox[V14_MBOX_CONVERGENCE_ITERATIONS] = i;"
+        ),
+        "convergence evidence store occurs inside the loop",
     ),
     (
         "variant_specific_convergence_helper",
@@ -2340,6 +2480,23 @@ def run_coverage_suite():
         "q_timeout_diagnostic_duplicated",
         "convergence_failure_discards_first_tuple",
         "success_publishes_failure_tuple",
+        # Every forbidden effect, hidden behind the first guard of each loop.
+        "q_primary_status_read_after_guard",
+        "q_primary_qsize_read_after_guard",
+        "q_primary_timestamp_after_guard",
+        "q_primary_call_after_guard",
+        "q_primary_evidence_store_after_guard",
+        "primary_status_reload_after_guard",
+        "primary_qsize_read_after_guard",
+        "primary_timestamp_after_guard",
+        "primary_call_after_guard",
+        "primary_evidence_store_after_guard",
+        "converge_status_reload_after_guard",
+        "converge_qsize_read_after_guard",
+        "converge_timestamp_after_guard",
+        "converge_call_after_guard",
+        "converge_evidence_store_after_guard",
+        "converge_short_circuit_between_reads",
     }
     missing = sorted(required - REJECTED_FIXTURES)
     check("every design-mandated negative fixture is present", not missing, repr(missing))

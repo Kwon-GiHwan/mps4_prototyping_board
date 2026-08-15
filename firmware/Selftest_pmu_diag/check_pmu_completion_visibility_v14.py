@@ -14,12 +14,12 @@ in the design are a separate, later contract and are not implemented here. A
 build that satisfies this module is UNIT-QUALIFIED and nothing more.
 
 The analyzer is structural rather than textual. Function bodies are resolved by
-brace matching, loop bodies are split into statements, and each statement is
-classified into a semantic effect (an MMIO load of a bound register pointer, a
-timestamp read, a store, a call, a control branch). Gates are then expressed
-over the ordered effect sequence and over the branch topology, so reformatting
-the generated source cannot change a verdict while inserting a per-iteration
-effect can.
+brace matching, loop bodies are flattened into every reachable statement at
+every nesting depth, and each statement is classified into a semantic effect (an
+MMIO load of a bound register pointer, a timestamp read, a store, a call, a
+control branch). Gates are then expressed over the ordered effect sequence and
+over the branch topology, so reformatting the generated source cannot change a
+verdict while inserting a per-iteration effect anywhere in the loop can.
 """
 
 from __future__ import annotations
@@ -557,14 +557,38 @@ def extract_loop(body: str, what: str) -> tuple[str, str, int, int]:
     return head, body[open_index + 1 : close_index], open_index + 1, close_index
 
 
-def _all_loads(block: str, roles: dict[str, str]) -> list[str]:
-    """Every MMIO load in ``block``, in source order, regardless of nesting."""
+_GUARD_HEAD_RE = re.compile(r"^(?:else\s+if\b|if\b|else\b)")
 
-    found: list[tuple[int, str]] = []
-    for name, role in roles.items():
-        for match in re.finditer(r"\*\s*%s(?![A-Za-z0-9_])" % re.escape(name), block):
-            found.append((match.start(), role))
-    return [role for _, role in sorted(found)]
+
+def flatten_loop(block: str, what: str) -> tuple[tuple[int, str, str, str], ...]:
+    """Return every reachable item of a loop body as ``(depth, kind, head, body)``.
+
+    ``depth`` 0 is the loop body itself, so a depth-0 item runs on every
+    iteration and a deeper one only on the iteration that takes its branch. The
+    walk recurses, so no statement can hide behind an earlier guard, and every
+    nested block has to be an ``if``/``else`` guard -- a bare block or a nested
+    loop would let a per-iteration effect masquerade as a guard body.
+    """
+
+    items: list[tuple[int, str, str, str]] = []
+
+    def walk(text: str, depth: int) -> None:
+        for kind, headline, nested in split_block(text):
+            if kind == "stmt":
+                items.append((depth, "stmt", headline, ""))
+                continue
+            head = headline.strip()
+            if _GUARD_HEAD_RE.match(head) is None:
+                raise fail("%s: nested block %r is not an if/else guard" % (what, head[:40] or "{}"))
+            items.append((depth, "guard", head, nested))
+            walk(nested, depth + 1)
+
+    walk(block, 0)
+    return tuple(items)
+
+
+def _duplicate_roles(read_order: list[str]) -> list[str]:
+    return sorted({role for role in read_order if read_order.count(role) > 1})
 
 
 def _guard_kind(condition: str) -> str:
@@ -608,49 +632,63 @@ def verify_primary_contract(
     if "V14_ITERATION_BOUND" not in head:
         raise fail("primary loop bound is not 10000: loop head does not use V14_ITERATION_BOUND")
 
-    items = split_block(loop_body)
+    items = flatten_loop(loop_body, "primary loop")
     read_order: list[str] = []
+    loads_after_branch: list[str] = []
+    branched = False
     expected = ["QREAD"] if variant == "Q" else EXPECTED_PRIMARY_ORDER[variant]
-    for kind, headline, nested in items:
-        if kind == "block":
-            break
-        effects = statement_effects(headline, roles)
+    for depth, kind, head, _ in items:
+        effects = statement_effects(head, roles)
+        if depth:
+            # A guard body runs only on the iteration that exits, so a store or
+            # a timestamp there is the frozen success tuple, not a per-iteration
+            # effect. A reload is still forbidden: it would unfreeze the tuple.
+            for effect in effects:
+                if effect == "qsize":
+                    raise fail("QSIZE access reachable in a primary loop")
+                if effect.startswith("load:"):
+                    raise fail("primary success tuple is re-read rather than frozen")
+            continue
         for effect in effects:
             if effect == "qsize":
                 raise fail("QSIZE access reachable in a primary loop")
         if any(effect in ("timestamp", "store") or effect.startswith("call:") for effect in effects):
             raise fail(
-                "primary loop carries a per-iteration store/call/timestamp: %s" % headline.strip()[:50]
+                "primary loop carries a per-iteration store/call/timestamp: %s" % head.strip()[:50]
             )
         for effect in effects:
             if effect.startswith("load:"):
-                read_order.append(effect.split(":", 1)[1])
+                role = effect.split(":", 1)[1]
+                read_order.append(role)
+                if branched:
+                    loads_after_branch.append(role)
+        if kind == "guard":
+            branched = True
+
+    if variant == "Q" and "STATUS" in read_order:
+        raise fail("Q primary loop reads STATUS")
+    duplicates = _duplicate_roles(read_order)
+    if duplicates:
+        raise fail(
+            "primary loop reloads %s: the exit predicate must come from one load per register"
+            % ", ".join(duplicates)
+        )
+    # A read that exists in the loop but only downstream of a branch is a
+    # short-circuit exit, not a missing read: the two cases need different names
+    # because they need different fixes.
+    if loads_after_branch and read_order == expected:
+        raise fail("primary predicate is evaluated before both reads")
     if read_order != expected:
-        if variant == "Q" and "STATUS" in read_order:
-            raise fail("Q primary loop reads STATUS")
-        # A read that exists in the loop but only downstream of a branch is a
-        # short-circuit exit, not a missing read: the two cases need different
-        # names because they need different fixes.
-        if read_order == expected[: len(read_order)] and _all_loads(loop_body, roles)[: len(expected)] == expected:
-            raise fail("primary predicate is evaluated before both reads")
         raise fail(
             "%s primary read order is not %s: observed %s"
             % (variant, " then ".join(expected), read_order or ["nothing"])
         )
 
-    guards: list[tuple[str, str]] = []
-    for kind, headline, nested in items:
-        if kind != "block":
-            continue
-        if not headline.startswith("if"):
-            continue
-        effects = statement_effects(nested, roles)
-        for effect in effects:
-            if effect == "qsize":
-                raise fail("QSIZE access reachable in a primary loop")
-            if effect.startswith("load:"):
-                raise fail("primary success tuple is re-read rather than frozen")
-        guards.append((_guard_kind(headline), headline))
+    guards = [
+        (_guard_kind(head), head)
+        for depth, kind, head, _ in items
+        if depth == 0 and kind == "guard" and head.startswith("if")
+    ]
 
     kinds = [kind for kind, _ in guards]
     if "completion" not in kinds:
@@ -800,39 +838,52 @@ def verify_convergence_contract(vendor_masked: str, defines: dict[str, int]) -> 
     if "V14_ITERATION_BOUND" not in head:
         raise fail("convergence bound is not 10000: loop head does not use V14_ITERATION_BOUND")
 
-    items = split_block(loop_body)
+    items = flatten_loop(loop_body, "convergence loop")
     read_order: list[str] = []
-    for kind, headline, _ in items:
-        if kind == "block":
-            break
-        for effect in statement_effects(headline, roles):
+    loads_after_branch: list[str] = []
+    branched = False
+    for depth, kind, head, _ in items:
+        effects = statement_effects(head, roles)
+        for effect in effects:
             if effect == "qsize":
                 raise fail("QSIZE access reachable in the convergence tail")
             if effect == "store":
                 raise fail("convergence evidence store occurs inside the loop")
+        if depth:
+            for effect in effects:
+                if effect.startswith("load:"):
+                    raise fail("convergence predicate is satisfied by a reread rather than the loop tuple")
+            continue
+        for effect in effects:
             if effect == "timestamp" or effect.startswith("call:"):
                 raise fail(
                     "convergence loop carries a per-iteration store/call/timestamp: %s"
-                    % headline.strip()[:50]
+                    % head.strip()[:50]
                 )
             if effect.startswith("load:"):
-                read_order.append(effect.split(":", 1)[1])
+                role = effect.split(":", 1)[1]
+                read_order.append(role)
+                if branched:
+                    loads_after_branch.append(role)
+        if kind == "guard":
+            branched = True
+
+    duplicates = _duplicate_roles(read_order)
+    if duplicates:
+        raise fail(
+            "convergence loop reloads %s: the same-iteration tuple must come from one load per register"
+            % ", ".join(duplicates)
+        )
+    if loads_after_branch and read_order == ["QREAD", "STATUS"]:
+        raise fail("convergence predicate is evaluated before both reads")
     if read_order != ["QREAD", "STATUS"]:
         raise fail("convergence read order is not QREAD then STATUS: observed %s" % (read_order or ["nothing"]))
 
-    guards: list[tuple[str, str, str]] = []
-    for kind, headline, nested in items:
-        if kind != "block" or not headline.startswith("if"):
-            continue
-        for effect in statement_effects(nested, roles):
-            if effect == "qsize":
-                raise fail("QSIZE access reachable in the convergence tail")
-            if effect == "store":
-                raise fail("convergence evidence store occurs inside the loop")
-            if effect.startswith("load:"):
-                raise fail("convergence predicate is satisfied by a reread rather than the loop tuple")
-        role = "success" if "V14_CONVERGENCE_SUCCESS" in nested else _guard_kind(headline)
-        guards.append((role, headline, nested))
+    guards = [
+        ("success" if "V14_CONVERGENCE_SUCCESS" in body else _guard_kind(head), head, body)
+        for depth, kind, head, body in items
+        if depth == 0 and kind == "guard" and head.startswith("if")
+    ]
 
     kinds = [role for role, _, _ in guards]
     if "success" not in kinds:
