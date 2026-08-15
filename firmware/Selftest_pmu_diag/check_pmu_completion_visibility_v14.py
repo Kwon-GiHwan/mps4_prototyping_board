@@ -223,12 +223,44 @@ def _blank_span(out: list[str], text: str, start: int, stop: int) -> None:
 
 
 def mask_c_lexical(text: str) -> str:
-    """Blank comments and literals while preserving every byte offset."""
+    """Blank comments and literals while preserving every byte offset.
+
+    The scan is the single left-to-right pass the frozen V13 gate already uses,
+    because the construct that opens first is the construct that wins. Masking
+    each kind with its own sweep does not hold that rule: a ``/*`` written
+    *inside* a string literal opens a block comment for the sweep that runs
+    first, and everything up to the next ``*/`` -- real executable code
+    included -- is blanked before the string sweep ever gets to see that the
+    ``/*`` was only text. One pass cannot be talked into that, because reaching
+    the ``/`` means the enclosing string was already recognised and skipped.
+
+    Each construct is recognised by a pattern that must close: an unterminated
+    block comment or literal simply does not match, and its opening character
+    is then left as ordinary code. That is the fail-closed direction -- the
+    scan may look at something that is really comment text, but it can never be
+    talked out of looking at real code by an unbalanced quote.
+    """
 
     out = list(text)
-    for pattern in (_BLOCK_COMMENT_RE, _LINE_COMMENT_RE, _STRING_LITERAL_RE, _CHAR_LITERAL_RE):
-        for match in pattern.finditer("".join(out)):
-            _blank_span(out, text, match.start(), match.end())
+    index = 0
+    length = len(text)
+    while index < length:
+        character = text[index]
+        if character == "/" and index + 1 < length and text[index + 1] in "/*":
+            pattern = _LINE_COMMENT_RE if text[index + 1] == "/" else _BLOCK_COMMENT_RE
+        elif character == '"':
+            pattern = _STRING_LITERAL_RE
+        elif character == "'":
+            pattern = _CHAR_LITERAL_RE
+        else:
+            index += 1
+            continue
+        match = pattern.match(text, index)
+        if match is None:
+            index += 1
+            continue
+        _blank_span(out, text, index, match.end())
+        index = match.end()
     return "".join(out)
 
 

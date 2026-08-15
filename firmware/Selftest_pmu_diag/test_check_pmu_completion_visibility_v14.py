@@ -126,7 +126,7 @@ STATUS_FAULT_MASK = 0x314
 
 # The suite is frozen at this many assertions. Adding a named fixture is a
 # deliberate act, so the count moves with it and never drifts silently.
-EXPECTED_PASS_COUNT = 319
+EXPECTED_PASS_COUNT = 322
 
 CHECKER_PATH = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
@@ -2886,6 +2886,97 @@ def run_generated_fixture_cli_suite(patcher):
         check("generated variants share one convergence-helper digest", len(set(digests)) == 1, repr(set(digests)))
 
 
+# ---------------------------------------------------------------------------
+# Fail-open fixtures.
+#
+# Each mutation below was accepted by the gate before the rule that rejects it
+# existed. They are grouped by the assumption they break rather than by the
+# function they land in, because that is what a reader has to check when the
+# analyzer changes: not "does this still parse" but "is this still the thing
+# the rule believed".
+# ---------------------------------------------------------------------------
+
+# -- Lexical masking: a comment opener written inside a literal is text. ----
+
+Q_LOOP_TAIL = """            obs->status = V14_U32_INVALID;
+            return;
+        }
+    }
+"""
+
+Q_LOOP_HEAD = """    uint32_t status = 0U;
+
+    for (uint32_t i = 1U; i <= V14_ITERATION_BOUND; ++i) {
+        qread = *qread_reg;
+"""
+
+Q_LOOP_HEAD_DECLS = """    uint32_t status = 0U;
+
+"""
+
+
+def lexical_hides_nvic_enable(vendor):
+    return replace_once(
+        vendor,
+        "    NVIC_SetVector(NPU0_IRQn, (uint32_t)&u85_irq_handler);\n",
+        "    NVIC_SetVector(NPU0_IRQn, (uint32_t)&u85_irq_handler);\n"
+        '    const char *v14_lex_open = "/*";\n'
+        "    NVIC_EnableIRQ(NPU0_IRQn);\n"
+        '    const char *v14_lex_close = "*/";\n',
+        "vector install",
+    )
+
+
+def lexical_hides_qsize_read(vendor):
+    return replace_once(
+        vendor,
+        Q_LOOP_TAIL,
+        """            obs->status = V14_U32_INVALID;
+            return;
+        }
+        const char *v14_lex = "//"; (void)read_reg(NPU_REG_QSIZE);
+    }
+""",
+        "q loop tail",
+    )
+
+
+def lexical_hides_second_magic_store(vendor):
+    return replace_once(
+        vendor,
+        "    pmu_completion_visibility_v14_mailbox[V14_MBOX_FAILURE_STATUS] = V14_U32_INVALID;\n"
+        "    v14_mailbox_publish();\n",
+        "    pmu_completion_visibility_v14_mailbox[V14_MBOX_FAILURE_STATUS] = V14_U32_INVALID;\n"
+        '    const char *v14_lex_open = "/*";\n'
+        "    pmu_completion_visibility_v14_mailbox[V14_MBOX_MAILBOX_VALID] = V14_MAILBOX_VALID;\n"
+        '    const char *v14_lex_close = "*/";\n'
+        "    v14_mailbox_publish();\n",
+        "success publication",
+    )
+
+
+LEXICAL_VENDOR_MUTATIONS = (
+    (
+        "lexical_string_hides_nvic_enable",
+        lexical_hides_nvic_enable,
+        "reachable NVIC_EnableIRQ",
+    ),
+    (
+        "lexical_string_hides_qsize_read",
+        lexical_hides_qsize_read,
+        "QSIZE access reachable in a primary loop",
+    ),
+    (
+        "lexical_string_hides_second_magic_store",
+        lexical_hides_second_magic_store,
+        "mailbox_valid is published from more than one site",
+    ),
+)
+
+def run_fail_open_suite(gate):
+    run_vendor_mutations(gate, LEXICAL_VENDOR_MUTATIONS, "Q")
+
+
 def run_coverage_suite():
     """The named negative fixtures the design demands are all present."""
 
@@ -2964,6 +3055,11 @@ def run_coverage_suite():
         "cleanup_hprintf_debug_printf_only",
         "cleanup_hprintf_seam_marker_detached",
         "cleanup_hprintf_second_unmarked_callsite",
+        # A comment opener written inside a literal is text, and must not blank
+        # the executable code that follows it.
+        "lexical_string_hides_nvic_enable",
+        "lexical_string_hides_qsize_read",
+        "lexical_string_hides_second_magic_store",
     }
     missing = sorted(required - REJECTED_FIXTURES)
     check("every design-mandated negative fixture is present", not missing, repr(missing))
@@ -2985,6 +3081,7 @@ if __name__ == "__main__":
         run_primary_suite(gate)
         run_cross_variant_suite(gate)
         run_convergence_suite(gate)
+        run_fail_open_suite(gate)
         run_coverage_suite()
 
     try:
