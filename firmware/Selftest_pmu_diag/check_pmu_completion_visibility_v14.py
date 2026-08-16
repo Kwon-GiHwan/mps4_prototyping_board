@@ -5969,6 +5969,121 @@ def require_no_qread_write(vendor_masked: str) -> None:
         raise fail(_QREAD_WRITE_REFUSAL % ("the vendor translation unit", site))
 
 
+# ---------------------------------------------------------------------------
+# The vendor accessor's own argument
+#
+# The two whole-unit scans above read an address expression and a register
+# *name*. The vendor accessor carries neither: it takes the register as an
+# ordinary integer argument, so
+#
+#     write_reg(0x000U, 1U);          /* a second submit                     */
+#     (void)read_reg(0x108U);         /* a running-path QSIZE load           */
+#     (void)read_reg(SEL2(NPU_REG_,QSIZE));   /* the prefix as a paste argument */
+#
+# reach CMD and QSIZE without ever spelling ``NPU_REG_`` and without ever
+# building a pointer. ``require_register_confinement`` scans for the token,
+# ``require_whole_unit_mmio_confinement`` resolves pointer expressions, and an
+# accessor call carrying a number is neither -- which is precisely the
+# capability both of them exist to bound, spelled a third way.
+#
+# So the accessor's own argument is resolved here, on the same terms every other
+# address in this file is: a designation this gate can pin to one register is
+# held to the owner table, and one it cannot pin is refused rather than counted
+# as nothing. This is what makes ``register_confinement_scope:
+# vendor_translation_unit`` a statement about every access in the unit rather
+# than about the two spellings the scans above happen to recognise.
+# ---------------------------------------------------------------------------
+
+_ACCESSOR_CALL_RE = re.compile(r"(?<![A-Za-z0-9_])(read_reg|write_reg)\s*\(")
+# ``NPU_REG_QSIZE`` and nothing else. An offset built *from* a designation --
+# ``NPU_REG_QREAD + 4U`` -- is not a designation: it reaches a different word
+# than the name it spells, and this gate has no map to say which.
+_PLAIN_DESIGNATION_RE = re.compile(r"^\s*NPU_REG_([A-Z][A-Z0-9_]*)\s*$")
+
+_ACCESSOR_REFUSAL = (
+    "the vendor accessor %s is called with a register offset this gate cannot resolve to one "
+    "register, in %s at offset %d: the argument is neither a register designation nor a value "
+    "this unit's own offset table names, so every confinement, submit-count and read-order rule "
+    "in this file walks past the access it makes"
+)
+
+
+def _accessor_offset_role(argument: str, defines: dict[str, int]) -> str:
+    """The register an accessor's offset argument designates."""
+
+    designation = _PLAIN_DESIGNATION_RE.match(argument)
+    if designation is not None:
+        return designation.group(1)
+    value = _evaluate_constant(argument, defines)
+    if value is None:
+        return UNRESOLVED_ROLE
+    return _role_at_offset(value, defines)
+
+
+def accessor_designations(
+    vendor_masked: str, defines: dict[str, int]
+) -> tuple[tuple[int, str, str], ...]:
+    """``(site, verb, role)`` for every vendor-accessor *call* in the unit.
+
+    A declaration is separated from a call the way ``_publication_symbol_sites``
+    separates them: a declarator is introduced by its return type, and nothing
+    but a type name or a ``*`` can sit directly in front of one.
+    """
+
+    scan = blank_directives(vendor_masked)
+    close_of, _open_of = _bracket_pairs(scan)
+    found: list[tuple[int, str, str]] = []
+    for match in _ACCESSOR_CALL_RE.finditer(scan):
+        cursor = match.start() - 1
+        while cursor >= 0 and scan[cursor] in _INLINE_SPACE:
+            cursor -= 1
+        if cursor >= 0 and (
+            _NAME_CHARACTER_RE.match(scan[cursor]) or scan[cursor] == "*"
+        ):
+            continue
+        open_index = match.end() - 1
+        close_index = close_of.get(open_index)
+        if close_index is None:
+            found.append((match.start(), match.group(1), UNRESOLVED_ROLE))
+            continue
+        arguments = _split_top_level(scan[open_index + 1 : close_index], ",")
+        found.append(
+            (
+                match.start(),
+                match.group(1),
+                _accessor_offset_role(arguments[0] if arguments else "", defines),
+            )
+        )
+    return tuple(found)
+
+
+def require_accessor_designations_confined(
+    vendor_masked: str, defines: dict[str, int], setup_name: str, variant: str
+) -> int:
+    """Refuse an accessor call this gate cannot pin to one authorised register.
+
+    Returns the number of resolved, authorised accessor calls it walked, so the
+    manifest publishes the verifier's own count of the third spelling too.
+    """
+
+    authorized = _register_authorized_owners(setup_name, variant)
+    spans = function_spans(vendor_masked)
+    walked = 0
+    for site, verb, role in accessor_designations(vendor_masked, defines):
+        owner = enclosing_function(spans, site)
+        if role == UNRESOLVED_ROLE:
+            raise fail(_ACCESSOR_REFUSAL % (verb, _span_label(owner), site))
+        if role == "QREAD" and verb == "write_reg":
+            raise fail(_QREAD_WRITE_REFUSAL % (_span_label(owner), site))
+        allowed = authorized.get(role)
+        if allowed is None:
+            continue
+        if owner not in allowed:
+            raise fail(_REGISTER_REFUSALS[role] % (owner or "file scope", site))
+        walked += 1
+    return walked
+
+
 # The confinement table authorises ``u85_irq_handler`` to write CMD, because the
 # stock ISR clears completion there. It authorised the *owner* and never the
 # *value*, so a second submit issued from interrupt context satisfied it -- and
@@ -6027,9 +6142,27 @@ def _direct_call_sites(masked: str, name: str) -> tuple[int, ...]:
     return tuple(found)
 
 
-def require_wait_for_irq_unreachable(vendor_masked: str) -> None:
-    """Refuse a ``wait_for_irq`` that is actually reached."""
+_WAIT_FOR_IRQ_REFUSAL = (
+    "wait_for_irq is named outside its own definition, %s: the STATUS designation this gate "
+    "authorises inside it is authorised on the ground that the command path never reaches it, "
+    "and a name that is not the declarator is a reachability this gate cannot bound -- a "
+    "running-path STATUS load no dominance or read-order rule judged"
+)
 
+
+def require_wait_for_irq_unreachable(vendor_masked: str) -> None:
+    """Refuse a ``wait_for_irq`` this gate cannot prove is unreached.
+
+    ``_direct_call_sites`` answers "is it called *here*", which is an answer
+    about the token stream after ``blank_directives`` -- so a macro expanding to
+    the call is a call after preprocessing and no call site before it, and the
+    address of the symbol is a reachability with no call site at all. The
+    exemption rests on the helper being unreached, so the proof is written the
+    same way: the symbol may appear as its own declarator and nowhere else.
+    """
+
+    # The direct call first, so the spelling the design's own fixtures name is
+    # reported by the rule that names it rather than by the wider one below.
     sites = _direct_call_sites(vendor_masked, WAIT_FOR_IRQ_SYMBOL)
     if sites:
         raise fail(
@@ -6038,6 +6171,31 @@ def require_wait_for_irq_unreachable(vendor_masked: str) -> None:
             "call makes that a running-path STATUS load no dominance or read-order rule judged"
             % sites[0]
         )
+    scan = blank_directives(vendor_masked)
+    for match in _IDENTIFIER_RE.finditer(scan):
+        if match.group(0) != WAIT_FOR_IRQ_SYMBOL:
+            continue
+        cursor = match.start() - 1
+        while cursor >= 0 and scan[cursor] in _INLINE_SPACE:
+            cursor -= 1
+        introduced_by_a_type = cursor >= 0 and (
+            _NAME_CHARACTER_RE.match(scan[cursor]) or scan[cursor] == "*"
+        )
+        cursor = match.end()
+        while cursor < len(scan) and scan[cursor] in _INLINE_SPACE:
+            cursor += 1
+        if introduced_by_a_type and scan[cursor : cursor + 1] == "(":
+            # A definition or a prototype: a return type in front of it, a
+            # parameter list behind it. Neither reaches the helper.
+            continue
+        raise fail(_WAIT_FOR_IRQ_REFUSAL % ("at offset %d" % match.start()))
+    # And the half the scan above cannot see at all. A replacement list naming
+    # the helper is a call site this gate never expands, whichever of the two
+    # macro forms carries it and whether it spells the parentheses or leaves
+    # them to the invocation.
+    for name, _parameters, body in macro_definitions(vendor_masked):
+        if names_identifier(body, WAIT_FOR_IRQ_SYMBOL):
+            raise fail(_WAIT_FOR_IRQ_REFUSAL % ("in the replacement list of %s" % name))
 
 
 # ---------------------------------------------------------------------------
@@ -6240,14 +6398,30 @@ def require_runner_diagnostic_closed(runner_masked: str, span: tuple[int, int]) 
 # declarator followed by a parameter list. A cast such as ``(volatile uint32_t *)``
 # does not match: its parenthesis opens on a type name, not on a ``*``.
 _FUNCTION_POINTER_DECLARATOR_RE = re.compile(
-    r"\(\s*\*+\s*(?:const\s+|volatile\s+)*[A-Za-z_]\w*\s*(?:\[[^\[\]]*\])*\s*\)\s*\("
+    r"\(\s*\*+\s*(?:const\s+|volatile\s+)*([A-Za-z_]\w*)\s*(?:\[[^\[\]]*\])*\s*\)\s*\("
 )
 
+# The one function-pointer name the *host runner* legitimately declares: the
+# stock vector-table type it installs its handler through. Exempting the name
+# rather than the whole translation unit is what separates the stock file from
+# an attack -- a second declarator, under any other name, is refused in the
+# runner exactly as it is in the vendor unit.
+RUNNER_STOCK_FUNCTION_POINTERS = frozenset(("irq_handler_t",))
 
-def require_no_function_pointer(masked: str, what: str) -> None:
+
+def require_no_function_pointer(
+    masked: str, what: str, exempt: frozenset = frozenset()
+) -> None:
     """Refuse a function-pointer declarator anywhere in ``masked``."""
 
-    match = _FUNCTION_POINTER_DECLARATOR_RE.search(masked)
+    match = next(
+        (
+            found
+            for found in _FUNCTION_POINTER_DECLARATOR_RE.finditer(masked)
+            if found.group(1) not in exempt
+        ),
+        None,
+    )
     if match is not None:
         raise fail(
             "%s declares a function pointer at offset %d: %s -- a call through it carries "
@@ -6255,6 +6429,12 @@ def require_no_function_pointer(masked: str, what: str) -> None:
             "rules, and this gate cannot resolve its target"
             % (what, match.start(), " ".join(match.group(0).split()))
         )
+
+
+# The keywords that can stand directly in front of a parenthesised expression
+# without being a value themselves. Everything else spelled as an identifier
+# there is an operand, and a ``(`` after an operand is a call.
+_EXPRESSION_KEYWORDS = frozenset(("return", "case", "else", "do", "sizeof"))
 
 
 def _is_type_only_group(masked: str, open_index: int, close_index: int) -> bool:
@@ -6294,10 +6474,13 @@ def _closes_cast_chain(masked: str, close_index: int, opens: dict[int, int]) -> 
             return True
         if masked[cursor] == ")":
             continue
-        return not (
-            _NAME_CHARACTER_RE.match(masked[cursor])
-            or masked[cursor] in _OPERAND_END_CHARACTERS
-        )
+        if _NAME_CHARACTER_RE.match(masked[cursor]):
+            # An identifier before a cast ends an operand only if it *is* one. A
+            # keyword that introduces an expression is not a value, so
+            # ``return (uint32_t)(uintptr_t)p`` is a chain of casts and not a
+            # call through whatever ``return`` produced.
+            return _token_before(masked, cursor + 1)[1] in _EXPRESSION_KEYWORDS
+        return masked[cursor] not in _OPERAND_END_CHARACTERS
     return False
 
 
@@ -6313,8 +6496,18 @@ def require_no_indirect_call(masked: str, what: str) -> None:
     # not a call site, and ``require_no_statement_macro`` is what judges it.
     scan = blank_directives(masked)
     _close_of, opens = _bracket_pairs(scan)
+    # A function-pointer *declarator* closes with ``)`` and is followed by its
+    # parameter list, so the ``(`` that opens that list is not a call site. The
+    # declarator itself is judged by ``require_no_function_pointer``; reading it
+    # as a call here would refuse the stock ``typedef void (*irq_handler_t)(void)``
+    # for being a declaration.
+    declarator_parameters = frozenset(
+        match.end() - 1 for match in _FUNCTION_POINTER_DECLARATOR_RE.finditer(scan)
+    )
     for index, character in enumerate(scan):
         if character != "(":
+            continue
+        if index in declarator_parameters:
             continue
         cursor = index - 1
         while cursor >= 0 and scan[cursor] in _INLINE_SPACE:
@@ -6552,9 +6745,13 @@ def require_appendix_value_provenance(
 # gives every publication site one argument tuple; the table is that set.
 # ---------------------------------------------------------------------------
 
+# The parenthesis is deliberately not part of the match. A symbol that is not
+# followed by one is the same defect with the call removed rather than hidden:
+# ``(void)(&v14_publish_failure);`` names a publisher this table never reads,
+# and a name it can reach is a call this gate cannot see the arguments of.
 _PUBLICATION_SYMBOL_RE = re.compile(
     r"(?<![A-Za-z0-9_])(v14_publish_failure|v14_publish_cleanup_failure|v14_publish_success)"
-    r"(?![A-Za-z0-9_])\s*\("
+    r"(?![A-Za-z0-9_])"
 )
 
 
@@ -6609,7 +6806,16 @@ def _publication_symbol_sites(
             _NAME_CHARACTER_RE.match(vendor_masked[cursor]) or vendor_masked[cursor] == "*"
         ):
             continue
-        open_index = match.end() - 1
+        cursor = match.end()
+        while cursor < len(vendor_masked) and vendor_masked[cursor] in _INLINE_SPACE:
+            cursor += 1
+        if vendor_masked[cursor : cursor + 1] != "(":
+            # The symbol reached without a parameter list at all -- its address,
+            # or a bare mention. It publishes nothing on its own and it hands
+            # the publisher somewhere no argument rule below can follow.
+            found.append((match.start(), match.group(1), "", False))
+            continue
+        open_index = cursor
         close_index = close_of.get(open_index)
         if close_index is None:
             found.append((match.start(), match.group(1), "", False))
@@ -6745,6 +6951,13 @@ def require_publication_call_provenance(vendor_masked: str) -> int:
 _CLEANUP_EPILOGUE_RE = re.compile(
     r"(?<![A-Za-z0-9_])if\s*\(\s*ret_code\s*!=\s*0\s*\)\s*\{([^{}]*)\}\s*else\s*\{([^{}]*)\}"
 )
+# The design's own stores to the vendor return code, across the whole command
+# function: the initialisation, the read-back mismatch, and one per epilogue arm.
+COMMAND_RETURN_CODE_ASSIGNMENTS = 4
+# And across the entry function that returns it to the host: the initialisation
+# and the one store that carries the command function's verdict out.
+ENTRY_SYMBOL = "test_u85"
+ENTRY_RETURN_CODE_ASSIGNMENTS = 2
 
 
 def require_cleanup_epilogue(command: str) -> None:
@@ -6790,6 +7003,37 @@ def require_cleanup_epilogue(command: str) -> None:
                 "the cleanup %s arm assigns ret_code more than once: a read-modify-write reaches "
                 "the vendor return code after the assignment this rule proved" % label
             )
+    require_return_code_settled(command, "command", COMMAND_RETURN_CODE_ASSIGNMENTS)
+
+
+# Exclusivity *within* each epilogue arm is only a proof while the arms are the
+# last word. The epilogue is not the end of the function and the command
+# function is not the end of the call chain, so a store one statement further
+# down -- in either frame -- overwrites whichever arm ran with every rule above
+# satisfied: ``ret_code &= 0;`` republishes a detected cleanup invariant as
+# V14_RET_SUCCESS while the mailbox still carries the failure tuple. The return
+# code is therefore settled over each whole function that owns one: the design's
+# assignments, and never a read-modify-write.
+def require_return_code_settled(body: str, what: str, expected: int) -> None:
+    """Refuse a return code rewritten after the branch that decided it."""
+
+    if compound_assignment_targets(body, ("ret_code",)):
+        raise fail(
+            "the %s function reaches ret_code through a read-modify-write: the value the vendor "
+            "returns is then not the one the branch that detected the outcome assigned, and the "
+            "mailbox tuple and the return code stop agreeing" % what
+        )
+    writes = [
+        lvalue
+        for _start, lvalue, _rvalue in assignment_statements(body)
+        if names_identifier(lvalue, "ret_code")
+    ]
+    if len(writes) != expected:
+        raise fail(
+            "the %s function assigns ret_code %d times: the design assigns it %d, and a further "
+            "assignment reaches the vendor return code after the branch that decided it"
+            % (what, len(writes), expected)
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -6876,6 +7120,9 @@ def require_convergence_same_iteration(loop_body: str) -> None:
 # ---------------------------------------------------------------------------
 
 TRANSPORT_VALID_SYMBOL = "pmu_diag_v14_transport_valid"
+# The design's own stores to the transport flag, across the whole runner: the
+# reset clears it, and the mailbox-magic branch settles it one way per arm.
+RUNNER_TRANSPORT_ASSIGNMENTS = 3
 
 
 def require_transport_validity_polarity(runner_masked: str) -> None:
@@ -6909,6 +7156,27 @@ def require_transport_validity_polarity(runner_masked: str) -> None:
             "the invalid-magic arm assigns %s more than once: %d assignments reach the transport "
             "flag, and a run that never published is reported to the host as a valid transport by "
             "whichever one lands last" % (TRANSPORT_VALID_SYMBOL, len(writes))
+        )
+    # And the arm is only the last word while nothing outside it writes the flag
+    # either. A store *after* the branch reports the transport as valid whichever
+    # arm ran, with the polarity rule above fully satisfied, so the flag is
+    # settled over the whole runner rather than inside one arm of it.
+    if compound_assignment_targets(runner_masked, (TRANSPORT_VALID_SYMBOL,)):
+        raise fail(
+            "the runner reaches %s through a read-modify-write: the flag the host reads is then "
+            "not the one the mailbox-magic branch assigned, and a run that never published is "
+            "reported as a valid transport" % TRANSPORT_VALID_SYMBOL
+        )
+    unit_writes = [
+        lvalue
+        for _start, lvalue, _rvalue in assignment_statements(runner_masked)
+        if names_identifier(lvalue, TRANSPORT_VALID_SYMBOL)
+    ]
+    if len(unit_writes) != RUNNER_TRANSPORT_ASSIGNMENTS:
+        raise fail(
+            "the runner assigns %s %d times: the design assigns it %d, and a further assignment "
+            "reaches the transport flag after the mailbox-magic branch that decided it"
+            % (TRANSPORT_VALID_SYMBOL, len(unit_writes), RUNNER_TRANSPORT_ASSIGNMENTS)
         )
 
 
@@ -6957,6 +7225,16 @@ def verify_generated_sources(runner_text: str, vendor_text: str, variant: str) -
     # by its own record, copy and validity rules instead.
     require_no_function_pointer(vendor_masked, "the vendor translation unit")
     require_no_indirect_call(vendor_masked, "the vendor translation unit")
+    # The runner gets the same two rules, minus the one name the stock file
+    # legitimately declares. Exempting the *translation unit* was what admitted a
+    # function pointer at the runner's file scope -- which, composed with a
+    # publication or reset symbol taken by address, is a call this gate cannot
+    # follow reaching the transport it just proved. Exempting the stock name
+    # instead keeps the frozen ``irq_handler_t`` and refuses every other one.
+    require_no_function_pointer(
+        runner_masked, "the runner translation unit", RUNNER_STOCK_FUNCTION_POINTERS
+    )
+    require_no_indirect_call(runner_masked, "the runner translation unit")
     defines = parse_defines(vendor_masked)
 
     pre_run = verify_pre_run_contract(vendor_masked, defines)
@@ -6989,6 +7267,13 @@ def verify_generated_sources(runner_text: str, vendor_text: str, variant: str) -
         vendor_masked[function_span(vendor_masked, "test_commands", "command function")[0] :
                       function_span(vendor_masked, "test_commands", "command function")[1]]
     )
+    # The epilogue decides the code; this is the frame that returns it. A store
+    # here forges the same verdict one call further out.
+    require_return_code_settled(
+        function_text(vendor_masked, ENTRY_SYMBOL, "entry function"),
+        "entry",
+        ENTRY_RETURN_CODE_ASSIGNMENTS,
+    )
     # The appendix is a transport object like the other two, and it is the one
     # that was not closed against a write that names no word.
     require_mailbox_storage_closed(vendor_masked, defines, "the vendor translation unit")
@@ -7017,6 +7302,11 @@ def verify_generated_sources(runner_text: str, vendor_text: str, variant: str) -
         mmio_macro_kinds(vendor_masked),
     )
     register_accesses = require_whole_unit_mmio_confinement(
+        vendor_masked, defines, setup_owner, variant
+    )
+    # And the third spelling: the register carried as the accessor's own
+    # argument, which neither the name scan nor the address resolver reads.
+    accessor_designations_confined = require_accessor_designations_confined(
         vendor_masked, defines, setup_owner, variant
     )
     require_no_qread_write(vendor_masked)
@@ -7088,6 +7378,13 @@ def verify_generated_sources(runner_text: str, vendor_text: str, variant: str) -
         # which is what makes the scope below a statement about the translation
         # unit rather than about the ``NPU_REG_*`` tokens in it.
         "vendor_register_accesses_confined": register_accesses,
+        # And the third spelling, counted the same way: the register carried as
+        # the vendor accessor's own argument. An accessor call this gate cannot
+        # resolve to one register, anywhere in the unit, is a refusal rather
+        # than a larger number here -- without which "confined" would still be a
+        # claim about pointer expressions and ``NPU_REG_*`` tokens rather than
+        # about every access the unit makes.
+        "vendor_accessor_designations_confined": accessor_designations_confined,
         "register_confinement_scope": "vendor_translation_unit",
     }
     for section in (pre_run, primary, hard_bypass, convergence, mailbox, identity, cleanup, runner):

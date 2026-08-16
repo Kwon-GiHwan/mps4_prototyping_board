@@ -128,7 +128,7 @@ STATUS_FAULT_MASK = 0x314
 
 # The suite is frozen at this many assertions. Adding a named fixture is a
 # deliberate act, so the count moves with it and never drifts silently.
-EXPECTED_PASS_COUNT = 818
+EXPECTED_PASS_COUNT = 865
 
 CHECKER_PATH = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
@@ -8076,6 +8076,7 @@ V14_TEST_U85_TAIL = (
     "    ret_code = test_commands(eTest, u32CmdQueueSize, pu85_warp_data_st);\n"
 )
 RUNNER_COLLECT_HEAD = "void pmu_diag_collect_v14(pmu_diag_record_t *out)\n{\n"
+RUNNER_RESET_HEAD = "void pmu_diag_reset_v14_state(void)\n"
 
 
 def _with_macro_alias(name, register, statement, anchor, what):
@@ -8686,7 +8687,366 @@ RUNNER_DIAGNOSTIC_ESCAPE_MUTATIONS = (
     ),
 )
 
+# --- a0fe0ab red-team blockers ---------------------------------------------
+#
+# The a0fe0ab review reproduced every fixture above and then walked around four
+# of the rules they pin, by changing the *spelling* rather than the capability:
+# the vendor accessor carries the register as an argument, so a numeric offset
+# reaches CMD or QSIZE without ever spelling ``NPU_REG_``; ``wait_for_irq`` is
+# reached from a macro instead of from a call site; and the cleanup return code
+# and the transport flag are rewritten one statement past the arm each
+# exclusivity rule reads.
+
+RT_TOKEN_PASTE_ACCESSOR = "    (void)read_reg(SEL2(NPU_REG_,QSIZE));\n"
+
+
+def _with_define_and_statement(define, statement, anchor, what):
+    """Add a ``#define`` at the head of the unit and use it at ``anchor``."""
+
+    def mutate(vendor):
+        defined = replace_once(
+            vendor, RT_MAILBOX_DECL, define + RT_MAILBOX_DECL, "mailbox declaration"
+        )
+        return replace_once(defined, anchor, statement + anchor, what)
+
+    return mutate
+
+
+ACCESSOR_OFFSET_CONFINEMENT_MUTATIONS = (
+    (
+        "running_qsize_load_through_a_bare_numeric_accessor_offset",
+        _rt_before(
+            RT_PUBLISH_PRIMARY_FIRST_STORE,
+            "    (void)read_reg(0x108U);\n",
+            "primary publisher head",
+        ),
+        "is called with a register offset this gate cannot resolve to one register",
+    ),
+    (
+        "second_submit_through_a_numeric_accessor_offset",
+        _rt_before(
+            RT_PUBLISH_PRIMARY_FIRST_STORE,
+            "    write_reg(0x000U, 1U);\n",
+            "primary publisher head",
+        ),
+        "is called with a register offset this gate cannot resolve to one register",
+    ),
+    (
+        "terminal_stop_through_a_numeric_accessor_offset",
+        _rt_before(
+            RT_MAILBOX_PUBLISH_MAGIC,
+            "    write_reg(0x000U, 0U);\n",
+            "mailbox publish barrier",
+        ),
+        "is called with a register offset this gate cannot resolve to one register",
+    ),
+    (
+        "qread_rewound_through_a_numeric_accessor_offset",
+        _rt_before(
+            V14_CONVERGE_CALL,
+            "\t  write_reg(0x104U, 0U);\n",
+            "convergence call",
+        ),
+        "is called with a register offset this gate cannot resolve to one register",
+    ),
+    (
+        "isr_qsize_load_through_a_numeric_accessor_offset",
+        _rt_after(
+            RT_ISR_STATUS_READ,
+            "\n    (void)read_reg(0x108U);",
+            "isr status read",
+        ),
+        "is called with a register offset this gate cannot resolve to one register",
+    ),
+    (
+        "running_qsize_load_through_an_object_like_offset_macro",
+        _with_define_and_statement(
+            "#define QOFF_N 0x108U\n",
+            "    (void)read_reg(QOFF_N);\n",
+            RT_PUBLISH_PRIMARY_FIRST_STORE,
+            "primary publisher head",
+        ),
+        "is called with a register offset this gate cannot resolve to one register",
+    ),
+    (
+        "running_qsize_load_through_a_token_paste_argument",
+        _with_define_and_statement(
+            "#define SEL2(a,b) a##b\n",
+            RT_TOKEN_PASTE_ACCESSOR,
+            RT_PUBLISH_PRIMARY_FIRST_STORE,
+            "primary publisher head",
+        ),
+        "is called with a register offset this gate cannot resolve to one register",
+    ),
+    (
+        "accessor_offset_computed_from_the_designated_name",
+        _rt_before(
+            RT_PUBLISH_PRIMARY_FIRST_STORE,
+            "    (void)read_reg(NPU_REG_QREAD + 4U);\n",
+            "primary publisher head",
+        ),
+        "is called with a register offset this gate cannot resolve to one register",
+    ),
+)
+
+RT_WAIT_FOR_IRQ_MACRO_CALL = "#define SETTLE() wait_for_irq()\n"
+RT_WAIT_FOR_IRQ_MACRO_OBJECT = "#define SETTLE wait_for_irq()\n"
+RT_WAIT_FOR_IRQ_MACRO_ALIAS = "#define SPIN wait_for_irq\n"
+
+
+def _with_wait_for_irq_macro(define, statement, definition=None):
+    """Define ``wait_for_irq``, alias it behind a macro, and reach it."""
+
+    def mutate(vendor):
+        defined = replace_once(
+            vendor,
+            RT_PUBLISH_PRIMARY_DEF,
+            (definition or RT_WAIT_FOR_IRQ_SPIN_DEFINITION) + RT_PUBLISH_PRIMARY_DEF,
+            "primary publisher definition",
+        )
+        aliased = replace_once(
+            defined, RT_MAILBOX_DECL, define + RT_MAILBOX_DECL, "mailbox declaration"
+        )
+        return replace_once(
+            aliased,
+            RT_PUBLISH_PRIMARY_CALL,
+            RT_PUBLISH_PRIMARY_CALL + statement,
+            "primary publication call",
+        )
+
+    return mutate
+
+
+WAIT_FOR_IRQ_MACRO_REACHABILITY_MUTATIONS = (
+    (
+        "wait_for_irq_reached_through_a_function_like_macro",
+        _with_wait_for_irq_macro(RT_WAIT_FOR_IRQ_MACRO_CALL, "\n\t  SETTLE();"),
+        "wait_for_irq is named outside its own definition",
+    ),
+    (
+        "wait_for_irq_reached_through_an_object_like_macro",
+        _with_wait_for_irq_macro(RT_WAIT_FOR_IRQ_MACRO_OBJECT, "\n\t  SETTLE;"),
+        "wait_for_irq is named outside its own definition",
+    ),
+    (
+        "wait_for_irq_reached_through_a_macro_that_aliases_its_name",
+        _with_wait_for_irq_macro(RT_WAIT_FOR_IRQ_MACRO_ALIAS, "\n\t  SPIN();"),
+        "wait_for_irq is named outside its own definition",
+    ),
+    (
+        "wait_for_irq_address_taken_on_the_measured_path",
+        _with_wait_for_irq_macro(
+            "#define V14_SPARE_WORD 7U\n", "\n\t  (void)(&wait_for_irq);"
+        ),
+        "wait_for_irq is named outside its own definition",
+    ),
+)
+
+CLEANUP_TAIL_EXCLUSIVITY_MUTATIONS = (
+    (
+        "cleanup_return_code_masked_to_success_after_the_epilogue",
+        _rt_before(
+            "\treturn ret_code;\n}",
+            "\t  ret_code &= 0;\n",
+            "command function return",
+        ),
+        "reaches ret_code through a read-modify-write",
+    ),
+    (
+        "cleanup_return_code_zeroed_by_a_multiply_after_the_epilogue",
+        _rt_before(
+            "\treturn ret_code;\n}",
+            "\t  ret_code *= 0;\n",
+            "command function return",
+        ),
+        "reaches ret_code through a read-modify-write",
+    ),
+    (
+        "cleanup_return_code_reassigned_to_success_after_the_epilogue",
+        _rt_before(
+            "\treturn ret_code;\n}",
+            "\t  ret_code = V14_RET_SUCCESS;\n",
+            "command function return",
+        ),
+        "the command function assigns ret_code",
+    ),
+    (
+        "cleanup_return_code_stepped_before_the_epilogue",
+        _rt_before(
+            RT_CLEANUP_FAILURE_BRANCH,
+            "\t  ret_code |= 1;\n",
+            "cleanup failure branch",
+        ),
+        "reaches ret_code through a read-modify-write",
+    ),
+    # The command function's epilogue decides the code, and ``test_u85`` is what
+    # returns it to the host. A store in *its* tail forges the same verdict one
+    # frame further out, with every rule inside the command function satisfied.
+    (
+        "entry_return_code_masked_to_success_after_the_command_call",
+        _rt_before(
+            "    return ret_code;\n}",
+            "    ret_code &= 0;\n",
+            "entry function return",
+        ),
+        "reaches ret_code through a read-modify-write",
+    ),
+    (
+        "entry_return_code_reassigned_after_the_command_call",
+        _rt_before(
+            "    return ret_code;\n}",
+            "    ret_code = V14_RET_SUCCESS;\n",
+            "entry function return",
+        ),
+        "the entry function assigns ret_code",
+    ),
+)
+
+RUNNER_TRANSPORT_TAIL_EXCLUSIVITY_MUTATIONS = (
+    (
+        "runner_reasserts_transport_valid_after_the_magic_branch",
+        _rt_before(
+            RUNNER_RECORD_CLOSURE_ANCHOR,
+            "    pmu_diag_v14_transport_valid = 1U;\n",
+            "runner record copy out",
+        ),
+        "the runner assigns pmu_diag_v14_transport_valid",
+    ),
+    (
+        "runner_sets_transport_valid_through_a_compound_or",
+        _rt_before(
+            RUNNER_RECORD_CLOSURE_ANCHOR,
+            "    pmu_diag_v14_transport_valid |= 1U;\n",
+            "runner record copy out",
+        ),
+        "reaches pmu_diag_v14_transport_valid through a read-modify-write",
+    ),
+    (
+        "runner_steps_transport_valid_after_the_magic_branch",
+        _rt_before(
+            RUNNER_RECORD_CLOSURE_ANCHOR,
+            "    pmu_diag_v14_transport_valid++;\n",
+            "runner record copy out",
+        ),
+        "reaches pmu_diag_v14_transport_valid through a read-modify-write",
+    ),
+)
+
+PUBLICATION_SYMBOL_ESCAPE_MUTATIONS = (
+    (
+        "publication_symbol_address_taken_on_the_measured_path",
+        _rt_after(
+            V14_TEST_U85_TAIL,
+            "    (void)(&v14_publish_failure);\n",
+            "test_u85 command call",
+        ),
+        "publication symbol appears outside a proven call site",
+    ),
+    (
+        "publication_symbol_address_taken_in_the_mailbox_publisher",
+        _rt_before(
+            RT_MAILBOX_PUBLISH_MAGIC,
+            "    (void)(&v14_publish_success);\n",
+            "mailbox publish barrier",
+        ),
+        "publication symbol appears outside a proven call site",
+    ),
+    (
+        "publication_symbol_bound_to_a_file_scope_name",
+        _rt_before(
+            RT_MAILBOX_DECL,
+            "static void (*const v14_pub_alias)(void) = v14_publish_success;\n",
+            "mailbox declaration",
+        ),
+        "declares a function pointer",
+    ),
+)
+
+RUNNER_FILE_SCOPE_INDIRECTION_MUTATIONS = (
+    (
+        "runner_declares_a_function_pointer_at_file_scope",
+        _rt_before(
+            RUNNER_RESET_HEAD,
+            "static void (*v14_hook)(void);\n\n",
+            "runner reset definition",
+        ),
+        "declares a function pointer",
+    ),
+    (
+        "runner_calls_a_file_scope_pointer_beside_the_mailbox_reset",
+        lambda runner: replace_once(
+            replace_once(
+                runner,
+                RUNNER_RESET_HEAD,
+                "static void (*v14_hook)(void) = v14_mailbox_reset;\n\n" + RUNNER_RESET_HEAD,
+                "runner reset definition",
+            ),
+            "    v14_mailbox_reset();\n",
+            "    v14_mailbox_reset();\n    v14_hook();\n",
+            "runner reset body",
+        ),
+        "declares a function pointer",
+    ),
+    (
+        "runner_calls_through_a_file_scope_handler_table",
+        lambda runner: replace_once(
+            replace_once(
+                runner,
+                RUNNER_RESET_HEAD,
+                "typedef void (*irq_handler_t)(void);\n"
+                "static irq_handler_t v14_table[1];\n\n" + RUNNER_RESET_HEAD,
+                "runner reset definition",
+            ),
+            "    v14_mailbox_reset();\n",
+            "    v14_mailbox_reset();\n    v14_table[0]();\n",
+            "runner reset body",
+        ),
+        "calls through a function pointer",
+    ),
+)
+
+
 # --- controls: the neighbouring legal sources still pass --------------------
+
+A0FE0AB_REMEDIATION_CONTROLS = (
+    (
+        "the design's own accessor calls, each naming the register it designates",
+        lambda vendor: vendor,
+    ),
+    (
+        "an object-like macro whose replacement list is an ordinary constant",
+        _with_define_and_statement(
+            "#define V14_SPARE_LIMIT 7U\n",
+            "    irq_history_mask = irq_history_mask;\n",
+            RT_PUBLISH_PRIMARY_FIRST_STORE,
+            "primary publisher head",
+        ),
+    ),
+    (
+        "the stock wait_for_irq helper, defined and named nowhere else",
+        _with_helper(RT_WAIT_FOR_IRQ_SPIN_DEFINITION, None, "", ""),
+    ),
+    (
+        "a publication call statement written exactly as the design writes it",
+        lambda vendor: vendor,
+    ),
+)
+
+RUNNER_A0FE0AB_REMEDIATION_CONTROLS = (
+    (
+        "the stock host runner's file-scope irq_handler_t typedef and vector slot",
+        _rt_before(
+            RUNNER_RESET_HEAD,
+            "typedef void (*irq_handler_t)(void);\nstatic irq_handler_t v14_vector_slot;\n\n",
+            "runner reset definition",
+        ),
+    ),
+    (
+        "the runner's transport flag cleared and set exactly as the design does",
+        lambda runner: runner,
+    ),
+)
+
 
 E6_REMEDIATION_CONTROLS = (
     (
@@ -8786,6 +9146,78 @@ def run_e6_remediation_suite(gate):
             "accepts %s" % label,
         )
     for label, mutate in RUNNER_E6_REMEDIATION_CONTROLS:
+        expect_accept(
+            gate,
+            "Q",
+            mutate(canonical_runner("Q")),
+            canonical_vendor("Q"),
+            "accepts %s" % label,
+        )
+
+
+def run_a0fe0ab_remediation_suite(gate):
+    """The a0fe0ab red-team blockers, each reproduced before it was closed.
+
+    Every one of these is a *sibling* of a fixture above: the same capability
+    spelled so that the rule which refuses it never reads the tokens it matches
+    on. They are kept as their own family because the property each one pins --
+    "the accessor's argument is a designation this gate resolved", "the exempt
+    IRQ helper is named nowhere but its own definition", "the return code and
+    the transport flag are settled once" -- is a statement about the whole unit
+    rather than about the statement the mutation happens to sit in.
+    """
+
+    run_vendor_mutations(gate, ACCESSOR_OFFSET_CONFINEMENT_MUTATIONS, "Q")
+    run_vendor_mutations(gate, WAIT_FOR_IRQ_MACRO_REACHABILITY_MUTATIONS, "Q")
+    run_vendor_mutations(gate, CLEANUP_TAIL_EXCLUSIVITY_MUTATIONS, "Q")
+    run_vendor_mutations(gate, PUBLICATION_SYMBOL_ESCAPE_MUTATIONS, "Q")
+    run_runner_mutations(gate, RUNNER_TRANSPORT_TAIL_EXCLUSIVITY_MUTATIONS, "Q")
+    run_runner_mutations(gate, RUNNER_FILE_SCOPE_INDIRECTION_MUTATIONS, "Q")
+
+    # Replayed on the other two variants, because the confinement scope the
+    # manifest publishes is a claim about each generated unit and not about Q.
+    for variant in ("QS", "SQ"):
+        for label, mutate, reason in (
+            ACCESSOR_OFFSET_CONFINEMENT_MUTATIONS[0],
+            ACCESSOR_OFFSET_CONFINEMENT_MUTATIONS[1],
+            WAIT_FOR_IRQ_MACRO_REACHABILITY_MUTATIONS[0],
+            CLEANUP_TAIL_EXCLUSIVITY_MUTATIONS[0],
+            PUBLICATION_SYMBOL_ESCAPE_MUTATIONS[0],
+        ):
+            name = "%s_%s" % (variant.lower(), label)
+            REJECTED_FIXTURES.add(name)
+            expect_reject(
+                gate,
+                variant,
+                canonical_runner(variant),
+                mutate(canonical_vendor(variant)),
+                name,
+                reason,
+            )
+        for label, mutate, reason in (
+            RUNNER_TRANSPORT_TAIL_EXCLUSIVITY_MUTATIONS[0],
+            RUNNER_FILE_SCOPE_INDIRECTION_MUTATIONS[0],
+        ):
+            name = "%s_%s" % (variant.lower(), label)
+            REJECTED_FIXTURES.add(name)
+            expect_reject(
+                gate,
+                variant,
+                mutate(canonical_runner(variant)),
+                canonical_vendor(variant),
+                name,
+                reason,
+            )
+
+    for label, mutate in A0FE0AB_REMEDIATION_CONTROLS:
+        expect_accept(
+            gate,
+            "Q",
+            canonical_runner("Q"),
+            mutate(canonical_vendor("Q")),
+            "accepts %s" % label,
+        )
+    for label, mutate in RUNNER_A0FE0AB_REMEDIATION_CONTROLS:
         expect_accept(
             gate,
             "Q",
@@ -9346,6 +9778,7 @@ if __name__ == "__main__":
         run_source_gate_remediation_suite(gate)
         run_value_and_confinement_remediation_suite(gate)
         run_e6_remediation_suite(gate)
+        run_a0fe0ab_remediation_suite(gate)
         run_coverage_suite()
 
     try:
