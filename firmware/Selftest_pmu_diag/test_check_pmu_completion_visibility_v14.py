@@ -127,7 +127,7 @@ STATUS_FAULT_MASK = 0x314
 
 # The suite is frozen at this many assertions. Adding a named fixture is a
 # deliberate act, so the count moves with it and never drifts silently.
-EXPECTED_PASS_COUNT = 653
+EXPECTED_PASS_COUNT = 747
 
 CHECKER_PATH = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
@@ -4713,7 +4713,7 @@ def run_mmio_provenance_suite(gate):
 # ---------------------------------------------------------------------------
 
 DERIVED_MANIFEST_FIELDS = (
-    "running_qsize_loads",
+    "running_qsize_loads_in_test_commands",
     "failure_paths_clear_npu",
     "failure_paths_enter_hprintf",
     "reachable_nvic_enable_sites",
@@ -4734,7 +4734,7 @@ DERIVED_MANIFEST_FIELDS = (
 # claim. A rejection is the proof: the manifest is never written, so the false
 # claim cannot be published.
 DERIVED_FIELD_WITNESSES = (
-    ("running_qsize_loads", running_qsize_through_raw_pointer),
+    ("running_qsize_loads_in_test_commands", running_qsize_through_raw_pointer),
     ("failure_paths_clear_npu", failure_path_clears_cmd_through_raw_pointer),
     ("failure_paths_enter_hprintf", failure_path_prints_through_the_seam),
     ("reachable_nvic_enable_sites", nvic_enable_with_a_space),
@@ -4753,7 +4753,7 @@ def run_manifest_evidence_suite(gate):
     if doc is not None:
         check(
             "derived manifest fields report what the verifier observed",
-            doc["running_qsize_loads"] == 0
+            doc["running_qsize_loads_in_test_commands"] == 0
             and doc["failure_paths_clear_npu"] is False
             and doc["failure_paths_enter_hprintf"] is False
             and doc["reachable_nvic_enable_sites"] == 0
@@ -7212,6 +7212,868 @@ RUNNER_REMEDIATION_CONTROLS = (
 )
 
 
+# ---------------------------------------------------------------------------
+# a1208a3 red-team and acceptance-review blockers.
+#
+# Every mutation below was an ACCEPT against the a1208a3 gate and compiles as a
+# C11 translation unit. They are grouped by the property each one falsifies:
+#
+#   * a running-path QSIZE or STATUS access reached through a helper or the ISR,
+#     which the intraprocedural scan of ``test_commands`` never saw;
+#   * an indirect call, which carries any effect -- a second submit, a second
+#     register load -- past the statement-effect model and the measured loops;
+#   * the appendix reached as whole storage, by ``memcpy``/``memset``/an escaped
+#     address, which the resolved-lvalue producer table never saw;
+#   * a CMD write between the submit and the convergence tail, which stops the
+#     queue every later word claims to have measured;
+#   * an appendix word published from a value the design does not give it, which
+#     the site-and-count producer table never looked at;
+#   * a publication call, a convergence classification or the runner's validity
+#     handshake carrying a label the condition that produced it does not imply.
+# ---------------------------------------------------------------------------
+
+RT_PUBLISH_PRIMARY_FIRST_STORE = (
+    "    pmu_completion_visibility_v14_mailbox[V14_MBOX_PRIMARY_RESULT] = obs->result;"
+)
+RT_MAILBOX_PUBLISH_MAGIC = (
+    "    __DSB();\n"
+    "    pmu_completion_visibility_v14_mailbox[V14_MBOX_MAILBOX_VALID] = V14_MAILBOX_VALID;"
+)
+RT_ISR_STATUS_READ = "    status_register = read_reg(NPU_REG_STATUS);"
+RT_PUBLISH_FAILURE_HEAD = (
+    "    pmu_completion_visibility_v14_mailbox[V14_MBOX_CONVERGENCE_FINAL_QREAD]"
+    " = V14_U32_INVALID;\n"
+    "    pmu_completion_visibility_v14_mailbox[V14_MBOX_CONVERGENCE_FINAL_STATUS]"
+    " = V14_U32_INVALID;"
+)
+RT_PUBLISH_SUCCESS_HEAD = (
+    "    pmu_completion_visibility_v14_mailbox[V14_MBOX_FAILURE_PHASE] = V14_PHASE_NONE;"
+)
+RT_PUBLISH_PRIMARY_CALL = "\t  v14_publish_primary(&primary, qsize_expected);"
+RT_T_SUBMIT_AFTER = (
+    "\t  pmu_completion_visibility_v14_mailbox[V14_MBOX_T_SUBMIT_AFTER_CMD] = DWT->CYCCNT;"
+)
+RT_T_PRIMARY_ENTRY = (
+    "\t  pmu_completion_visibility_v14_mailbox[V14_MBOX_T_PRIMARY_ENTRY] = DWT->CYCCNT;"
+)
+RT_PUBLISH_PRIMARY_DEF = "__attribute__((noinline))\nstatic void v14_publish_primary("
+RT_PUBLISH_SUCCESS_DEF = "__attribute__((noinline))\nstatic void v14_publish_success(void)"
+RT_MAILBOX_DECL = "volatile uint32_t pmu_completion_visibility_v14_mailbox[34];"
+RT_CONVERGE_READ_PAIR = "        qread = *qread_reg;\n        status = *status_reg;\n"
+RT_CONVERGE_FAULT_BLOCK = (
+    "        if ((status & V14_STATUS_FAULT_MASK) != 0U) {\n"
+    "            result = V14_CONVERGENCE_FAULT;\n"
+    "            break;\n"
+    "        }"
+)
+RT_CONVERGE_RESET_BLOCK = (
+    "        if ((status & V14_STATUS_RESET) != 0U) {\n"
+    "            result = V14_CONVERGENCE_RESET;\n"
+    "            break;\n"
+    "        }"
+)
+RT_CONVERGE_ITERATIONS = (
+    "            result = V14_CONVERGENCE_SUCCESS;\n            iterations = i;"
+)
+RT_CLEANUP_FAILURE_BRANCH = (
+    "\t  if (ret_code != 0) {\n"
+    "\t    v14_publish_cleanup_failure((uint32_t)read_val, converged.status);\n"
+    "\t    ret_code = V14_RET_CLEANUP_INVARIANT;\n"
+    "\t  }"
+)
+RT_PRIMARY_TIMEOUT_PUBLICATION = (
+    "\t    v14_publish_failure(V14_PHASE_PRIMARY, V14_REASON_PRIMARY_TIMEOUT,"
+    " primary.qread, primary.status);"
+)
+RT_CONVERGENCE_TIMEOUT_PUBLICATION = (
+    "\t    v14_publish_failure(V14_PHASE_CONVERGENCE, V14_REASON_CONVERGENCE_TIMEOUT,"
+    " converged.qread, converged.status);"
+)
+
+
+def _rt_after(anchor, statement, what):
+    return _append_after(anchor, statement, what)
+
+
+def _rt_before(anchor, statement, what):
+    return _prepend_before(anchor, statement, what)
+
+
+def _rt_swap(anchor, replacement, what):
+    def mutate(text):
+        return replace_once(text, anchor, replacement, what)
+
+    return mutate
+
+
+# --- running-path QSIZE reached through a callee or the ISR -----------------
+
+RUNNING_PATH_QSIZE_MUTATIONS = (
+    (
+        "qsize_read_in_the_primary_publisher",
+        _rt_before(
+            RT_PUBLISH_PRIMARY_FIRST_STORE,
+            "    (void)read_reg(NPU_REG_QSIZE);\n",
+            "primary publisher head",
+        ),
+        "QSIZE is designated outside the queue setup",
+    ),
+    (
+        "qsize_read_in_the_mailbox_publisher",
+        _rt_before(
+            RT_MAILBOX_PUBLISH_MAGIC,
+            "    (void)read_reg(NPU_REG_QSIZE);\n",
+            "mailbox publish barrier",
+        ),
+        "QSIZE is designated outside the queue setup",
+    ),
+    (
+        "qsize_read_in_the_npu_isr",
+        _rt_after(
+            RT_ISR_STATUS_READ,
+            "\n    (void)read_reg(NPU_REG_QSIZE);",
+            "isr status read",
+        ),
+        "QSIZE is designated outside the queue setup",
+    ),
+    (
+        "qsize_read_in_a_new_running_path_helper",
+        lambda vendor: replace_once(
+            replace_once(
+                vendor,
+                RT_PUBLISH_PRIMARY_DEF,
+                "__attribute__((noinline))\nstatic uint32_t v14_running_probe(void)\n"
+                "{\n    return read_reg(NPU_REG_QSIZE);\n}\n\n" + RT_PUBLISH_PRIMARY_DEF,
+                "primary publisher definition",
+            ),
+            RT_PUBLISH_PRIMARY_CALL,
+            "\t  (void)v14_running_probe();\n" + RT_PUBLISH_PRIMARY_CALL,
+            "primary publication call",
+        ),
+        "QSIZE is designated outside the queue setup",
+    ),
+    (
+        "qsize_read_in_the_failure_publisher",
+        _rt_before(
+            RT_PUBLISH_FAILURE_HEAD,
+            "    (void)read_reg(NPU_REG_QSIZE);\n",
+            "failure publisher head",
+        ),
+        "QSIZE is designated outside the queue setup",
+    ),
+    (
+        "qsize_read_in_the_success_publisher",
+        _rt_before(
+            RT_PUBLISH_SUCCESS_HEAD,
+            "    (void)read_reg(NPU_REG_QSIZE);\n",
+            "success publisher head",
+        ),
+        "QSIZE is designated outside the queue setup",
+    ),
+    (
+        "qsize_pointer_bound_in_the_primary_publisher",
+        _rt_before(
+            RT_PUBLISH_PRIMARY_FIRST_STORE,
+            "    volatile uint32_t *const qsize_reg =\n"
+            "        (volatile uint32_t *)(uintptr_t)(U85_BASE_ADDRESS + NPU_REG_QSIZE);\n"
+            "    (void)*qsize_reg;\n",
+            "primary publisher head",
+        ),
+        "QSIZE is designated outside the queue setup",
+    ),
+    (
+        "first_q_done_compared_against_a_running_qsize_read",
+        _rt_before(
+            RT_PUBLISH_PRIMARY_FIRST_STORE,
+            "    volatile uint32_t *const qsize_reg =\n"
+            "        (volatile uint32_t *)(uintptr_t)(U85_BASE_ADDRESS + NPU_REG_QSIZE);\n"
+            "    (void)qsize_reg;\n",
+            "primary publisher head",
+        ),
+        "QSIZE is designated outside the queue setup",
+    ),
+)
+
+# --- other running-path MMIO reached through a callee -----------------------
+
+RUNNING_PATH_STATUS_MUTATIONS = (
+    (
+        "extra_status_load_in_the_primary_publisher",
+        _rt_before(
+            RT_PUBLISH_PRIMARY_FIRST_STORE,
+            "    (void)read_reg(NPU_REG_STATUS);\n",
+            "primary publisher head",
+        ),
+        "STATUS is designated in a function the contract does not read it from",
+    ),
+    (
+        "extra_status_load_in_the_success_publisher",
+        _rt_before(
+            RT_PUBLISH_SUCCESS_HEAD,
+            "    (void)read_reg(NPU_REG_STATUS);\n",
+            "success publisher head",
+        ),
+        "STATUS is designated in a function the contract does not read it from",
+    ),
+    (
+        "extra_status_load_in_the_mailbox_publisher",
+        _rt_before(
+            RT_MAILBOX_PUBLISH_MAGIC,
+            "    (void)read_reg(NPU_REG_STATUS);\n",
+            "mailbox publish barrier",
+        ),
+        "STATUS is designated in a function the contract does not read it from",
+    ),
+)
+
+# --- indirect calls ---------------------------------------------------------
+
+RT_HOOK_DECLARATION = (
+    RT_MAILBOX_DECL
+    + "\n\ntypedef void (*v14_hook_t)(void);\nextern v14_hook_t v14_hook;"
+)
+
+INDIRECT_CALL_MUTATIONS = (
+    (
+        "indirect_call_through_a_parenthesised_pointer_in_the_primary_loop",
+        lambda vendor: replace_once(
+            replace_once(
+                vendor, RT_MAILBOX_DECL, RT_HOOK_DECLARATION, "mailbox declaration"
+            ),
+            Q_LOOP_READ_AND_GUARD,
+            "        (*v14_hook)();\n" + Q_LOOP_READ_AND_GUARD,
+            "Q primary loop read",
+        ),
+        "declares a function pointer",
+    ),
+    (
+        "indirect_qsize_read_through_a_pointer_in_the_primary_loop",
+        lambda vendor: replace_once(
+            replace_once(
+                vendor,
+                RT_MAILBOX_DECL,
+                RT_MAILBOX_DECL
+                + "\n\n__attribute__((noinline))\nstatic void v14_tick(void)\n{\n"
+                "    (void)read_reg(NPU_REG_QSIZE);\n}\n"
+                "static void (*const v14_hook)(void) = v14_tick;",
+                "mailbox declaration",
+            ),
+            Q_LOOP_READ_AND_GUARD,
+            "        (*v14_hook)();\n" + Q_LOOP_READ_AND_GUARD,
+            "Q primary loop read",
+        ),
+        "declares a function pointer",
+    ),
+    (
+        "indirect_call_through_a_struct_member_in_the_primary_loop",
+        lambda vendor: replace_once(
+            replace_once(
+                vendor,
+                RT_MAILBOX_DECL,
+                RT_MAILBOX_DECL
+                + "\n\nstruct v14_ops_t { void (*tick)(void); };\nextern struct v14_ops_t v14_ops;",
+                "mailbox declaration",
+            ),
+            Q_LOOP_READ_AND_GUARD,
+            "        v14_ops.tick();\n" + Q_LOOP_READ_AND_GUARD,
+            "Q primary loop read",
+        ),
+        "declares a function pointer",
+    ),
+    (
+        "second_submit_written_through_a_function_pointer",
+        _rt_after(
+            SUBMIT_WRITE,
+            "\t  void (*v14_wr)(uint32_t, uint32_t) = write_reg;\n"
+            "\t  v14_wr(NPU_REG_CMD, 0x00000001);\n",
+            "submit write",
+        ),
+        "declares a function pointer",
+    ),
+    (
+        "second_submit_written_through_a_function_pointer_array",
+        _rt_after(
+            SUBMIT_WRITE,
+            "\t  void (*v14_tab[1])(uint32_t, uint32_t) = { write_reg };\n"
+            "\t  v14_tab[0](NPU_REG_CMD, 0x00000001);\n",
+            "submit write",
+        ),
+        "declares a function pointer",
+    ),
+    (
+        "second_pre_submit_status_load_through_a_function_pointer",
+        _rt_before(
+            SUBMIT_WRITE,
+            "\t  uint32_t (*v14_rd)(uint32_t) = read_reg;\n"
+            "\t  pre_submit_status = v14_rd(NPU_REG_STATUS);\n",
+            "submit write",
+        ),
+        "declares a function pointer",
+    ),
+    (
+        "second_qsize_load_through_a_function_pointer",
+        _rt_before(
+            SUBMIT_WRITE,
+            "\t  uint32_t (*v14_rd)(uint32_t) = read_reg;\n"
+            "\t  qsize_expected = v14_rd(NPU_REG_QSIZE);\n",
+            "submit write",
+        ),
+        "declares a function pointer",
+    ),
+)
+
+# --- the appendix reached as whole storage ---------------------------------
+
+APPENDIX_STORAGE_CLOSURE_MUTATIONS = (
+    (
+        "appendix_word_forged_by_memcpy_inline",
+        _rt_before(
+            RT_PUBLISH_SUCCESS_HEAD,
+            "    static const uint32_t f = V14_QSIZE_EXPECTED;\n"
+            "    memcpy((void *)&pmu_completion_visibility_v14_mailbox[V14_MBOX_FIRST_QREAD],"
+            " &f, 4U);\n",
+            "success publisher head",
+        ),
+        "takes the address of appendix word",
+    ),
+    (
+        "appendix_address_handed_to_an_extern_sink",
+        _rt_before(
+            RT_PUBLISH_SUCCESS_HEAD,
+            "    extern void v14_sink(volatile uint32_t *p);\n"
+            "    v14_sink(&pmu_completion_visibility_v14_mailbox[V14_MBOX_FIRST_QREAD]);\n",
+            "success publisher head",
+        ),
+        "takes the address of appendix word",
+    ),
+    (
+        "appendix_scrubbed_by_memset_inline",
+        _rt_before(
+            RT_PUBLISH_SUCCESS_HEAD,
+            "    memset((void *)pmu_completion_visibility_v14_mailbox, 0xFF, 4U * 34U);\n",
+            "success publisher head",
+        ),
+        "reaches the appendix as whole storage",
+    ),
+    (
+        "appendix_forged_by_memcpy_from_a_helper",
+        lambda vendor: replace_once(
+            replace_once(
+                vendor,
+                RT_PUBLISH_SUCCESS_DEF,
+                "__attribute__((noinline))\nstatic void v14_fixup2(const uint32_t *src)\n{\n"
+                "    memcpy((void *)&pmu_completion_visibility_v14_mailbox"
+                "[V14_MBOX_FIRST_QREAD], src, 4U);\n}\n\n" + RT_PUBLISH_SUCCESS_DEF,
+                "success publisher definition",
+            ),
+            RT_PUBLISH_SUCCESS_HEAD,
+            "    static const uint32_t forged = V14_QSIZE_EXPECTED;\n"
+            "    v14_fixup2(&forged);\n" + RT_PUBLISH_SUCCESS_HEAD,
+            "success publisher head",
+        ),
+        "takes the address of appendix word",
+    ),
+    (
+        "appendix_scrubbed_by_memset_from_a_helper",
+        lambda vendor: replace_once(
+            replace_once(
+                vendor,
+                RT_PUBLISH_SUCCESS_DEF,
+                "__attribute__((noinline))\nstatic void v14_scrub(void)\n{\n"
+                "    memset((void *)pmu_completion_visibility_v14_mailbox, 0, 4U * 33U);\n}\n\n"
+                + RT_PUBLISH_SUCCESS_DEF,
+                "success publisher definition",
+            ),
+            RT_PUBLISH_SUCCESS_HEAD,
+            "    v14_scrub();\n" + RT_PUBLISH_SUCCESS_HEAD,
+            "success publisher head",
+        ),
+        "reaches the appendix as whole storage",
+    ),
+    (
+        "mailbox_magic_forged_by_memcpy_from_a_helper",
+        lambda vendor: replace_once(
+            replace_once(
+                vendor,
+                RT_PUBLISH_PRIMARY_DEF,
+                "__attribute__((noinline))\nstatic void v14_forge(void)\n{\n"
+                "    static const uint32_t m = V14_MAILBOX_VALID;\n"
+                "    memcpy((void *)&pmu_completion_visibility_v14_mailbox[33], &m, 4U);\n}\n\n"
+                + RT_PUBLISH_PRIMARY_DEF,
+                "primary publisher definition",
+            ),
+            RT_T_SUBMIT_AFTER,
+            "\t  v14_forge();\n" + RT_T_SUBMIT_AFTER,
+            "submit timestamp",
+        ),
+        "takes the address of appendix word",
+    ),
+    (
+        "mailbox_magic_forged_by_memcpy_inline_in_the_command_path",
+        _rt_before(
+            RT_T_SUBMIT_AFTER,
+            "\t  static const uint32_t m = V14_MAILBOX_VALID;\n"
+            "\t  memcpy((void *)&pmu_completion_visibility_v14_mailbox[33], &m, 4U);\n",
+            "submit timestamp",
+        ),
+        "takes the address of appendix word",
+    ),
+    (
+        "mailbox_magic_forged_by_memcpy_from_the_appendix_itself",
+        lambda vendor: replace_once(
+            replace_once(
+                vendor,
+                RT_PUBLISH_PRIMARY_DEF,
+                "__attribute__((noinline))\nstatic void v14_early(void)\n{\n"
+                "    memcpy((void *)&pmu_completion_visibility_v14_mailbox[33],\n"
+                "           (const void *)&pmu_completion_visibility_v14_mailbox[0], 4U);\n}\n\n"
+                + RT_PUBLISH_PRIMARY_DEF,
+                "primary publisher definition",
+            ),
+            RT_PUBLISH_PRIMARY_CALL,
+            "\t  v14_early();\n" + RT_PUBLISH_PRIMARY_CALL,
+            "primary publication call",
+        ),
+        "takes the address of appendix word",
+    ),
+    (
+        "first_q_done_forged_by_memcpy_inline",
+        _rt_before(
+            RT_PUBLISH_SUCCESS_HEAD,
+            "    static const uint32_t f = 1U;\n"
+            "    memcpy((void *)&pmu_completion_visibility_v14_mailbox"
+            "[V14_MBOX_FIRST_Q_DONE], &f, 4U);\n",
+            "success publisher head",
+        ),
+        "takes the address of appendix word",
+    ),
+)
+
+# --- CMD writes between the submit and the convergence tail -----------------
+
+SUBMIT_WINDOW_CMD_MUTATIONS = (
+    (
+        "cmd_stop_written_immediately_after_the_submit",
+        _rt_before(
+            RT_T_SUBMIT_AFTER,
+            "\t  write_reg(NPU_REG_CMD, 0x00000000);\n",
+            "submit timestamp",
+        ),
+        "CMD write falls between the submit write and the convergence tail",
+    ),
+    (
+        "extra_cmd_isr_clear_between_submit_and_convergence",
+        _rt_before(
+            RT_PUBLISH_PRIMARY_CALL,
+            "\t  write_reg(NPU_REG_CMD, 0x00000002);\n",
+            "primary publication call",
+        ),
+        "CMD write falls between the submit write and the convergence tail",
+    ),
+    (
+        "cmd_stop_written_inline_before_the_primary_loop",
+        _rt_after(
+            RT_T_PRIMARY_ENTRY,
+            "\n\t  write_reg(NPU_REG_CMD, 0x00000000);",
+            "primary entry timestamp",
+        ),
+        "CMD write falls between the submit write and the convergence tail",
+    ),
+    (
+        "cmd_stop_written_from_a_helper_before_the_primary_loop",
+        lambda vendor: replace_once(
+            replace_once(
+                vendor,
+                RT_PUBLISH_PRIMARY_DEF,
+                "__attribute__((noinline))\nstatic void v14_pre(void)\n{\n"
+                "    write_reg(NPU_REG_CMD, 0x00000000);\n}\n\n" + RT_PUBLISH_PRIMARY_DEF,
+                "primary publisher definition",
+            ),
+            RT_T_PRIMARY_ENTRY,
+            RT_T_PRIMARY_ENTRY + "\n\t  v14_pre();",
+            "primary entry timestamp",
+        ),
+        "CMD is written in a function the contract does not write it from",
+    ),
+    (
+        "cmd_stop_written_from_the_primary_publisher",
+        _rt_before(
+            RT_PUBLISH_PRIMARY_FIRST_STORE,
+            "    write_reg(NPU_REG_CMD, 0x00000000);\n",
+            "primary publisher head",
+        ),
+        "CMD is written in a function the contract does not write it from",
+    ),
+)
+
+# --- appendix value provenance ---------------------------------------------
+#
+# Transcribed from the design's appendix table: the expression each producer
+# writes into each word. A store whose right-hand side is not the one named here
+# publishes a number the diagnostic never measured.
+
+APPENDIX_VALUE_SOURCES = (
+    ("variant_id", "V14_VARIANT_ID"),
+    ("qsize_expected", "qsize_expected"),
+    ("pre_program_status", "pre_program_status"),
+    ("pre_submit_status", "pre_submit_status"),
+    ("t_submit_after_cmd", "DWT->CYCCNT"),
+    ("t_primary_entry", "DWT->CYCCNT"),
+    ("t_first_observation", "obs->t_first"),
+    ("primary_result", "obs->result"),
+    ("primary_iterations", "obs->iterations"),
+    ("first_qread", "obs->qread"),
+    ("first_status", "obs->status"),
+    ("first_q_done", "(obs->qread == qsize_expected) ? 1U : 0U"),
+    ("first_cmd_end_reached", "((obs->status & V14_STATUS_CMD_END) != 0U) ? 1U : 0U"),
+    ("first_irq_raised", "((obs->status & V14_STATUS_IRQ_RAISED) != 0U) ? 1U : 0U"),
+    ("first_state", "(obs->status & V14_STATUS_STATE)"),
+    ("convergence_result", "converged.result"),
+    ("convergence_iterations", "converged.iterations"),
+    ("convergence_final_qread", "converged.qread"),
+    ("convergence_final_status", "converged.status"),
+    ("convergence_timeout", "(converged.result == V14_CONVERGENCE_TIMEOUT) ? 1U : 0U"),
+    ("failure_phase", "phase"),
+    ("failure_reason", "reason"),
+    ("failure_qread", "qread"),
+    ("failure_status", "status"),
+    ("installed_vector", "NVIC_GetVector(NPU0_IRQn)"),
+    ("nvic_enabled_before_submit", "NVIC_GetEnableIRQ(NPU0_IRQn)"),
+    ("nvic_pending_after_initial_clear", "NVIC_GetPendingIRQ(NPU0_IRQn)"),
+    ("nvic_active_before_submit", "NVIC_GetActive(NPU0_IRQn)"),
+    ("irq_triggered_before_submit", "irq_triggered ? 1U : 0U"),
+    ("nvic_pending_before_final_clear", "NVIC_GetPendingIRQ(NPU0_IRQn)"),
+    ("nvic_pending_after_final_clear", "NVIC_GetPendingIRQ(NPU0_IRQn)"),
+    ("nvic_active_after_cleanup", "NVIC_GetActive(NPU0_IRQn)"),
+    ("irq_triggered_after_cleanup", "irq_triggered ? 1U : 0U"),
+    ("mailbox_valid", "V14_MAILBOX_VALID"),
+)
+
+FORGED_CONSTANT = "0x41414141U"
+
+_APPENDIX_STORE_RE = re.compile(
+    r"pmu_completion_visibility_v14_mailbox\[(V14_MBOX_[A-Z0-9_]+)\]\s*=\s*[^;]*;"
+)
+
+
+def _forge_appendix_word(field):
+    """Replace the *last* store to ``field`` with an attacker-chosen constant.
+
+    The last one is the measured store wherever a word has both a sentinel and a
+    measured producer, so the mutation lands on the value the host is meant to
+    trust rather than on the ``V14_U32_INVALID`` beside it.
+    """
+
+    macro = mbox(field)
+
+    def mutate(vendor):
+        sites = [
+            match
+            for match in _APPENDIX_STORE_RE.finditer(vendor)
+            if match.group(1) == macro
+        ]
+        if not sites:
+            raise AssertionError("no store to %s in the canonical vendor" % macro)
+        match = sites[-1]
+        forged = "pmu_completion_visibility_v14_mailbox[%s] = %s;" % (macro, FORGED_CONSTANT)
+        return vendor[: match.start()] + forged + vendor[match.end() :]
+
+    return mutate
+
+
+# Nine of the thirty-four forgeries are refused by an older, more specific rule
+# before the value table is reached -- the variant-id binding, the success/failure
+# exclusivity rule, the NVIC probe ordering and the magic-is-last rule. The
+# property is closed either way; the fixture records which rule closes it rather
+# than asserting a message the gate has no reason to prefer.
+APPENDIX_VALUE_EARLIER_REFUSALS = {
+    "variant_id": "mailbox word 0 does not publish V14_VARIANT_ID",
+    "failure_phase": "success and failure tuples are both published as valid",
+    "failure_qread": "success and failure tuples are both published as valid",
+    "failure_status": "success and failure tuples are both published as valid",
+    "installed_vector": "NVIC hard-bypass probe ordering drifted",
+    "nvic_enabled_before_submit": "NVIC hard-bypass probe ordering drifted",
+    "nvic_pending_after_initial_clear": "NVIC hard-bypass probe ordering drifted",
+    "nvic_active_before_submit": "NVIC hard-bypass probe ordering drifted",
+    "mailbox_valid": "mailbox magic is not the final appendix store",
+}
+
+APPENDIX_VALUE_MUTATIONS = tuple(
+    (
+        "appendix_word_%s_published_from_a_forged_constant" % field,
+        _forge_appendix_word(field),
+        APPENDIX_VALUE_EARLIER_REFUSALS.get(
+            field, "is not published from the value the design gives it"
+        ),
+    )
+    for field, _source in APPENDIX_VALUE_SOURCES
+)
+
+APPENDIX_VALUE_SHARP_MUTATIONS = (
+    (
+        "primary_result_republished_as_observed_by_a_constant",
+        _rt_swap(
+            RT_PUBLISH_PRIMARY_FIRST_STORE,
+            "    pmu_completion_visibility_v14_mailbox[V14_MBOX_PRIMARY_RESULT]"
+            " = V14_PRIMARY_OBSERVED;",
+            "primary result store",
+        ),
+        "is not published from the value the design gives it",
+    ),
+    (
+        "first_status_published_from_the_wrong_observation_field",
+        _rt_swap(
+            "    pmu_completion_visibility_v14_mailbox[V14_MBOX_FIRST_STATUS] = obs->status;",
+            "    pmu_completion_visibility_v14_mailbox[V14_MBOX_FIRST_STATUS] = obs->qread;",
+            "first status store",
+        ),
+        "is not published from the value the design gives it",
+    ),
+    (
+        "convergence_timeout_flag_pinned_to_zero",
+        _rt_swap(
+            "\t  pmu_completion_visibility_v14_mailbox[V14_MBOX_CONVERGENCE_TIMEOUT] =\n"
+            "\t      (converged.result == V14_CONVERGENCE_TIMEOUT) ? 1U : 0U;",
+            "\t  pmu_completion_visibility_v14_mailbox[V14_MBOX_CONVERGENCE_TIMEOUT] = 0U;",
+            "convergence timeout flag",
+        ),
+        "is not published from the value the design gives it",
+    ),
+)
+
+# --- publication call sites -------------------------------------------------
+
+PUBLICATION_CALL_MUTATIONS = (
+    (
+        "primary_timeout_published_with_reason_none",
+        _rt_swap(
+            RT_PRIMARY_TIMEOUT_PUBLICATION,
+            "\t    v14_publish_failure(V14_PHASE_PRIMARY, V14_REASON_NONE,"
+            " primary.qread, primary.status);",
+            "primary timeout publication",
+        ),
+        "publication call does not carry the argument tuple the design gives it",
+    ),
+    (
+        "primary_timeout_published_with_the_cleanup_phase",
+        _rt_swap(
+            RT_PRIMARY_TIMEOUT_PUBLICATION,
+            "\t    v14_publish_failure(V14_PHASE_CLEANUP, V14_REASON_PRIMARY_TIMEOUT,"
+            " primary.qread, primary.status);",
+            "primary timeout publication",
+        ),
+        "publication call does not carry the argument tuple the design gives it",
+    ),
+    (
+        "convergence_timeout_published_with_phase_none",
+        _rt_swap(
+            RT_CONVERGENCE_TIMEOUT_PUBLICATION,
+            "\t    v14_publish_failure(V14_PHASE_NONE, V14_REASON_CONVERGENCE_TIMEOUT,"
+            " converged.qread, converged.status);",
+            "convergence timeout publication",
+        ),
+        "publication call does not carry the argument tuple the design gives it",
+    ),
+    (
+        "cleanup_failure_branch_calls_the_success_publisher",
+        _rt_swap(
+            RT_CLEANUP_FAILURE_BRANCH,
+            "\t  if (ret_code != 0) {\n"
+            "\t    v14_publish_success();\n"
+            "\t    ret_code = V14_RET_CLEANUP_INVARIANT;\n"
+            "\t  }",
+            "cleanup failure branch",
+        ),
+        "publication call does not carry the argument tuple the design gives it",
+    ),
+    (
+        "cleanup_failure_branch_drops_the_failure_publication",
+        _rt_swap(
+            RT_CLEANUP_FAILURE_BRANCH,
+            "\t  if (ret_code != 0) {\n"
+            "\t    ret_code = V14_RET_CLEANUP_INVARIANT;\n"
+            "\t  }",
+            "cleanup failure branch",
+        ),
+        "publication call does not carry the argument tuple the design gives it",
+    ),
+    (
+        "cleanup_failure_branch_returns_success",
+        _rt_swap(
+            RT_CLEANUP_FAILURE_BRANCH,
+            "\t  if (ret_code != 0) {\n"
+            "\t    v14_publish_cleanup_failure((uint32_t)read_val, converged.status);\n"
+            "\t    ret_code = V14_RET_SUCCESS;\n"
+            "\t  }",
+            "cleanup failure branch",
+        ),
+        "the cleanup-failure branch does not land its own return code",
+    ),
+)
+
+# --- the convergence tail held to the primary's standard --------------------
+
+CONVERGENCE_CLASSIFICATION_MUTATIONS = (
+    (
+        "convergence_fault_relabelled_as_timeout",
+        _rt_swap(
+            RT_CONVERGE_FAULT_BLOCK,
+            "        if ((status & V14_STATUS_FAULT_MASK) != 0U) {\n"
+            "            result = V14_CONVERGENCE_TIMEOUT;\n"
+            "            break;\n"
+            "        }",
+            "convergence fault guard",
+        ),
+        "convergence classifier does not bind",
+    ),
+    (
+        "convergence_reset_relabelled_as_timeout",
+        _rt_swap(
+            RT_CONVERGE_RESET_BLOCK,
+            "        if ((status & V14_STATUS_RESET) != 0U) {\n"
+            "            result = V14_CONVERGENCE_TIMEOUT;\n"
+            "            break;\n"
+            "        }",
+            "convergence reset guard",
+        ),
+        "convergence classifier does not bind",
+    ),
+    (
+        "convergence_iterations_set_to_a_constant",
+        _rt_swap(
+            RT_CONVERGE_ITERATIONS,
+            "            result = V14_CONVERGENCE_SUCCESS;\n            iterations = 1U;",
+            "convergence success block",
+        ),
+        "convergence classifier does not bind",
+    ),
+)
+
+CONVERGENCE_SAME_ITERATION_MUTATIONS = (
+    (
+        "convergence_status_published_from_the_previous_iteration",
+        _rt_swap(
+            RT_CONVERGE_READ_PAIR,
+            "        uint32_t status_prev = status;\n"
+            "        qread = *qread_reg;\n"
+            "        status = *status_reg;\n"
+            "        status = status_prev;\n",
+            "convergence read pair",
+        ),
+        "convergence tuple is not the one the loop's own iteration read",
+    ),
+    (
+        "convergence_qread_reassigned_after_its_load",
+        _rt_swap(
+            RT_CONVERGE_READ_PAIR,
+            "        qread = *qread_reg;\n"
+            "        status = *status_reg;\n"
+            "        qread = qsize_expected;\n",
+            "convergence read pair",
+        ),
+        "convergence tuple is not the one the loop's own iteration read",
+    ),
+)
+
+# --- the runner's validity handshake ---------------------------------------
+
+RUNNER_TRANSPORT_POLARITY_MUTATIONS = (
+    (
+        "runner_sets_transport_valid_on_an_invalid_magic",
+        _rt_swap(
+            RUNNER_MAGIC_GUARD_LINE + "        pmu_diag_v14_transport_valid = 0U;\n",
+            RUNNER_MAGIC_GUARD_LINE + "        pmu_diag_v14_transport_valid = 1U;\n",
+            "runner magic guard",
+        ),
+        "runner sets transport_valid on an invalid mailbox magic",
+    ),
+)
+
+# --- controls: neighbouring legal sources still pass ------------------------
+
+RT_REMEDIATION_CONTROLS = (
+    (
+        "the canonical pre-submit QSIZE snapshot and setup programming",
+        lambda vendor: vendor,
+    ),
+    (
+        "a non-MMIO helper called from the running path",
+        lambda vendor: replace_once(
+            replace_once(
+                vendor,
+                RT_PUBLISH_PRIMARY_DEF,
+                "__attribute__((noinline))\nstatic uint32_t v14_double(uint32_t v)\n"
+                "{\n    return v + v;\n}\n\n" + RT_PUBLISH_PRIMARY_DEF,
+                "primary publisher definition",
+            ),
+            RT_PUBLISH_PRIMARY_CALL,
+            "\t  (void)v14_double(qsize_expected);\n" + RT_PUBLISH_PRIMARY_CALL,
+            "primary publication call",
+        ),
+    ),
+    (
+        "a cast of a parenthesised expression, which is not an indirect call",
+        _rt_before(
+            RT_PUBLISH_SUCCESS_HEAD,
+            "    volatile uint32_t sink = (uint32_t)(1U + 2U);\n    (void)sink;\n",
+            "success publisher head",
+        ),
+    ),
+)
+
+
+def run_value_and_confinement_remediation_suite(gate):
+    """The a1208a3 red-team and acceptance-review blockers, each reproduced first.
+
+    Grouped by the property each mutation falsifies rather than by the report it
+    came from, because several of them were found twice from different angles and
+    a fixture named after a report is a fixture nobody can place later.
+    """
+
+    run_vendor_mutations(gate, RUNNING_PATH_QSIZE_MUTATIONS, "Q")
+    run_vendor_mutations(gate, RUNNING_PATH_STATUS_MUTATIONS, "Q")
+    run_vendor_mutations(gate, INDIRECT_CALL_MUTATIONS, "Q")
+    run_vendor_mutations(gate, APPENDIX_STORAGE_CLOSURE_MUTATIONS, "Q")
+    run_vendor_mutations(gate, SUBMIT_WINDOW_CMD_MUTATIONS, "Q")
+    run_vendor_mutations(gate, APPENDIX_VALUE_MUTATIONS, "Q")
+    run_vendor_mutations(gate, APPENDIX_VALUE_SHARP_MUTATIONS, "Q")
+    run_vendor_mutations(gate, PUBLICATION_CALL_MUTATIONS, "Q")
+    run_vendor_mutations(gate, CONVERGENCE_CLASSIFICATION_MUTATIONS, "Q")
+    run_vendor_mutations(gate, CONVERGENCE_SAME_ITERATION_MUTATIONS, "Q")
+    run_runner_mutations(gate, RUNNER_TRANSPORT_POLARITY_MUTATIONS, "Q")
+
+    # The four properties a downstream reader would qualify an ELF against are
+    # proven on the whole variant matrix, not only on the Q image the reports
+    # were written against.
+    for variant in ("QS", "SQ"):
+        for label, mutate, reason in (
+            RUNNING_PATH_QSIZE_MUTATIONS[0],
+            APPENDIX_STORAGE_CLOSURE_MUTATIONS[6],
+            SUBMIT_WINDOW_CMD_MUTATIONS[0],
+            APPENDIX_VALUE_SHARP_MUTATIONS[0],
+            CONVERGENCE_CLASSIFICATION_MUTATIONS[0],
+        ):
+            name = "%s_%s" % (variant.lower(), label)
+            REJECTED_FIXTURES.add(name)
+            expect_reject(
+                gate,
+                variant,
+                canonical_runner(variant),
+                mutate(canonical_vendor(variant)),
+                name,
+                reason,
+            )
+
+    for label, mutate in RT_REMEDIATION_CONTROLS:
+        expect_accept(
+            gate,
+            "Q",
+            canonical_runner("Q"),
+            mutate(canonical_vendor("Q")),
+            "accepts %s" % label,
+        )
+
+
 def run_source_gate_remediation_suite(gate):
     """The 7456670 acceptance and red-team blockers, each reproduced first."""
 
@@ -7487,7 +8349,7 @@ def run_coverage_suite():
         "primary_per_loop_store_through_pointer_arithmetic",
         "runner_copy_ahead_of_the_guard_through_pointer_arithmetic",
         # A manifest field is what the verifier saw, so a false one is refused.
-        "false_running_qsize_loads_claim",
+        "false_running_qsize_loads_in_test_commands_claim",
         "false_failure_paths_clear_npu_claim",
         "false_failure_paths_enter_hprintf_claim",
         "false_reachable_nvic_enable_sites_claim",
@@ -7676,6 +8538,7 @@ if __name__ == "__main__":
         run_final_blocker_suite(gate)
         run_acceptance_grammar_suite(gate)
         run_source_gate_remediation_suite(gate)
+        run_value_and_confinement_remediation_suite(gate)
         run_coverage_suite()
 
     try:
