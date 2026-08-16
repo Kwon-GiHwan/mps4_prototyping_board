@@ -675,8 +675,34 @@ APP/VECTORS/DDR/ELF/map/manifest and declared evidence.
 
 - [ ] **Step 4: Run clean Build B for each variant**
 
-Repeat the exact command with both `BUILD_A` occurrences changed to `BUILD_B`.
-Do not copy any A file into B. Expected: three exits zero.
+**Corrected 2026-08-17.** Building A and B at *different* `BUILD` paths asks for
+byte identity from artifacts that record their own build path, and then gets a
+mismatch the procedure itself created. Observed: APP/VECTORS/DDR.BIN were
+byte-identical across A and B while the ELF, map, objdump, DWARF dump and
+preprocessed source all differed, and the preprocessed sources became identical
+under a single `BUILD_A`->`BUILD_B` substitution -- 262 differing lines, every
+one a `#` line marker.
+
+Normalising that away is what Step 6 forbids, so build both sides at the *same*
+path instead and copy each out before the next begins. Determinism is then a
+claim about the compiler and the inputs rather than about path strings:
+
+```bash
+ssh gihwan 'set -eu
+  R=/home/gihwan/mps4/PMU_COMPLETION_VISIBILITY_V14_PREBOARD_STAGE
+  for side in A B; do
+    for c in Q QS SQ; do
+      docker exec -w /work/selftest benchmark-runner make \
+        -f Makefile.pmu_completion_visibility_v14 \
+        V14_VARIANT="$c" BUILD="/work/v14/BUILD/$c" clean all manifest
+      mkdir -p "$R/SAMEPATH_$side/$c"
+      docker cp "benchmark-runner:/work/v14/BUILD/$c/." "$R/SAMEPATH_$side/$c/"
+      docker exec benchmark-runner rm -rf "/work/v14/BUILD/$c"
+    done
+  done'
+```
+
+Do not copy any A file into B. Expected: six exits zero.
 
 - [ ] **Step 5: Compare declared artifacts**
 
@@ -687,8 +713,8 @@ timestamps. Run on `gihwan`:
 
 ```bash
 python3 /home/gihwan/mps4/PMU_COMPLETION_VISIBILITY_V14_PREBOARD_STAGE/SOURCE/compare_declared_builds.py \
-  --left /home/gihwan/mps4/PMU_COMPLETION_VISIBILITY_V14_PREBOARD_STAGE/BUILD_A \
-  --right /home/gihwan/mps4/PMU_COMPLETION_VISIBILITY_V14_PREBOARD_STAGE/BUILD_B \
+  --left /home/gihwan/mps4/PMU_COMPLETION_VISIBILITY_V14_PREBOARD_STAGE/SAMEPATH_A \
+  --right /home/gihwan/mps4/PMU_COMPLETION_VISIBILITY_V14_PREBOARD_STAGE/SAMEPATH_B \
   --variants Q,QS,SQ \
   --manifest-name pmu_completion_visibility_v14_manifest.json \
   --report /home/gihwan/mps4/PMU_COMPLETION_VISIBILITY_V14_PREBOARD_STAGE/BUILD_DETERMINISM.json
