@@ -128,7 +128,7 @@ STATUS_FAULT_MASK = 0x314
 
 # The suite is frozen at this many assertions. Adding a named fixture is a
 # deliberate act, so the count moves with it and never drifts silently.
-EXPECTED_PASS_COUNT = 1009
+EXPECTED_PASS_COUNT = 1027
 
 CHECKER_PATH = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
@@ -9943,7 +9943,119 @@ RUNNER_REARM_REACHABILITY_MUTATIONS = (
 )
 
 
+# --- 6905425 r7-review family 3 --------------------------------------------
+#
+# ``_executes_unconditionally`` inspects the blocks *enclosing* the clear and
+# never the statements that precede it inside them, so an early exit ahead of an
+# otherwise-unguarded store leaves every enclosing block trivially acceptable.
+# C6 and C13 are ordinary warning-clean C -- no dead code, no -Wunreachable-code
+# diagnostic -- and reach the same harm the rule's own refusal text names.
+
+RT_RESET_HEAD_CALL = "    v14_mailbox_reset();\n"
+RT_RESET_STORE = "    pmu_diag_v14_transport_valid = 0U;"
+RT_UNFOLDABLE = "pmu_qual_hook_pmu_reads != 0U"
+
+
+def _reset_body(statements):
+    """Respell the reset function's body, keeping the mailbox-reset call first."""
+
+    return _rt_swap(
+        RUNNER_RESET_CLEAR, RT_RESET_HEAD_CALL + statements, "runner reset clear"
+    )
+
+
+RUNNER_REARM_TRANSFER_MUTATIONS = (
+    (
+        "reset_clear_skipped_by_a_conditional_early_return",
+        _reset_body(
+            "    if (%s) {\n        return;\n    }\n" % RT_UNFOLDABLE + RT_RESET_STORE
+        ),
+        "does not clear the transport flag on every path",
+    ),
+    (
+        "reset_clear_after_an_early_return_branch_that_also_resets_the_mailbox",
+        _reset_body(
+            "    if (%s) {\n        v14_mailbox_reset();\n"
+            "        return;\n    }\n" % RT_UNFOLDABLE + RT_RESET_STORE
+        ),
+        "does not clear the transport flag on every path",
+    ),
+    (
+        "reset_clear_after_an_unconditional_return",
+        _reset_body("    return;\n" + RT_RESET_STORE),
+        "does not clear the transport flag on every path",
+    ),
+    (
+        "reset_clear_jumped_over_by_a_goto",
+        _reset_body(
+            "    goto v14_rearm_done;\n"
+            + RT_RESET_STORE
+            + "\nv14_rearm_done:\n    return;"
+        ),
+        "does not clear the transport flag on every path",
+    ),
+    (
+        "reset_clear_after_an_early_return_under_a_foldably_true_guard",
+        _reset_body("    if (1) {\n        return;\n    }\n" + RT_RESET_STORE),
+        "does not clear the transport flag on every path",
+    ),
+    (
+        "reset_clear_skipped_by_a_break_in_a_bounded_loop",
+        _reset_body(
+            "    for (uint32_t i = 0U; i < 1U; ++i) {\n"
+            "        if (%s) {\n            break;\n        }\n" % RT_UNFOLDABLE
+            + "    " + RT_RESET_STORE.strip() + "\n    }"
+        ),
+        "does not clear the transport flag on every path",
+    ),
+    (
+        "reset_clear_skipped_by_a_continue_in_a_bounded_loop",
+        _reset_body(
+            "    for (uint32_t i = 0U; i < 1U; ++i) {\n"
+            "        if (%s) {\n            continue;\n        }\n" % RT_UNFOLDABLE
+            + "    " + RT_RESET_STORE.strip() + "\n    }"
+        ),
+        "does not clear the transport flag on every path",
+    ),
+    (
+        "reset_clear_skipped_by_a_break_out_of_a_do_while_zero",
+        _reset_body(
+            "    do {\n        if (%s) {\n            break;\n        }\n" % RT_UNFOLDABLE
+            + "    " + RT_RESET_STORE.strip() + "\n    } while (0);"
+        ),
+        "does not clear the transport flag on every path",
+    ),
+)
+
+
 # --- controls: the neighbouring legal sources still pass --------------------
+
+RUNNER_R7_REMEDIATION_CONTROLS = (
+    (
+        "the design's own direct unguarded transport clear",
+        lambda runner: runner,
+    ),
+    (
+        "the clear under two nested guards that both fold to a non-zero constant",
+        _reset_body(
+            "    if (1) {\n        if (V14_APPENDIX_WORDS) {\n        "
+            + RT_RESET_STORE.strip()
+            + "\n        }\n    }"
+        ),
+    ),
+    (
+        "an early return under a guard that folds to zero, ahead of the clear",
+        _reset_body("    if (0) {\n        return;\n    }\n" + RT_RESET_STORE),
+    ),
+    (
+        "a bounded loop that completes before the clear, carrying its own break",
+        _reset_body(
+            "    for (uint32_t i = 0U; i < 1U; ++i) {\n        break;\n    }\n"
+            + RT_RESET_STORE
+        ),
+    ),
+)
+
 
 RUNNER_R6_REMEDIATION_CONTROLS = (
     (
@@ -10358,6 +10470,44 @@ def run_a0fe0ab_remediation_suite(gate):
             "accepts %s" % label,
         )
     for label, mutate in RUNNER_A0FE0AB_REMEDIATION_CONTROLS:
+        expect_accept(
+            gate,
+            "Q",
+            mutate(canonical_runner("Q")),
+            canonical_vendor("Q"),
+            "accepts %s" % label,
+        )
+
+
+def run_r7_remediation_suite(gate):
+    """The 6905425 r7-review family-3 blockers, each reproduced before it was closed.
+
+    One family: a clearing store that every *enclosing block* admits and that a
+    control transfer *preceding* it can still skip. C6 and C13 are warning-clean
+    C; the unconditional return, the goto and the loop-transfer forms are the
+    same defect with the transfer spelled differently.
+    """
+
+    run_runner_mutations(gate, RUNNER_REARM_TRANSFER_MUTATIONS, "Q")
+
+    for variant in ("QS", "SQ"):
+        for label, mutate, reason in (
+            RUNNER_REARM_TRANSFER_MUTATIONS[0],
+            RUNNER_REARM_TRANSFER_MUTATIONS[1],
+            RUNNER_REARM_TRANSFER_MUTATIONS[3],
+        ):
+            name = "%s_%s" % (variant.lower(), label)
+            REJECTED_FIXTURES.add(name)
+            expect_reject(
+                gate,
+                variant,
+                mutate(canonical_runner(variant)),
+                canonical_vendor(variant),
+                name,
+                reason,
+            )
+
+    for label, mutate in RUNNER_R7_REMEDIATION_CONTROLS:
         expect_accept(
             gate,
             "Q",
@@ -11178,6 +11328,7 @@ if __name__ == "__main__":
         run_eff4143_remediation_suite(gate)
         run_fresh_42a1314_remediation_suite(gate)
         run_r6_remediation_suite(gate)
+        run_r7_remediation_suite(gate)
         run_coverage_suite()
 
     try:

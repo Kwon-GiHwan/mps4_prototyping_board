@@ -7803,6 +7803,104 @@ _MAILBOX_MAGIC_GUARD_RE = re.compile(
 )
 
 
+# A statement that leaves the block, and the heads whose bodies ``break`` and
+# ``continue`` belong to.
+_CONTROL_TRANSFER_RE = re.compile(
+    r"(?<![A-Za-z0-9_])(return|goto|break|continue)(?![A-Za-z0-9_])"
+)
+_LOOP_OR_SWITCH_KEYWORDS = frozenset(("for", "while", "switch"))
+
+
+def _opens_loop_or_switch(body: str, open_index: int) -> bool:
+    """Whether the block opening at ``open_index`` is a loop or ``switch`` body.
+
+    The head is read by matching its parenthesis rather than by a pattern, because
+    a ``for`` header carries its own semicolons and any expression the source
+    likes -- a regex bounded on ``;`` misses exactly the loop this has to see.
+    """
+
+    head = body[:open_index].rstrip()
+    if head.endswith("do"):
+        return _token_before(head, len(head))[1] == "do"
+    if not head.endswith(")"):
+        return False
+    open_paren = _bracket_pairs(head)[1].get(len(head) - 1)
+    if open_paren is None:
+        return False
+    return _token_before(head, open_paren)[1] in _LOOP_OR_SWITCH_KEYWORDS
+
+
+def _enclosing_blocks(body: str, position: int) -> tuple[tuple[int, int], ...]:
+    """``(open brace, just-inside offset)`` for each block enclosing ``position``."""
+
+    stack: list[tuple[int, int]] = []
+    for index in range(min(position, len(body))):
+        character = body[index]
+        if character == "{":
+            stack.append((index, index + 1))
+        elif character == "}" and stack:
+            stack.pop()
+    return tuple(reversed(stack))
+
+
+def _is_unreachable_here(body: str, position: int, defines: dict[str, int]) -> bool:
+    """Whether some block enclosing ``position`` is an ``if`` that folds to zero."""
+
+    for open_index, _inside in _enclosing_blocks(body, position):
+        head = body[:open_index]
+        opener = None
+        for match in _IF_HEAD_OPEN_RE.finditer(head):
+            opener = match
+        if opener is None:
+            continue
+        close = _bracket_pairs(head)[0].get(opener.end() - 1)
+        if close is None or head[close + 1 :].strip():
+            continue
+        if _evaluate_constant(head[opener.end() : close], defines) == 0:
+            return True
+    return False
+
+
+def _transfer_stays_inside(body: str, offset: int, position: int) -> bool:
+    """Whether a ``break``/``continue`` at ``offset`` is spent before ``position``.
+
+    A loop that runs to completion ahead of the store cannot skip it, so its own
+    ``break`` is not a bypass. One whose block still encloses the store is.
+    """
+
+    for open_index, _inside in _enclosing_blocks(body, offset):
+        if not _opens_loop_or_switch(body, open_index):
+            continue
+        return _matching_brace(body, open_index, "loop body") < position
+    return False
+
+
+def _reaches_without_transfer(
+    body: str, position: int, defines: dict[str, int]
+) -> bool:
+    """Whether no reachable control transfer precedes ``position`` in ``body``.
+
+    Checking the blocks that *enclose* the store leaves every statement *before*
+    it unexamined, and an early exit there skips an otherwise-unguarded clear
+    while every enclosing block stays trivially acceptable -- ordinary
+    warning-clean C, no dead code. Every transfer in the prefix therefore has to
+    be discharged: one this gate can prove unreachable, or a ``break``/
+    ``continue`` whose loop is over before the store. Anything else, including a
+    ``goto`` whose label this gate does not resolve, is a bypass.
+    """
+
+    prefix = blank_directives(body[:position])
+    for match in _CONTROL_TRANSFER_RE.finditer(prefix):
+        if _is_unreachable_here(body, match.start(), defines):
+            continue
+        if match.group(1) in ("break", "continue") and _transfer_stays_inside(
+            body, match.start(), position
+        ):
+            continue
+        return False
+    return True
+
+
 def _executes_unconditionally(body: str, position: int, defines: dict[str, int]) -> bool:
     """Whether the statement at ``position`` runs on every path through ``body``.
 
@@ -7813,8 +7911,13 @@ def _executes_unconditionally(body: str, position: int, defines: dict[str, int])
     ``if`` whose condition folds to a non-zero constant -- a guard that selects
     nothing -- and it is not on that path when a block is an ``else`` arm, a
     loop, or an ``if`` this gate cannot fold.
+
+    The enclosing blocks are only half of it: a transfer that *precedes* the
+    store skips it without touching any of them, so the prefix is walked too.
     """
 
+    if not _reaches_without_transfer(body, position, defines):
+        return False
     cursor = position
     for _step in range(len(body)):
         start = enclosing_block_start(body, cursor)
