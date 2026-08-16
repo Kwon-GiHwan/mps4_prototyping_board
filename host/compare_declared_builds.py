@@ -217,13 +217,58 @@ def load_manifest(root: pathlib.Path, variant: str, name: str, side: str) -> tup
                 "manifest declares no artifact table",
             )
         ]
+    # An empty table agrees with any other empty table and proves nothing: two
+    # builds that declared nothing would compare clean and be reported as
+    # evidence of determinism.
+    if not document["declared_artifacts"]:
+        return None, [
+            _mismatch(
+                "manifest",
+                variant,
+                "%s:%s" % (side, name),
+                "manifest declares an empty artifact table",
+            )
+        ]
     return document, []
+
+
+def variant_directory_fault(root: pathlib.Path, variant: str):
+    """Why a variant directory cannot be attributed to this build, or ``None``.
+
+    The comparison asks whether two builds produced the same bytes, and that
+    question only means something when each side's tree *is* that side's output.
+    A symlinked variant directory -- or a symlinked build root -- can point both
+    sides at one tree, which then compares clean while proving nothing, or point
+    a side at a tree the build never wrote.
+    """
+
+    if root.is_symlink():
+        return "build root is a symlink"
+    directory = root / variant
+    if directory.is_symlink():
+        return "variant directory is a symlink"
+    if not directory.is_dir():
+        return "variant directory is absent"
+    # Belt and braces: even without a symlink on the last component, the
+    # resolved directory has to sit under the resolved root.
+    try:
+        directory.resolve().relative_to(root.resolve())
+    except ValueError:
+        return "variant directory resolves outside the build root"
+    return None
 
 
 def compare_variant(
     left: pathlib.Path, right: pathlib.Path, variant: str, manifest_name: str
 ) -> list:
     mismatches = []
+    for side, root in (("left", left), ("right", right)):
+        fault = variant_directory_fault(root, variant)
+        if fault is not None:
+            mismatches.append(_mismatch("variant", variant, side, fault))
+    if mismatches:
+        # Nothing below can be attributed to a build, so nothing below is read.
+        return mismatches
     left_manifest, problems = load_manifest(left, variant, manifest_name, "left")
     mismatches.extend(problems)
     right_manifest, problems = load_manifest(right, variant, manifest_name, "right")

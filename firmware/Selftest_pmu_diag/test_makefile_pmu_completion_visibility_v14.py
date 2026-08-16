@@ -14,6 +14,7 @@ the graph relies on is exercised rather than asserted.
 """
 
 import json
+import os
 import pathlib
 import re
 import subprocess
@@ -80,12 +81,12 @@ def make_dry_run(build: str, variant: str, *goals: str):
 def validate_isolation(text: str) -> None:
     # The default root carries the variant, so Q, QS and SQ cannot land on each
     # other even when BUILD is left alone.
-    require(text, "BUILD ?= build_pmu_completion_visibility_v14/$(V14_VARIANT)",
+    require(text, "BUILD := build_pmu_completion_visibility_v14/$(V14_VARIANT)",
             "the default build root is per-variant")
     check(
-        "BUILD is overridable rather than assigned",
-        "BUILD ?=" in text and "BUILD :=" not in text,
-        "?= only",
+        "the default is only applied when the caller set nothing",
+        "ifeq ($(origin BUILD),undefined)" in text,
+        "origin guard",
     )
     # Generated sources live under the per-variant root: nothing writable is
     # shared, so one variant's generation cannot be read by another.
@@ -186,30 +187,45 @@ def validate_dry_runs() -> None:
     # manifest graph cannot be fully expanded here. That is itself the assertion
     # worth making: the graph must demand the frozen input by name rather than
     # proceed without it, and everything reachable without it must still resolve.
-    for variant in VARIANTS:
-        # Suffixed so no variant's root is a prefix of another's -- ``.../Q``
-        # would otherwise read as present inside ``.../QS``.
-        root = "/tmp/v14-dry/%s-root" % variant
-        cleaned = make_dry_run(root, variant, "clean")
-        check(
-            "make -n resolves the %s clean graph" % variant,
-            cleaned.returncode == 0,
-            (cleaned.stderr or cleaned.stdout).strip()[:60],
-        )
-        check(
-            "the %s graph cleans its own root and nothing else" % variant,
-            root in cleaned.stdout and "rm -rf --" in cleaned.stdout,
-            cleaned.stdout.strip()[:60],
-        )
-        for other in VARIANTS:
-            if other == variant:
-                continue
-            check(
-                "the %s graph never names the %s root" % (variant, other),
-                "/tmp/v14-dry/%s-root" % other not in cleaned.stdout,
-                "",
+    # BUILD reaches the recipe through the environment now, so ``make -n`` no
+    # longer prints it. Isolation is proven by running the real ``clean`` against
+    # scratch roots and observing exactly which one disappears.
+    with tempfile.TemporaryDirectory() as scratch:
+        roots = {}
+        for variant in VARIANTS:
+            directory = pathlib.Path(scratch) / ("%s-root" % variant)
+            directory.mkdir(parents=True)
+            (directory / "marker").write_text(variant, encoding="utf-8")
+            roots[variant] = directory
+        for index, variant in enumerate(VARIANTS):
+            done = subprocess.run(
+                [
+                    "make", "-f", str(MAKEFILE), "V14_VARIANT=%s" % variant,
+                    "BUILD=%s" % roots[variant], "clean",
+                ],
+                capture_output=True,
+                text=True,
+                cwd=str(FIRMWARE),
             )
+            check(
+                "the %s clean graph runs" % variant,
+                done.returncode == 0,
+                (done.stderr or done.stdout).strip()[:60],
+            )
+            check(
+                "the %s clean removed its own root" % variant,
+                not roots[variant].exists(),
+                roots[variant].name,
+            )
+            for other in VARIANTS[index + 1 :]:
+                check(
+                    "cleaning %s left the %s root alone" % (variant, other),
+                    roots[other].exists(),
+                    roots[other].name,
+                )
 
+    for variant in VARIANTS:
+        root = "/tmp/v14-dry/%s-root" % variant
         wanted = make_dry_run(root, variant, "manifest")
         combined = wanted.stdout + wanted.stderr
         check(
@@ -295,14 +311,18 @@ def validate_clean_safety(text: str) -> None:
         # The guard carries its own quoting, so it is written to a script and
         # given the candidate as an argument rather than composed into ``sh -c``.
         script = pathlib.Path(scratch) / "guard.sh"
-        script.write_text('%s "$1"\n' % guard, encoding="utf-8")
+        script.write_text("%s\n" % guard, encoding="utf-8")
 
         def run_guard(candidate: str):
+            # The guard reads the candidate from the environment, the same way
+            # the recipe hands it over -- there is no argv path to test.
+            environment = dict(os.environ, V14_CLEAN_BUILD=candidate)
             return subprocess.run(
-                ["sh", str(script), candidate],
+                ["sh", str(script)],
                 capture_output=True,
                 text=True,
                 cwd=str(FIRMWARE),
+                env=environment,
             )
 
         home = str(pathlib.Path.home())
@@ -324,6 +344,90 @@ def validate_clean_safety(text: str) -> None:
                 probe.returncode == 0,
                 (probe.stderr or probe.stdout).strip()[:60],
             )
+
+
+def validate_clean_injection(text: str) -> None:
+    """A caller-supplied BUILD must reach ``clean`` as data, never as shell syntax.
+
+    ``clean`` runs a shell, and BUILD is the caller's string. Interpolating it
+    into the recipe lets an apostrophe close the quoting and whatever follows run
+    as a command -- with the privileges of whoever ran make. This drives the real
+    recipe rather than the guard alone, because the guard was never what was
+    bypassed: the payload fired before the guard was reached.
+
+    Everything happens under a scratch root, and the assertion is that a sentinel
+    inside that scratch root was never created.
+    """
+
+    with tempfile.TemporaryDirectory() as scratch:
+        sentinel = pathlib.Path(scratch) / "SENTINEL"
+        payloads = (
+            "%s/root'`touch %s`'" % (scratch, sentinel),
+            "%s/root' && touch %s && echo '" % (scratch, sentinel),
+            "%s/root'$(touch %s)'" % (scratch, sentinel),
+            "%s/root'|touch %s|'" % (scratch, sentinel),
+            # Make syntax, not shell syntax: BUILD is expanded by make wherever
+            # it is referenced, so a make function written into it is its own
+            # surface. The graph refuses the metacharacter rather than relying on
+            # where the expansion happens to land.
+            "$(shell touch %s)/root" % sentinel,
+            "%s/root$(shell touch %s)" % (scratch, sentinel),
+        )
+        for payload in payloads:
+            subprocess.run(
+                [
+                    "make", "-f", str(MAKEFILE), "V14_VARIANT=Q",
+                    "BUILD=%s" % payload, "clean",
+                ],
+                capture_output=True,
+                text=True,
+                cwd=str(FIRMWARE),
+            )
+            check(
+                "a BUILD carrying %r executes nothing" % payload[len(scratch):][:26],
+                not sentinel.exists(),
+                "sentinel present" if sentinel.exists() else "sentinel absent",
+            )
+            if sentinel.exists():
+                sentinel.unlink()
+
+        # And the honest paths still clean: a Task 7 absolute staging root and
+        # the per-variant default.
+        honest = pathlib.Path(scratch) / "BUILD_A" / "Q"
+        honest.mkdir(parents=True)
+        (honest / "marker").write_text("x", encoding="utf-8")
+        done = subprocess.run(
+            ["make", "-f", str(MAKEFILE), "V14_VARIANT=Q", "BUILD=%s" % honest, "clean"],
+            capture_output=True,
+            text=True,
+            cwd=str(FIRMWARE),
+        )
+        check(
+            "an absolute staging root still cleans",
+            done.returncode == 0 and not honest.exists(),
+            (done.stderr or done.stdout).strip()[:60],
+        )
+        # The default root, proven by deletion rather than by grepping the
+        # recipe: BUILD travels in the environment now and need not appear in
+        # ``make -n`` output at all. The directory is a build output this test
+        # creates itself, so nothing pre-existing is at risk.
+        default_root = FIRMWARE / "build_pmu_completion_visibility_v14" / "Q"
+        default_root.mkdir(parents=True, exist_ok=True)
+        (default_root / "marker").write_text("x", encoding="utf-8")
+        defaulted = subprocess.run(
+            ["make", "-f", str(MAKEFILE), "V14_VARIANT=Q", "clean"],
+            capture_output=True,
+            text=True,
+            cwd=str(FIRMWARE),
+        )
+        check(
+            "the default root still cleans",
+            defaulted.returncode == 0 and not default_root.exists(),
+            (defaulted.stderr or defaulted.stdout).strip()[:60],
+        )
+        parent = FIRMWARE / "build_pmu_completion_visibility_v14"
+        if parent.is_dir() and not any(parent.iterdir()):
+            parent.rmdir()
 
 
 def validate_checker_cli() -> None:
@@ -446,6 +550,7 @@ def main() -> int:
     validate_targets(text)
     validate_manifest_inputs(text)
     validate_clean_safety(text)
+    validate_clean_injection(text)
     validate_dry_runs()
     validate_checker_cli()
     print("\npassed=%d failed=%d" % (PASSED, FAILED))

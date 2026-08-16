@@ -261,6 +261,106 @@ class ComparatorContract(unittest.TestCase):
 
         self.assert_rejected(link, "artifact-path")
 
+    def test_empty_declared_artifacts_is_refused(self):
+        def empty(right):
+            path = right / "Q" / MANIFEST_NAME
+            manifest = json.loads(path.read_text())
+            manifest["declared_artifacts"] = {}
+            path.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n")
+
+        self.assert_rejected(empty, "manifest")
+
+    def test_empty_declared_artifacts_on_both_sides_is_refused(self):
+        """Two empty manifests agree on everything and prove nothing."""
+
+        def empty(variant, directory):
+            return {"declared_artifacts": {}}
+
+        result, report = self.compare(extra_manifest=empty)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertNotIn("Traceback", result.stderr)
+        self.assertTrue(any(m["kind"] == "manifest" for m in report["mismatches"]))
+
+    # --- symlinked variant directories --------------------------------------
+
+    def _symlink_variant(self, side, variant, target):
+        import shutil
+
+        directory = side / variant
+        shutil.rmtree(directory)
+        directory.symlink_to(target, target_is_directory=True)
+
+    def test_variant_directory_symlinked_to_a_shared_tree_is_refused(self):
+        """One tree behind two names compares clean while proving nothing."""
+
+        with tempfile.TemporaryDirectory() as scratch:
+            root = pathlib.Path(scratch)
+            left, right = root / "A", root / "B"
+            _write_side(left, BASE)
+            _write_side(right, BASE)
+            shared = root / "SHARED"
+            shared.mkdir()
+            import shutil
+
+            shutil.copytree(left / "Q", shared / "Q")
+            self._symlink_variant(left, "Q", shared / "Q")
+            self._symlink_variant(right, "Q", shared / "Q")
+            report = root / "r.json"
+            result = self.run_comparator(left, right, report)
+            self.assertNotEqual(result.returncode, 0, result.stdout)
+            self.assertNotIn("Traceback", result.stderr)
+            payload = json.loads(report.read_text())
+            self.assertTrue(any(m["kind"] == "variant" for m in payload["mismatches"]))
+
+    def test_variant_directory_symlinked_outside_is_refused(self):
+        with tempfile.TemporaryDirectory() as scratch:
+            root = pathlib.Path(scratch)
+            left, right = root / "A", root / "B"
+            _write_side(left, BASE)
+            _write_side(right, BASE)
+            outside = root / "ELSEWHERE"
+            import shutil
+
+            shutil.copytree(right / "QS", outside)
+            self._symlink_variant(right, "QS", outside)
+            report = root / "r.json"
+            result = self.run_comparator(left, right, report)
+            self.assertNotEqual(result.returncode, 0, result.stdout)
+            payload = json.loads(report.read_text())
+            self.assertTrue(any(m["kind"] == "variant" for m in payload["mismatches"]))
+
+    def test_symlinked_build_root_is_refused(self):
+        with tempfile.TemporaryDirectory() as scratch:
+            root = pathlib.Path(scratch)
+            real, right = root / "REAL", root / "B"
+            _write_side(real, BASE)
+            _write_side(right, BASE)
+            left = root / "A"
+            left.symlink_to(real, target_is_directory=True)
+            report = root / "r.json"
+            result = self.run_comparator(left, right, report)
+            self.assertNotEqual(result.returncode, 0, result.stdout)
+            payload = json.loads(report.read_text())
+            self.assertTrue(any(m["kind"] == "variant" for m in payload["mismatches"]))
+
+    def test_physical_variant_directories_are_accepted(self):
+        """The positive control: honest directories with nonempty nested artifacts."""
+
+        result, report = self.compare()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(report["mismatches"], [])
+        with tempfile.TemporaryDirectory() as scratch:
+            root = pathlib.Path(scratch)
+            left, right = root / "A", root / "B"
+            _write_side(left, BASE)
+            _write_side(right, BASE)
+            for side in (left, right):
+                for variant in VARIANTS:
+                    self.assertFalse((side / variant).is_symlink())
+                    self.assertTrue((side / variant).is_dir())
+                manifest = json.loads((side / "Q" / MANIFEST_NAME).read_text())
+                self.assertTrue(manifest["declared_artifacts"])
+
     # --- variant arguments ---------------------------------------------------
 
     def test_variant_outside_the_contract_set_is_a_caller_error(self):
