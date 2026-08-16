@@ -1,0 +1,292 @@
+# Makefile.pmu_completion_visibility_v14 -- isolated PMU_COMPLETION_VISIBILITY_DIAG_V14
+# Q/QS/SQ build graph.
+#
+# The three variants differ only in the order the primary loop samples QREAD and
+# STATUS, so they are built from one frozen pair of sources and told apart by
+# V14_VARIANT alone. That makes isolation the property this graph has to carry:
+#
+#   * V14_VARIANT is required and validated -- there is no default variant to
+#     fall back to, because a build that guessed would produce evidence labelled
+#     with a variant it did not build.
+#   * BUILD is overridable and defaults to a per-variant root, so Q, QS and SQ
+#     never share an output path even when the caller sets nothing.
+#   * The generated sources live *under* that root. Nothing writable is shared
+#     between variants, so one variant's generation can never be read by another.
+#   * The frozen inputs are read-only and pinned by digest; the graph refuses to
+#     run against anything else.
+#
+# Determinism is compared across two clean builds by host/compare_declared_builds.py,
+# which reads the manifest this graph writes -- so the manifest declares logical
+# artifact keys and digests and never an absolute path or a timestamp.
+
+V14_VALID_VARIANTS := Q QS SQ
+
+ifeq ($(strip $(V14_VARIANT)),)
+$(error V14_VARIANT is required and must be one of: $(V14_VALID_VARIANTS))
+endif
+# One word, exactly. A two-word value would otherwise satisfy a membership test
+# word by word and build one variant while claiming another.
+ifneq ($(words $(V14_VARIANT)),1)
+$(error V14_VARIANT must name exactly one variant, got '$(V14_VARIANT)')
+endif
+# ``filter`` would take the *caller's* value as the pattern, so ``V14_VARIANT=%``
+# matches every accepted name and passes. ``filter-out`` puts the trusted
+# constants in the pattern position instead: the value is plain text there, and
+# anything that is not literally Q, QS or SQ survives the filter and is refused.
+ifneq ($(filter-out $(V14_VALID_VARIANTS),$(V14_VARIANT)),)
+$(error V14_VARIANT '$(V14_VARIANT)' is not one of: $(V14_VALID_VARIANTS))
+endif
+
+TOOLCHAIN := /opt/arm/gcc-arm-none-eabi/bin/arm-none-eabi-
+CC        := $(TOOLCHAIN)gcc
+OBJCOPY   := $(TOOLCHAIN)objcopy
+OBJDUMP   := $(TOOLCHAIN)objdump
+SIZE      := $(TOOLCHAIN)size
+NM        := $(TOOLCHAIN)nm
+READELF   := $(TOOLCHAIN)readelf
+
+CMSIS_INC := /opt/arm/ml-embedded-evaluation-kit/dependencies/cmsis-6/CMSIS/Core/Include
+
+# Overridable, and per-variant by default: three roots that cannot collide.
+BUILD ?= build_pmu_completion_visibility_v14/$(V14_VARIANT)
+GEN := $(BUILD)/generated
+TARGET := $(BUILD)/runner_pmu_completion_visibility_v14
+BUILD_ID := 0x34314950
+
+PATCHER := patches/patch_pmu_completion_visibility_v14.py
+GATE    := Selftest_pmu_diag/check_pmu_completion_visibility_v14.py
+
+# Frozen inputs. These are read, never written, and pinned by digest.
+RUNNER_SRC := Selftest_pmu_diag/runner_pmu_diag_main.c
+VENDOR_SRC := Drivers/u85_driver/u85.c
+RUNNER_SHA256 := 69cab8c48a2248d0cc0b883a2bc651efa8eb8867c86369051ebc99cc5ee5a88b
+VENDOR_SHA256 := bcd877bbd42a35d83c8696d02b64d2ae4985a46fcce91b98102e08661b356bcf
+INTERFACE_HEADER := Drivers/u85_driver/interface.h
+REGS_HEADER := Selftest_pmu/npu_pmu_regs.h
+
+GEN_RUNNER := $(GEN)/Selftest_pmu_diag/runner_pmu_diag_main.c
+GEN_VENDOR := $(GEN)/Drivers/u85_driver/u85.c
+GEN_RUNNER_OBJ := $(GEN_RUNNER:.c=.o)
+GEN_VENDOR_OBJ := $(GEN_VENDOR:.c=.o)
+GEN_STAMP := $(GEN)/.generated
+PREPROCESSED := $(BUILD)/runner_pmu_completion_visibility_v14_main.i
+
+V14_OBJDUMP := $(BUILD)/runner_pmu_completion_visibility_v14.objdump
+V14_NM := $(BUILD)/runner_pmu_completion_visibility_v14.nm
+V14_DWARF := $(BUILD)/runner_pmu_completion_visibility_v14.dwarf.txt
+
+# Declared evidence. Each is a separate proof so a manifest cannot be produced
+# by asserting the conclusion.
+SOURCE_FIXTURE_EVIDENCE := $(BUILD)/pmu_completion_visibility_v14_source_fixture_evidence.json
+MAILBOX_WIRE_EVIDENCE := $(BUILD)/pmu_completion_visibility_v14_mailbox_wire_evidence.json
+RETAINED_BASE_PMU_EVIDENCE := $(BUILD)/pmu_completion_visibility_v14_retained_base_pmu_evidence.json
+FROZEN_INPUT_EVIDENCE := $(BUILD)/pmu_completion_visibility_v14_frozen_input_evidence.json
+MANIFEST := $(BUILD)/pmu_completion_visibility_v14_manifest.json
+
+PROFILE_CFLAGS := -DMEASUREMENT_BUILD -DPMU_DIAG_BUILD -DPMU_QUAL_SCHEMA_V8 \
+                  -DPMU_QUAL_SCHEMA_V14 \
+                  -DPMU_COMPLETION_VISIBILITY_DIAG_V14 -DPMU_QUAL_MODE_Q1 \
+                  -DPMU_DIAG_CASE_A -DPMU_DIAG_SEAM_S1 \
+                  -DPMU_DIAG_USES_PRIVATE_DRIVER
+
+SRCS := $(shell find Device_SSE-320 Drivers Selftest Selftest_cli Selftest_pmu \
+                    Selftest_pmu_diag Serial Sleep Tests -name '*.c' -not -name '._*')
+SRCS := $(filter-out Selftest/retarget.c Selftest/main.c Selftest/raw_rx_main.c \
+                     Selftest/runner_v1_main.c Selftest_pmu/runner_pmu_main.c \
+                     Selftest_measure/runner_measure_main.c \
+                     Selftest_pmu_diag/runner_pmu_diag_main.c \
+                     Selftest_pmu_diag/u85_diag.c Drivers/u85_driver/u85.c,$(SRCS))
+SRCS := $(sort $(SRCS))
+BASE_OBJS := $(patsubst %.c,$(BUILD)/%.o,$(SRCS))
+OBJS := $(BASE_OBJS) $(GEN_RUNNER_OBJ) $(GEN_VENDOR_OBJ)
+DEPS := $(OBJS:.o=.d)
+
+INCDIRS := $(sort $(dir $(shell find Device_SSE-320 Drivers Selftest Selftest_cli \
+                    Selftest_pmu Selftest_pmu_diag Serial Sleep Tests LinkScripts \
+                    -name '*.h' -not -name '._*')))
+INCS := $(addprefix -I,$(INCDIRS)) -I$(CMSIS_INC) -I$(GEN)
+
+ARCHFLAGS := -mcpu=cortex-m85+nomve+nofp -mthumb -mfloat-abi=soft
+LEGACY_C := -Wno-error=int-conversion \
+            -Wno-error=incompatible-pointer-types \
+            -Wno-error=implicit-function-declaration \
+            -Wno-error=implicit-int \
+            -Wno-error=return-mismatch \
+            -Wno-error=discarded-qualifiers
+CFLAGS := $(ARCHFLAGS) -std=gnu11 -O1 -g3 -ffunction-sections -fdata-sections \
+          -fno-builtin-printf -Wno-unused-variable -Wno-unused-function \
+          -Wno-missing-braces $(LEGACY_C) $(PROFILE_CFLAGS) \
+          -DRUNNER_FIRMWARE_BUILD_ID=$(BUILD_ID) $(INCS) -MMD -MP
+WRAP_SYMS := printf vprintf fprintf vfprintf puts putchar fwrite _write _write_r fputc serial_print
+WRAPFLAGS := $(foreach s,$(WRAP_SYMS),-Wl,--wrap=$(s))
+LDFLAGS := $(ARCHFLAGS) --specs=nano.specs --specs=nosys.specs \
+           -T $(BUILD)/lnk.ld -T LinkScripts/lnk.measure.overlay.ld \
+           -T LinkScripts/lnk.pmu_diag.overlay.ld \
+           -Wl,-Map=$(TARGET).map,--cref -Wl,--gc-sections \
+           -Wl,--print-memory-usage $(WRAPFLAGS)
+
+.PHONY: all clean bins check manifest preprocess
+
+all: bins preprocess check manifest
+
+$(BUILD)/lnk.ld: LinkScripts/lnk.ld.S LinkScripts/region_defs.h LinkScripts/region_limits.h
+	@mkdir -p $(dir $@)
+	$(CC) -E -P -x c -ILinkScripts $< -o $@
+
+# The frozen inputs are checked before anything is generated from them, so a
+# changed input is a refusal rather than a differently-labelled build.
+$(FROZEN_INPUT_EVIDENCE): $(RUNNER_SRC) $(VENDOR_SRC) $(PATCHER) $(GATE)
+	@mkdir -p $(dir $@)
+	python3 -c 'import hashlib, json, pathlib, sys; \
+expected = {"$(RUNNER_SRC)": "$(RUNNER_SHA256)", "$(VENDOR_SRC)": "$(VENDOR_SHA256)"}; \
+actual = {name: hashlib.sha256(pathlib.Path(name).read_bytes()).hexdigest() for name in expected}; \
+bad = {name: (actual[name], expected[name]) for name in expected if actual[name] != expected[name]}; \
+sys.exit("frozen input digest mismatch: %s" % bad) if bad else None; \
+pathlib.Path("$@").write_text(json.dumps({"frozen_inputs": actual, "variant": "$(V14_VARIANT)"}, indent=2, sort_keys=True) + "\n", encoding="utf-8")'
+
+$(GEN_STAMP): $(RUNNER_SRC) $(VENDOR_SRC) $(PATCHER) $(FROZEN_INPUT_EVIDENCE)
+	@mkdir -p $(GEN)
+	python3 $(PATCHER) \
+	    --variant $(V14_VARIANT) \
+	    --runner-in $(RUNNER_SRC) \
+	    --vendor-in $(VENDOR_SRC) \
+	    --runner-out $(GEN_RUNNER) \
+	    --vendor-out $(GEN_VENDOR)
+	@touch $@
+
+$(GEN_RUNNER) $(GEN_VENDOR): $(GEN_STAMP)
+
+$(BUILD)/%.o: %.c
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(GEN)/%.o: $(GEN)/%.c
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(TARGET).elf: $(OBJS) $(BUILD)/lnk.ld LinkScripts/lnk.measure.overlay.ld LinkScripts/lnk.pmu_diag.overlay.ld
+	$(CC) $(OBJS) $(LDFLAGS) -o $@ -lm
+	$(SIZE) $@
+
+# The map and the three images are side effects of the link and of ``bins``.
+# Make has no rule for a side effect, so naming one as a prerequisite would fail
+# with "No rule to make target" even though the recipe above emits it. Each gets
+# a witness rule instead: the artifact depends on what produces it, and the
+# recipe proves it landed rather than remaking it.
+$(TARGET).map: $(TARGET).elf
+	@test -s $@
+
+$(BUILD)/APP.BIN $(BUILD)/VECTORS.BIN $(BUILD)/DDR.BIN: bins
+	@test -s $@
+
+bins: $(TARGET).elf
+	$(OBJCOPY) -O binary --only-section=.vectors_rom $(TARGET).elf $(BUILD)/VECTORS.BIN
+	$(OBJCOPY) -O binary --only-section=.text --only-section=.ARM.extab \
+	    --only-section=.ARM.exidx --only-section=.preinit_array --only-section=.init_array \
+	    --only-section=.fini_array --only-section=.copy.table --only-section=.zero.table \
+	    --only-section=.vectors_ram --only-section=.data $(TARGET).elf $(BUILD)/APP.BIN
+	$(OBJCOPY) -O binary --only-section=.ddr $(TARGET).elf $(BUILD)/DDR.BIN
+
+preprocess: $(PREPROCESSED)
+
+$(PREPROCESSED): $(GEN_RUNNER)
+	$(CC) $(CFLAGS) -E $(GEN_RUNNER) -o $@
+
+$(V14_OBJDUMP): $(TARGET).elf
+	@mkdir -p $(dir $@)
+	$(OBJDUMP) -d $< > $@
+
+$(V14_NM): $(TARGET).elf
+	@mkdir -p $(dir $@)
+	$(NM) -n $< > $@
+
+$(V14_DWARF): $(TARGET).elf
+	@mkdir -p $(dir $@)
+	$(READELF) --debug-dump=info,loc $< > $@
+
+# The source/fixture proof is the checker's own verdict on the generated pair,
+# produced by the real CLI rather than restated here.
+$(SOURCE_FIXTURE_EVIDENCE): $(GEN_RUNNER) $(GEN_VENDOR) $(GATE)
+	@mkdir -p $(dir $@)
+	python3 $(GATE) \
+	    --allow-fixture \
+	    --variant $(V14_VARIANT) \
+	    --runner-generated $(GEN_RUNNER) \
+	    --vendor-generated $(GEN_VENDOR) \
+	    --fixture-manifest-out $@
+	@test -s $@
+
+# What the mailbox publishes and what the runner serializes, read off the
+# generated sources the ELF was actually built from.
+$(MAILBOX_WIRE_EVIDENCE): $(GEN_RUNNER) $(GEN_VENDOR) $(GATE) $(TARGET).elf $(V14_NM)
+	@mkdir -p $(dir $@)
+	python3 -c 'import json, pathlib, sys; \
+sys.path.insert(0, "Selftest_pmu_diag"); \
+import check_pmu_completion_visibility_v14 as gate; \
+runner = gate.mask_c_lexical(gate._normalize_newlines(pathlib.Path("$(GEN_RUNNER)").read_text(encoding="utf-8"))); \
+vendor = gate.mask_c_lexical(gate._normalize_newlines(pathlib.Path("$(GEN_VENDOR)").read_text(encoding="utf-8"))); \
+defines = gate.parse_defines(vendor); \
+evidence = {"mailbox": gate.verify_mailbox_contract(vendor, defines), "runner_wire": gate.verify_runner_contract(runner), "variant": "$(V14_VARIANT)"}; \
+pathlib.Path("$@").write_text(json.dumps(evidence, indent=2, sort_keys=True) + "\n", encoding="utf-8")'
+	@test -s $@
+
+# The base PMU path has to survive into the image: its symbols are read out of
+# the linked ELF, not asserted from the source.
+$(RETAINED_BASE_PMU_EVIDENCE): $(TARGET).elf $(V14_NM) $(V14_OBJDUMP) $(GEN_VENDOR_OBJ)
+	@mkdir -p $(dir $@)
+	python3 -c 'import json, pathlib, sys; \
+nm = pathlib.Path("$(V14_NM)").read_text(encoding="utf-8"); \
+required = ["run_fixed_inference", "test_u85", "test_commands", "u85_irq_handler", "pmu_completion_visibility_v14_mailbox"]; \
+retained = {name: any(line.split()[-1] == name for line in nm.splitlines() if line.split()) for name in required}; \
+missing = sorted(name for name, present in retained.items() if not present); \
+sys.exit("base PMU symbols missing from the linked image: %s" % missing) if missing else None; \
+pathlib.Path("$@").write_text(json.dumps({"retained_symbols": retained, "variant": "$(V14_VARIANT)"}, indent=2, sort_keys=True) + "\n", encoding="utf-8")'
+	@test -s $@
+
+check: $(SOURCE_FIXTURE_EVIDENCE) $(MAILBOX_WIRE_EVIDENCE) $(RETAINED_BASE_PMU_EVIDENCE) $(FROZEN_INPUT_EVIDENCE)
+
+manifest: $(MANIFEST)
+
+# The manifest cannot be produced without every artifact it declares: the ELF,
+# the map, the symbol and disassembly dumps, the DWARF, the generated sources,
+# the preprocessed translation unit, the images, and all four proofs.
+$(MANIFEST): $(TARGET).elf $(TARGET).map $(V14_NM) $(V14_OBJDUMP) $(V14_DWARF) \
+             $(GEN_RUNNER) $(GEN_VENDOR) $(PREPROCESSED) \
+             $(BUILD)/APP.BIN $(BUILD)/VECTORS.BIN $(BUILD)/DDR.BIN \
+             $(SOURCE_FIXTURE_EVIDENCE) $(MAILBOX_WIRE_EVIDENCE) \
+             $(RETAINED_BASE_PMU_EVIDENCE) $(FROZEN_INPUT_EVIDENCE) $(GATE)
+	@mkdir -p $(dir $@)
+	python3 -c 'import hashlib, json, pathlib, sys; \
+build = pathlib.Path("$(BUILD)"); \
+declared = ["APP.BIN", "VECTORS.BIN", "DDR.BIN", pathlib.Path("$(TARGET).elf").name, pathlib.Path("$(TARGET).map").name, pathlib.Path("$(V14_NM)").name, pathlib.Path("$(V14_OBJDUMP)").name, pathlib.Path("$(V14_DWARF)").name, pathlib.Path("$(PREPROCESSED)").name, pathlib.Path("$(SOURCE_FIXTURE_EVIDENCE)").name, pathlib.Path("$(MAILBOX_WIRE_EVIDENCE)").name, pathlib.Path("$(RETAINED_BASE_PMU_EVIDENCE)").name, pathlib.Path("$(FROZEN_INPUT_EVIDENCE)").name]; \
+declared += ["generated/Selftest_pmu_diag/runner_pmu_diag_main.c", "generated/Drivers/u85_driver/u85.c"]; \
+missing = [name for name in declared if not (build / name).is_file()]; \
+sys.exit("declared artifact missing: %s" % missing) if missing else None; \
+table = {name: {"sha256": hashlib.sha256((build / name).read_bytes()).hexdigest(), "bytes": (build / name).stat().st_size} for name in declared}; \
+frozen = json.loads(pathlib.Path("$(FROZEN_INPUT_EVIDENCE)").read_text(encoding="utf-8"))["frozen_inputs"]; \
+document = {"variant": "$(V14_VARIANT)", "schema_version": 14, "build_id": "$(BUILD_ID)", "frozen_input_sha256": frozen, "declared_artifacts": table}; \
+pathlib.Path("$@").write_text(json.dumps(document, indent=2, sort_keys=True) + "\n", encoding="utf-8")'
+	@test -s $(MANIFEST)
+
+# BUILD is caller-supplied and clean deletes it, so it is validated before rm
+# ever sees it. The guard prints the one path it approved and fails otherwise,
+# and clean is written so rm cannot run unless it succeeded. Task 7's absolute
+# staging roots (/work/v14/BUILD_A/Q) are accepted; a filesystem root, the
+# working tree, $HOME, and any path shallow enough to be one of those are not.
+CLEAN_GUARD := python3 -c 'import os,pathlib,sys; \
+raw = sys.argv[1] if len(sys.argv) > 1 else ""; \
+sys.exit("refusing to clean an empty BUILD") if not raw.strip() else None; \
+target = pathlib.Path(raw).expanduser(); \
+resolved = pathlib.Path(os.path.abspath(str(target))); \
+here = pathlib.Path(os.path.abspath(os.getcwd())); \
+home = pathlib.Path(os.path.abspath(os.path.expanduser("~"))); \
+sys.exit("refusing to clean the filesystem root: %s" % resolved) if resolved.parent == resolved else None; \
+sys.exit("refusing to clean a path with fewer than two components: %s" % resolved) if len(resolved.parts) < 3 else None; \
+sys.exit("refusing to clean the working tree: %s" % resolved) if resolved == here or resolved in here.parents else None; \
+sys.exit("refusing to clean the home directory: %s" % resolved) if resolved == home else None; \
+print(resolved)'
+
+clean:
+	@path="$$($(CLEAN_GUARD) '$(BUILD)')" && rm -rf -- "$$path"
+
+-include $(DEPS)
