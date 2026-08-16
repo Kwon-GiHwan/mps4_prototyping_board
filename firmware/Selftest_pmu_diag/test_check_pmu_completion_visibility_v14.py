@@ -128,7 +128,7 @@ STATUS_FAULT_MASK = 0x314
 
 # The suite is frozen at this many assertions. Adding a named fixture is a
 # deliberate act, so the count moves with it and never drifts silently.
-EXPECTED_PASS_COUNT = 989
+EXPECTED_PASS_COUNT = 1009
 
 CHECKER_PATH = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
@@ -9840,7 +9840,160 @@ RETURN_GUARD_NESTING_MUTATIONS = (
 )
 
 
+# --- 6deb3d3 r6-review blockers --------------------------------------------
+#
+# Three compiling bypasses, all in rules the previous two commits added. Two are
+# the declarator walk reading one name where C declares several, or reading a
+# declaration in a context whose end it does not know; the third is a store
+# proven to *exist* where the contract needs it to *execute*.
+
+RUNNER_MULTI_ALIAS_TYPEDEF_MUTATIONS = (
+    (
+        "runner_calls_an_object_of_the_first_alias_of_a_multi_alias_typedef",
+        _with_runner_vector_declaration(
+            "typedef irq_handler_t v14_a_t, v14_b_t;\nstatic v14_a_t v14_hook;\n",
+            "    v14_hook();\n",
+            RUNNER_RECORD_CLOSURE_ANCHOR,
+        ),
+        "calls through a function pointer",
+    ),
+    (
+        "runner_calls_an_object_of_the_middle_alias_of_a_three_alias_typedef",
+        _with_runner_vector_declaration(
+            "typedef irq_handler_t v14_a_t, v14_b_t, v14_c_t;\nstatic v14_b_t v14_hook;\n",
+            "    v14_hook();\n",
+            RUNNER_RECORD_CLOSURE_ANCHOR,
+        ),
+        "calls through a function pointer",
+    ),
+    (
+        "runner_calls_an_object_of_an_alias_declared_beside_a_pointer_alias",
+        _with_runner_vector_declaration(
+            "typedef irq_handler_t v14_a_t, *v14_p_t;\nstatic v14_a_t v14_hook;\n",
+            "    v14_hook();\n",
+            RUNNER_RECORD_CLOSURE_ANCHOR,
+        ),
+        "calls through a function pointer",
+    ),
+)
+
+RUNNER_EXEMPT_PARAMETER_MUTATIONS = (
+    (
+        "runner_calls_through_an_exempt_type_parameter_inside_the_callee",
+        _with_runner_vector_declaration(
+            "static void v14_trampoline(irq_handler_t v14_hook)\n{\n    v14_hook();\n}\n",
+            "    v14_trampoline((irq_handler_t)0);\n",
+            RUNNER_RECORD_CLOSURE_ANCHOR,
+        ),
+        "calls through a function pointer",
+    ),
+    (
+        "runner_calls_through_a_second_position_exempt_type_parameter",
+        _with_runner_vector_declaration(
+            "static void v14_trampoline(uint32_t v14_word, irq_handler_t v14_hook)\n"
+            "{\n    (void)v14_word;\n    v14_hook();\n}\n",
+            "    v14_trampoline(0U, (irq_handler_t)0);\n",
+            RUNNER_RECORD_CLOSURE_ANCHOR,
+        ),
+        "calls through a function pointer",
+    ),
+    (
+        "runner_calls_through_an_alias_typed_parameter",
+        _with_runner_vector_declaration(
+            "typedef irq_handler_t v14_a_t;\n"
+            "static void v14_trampoline(v14_a_t v14_hook)\n{\n    v14_hook();\n}\n",
+            "    v14_trampoline((v14_a_t)0);\n",
+            RUNNER_RECORD_CLOSURE_ANCHOR,
+        ),
+        "calls through a function pointer",
+    ),
+)
+
+RUNNER_REARM_REACHABILITY_MUTATIONS = (
+    (
+        "runner_clears_the_transport_flag_under_an_always_false_guard",
+        _rt_swap(
+            RUNNER_RESET_CLEAR,
+            "    v14_mailbox_reset();\n    if (0) {\n"
+            "        pmu_diag_v14_transport_valid = 0U;\n    }",
+            "runner reset clear",
+        ),
+        "does not clear the transport flag on every path",
+    ),
+    (
+        "runner_clears_the_transport_flag_under_a_guard_this_gate_cannot_fold",
+        _rt_swap(
+            RUNNER_RESET_CLEAR,
+            "    v14_mailbox_reset();\n    if (pmu_qual_hook_pmu_reads != 0U) {\n"
+            "        pmu_diag_v14_transport_valid = 0U;\n    }",
+            "runner reset clear",
+        ),
+        "does not clear the transport flag on every path",
+    ),
+    (
+        "runner_clears_the_transport_flag_only_in_an_else_arm",
+        _rt_swap(
+            RUNNER_RESET_CLEAR,
+            "    v14_mailbox_reset();\n    if (1) {\n        (void)0;\n    } else {\n"
+            "        pmu_diag_v14_transport_valid = 0U;\n    }",
+            "runner reset clear",
+        ),
+        "does not clear the transport flag on every path",
+    ),
+)
+
+
 # --- controls: the neighbouring legal sources still pass --------------------
+
+RUNNER_R6_REMEDIATION_CONTROLS = (
+    (
+        "a multi-alias typedef of the exempt type whose objects are never called",
+        _rt_before(
+            RUNNER_RESET_HEAD,
+            RUNNER_STOCK_VECTOR_TYPEDEF
+            + "typedef irq_handler_t v14_a_t, v14_b_t;\n"
+            + "static v14_a_t v14_spare_one;\nstatic v14_b_t v14_spare_two;\n\n",
+            "runner reset definition",
+        ),
+    ),
+    (
+        "the stock vector slot chained to from outside the record-owning function",
+        _with_runner_vector_declaration(
+            "static irq_handler_t original_u85_handler;\n"
+            "static void v14_chain(void)\n{\n    original_u85_handler();\n}\n",
+            "    (void)0;\n",
+            RUNNER_RECORD_CLOSURE_ANCHOR,
+        ),
+    ),
+    (
+        "an exempt-type parameter passed through but never called",
+        _with_runner_vector_declaration(
+            "static void v14_store(irq_handler_t v14_slot)\n"
+            "{\n    (void)v14_slot;\n}\n",
+            "    v14_store((irq_handler_t)0);\n",
+            RUNNER_RECORD_CLOSURE_ANCHOR,
+        ),
+    ),
+    (
+        "the transport clear under a guard that folds to a non-zero constant",
+        _rt_swap(
+            RUNNER_RESET_CLEAR,
+            "    v14_mailbox_reset();\n    if (1) {\n"
+            "        pmu_diag_v14_transport_valid = 0U;\n    }",
+            "runner reset clear",
+        ),
+    ),
+    (
+        "the transport clear under a guard folded from a contract macro",
+        _rt_swap(
+            RUNNER_RESET_CLEAR,
+            "    v14_mailbox_reset();\n    if (V14_APPENDIX_WORDS) {\n"
+            "        pmu_diag_v14_transport_valid = 0U;\n    }",
+            "runner reset clear",
+        ),
+    ),
+)
+
 
 FRESH42A_REMEDIATION_CONTROLS = (
     (
@@ -10205,6 +10358,46 @@ def run_a0fe0ab_remediation_suite(gate):
             "accepts %s" % label,
         )
     for label, mutate in RUNNER_A0FE0AB_REMEDIATION_CONTROLS:
+        expect_accept(
+            gate,
+            "Q",
+            mutate(canonical_runner("Q")),
+            canonical_vendor("Q"),
+            "accepts %s" % label,
+        )
+
+
+def run_r6_remediation_suite(gate):
+    """The 6deb3d3 r6-review blockers, each reproduced before it was closed.
+
+    Three families, all inside rules the previous two commits added: a typedef
+    that declares several aliases at once, an exempt type reached through a
+    parameter list, and a clearing store that exists without executing. Each
+    carries a sibling the reviewer's PoCs did not use.
+    """
+
+    run_runner_mutations(gate, RUNNER_MULTI_ALIAS_TYPEDEF_MUTATIONS, "Q")
+    run_runner_mutations(gate, RUNNER_EXEMPT_PARAMETER_MUTATIONS, "Q")
+    run_runner_mutations(gate, RUNNER_REARM_REACHABILITY_MUTATIONS, "Q")
+
+    for variant in ("QS", "SQ"):
+        for label, mutate, reason in (
+            RUNNER_MULTI_ALIAS_TYPEDEF_MUTATIONS[0],
+            RUNNER_EXEMPT_PARAMETER_MUTATIONS[0],
+            RUNNER_REARM_REACHABILITY_MUTATIONS[0],
+        ):
+            name = "%s_%s" % (variant.lower(), label)
+            REJECTED_FIXTURES.add(name)
+            expect_reject(
+                gate,
+                variant,
+                mutate(canonical_runner(variant)),
+                canonical_vendor(variant),
+                name,
+                reason,
+            )
+
+    for label, mutate in RUNNER_R6_REMEDIATION_CONTROLS:
         expect_accept(
             gate,
             "Q",
@@ -10984,6 +11177,7 @@ if __name__ == "__main__":
         run_c10da9b_remediation_suite(gate)
         run_eff4143_remediation_suite(gate)
         run_fresh_42a1314_remediation_suite(gate)
+        run_r6_remediation_suite(gate)
         run_coverage_suite()
 
     try:

@@ -6738,17 +6738,24 @@ def function_pointer_type_names(masked: str, seeds: frozenset) -> frozenset:
     for _pass in range(budget):
         grown = False
         for body in declarations:
-            names = _IDENTIFIER_RE.findall(body)
-            if not names or names[-1] in known:
+            # One ``typedef`` declares as many names as it has declarators:
+            # ``typedef irq_handler_t v14_a_t, v14_b_t;`` gives the exempt type
+            # two aliases, and reading only the last identifier lost the first.
+            # The declarators are therefore split the same way an object
+            # declaration's are, and every one of them enters the closure.
+            parts = _split_top_level(body, ",")
+            base = _IDENTIFIER_RE.findall(parts[0]) if parts else []
+            if len(base) < 2 or not set(base[:-1]) & known:
                 continue
-            # The declared name is the last identifier; the type it aliases is
-            # any earlier one. A typedef that merely *mentions* a known type in
-            # a parameter list is not an alias of it, so only a body whose
-            # non-declarator tokens are the known type alone counts.
-            if set(names[:-1]) & known and not _FUNCTION_POINTER_DECLARATOR_RE.search(
-                body
-            ):
-                known.add(names[-1])
+            # A typedef that merely *mentions* a known type inside a
+            # function-pointer declarator is not an alias of it.
+            if _FUNCTION_POINTER_DECLARATOR_RE.search(body) is not None:
+                continue
+            for part in parts:
+                match = _DECLARATOR_TAIL_RE.search(part.strip())
+                if match is None or match.group(1) in known:
+                    continue
+                known.add(match.group(1))
                 grown = True
         if not grown:
             break
@@ -6767,10 +6774,35 @@ def _is_cast_of(masked: str, start: int, stop: int) -> bool:
     return masked[before : before + 1] == "(" and masked[after : after + 1] == ")"
 
 
+def _declaration_end(text: str, start: int) -> int:
+    """Where the declaration beginning at ``start`` ends.
+
+    ``_statement_end`` stops at ``;``/``{``/``}`` at bracket depth zero, which is
+    the wrong end for a *parameter*: the declaration sits inside a parameter
+    list, so the first ``)`` closes a bracket this scan never opened and the walk
+    ran on past the whole function -- missing the parameter's own name and
+    sweeping in identifiers from unrelated statements. A closer with nothing to
+    match is therefore an end too.
+    """
+
+    depth = 0
+    for index in range(start, len(text)):
+        character = text[index]
+        if character in "([":
+            depth += 1
+        elif character in ")]":
+            if depth == 0:
+                return index
+            depth -= 1
+        elif depth == 0 and character in ";{}":
+            return index
+    return len(text)
+
+
 def declaration_declarators(text: str, start: int) -> tuple[str, ...]:
     """Every declarator name in the declaration whose type name begins at ``start``."""
 
-    body = text[start : _statement_end(text, start)]
+    body = text[start : _declaration_end(text, start)]
     found: list[str] = []
     for part in _split_top_level(body, ","):
         # An initialiser is not a declarator. ``= 0`` after the name would
@@ -7771,6 +7803,41 @@ _MAILBOX_MAGIC_GUARD_RE = re.compile(
 )
 
 
+def _executes_unconditionally(body: str, position: int, defines: dict[str, int]) -> bool:
+    """Whether the statement at ``position`` runs on every path through ``body``.
+
+    Proving the clearing store *exists* is not proving it *happens*: wrapping it
+    in ``if (0)`` leaves a store that folds to zero and never executes, so the
+    flag is never cleared and the run window carries whatever the last one left.
+    A store is on the must-execute path when every block enclosing it is an
+    ``if`` whose condition folds to a non-zero constant -- a guard that selects
+    nothing -- and it is not on that path when a block is an ``else`` arm, a
+    loop, or an ``if`` this gate cannot fold.
+    """
+
+    cursor = position
+    for _step in range(len(body)):
+        start = enclosing_block_start(body, cursor)
+        if start <= 0:
+            return True
+        head = body[: start - 1]
+        opener = None
+        for match in _IF_HEAD_OPEN_RE.finditer(head):
+            opener = match
+        if opener is None:
+            return False
+        close = _bracket_pairs(head)[0].get(opener.end() - 1)
+        if close is None or head[close + 1 :].strip():
+            # An ``else`` arm or a loop body: text sits between the guard's
+            # ``)`` and this block's ``{``, so the block is not the guard's own.
+            return False
+        folded = _evaluate_constant(head[opener.end() : close], defines)
+        if folded is None or folded == 0:
+            return False
+        cursor = opener.start()
+    return False
+
+
 def _mailbox_magic_branch(runner_masked: str) -> tuple[int, int]:
     """The span of the mailbox-magic ``if``/``else``, arms included.
 
@@ -7863,6 +7930,23 @@ def require_transport_reset_polarity(runner_masked: str) -> None:
         and not branch_start <= body_start + start < branch_stop
         and _evaluate_constant(rvalue, defines) == TRANSPORT_CLEARED
     ]
+    # A store the contract needs to *happen* is not proven by one that merely
+    # *exists*. ``if (0) { pmu_diag_v14_transport_valid = 0U; }`` satisfies the
+    # value and the ownership and clears nothing.
+    if cleared_here and not any(
+        _executes_unconditionally(body, start, defines) for start in cleared_here
+    ):
+        raise fail(
+            "the runner does not clear the transport flag on every path: %s stores %s to %s "
+            "only under a guard this gate cannot discharge, so a run whose vendor never "
+            "published carries whatever the previous run left in %s"
+            % (
+                owner or "file scope",
+                TRANSPORT_INVALID_VALUE,
+                TRANSPORT_VALID_SYMBOL,
+                TRANSPORT_VALID_SYMBOL,
+            )
+        )
     if not cleared_here:
         raise fail(
             "the runner resets the mailbox in a function that does not clear the transport "
