@@ -128,7 +128,7 @@ STATUS_FAULT_MASK = 0x314
 
 # The suite is frozen at this many assertions. Adding a named fixture is a
 # deliberate act, so the count moves with it and never drifts silently.
-EXPECTED_PASS_COUNT = 952
+EXPECTED_PASS_COUNT = 989
 
 CHECKER_PATH = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
@@ -9589,7 +9589,303 @@ RETURN_GUARD_BINDING_MUTATIONS = (
 )
 
 
+# --- 42a1314 fresh-review blockers -----------------------------------------
+#
+# Seven compiling bypasses in four families. Three sit inside the declarator
+# walk the previous commit rewrote, and two invert a branch priority that
+# commit's own comment states as the design. The shape is the recurring one:
+# the rule reads the construct the last report spelled and stops at the first
+# thing C lets you write differently -- a declarator wrapped in parentheses, a
+# type reached through an alias, a store placed in another function, a load
+# outside the loop that measures it, a guard nested above the one recorded.
+
+RT_CONVERGE_PUBLISH_TAIL = V14_CONVERGE_TAIL
+RT_PRESUBMIT_RESET_ARM_OPEN = "\t  if ((pre_submit_status & V14_STATUS_RESET) != 0U) {\n"
+RT_PRIMARY_RESET_ARM_OPEN = "\t    if (primary.result == V14_PRIMARY_RESET) {\n"
+RT_CONVERGENCE_RESET_ARM_OPEN = "\t    if (converged.result == V14_CONVERGENCE_RESET) {\n"
+RT_PRESUBMIT_RESET_ARM_CLOSE = RT_PRESUBMIT_RESET_RETURN + "\t  }\n"
+RT_PRIMARY_RESET_ARM_CLOSE = (
+    "\t      v14_publish_failure(V14_PHASE_PRIMARY, V14_REASON_RESET_IN_PROGRESS,"
+    " primary.qread, primary.status);\n\t      return V14_RET_RESET_IN_PROGRESS;\n\t    }\n"
+)
+RT_CONVERGENCE_RESET_ARM_CLOSE = (
+    "\t      v14_publish_failure(V14_PHASE_CONVERGENCE, V14_REASON_RESET_IN_PROGRESS,"
+    " converged.qread, converged.status);\n\t      return V14_RET_RESET_IN_PROGRESS;\n\t    }\n"
+)
+
+
+def _wrap_arm(open_anchor, close_anchor, condition, what):
+    """Nest a whole guarded arm under an extra enclosing condition."""
+
+    def mutate(vendor):
+        opened = replace_once(
+            vendor,
+            open_anchor,
+            "\t  if (%s) {\n" % condition + open_anchor,
+            what + " open",
+        )
+        return replace_once(
+            opened, close_anchor, close_anchor + "\t  }\n", what + " close"
+        )
+
+    return mutate
+
+
+# A. ``_DECLARATOR_TAIL_RE`` anchors the declared name at the end of the
+# declarator, so ``irq_handler_t (v14_hook);`` -- valid C11, the parentheses are
+# redundant grouping -- ends in ``)`` and the name is never collected. And the
+# type set is keyed on one literal name, so a typedef alias of the exempt type
+# is a type the object walk never scans for at all. Both leave a call through a
+# function pointer inside the record-owning function, which is the window the
+# diagnostic rule exists to refuse.
+RUNNER_PARENTHESISED_DECLARATOR_MUTATIONS = (
+    (
+        "runner_calls_a_parenthesised_pointer_declarator",
+        _with_runner_vector_declaration(
+            "static irq_handler_t (v14_hook);\n",
+            "    v14_hook();\n",
+            RUNNER_RECORD_CLOSURE_ANCHOR,
+        ),
+        "calls through a function pointer",
+    ),
+    (
+        "runner_calls_a_parenthesised_declarator_sharing_the_exempt_declaration",
+        _with_runner_vector_declaration(
+            "static irq_handler_t (v14_hook), original_u85_handler;\n",
+            "    v14_hook();\n",
+            RUNNER_RECORD_CLOSURE_ANCHOR,
+        ),
+        "calls through a function pointer",
+    ),
+    (
+        "runner_calls_a_doubly_parenthesised_pointer_declarator",
+        _with_runner_vector_declaration(
+            "static irq_handler_t ((v14_hook));\n",
+            "    v14_hook();\n",
+            RUNNER_RECORD_CLOSURE_ANCHOR,
+        ),
+        "calls through a function pointer",
+    ),
+    (
+        "runner_calls_a_parenthesised_declarator_carrying_a_subscript",
+        _with_runner_vector_declaration(
+            "static irq_handler_t (v14_table)[2];\n",
+            "    v14_table[0]();\n",
+            RUNNER_RECORD_CLOSURE_ANCHOR,
+        ),
+        "calls through a function pointer",
+    ),
+)
+
+RUNNER_TYPEDEF_ALIAS_MUTATIONS = (
+    (
+        "runner_calls_an_object_of_a_typedef_alias_of_the_exempt_type",
+        _with_runner_vector_declaration(
+            "typedef irq_handler_t irq_alias_t;\nstatic irq_alias_t v14_hook;\n",
+            "    v14_hook();\n",
+            RUNNER_RECORD_CLOSURE_ANCHOR,
+        ),
+        "calls through a function pointer",
+    ),
+    (
+        "runner_calls_an_object_of_an_alias_of_an_alias",
+        _with_runner_vector_declaration(
+            "typedef irq_handler_t irq_alias_t;\ntypedef irq_alias_t irq_alias2_t;\n"
+            "static irq_alias2_t v14_hook;\n",
+            "    v14_hook();\n",
+            RUNNER_RECORD_CLOSURE_ANCHOR,
+        ),
+        "calls through a function pointer",
+    ),
+    (
+        "runner_calls_a_parenthesised_declarator_of_an_alias_type",
+        _with_runner_vector_declaration(
+            "typedef irq_handler_t irq_alias_t;\nstatic irq_alias_t (v14_hook);\n",
+            "    v14_hook();\n",
+            RUNNER_RECORD_CLOSURE_ANCHOR,
+        ),
+        "calls through a function pointer",
+    ),
+)
+
+# B. The re-arm rule resolves the owner of the ``v14_mailbox_reset()`` call and
+# reads the first transport store at or after it. Move the call into the record
+# owner and the "first store after it" becomes the magic branch's own ``= 0U``,
+# which folds to zero -- while the function that actually re-arms the run
+# asserts the flag. The count stays at three and the arm polarity is untouched.
+RUNNER_REARM_LIFETIME_MUTATIONS = (
+    (
+        "runner_hoists_the_mailbox_reset_and_asserts_the_flag_in_the_re_arm",
+        lambda runner: replace_once(
+            replace_once(
+                runner,
+                RUNNER_RESET_CLEAR,
+                "    pmu_diag_v14_transport_valid = 1U;",
+                "runner reset clear",
+            ),
+            "    rc = run_fixed_inference();\n",
+            "    v14_mailbox_reset();\n    rc = run_fixed_inference();\n",
+            "runner measured call",
+        ),
+        "resets the mailbox in a function that does not clear the transport flag",
+    ),
+    (
+        "runner_asserts_the_flag_in_a_second_store_outside_the_magic_branch",
+        _rt_before(
+            "    rc = run_fixed_inference();\n",
+            "    pmu_diag_v14_transport_valid = 1U;\n",
+            "runner measured call",
+        ),
+        "assigns pmu_diag_v14_transport_valid",
+    ),
+    (
+        "runner_re_arms_the_flag_in_a_function_that_does_not_reset_the_mailbox",
+        lambda runner: replace_once(
+            replace_once(
+                runner,
+                RUNNER_RESET_CLEAR,
+                "    v14_mailbox_reset();",
+                "runner reset clear",
+            ),
+            "    rc = run_fixed_inference();\n",
+            "    pmu_diag_v14_transport_valid = 0U;\n    rc = run_fixed_inference();\n",
+            "runner measured call",
+        ),
+        "does not clear the transport flag",
+    ),
+)
+
+# C. QREAD's owner set names the three functions that load it, and nothing
+# bounds how often. The read-order rules walk the loop bodies, so a load placed
+# after the loop and before publication is running-path MMIO with nothing
+# judging it -- and it perturbs the hook read count the runner publishes as a
+# record word.
+QREAD_LOAD_COUNT_MUTATIONS = (
+    (
+        "extra_qread_load_in_the_convergence_helper_after_its_loop",
+        _rt_before(
+            RT_CONVERGE_PUBLISH_TAIL,
+            "    (void)*qread_reg;\n",
+            "convergence publication tail",
+        ),
+        "loads QREAD more times than the design loads it",
+    ),
+    (
+        "extra_qread_load_in_the_primary_helper_after_its_loop",
+        _rt_swap(
+            V14_PRIMARY_STATUS_LOAD,
+            "    status = *status_reg;\n    (void)*qread_reg;\n"
+            "    obs->t_first = V14_U32_INVALID;\n",
+            "primary status load",
+        ),
+        "loads QREAD more times than the design loads it",
+    ),
+    (
+        "extra_qread_read_back_in_the_command_function",
+        _rt_before(
+            V14_CONVERGE_CALL,
+            "\t  (void)read_reg(NPU_REG_QREAD);\n",
+            "convergence call",
+        ),
+        "loads QREAD more times than the design loads it",
+    ),
+)
+
+# D. ``_enclosing_guard`` reads the innermost enclosing ``if`` only, so an extra
+# guard wrapped *around* a whole arm leaves the recorded pair byte-identical
+# while inverting the priority the design fixes: a status carrying both RESET
+# and FAULT_MASK returns HARDWARE_FAULT where the design returns
+# RESET_IN_PROGRESS, and the host's disposition keys off the class.
+RETURN_GUARD_NESTING_MUTATIONS = (
+    (
+        "pre_submit_reset_arm_nested_under_a_no_fault_guard",
+        _wrap_arm(
+            RT_PRESUBMIT_RESET_ARM_OPEN,
+            RT_PRESUBMIT_RESET_ARM_CLOSE,
+            "(pre_submit_status & V14_STATUS_FAULT_MASK) == 0U",
+            "pre-submit reset arm",
+        ),
+        "does not return the value the design returns",
+    ),
+    (
+        "primary_reset_arm_nested_under_a_not_fault_guard",
+        _wrap_arm(
+            RT_PRIMARY_RESET_ARM_OPEN,
+            RT_PRIMARY_RESET_ARM_CLOSE,
+            "primary.result != V14_PRIMARY_FAULT",
+            "primary reset arm",
+        ),
+        "does not return the value the design returns",
+    ),
+    (
+        "convergence_reset_arm_nested_under_a_not_fault_guard",
+        _wrap_arm(
+            RT_CONVERGENCE_RESET_ARM_OPEN,
+            RT_CONVERGENCE_RESET_ARM_CLOSE,
+            "converged.result != V14_CONVERGENCE_FAULT",
+            "convergence reset arm",
+        ),
+        "does not return the value the design returns",
+    ),
+    (
+        "pre_submit_reset_arm_nested_under_a_vacuous_extra_guard",
+        _wrap_arm(
+            RT_PRESUBMIT_RESET_ARM_OPEN,
+            RT_PRESUBMIT_RESET_ARM_CLOSE,
+            "qsize_expected == V14_QSIZE_EXPECTED",
+            "pre-submit reset arm",
+        ),
+        "does not return the value the design returns",
+    ),
+)
+
+
 # --- controls: the neighbouring legal sources still pass --------------------
+
+FRESH42A_REMEDIATION_CONTROLS = (
+    (
+        "the design's own QREAD loads, one per owner in the structures that measure them",
+        lambda vendor: vendor,
+    ),
+    (
+        "the design's own guard nesting, each arm at the depth the design gives it",
+        lambda vendor: vendor,
+    ),
+    (
+        "a non-QREAD load added where the design already reads that register",
+        _rt_after(
+            RT_ISR_STATUS_READ,
+            "\n    irq_history_mask = irq_history_mask;",
+            "isr status read",
+        ),
+    ),
+)
+
+RUNNER_FRESH42A_REMEDIATION_CONTROLS = (
+    (
+        "the stock vector slot declared with redundant parentheses and never called",
+        _rt_before(
+            RUNNER_RESET_HEAD,
+            RUNNER_STOCK_VECTOR_TYPEDEF
+            + "static irq_handler_t (original_u85_handler);\n\n",
+            "runner reset definition",
+        ),
+    ),
+    (
+        "a typedef alias of the exempt type whose object is never called through",
+        _rt_before(
+            RUNNER_RESET_HEAD,
+            RUNNER_STOCK_VECTOR_TYPEDEF
+            + "typedef irq_handler_t irq_alias_t;\nstatic irq_alias_t v14_spare_slot;\n\n",
+            "runner reset definition",
+        ),
+    ),
+    (
+        "the runner's mailbox reset and transport clear in the one function the design puts them in",
+        lambda runner: runner,
+    ),
+)
+
 
 EFF4143_REMEDIATION_CONTROLS = (
     (
@@ -9909,6 +10205,80 @@ def run_a0fe0ab_remediation_suite(gate):
             "accepts %s" % label,
         )
     for label, mutate in RUNNER_A0FE0AB_REMEDIATION_CONTROLS:
+        expect_accept(
+            gate,
+            "Q",
+            mutate(canonical_runner("Q")),
+            canonical_vendor("Q"),
+            "accepts %s" % label,
+        )
+
+
+def run_fresh_42a1314_remediation_suite(gate):
+    """The 42a1314 fresh-review blockers, each reproduced before it was closed.
+
+    Four families. Three of them sit inside rules the previous two commits
+    added, and each is the same construct written the way C also allows: a
+    declarator wrapped in parentheses, a type reached through an alias, a store
+    moved to another function, a load outside the loop that measures it, a guard
+    nested above the one recorded. Every family carries a sibling the reviewer's
+    PoCs did not use.
+    """
+
+    run_runner_mutations(gate, RUNNER_PARENTHESISED_DECLARATOR_MUTATIONS, "Q")
+    run_runner_mutations(gate, RUNNER_TYPEDEF_ALIAS_MUTATIONS, "Q")
+    run_runner_mutations(gate, RUNNER_REARM_LIFETIME_MUTATIONS, "Q")
+    run_vendor_mutations(gate, QREAD_LOAD_COUNT_MUTATIONS, "Q")
+    run_vendor_mutations(gate, RETURN_GUARD_NESTING_MUTATIONS, "Q")
+
+    # Replayed on the other two variants: the QREAD load budget names the
+    # *active* primary helper, and the guard nesting is a claim about each
+    # generated unit rather than about Q.
+    for variant in ("QS", "SQ"):
+        for label, mutate, reason in (
+            QREAD_LOAD_COUNT_MUTATIONS[0],
+            # The primary-helper load is anchored on the Q read order, which QS
+            # and SQ deliberately spell differently; the command-function
+            # read-back is the variant-independent member of the family.
+            QREAD_LOAD_COUNT_MUTATIONS[2],
+            RETURN_GUARD_NESTING_MUTATIONS[0],
+            RETURN_GUARD_NESTING_MUTATIONS[1],
+        ):
+            name = "%s_%s" % (variant.lower(), label)
+            REJECTED_FIXTURES.add(name)
+            expect_reject(
+                gate,
+                variant,
+                canonical_runner(variant),
+                mutate(canonical_vendor(variant)),
+                name,
+                reason,
+            )
+        for label, mutate, reason in (
+            RUNNER_PARENTHESISED_DECLARATOR_MUTATIONS[0],
+            RUNNER_TYPEDEF_ALIAS_MUTATIONS[0],
+            RUNNER_REARM_LIFETIME_MUTATIONS[0],
+        ):
+            name = "%s_%s" % (variant.lower(), label)
+            REJECTED_FIXTURES.add(name)
+            expect_reject(
+                gate,
+                variant,
+                mutate(canonical_runner(variant)),
+                canonical_vendor(variant),
+                name,
+                reason,
+            )
+
+    for label, mutate in FRESH42A_REMEDIATION_CONTROLS:
+        expect_accept(
+            gate,
+            "Q",
+            canonical_runner("Q"),
+            mutate(canonical_vendor("Q")),
+            "accepts %s" % label,
+        )
+    for label, mutate in RUNNER_FRESH42A_REMEDIATION_CONTROLS:
         expect_accept(
             gate,
             "Q",
@@ -10613,6 +10983,7 @@ if __name__ == "__main__":
         run_a0fe0ab_remediation_suite(gate)
         run_c10da9b_remediation_suite(gate)
         run_eff4143_remediation_suite(gate)
+        run_fresh_42a1314_remediation_suite(gate)
         run_coverage_suite()
 
     try:
