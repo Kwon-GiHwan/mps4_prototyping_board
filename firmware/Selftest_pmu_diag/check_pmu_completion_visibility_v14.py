@@ -1432,22 +1432,102 @@ def mmio_macro_names(masked: str) -> tuple[str, ...]:
 # past a running-path QSIZE load and keeps publishing its count as complete.
 _RAW_REGISTER_PREFIX_RE = re.compile(r"(?<![A-Za-z0-9_])NPU_REG_")
 
+# And a replacement list that names the *accessor* is the same defect one token
+# to the left of that. Every submit-count, QSIZE-count and designation rule in
+# this file recognises an MMIO access by the callee token ``read_reg`` or
+# ``write_reg``, so ``#define WR write_reg`` and ``#define WR(o,v)
+# write_reg((o),(v))`` both put an accessor call somewhere those rules read as
+# an ordinary function call to a name they have never heard of -- a second
+# submit that no count covers.
+ACCESSOR_SYMBOLS = ("read_reg", "write_reg")
+_ACCESSOR_SYMBOL_RE = re.compile(
+    r"(?<![A-Za-z0-9_])(?:%s)(?![A-Za-z0-9_])" % "|".join(ACCESSOR_SYMBOLS)
+)
+
 
 def mmio_macro_kinds(masked: str) -> dict[str, str]:
     """Every MMIO-carrying macro, mapped to what its replacement list carries.
 
     ``"designation"`` is a register *name* the confinement scan would otherwise
-    never see; ``"dereference"`` is an unexpanded MMIO access. The two are
-    reported separately because they are refused for different reasons.
+    never see; ``"accessor"`` is the vendor accessor under another name;
+    ``"dereference"`` is an unexpanded MMIO access. The three are reported
+    separately because they are refused for different reasons.
     """
 
     found: dict[str, str] = {}
     for name, _parameters, body in macro_definitions(masked):
         if _RAW_REGISTER_PREFIX_RE.search(body) is not None:
             found[name] = "designation"
+        elif _ACCESSOR_SYMBOL_RE.search(body) is not None:
+            found[name] = "accessor"
         elif _POINTER_CAST_RE.search(body) is not None and _DEREF_RE.search(body) is not None:
             found[name] = "dereference"
     return found
+
+
+# ---------------------------------------------------------------------------
+# Identifiers the preprocessor builds
+#
+# Every reachability rule in this file matches a name as *written*:
+# ``names_identifier`` for the ``wait_for_irq`` replacement-list scan,
+# ``_PUBLICATION_SYMBOL_RE`` for the publishers, ``_ACCESSOR_CALL_RE`` for the
+# accessor, ``_direct_call_sites`` for a callee. A ``##`` paste builds the name
+# during translation, so one level of indirection is invisible to all of them at
+# once:
+#
+#     #define JOIN(a, b) a##b
+#     #define SETTLE()   JOIN(wait_for,_irq)()      /* reaches wait_for_irq   */
+#     #define STAMP()    JOIN(v14_publish,_success)()  /* forges the verdict  */
+#     #define POKE(o, v) JOIN(write,_reg)((o), (v))    /* an uncounted submit */
+#
+# This gate does not preprocess, so it cannot compute the name a paste
+# produces. Refusing the operator is the honest statement of that: the design
+# writes no token paste, and one that appears is a reachability nothing here can
+# bound. It is settled with the rest of the preprocessing history rather than
+# left to each identifier rule to miss separately.
+# ---------------------------------------------------------------------------
+
+_TOKEN_PASTE_RE = re.compile(r"##")
+
+
+def require_no_token_paste(masked: str, what: str) -> None:
+    """Refuse a macro replacement list that builds an identifier by pasting."""
+
+    for name, _parameters, body in macro_definitions(masked):
+        if _TOKEN_PASTE_RE.search(body) is None:
+            continue
+        if _RAW_REGISTER_PREFIX_RE.search(body) is not None:
+            # ``#define SEL(x) NPU_REG_##x`` is a paste too, and it is already a
+            # refusal by the rule that owns register designations. Leaving it to
+            # that rule keeps a source named by the most specific thing wrong
+            # with it rather than by the operator it happens to use.
+            continue
+        raise fail(
+            "%s builds an identifier this gate cannot compute: the macro %s pastes tokens in "
+            "its replacement list, and a name produced during translation is one no call, "
+            "reachability or designation rule in this file can read"
+            % (what, name)
+        )
+
+
+# What a macro this gate refuses is reported as when the caller did not resolve
+# its kind. The kinds are carried by ``mmio_macro_kinds`` and threaded through
+# ``mmio_macro_table`` below, so this is the answer for a caller that passes a
+# bare name tuple -- never a guess at a *specific* construct, which is what
+# reported an accessor alias as a dereference.
+_UNCLASSIFIED_MACRO_KIND = "construct"
+
+
+def mmio_macro_table(masked: str) -> tuple[tuple[str, ...], dict[str, str]]:
+    """``(names, kinds)`` for every MMIO-carrying macro, resolved together.
+
+    Returned as a pair so a caller cannot pass the names of one walk with the
+    kinds of another -- or, as happened before, the names with no kinds at all,
+    which reported every refusal under whichever construct the default named.
+    """
+
+    kinds = mmio_macro_kinds(masked)
+    return tuple(sorted(kinds)), kinds
 
 
 def require_no_macro_mmio(
@@ -1465,7 +1545,7 @@ def require_no_macro_mmio(
             raise fail(
                 "%s reaches an NPU-region address this gate cannot resolve to one register: "
                 "the macro %s expands to an unexpanded MMIO %s"
-                % (what, name, (kinds or {}).get(name, "dereference"))
+                % (what, name, (kinds or {}).get(name, _UNCLASSIFIED_MACRO_KIND))
             )
 
 
@@ -2582,7 +2662,7 @@ def verify_pre_run_contract(vendor_masked: str, defines: dict[str, int]) -> dict
     # The gate is anchored on whichever function actually programs the queue,
     # rather than on a function name, so the proof holds wherever the vendor
     # keeps its programming.
-    mmio_macros = mmio_macro_names(vendor_masked)
+    mmio_macros, mmio_kinds = mmio_macro_table(vendor_masked)
     scope = file_scope_text(vendor_masked)
     spans = function_spans(vendor_masked)
     programming_sites = queue_programming_sites(vendor_masked, defines, scope, spans)
@@ -2596,7 +2676,7 @@ def verify_pre_run_contract(vendor_masked: str, defines: dict[str, int]) -> dict
     setup_roles = pointer_roles(setup, defines, scope)
     require_resolved_pointers(setup_roles, "queue setup function")
     require_resolved_dereferences(setup, defines, setup_roles, "the queue setup function")
-    require_no_macro_mmio(setup, mmio_macros, "the queue setup function")
+    require_no_macro_mmio(setup, mmio_macros, "the queue setup function", mmio_kinds)
 
     pre_program_reads = register_access_sites(setup, "STATUS", defines, setup_roles)
     queue_accesses = [
@@ -2654,7 +2734,7 @@ def verify_pre_run_contract(vendor_masked: str, defines: dict[str, int]) -> dict
     command_roles = pointer_roles(command, defines, scope)
     require_resolved_pointers(command_roles, "command function")
     require_resolved_dereferences(command, defines, command_roles, "the command function")
-    require_no_macro_mmio(command, mmio_macros, "the command function")
+    require_no_macro_mmio(command, mmio_macros, "the command function", mmio_kinds)
 
     qsize_loads = register_access_sites(command, "QSIZE", defines, command_roles)
     if len(qsize_loads) == 0:
@@ -3664,7 +3744,8 @@ def verify_primary_contract(
     # for this to name is an address written where it stands, which the ordered
     # effect sequence below would otherwise carry as an unnamed load.
     require_resolved_dereferences(body, defines, roles, "the primary helper")
-    require_no_macro_mmio(body, mmio_macro_names(vendor_masked), "the primary helper")
+    require_no_macro_mmio(body, *mmio_macro_table(vendor_masked)[:1], "the primary helper",
+                          mmio_macro_table(vendor_masked)[1])
 
     items = flatten_loop(loop_body, "primary loop")
     read_order: list[str] = []
@@ -4053,7 +4134,8 @@ def verify_convergence_contract(vendor_masked: str, defines: dict[str, int]) -> 
     verify_single_bounded_loop(body, "convergence helper")
     verify_loop_header(head, roles, "convergence loop", store_re, defines)
     require_resolved_dereferences(body, defines, roles, "the convergence helper")
-    require_no_macro_mmio(body, mmio_macro_names(vendor_masked), "the convergence helper")
+    require_no_macro_mmio(body, *mmio_macro_table(vendor_masked)[:1], "the convergence helper",
+                          mmio_macro_table(vendor_masked)[1])
 
     items = flatten_loop(loop_body, "convergence loop")
     read_order: list[str] = []
@@ -5160,7 +5242,8 @@ def verify_cleanup_contract(
     command_roles = pointer_roles(command, defines, scope)
     require_resolved_pointers(command_roles, "command function")
     require_resolved_dereferences(command, defines, command_roles, "the command function")
-    require_no_macro_mmio(command, mmio_macro_names(vendor_masked), "the command function")
+    require_no_macro_mmio(command, *mmio_macro_table(vendor_masked)[:1], "the command function",
+                          mmio_macro_table(vendor_masked)[1])
 
     primary_call = code_find(command, PRIMARY_SYMBOL[variant] + "(")
     if primary_call < 0:
@@ -5800,6 +5883,49 @@ ISR_SYMBOL = "u85_irq_handler"
 COMMAND_SYMBOL = "test_commands"
 
 
+class _AnyOwner(frozenset):
+    """An owner set that admits every function, written down rather than absent.
+
+    A register the design deliberately does not confine by owner still has to be
+    *in* the table: absence is what the walks below read as permission, and it
+    reads the same for a role the contract never modelled at all.
+    """
+
+    def __contains__(self, item: object) -> bool:
+        return True
+
+
+ANY_OWNER = _AnyOwner()
+
+# The role a register access resolves to is read out of the *source's own*
+# ``NPU_REG_*`` define table, and that table is not the design's -- it is
+# whatever the unit declares. So a role outside the table above is not "a
+# register this contract has no opinion about"; it is a register the operator
+# named, at an offset the operator chose, that every counting, ordering and
+# confinement rule below would otherwise skip. One added ``#define
+# NPU_REG_DOORBELL 0x000U`` turns a second submit into exactly that.
+#
+# An access this gate can attribute to *no* modelled register is therefore
+# refused, on the same terms as one it cannot attribute at all.
+_UNMODELLED_ROLE_REFUSAL = (
+    "%s designates NPU_REG_%s at offset %d, which resolves to a register this contract does "
+    "not model: the register map this gate reads is the translation unit's own, so a name or "
+    "offset outside the modelled set is one no confinement, submit-count or read-order rule "
+    "in this file covers"
+)
+
+
+def _require_modelled_role(
+    role: str, authorized: dict[str, frozenset], what: str, site: int
+) -> frozenset:
+    """The owner set for ``role``, or a refusal when the contract models none."""
+
+    allowed = authorized.get(role)
+    if allowed is None:
+        raise fail(_UNMODELLED_ROLE_REFUSAL % (what, role, site))
+    return allowed
+
+
 def _register_authorized_owners(setup_name: str, variant: str) -> dict[str, frozenset]:
     """The functions the design lets name each NPU register.
 
@@ -5822,12 +5948,23 @@ def _register_authorized_owners(setup_name: str, variant: str) -> dict[str, froz
             (setup_name, COMMAND_SYMBOL, ISR_SYMBOL, primary, CONVERGE_SYMBOL, "wait_for_irq")
         ),
         "CMD": frozenset((COMMAND_SYMBOL, ISR_SYMBOL)),
+        # QREAD used to be *absent* from this table, on the ground that a bound
+        # QREAD pointer is not evidence the way a QSIZE or CMD one is -- it is
+        # the register the design polls, its ordering is proven inside the two
+        # measured loops, and the frozen contract permits a file-scope binding
+        # this table would otherwise refuse.
+        #
+        # That ground is unchanged, and the *encoding* of it was the bug.
+        # Absence was read by every walk below as permission, and
+        # permission-by-absence is indistinguishable from "a role nothing
+        # models": one added ``#define NPU_REG_DOORBELL 0x000U`` produced a role
+        # with no owner set, and each walk skipped the second submit it named.
+        # So QREAD is listed, with the owner-unconstrained answer written down
+        # rather than left to be inferred from a missing key. Its writes are
+        # refused by their own rules; this row is only about where the *name*
+        # may appear.
+        "QREAD": ANY_OWNER,
     }
-    # QREAD is deliberately absent. It is the register the design polls, so a
-    # bound QREAD pointer is not evidence of anything the way a QSIZE or CMD one
-    # is, and the frozen contract already permits a file-scope QREAD binding that
-    # this table would otherwise refuse. Its ordering is proven where it matters,
-    # inside the two measured loops.
 
 
 _REGISTER_REFUSALS = {
@@ -5850,6 +5987,11 @@ _REGISTER_REFUSALS = {
         "CMD is written in a function the contract does not write it from: %s names "
         "NPU_REG_CMD at offset %d, and a CMD write off the command path transitions the NPU "
         "between the submit and the measurement that reports it"
+    ),
+    "QREAD": (
+        "QREAD is designated in a function the contract does not poll it from: %s names "
+        "NPU_REG_QREAD at offset %d, and a queue-read-pointer access outside the two measured "
+        "loops and the read-back is one no ordering rule in this file judged"
     ),
 }
 
@@ -5875,10 +6017,10 @@ def require_register_confinement(
     walked = 0
     for match in _RAW_REGISTER_RE.finditer(scanned):
         register = match.group(1)
-        allowed = authorized.get(register)
-        if allowed is None:
-            continue
         owner = enclosing_function(spans, match.start())
+        allowed = _require_modelled_role(
+            register, authorized, _span_label(owner), match.start()
+        )
         if owner in allowed:
             walked += 1
             continue
@@ -5937,9 +6079,7 @@ def require_whole_unit_mmio_confinement(
         for site, role, is_write in dereference_sites(body, defines, roles):
             if role == "QREAD" and is_write:
                 raise fail(_QREAD_WRITE_REFUSAL % (what, start + site))
-            allowed = authorized.get(role)
-            if allowed is None:
-                continue
+            allowed = _require_modelled_role(role, authorized, what, start + site)
             if name in allowed:
                 walked += 1
                 continue
@@ -6075,9 +6215,7 @@ def require_accessor_designations_confined(
             raise fail(_ACCESSOR_REFUSAL % (verb, _span_label(owner), site))
         if role == "QREAD" and verb == "write_reg":
             raise fail(_QREAD_WRITE_REFUSAL % (_span_label(owner), site))
-        allowed = authorized.get(role)
-        if allowed is None:
-            continue
+        allowed = _require_modelled_role(role, authorized, _span_label(owner), site)
         if owner not in allowed:
             raise fail(_REGISTER_REFUSALS[role] % (owner or "file scope", site))
         walked += 1
@@ -6371,6 +6509,16 @@ def require_runner_diagnostic_closed(runner_masked: str, span: tuple[int, int]) 
     body = runner_masked[start:stop]
     require_no_function_pointer(body, "the runner diagnostic function")
     require_no_indirect_call(body, "the runner diagnostic function")
+    # No exemption inside this window: the stock vector slot is chained to from
+    # the ISR wrapper, not from the function that owns the serialized record, and
+    # a call through any pointer object here rewrites words the copy, dominance
+    # and address rules just proved.
+    require_no_call_through_pointer_object(
+        runner_masked,
+        RUNNER_STOCK_FUNCTION_POINTERS,
+        "the runner diagnostic function",
+        window=span,
+    )
     pointers = frozenset(
         name for name, is_pointer in _parameter_names(runner_masked, start) if is_pointer
     )
@@ -6402,23 +6550,52 @@ _FUNCTION_POINTER_DECLARATOR_RE = re.compile(
 )
 
 # The one function-pointer name the *host runner* legitimately declares: the
-# stock vector-table type it installs its handler through. Exempting the name
-# rather than the whole translation unit is what separates the stock file from
-# an attack -- a second declarator, under any other name, is refused in the
-# runner exactly as it is in the vendor unit.
+# stock vector-table type it installs its handler through.
+#
+# Exempting the name alone exempted the *type*, and an object of a
+# function-pointer type is an ordinary identifier -- so ``static irq_handler_t
+# g_hook; ... g_hook();`` is a call through a pointer spelled exactly like a
+# direct call, which ``require_no_indirect_call`` (which looks for a callee that
+# is an *expression*) can never see. Two things are therefore required of the
+# exemption rather than one: the declarator must be introduced by ``typedef``,
+# so a file-scope pointer *object* that merely reuses the name is still refused;
+# and every object declared with the exempt type is collected below, so a call
+# through one is refused as the indirect call it is. The stock runner declares
+# ``original_u85_handler``, compares it against a cast null and assigns it, and
+# never calls through it -- which is what this pair of rules permits and an
+# attack is not.
 RUNNER_STOCK_FUNCTION_POINTERS = frozenset(("irq_handler_t",))
+
+
+def _introduced_by_typedef(masked: str, start: int) -> bool:
+    """Whether the declarator beginning at ``start`` belongs to a ``typedef``."""
+
+    head = masked.rfind(";", 0, start)
+    brace = max(masked.rfind("{", 0, start), masked.rfind("}", 0, start))
+    return _TYPEDEF_RE.search(masked, max(head, brace) + 1, start) is not None
+
+
+_TYPEDEF_RE = re.compile(r"(?<![A-Za-z0-9_])typedef(?![A-Za-z0-9_])")
 
 
 def require_no_function_pointer(
     masked: str, what: str, exempt: frozenset = frozenset()
 ) -> None:
-    """Refuse a function-pointer declarator anywhere in ``masked``."""
+    """Refuse a function-pointer declarator anywhere in ``masked``.
+
+    ``exempt`` names the *typedefs* the stock file may introduce. A declarator
+    that carries an exempt name without a ``typedef`` in front of it is an
+    object, not a type, and is refused like any other.
+    """
 
     match = next(
         (
             found
             for found in _FUNCTION_POINTER_DECLARATOR_RE.finditer(masked)
-            if found.group(1) not in exempt
+            if not (
+                found.group(1) in exempt
+                and _introduced_by_typedef(masked, found.start())
+            )
         ),
         None,
     )
@@ -6429,6 +6606,70 @@ def require_no_function_pointer(
             "rules, and this gate cannot resolve its target"
             % (what, match.start(), " ".join(match.group(0).split()))
         )
+
+
+def function_pointer_objects(masked: str, types: frozenset) -> tuple[str, ...]:
+    """Every identifier declared with one of the exempt function-pointer types."""
+
+    found: list[str] = []
+    for type_name in sorted(types):
+        pattern = re.compile(
+            r"(?<![A-Za-z0-9_])%s(?![A-Za-z0-9_])\s*\*?\s*([A-Za-z_]\w*)"
+            % re.escape(type_name)
+        )
+        for match in pattern.finditer(blank_directives(masked)):
+            if _introduced_by_typedef(masked, match.start()):
+                continue
+            found.append(match.group(1))
+    return tuple(sorted(set(found)))
+
+
+# The stock host runner declares its vector slot *and chains to it* -- the ISR
+# wrapper calls ``original_u85_handler()`` to hand the interrupt on to the
+# handler it displaced. That call is part of the frozen file, so the exemption
+# has to name the slot as well as the type; refusing every call through the type
+# would refuse the stock runner rather than an attack.
+#
+# It is bounded twice rather than trusted. The slot is exempt by name, so an
+# object of the same type under any other name is refused wherever it is called;
+# and the exemption does not reach the function that owns the serialized record,
+# where a call through any pointer object at all is refused, because that is the
+# window in which an unfollowable call rewrites words the copy and dominance
+# rules just proved.
+RUNNER_STOCK_VECTOR_SLOTS = frozenset(("original_u85_handler",))
+
+_POINTER_OBJECT_CALL_REFUSAL = (
+    "%s calls through a function pointer at offset %d: %s is an object of the stock vector "
+    "type, so the call is spelled like a direct one and no counting, ordering or "
+    "per-iteration rule in this file sees the effect it carries"
+)
+
+
+def require_no_call_through_pointer_object(
+    masked: str,
+    types: frozenset,
+    what: str,
+    exempt: frozenset = frozenset(),
+    window: tuple[int, int] | None = None,
+) -> None:
+    """Refuse a call whose callee is an object of a function-pointer type.
+
+    ``exempt`` names the stock slots the frozen host file calls through.
+    ``window`` bounds the scan to one span, and an exemption does not apply
+    inside one -- the record-owning function is held to the stricter rule.
+    """
+
+    objects = function_pointer_objects(masked, types)
+    if not objects:
+        return
+    scan = blank_directives(masked)
+    start, stop = window if window is not None else (0, len(scan))
+    for name in objects:
+        if window is None and name in exempt:
+            continue
+        for site in _direct_call_sites(scan, name):
+            if start <= site < stop:
+                raise fail(_POINTER_OBJECT_CALL_REFUSAL % (what, site, name))
 
 
 # The keywords that can stand directly in front of a parenthesised expression
@@ -7037,6 +7278,89 @@ def require_return_code_settled(body: str, what: str, expected: int) -> None:
 
 
 # ---------------------------------------------------------------------------
+# The return expressions
+#
+# Settling the variable is not settling the verdict. Every rule above reads an
+# *assignment*, and the host is handed whatever the ``return`` evaluates -- so
+# the two need not be the same value at all:
+#
+#     ret_code = V14_RET_CLEANUP_INVARIANT;   /* the arm rules are satisfied */
+#     ...
+#     return V14_RET_SUCCESS;                 /* and this is what ships      */
+#
+# ``return (ret_code != 0) ? V14_RET_SUCCESS : ret_code`` and ``return
+# ret_code & 0`` are the same forgery with the constant moved inside an
+# operator, and the second is a read-modify-write that
+# ``compound_assignment_targets`` cannot see because it is not an assignment.
+#
+# Each function that carries a vendor return code is therefore pinned to the
+# multiset of return expressions the design gives it, compared over the C token
+# sequence so formatting is free and spelling is not -- the same shape as
+# ``APPENDIX_VALUES`` and ``PUBLICATION_CALLS``. An early exit swapped for a
+# different code is refused by the same table.
+# ---------------------------------------------------------------------------
+
+_RETURN_STATEMENT_RE = re.compile(r"(?<![A-Za-z0-9_])return\b([^;]*);")
+
+RETURN_EXPRESSIONS: dict[str, tuple[str, ...]] = {
+    "test_commands": (
+        "V14_RET_CONVERGENCE_TIMEOUT",
+        "V14_RET_HARDWARE_FAULT",
+        "V14_RET_HARDWARE_FAULT",
+        "V14_RET_HARDWARE_FAULT",
+        "V14_RET_PRE_SUBMIT_FAILURE",
+        "V14_RET_PRE_SUBMIT_FAILURE",
+        "V14_RET_PRE_SUBMIT_FAILURE",
+        "V14_RET_PRE_SUBMIT_FAILURE",
+        "V14_RET_PRIMARY_TIMEOUT",
+        "V14_RET_RESET_IN_PROGRESS",
+        "V14_RET_RESET_IN_PROGRESS",
+        "V14_RET_RESET_IN_PROGRESS",
+        "ret_code",
+    ),
+    "test_u85": (
+        "V14_RET_HARDWARE_FAULT",
+        "V14_RET_PRE_PROGRAM_FAILURE",
+        "V14_RET_PRE_PROGRAM_FAILURE",
+        "V14_RET_RESET_IN_PROGRESS",
+        "ret_code",
+    ),
+}
+
+
+def return_expressions(body: str) -> tuple[str, ...]:
+    """Every ``return`` expression in ``body``, as its C token sequence."""
+
+    return tuple(
+        sorted(
+            _normalized_expression(match.group(1))
+            for match in _RETURN_STATEMENT_RE.finditer(body)
+        )
+    )
+
+
+def require_return_expression_provenance(body: str, name: str, what: str) -> int:
+    """Refuse a function that hands the host a value the design does not return."""
+
+    expected = tuple(sorted(RETURN_EXPRESSIONS[name]))
+    found = return_expressions(body)
+    if found != expected:
+        missing = [item for item in expected if item not in found]
+        extra = [item for item in found if item not in expected]
+        raise fail(
+            "the %s function does not return the value the design returns: missing %s, "
+            "unexpected %s -- the settled return code is only what the host is told while the "
+            "return statement hands back the variable that carries it"
+            % (
+                what,
+                ", ".join(missing) or "none",
+                ", ".join(extra) or "none",
+            )
+        )
+    return len(found)
+
+
+# ---------------------------------------------------------------------------
 # The convergence tail, held to the primary's standard
 #
 # The primary helper's classifier is proven term by term. The convergence
@@ -7123,6 +7447,43 @@ TRANSPORT_VALID_SYMBOL = "pmu_diag_v14_transport_valid"
 # The design's own stores to the transport flag, across the whole runner: the
 # reset clears it, and the mailbox-magic branch settles it one way per arm.
 RUNNER_TRANSPORT_ASSIGNMENTS = 3
+# The runner function that re-arms the transport before a run, and the value the
+# design gives its store. The count above pins how many stores reach the flag
+# and the arm rule pins the polarity of one of them; neither reads the reset's
+# value, so ``pmu_diag_v14_transport_valid = 1U`` in the reset keeps the count
+# at three, keeps the arm's clear intact, and leaves the flag asserted for every
+# window between a reset and the branch that settles it.
+TRANSPORT_INVALID_VALUE = "0U"
+
+
+def require_transport_reset_polarity(runner_masked: str) -> None:
+    """Prove the runner's reset clears the transport flag rather than asserting it.
+
+    The reset function is *resolved* rather than named -- it is whichever
+    function calls ``v14_mailbox_reset()``, the way ``verify_pre_run_contract``
+    resolves the queue setup owner. The host runner this contract is generated
+    into keeps its own name for that routine, so a rule written against one
+    spelling proves nothing about the file it actually runs on.
+    """
+
+    site = code_find(runner_masked, MAILBOX_RESET_SYMBOL + "();")
+    if site < 0:
+        raise fail("runner does not reset the mailbox before the measured call")
+    spans = function_spans(runner_masked)
+    owner = enclosing_function(spans, site)
+    body = next(
+        (runner_masked[start:stop] for name, start, stop in spans if name == owner and start <= site < stop),
+        "",
+    )
+    if not code_contains(
+        body, "%s = %s" % (TRANSPORT_VALID_SYMBOL, TRANSPORT_INVALID_VALUE)
+    ):
+        raise fail(
+            "the runner reset does not clear the transport flag: %s re-arms the run without "
+            "storing %s to %s, so a mailbox that never published is reported to the host as a "
+            "valid transport for every window before the magic branch settles it"
+            % (owner or "file scope", TRANSPORT_INVALID_VALUE, TRANSPORT_VALID_SYMBOL)
+        )
 
 
 def require_transport_validity_polarity(runner_masked: str) -> None:
@@ -7235,6 +7596,15 @@ def verify_generated_sources(runner_text: str, vendor_text: str, variant: str) -
         runner_masked, "the runner translation unit", RUNNER_STOCK_FUNCTION_POINTERS
     )
     require_no_indirect_call(runner_masked, "the runner translation unit")
+    # The exemption above admits the stock vector *type*. An object of that type
+    # is called with the syntax of a direct call, so the indirect-call rule
+    # cannot see it and this is what refuses it.
+    require_no_call_through_pointer_object(
+        runner_masked,
+        RUNNER_STOCK_FUNCTION_POINTERS,
+        "the runner translation unit",
+        RUNNER_STOCK_VECTOR_SLOTS,
+    )
     defines = parse_defines(vendor_masked)
 
     pre_run = verify_pre_run_contract(vendor_masked, defines)
@@ -7274,11 +7644,22 @@ def verify_generated_sources(runner_text: str, vendor_text: str, variant: str) -
         "entry",
         ENTRY_RETURN_CODE_ASSIGNMENTS,
     )
+    # And settling the variable is not settling the verdict: the host is handed
+    # whatever the ``return`` evaluates, which no assignment rule above reads.
+    returned_expressions = sum(
+        require_return_expression_provenance(
+            function_text(vendor_masked, name, label), name, label
+        )
+        for name, label in ((COMMAND_SYMBOL, "command"), (ENTRY_SYMBOL, "entry"))
+    )
     # The appendix is a transport object like the other two, and it is the one
     # that was not closed against a write that names no word.
     require_mailbox_storage_closed(vendor_masked, defines, "the vendor translation unit")
     require_mailbox_storage_closed(runner_masked, defines, "the runner translation unit")
     require_transport_validity_polarity(runner_masked)
+    # The arm rule proves the branch that settles the flag; this proves the store
+    # that re-arms it before the run, which the count above left unread.
+    require_transport_reset_polarity(runner_masked)
     # Last of the whole-unit rules: every NPU register named where the design
     # does not name it, which is what makes the running-path counts above
     # statements about the translation unit rather than about one function.
@@ -7309,6 +7690,11 @@ def verify_generated_sources(runner_text: str, vendor_text: str, variant: str) -
     accessor_designations_confined = require_accessor_designations_confined(
         vendor_masked, defines, setup_owner, variant
     )
+    # After the designation rules, so a paste that *does* name a register or an
+    # offset is still reported by the rule that owns designations, and only a
+    # name this gate genuinely cannot compute is reported as one.
+    require_no_token_paste(vendor_masked, "the vendor translation unit")
+    require_no_token_paste(runner_masked, "the runner translation unit")
     require_no_qread_write(vendor_masked)
     require_isr_register_values(vendor_masked, defines)
     require_wait_for_irq_unreachable(vendor_masked)
@@ -7386,6 +7772,12 @@ def verify_generated_sources(runner_text: str, vendor_text: str, variant: str) -
         # about every access the unit makes.
         "vendor_accessor_designations_confined": accessor_designations_confined,
         "register_confinement_scope": "vendor_translation_unit",
+        # The verifier's own count of the return statements it matched against
+        # the design's table, across the two frames that carry a vendor return
+        # code. A return expression outside the table is a refusal rather than a
+        # larger number here, so the settled return code and the value the host
+        # is handed are the same statement.
+        "vendor_return_expressions_with_proven_values": returned_expressions,
     }
     for section in (pre_run, primary, hard_bypass, convergence, mailbox, identity, cleanup, runner):
         doc.update(section)

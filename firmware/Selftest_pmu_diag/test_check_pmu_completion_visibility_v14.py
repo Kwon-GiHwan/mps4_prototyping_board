@@ -128,7 +128,7 @@ STATUS_FAULT_MASK = 0x314
 
 # The suite is frozen at this many assertions. Adding a named fixture is a
 # deliberate act, so the count moves with it and never drifts silently.
-EXPECTED_PASS_COUNT = 865
+EXPECTED_PASS_COUNT = 916
 
 CHECKER_PATH = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
@@ -9006,6 +9006,417 @@ RUNNER_FILE_SCOPE_INDIRECTION_MUTATIONS = (
 )
 
 
+# --- c10da9b red-team blockers ---------------------------------------------
+#
+# The c10da9b review found the same pattern in six places: each rule above
+# proves a property of *the spelling the previous report used*, and the
+# generalisation stops one token short -- a role name outside four, a callee
+# token outside two, a paste one level deeper, an assignment rather than a
+# return, a type rather than an object, a count rather than a value. The
+# fixtures below are authored against the *class* rather than the spelling: the
+# decoy register names, offsets and macro names here are deliberately not the
+# ones the report used, so a rule that passes them is a rule about the
+# construct.
+
+RT_SUBMIT_WRITE = "\t  write_reg(NPU_REG_CMD, read_val | 0x00000001);\n"
+RT_TEST_COMMANDS_RETURN = "\treturn ret_code;\n}"
+RT_TEST_U85_RETURN = "    return ret_code;\n}"
+RT_PUBLISH_SUCCESS_BODY = RT_PUBLISH_SUCCESS_DEF + "\n{\n"
+RUNNER_RESET_CLEAR = "    v14_mailbox_reset();\n    pmu_diag_v14_transport_valid = 0U;"
+
+
+def _with_define_after_submit(define, statement, what="running submit write"):
+    """Add a ``#define`` at the head of the unit and a statement after the submit."""
+
+    def mutate(vendor):
+        defined = replace_once(
+            vendor, RT_MAILBOX_DECL, define + RT_MAILBOX_DECL, "mailbox declaration"
+        )
+        return replace_once(defined, RT_SUBMIT_WRITE, RT_SUBMIT_WRITE + statement, what)
+
+    return mutate
+
+
+def _with_runner_define_and_statement(define, statement):
+    """Add a ``#define`` above the runner reset and a statement in the diagnostic."""
+
+    def mutate(runner):
+        defined = replace_once(
+            runner, RUNNER_RESET_HEAD, define + RUNNER_RESET_HEAD, "runner reset definition"
+        )
+        return replace_once(
+            defined,
+            RUNNER_RECORD_CLOSURE_ANCHOR,
+            statement + RUNNER_RECORD_CLOSURE_ANCHOR,
+            "runner record copy out",
+        )
+
+    return mutate
+
+
+# F1. The role a register access resolves to comes from the *source's own*
+# ``NPU_REG_*`` define table, and the confinement walks skip a role with no
+# authorised owner set. One added define therefore turns any access at that
+# offset into a role nothing models -- and all three walks the a0fe0ab commit
+# enumerates skip it. The decoy names below are not the report's.
+DECOY_REGISTER_TABLE_MUTATIONS = (
+    (
+        "second_submit_through_a_decoy_register_designation",
+        _with_define_after_submit(
+            "#define NPU_REG_DOORBELL 0x000U\n",
+            "\t  write_reg(NPU_REG_DOORBELL, 0x00000001);\n",
+        ),
+        "resolves to a register this contract does not model",
+    ),
+    (
+        "second_submit_through_a_numeric_offset_a_decoy_define_names",
+        _with_define_after_submit(
+            "#define NPU_REG_GO 0x000U\n",
+            "\t  write_reg(0x000U, 0x00000001U);\n",
+        ),
+        "resolves to a register this contract does not model",
+    ),
+    (
+        "second_submit_through_a_pointer_a_decoy_define_names",
+        _with_define_after_submit(
+            "#define NPU_REG_GO 0x000U\n",
+            "\t  *(volatile uint32_t *)(uintptr_t)(U85_BASE_ADDRESS + NPU_REG_GO) = 0x00000001U;\n",
+        ),
+        "resolves to a register this contract does not model",
+    ),
+    (
+        "interrupt_context_submit_through_a_decoy_designation",
+        lambda vendor: replace_once(
+            replace_once(
+                vendor,
+                RT_MAILBOX_DECL,
+                "#define NPU_REG_KICK 0x000U\n" + RT_MAILBOX_DECL,
+                "mailbox declaration",
+            ),
+            RT_ISR_STATUS_READ,
+            RT_ISR_STATUS_READ + "\n    write_reg(NPU_REG_KICK, 1);",
+            "isr status read",
+        ),
+        "resolves to a register this contract does not model",
+    ),
+    (
+        "queue_read_pointer_rewound_through_a_decoy_designation",
+        _with_define_after_submit(
+            "#define NPU_REG_HEADPTR 0x108U\n",
+            "\t  write_reg(NPU_REG_HEADPTR, 0U);\n",
+        ),
+        "resolves to a register this contract does not model",
+    ),
+    (
+        "queue_base_reprogrammed_through_a_decoy_designation",
+        _with_define_after_submit(
+            "#define NPU_REG_BASE_ALT 0x004U\n",
+            "\t  write_reg(NPU_REG_BASE_ALT, 0x20000000U);\n",
+        ),
+        "resolves to a register this contract does not model",
+    ),
+    (
+        "status_load_inside_a_publisher_through_a_decoy_designation",
+        lambda vendor: replace_once(
+            replace_once(
+                vendor,
+                RT_MAILBOX_DECL,
+                "#define NPU_REG_STAT_ALT 0x00CU\n" + RT_MAILBOX_DECL,
+                "mailbox declaration",
+            ),
+            RT_PUBLISH_SUCCESS_BODY,
+            RT_PUBLISH_SUCCESS_BODY + "    (void)read_reg(NPU_REG_STAT_ALT);\n",
+            "success publisher body",
+        ),
+        "resolves to a register this contract does not model",
+    ),
+)
+
+# F2. Every submit-count, QSIZE-count and designation rule keys off the two
+# literal callee tokens ``read_reg``/``write_reg``. A macro that expands to one
+# of them is neither read nor refused.
+ACCESSOR_ALIAS_MUTATIONS = (
+    (
+        "second_submit_through_an_object_like_accessor_alias",
+        _with_define_after_submit(
+            "#define VENDOR_POKE write_reg\n",
+            "\t  VENDOR_POKE(NPU_REG_CMD, 0x00000001);\n",
+        ),
+        "expands to an unexpanded MMIO accessor",
+    ),
+    (
+        "second_submit_through_a_function_like_accessor_alias",
+        _with_define_after_submit(
+            "#define VENDOR_POKE(o, v) write_reg((o), (v))\n",
+            "\t  VENDOR_POKE(NPU_REG_CMD, 0x00000001);\n",
+        ),
+        "expands to an unexpanded MMIO accessor",
+    ),
+    (
+        "running_path_qsize_load_through_an_accessor_alias",
+        _with_define_after_submit(
+            "#define VENDOR_PEEK read_reg\n",
+            "\t  (void)VENDOR_PEEK(NPU_REG_QSIZE);\n",
+        ),
+        "expands to an unexpanded MMIO accessor",
+    ),
+    (
+        "accessor_alias_declared_but_never_invoked",
+        lambda vendor: replace_once(
+            vendor,
+            RT_MAILBOX_DECL,
+            "#define VENDOR_POKE write_reg\n" + RT_MAILBOX_DECL,
+            "mailbox declaration",
+        ),
+        "expands to an unexpanded MMIO accessor",
+    ),
+)
+
+# F3. Every identifier-reachability rule in this file matches the name as
+# *written*. A ``##`` paste builds the name during translation, so one level of
+# indirection is invisible to all of them at once -- the wait helper, the
+# publishers, the runner's own symbols, and the accessor tokens above.
+NESTED_TOKEN_PASTE_MUTATIONS = (
+    (
+        "wait_for_irq_reached_through_a_nested_token_paste",
+        lambda vendor: replace_once(
+            replace_once(
+                replace_once(
+                    vendor,
+                    RT_PUBLISH_PRIMARY_DEF,
+                    RT_WAIT_FOR_IRQ_SPIN_DEFINITION + RT_PUBLISH_PRIMARY_DEF,
+                    "primary publisher definition",
+                ),
+                RT_MAILBOX_DECL,
+                "#define JOIN(a, b) a##b\n#define V14_SETTLE() JOIN(wait_for,_irq)()\n"
+                + RT_MAILBOX_DECL,
+                "mailbox declaration",
+            ),
+            RT_SUBMIT_WRITE,
+            RT_SUBMIT_WRITE + "\t  V14_SETTLE();\n",
+            "running submit write",
+        ),
+        "builds an identifier this gate cannot compute",
+    ),
+    (
+        "publisher_reached_through_a_nested_token_paste",
+        _with_define_after_submit(
+            "#define JOIN(a, b) a##b\n#define V14_STAMP() JOIN(v14_publish,_success)()\n",
+            "\t  V14_STAMP();\n",
+        ),
+        "builds an identifier this gate cannot compute",
+    ),
+    (
+        "accessor_reached_through_a_nested_token_paste",
+        _with_define_after_submit(
+            "#define JOIN(a, b) a##b\n#define V14_POKE(o, v) JOIN(write,_reg)((o), (v))\n",
+            "\t  V14_POKE(NPU_REG_CMD, 0x00000001);\n",
+        ),
+        "builds an identifier this gate cannot compute",
+    ),
+    (
+        "token_paste_declared_but_never_invoked",
+        lambda vendor: replace_once(
+            vendor,
+            RT_MAILBOX_DECL,
+            "#define JOIN(a, b) a##b\n" + RT_MAILBOX_DECL,
+            "mailbox declaration",
+        ),
+        "builds an identifier this gate cannot compute",
+    ),
+)
+
+RUNNER_NESTED_TOKEN_PASTE_MUTATIONS = (
+    (
+        "runner_symbol_reached_through_a_nested_token_paste",
+        _with_runner_define_and_statement(
+            "#define JOIN(a, b) a##b\n#define V14_REARM() JOIN(v14_mailbox,_reset)()\n\n",
+            "    V14_REARM();\n",
+        ),
+        "builds an identifier this gate cannot compute",
+    ),
+    (
+        "runner_token_paste_declared_but_never_invoked",
+        _rt_before(
+            RUNNER_RESET_HEAD,
+            "#define JOIN(a, b) a##b\n\n",
+            "runner reset definition",
+        ),
+        "builds an identifier this gate cannot compute",
+    ),
+)
+
+# F4. ``require_return_code_settled`` pins how many times the code is assigned
+# and never what the ``return`` hands back, so the settled variable does not
+# have to be the value returned.
+RETURN_EXPRESSION_PROVENANCE_MUTATIONS = (
+    (
+        "command_function_returns_the_literal_success_code",
+        _rt_swap(
+            RT_TEST_COMMANDS_RETURN,
+            "\treturn V14_RET_SUCCESS;\n}",
+            "command function return",
+        ),
+        "does not return the value the design returns",
+    ),
+    (
+        "command_function_launders_the_code_through_a_ternary",
+        _rt_swap(
+            RT_TEST_COMMANDS_RETURN,
+            "\treturn (ret_code != 0) ? V14_RET_SUCCESS : ret_code;\n}",
+            "command function return",
+        ),
+        "does not return the value the design returns",
+    ),
+    (
+        "command_function_masks_the_code_in_the_return_expression",
+        _rt_swap(
+            RT_TEST_COMMANDS_RETURN,
+            "\treturn ret_code & 0;\n}",
+            "command function return",
+        ),
+        "does not return the value the design returns",
+    ),
+    (
+        "command_function_replaces_an_early_exit_code",
+        _rt_swap(
+            "\t    return V14_RET_CONVERGENCE_TIMEOUT;\n",
+            "\t    return V14_RET_SUCCESS;\n",
+            "convergence timeout return",
+        ),
+        "does not return the value the design returns",
+    ),
+    (
+        "entry_function_returns_the_literal_success_code",
+        _rt_swap(
+            RT_TEST_U85_RETURN,
+            "    return V14_RET_SUCCESS;\n}",
+            "entry function return",
+        ),
+        "does not return the value the design returns",
+    ),
+    (
+        "entry_function_masks_the_code_in_the_return_expression",
+        _rt_swap(
+            RT_TEST_U85_RETURN,
+            "    return ret_code & 0;\n}",
+            "entry function return",
+        ),
+        "does not return the value the design returns",
+    ),
+)
+
+# F5. The function-pointer exemption is keyed on the declarator *name*, so
+# exempting the stock typedef exempts the type -- and an object of that type is
+# an ordinary identifier, so a call through it is spelled exactly like a direct
+# call and the indirect-call rule never sees it.
+RUNNER_FUNCTION_POINTER_OBJECT_MUTATIONS = (
+    (
+        "runner_calls_through_an_object_of_the_exempt_type",
+        _with_runner_define_and_statement(
+            "typedef void (*irq_handler_t)(void);\nstatic irq_handler_t v14_gate_hook;\n\n",
+            "    v14_gate_hook();\n",
+        ),
+        "calls through a function pointer",
+    ),
+    (
+        "runner_hands_a_published_word_to_an_object_of_the_exempt_type",
+        _with_runner_define_and_statement(
+            "typedef void (*irq_handler_t)(uint32_t);\nstatic irq_handler_t v14_gate_sink;\n\n",
+            "    v14_gate_sink(d.mailbox_valid);\n",
+        ),
+        "calls through a function pointer",
+    ),
+    (
+        "runner_declares_a_pointer_object_reusing_the_exempt_name",
+        _with_runner_define_and_statement(
+            "static void (*irq_handler_t)(void) = 0;\n\n",
+            "    irq_handler_t();\n",
+        ),
+        "declares a function pointer",
+    ),
+)
+
+# F6. The transport count and the arm polarity are both pinned; the value the
+# reset store writes is not, so the flag can be left asserted for any window
+# between a reset and the branch that settles it.
+RUNNER_RESET_POLARITY_MUTATIONS = (
+    (
+        "runner_reset_publishes_a_valid_transport",
+        _rt_swap(
+            RUNNER_RESET_CLEAR,
+            "    v14_mailbox_reset();\n    pmu_diag_v14_transport_valid = 1U;",
+            "runner reset clear",
+        ),
+        "does not clear the transport flag",
+    ),
+    (
+        "runner_reset_leaves_the_transport_flag_at_the_invalid_sentinel",
+        _rt_swap(
+            RUNNER_RESET_CLEAR,
+            "    v14_mailbox_reset();\n    pmu_diag_v14_transport_valid = 0xFFFFFFFFU;",
+            "runner reset clear",
+        ),
+        "does not clear the transport flag",
+    ),
+)
+
+
+# --- controls: the neighbouring legal sources still pass --------------------
+
+C10DA9B_REMEDIATION_CONTROLS = (
+    (
+        "the design's own register designations, each in the owner that names it",
+        lambda vendor: vendor,
+    ),
+    (
+        "a define whose name is not an NPU register offset at all",
+        lambda vendor: replace_once(
+            vendor,
+            RT_MAILBOX_DECL,
+            "#define V14_SPARE_OFFSET 0x000U\n" + RT_MAILBOX_DECL,
+            "mailbox declaration",
+        ),
+    ),
+    (
+        "an object-like macro that expands to neither an accessor nor a paste",
+        lambda vendor: replace_once(
+            vendor,
+            RT_MAILBOX_DECL,
+            "#define V14_SPARE_WIDTH 4U\n" + RT_MAILBOX_DECL,
+            "mailbox declaration",
+        ),
+    ),
+    (
+        "the design's own return statements, each handing back what it settled",
+        lambda vendor: vendor,
+    ),
+)
+
+RUNNER_C10DA9B_REMEDIATION_CONTROLS = (
+    (
+        "the stock host runner's irq_handler_t typedef and its uncalled vector slot",
+        _rt_before(
+            RUNNER_RESET_HEAD,
+            "typedef void (*irq_handler_t)(void);\nstatic irq_handler_t original_u85_handler;\n\n",
+            "runner reset definition",
+        ),
+    ),
+    (
+        "the stock vector slot compared against a cast null but never called through",
+        _with_runner_define_and_statement(
+            "typedef void (*irq_handler_t)(void);\nstatic irq_handler_t original_u85_handler;\n\n",
+            "    if (original_u85_handler != (irq_handler_t)0) {\n"
+            "        d.hook_pmu_mmio_read_count = d.hook_pmu_mmio_read_count;\n    }\n",
+        ),
+    ),
+    (
+        "the runner's reset clearing the transport flag exactly as the design does",
+        lambda runner: runner,
+    ),
+)
+
+
 # --- controls: the neighbouring legal sources still pass --------------------
 
 A0FE0AB_REMEDIATION_CONTROLS = (
@@ -9218,6 +9629,78 @@ def run_a0fe0ab_remediation_suite(gate):
             "accepts %s" % label,
         )
     for label, mutate in RUNNER_A0FE0AB_REMEDIATION_CONTROLS:
+        expect_accept(
+            gate,
+            "Q",
+            mutate(canonical_runner("Q")),
+            canonical_vendor("Q"),
+            "accepts %s" % label,
+        )
+
+
+def run_c10da9b_remediation_suite(gate):
+    """The c10da9b acceptance-and-security blockers, each reproduced before it was closed.
+
+    Six families, one per class the review named. Each is written against the
+    *construct* rather than the spelling the report used: a role the contract
+    does not model, a callee that is not one of two tokens, an identifier the
+    preprocessor builds, a return expression rather than an assignment, an
+    object rather than a type, a value rather than a count.
+    """
+
+    run_vendor_mutations(gate, DECOY_REGISTER_TABLE_MUTATIONS, "Q")
+    run_vendor_mutations(gate, ACCESSOR_ALIAS_MUTATIONS, "Q")
+    run_vendor_mutations(gate, NESTED_TOKEN_PASTE_MUTATIONS, "Q")
+    run_runner_mutations(gate, RUNNER_NESTED_TOKEN_PASTE_MUTATIONS, "Q")
+    run_vendor_mutations(gate, RETURN_EXPRESSION_PROVENANCE_MUTATIONS, "Q")
+    run_runner_mutations(gate, RUNNER_FUNCTION_POINTER_OBJECT_MUTATIONS, "Q")
+    run_runner_mutations(gate, RUNNER_RESET_POLARITY_MUTATIONS, "Q")
+
+    # Replayed on the other two variants: the confinement scope, the accessor
+    # token set and the return provenance are claims about each generated unit.
+    for variant in ("QS", "SQ"):
+        for label, mutate, reason in (
+            DECOY_REGISTER_TABLE_MUTATIONS[0],
+            DECOY_REGISTER_TABLE_MUTATIONS[4],
+            ACCESSOR_ALIAS_MUTATIONS[0],
+            NESTED_TOKEN_PASTE_MUTATIONS[1],
+            RETURN_EXPRESSION_PROVENANCE_MUTATIONS[0],
+            RETURN_EXPRESSION_PROVENANCE_MUTATIONS[4],
+        ):
+            name = "%s_%s" % (variant.lower(), label)
+            REJECTED_FIXTURES.add(name)
+            expect_reject(
+                gate,
+                variant,
+                canonical_runner(variant),
+                mutate(canonical_vendor(variant)),
+                name,
+                reason,
+            )
+        for label, mutate, reason in (
+            RUNNER_FUNCTION_POINTER_OBJECT_MUTATIONS[0],
+            RUNNER_RESET_POLARITY_MUTATIONS[0],
+        ):
+            name = "%s_%s" % (variant.lower(), label)
+            REJECTED_FIXTURES.add(name)
+            expect_reject(
+                gate,
+                variant,
+                mutate(canonical_runner(variant)),
+                canonical_vendor(variant),
+                name,
+                reason,
+            )
+
+    for label, mutate in C10DA9B_REMEDIATION_CONTROLS:
+        expect_accept(
+            gate,
+            "Q",
+            canonical_runner("Q"),
+            mutate(canonical_vendor("Q")),
+            "accepts %s" % label,
+        )
+    for label, mutate in RUNNER_C10DA9B_REMEDIATION_CONTROLS:
         expect_accept(
             gate,
             "Q",
@@ -9779,6 +10262,7 @@ if __name__ == "__main__":
         run_value_and_confinement_remediation_suite(gate)
         run_e6_remediation_suite(gate)
         run_a0fe0ab_remediation_suite(gate)
+        run_c10da9b_remediation_suite(gate)
         run_coverage_suite()
 
     try:
