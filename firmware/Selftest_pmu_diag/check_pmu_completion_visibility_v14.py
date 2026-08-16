@@ -127,13 +127,21 @@ earlier revision of this file got wrong and is worth stating plainly.
 ``test_commands``; it was once called ``running_qsize_loads`` and published as
 though it were a statement about the running path, which it is not -- a QSIZE
 read moved into ``v14_publish_primary`` is on the running path by construction
-and that comparison cannot see it. The whole-unit claim is
-``vendor_register_designations_confined``, and it is a different proof:
-``require_register_confinement`` refuses any NPU register named outside the
-functions the design names it in, so the running path carries no QSIZE access in
-the *analysed translation unit* whatever call reaches it. Neither key says
-anything about a callee in another translation unit or about the built image;
-that is C2-1's, and it is disclosed below rather than implied away here.
+and that comparison cannot see it. The whole-unit claim is two keys and three
+scans, because one register access has more than one spelling and a scan that
+knows only one of them is a scan the others walk around.
+``vendor_register_designations_confined`` counts the register *names*
+``require_register_confinement`` walked; ``vendor_register_accesses_confined``
+counts the accesses ``require_whole_unit_mmio_confinement`` resolved over every
+function span and file scope, where an address written as a numeric offset or an
+absolute constant is named by the same resolver the contract-critical functions
+use, and one it cannot name is refused rather than counted as nothing; and
+``require_no_macro_mmio`` refuses, whole-unit, a macro whose replacement list
+carries either. Together they are what makes ``register_confinement_scope:
+vendor_translation_unit`` a statement about the translation unit rather than
+about the tokens ``NPU_REG_*`` in it. Neither key says anything about a callee in
+another translation unit or about the built image; that is C2-1's, and it is
+disclosed below rather than implied away here.
 
 Two proofs are made about every published word, and they are not the same proof.
 ``require_authorized_appendix_producers`` answers *which function wrote this word
@@ -300,8 +308,11 @@ RESIDUAL_LIMITATIONS = (
     "macros_are_not_expanded: this gate reads translation-unit text, so an object-like macro "
     "is resolved only through the source's own #define table and a macro with a parameter list "
     "is never expanded at all; a macro whose replacement list dereferences a pointer cast or "
-    "names an NPU_REG_ register is refused as unresolved MMIO in every contract-critical "
-    "function rather than read through, and one whose replacement list carries a store is "
+    "names the NPU_REG_ prefix -- by a whole register name or by a token paste -- is refused as "
+    "unresolved MMIO across the whole vendor translation unit rather than read through, because "
+    "the directive line that carries it is blanked before the confinement scan runs and a rule "
+    "bounded to the contract-critical bodies left the publishers and the ISR outside both "
+    "scans; and one whose replacement list carries a store is "
     "refused outright, because the directive line is blanked before statements are split and "
     "the invocation site then names no storage at all. C line splicing is applied before comment "
     "recognition so a spliced comment opener deletes the same text the compiler deletes, and the "
@@ -314,16 +325,25 @@ RESIDUAL_LIMITATIONS = (
     "mmio_and_mailbox_analysis_is_intraprocedural: every ordering, counting and provenance "
     "rule is proven inside the function that carries it, so a register read or a mailbox "
     "store moved into a helper called from a path that permits calls is outside what those "
-    "particular verdicts cover. Two whole-unit rules now bound what that leaves reachable: "
+    "particular verdicts cover. Four whole-unit rules now bound what that leaves reachable: "
     "require_register_confinement refuses an NPU register named in any function the design "
-    "does not name it in, and require_mailbox_storage_closed refuses the appendix reached as "
-    "whole storage or by an escaped address, both across the entire vendor translation unit. "
-    "What remains uncovered is therefore a callee in a *different* translation unit and the "
-    "built image itself, not a helper in this one",
+    "does not name it in; require_whole_unit_mmio_confinement runs the address resolver over "
+    "every function span and file scope, so an NPU-region address written as a numeric offset "
+    "or an absolute constant is refused wherever this gate cannot pin it to one register and "
+    "held to the same owner table wherever it can; require_no_macro_mmio refuses a macro whose "
+    "replacement list carries either spelling; and require_mailbox_storage_closed refuses the "
+    "appendix reached as whole storage or by an escaped address -- all four across the entire "
+    "vendor translation unit. What remains uncovered is therefore a callee in a *different* "
+    "translation unit and the built image itself, not a helper in this one",
     "indirect_calls_are_refused_rather_than_resolved: this gate cannot resolve a function "
     "pointer's target, so it refuses the declarator and the postfix call form outright rather "
-    "than modelling them. A source that legitimately needs one is a source this gate cannot "
-    "verify, and proving the target set of an indirect call site in the built image is C2-3",
+    "than modelling them. That refusal covers the whole vendor translation unit and, on the "
+    "runner side, the function that owns the serialized record -- the stock runner's file-scope "
+    "irq_handler_t is its own construct and is not refused, but a pointer declared inside the "
+    "diagnostic is, and the record's copy-out parameter is closed against every call the way "
+    "the record itself already is. A source that legitimately needs one is a source this gate "
+    "cannot verify, and proving the target set of an indirect call site in the built image is "
+    "C2-3",
     "published_values_are_proven_against_the_design_text_not_against_hardware: "
     "require_appendix_value_provenance proves each word carries the expression the approved "
     "design gives it, over the C token sequence. That refuses a forged constant and a wrong "
@@ -1402,16 +1422,37 @@ def mmio_macro_names(masked: str) -> tuple[str, ...]:
     of the two forms carries it.
     """
 
-    found = set()
+    return tuple(sorted(mmio_macro_kinds(masked)))
+
+
+# A replacement list that merely *names* the ``NPU_REG_`` prefix is the same
+# defect one token earlier: ``#define QSEL NPU_REG_QSIZE`` and
+# ``#define SEL(x) NPU_REG_##x`` both put a register designation somewhere
+# ``blank_directives`` erases it, so the whole-unit confinement scan below walks
+# past a running-path QSIZE load and keeps publishing its count as complete.
+_RAW_REGISTER_PREFIX_RE = re.compile(r"(?<![A-Za-z0-9_])NPU_REG_")
+
+
+def mmio_macro_kinds(masked: str) -> dict[str, str]:
+    """Every MMIO-carrying macro, mapped to what its replacement list carries.
+
+    ``"designation"`` is a register *name* the confinement scan would otherwise
+    never see; ``"dereference"`` is an unexpanded MMIO access. The two are
+    reported separately because they are refused for different reasons.
+    """
+
+    found: dict[str, str] = {}
     for name, _parameters, body in macro_definitions(masked):
-        if _RAW_REGISTER_RE.search(body) is not None:
-            found.add(name)
+        if _RAW_REGISTER_PREFIX_RE.search(body) is not None:
+            found[name] = "designation"
         elif _POINTER_CAST_RE.search(body) is not None and _DEREF_RE.search(body) is not None:
-            found.add(name)
-    return tuple(sorted(found))
+            found[name] = "dereference"
+    return found
 
 
-def require_no_macro_mmio(text: str, macros: tuple[str, ...], what: str) -> None:
+def require_no_macro_mmio(
+    text: str, macros: tuple[str, ...], what: str, kinds: dict[str, str] | None = None
+) -> None:
     """Refuse an MMIO access made through a macro this gate cannot expand.
 
     The invocation is looked for as a *name* rather than as ``name(``, because
@@ -1423,7 +1464,8 @@ def require_no_macro_mmio(text: str, macros: tuple[str, ...], what: str) -> None
         if names_identifier(text, name):
             raise fail(
                 "%s reaches an NPU-region address this gate cannot resolve to one register: "
-                "the macro %s expands to an unexpanded MMIO dereference" % (what, name)
+                "the macro %s expands to an unexpanded MMIO %s"
+                % (what, name, (kinds or {}).get(name, "dereference"))
             )
 
 
@@ -5605,6 +5647,18 @@ def verify_runner_contract(runner_masked: str) -> dict[str, object]:
         len(runner_masked),
     )
     require_record_storage_closed(runner_masked, (close_index, owning_stop))
+    # The vendor-only indirect-call exemption ends at the function that owns the
+    # record: the stock runner's file-scope ``irq_handler_t`` is not an attack,
+    # and a function pointer declared inside the diagnostic is.
+    owning_start = next(
+        (
+            start
+            for _name, start, stop in function_spans(runner_masked)
+            if start <= close_index < stop
+        ),
+        0,
+    )
+    require_runner_diagnostic_closed(runner_masked, (owning_start, owning_stop))
 
     return {
         "runner_serialized_words": TOTAL_WORDS,
@@ -5833,6 +5887,337 @@ def require_register_confinement(
             % (owner or "file scope", match.start())
         )
     return walked
+
+
+# ---------------------------------------------------------------------------
+# Whole-unit MMIO confinement
+#
+# The scan above reads a register *name*, so it is a scan every spelling that
+# carries no name walks around:
+#
+#     *(volatile uint32_t *)(uintptr_t)(U85_BASE_ADDRESS + 0x000U) = 1U;
+#     *(volatile uint32_t *)0x50004000U = 1U;
+#
+# Both are a second submit. The gate already owns the resolver that names them
+# -- ``resolve_address_role``, reached through ``require_resolved_dereferences``
+# -- but that resolver ran only inside the functions the design names, and a
+# helper the design does not name was scanned by neither rule. The resolver is
+# therefore run over *every* function span and over file scope, so an NPU-region
+# address this gate cannot pin to one register is refused wherever it is
+# written, and a resolved one is held to the same owner table as its name.
+#
+# That is what makes ``register_confinement_scope: vendor_translation_unit`` a
+# statement about the translation unit rather than about the tokens that happen
+# to spell a register.
+# ---------------------------------------------------------------------------
+
+
+def _span_label(name: str) -> str:
+    return "the vendor function %s" % name if name else "the vendor unit at file scope"
+
+
+def require_whole_unit_mmio_confinement(
+    vendor_masked: str, defines: dict[str, int], setup_name: str, variant: str
+) -> int:
+    """Refuse an NPU-region access this gate cannot name, or names out of place.
+
+    Returns the number of resolved, authorised accesses it walked, so the
+    manifest publishes the verifier's own whole-unit count.
+    """
+
+    authorized = _register_authorized_owners(setup_name, variant)
+    scope = file_scope_text(vendor_masked)
+    walked = 0
+    for name, start, stop in function_spans(vendor_masked):
+        body = vendor_masked[start:stop]
+        what = _span_label(name)
+        roles = pointer_roles(body, defines, scope)
+        require_resolved_pointers(roles, what)
+        require_resolved_dereferences(body, defines, roles, what)
+        for site, role, is_write in dereference_sites(body, defines, roles):
+            if role == "QREAD" and is_write:
+                raise fail(_QREAD_WRITE_REFUSAL % (what, start + site))
+            allowed = authorized.get(role)
+            if allowed is None:
+                continue
+            if name in allowed:
+                walked += 1
+                continue
+            raise fail(_REGISTER_REFUSALS[role] % (name or "file scope", start + site))
+    return walked
+
+
+# QREAD is the register the design *polls*, so the confinement table above
+# authorises no owner for it and a bound QREAD pointer is not evidence of
+# anything. A QREAD *write* is a different construct entirely: nothing in this
+# contract writes the queue read pointer, and one that does rewinds the queue
+# between the primary observation and the convergence tail, so words 17..19 and
+# the success predicate all describe a queue that was reset under them.
+_QREAD_WRITE_REFUSAL = (
+    "QREAD is written in %s at offset %d: the design never writes the queue read pointer, "
+    "and a write to it rewinds the queue between the observation and the convergence tail "
+    "every later word claims to have measured"
+)
+
+
+def require_no_qread_write(vendor_masked: str) -> None:
+    """Refuse the accessor spelling of a QREAD write anywhere in the unit."""
+
+    scan = blank_directives(vendor_masked)
+    site = code_find(scan, "write_reg(NPU_REG_QREAD")
+    if site >= 0:
+        raise fail(_QREAD_WRITE_REFUSAL % ("the vendor translation unit", site))
+
+
+# The confinement table authorises ``u85_irq_handler`` to write CMD, because the
+# stock ISR clears completion there. It authorised the *owner* and never the
+# *value*, so a second submit issued from interrupt context satisfied it -- and
+# a terminal CMD=0 written there stops the NPU before the convergence tail
+# measures it. The ISR's STATUS load is bounded for the same reason: one load is
+# the design's, and a second is one no ordering rule in this file judged.
+ISR_CMD_CLEAR_VALUE = 2
+ISR_STATUS_LOADS = 1
+
+
+def require_isr_register_values(vendor_masked: str, defines: dict[str, int]) -> None:
+    """Pin what the interrupt handler writes to CMD and how often it reads STATUS."""
+
+    body = function_text(vendor_masked, ISR_SYMBOL, "interrupt handler")
+    roles = pointer_roles(body, defines, file_scope_text(vendor_masked))
+    for site, value in cmd_write_values(body, defines, roles):
+        if value != ISR_CMD_CLEAR_VALUE:
+            raise fail(
+                "the interrupt handler writes CMD with a value the design does not give it: "
+                "%s at offset %d, and the only CMD write this contract makes from interrupt "
+                "context is the 0x%X completion clear"
+                % (_cmd_value_text(value), site, ISR_CMD_CLEAR_VALUE)
+            )
+    loads = register_access_sites(body, "STATUS", defines, roles)
+    if len(loads) != ISR_STATUS_LOADS:
+        raise fail(
+            "the interrupt handler loads STATUS %d times: the design loads it %d, and a further "
+            "load is one no dominance or read-order rule in this file judged"
+            % (len(loads), ISR_STATUS_LOADS)
+        )
+
+
+# ``_register_authorized_owners`` lets ``wait_for_irq`` name STATUS on the
+# stated ground that the V14 command path never calls it. That was a comment,
+# not a rule, so a ``wait_for_irq`` that spins on STATUS until CMD_END and is
+# actually called consumes completion before the measured loop starts -- and
+# every ``first_*`` word then describes an already-complete device while the
+# gate reports the exemption intact. The ground is checked here.
+WAIT_FOR_IRQ_SYMBOL = "wait_for_irq"
+
+
+def _direct_call_sites(masked: str, name: str) -> tuple[int, ...]:
+    """Every offset where ``name`` is used as a callee rather than declared."""
+
+    found: list[int] = []
+    pattern = re.compile(r"(?<![A-Za-z0-9_])%s(?![A-Za-z0-9_])\s*\(" % re.escape(name))
+    for match in pattern.finditer(blank_directives(masked)):
+        cursor = match.start() - 1
+        while cursor >= 0 and masked[cursor] in _INLINE_SPACE:
+            cursor -= 1
+        if cursor >= 0 and (
+            _NAME_CHARACTER_RE.match(masked[cursor]) or masked[cursor] == "*"
+        ):
+            continue
+        found.append(match.start())
+    return tuple(found)
+
+
+def require_wait_for_irq_unreachable(vendor_masked: str) -> None:
+    """Refuse a ``wait_for_irq`` that is actually reached."""
+
+    sites = _direct_call_sites(vendor_masked, WAIT_FOR_IRQ_SYMBOL)
+    if sites:
+        raise fail(
+            "wait_for_irq is called at offset %d: the STATUS designation this gate authorises "
+            "inside it is authorised on the ground that the command path never calls it, and a "
+            "call makes that a running-path STATUS load no dominance or read-order rule judged"
+            % sites[0]
+        )
+
+
+# ---------------------------------------------------------------------------
+# The measured locals
+#
+# ``assignment_statements`` recovers ``name = expr`` and, by construction, skips
+# every ``=`` whose preceding character is in ``_ASSIGNMENT_BOUNDARY``. So a
+# compound assignment and an increment are stores the same-iteration, count and
+# classification proofs never saw:
+#
+#     status &= ~V14_STATUS_RESET;   /* a reset run published as a timeout   */
+#     qread++;                       /* word 17 published one past the read  */
+#     iterations += 1U;              /* word 16 off by one                   */
+#     status |= V14_STATUS_CMD_END;  /* a timed-out run asserting completion */
+#
+# The lvalue walk already exists for the mailbox and the record; the measured
+# locals are the storage it was not applied to.
+# ---------------------------------------------------------------------------
+
+MEASURED_LOCALS = ("qread", "status", "result", "iterations")
+
+
+def require_measured_locals_not_stepped(body: str, what: str) -> None:
+    """Refuse a read-modify-write on a local the publication reads."""
+
+    stepped = compound_assignment_targets(body, MEASURED_LOCALS)
+    if stepped:
+        raise fail(
+            "%s: %s is stepped by a read-modify-write, so the value it publishes is not the one "
+            "the measured load produced" % (what, ", ".join(stepped))
+        )
+
+
+# ---------------------------------------------------------------------------
+# The convergence helper's declarations
+#
+# ``require_convergence_classification`` proves each *guard* lands its own
+# category. Nothing proved the fall-through, and the fall-through is a
+# declaration:
+#
+#     -    uint32_t result = V14_CONVERGENCE_TIMEOUT;
+#     +    uint32_t result = V14_CONVERGENCE_SUCCESS;
+#
+# The loop then runs to the bound without matching, no ``break`` fires, and
+# ``obs->result`` carries SUCCESS out of a run that never converged --
+# ``v14_publish_success()`` and ``V14_RET_SUCCESS`` with every convergence
+# manifest key still correct. The primary helper has no such hole because it
+# ends in an unconditional terminal store the observation table pins; this is
+# that pin, written for the helper that carries its terminal category in an
+# initialiser instead.
+# ---------------------------------------------------------------------------
+
+CONVERGENCE_DECLARATIONS = (
+    ("result", "V14_CONVERGENCE_TIMEOUT"),
+    ("iterations", "0U"),
+    ("qread", "0U"),
+    ("status", "0U"),
+)
+# ``result`` is settled by the three classifier guards, ``iterations`` by the
+# completion guard alone, and ``qread``/``status`` by the one read pair the
+# same-iteration rule already counts.
+CONVERGENCE_ASSIGNMENTS = (("result", 3), ("iterations", 1), ("qread", 1), ("status", 1))
+
+# ``uint32_t result``, ``result`` -- a declarator or a bare name, and nothing
+# with a member, a subscript or a dereference in it.
+_PLAIN_LOCAL_LVALUE_RE = re.compile(r"^\s*(?:[A-Za-z_]\w*\s+)*([A-Za-z_]\w*)\s*$")
+
+
+def require_convergence_declarations(converge_body: str, defines: dict[str, int]) -> None:
+    """Pin the convergence helper's terminal tuple and count what may rewrite it."""
+
+    wanted_names = frozenset(name for name, _expected in CONVERGENCE_DECLARATIONS)
+    declared: dict[str, list[str]] = {}
+    assigned: dict[str, int] = {}
+    for _start, lvalue, rvalue in assignment_statements(converge_body):
+        # The bare local only. ``obs->result`` writes the observation record,
+        # which ``verify_observation_contract`` owns, and counting it here would
+        # credit the helper with a write to a name it never touched.
+        match = _PLAIN_LOCAL_LVALUE_RE.match(lvalue)
+        if match is None or match.group(1) not in wanted_names:
+            continue
+        name = match.group(1)
+        if _is_declaration(lvalue):
+            declared.setdefault(name, []).append(rvalue)
+        else:
+            assigned[name] = assigned.get(name, 0) + 1
+    for name, expected in CONVERGENCE_DECLARATIONS:
+        found = declared.get(name, [])
+        wanted = _evaluate_constant(expected, defines)
+        if len(found) != 1 or _evaluate_constant(found[0], defines) != wanted:
+            raise fail(
+                "the convergence helper does not carry its terminal category in its declaration: "
+                "%s is declared %s, and the design declares it %s -- a loop that runs to the "
+                "bound without matching publishes whatever the declaration left there"
+                % (
+                    name,
+                    ", ".join(_normalized_expression(item) for item in found) or "nowhere",
+                    expected,
+                )
+            )
+    for name, count in CONVERGENCE_ASSIGNMENTS:
+        found_count = assigned.get(name, 0)
+        if found_count != count:
+            raise fail(
+                "the convergence helper assigns %s %d times outside its declaration: the design "
+                "assigns it %d, and a further assignment reaches the publication without passing "
+                "the guard that would justify it" % (name, found_count, count)
+            )
+
+
+# ---------------------------------------------------------------------------
+# The runner's diagnostic function
+#
+# ``require_no_function_pointer``/``require_no_indirect_call`` are vendor-only,
+# because the stock runner declares an ``irq_handler_t`` of its own at file
+# scope. That exemption reached the serialized record: a function pointer
+# declared *inside* the diagnostic function rewrote all 34 words after every
+# copy and dominance rule was satisfied, and the copy-out parameter escaped the
+# ``&d`` closure because the write went through ``out`` rather than through the
+# record. The exemption is narrowed to file scope here, and the copy-out pointer
+# is closed the way the record already is.
+# ---------------------------------------------------------------------------
+
+
+def _parameter_names(masked: str, body_start: int) -> tuple[tuple[str, bool], ...]:
+    """``(name, is_pointer)`` for each parameter of the function opening at ``body_start``."""
+
+    head = masked[: max(body_start - 1, 0)]
+    close = head.rfind(")")
+    if close < 0:
+        return ()
+    _close_of, opens = _bracket_pairs(head[: close + 1])
+    open_index = opens.get(close)
+    if open_index is None:
+        return ()
+    found: list[tuple[str, bool]] = []
+    for declarator in head[open_index + 1 : close].split(","):
+        names = _IDENTIFIER_RE.findall(declarator)
+        if not names:
+            continue
+        found.append((names[-1], "*" in declarator))
+    return tuple(found)
+
+
+def require_record_copy_out_closed(
+    runner_masked: str, span: tuple[int, int], parameters: frozenset
+) -> None:
+    """Refuse the record copy-out pointer reaching anything but its own store."""
+
+    start, stop = span
+    for match in _IDENTIFIER_RE.finditer(runner_masked, start, stop):
+        if match.group(0) not in parameters:
+            continue
+        cursor = match.start() - 1
+        while cursor >= 0 and runner_masked[cursor] in _INLINE_SPACE:
+            cursor -= 1
+        if runner_masked[cursor : cursor + 1] == "*" and not _is_declarator_star(
+            runner_masked, cursor
+        ):
+            continue
+        raise fail(
+            "the runner hands the record copy-out pointer %s to something other than the copy "
+            "the design writes, at offset %d: a write through it rewrites every word the "
+            "record's copy, dominance and address rules proved"
+            % (match.group(0), match.start())
+        )
+
+
+def require_runner_diagnostic_closed(runner_masked: str, span: tuple[int, int]) -> None:
+    """Hold the record-owning function to the vendor's indirect-call standard."""
+
+    start, stop = span
+    body = runner_masked[start:stop]
+    require_no_function_pointer(body, "the runner diagnostic function")
+    require_no_indirect_call(body, "the runner diagnostic function")
+    pointers = frozenset(
+        name for name, is_pointer in _parameter_names(runner_masked, start) if is_pointer
+    )
+    if pointers:
+        require_record_copy_out_closed(runner_masked, span, pointers)
 
 
 # ---------------------------------------------------------------------------
@@ -6190,8 +6575,32 @@ def _publication_call_sites(vendor_masked: str) -> tuple[tuple[int, str, str], .
     ``{``, ``}`` or the ``)`` of the branch that reaches it.
     """
 
+    return tuple(
+        (site, callee, arguments)
+        for site, callee, arguments, is_call in _publication_symbol_sites(vendor_masked)
+        if is_call
+    )
+
+
+def _publication_symbol_sites(
+    vendor_masked: str,
+) -> tuple[tuple[int, str, str, bool], ...]:
+    """``(site, callee, arguments, is_call_statement)`` for every publication symbol.
+
+    A symbol that is neither a definition nor a prototype but whose ``)`` is not
+    followed by ``;`` is reported here with ``is_call_statement`` false rather
+    than dropped, because dropping it is what let a live publication call hide
+    behind one pair of parentheses:
+
+        (void)(v14_publish_failure(V14_PHASE_NONE, V14_REASON_NONE, ...));
+
+    That overwrites every verdict the run reached with a clean tuple, republishes
+    the magic, and leaves ``publication_calls_with_proven_arguments`` at the
+    number the design's own call sites produce.
+    """
+
     close_of, _open_of = _bracket_pairs(vendor_masked)
-    found: list[tuple[int, str, str]] = []
+    found: list[tuple[int, str, str, bool]] = []
     for match in _PUBLICATION_SYMBOL_RE.finditer(vendor_masked):
         cursor = match.start() - 1
         while cursor >= 0 and vendor_masked[cursor] in _INLINE_SPACE:
@@ -6203,14 +6612,18 @@ def _publication_call_sites(vendor_masked: str) -> tuple[tuple[int, str, str], .
         open_index = match.end() - 1
         close_index = close_of.get(open_index)
         if close_index is None:
+            found.append((match.start(), match.group(1), "", False))
             continue
         cursor = close_index + 1
         while cursor < len(vendor_masked) and vendor_masked[cursor] in _INLINE_SPACE:
             cursor += 1
-        if vendor_masked[cursor : cursor + 1] != ";":
-            continue
         found.append(
-            (match.start(), match.group(1), vendor_masked[open_index + 1 : close_index])
+            (
+                match.start(),
+                match.group(1),
+                vendor_masked[open_index + 1 : close_index],
+                vendor_masked[cursor : cursor + 1] == ";",
+            )
         )
     return tuple(found)
 
@@ -6291,6 +6704,16 @@ PUBLICATION_CALLS: dict[str, tuple[tuple[str, str], ...]] = {
 def require_publication_call_provenance(vendor_masked: str) -> int:
     """Refuse a publication call whose argument tuple is not the design's."""
 
+    # A symbol that is not a definition, not a prototype and not a call
+    # *statement* is a live publication this table never reads, so it is refused
+    # here rather than skipped by the walk that builds the table.
+    for site, callee, _arguments, is_call in _publication_symbol_sites(vendor_masked):
+        if not is_call:
+            raise fail(
+                "a publication symbol appears outside a proven call site: %s at offset %d is "
+                "neither a definition nor a call statement, so the tuple it publishes is one no "
+                "argument rule in this file reads" % (callee, site)
+            )
     spans = function_spans(vendor_masked)
     observed: dict[str, list[tuple[str, str]]] = {}
     for site, callee, arguments in _publication_call_sites(vendor_masked):
@@ -6346,6 +6769,26 @@ def require_cleanup_epilogue(command: str) -> None:
             raise fail(
                 "the cleanup-failure branch does not land its own return code: the %s arm does "
                 "not assign %s" % (label, code)
+            )
+        # Presence is not exclusivity. A second store to the same name walks
+        # straight past the check above, and only the last one decides what the
+        # host is told -- so the mailbox says CLEANUP_INVARIANT while the vendor
+        # returns SUCCESS, which is the disagreement this rule exists to refuse.
+        writes = [
+            lvalue
+            for _start, lvalue, _rvalue in assignment_statements(arm)
+            if names_identifier(lvalue, "ret_code")
+        ]
+        if len(writes) != 1:
+            raise fail(
+                "the cleanup %s arm assigns ret_code more than once: %d assignments reach the "
+                "vendor return code, and only the last one decides what the host is told"
+                % (label, len(writes))
+            )
+        if compound_assignment_targets(arm, ("ret_code",)):
+            raise fail(
+                "the cleanup %s arm assigns ret_code more than once: a read-modify-write reaches "
+                "the vendor return code after the assignment this rule proved" % label
             )
 
 
@@ -6454,6 +6897,19 @@ def require_transport_validity_polarity(runner_masked: str) -> None:
             "word 33 is not the magic does not clear %s, so a run that never published is "
             "reported to the host as a valid transport" % TRANSPORT_VALID_SYMBOL
         )
+    # And clearing it is only a proof while nothing sets it again: the check
+    # above asks whether the store appears, never whether it is the last one.
+    writes = [
+        lvalue
+        for _start, lvalue, _rvalue in assignment_statements(guards[0])
+        if names_identifier(lvalue, TRANSPORT_VALID_SYMBOL)
+    ]
+    if len(writes) != 1 or compound_assignment_targets(guards[0], (TRANSPORT_VALID_SYMBOL,)):
+        raise fail(
+            "the invalid-magic arm assigns %s more than once: %d assignments reach the transport "
+            "flag, and a run that never published is reported to the host as a valid transport by "
+            "whichever one lands last" % (TRANSPORT_VALID_SYMBOL, len(writes))
+        )
 
 
 def verify_generated_sources(runner_text: str, vendor_text: str, variant: str) -> dict[str, object]:
@@ -6550,11 +7006,39 @@ def verify_generated_sources(runner_text: str, vendor_text: str, variant: str) -
         }
     )[0]
     register_designations = require_register_confinement(vendor_masked, setup_owner, variant)
+    # And the same question asked of every spelling that carries no register
+    # name: a numeric offset, an absolute address, a macro alias. Without these
+    # three, "confined" is a claim about the tokens ``NPU_REG_*`` rather than
+    # about the translation unit the manifest says it is about.
+    require_no_macro_mmio(
+        vendor_masked,
+        mmio_macro_names(vendor_masked),
+        "the vendor translation unit",
+        mmio_macro_kinds(vendor_masked),
+    )
+    register_accesses = require_whole_unit_mmio_confinement(
+        vendor_masked, defines, setup_owner, variant
+    )
+    require_no_qread_write(vendor_masked)
+    require_isr_register_values(vendor_masked, defines)
+    require_wait_for_irq_unreachable(vendor_masked)
     converge_body = function_text(vendor_masked, CONVERGE_SYMBOL, "common convergence helper")
     require_convergence_classification(converge_body)
+    # Before the count rule below, so a local the design assigns once and a
+    # mutation steps is named by the stepping rule rather than by the count it
+    # happens to leave intact.
+    require_measured_locals_not_stepped(converge_body, "the common convergence helper")
+    require_measured_locals_not_stepped(
+        function_text(vendor_masked, PRIMARY_SYMBOL[variant], "primary helper"),
+        "the primary helper",
+    )
     require_convergence_same_iteration(
         extract_loop(converge_body, "common convergence helper")[1]
     )
+    # Last of the convergence rules, so a source that breaks one of the named
+    # ones above is reported by that rule rather than by the count it leaves
+    # behind.
+    require_convergence_declarations(converge_body, defines)
     command_start, command_stop = function_span(vendor_masked, "test_commands", "command function")
     command = vendor_masked[command_start:command_stop]
     tail_start = code_find(command, "v14_publish_primary(")
@@ -6597,6 +7081,13 @@ def verify_generated_sources(runner_text: str, vendor_text: str, variant: str) -
         # refusal rather than a larger number here, so this is the whole-unit
         # scope the running-path counts above are true of.
         "vendor_register_designations_confined": register_designations,
+        # And the verifier's own count of the resolved MMIO accesses it walked
+        # over every function span and file scope -- the spellings that carry no
+        # register name at all. An access this gate cannot pin to one register,
+        # anywhere in the unit, is a refusal rather than a larger number here,
+        # which is what makes the scope below a statement about the translation
+        # unit rather than about the ``NPU_REG_*`` tokens in it.
+        "vendor_register_accesses_confined": register_accesses,
         "register_confinement_scope": "vendor_translation_unit",
     }
     for section in (pre_run, primary, hard_bypass, convergence, mailbox, identity, cleanup, runner):

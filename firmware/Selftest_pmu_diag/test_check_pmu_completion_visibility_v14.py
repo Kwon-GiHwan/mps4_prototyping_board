@@ -14,6 +14,7 @@ import subprocess
 import sys
 import tempfile
 import time
+import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
@@ -127,7 +128,7 @@ STATUS_FAULT_MASK = 0x314
 
 # The suite is frozen at this many assertions. Adding a named fixture is a
 # deliberate act, so the count moves with it and never drifts silently.
-EXPECTED_PASS_COUNT = 747
+EXPECTED_PASS_COUNT = 818
 
 CHECKER_PATH = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
@@ -8022,6 +8023,778 @@ RT_REMEDIATION_CONTROLS = (
 )
 
 
+# ---------------------------------------------------------------------------
+# e6d0393 acceptance-review and red-team blockers.
+#
+# Every mutation below was an ACCEPT against the e6d0393 gate. They are grouped
+# by the property each one falsifies:
+#
+#   * an NPU register designated through an object-like macro alias, which the
+#     ``NPU_REG_*`` name scan cannot see because the ``#define`` that carries it
+#     is blanked before the scan runs;
+#   * an NPU register reached by numeric offset or absolute address from a
+#     function the design does not name, which the address resolver never ran
+#     over because it ran only inside contract-critical bodies;
+#   * a QREAD write, or a CMD value written from the ISR that is not the
+#     ISR-clear, which the confinement table authorised by owner without ever
+#     reading the value;
+#   * ``wait_for_irq`` actually called, which the STATUS exemption for it
+#     assumed in a comment and never checked;
+#   * a measured local stepped or read-modify-written, which the plain-assignment
+#     walk skips by construction;
+#   * a convergence category or iteration count carried in a declaration, which
+#     the classifier proved only for the in-guard writes;
+#   * a publication call whose ``)`` is not followed by ``;``, which the call
+#     site walk skipped rather than refused;
+#   * a second assignment to ``ret_code`` or ``transport_valid`` in an arm whose
+#     first assignment the presence check already accepted;
+#   * the runner's serialized record rewritten through a function pointer or
+#     through the copy-out parameter, which the vendor-only indirect-call rule
+#     and the ``&d`` address closure both leave open.
+# ---------------------------------------------------------------------------
+
+V14_CONVERGE_CALL = "\t  v14_converge(qsize_expected, &converged);"
+V14_CONVERGE_LOCAL_DECLS = (
+    "    uint32_t qread = 0U;\n"
+    "    uint32_t status = 0U;\n"
+    "    uint32_t result = V14_CONVERGENCE_TIMEOUT;\n"
+    "    uint32_t iterations = 0U;\n"
+)
+V14_CONVERGE_TAIL = (
+    "    obs->t_first = V14_U32_INVALID;\n    obs->result = result;\n"
+)
+V14_PRIMARY_STATUS_LOAD = (
+    "    status = *status_reg;\n    obs->t_first = V14_U32_INVALID;\n"
+)
+V14_CLEANUP_SUCCESS_ARM = (
+    "\t  else {\n"
+    "\t    v14_publish_success();\n"
+    "\t    ret_code = V14_RET_SUCCESS;\n"
+    "\t  }"
+)
+V14_TEST_U85_TAIL = (
+    "    ret_code = test_commands(eTest, u32CmdQueueSize, pu85_warp_data_st);\n"
+)
+RUNNER_COLLECT_HEAD = "void pmu_diag_collect_v14(pmu_diag_record_t *out)\n{\n"
+
+
+def _with_macro_alias(name, register, statement, anchor, what):
+    """Alias an ``NPU_REG_*`` name behind an object-like macro and use it."""
+
+    def mutate(vendor):
+        aliased = replace_once(
+            vendor,
+            RT_MAILBOX_DECL,
+            "#define %s %s\n%s" % (name, register, RT_MAILBOX_DECL),
+            "mailbox declaration",
+        )
+        return replace_once(aliased, anchor, statement + anchor, what)
+
+    return mutate
+
+
+def _with_helper(definition, call_anchor, call, what):
+    """Define a helper above the primary publisher and call it from ``anchor``."""
+
+    def mutate(vendor):
+        defined = replace_once(
+            vendor,
+            RT_PUBLISH_PRIMARY_DEF,
+            definition + RT_PUBLISH_PRIMARY_DEF,
+            "primary publisher definition",
+        )
+        if call_anchor is None:
+            return defined
+        return replace_once(defined, call_anchor, call + call_anchor, what)
+
+    return mutate
+
+
+def _numeric_helper(name, body):
+    return (
+        "__attribute__((noinline))\nstatic void %s(void)\n{\n%s}\n\n" % (name, body)
+    )
+
+
+MACRO_ALIASED_CONFINEMENT_MUTATIONS = (
+    (
+        "running_qsize_load_through_an_object_like_macro_alias",
+        _with_macro_alias(
+            "QSEL_RUNNING",
+            "NPU_REG_QSIZE",
+            "    (void)read_reg(QSEL_RUNNING);\n",
+            RT_PUBLISH_PRIMARY_FIRST_STORE,
+            "primary publisher head",
+        ),
+        "expands to an unexpanded MMIO designation",
+    ),
+    (
+        "second_submit_through_an_object_like_macro_alias",
+        _with_macro_alias(
+            "CMDSEL_X",
+            "NPU_REG_CMD",
+            "    write_reg(CMDSEL_X, 0x00000001);\n",
+            RT_PUBLISH_PRIMARY_FIRST_STORE,
+            "primary publisher head",
+        ),
+        "expands to an unexpanded MMIO designation",
+    ),
+    (
+        "terminal_cmd_write_through_an_object_like_macro_alias",
+        _with_macro_alias(
+            "CMDSEL_Z",
+            "NPU_REG_CMD",
+            "    write_reg(CMDSEL_Z, 0x00000000);\n",
+            RT_PUBLISH_PRIMARY_FIRST_STORE,
+            "primary publisher head",
+        ),
+        "expands to an unexpanded MMIO designation",
+    ),
+    (
+        "qbase_reprogrammed_through_an_object_like_macro_alias",
+        _with_macro_alias(
+            "QBSEL",
+            "NPU_REG_QBASE",
+            "    write_reg(QBSEL, 0U);\n",
+            RT_PUBLISH_PRIMARY_FIRST_STORE,
+            "primary publisher head",
+        ),
+        "expands to an unexpanded MMIO designation",
+    ),
+    (
+        "isr_qsize_load_through_an_object_like_macro_alias",
+        _with_macro_alias(
+            "QSEL_ISR",
+            "NPU_REG_QSIZE",
+            "    (void)read_reg(QSEL_ISR);\n",
+            RT_ISR_STATUS_READ,
+            "isr status read",
+        ),
+        "expands to an unexpanded MMIO designation",
+    ),
+    (
+        "running_qsize_load_through_a_function_like_macro_alias",
+        _with_macro_alias(
+            "SEL(x)",
+            "NPU_REG_##x",
+            "    (void)read_reg(SEL(QSIZE));\n",
+            RT_PUBLISH_PRIMARY_FIRST_STORE,
+            "primary publisher head",
+        ),
+        "expands to an unexpanded MMIO designation",
+    ),
+)
+
+NUMERIC_OFFSET_CONFINEMENT_MUTATIONS = (
+    (
+        "second_submit_through_a_numeric_offset_helper",
+        _with_helper(
+            _numeric_helper(
+                "v14_resubmit",
+                "    *(volatile uint32_t *)(uintptr_t)(U85_BASE_ADDRESS + 0x000U) = 1U;\n",
+            ),
+            V14_CONVERGE_CALL,
+            "\t  v14_resubmit();\n",
+            "convergence call",
+        ),
+        "reaches an NPU-region address this gate cannot resolve to one register",
+    ),
+    (
+        "cmd_transition_through_a_numeric_offset_helper",
+        _with_helper(
+            _numeric_helper(
+                "v14_transition",
+                "    *(volatile uint32_t *)(uintptr_t)(U85_BASE_ADDRESS + 0x000U) = 2U;\n",
+            ),
+            V14_CONVERGE_CALL,
+            "\t  v14_transition();\n",
+            "convergence call",
+        ),
+        "reaches an NPU-region address this gate cannot resolve to one register",
+    ),
+    (
+        "qbase_reprogrammed_through_a_numeric_offset_helper",
+        _with_helper(
+            _numeric_helper(
+                "v14_rebase",
+                "    *(volatile uint32_t *)(uintptr_t)(U85_BASE_ADDRESS + 0x100U) = 0U;\n",
+            ),
+            V14_CONVERGE_CALL,
+            "\t  v14_rebase();\n",
+            "convergence call",
+        ),
+        "reaches an NPU-region address this gate cannot resolve to one register",
+    ),
+    (
+        "running_qsize_load_through_a_numeric_offset_helper",
+        _with_helper(
+            _numeric_helper(
+                "v14_probe_qsize",
+                "    (void)*(volatile uint32_t *)(uintptr_t)(U85_BASE_ADDRESS + 0x104U);\n",
+            ),
+            V14_CONVERGE_CALL,
+            "\t  v14_probe_qsize();\n",
+            "convergence call",
+        ),
+        "reaches an NPU-region address this gate cannot resolve to one register",
+    ),
+    (
+        "second_submit_through_an_absolute_address_helper",
+        _with_helper(
+            _numeric_helper(
+                "v14_absolute_submit",
+                "    *(volatile uint32_t *)0x50004000U = 1U;\n",
+            ),
+            V14_CONVERGE_CALL,
+            "\t  v14_absolute_submit();\n",
+            "convergence call",
+        ),
+        "reaches an NPU-region address this gate cannot resolve to one register",
+    ),
+    (
+        "numeric_offset_write_through_folded_arithmetic",
+        _with_helper(
+            _numeric_helper(
+                "v14_folded_write",
+                "    *(volatile uint32_t *)(uintptr_t)(U85_BASE_ADDRESS + 0x100U + 4U) = 3U;\n",
+            ),
+            V14_CONVERGE_CALL,
+            "\t  v14_folded_write();\n",
+            "convergence call",
+        ),
+        "reaches an NPU-region address this gate cannot resolve to one register",
+    ),
+    (
+        "numeric_offset_helper_that_is_never_called",
+        _with_helper(
+            _numeric_helper(
+                "v14_dead_submit",
+                "    *(volatile uint32_t *)(uintptr_t)(U85_BASE_ADDRESS + 0x000U) = 1U;\n",
+            ),
+            None,
+            "",
+            "",
+        ),
+        "reaches an NPU-region address this gate cannot resolve to one register",
+    ),
+    (
+        "numeric_offset_helper_called_from_the_primary_publisher",
+        _with_helper(
+            _numeric_helper(
+                "v14_publisher_probe",
+                "    (void)*(volatile uint32_t *)(uintptr_t)(U85_BASE_ADDRESS + 0x104U);\n",
+            ),
+            RT_PUBLISH_PRIMARY_FIRST_STORE,
+            "    v14_publisher_probe();\n",
+            "primary publisher head",
+        ),
+        "reaches an NPU-region address this gate cannot resolve to one register",
+    ),
+    (
+        "isr_qsize_load_through_a_numeric_offset",
+        _rt_after(
+            RT_ISR_STATUS_READ,
+            "\n    (void)*(volatile uint32_t *)(uintptr_t)(U85_BASE_ADDRESS + 0x104U);",
+            "isr status read",
+        ),
+        "reaches an NPU-region address this gate cannot resolve to one register",
+    ),
+    (
+        "numeric_offset_write_in_the_mailbox_publisher",
+        _rt_before(
+            RT_MAILBOX_PUBLISH_MAGIC,
+            "    *(volatile uint32_t *)(uintptr_t)(U85_BASE_ADDRESS + 0x000U) = 1U;\n",
+            "mailbox publish barrier",
+        ),
+        "reaches an NPU-region address this gate cannot resolve to one register",
+    ),
+)
+
+QREAD_AND_ISR_VALUE_MUTATIONS = (
+    (
+        "qread_reset_written_from_the_primary_publisher",
+        _rt_before(
+            RT_PUBLISH_PRIMARY_FIRST_STORE,
+            "    write_reg(NPU_REG_QREAD, 0U);\n",
+            "primary publisher head",
+        ),
+        "QREAD is written",
+    ),
+    (
+        "qread_reset_written_from_the_mailbox_publisher",
+        _rt_before(
+            RT_MAILBOX_PUBLISH_MAGIC,
+            "    write_reg(NPU_REG_QREAD, 0U);\n",
+            "mailbox publish barrier",
+        ),
+        "QREAD is written",
+    ),
+    (
+        "qread_reset_written_from_the_command_tail",
+        _rt_before(
+            V14_CONVERGE_CALL,
+            "\t  write_reg(NPU_REG_QREAD, 0U);\n",
+            "convergence call",
+        ),
+        "QREAD is written",
+    ),
+    (
+        "second_submit_written_from_the_npu_isr",
+        _rt_after(
+            RT_ISR_STATUS_READ,
+            "\n    write_reg(NPU_REG_CMD, 1);",
+            "isr status read",
+        ),
+        "the interrupt handler writes CMD with a value the design does not give it",
+    ),
+    (
+        "isr_cmd_clear_replaced_by_a_terminal_stop",
+        _rt_swap(
+            "        write_reg(NPU_REG_CMD, 2);\n",
+            "        write_reg(NPU_REG_CMD, 0);\n",
+            "isr cmd clear",
+        ),
+        "the interrupt handler writes CMD with a value the design does not give it",
+    ),
+    (
+        "second_status_load_in_the_npu_isr",
+        _rt_after(
+            RT_ISR_STATUS_READ,
+            "\n    status_register = read_reg(NPU_REG_STATUS);",
+            "isr status read",
+        ),
+        "the interrupt handler loads STATUS",
+    ),
+)
+
+RT_WAIT_FOR_IRQ_DEFINITION = (
+    "__attribute__((noinline))\nstatic void wait_for_irq(void)\n"
+    "{\n    (void)read_reg(NPU_REG_STATUS);\n}\n\n"
+)
+RT_WAIT_FOR_IRQ_SPIN_DEFINITION = (
+    "__attribute__((noinline))\nstatic void wait_for_irq(void)\n"
+    "{\n    for (uint32_t w = 0U; w < 10000U; ++w) {\n"
+    "        if ((read_reg(NPU_REG_STATUS) & V14_STATUS_CMD_END) != 0U) {\n"
+    "            break;\n        }\n    }\n}\n\n"
+)
+
+WAIT_FOR_IRQ_REACHABILITY_MUTATIONS = (
+    (
+        "wait_for_irq_called_from_the_command_path",
+        _with_helper(
+            RT_WAIT_FOR_IRQ_DEFINITION,
+            RT_PUBLISH_PRIMARY_CALL,
+            "\t  wait_for_irq();\n",
+            "primary publication call",
+        ),
+        "wait_for_irq is called",
+    ),
+    (
+        "wait_for_irq_spins_on_status_before_the_measured_publication",
+        _with_helper(
+            RT_WAIT_FOR_IRQ_SPIN_DEFINITION,
+            RT_PUBLISH_PRIMARY_CALL,
+            "\t  wait_for_irq();\n",
+            "primary publication call",
+        ),
+        "wait_for_irq is called",
+    ),
+    (
+        "wait_for_irq_called_from_the_mailbox_publisher",
+        _with_helper(
+            RT_WAIT_FOR_IRQ_DEFINITION,
+            RT_MAILBOX_PUBLISH_MAGIC,
+            "    wait_for_irq();\n",
+            "mailbox publish barrier",
+        ),
+        "wait_for_irq is called",
+    ),
+)
+
+MEASURED_LOCAL_STEP_MUTATIONS = (
+    (
+        "convergence_status_masked_by_a_compound_assignment",
+        _rt_swap(
+            RT_CONVERGE_READ_PAIR,
+            RT_CONVERGE_READ_PAIR + "        status &= ~V14_STATUS_RESET;\n",
+            "convergence read pair",
+        ),
+        "is stepped by a read-modify-write",
+    ),
+    (
+        "convergence_qread_stepped_by_an_increment",
+        _rt_swap(
+            RT_CONVERGE_READ_PAIR,
+            RT_CONVERGE_READ_PAIR + "        qread++;\n",
+            "convergence read pair",
+        ),
+        "is stepped by a read-modify-write",
+    ),
+    (
+        "convergence_status_restored_through_a_compound_xor",
+        _rt_swap(
+            RT_CONVERGE_READ_PAIR,
+            "        uint32_t status_prev = status;\n"
+            + RT_CONVERGE_READ_PAIR
+            + "        status ^= (status ^ status_prev);\n",
+            "convergence read pair",
+        ),
+        "is stepped by a read-modify-write",
+    ),
+    (
+        "convergence_iterations_stepped_after_the_loop",
+        _rt_before(
+            V14_CONVERGE_TAIL,
+            "    iterations += 1U;\n",
+            "convergence publication tail",
+        ),
+        "is stepped by a read-modify-write",
+    ),
+    (
+        "primary_status_forced_by_a_compound_or_before_publication",
+        _rt_swap(
+            V14_PRIMARY_STATUS_LOAD,
+            "    status = *status_reg;\n"
+            "    status |= V14_STATUS_CMD_END;\n"
+            "    obs->t_first = V14_U32_INVALID;\n",
+            "primary status load",
+        ),
+        "is stepped by a read-modify-write",
+    ),
+    (
+        "primary_qread_stepped_after_the_measured_loop",
+        _rt_swap(
+            V14_PRIMARY_STATUS_LOAD,
+            "    status = *status_reg;\n"
+            "    qread--;\n"
+            "    obs->t_first = V14_U32_INVALID;\n",
+            "primary status load",
+        ),
+        "is stepped by a read-modify-write",
+    ),
+)
+
+CONVERGENCE_DECLARATION_MUTATIONS = (
+    (
+        "convergence_result_initialised_to_success",
+        _rt_swap(
+            "    uint32_t result = V14_CONVERGENCE_TIMEOUT;\n",
+            "    uint32_t result = V14_CONVERGENCE_SUCCESS;\n",
+            "convergence result declaration",
+        ),
+        "the convergence helper does not carry its terminal category in its declaration",
+    ),
+    (
+        "convergence_result_initialised_to_reset",
+        _rt_swap(
+            "    uint32_t result = V14_CONVERGENCE_TIMEOUT;\n",
+            "    uint32_t result = V14_CONVERGENCE_RESET;\n",
+            "convergence result declaration",
+        ),
+        "the convergence helper does not carry its terminal category in its declaration",
+    ),
+    (
+        "convergence_result_initialised_to_a_folded_success",
+        _rt_swap(
+            "    uint32_t result = V14_CONVERGENCE_TIMEOUT;\n",
+            "    uint32_t result = V14_CONVERGENCE_TIMEOUT - 1U;\n",
+            "convergence result declaration",
+        ),
+        "the convergence helper does not carry its terminal category in its declaration",
+    ),
+    (
+        "convergence_iterations_initialised_to_one",
+        _rt_swap(
+            "    uint32_t iterations = 0U;\n",
+            "    uint32_t iterations = 1U;\n",
+            "convergence iterations declaration",
+        ),
+        "the convergence helper does not carry its terminal category in its declaration",
+    ),
+    (
+        "convergence_result_and_iterations_forged_as_a_coherent_tuple",
+        lambda vendor: replace_once(
+            replace_once(
+                vendor,
+                "    uint32_t result = V14_CONVERGENCE_TIMEOUT;\n",
+                "    uint32_t result = V14_CONVERGENCE_SUCCESS;\n",
+                "convergence result declaration",
+            ),
+            "    uint32_t iterations = 0U;\n",
+            "    uint32_t iterations = 1U;\n",
+            "convergence iterations declaration",
+        ),
+        "the convergence helper does not carry its terminal category in its declaration",
+    ),
+    (
+        "convergence_qread_and_status_seeded_to_converged_constants",
+        _rt_swap(
+            "    uint32_t qread = 0U;\n"
+            "    uint32_t status = 0U;\n"
+            "    uint32_t result = V14_CONVERGENCE_TIMEOUT;\n",
+            "    uint32_t qread = V14_QSIZE_EXPECTED;\n"
+            "    uint32_t status = V14_STATUS_CMD_END;\n"
+            "    uint32_t result = V14_CONVERGENCE_TIMEOUT;\n",
+            "convergence local declarations",
+        ),
+        "the convergence helper does not carry its terminal category in its declaration",
+    ),
+    (
+        "convergence_result_assigned_success_before_the_publication",
+        _rt_before(
+            V14_CONVERGE_TAIL,
+            "    result = V14_CONVERGENCE_SUCCESS;\n",
+            "convergence publication tail",
+        ),
+        "the convergence helper assigns",
+    ),
+    (
+        "convergence_iterations_assigned_after_the_loop",
+        _rt_before(
+            V14_CONVERGE_TAIL,
+            "    iterations = 1U;\n",
+            "convergence publication tail",
+        ),
+        "the convergence helper assigns",
+    ),
+)
+
+PARENTHESISED_PUBLICATION_MUTATIONS = (
+    (
+        "publication_call_hidden_behind_a_cast_parenthesis",
+        _rt_after(
+            V14_TEST_U85_TAIL,
+            "    (void)(v14_publish_failure(V14_PHASE_NONE, V14_REASON_NONE,"
+            " V14_U32_INVALID, V14_U32_INVALID));\n",
+            "test_u85 command call",
+        ),
+        "publication symbol appears outside a proven call site",
+    ),
+    (
+        "publication_call_hidden_behind_redundant_parentheses",
+        _rt_after(
+            V14_TEST_U85_TAIL,
+            "    (v14_publish_success());\n",
+            "test_u85 command call",
+        ),
+        "publication symbol appears outside a proven call site",
+    ),
+    (
+        "publication_call_hidden_inside_a_comma_expression",
+        _rt_after(
+            V14_TEST_U85_TAIL,
+            "    (void)(0U, v14_publish_success());\n",
+            "test_u85 command call",
+        ),
+        "publication symbol appears outside a proven call site",
+    ),
+)
+
+CLEANUP_AND_TRANSPORT_EXCLUSIVITY_MUTATIONS = (
+    (
+        "cleanup_failure_arm_reassigns_the_success_return_code",
+        _rt_swap(
+            RT_CLEANUP_FAILURE_BRANCH,
+            "\t  if (ret_code != 0) {\n"
+            "\t    v14_publish_cleanup_failure((uint32_t)read_val, converged.status);\n"
+            "\t    ret_code = V14_RET_CLEANUP_INVARIANT;\n"
+            "\t    ret_code = V14_RET_SUCCESS;\n"
+            "\t  }",
+            "cleanup failure branch",
+        ),
+        "assigns ret_code more than once",
+    ),
+    (
+        "cleanup_success_arm_reassigns_the_cleanup_return_code",
+        _rt_swap(
+            V14_CLEANUP_SUCCESS_ARM,
+            "\t  else {\n"
+            "\t    v14_publish_success();\n"
+            "\t    ret_code = V14_RET_SUCCESS;\n"
+            "\t    ret_code = V14_RET_CLEANUP_INVARIANT;\n"
+            "\t  }",
+            "cleanup success branch",
+        ),
+        "assigns ret_code more than once",
+    ),
+)
+
+RUNNER_TRANSPORT_EXCLUSIVITY_MUTATIONS = (
+    (
+        "runner_reasserts_transport_valid_after_clearing_it",
+        _rt_swap(
+            RUNNER_MAGIC_GUARD_LINE + "        pmu_diag_v14_transport_valid = 0U;\n",
+            RUNNER_MAGIC_GUARD_LINE
+            + "        pmu_diag_v14_transport_valid = 0U;\n"
+            + "        pmu_diag_v14_transport_valid = 1U;\n",
+            "runner magic guard",
+        ),
+        "assigns pmu_diag_v14_transport_valid more than once",
+    ),
+)
+
+RUNNER_DIAGNOSTIC_ESCAPE_MUTATIONS = (
+    (
+        "runner_record_rewritten_through_a_function_pointer_in_the_diagnostic",
+        lambda runner: replace_once(
+            replace_once(
+                runner,
+                RUNNER_COLLECT_HEAD,
+                "static void v14_fill(pmu_diag_record_t *r)\n{\n"
+                "    uint32_t *w = (uint32_t *)r;\n    w[2] = 3U;\n}\n\n"
+                + RUNNER_COLLECT_HEAD
+                + "    void (*fp)(pmu_diag_record_t *) = v14_fill;\n",
+                "runner collect head",
+            ),
+            RUNNER_RECORD_CLOSURE_ANCHOR,
+            RUNNER_RECORD_CLOSURE_ANCHOR + "    fp(out);\n",
+            "runner record copy out",
+        ),
+        "declares a function pointer",
+    ),
+    (
+        "runner_copy_out_pointer_handed_to_a_call",
+        lambda runner: replace_once(
+            replace_once(
+                runner,
+                RUNNER_COLLECT_HEAD,
+                "static void v14_fill(pmu_diag_record_t *r)\n{\n"
+                "    uint32_t *w = (uint32_t *)r;\n    w[2] = 3U;\n}\n\n" + RUNNER_COLLECT_HEAD,
+                "runner collect head",
+            ),
+            RUNNER_RECORD_CLOSURE_ANCHOR,
+            RUNNER_RECORD_CLOSURE_ANCHOR + "    v14_fill(out);\n",
+            "runner record copy out",
+        ),
+        "hands the record copy-out pointer",
+    ),
+    (
+        "runner_copy_out_pointer_address_escapes_the_diagnostic",
+        lambda runner: replace_once(
+            replace_once(
+                runner,
+                RUNNER_COLLECT_HEAD,
+                "static void v14_sink(pmu_diag_record_t **r)\n{\n"
+                "    uint32_t *w = (uint32_t *)(*r);\n    w[2] = 3U;\n}\n\n" + RUNNER_COLLECT_HEAD,
+                "runner collect head",
+            ),
+            RUNNER_RECORD_CLOSURE_ANCHOR,
+            RUNNER_RECORD_CLOSURE_ANCHOR + "    v14_sink(&out);\n",
+            "runner record copy out",
+        ),
+        "hands the record copy-out pointer",
+    ),
+)
+
+# --- controls: the neighbouring legal sources still pass --------------------
+
+E6_REMEDIATION_CONTROLS = (
+    (
+        "an object-like macro whose replacement list names no NPU register",
+        lambda vendor: replace_once(
+            vendor,
+            RT_MAILBOX_DECL,
+            "#define SPARE_WORD 7U\n" + RT_MAILBOX_DECL,
+            "mailbox declaration",
+        ),
+    ),
+    (
+        "the stock wait_for_irq helper, defined and never called",
+        _with_helper(RT_WAIT_FOR_IRQ_DEFINITION, None, "", ""),
+    ),
+    (
+        "a helper that reaches no NPU address at all, called from the command path",
+        _with_helper(
+            "__attribute__((noinline))\nstatic void v14_note(void)\n"
+            "{\n    irq_history_mask = irq_history_mask;\n}\n\n",
+            V14_CONVERGE_CALL,
+            "\t  v14_note();\n",
+            "convergence call",
+        ),
+    ),
+    (
+        "the convergence terminal category spelled with redundant parentheses",
+        _rt_swap(
+            "    uint32_t result = V14_CONVERGENCE_TIMEOUT;\n",
+            "    uint32_t result = (V14_CONVERGENCE_TIMEOUT);\n",
+            "convergence result declaration",
+        ),
+    ),
+    (
+        "a non-publication call statement wrapped in a cast parenthesis",
+        _rt_after(
+            V14_TEST_U85_TAIL,
+            "    (void)(NVIC_GetActive(NPU0_IRQn));\n",
+            "test_u85 command call",
+        ),
+    ),
+)
+
+RUNNER_E6_REMEDIATION_CONTROLS = (
+    (
+        "the record copy-out pointer dereferenced exactly as the design writes it",
+        lambda runner: runner,
+    ),
+)
+
+
+def run_e6_remediation_suite(gate):
+    """The e6d0393 acceptance and red-team blockers, each reproduced first."""
+
+    run_vendor_mutations(gate, MACRO_ALIASED_CONFINEMENT_MUTATIONS, "Q")
+    run_vendor_mutations(gate, NUMERIC_OFFSET_CONFINEMENT_MUTATIONS, "Q")
+    run_vendor_mutations(gate, QREAD_AND_ISR_VALUE_MUTATIONS, "Q")
+    run_vendor_mutations(gate, WAIT_FOR_IRQ_REACHABILITY_MUTATIONS, "Q")
+    run_vendor_mutations(gate, MEASURED_LOCAL_STEP_MUTATIONS, "Q")
+    run_vendor_mutations(gate, CONVERGENCE_DECLARATION_MUTATIONS, "Q")
+    run_vendor_mutations(gate, PARENTHESISED_PUBLICATION_MUTATIONS, "Q")
+    run_vendor_mutations(gate, CLEANUP_AND_TRANSPORT_EXCLUSIVITY_MUTATIONS, "Q")
+    run_runner_mutations(gate, RUNNER_TRANSPORT_EXCLUSIVITY_MUTATIONS, "Q")
+    run_runner_mutations(gate, RUNNER_DIAGNOSTIC_ESCAPE_MUTATIONS, "Q")
+
+    # The properties a downstream reader would qualify an ELF against are proven
+    # on the whole variant matrix, not only on the Q image the reports were
+    # written against.
+    for variant in ("QS", "SQ"):
+        for label, mutate, reason in (
+            MACRO_ALIASED_CONFINEMENT_MUTATIONS[0],
+            NUMERIC_OFFSET_CONFINEMENT_MUTATIONS[0],
+            QREAD_AND_ISR_VALUE_MUTATIONS[0],
+            QREAD_AND_ISR_VALUE_MUTATIONS[3],
+            WAIT_FOR_IRQ_REACHABILITY_MUTATIONS[0],
+            CONVERGENCE_DECLARATION_MUTATIONS[0],
+            PARENTHESISED_PUBLICATION_MUTATIONS[0],
+            CLEANUP_AND_TRANSPORT_EXCLUSIVITY_MUTATIONS[0],
+        ):
+            name = "%s_%s" % (variant.lower(), label)
+            REJECTED_FIXTURES.add(name)
+            expect_reject(
+                gate,
+                variant,
+                canonical_runner(variant),
+                mutate(canonical_vendor(variant)),
+                name,
+                reason,
+            )
+
+    for label, mutate in E6_REMEDIATION_CONTROLS:
+        expect_accept(
+            gate,
+            "Q",
+            canonical_runner("Q"),
+            mutate(canonical_vendor("Q")),
+            "accepts %s" % label,
+        )
+    for label, mutate in RUNNER_E6_REMEDIATION_CONTROLS:
+        expect_accept(
+            gate,
+            "Q",
+            mutate(canonical_runner("Q")),
+            canonical_vendor("Q"),
+            "accepts %s" % label,
+        )
+
+
 def run_value_and_confinement_remediation_suite(gate):
     """The a1208a3 red-team and acceptance-review blockers, each reproduced first.
 
@@ -8513,6 +9286,39 @@ def run_coverage_suite():
     check("every design-mandated negative fixture is present", not missing, repr(missing))
 
 
+# ---------------------------------------------------------------------------
+# The zero-test trap
+#
+# This suite is a hand-rolled script: every fixture runs from the ``__main__``
+# block below, and nothing in it is a ``unittest.TestCase`` or a module-level
+# ``test_*`` function. ``python3 -m pytest`` and ``python3 -m unittest`` both
+# therefore collect *nothing* from it and exit reporting success -- a green
+# shell with zero assertions executed, which is indistinguishable in CI from a
+# suite that ran and passed.
+#
+# The class below is the one collectable thing in the file. Under either
+# collector it runs the script the only way that executes the fixtures, and
+# fails unless the run reports the frozen count with no failures. So the two
+# invocations that used to report a silent pass now report the real verdict,
+# and a run that executes no fixture at all cannot be mistaken for a run that
+# executed all of them.
+# ---------------------------------------------------------------------------
+
+
+class DirectSuiteExecution(unittest.TestCase):
+    """Run the suite the way it has to be run, and pin its fixture count."""
+
+    def test_the_v14_contract_suite_runs_every_frozen_fixture(self):
+        result = subprocess.run(
+            [sys.executable, os.path.abspath(__file__)],
+            capture_output=True,
+            text=True,
+        )
+        tail = (result.stdout[-4000:] + result.stderr[-2000:]).strip()
+        self.assertEqual(result.returncode, 0, tail)
+        self.assertIn("passed=%d failed=0" % EXPECTED_PASS_COUNT, result.stdout, tail)
+
+
 if __name__ == "__main__":
     try:
         import check_pmu_completion_visibility_v14 as gate
@@ -8539,6 +9345,7 @@ if __name__ == "__main__":
         run_acceptance_grammar_suite(gate)
         run_source_gate_remediation_suite(gate)
         run_value_and_confinement_remediation_suite(gate)
+        run_e6_remediation_suite(gate)
         run_coverage_suite()
 
     try:
@@ -8555,6 +9362,11 @@ if __name__ == "__main__":
             run_generator_suite(gate, patcher)
             run_generated_fixture_cli_suite(patcher)
 
+    check(
+        "the suite executed fixtures rather than collecting none",
+        passed + failed > 0,
+        "passed=%d failed=%d" % (passed, failed),
+    )
     check(
         "the frozen fixture count is unchanged",
         passed + 1 == EXPECTED_PASS_COUNT,
