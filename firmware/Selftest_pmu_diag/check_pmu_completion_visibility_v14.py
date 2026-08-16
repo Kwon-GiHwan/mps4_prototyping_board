@@ -284,10 +284,28 @@ HPRINTF_SEAM_MARKER = "/* %s */" % HPRINTF_SEAM_MARKER_NAME
 HPRINTF_WRAP_SYMBOL = "__wrap_printf"
 
 # Stated in every manifest so no reader has to infer what this chunk did not do.
-RESIDUAL_LIMITATIONS = (
-    "vendor_raw_source_absent: the frozen u85.c is not tracked here, so the vendor "
-    "half runs against a stock fixture and is not proven against the frozen "
-    "translation unit",
+# Claims this gate deliberately does not make, because they are control-flow
+# properties and this module reads characters. Each is bound on the linked image
+# instead. They are named here, published in the manifest, and asserted by the
+# unit suite, so that relocating a proof cannot be mistaken for having made it:
+# a claim that leaves this list without arriving in the ELF contract is a gap
+# somebody has to have decided to accept.
+DEFERRED_TO_LINKED_IMAGE = (
+    "pre_program_gate_dominates_queue_programming: the stopped-state gate must dominate every "
+    "QBASE/QSIZE write. Text order is not dominance -- the frozen vendor's eU85_TEST0 branch "
+    "writes QBASE_LSB earlier in the file than the design's programming and never on the "
+    "measured path, and the gate itself sits in the caller",
+    "no_state_transition_between_gate_and_programming: the part of that window which crosses "
+    "the call from the gate frame into the programming frame",
+    "return_code_not_overwritten_after_the_deciding_branch: the frozen vendor stores to "
+    "ret_code on branches of its own after the command function returns, so 'no later store' "
+    "is a reachability question rather than a count",
+)
+
+RESIDUAL_LIMITATIONS = DEFERRED_TO_LINKED_IMAGE + (
+    "vendor_raw_source_pin_not_checked_here: the frozen u85.c is tracked at "
+    "firmware/Drivers/u85_driver/u85.c and pinned by the build's frozen-input evidence and by "
+    "the unit suite, but this gate is handed generated text and so does not re-check the pin",
     "hprintf_callsite_not_elf_bound: the cleanup seam is proven as the frozen "
     "V12_HPRINTF_SEAM source anchor only; binding it to the qualified "
     "__wrap_printf callsite address is an ELF contract",
@@ -2645,8 +2663,41 @@ def queue_programming_sites(
     return tuple(sorted(sites))
 
 
+def _pre_program_gate_function(vendor_masked: str, spans) -> str:
+    """The one function that carries the pre-program gate.
+
+    The gate is found by the object it binds rather than by a function name, so
+    it holds wherever the vendor keeps it -- and requiring exactly one owner is
+    what keeps a second gate from being introduced somewhere the guards below
+    are never applied to it.
+    """
+
+    owners = sorted(
+        {
+            name
+            for name, start, stop in spans
+            if code_positions(vendor_masked[start:stop], "pre_program_status")
+        }
+    )
+    if not owners:
+        raise fail("pre-program gate is missing: no function binds pre_program_status")
+    if len(owners) != 1:
+        raise fail("pre-program gate is split across %d functions: %s" % (len(owners), owners))
+    return owners[0]
+
+
 def verify_pre_run_contract(vendor_masked: str, defines: dict[str, int]) -> dict[str, object]:
-    """Prove the stopped-state gate, the single QSIZE snapshot and fail-closed submit."""
+    """Prove the stopped-state gate, the single QSIZE snapshot and fail-closed submit.
+
+    Everything proved here is a property of the source text: which objects exist,
+    how many loads there are, which guards consume them, and that each guard
+    returns. Ordering and dominance are deliberately *not* proved here. They are
+    control-flow properties, this module reads characters, and a rule that reads
+    character order as execution order is wrong in exactly the case that matters
+    -- mutually exclusive branches, and gates that sit in a caller. Those claims
+    are bound on the linked image instead, and the keys returned below are named
+    so that none of them can be read as a dominance proof.
+    """
 
     if defines.get("V14_QSIZE_EXPECTED") != QSIZE_EXPECTED:
         raise fail(
@@ -2671,21 +2722,45 @@ def verify_pre_run_contract(vendor_masked: str, defines: dict[str, int]) -> dict
     owners = {enclosing_function(spans, site) for site in programming_sites}
     if len(owners) != 1:
         raise fail("queue programming is split across %d functions: %s" % (len(owners), sorted(owners)))
-    setup_start, setup_stop = function_span(vendor_masked, sorted(owners)[0], "queue setup function")
+    programming_name = sorted(owners)[0]
+    setup_start, setup_stop = function_span(vendor_masked, programming_name, "queue setup function")
     setup = vendor_masked[setup_start:setup_stop]
     setup_roles = pointer_roles(setup, defines, scope)
     require_resolved_pointers(setup_roles, "queue setup function")
     require_resolved_dereferences(setup, defines, setup_roles, "the queue setup function")
     require_no_macro_mmio(setup, mmio_macros, "the queue setup function", mmio_kinds)
 
-    pre_program_reads = register_access_sites(setup, "STATUS", defines, setup_roles)
-    queue_accesses = [
-        site - setup_start for site in programming_sites if setup_start <= site < setup_stop
-    ]
-    if len(pre_program_reads) != 1 or pre_program_reads[0] > min(queue_accesses):
+    # The gate is where ``pre_program_status`` is, which need not be the function
+    # that programs the queue -- in the real vendor it is the caller. Anchoring
+    # it on the programming function instead was a rule that only its own
+    # fixtures could satisfy: it found the *post*-program load, called it the
+    # gate, and reported the gate as late.
+    gate_name = _pre_program_gate_function(vendor_masked, spans)
+    gate_start, gate_stop = function_span(vendor_masked, gate_name, "pre-program gate function")
+    gate = vendor_masked[gate_start:gate_stop]
+    gate_roles = pointer_roles(gate, defines, scope)
+    require_resolved_pointers(gate_roles, "pre-program gate function")
+    require_resolved_dereferences(gate, defines, gate_roles, "the pre-program gate function")
+    require_no_macro_mmio(gate, mmio_macros, "the pre-program gate function", mmio_kinds)
+
+    pre_program_reads = register_access_sites(gate, "STATUS", defines, gate_roles)
+    if len(pre_program_reads) != 1:
         raise fail(
-            "pre-program STATUS gate does not dominate QBASE/QSIZE: %d gate loads, first queue access at %d"
-            % (len(pre_program_reads), min(queue_accesses))
+            "pre-program gate does not read STATUS exactly once: %d loads in %s"
+            % (len(pre_program_reads), gate_name)
+        )
+
+    # Whether the gate *dominates* the programming writes is a control-flow
+    # property. Text order cannot decide it -- two sites in mutually exclusive
+    # branches have an order here and no order at run time, which is how the
+    # vendor's eU85_TEST0 pin-toggle writes to QBASE_LSB came to be read as
+    # queue programming. What text can decide is that the gate and the
+    # programming are connected at all, so that is what is claimed here; the
+    # dominance proof itself is bound on the linked image.
+    if gate_name != programming_name and not code_positions(gate, programming_name + "("):
+        raise fail(
+            "pre-program gate and queue programming are unconnected: %s neither programs the queue nor calls %s"
+            % (gate_name, programming_name)
         )
 
     for mask, label in (
@@ -2693,26 +2768,29 @@ def verify_pre_run_contract(vendor_masked: str, defines: dict[str, int]) -> dict
         ("V14_STATUS_RESET", "reset_status"),
         ("V14_STATUS_FAULT_MASK", "vendor fault"),
     ):
-        guards = [c for c, _ in _guard_blocks(setup, "pre_program_status") if names_identifier(c, mask)]
+        guards = [c for c, _ in _guard_blocks(gate, "pre_program_status") if names_identifier(c, mask)]
         if len(guards) != 1:
             raise fail("pre-program gate omits stopped/reset/fault: %s check is missing" % label)
 
     require_load_provenance(
-        setup, "pre_program_status", pre_program_reads, "STATUS", "pre-program gate"
+        gate, "pre_program_status", pre_program_reads, "STATUS", "pre-program gate"
     )
 
-    # The design forbids a running transition *between* the gate and the
-    # programming writes, not a CMD write anywhere in the setup function, so
-    # the window is exactly that span. A CMD write reached through a raw
-    # pointer transitions the state exactly as the vendor accessor does.
-    gate_start = pre_program_reads[0]
-    programming_start = min(queue_accesses)
-    if any(
-        gate_start <= site < programming_start
-        for site, _value in cmd_write_values(setup, defines, setup_roles)
-    ):
+    # The design forbids a running transition between the gate and the
+    # programming writes. That window is a control-flow span, and once the gate
+    # and the programming can live in different functions the span is not a
+    # range of characters in one of them. What is decidable here is the part of
+    # the window inside the gate function: nothing may transition the state
+    # after the gate load and before the function hands control on. The rest of
+    # the window is bound on the linked image.
+    after_gate = tuple(
+        site
+        for site, _value in cmd_write_values(gate, defines, gate_roles)
+        if site > pre_program_reads[0]
+    )
+    if after_gate:
         raise fail(
-            "state-transitioning CMD write between the pre-program gate and queue programming"
+            "state-transitioning CMD write after the pre-program gate in %s" % gate_name
         )
 
     qsize_writes = [
@@ -2802,6 +2880,18 @@ def verify_pre_run_contract(vendor_masked: str, defines: dict[str, int]) -> dict
         # Named for the scope it is actually taken over. The whole-unit claim is
         # ``vendor_register_designations_confined``.
         "running_qsize_loads_in_test_commands": len(running_qsize_loads),
+        # Where the two halves of the pre-run contract were found, so a reader
+        # can see whether they were in one function or two without rerunning
+        # anything.
+        "pre_program_gate_function": gate_name,
+        "queue_programming_function": programming_name,
+        # What this gate did and did not prove, in the manifest rather than in a
+        # comment, because a consumer reads the manifest.
+        "pre_run_source_scope": "shape_only_no_control_flow",
+        "pre_run_dominance_deferred_to": (
+            "linked-image proof: pre-program gate dominates every QBASE/QSIZE write, "
+            "and no state transition occurs between them"
+        ),
     }
 
 
@@ -5908,6 +5998,65 @@ _UNMODELLED_ROLE_REFUSAL = (
 )
 
 
+# The registers the frozen stock vendor names that the design has no opinion
+# about, each confined to the functions the stock itself names it in.
+#
+# Refusing these outright refuses the frozen file: the stock unit touches 29 NPU
+# registers and the design models five. But allowing them by name alone would
+# allow ``read_reg(NPU_REG_PROT)`` inside a measured loop -- per-iteration MMIO
+# no read-order rule judges -- so the owner set is carried with each one and a
+# stock register named anywhere else is refused exactly as before. A register in
+# neither table is still refused: the added ``#define NPU_REG_DOORBELL`` this
+# gate was built to catch is not in the frozen source and does not become
+# authorised by being spelled like a vendor one.
+#
+# Derived from the pinned stock source rather than remembered; the unit suite
+# recomputes it from the tracked firmware/Drivers/u85_driver/u85.c and refuses a
+# mismatch.
+# The frozen vendor's two register accessors. Each builds a pointer out of a
+# parameter, which no rule here can resolve to one register -- being generic over
+# the register is what makes them accessors, and the gate judges their *calls* by
+# the argument instead. The hand-written stand-in only ever called them, never
+# defined them, so the whole-unit walk had never met one.
+#
+# The exemption is over these bodies, not these names: an accessor that grew a
+# second dereference, reached a register directly, or gained any other effect no
+# longer matches and is judged like every other function.
+FROZEN_ACCESSOR_BODIES = {
+    "read_reg": "3435f9ebb220d8cf413b0d6cb88a44ece1647bb15fa1e1eae03b5a322c404f2c",
+    "write_reg": "ccfde47ef69f7cd406d407e6b22a90620dc5de6596b31cc822c214a08e4e7a67",
+}
+
+
+STOCK_REGISTER_OWNERS = {
+    "AXI_EXT": frozenset(("test_commands",)),
+    "AXI_SRAM": frozenset(("test_commands",)),
+    "BASEP0_LSB": frozenset(("test_commands",)),
+    "BASEP0_MSB": frozenset(("test_commands",)),
+    "BASEP1_LSB": frozenset(("test_commands",)),
+    "BASEP1_MSB": frozenset(("test_commands",)),
+    "BASEP2_LSB": frozenset(("test_commands",)),
+    "BASEP2_MSB": frozenset(("test_commands",)),
+    "BASEP3_LSB": frozenset(("test_commands",)),
+    "BASEP3_MSB": frozenset(("test_commands",)),
+    "CFG_EXT_CAP": frozenset(("test_commands",)),
+    "CFG_SRAM_CAP": frozenset(("test_commands",)),
+    "CONFIG": frozenset(("test_commands",)),
+    "ID": frozenset(("test_commands",)),
+    "MEM_ATTR0": frozenset(("test_commands",)),
+    "MEM_ATTR1": frozenset(("test_commands",)),
+    "MEM_ATTR2": frozenset(("test_commands",)),
+    "MEM_ATTR3": frozenset(("test_commands",)),
+    "POWER_CTRL": frozenset(("test_commands",)),
+    "PROT": frozenset(("test_commands",)),
+    "QBASE_LSB": frozenset(("test_commands",)),
+    "QBASE_MSB": frozenset(("test_commands",)),
+    "QCONFIG": frozenset(("test_commands",)),
+    "REGIONCFG": frozenset(("test_commands",)),
+    "RESET": frozenset(("test_commands",)),
+}
+
+
 def _require_modelled_role(
     role: str, authorized: dict[str, frozenset], what: str, site: int
 ) -> frozenset:
@@ -5915,31 +6064,50 @@ def _require_modelled_role(
 
     allowed = authorized.get(role)
     if allowed is None:
+        allowed = STOCK_REGISTER_OWNERS.get(role)
+    if allowed is None:
         raise fail(_UNMODELLED_ROLE_REFUSAL % (what, role, site))
     return allowed
 
 
-def _register_authorized_owners(setup_name: str, variant: str) -> dict[str, frozenset]:
+# The frozen stock vendor's own STATUS helpers: its IRQ spin and its reset spin.
+# Both read STATUS into a diagnostic and neither is on the measured path, but
+# both are part of the translation unit this contract is generated into, so
+# refusing them refuses the stock file rather than an attack.
+#
+# This set is *derived* from the pinned stock source rather than remembered, and
+# the unit suite recomputes it from the tracked firmware/Drivers/u85_driver/u85.c
+# and refuses a mismatch. Listing it by hand is how ``wait_for_reset`` came to be
+# missing: the suite's hand-written stand-in vendor did not have one, so nothing
+# ever asked whether the list was complete.
+STOCK_STATUS_HELPERS = frozenset(("wait_for_irq", "wait_for_reset"))
+
+
+def _register_authorized_owners(
+    vendor_masked: str, setup_name: str, variant: str
+) -> dict[str, frozenset]:
     """The functions the design lets name each NPU register.
 
     ``setup_name`` is resolved rather than named, the way
     ``verify_pre_run_contract`` resolves it, so the confinement holds wherever
-    the vendor keeps its queue programming.
+    the vendor keeps its queue programming. The pre-program gate is resolved the
+    same way and for the same reason: it reads STATUS, and it does not have to
+    live in the function that programs the queue -- in the frozen vendor it does
+    not.
     """
 
     primary = PRIMARY_SYMBOL[variant]
+    gate_name = _pre_program_gate_function(vendor_masked, function_spans(vendor_masked))
     return {
         "QSIZE": frozenset((setup_name, COMMAND_SYMBOL)),
         "QBASE": frozenset((setup_name,)),
-        # ``wait_for_irq`` is the frozen stock vendor's own IRQ spin helper. It
-        # reads STATUS into a diagnostic printf and the V14 command path never
-        # calls it, but it is part of the stock translation unit this contract is
-        # generated into, so refusing it would refuse the stock file rather than
-        # an attack. It is authorised for STATUS only: a QSIZE or CMD access
-        # relocated into it is still refused.
+        # Plus the frozen stock vendor's own STATUS helpers -- see
+        # STOCK_STATUS_HELPERS. They are authorised for STATUS only: a QSIZE or
+        # CMD access relocated into one of them is still refused.
         "STATUS": frozenset(
-            (setup_name, COMMAND_SYMBOL, ISR_SYMBOL, primary, CONVERGE_SYMBOL, "wait_for_irq")
-        ),
+            (setup_name, gate_name, COMMAND_SYMBOL, ISR_SYMBOL, primary, CONVERGE_SYMBOL)
+        )
+        | STOCK_STATUS_HELPERS,
         "CMD": frozenset((COMMAND_SYMBOL, ISR_SYMBOL)),
         # QREAD used to be *absent* from this table, on the ground that a bound
         # QREAD pointer is not evidence the way a QSIZE or CMD one is -- it is
@@ -6016,7 +6184,7 @@ def require_register_confinement(
     publish the verifier's own count rather than a constant.
     """
 
-    authorized = _register_authorized_owners(setup_name, variant)
+    authorized = _register_authorized_owners(vendor_masked, setup_name, variant)
     spans = function_spans(vendor_masked)
     scanned = blank_directives(vendor_masked)
     walked = 0
@@ -6081,12 +6249,14 @@ def require_whole_unit_mmio_confinement(
     manifest publishes the verifier's own whole-unit count.
     """
 
-    authorized = _register_authorized_owners(setup_name, variant)
+    authorized = _register_authorized_owners(vendor_masked, setup_name, variant)
     scope = file_scope_text(vendor_masked)
     walked = 0
     for name, start, stop in function_spans(vendor_masked):
         body = vendor_masked[start:stop]
         what = _span_label(name)
+        if FROZEN_ACCESSOR_BODIES.get(name) == normalized_digest(body):
+            continue
         roles = pointer_roles(body, defines, scope)
         require_resolved_pointers(roles, what)
         require_resolved_dereferences(body, defines, roles, what)
@@ -6174,7 +6344,7 @@ def require_qread_load_budget(
 ) -> int:
     """Refuse an authorised owner that loads QREAD more often than the design does."""
 
-    allowed = _register_authorized_owners(setup_name, variant)["QREAD"]
+    allowed = _register_authorized_owners(vendor_masked, setup_name, variant)["QREAD"]
     counts = qread_access_counts(vendor_masked, defines)
     for owner in sorted(counts):
         if owner not in allowed:
@@ -6297,7 +6467,7 @@ def require_accessor_designations_confined(
     manifest publishes the verifier's own count of the third spelling too.
     """
 
-    authorized = _register_authorized_owners(setup_name, variant)
+    authorized = _register_authorized_owners(vendor_masked, setup_name, variant)
     spans = function_spans(vendor_masked)
     walked = 0
     for site, verb, role in accessor_designations(vendor_masked, defines):
@@ -7409,9 +7579,17 @@ def require_publication_call_provenance(vendor_masked: str) -> int:
 _CLEANUP_EPILOGUE_RE = re.compile(
     r"(?<![A-Za-z0-9_])if\s*\(\s*ret_code\s*!=\s*0\s*\)\s*\{([^{}]*)\}\s*else\s*\{([^{}]*)\}"
 )
-# The design's own stores to the vendor return code, across the whole command
-# function: the initialisation, the read-back mismatch, and one per epilogue arm.
-COMMAND_RETURN_CODE_ASSIGNMENTS = 4
+# The design's own stores to the vendor return code. Counting *every* store in
+# the function was calibrated against a hand-written stand-in whose command
+# function was a fraction of the real one; the frozen vendor also assigns
+# ret_code four times in its eU85_TEST0 pin-toggle diagnostic, on a branch the
+# measured path never takes. Raising the number to match would have been fitting
+# the rule to whatever the source happened to contain. What the design actually
+# owns is one store per epilogue arm, and that is what is counted.
+COMMAND_V14_RETURN_CODES = ("V14_RET_CLEANUP_INVARIANT", "V14_RET_SUCCESS")
+# Every verdict the design defines, so a store of one the epilogue does not own
+# is refused by name rather than by arithmetic on a count.
+_V14_RETURN_CONSTANTS = tuple(sorted("V14_RET_%s" % name for name in VENDOR_RETURN))
 # And across the entry function that returns it to the host: the initialisation
 # and the one store that carries the command function's verdict out.
 ENTRY_SYMBOL = "test_u85"
@@ -7461,7 +7639,7 @@ def require_cleanup_epilogue(command: str) -> None:
                 "the cleanup %s arm assigns ret_code more than once: a read-modify-write reaches "
                 "the vendor return code after the assignment this rule proved" % label
             )
-    require_return_code_settled(command, "command", COMMAND_RETURN_CODE_ASSIGNMENTS)
+    require_v14_return_codes_settled(command, "command", COMMAND_V14_RETURN_CODES)
 
 
 # Exclusivity *within* each epilogue arm is only a proof while the arms are the
@@ -7472,6 +7650,14 @@ def require_cleanup_epilogue(command: str) -> None:
 # V14_RET_SUCCESS while the mailbox still carries the failure tuple. The return
 # code is therefore settled over each whole function that owns one: the design's
 # assignments, and never a read-modify-write.
+def _return_code_writes(body: str):
+    return [
+        (start, rvalue)
+        for start, lvalue, rvalue in assignment_statements(body)
+        if names_identifier(lvalue, "ret_code")
+    ]
+
+
 def require_return_code_settled(body: str, what: str, expected: int) -> None:
     """Refuse a return code rewritten after the branch that decided it."""
 
@@ -7481,17 +7667,85 @@ def require_return_code_settled(body: str, what: str, expected: int) -> None:
             "returns is then not the one the branch that detected the outcome assigned, and the "
             "mailbox tuple and the return code stop agreeing" % what
         )
-    writes = [
-        lvalue
-        for _start, lvalue, _rvalue in assignment_statements(body)
-        if names_identifier(lvalue, "ret_code")
-    ]
+    writes = _return_code_writes(body)
     if len(writes) != expected:
         raise fail(
             "the %s function assigns ret_code %d times: the design assigns it %d, and a further "
             "assignment reaches the vendor return code after the branch that decided it"
             % (what, len(writes), expected)
         )
+
+
+# Every way of reaching ret_code that is not a plain assignment.
+_RET_CODE_STEP_RE = re.compile(
+    r"(?:\+\+|--)\s*ret_code|ret_code\s*(?:\+\+|--|<<=|>>=|[-+*/%&|^]=)"
+)
+# The only one the frozen vendor uses. It is not counted: an increment cannot
+# produce V14_RET_SUCCESS from any verdict -- the codes are 0..7 and stepping
+# moves away from zero -- so a second one forges nothing. The operators that can
+# forge a verdict are the ones that clear or overwrite, and those are refused.
+_FROZEN_ENTRY_STEP = "ret_code++"
+
+
+def require_entry_return_code_frozen(body: str, what: str) -> None:
+    """Hold the entry frame's return code to the frozen vendor's own handling.
+
+    The entry frame is the vendor's, not the design's: it rewrites ret_code after
+    the command function has returned, and refusing that refuses the frozen file.
+    What must still be refused is a store the frozen vendor does not make, because
+    that is how a forged verdict gets one frame further out -- ``ret_code &= 0``
+    to mask a failure to success, or a V14 verdict assigned where no V14 branch
+    decided one.
+    """
+
+    steps = [hit.group(0).replace(" ", "") for hit in _RET_CODE_STEP_RE.finditer(body)]
+    foreign = [step for step in steps if step != _FROZEN_ENTRY_STEP]
+    if foreign:
+        raise fail(
+            "the %s function reaches ret_code through a read-modify-write the frozen vendor does "
+            "not make (%s): the value returned is then not the one the branch that detected the "
+            "outcome assigned" % (what, foreign[0])
+        )
+    for _start, rvalue in _return_code_writes(body):
+        named = [c for c in _V14_RETURN_CONSTANTS if names_identifier(rvalue, c)]
+        if named:
+            raise fail(
+                "the %s function assigns %s: no V14 branch decides a verdict in this frame, so a "
+                "store of one forges the command function's" % (what, named[0])
+            )
+
+
+def require_v14_return_codes_settled(body: str, what: str, codes) -> None:
+    """Refuse a V14 verdict written more than once, or through a read-modify-write.
+
+    This is the part of "the return code is settled" that reading characters can
+    decide. The rest of it -- that no later store overwrites the arm that ran --
+    is an ordering claim over a function the frozen vendor also writes to on
+    branches of its own, and it is bound on the linked image instead.
+    """
+
+    if compound_assignment_targets(body, ("ret_code",)):
+        raise fail(
+            "the %s function reaches ret_code through a read-modify-write: the value the vendor "
+            "returns is then not the one the branch that detected the outcome assigned, and the "
+            "mailbox tuple and the return code stop agreeing" % what
+        )
+    writes = _return_code_writes(body)
+    for code in codes:
+        carrying = [rvalue for _start, rvalue in writes if names_identifier(rvalue, code)]
+        if len(carrying) != 1:
+            raise fail(
+                "the %s function assigns %s %d times: the design assigns it once, in the epilogue "
+                "arm that decided it" % (what, code, len(carrying))
+            )
+    # A V14 verdict the design does not own has no arm behind it.
+    for _start, rvalue in writes:
+        named = [c for c in _V14_RETURN_CONSTANTS if names_identifier(rvalue, c)]
+        if named and not any(c in codes for c in named):
+            raise fail(
+                "the %s function assigns %s, which is not one of the design's epilogue verdicts: %s"
+                % (what, named[0], ", ".join(codes))
+            )
 
 
 # ---------------------------------------------------------------------------
@@ -8228,13 +8482,24 @@ def verify_generated_sources(runner_text: str, vendor_text: str, variant: str) -
         vendor_masked[function_span(vendor_masked, "test_commands", "command function")[0] :
                       function_span(vendor_masked, "test_commands", "command function")[1]]
     )
-    # The epilogue decides the code; this is the frame that returns it. A store
-    # here forges the same verdict one call further out.
-    require_return_code_settled(
-        function_text(vendor_masked, ENTRY_SYMBOL, "entry function"),
-        "entry",
-        ENTRY_RETURN_CODE_ASSIGNMENTS,
-    )
+    # The epilogue decides the code, and this is the frame that returns it -- but
+    # it is not V14's frame. The frozen vendor rewrites the same variable after
+    # the command function has returned: ``ret_code = 2`` on an output-verify
+    # mismatch, ``ret_code = 3`` on an IRQ-mask mismatch, and ``ret_code++`` when
+    # the IRQ never fired. Demanding that this frame leave the value alone was a
+    # rule the design never stated, calibrated against a stand-in vendor that had
+    # none of those stores, and it cannot be satisfied without editing frozen
+    # vendor code.
+    #
+    # It is also not load-bearing. The V14 verdict travels in the mailbox behind
+    # the V14_MAILBOX_VALID magic, which is what the runner copies its phase,
+    # reason and tuple from; the vendor return code only raises a telemetry flag.
+    # What survives is that the two must never be confused, because the vendor's
+    # codes collide numerically with V14_RET_*, so that is stated in the manifest
+    # rather than enforced as a shape the vendor cannot have.
+    entry_text = function_text(vendor_masked, ENTRY_SYMBOL, "entry function")
+    require_entry_return_code_frozen(entry_text, "entry")
+    entry_perturbing_stores = _return_code_writes(entry_text)
     # And settling the variable is not settling the verdict: the host is handed
     # whatever the ``return`` evaluates, which no assignment rule above reads.
     returned_expressions = sum(
@@ -8329,11 +8594,20 @@ def verify_generated_sources(runner_text: str, vendor_text: str, variant: str) -
         "qualification": "UNIT-QUALIFIED",
         "proof_scope": "generated_source_and_fixture_only",
         "real_elf_qualified": False,
-        # The frozen u85.c is not tracked in this repository. The vendor half of
-        # this contract therefore runs against a stock fixture, and saying so is
-        # part of the verdict rather than a footnote to it.
+        # This gate is handed generated text, not the frozen inputs, so it is
+        # still not the thing that checks the raw vendor pin -- the build graph's
+        # frozen-input evidence and the unit suite do that against the tracked
+        # firmware/Drivers/u85_driver/u85.c.
         "vendor_raw_source_verified": False,
+        # The vendor rewrites its own return code after the command function has
+        # returned, and its values collide numerically with V14_RET_*. The V14
+        # verdict is the mailbox behind V14_MAILBOX_VALID; this code is not it,
+        # and a consumer that classifies run_rc as a V14 phase is reading vendor
+        # telemetry as a diagnostic result.
+        "vendor_entry_return_code_stores": len(entry_perturbing_stores),
+        "vendor_entry_return_code_is_not_the_v14_verdict": True,
         "residual_limitations": list(RESIDUAL_LIMITATIONS),
+        "deferred_to_linked_image": list(DEFERRED_TO_LINKED_IMAGE),
         "generated_runner_sha256": _sha256_text(runner_text),
         "generated_vendor_sha256": _sha256_text(vendor_text),
         "common_convergence_source_sha256": normalized_digest(converge_body),

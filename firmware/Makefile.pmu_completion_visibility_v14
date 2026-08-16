@@ -251,15 +251,26 @@ pathlib.Path("$@").write_text(json.dumps(evidence, indent=2, sort_keys=True) + "
 
 # The base PMU path has to survive into the image: its symbols are read out of
 # the linked ELF, not asserted from the source.
+#
+# test_commands is not in the required list. It is the frozen vendor's own
+# static function with exactly one call site, so -O1 inlines it into test_u85
+# and no symbol survives -- every function the generator inserts carries
+# __attribute__((noinline)) and does survive, but the vendor's does not and
+# V14 does not edit the vendor to change that. The code is still in the image,
+# inside test_u85, so its absence is recorded as the inlining it is: the
+# linked-image proofs anchor the queue programming on test_u85, and this
+# evidence is where they read that.
 $(RETAINED_BASE_PMU_EVIDENCE): $(TARGET).elf $(V14_NM) $(V14_OBJDUMP) $(GEN_VENDOR_OBJ)
 	@mkdir -p $(dir $@)
 	python3 -c 'import json, pathlib, sys; \
 nm = pathlib.Path("$(V14_NM)").read_text(encoding="utf-8"); \
-required = ["run_fixed_inference", "test_u85", "test_commands", "u85_irq_handler", "pmu_completion_visibility_v14_mailbox"]; \
-retained = {name: any(line.split()[-1] == name for line in nm.splitlines() if line.split()) for name in required}; \
-missing = sorted(name for name, present in retained.items() if not present); \
+required = ["run_fixed_inference", "test_u85", "u85_irq_handler", "pmu_completion_visibility_v14_mailbox", "v14_primary_$(shell echo $(V14_VARIANT) | tr A-Z a-z)", "v14_converge"]; \
+present = lambda name: any(line.split()[-1] == name for line in nm.splitlines() if line.split()); \
+retained = {name: present(name) for name in required}; \
+missing = sorted(name for name, ok in retained.items() if not ok); \
 sys.exit("base PMU symbols missing from the linked image: %s" % missing) if missing else None; \
-pathlib.Path("$@").write_text(json.dumps({"retained_symbols": retained, "variant": "$(V14_VARIANT)"}, indent=2, sort_keys=True) + "\n", encoding="utf-8")'
+inlined = sorted(name for name in ["test_commands"] if not present(name)); \
+pathlib.Path("$@").write_text(json.dumps({"retained_symbols": retained, "inlined_into_test_u85": inlined, "variant": "$(V14_VARIANT)"}, indent=2, sort_keys=True) + "\n", encoding="utf-8")'
 	@test -s $@
 
 check: $(SOURCE_FIXTURE_EVIDENCE) $(MAILBOX_WIRE_EVIDENCE) $(RETAINED_BASE_PMU_EVIDENCE) $(FROZEN_INPUT_EVIDENCE)

@@ -128,7 +128,7 @@ STATUS_FAULT_MASK = 0x314
 
 # The suite is frozen at this many assertions. Adding a named fixture is a
 # deliberate act, so the count moves with it and never drifts silently.
-EXPECTED_PASS_COUNT = 1027
+EXPECTED_PASS_COUNT = 1046
 
 CHECKER_PATH = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
@@ -958,6 +958,18 @@ def run_cli_suite():
 
 REAL_RUNNER_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "runner_pmu_diag_main.c")
 
+# The real vendor translation unit, tracked here for the same reason the real
+# runner is: ``PATCH_VENDOR_STOCK`` below is a hand-written stand-in, and a
+# stand-in only proves what its author already believed. It keeps the queue
+# programming and the pre-program gate in one function, which the real vendor
+# does not -- there the gate is in ``test_u85`` and the programming is in the
+# ``test_commands`` it calls. Every fixture in this file agreed with the
+# stand-in, so the source gate was never once run against what the generator
+# actually emits until the first ARM build did it.
+REAL_VENDOR_PATH = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "..", "Drivers", "u85_driver", "u85.c"
+)
+
 PATCH_VENDOR_STOCK = """#define BUSY_SLEEP
 #define VERIFY_OUTPUT 1
 #define TEST_CPM 1
@@ -1047,6 +1059,19 @@ int test_u85( const u85_eTest eTest,
 def load_real_runner_stock():
     with open(REAL_RUNNER_PATH, "r", encoding="utf-8") as handle:
         return handle.read().replace("\r\n", "\n").replace("\r", "\n")
+
+
+def load_real_vendor_stock():
+    # Read the way the generator reads it. Python's text mode translates the
+    # vendor's CRLF endings to LF, so this is the text the patcher actually
+    # transforms -- while the frozen pin below is over the untranslated bytes.
+    with open(REAL_VENDOR_PATH, "r", encoding="utf-8") as handle:
+        return handle.read()
+
+
+def real_vendor_raw_sha256():
+    with open(REAL_VENDOR_PATH, "rb") as handle:
+        return hashlib.sha256(handle.read()).hexdigest()
 
 
 def expect_accept(gate, variant, runner, vendor, name):
@@ -1199,16 +1224,15 @@ def reuse_pre_program_status_after_programming(vendor):
 
 
 PRE_RUN_MUTATIONS = (
-    ("pre_program_gate_missing", drop_pre_program_gate, "pre-program STATUS gate does not dominate QBASE/QSIZE"),
-    (
-        "pre_program_gate_after_programming",
-        move_pre_program_gate_after_programming,
-        "pre-program STATUS gate does not dominate QBASE/QSIZE",
-    ),
+    ("pre_program_gate_missing", drop_pre_program_gate, "pre-program gate"),
+    # ``pre_program_gate_after_programming`` used to live here. It is now a
+    # deferred claim rather than a source refusal -- see
+    # run_deferred_claim_suite, which holds the gate to accepting it *and* to
+    # naming it, so the relocation cannot quietly become a deletion.
     (
         "running_transition_between_gate_and_programming",
         insert_running_transition,
-        "state-transitioning CMD write between the pre-program gate and queue programming",
+        "state-transitioning CMD write after the pre-program gate",
     ),
     (
         "qsize_snapshot_before_final_programming",
@@ -2625,10 +2649,19 @@ def run_canonical_suite(gate):
             "%s manifest reports the vendor raw-source limitation" % variant,
             doc.get("vendor_raw_source_verified") is False
             and any(
-                item.startswith("vendor_raw_source_absent")
+                item.startswith("vendor_raw_source_pin_not_checked_here")
                 for item in doc.get("residual_limitations", [])
             ),
             repr(doc.get("residual_limitations")),
+        )
+        # And the claims this gate stopped making are in the document, not just
+        # in a comment: a consumer reading UNIT-QUALIFIED has to be able to see
+        # which proofs are still owed by the linked-image contract.
+        check(
+            "%s manifest publishes the deferred linked-image claims" % variant,
+            doc.get("deferred_to_linked_image") == list(gate.DEFERRED_TO_LINKED_IMAGE)
+            and bool(doc.get("deferred_to_linked_image")),
+            "%d claims" % len(doc.get("deferred_to_linked_image", [])),
         )
         check(
             "%s manifest names the seam without claiming the ELF callsite" % variant,
@@ -2845,6 +2878,146 @@ def run_generator_cli_suite():
             ]
         )
         check("generator CLI refuses an unknown variant", result.returncode != 0)
+
+
+DEFERRED_CLAIM_MUTATIONS = (
+    (
+        "pre_program_gate_after_programming",
+        move_pre_program_gate_after_programming,
+        "pre_program_gate_dominates_queue_programming",
+    ),
+)
+
+
+def run_deferred_claim_suite(gate):
+    """Hold the gate to admitting what it stopped proving.
+
+    A rule that moves to the linked-image contract stops refusing things here,
+    and that is the intended trade -- text order is not dominance. What must not
+    happen is the trade going unrecorded. So each mutation below is asserted to
+    be accepted *and* the claim that would have caught it is asserted to be named
+    in the gate's own deferred list, which the manifest publishes. Deleting the
+    claim to make this pass turns a silent gap into a failing test.
+    """
+
+    for name, mutate, claim in DEFERRED_CLAIM_MUTATIONS:
+        check(
+            "%s names the claim it defers" % name,
+            any(entry.startswith(claim + ":") for entry in gate.DEFERRED_TO_LINKED_IMAGE),
+            claim,
+        )
+        for variant in ("Q", "QS", "SQ"):
+            expect_accept(
+                gate,
+                variant,
+                canonical_runner(variant),
+                mutate(canonical_vendor(variant)),
+                "%s is accepted at source and left to the ELF contract (%s)" % (name, variant),
+            )
+    check(
+        "every deferred claim is published in the fixture manifest",
+        set(gate.DEFERRED_TO_LINKED_IMAGE) <= set(gate.RESIDUAL_LIMITATIONS),
+        "deferred=%d residual=%d"
+        % (len(gate.DEFERRED_TO_LINKED_IMAGE), len(gate.RESIDUAL_LIMITATIONS)),
+    )
+
+
+def run_real_vendor_source_suite(gate, patcher):
+    """Run the whole source gate on what the generator really emits.
+
+    This is the check the build does in the container, brought here so it costs
+    a second rather than an ARM toolchain. Everything else in this file feeds
+    the gate sources this file wrote; this feeds it the real pinned pair and
+    asks the gate to accept them. A gate that only accepts its own fixtures is
+    not a gate on the firmware.
+    """
+
+    vendor_stock = load_real_vendor_stock()
+    check(
+        "the tracked raw vendor still hashes to the frozen pin",
+        real_vendor_raw_sha256() == VENDOR_SHA256,
+    )
+    # The pin is over CRLF bytes. Tracking this file with its endings rewritten
+    # would keep the generator working and silently break the build's frozen
+    # input check, so the endings are part of what is pinned here.
+    check(
+        "the tracked vendor keeps the CRLF endings the pin is over",
+        "\r\n" in open(REAL_VENDOR_PATH, "rb").read().decode("utf-8"),
+    )
+    # The stand-in must stay visibly a stand-in: if it ever grows the real
+    # decomposition, the suite above stops covering the split it exists to model
+    # and this suite silently becomes the only real coverage.
+    check(
+        "the hand-written vendor stand-in is not mistaken for the real vendor",
+        hashlib.sha256(PATCH_VENDOR_STOCK.encode("utf-8")).hexdigest() != VENDOR_SHA256,
+    )
+
+    # The gate authorises the stock vendor's own STATUS helpers by name. Derive
+    # that set from the pinned source rather than trusting the list, so a helper
+    # the list forgot is a failure here instead of a refusal during an ARM build.
+    masked = gate.mask_c_lexical(vendor_stock)
+    stock_status_owners = {
+        name
+        for name, start, stop in gate.function_spans(masked)
+        if gate.code_positions(masked[start:stop], "NPU_REG_STATUS")
+    }
+    expected_helpers = stock_status_owners - {gate.ISR_SYMBOL, gate.COMMAND_SYMBOL, gate.ENTRY_SYMBOL}
+    check(
+        "the stock STATUS helper list matches the pinned vendor source",
+        gate.STOCK_STATUS_HELPERS == expected_helpers,
+        "gate=%s source=%s" % (sorted(gate.STOCK_STATUS_HELPERS), sorted(expected_helpers)),
+    )
+
+    # Same for the registers the design has no opinion about: derive the table
+    # and its owner sets, so a stock register the table forgot -- or one that
+    # quietly gained a new naming site -- fails here rather than during a build.
+    spans = gate.function_spans(masked)
+    derived_owners = {}
+    for hit in gate._RAW_REGISTER_RE.finditer(masked):
+        derived_owners.setdefault(hit.group(1), set()).add(
+            gate.enclosing_function(spans, hit.start())
+        )
+    modelled_by_name = {"CMD", "QREAD", "QSIZE", "STATUS"}
+    expected_owners = {
+        role: frozenset(owners)
+        for role, owners in derived_owners.items()
+        if role not in modelled_by_name
+    }
+    check(
+        "the stock register owner table matches the pinned vendor source",
+        gate.STOCK_REGISTER_OWNERS == expected_owners,
+        "gate=%d roles source=%d roles"
+        % (len(gate.STOCK_REGISTER_OWNERS), len(expected_owners)),
+    )
+    # The design's own registers must not be quietly re-authorised through the
+    # stock table, which would hand them the stock's owner set instead of the
+    # contract's.
+    check(
+        "the stock table does not re-authorise a register the design models",
+        not (set(gate.STOCK_REGISTER_OWNERS) & modelled_by_name),
+        sorted(set(gate.STOCK_REGISTER_OWNERS) & modelled_by_name),
+    )
+
+    runner_stock = load_real_runner_stock()
+    for variant in ("Q", "QS", "SQ"):
+        try:
+            runner_out, _ = patcher.patch_runner(runner_stock, variant)
+            vendor_out, _ = patcher.patch_vendor(vendor_stock, variant)
+        except (Exception, SystemExit) as exc:
+            check(
+                "the generator emits %s from the real pinned sources" % variant,
+                False,
+                ("%s" % exc)[:80],
+            )
+            continue
+        check("the generator emits %s from the real pinned sources" % variant, True)
+        expect_accept(
+            gate,
+            variant,
+            runner_out,
+            vendor_out,
+            "the source gate accepts the real generated %s pair" % variant,
+        )
 
 
 def run_generated_fixture_cli_suite(patcher):
@@ -3818,7 +3991,7 @@ WHITESPACE_EVASION_MUTATIONS = (
     (
         "cmd_write_before_programming_written_with_spaces",
         spaced_cmd_write_before_programming,
-        "state-transitioning CMD write between the pre-program gate and queue programming",
+        "state-transitioning CMD write after the pre-program gate",
     ),
 )
 
@@ -4181,7 +4354,7 @@ MMIO_PROVENANCE_MUTATIONS = (
     (
         "raw_pointer_cmd_start_between_gate_and_programming",
         raw_pointer_cmd_start_before_programming,
-        "state-transitioning CMD write between the pre-program gate and queue programming",
+        "state-transitioning CMD write after the pre-program gate",
     ),
     (
         "second_submit_written_as_a_bare_one",
@@ -8868,7 +9041,7 @@ CLEANUP_TAIL_EXCLUSIVITY_MUTATIONS = (
             "\t  ret_code = V14_RET_SUCCESS;\n",
             "command function return",
         ),
-        "the command function assigns ret_code",
+        "the command function assigns V14_RET_SUCCESS",
     ),
     (
         "cleanup_return_code_stepped_before_the_epilogue",
@@ -8898,7 +9071,7 @@ CLEANUP_TAIL_EXCLUSIVITY_MUTATIONS = (
             "    ret_code = V14_RET_SUCCESS;\n",
             "entry function return",
         ),
-        "the entry function assigns ret_code",
+        "the entry function assigns V14_RET_SUCCESS",
     ),
 )
 
@@ -11321,6 +11494,7 @@ if __name__ == "__main__":
         run_final_blocker_suite(gate)
         run_acceptance_grammar_suite(gate)
         run_source_gate_remediation_suite(gate)
+        run_deferred_claim_suite(gate)
         run_value_and_confinement_remediation_suite(gate)
         run_e6_remediation_suite(gate)
         run_a0fe0ab_remediation_suite(gate)
@@ -11343,6 +11517,7 @@ if __name__ == "__main__":
         run_encoding_cli_suite(patcher)
         if gate is not None:
             run_generator_suite(gate, patcher)
+            run_real_vendor_source_suite(gate, patcher)
             run_generated_fixture_cli_suite(patcher)
 
     check(
