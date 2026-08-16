@@ -5883,20 +5883,6 @@ ISR_SYMBOL = "u85_irq_handler"
 COMMAND_SYMBOL = "test_commands"
 
 
-class _AnyOwner(frozenset):
-    """An owner set that admits every function, written down rather than absent.
-
-    A register the design deliberately does not confine by owner still has to be
-    *in* the table: absence is what the walks below read as permission, and it
-    reads the same for a role the contract never modelled at all.
-    """
-
-    def __contains__(self, item: object) -> bool:
-        return True
-
-
-ANY_OWNER = _AnyOwner()
-
 # The role a register access resolves to is read out of the *source's own*
 # ``NPU_REG_*`` define table, and that table is not the design's -- it is
 # whatever the unit declares. So a role outside the table above is not "a
@@ -5907,6 +5893,13 @@ ANY_OWNER = _AnyOwner()
 #
 # An access this gate can attribute to *no* modelled register is therefore
 # refused, on the same terms as one it cannot attribute at all.
+# The registers whose *name* may appear outside the functions that may access
+# them, because the design binds a pointer to them at file scope and a binding
+# reaches nothing. They are still held to the owner table by the two walks that
+# read accesses rather than names, and they are still required to be modelled --
+# an unmodelled role is refused here exactly as everywhere else.
+NAME_UNCONFINED_REGISTERS = frozenset(("QREAD",))
+
 _UNMODELLED_ROLE_REFUSAL = (
     "%s designates NPU_REG_%s at offset %d, which resolves to a register this contract does "
     "not model: the register map this gate reads is the translation unit's own, so a name or "
@@ -5954,16 +5947,28 @@ def _register_authorized_owners(setup_name: str, variant: str) -> dict[str, froz
         # measured loops, and the frozen contract permits a file-scope binding
         # this table would otherwise refuse.
         #
-        # That ground is unchanged, and the *encoding* of it was the bug.
         # Absence was read by every walk below as permission, and
         # permission-by-absence is indistinguishable from "a role nothing
         # models": one added ``#define NPU_REG_DOORBELL 0x000U`` produced a role
         # with no owner set, and each walk skipped the second submit it named.
-        # So QREAD is listed, with the owner-unconstrained answer written down
-        # rather than left to be inferred from a missing key. Its writes are
-        # refused by their own rules; this row is only about where the *name*
-        # may appear.
-        "QREAD": ANY_OWNER,
+        # Writing that permission down as an owner-unconstrained answer fixed
+        # the confusion and kept the hole: "its ordering is proven inside the
+        # measured loops" is an argument about the loops, not a licence for
+        # QREAD MMIO anywhere in the unit, and an extra load in a publisher or
+        # in the ISR is running-path MMIO no read-order rule judged.
+        #
+        # So QREAD is owned like every other register. The design polls it in
+        # the active primary helper and the convergence helper, and reads it
+        # back once in the command function's cleanup; those three are the whole
+        # set the canonical and generated sources *load* it from.
+        #
+        # This row is read by the two **access** walks only. The name scan skips
+        # it, because a QREAD designation is not necessarily a load: the frozen
+        # contract binds a QREAD pointer, and a binding names the register
+        # without reaching it. Confining the name would refuse that binding;
+        # confining the access is what the ground about the measured loops
+        # actually supports. Writes are refused by their own rules.
+        "QREAD": frozenset((primary, CONVERGE_SYMBOL, COMMAND_SYMBOL)),
     }
 
 
@@ -6018,6 +6023,15 @@ def require_register_confinement(
     for match in _RAW_REGISTER_RE.finditer(scanned):
         register = match.group(1)
         owner = enclosing_function(spans, match.start())
+        if register in NAME_UNCONFINED_REGISTERS:
+            # A designation that may be a *binding* rather than an access. This
+            # walk reads names, so confining it here would refuse the frozen
+            # contract's own QREAD pointer; the two access walks below own the
+            # question of where a load may happen, and they hold it to the same
+            # table every other register is held to.
+            _require_modelled_role(register, authorized, _span_label(owner), match.start())
+            walked += 1
+            continue
         allowed = _require_modelled_role(
             register, authorized, _span_label(owner), match.start()
         )
@@ -6608,20 +6622,67 @@ def require_no_function_pointer(
         )
 
 
+# ``T a, b, c;`` is one declaration and three objects. A capture that reads one
+# identifier per occurrence of ``T`` collects only ``a``, so ``b`` and ``c`` are
+# names the call rule iterates a set that does not contain -- and a call through
+# one of them is spelled exactly like a direct call, which
+# ``require_no_indirect_call`` is documented as unable to see.
+#
+# The stock slot is what the exemption exists for, so sharing its declaration is
+# the natural place to hide: ``static irq_handler_t original_u85_handler,
+# v14_after_copy;``. Declarators are therefore read across the whole
+# declaration -- from the type name to the terminator, split on the commas that
+# sit at depth zero -- rather than one per type token.
+_DECLARATOR_TAIL_RE = re.compile(r"([A-Za-z_]\w*)\s*(?:\[[^\[\]]*\])*\s*$")
+
+
+def _is_cast_of(masked: str, start: int, stop: int) -> bool:
+    """Whether the type name spanning ``start``..``stop`` is a cast operator."""
+
+    before = start - 1
+    while before >= 0 and masked[before] in _INLINE_SPACE:
+        before -= 1
+    after = stop
+    while after < len(masked) and masked[after] in _INLINE_SPACE:
+        after += 1
+    return masked[before : before + 1] == "(" and masked[after : after + 1] == ")"
+
+
+def declaration_declarators(text: str, start: int) -> tuple[str, ...]:
+    """Every declarator name in the declaration whose type name begins at ``start``."""
+
+    body = text[start : _statement_end(text, start)]
+    found: list[str] = []
+    for part in _split_top_level(body, ","):
+        # An initialiser is not a declarator. ``= 0`` after the name would
+        # otherwise make the last identifier of the initialiser the object.
+        head = _split_top_level(part, "=")[0]
+        match = _DECLARATOR_TAIL_RE.search(head.strip())
+        if match is not None:
+            found.append(match.group(1))
+    return tuple(found)
+
+
 def function_pointer_objects(masked: str, types: frozenset) -> tuple[str, ...]:
     """Every identifier declared with one of the exempt function-pointer types."""
 
+    scan = blank_directives(masked)
     found: list[str] = []
     for type_name in sorted(types):
         pattern = re.compile(
-            r"(?<![A-Za-z0-9_])%s(?![A-Za-z0-9_])\s*\*?\s*([A-Za-z_]\w*)"
-            % re.escape(type_name)
+            r"(?<![A-Za-z0-9_])%s(?![A-Za-z0-9_])" % re.escape(type_name)
         )
-        for match in pattern.finditer(blank_directives(masked)):
+        for match in pattern.finditer(scan):
             if _introduced_by_typedef(masked, match.start()):
                 continue
-            found.append(match.group(1))
-    return tuple(sorted(set(found)))
+            if _is_cast_of(scan, match.start(), match.end()):
+                # ``(irq_handler_t)0`` names the type as an operator, not as the
+                # head of a declaration; reading declarators out of the
+                # expression behind it would invent objects the source has none
+                # of.
+                continue
+            found.extend(declaration_declarators(scan, match.end()))
+    return tuple(sorted(set(found) - {type_name for type_name in types}))
 
 
 # The stock host runner declares its vector slot *and chains to it* -- the ISR
@@ -7301,61 +7362,124 @@ def require_return_code_settled(body: str, what: str, expected: int) -> None:
 # ---------------------------------------------------------------------------
 
 _RETURN_STATEMENT_RE = re.compile(r"(?<![A-Za-z0-9_])return\b([^;]*);")
+_IF_HEAD_OPEN_RE = re.compile(r"(?<![A-Za-z0-9_])if\s*\(")
 
-RETURN_EXPRESSIONS: dict[str, tuple[str, ...]] = {
+# A *bag* of return expressions pins which codes appear and never which guard
+# produced which, so any permutation among the arms is accepted: the reset arm
+# returns HARDWARE_FAULT and the fault arm returns RESET_IN_PROGRESS with the
+# multiset unchanged. The design gives those two separate failure classes and
+# fixes their priority -- reset checked before fault -- and the host's
+# disposition keys off the class.
+#
+# So the table is an ordered sequence of ``(guard condition, return
+# expression)`` pairs, compared position by position over the C token sequence.
+# Order is the priority, the pairing is the binding, and a permutation changes
+# both. The fall-through returns carry an empty condition: they are reached when
+# no guard in their block matched, which is a position in the sequence rather
+# than a predicate.
+RETURN_BINDINGS: dict[str, tuple[tuple[str, str], ...]] = {
     "test_commands": (
-        "V14_RET_CONVERGENCE_TIMEOUT",
-        "V14_RET_HARDWARE_FAULT",
-        "V14_RET_HARDWARE_FAULT",
-        "V14_RET_HARDWARE_FAULT",
-        "V14_RET_PRE_SUBMIT_FAILURE",
-        "V14_RET_PRE_SUBMIT_FAILURE",
-        "V14_RET_PRE_SUBMIT_FAILURE",
-        "V14_RET_PRE_SUBMIT_FAILURE",
-        "V14_RET_PRIMARY_TIMEOUT",
-        "V14_RET_RESET_IN_PROGRESS",
-        "V14_RET_RESET_IN_PROGRESS",
-        "V14_RET_RESET_IN_PROGRESS",
-        "ret_code",
+        ("qsize_expected ! = V14_QSIZE_EXPECTED", "V14_RET_PRE_SUBMIT_FAILURE"),
+        ("( pre_submit_status & V14_STATUS_STATE ) ! = 0U", "V14_RET_PRE_SUBMIT_FAILURE"),
+        ("( pre_submit_status & V14_STATUS_RESET ) ! = 0U", "V14_RET_RESET_IN_PROGRESS"),
+        ("( pre_submit_status & V14_STATUS_FAULT_MASK ) ! = 0U", "V14_RET_HARDWARE_FAULT"),
+        ("( pre_submit_status & V14_STATUS_IRQ_RAISED ) ! = 0U", "V14_RET_PRE_SUBMIT_FAILURE"),
+        ("( pre_submit_status & V14_STATUS_CMD_END ) ! = 0U", "V14_RET_PRE_SUBMIT_FAILURE"),
+        ("primary . result = = V14_PRIMARY_RESET", "V14_RET_RESET_IN_PROGRESS"),
+        ("primary . result = = V14_PRIMARY_FAULT", "V14_RET_HARDWARE_FAULT"),
+        ("primary . result ! = V14_PRIMARY_OBSERVED", "V14_RET_PRIMARY_TIMEOUT"),
+        ("converged . result = = V14_CONVERGENCE_RESET", "V14_RET_RESET_IN_PROGRESS"),
+        ("converged . result = = V14_CONVERGENCE_FAULT", "V14_RET_HARDWARE_FAULT"),
+        ("converged . result ! = V14_CONVERGENCE_SUCCESS", "V14_RET_CONVERGENCE_TIMEOUT"),
+        ("", "ret_code"),
     ),
     "test_u85": (
-        "V14_RET_HARDWARE_FAULT",
-        "V14_RET_PRE_PROGRAM_FAILURE",
-        "V14_RET_PRE_PROGRAM_FAILURE",
-        "V14_RET_RESET_IN_PROGRESS",
-        "ret_code",
+        (
+            "( pmu_completion_visibility_v14_mailbox [ V14_MBOX_INSTALLED_VECTOR ] ! = "
+            "( uint32_t ) & u85_irq_handler ) | | "
+            "( pmu_completion_visibility_v14_mailbox [ V14_MBOX_NVIC_ENABLED_BEFORE_SUBMIT ] "
+            "! = 0U ) | | "
+            "( pmu_completion_visibility_v14_mailbox "
+            "[ V14_MBOX_NVIC_PENDING_AFTER_INITIAL_CLEAR ] ! = 0U ) | | "
+            "( pmu_completion_visibility_v14_mailbox [ V14_MBOX_NVIC_ACTIVE_BEFORE_SUBMIT ] "
+            "! = 0U ) | | "
+            "( pmu_completion_visibility_v14_mailbox "
+            "[ V14_MBOX_IRQ_TRIGGERED_BEFORE_SUBMIT ] ! = 0U )",
+            "V14_RET_PRE_PROGRAM_FAILURE",
+        ),
+        ("( pre_program_status & V14_STATUS_STATE ) ! = 0U", "V14_RET_PRE_PROGRAM_FAILURE"),
+        ("( pre_program_status & V14_STATUS_RESET ) ! = 0U", "V14_RET_RESET_IN_PROGRESS"),
+        ("( pre_program_status & V14_STATUS_FAULT_MASK ) ! = 0U", "V14_RET_HARDWARE_FAULT"),
+        ("", "ret_code"),
     ),
 }
 
 
-def return_expressions(body: str) -> tuple[str, ...]:
-    """Every ``return`` expression in ``body``, as its C token sequence."""
+def _enclosing_guard(body: str, position: int) -> str:
+    """The condition of the innermost ``if`` whose block encloses ``position``."""
+
+    start = enclosing_block_start(body, position)
+    if start <= 0:
+        return ""
+    head = body[: start - 1]
+    opener = None
+    for match in _IF_HEAD_OPEN_RE.finditer(head):
+        opener = match
+    if opener is None:
+        return ""
+    close = _bracket_pairs(head)[0].get(opener.end() - 1)
+    if close is None:
+        return ""
+    # A block that opens on something other than the guard it follows -- an
+    # ``else`` arm, a loop body -- has other text between the ``)`` and the
+    # ``{``, and reading its condition as this return's guard would bind the
+    # wrong predicate. Only an immediately-following block is the guard's own.
+    if head[close + 1 :].strip():
+        return ""
+    return _normalized_expression(head[opener.end() : close])
+
+
+def return_bindings(body: str) -> tuple[tuple[str, str], ...]:
+    """``(guard condition, return expression)`` for every return, in source order."""
 
     return tuple(
-        sorted(
-            _normalized_expression(match.group(1))
-            for match in _RETURN_STATEMENT_RE.finditer(body)
+        (
+            _enclosing_guard(body, match.start()),
+            _normalized_expression(match.group(1)),
         )
+        for match in _RETURN_STATEMENT_RE.finditer(body)
     )
 
 
-def require_return_expression_provenance(body: str, name: str, what: str) -> int:
-    """Refuse a function that hands the host a value the design does not return."""
+def _binding_text(pairs: tuple[tuple[str, str], ...], index: int) -> str:
+    if index >= len(pairs):
+        return "nothing"
+    condition, expression = pairs[index]
+    return "%s -> %s" % (condition or "the fall-through", expression)
 
-    expected = tuple(sorted(RETURN_EXPRESSIONS[name]))
-    found = return_expressions(body)
+
+def require_return_expression_provenance(body: str, name: str, what: str) -> int:
+    """Refuse a function whose guards do not return the codes the design binds them to."""
+
+    expected = RETURN_BINDINGS[name]
+    found = return_bindings(body)
     if found != expected:
-        missing = [item for item in expected if item not in found]
-        extra = [item for item in found if item not in expected]
+        index = next(
+            (
+                position
+                for position in range(max(len(expected), len(found)))
+                if position >= len(found)
+                or position >= len(expected)
+                or found[position] != expected[position]
+            ),
+            0,
+        )
         raise fail(
-            "the %s function does not return the value the design returns: missing %s, "
-            "unexpected %s -- the settled return code is only what the host is told while the "
-            "return statement hands back the variable that carries it"
-            % (
-                what,
-                ", ".join(missing) or "none",
-                ", ".join(extra) or "none",
-            )
+            "the %s function does not return the value the design returns: at return %d it "
+            "carries %s, and the design binds %s -- the failure class the host is handed is "
+            "decided by the guard that detected it, so the codes are not permutable among the "
+            "arms"
+            % (what, index, _binding_text(found, index), _binding_text(expected, index))
         )
     return len(found)
 
@@ -7454,6 +7578,14 @@ RUNNER_TRANSPORT_ASSIGNMENTS = 3
 # at three, keeps the arm's clear intact, and leaves the flag asserted for every
 # window between a reset and the branch that settles it.
 TRANSPORT_INVALID_VALUE = "0U"
+# The *value* the clear has to land, not the text it has to contain. Proving the
+# store by substring proves nothing about what it evaluates to: every
+# initialiser that merely *begins* with ``0U`` -- ``0U + 1U``, ``0U | 1U``,
+# ``0U ? 0U : 1U`` -- contains the literal ``pmu_diag_v14_transport_valid = 0U``
+# while storing one, which leaves the flag asserted for the whole window between
+# the reset and the branch that settles it. That is the defect this rule was
+# written to close, one token to the right of the fix.
+TRANSPORT_CLEARED = 0
 
 
 def require_transport_reset_polarity(runner_masked: str) -> None:
@@ -7464,6 +7596,10 @@ def require_transport_reset_polarity(runner_masked: str) -> None:
     resolves the queue setup owner. The host runner this contract is generated
     into keeps its own name for that routine, so a rule written against one
     spelling proves nothing about the file it actually runs on.
+
+    The store is then read as a value, folded the way ``APPENDIX_VALUES`` and
+    ``RETURN_EXPRESSIONS`` fold theirs, so a spelling this gate cannot fold is
+    refused rather than admitted for containing the right prefix.
     """
 
     site = code_find(runner_masked, MAILBOX_RESET_SYMBOL + "();")
@@ -7471,18 +7607,43 @@ def require_transport_reset_polarity(runner_masked: str) -> None:
         raise fail("runner does not reset the mailbox before the measured call")
     spans = function_spans(runner_masked)
     owner = enclosing_function(spans, site)
-    body = next(
-        (runner_masked[start:stop] for name, start, stop in spans if name == owner and start <= site < stop),
-        "",
+    body_start, body_stop = next(
+        (
+            (start, stop)
+            for name, start, stop in spans
+            if name == owner and start <= site < stop
+        ),
+        (0, len(runner_masked)),
     )
-    if not code_contains(
-        body, "%s = %s" % (TRANSPORT_VALID_SYMBOL, TRANSPORT_INVALID_VALUE)
-    ):
+    body = runner_masked[body_start:body_stop]
+    defines = {
+        name: seen[-1] for name, seen in parse_define_values(runner_masked).items()
+    }
+    # The host runner keeps the re-arm and the magic branch in one function, so
+    # "the only store in the owner" is not the design's shape. The store this
+    # rule is about is the one that *accompanies the reset*: the first
+    # assignment to the flag at or after the mailbox-reset call. The branch's
+    # two arms are proven by the polarity rule, and the count by the unit rule.
+    reset_offset = site - body_start
+    stores = [
+        rvalue
+        for start, lvalue, rvalue in assignment_statements(body)
+        if names_identifier(lvalue, TRANSPORT_VALID_SYMBOL) and start >= reset_offset
+    ]
+    landed = [_evaluate_constant(rvalue, defines) for rvalue in stores]
+    if not stores or landed[0] != TRANSPORT_CLEARED:
         raise fail(
             "the runner reset does not clear the transport flag: %s re-arms the run without "
-            "storing %s to %s, so a mailbox that never published is reported to the host as a "
-            "valid transport for every window before the magic branch settles it"
-            % (owner or "file scope", TRANSPORT_INVALID_VALUE, TRANSPORT_VALID_SYMBOL)
+            "storing %s to %s -- it stores %s, so a mailbox that never published is reported "
+            "to the host as a valid transport for every window before the magic branch "
+            "settles it"
+            % (
+                owner or "file scope",
+                TRANSPORT_INVALID_VALUE,
+                TRANSPORT_VALID_SYMBOL,
+                ", ".join(_normalized_expression(rvalue) for rvalue in stores)
+                or "nothing",
+            )
         )
 
 
@@ -7671,6 +7832,10 @@ def verify_generated_sources(runner_text: str, vendor_text: str, variant: str) -
             )
         }
     )[0]
+    # Before the confinement walks: a QREAD *write* is refused for what it does
+    # to the queue, not for where it sits, and reporting it by owner would name
+    # a source by the weaker of the two things wrong with it.
+    require_no_qread_write(vendor_masked)
     register_designations = require_register_confinement(vendor_masked, setup_owner, variant)
     # And the same question asked of every spelling that carries no register
     # name: a numeric offset, an absolute address, a macro alias. Without these
@@ -7695,7 +7860,6 @@ def verify_generated_sources(runner_text: str, vendor_text: str, variant: str) -
     # name this gate genuinely cannot compute is reported as one.
     require_no_token_paste(vendor_masked, "the vendor translation unit")
     require_no_token_paste(runner_masked, "the runner translation unit")
-    require_no_qread_write(vendor_masked)
     require_isr_register_values(vendor_masked, defines)
     require_wait_for_irq_unreachable(vendor_masked)
     converge_body = function_text(vendor_masked, CONVERGE_SYMBOL, "common convergence helper")

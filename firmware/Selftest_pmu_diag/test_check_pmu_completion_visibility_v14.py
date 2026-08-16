@@ -128,7 +128,7 @@ STATUS_FAULT_MASK = 0x314
 
 # The suite is frozen at this many assertions. Adding a named fixture is a
 # deliberate act, so the count moves with it and never drifts silently.
-EXPECTED_PASS_COUNT = 916
+EXPECTED_PASS_COUNT = 952
 
 CHECKER_PATH = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
@@ -9362,7 +9362,287 @@ RUNNER_RESET_POLARITY_MUTATIONS = (
 )
 
 
+# --- eff4143 acceptance blockers -------------------------------------------
+#
+# Four families, three of them inside rules the c10da9b commit itself
+# introduced. The shape is the same one that commit named: the rule proves a
+# property of the spelling the previous report used and stops one token short --
+# one declarator of a comma list, a substring rather than a value, a role
+# unconstrained rather than owned, a bag of codes rather than an ordered
+# binding. Every fixture below compiles under ``cc -std=c11 -fsyntax-only``
+# against the frozen prelude; the reviewer's own eight PoCs are reproduced here
+# and each family carries a sibling the PoCs did not use.
+
+RT_PRESUBMIT_RESET_RETURN = "\t    return V14_RET_RESET_IN_PROGRESS;\n"
+RT_PRESUBMIT_FAULT_RETURN = "\t    return V14_RET_HARDWARE_FAULT;\n"
+RT_PRIMARY_TIMEOUT_RETURN = "\t    return V14_RET_PRIMARY_TIMEOUT;\n"
+RT_CONVERGENCE_TIMEOUT_RETURN = "\t    return V14_RET_CONVERGENCE_TIMEOUT;\n"
+RT_ENTRY_RESET_RETURN = "        return V14_RET_RESET_IN_PROGRESS;\n"
+RT_ENTRY_FAULT_RETURN = "        return V14_RET_HARDWARE_FAULT;\n"
+RT_PUBLISH_SUCCESS_OPEN = RT_PUBLISH_SUCCESS_DEF + "\n{\n"
+RUNNER_STOCK_VECTOR_TYPEDEF = "typedef void (*irq_handler_t)(void);\n"
+
+
+def _with_runner_vector_declaration(declaration, statement, anchor):
+    """Declare the stock vector type and slot list, and reach ``statement``."""
+
+    def mutate(runner):
+        declared = replace_once(
+            runner,
+            RUNNER_RESET_HEAD,
+            RUNNER_STOCK_VECTOR_TYPEDEF + declaration + "\n" + RUNNER_RESET_HEAD,
+            "runner reset definition",
+        )
+        return replace_once(declared, anchor, statement + anchor, "runner call site")
+
+    return mutate
+
+
+def _swap_pair(first, second, what):
+    """Exchange two whole arms, leaving the multiset of codes unchanged."""
+
+    def mutate(vendor):
+        marker = "\x00SWAP\x00"
+        swapped = replace_once(vendor, first, marker, what + " first")
+        swapped = replace_once(swapped, second, first, what + " second")
+        return replace_once(swapped, marker, second, what + " marker")
+
+    return mutate
+
+
+# A. ``function_pointer_objects`` captures one identifier per occurrence of the
+# type name, so every declarator after the first in a comma list is never
+# collected -- and the stock slot is exactly what the exemption exists for, so
+# an attacker is invited to share its declaration.
+RUNNER_COMMA_DECLARATOR_MUTATIONS = (
+    (
+        "runner_calls_a_comma_declared_slot_inside_the_record_owner",
+        _with_runner_vector_declaration(
+            "static irq_handler_t original_u85_handler, v14_after_copy;\n",
+            "    v14_after_copy();\n",
+            RUNNER_RECORD_CLOSURE_ANCHOR,
+        ),
+        "calls through a function pointer",
+    ),
+    (
+        "runner_calls_a_comma_declared_slot_at_unit_scope",
+        _with_runner_vector_declaration(
+            "static irq_handler_t original_u85_handler, v14_scrub;\n",
+            "    v14_scrub();\n",
+            "    v14_mailbox_reset();\n",
+        ),
+        "calls through a function pointer",
+    ),
+    (
+        "runner_calls_the_third_slot_of_a_comma_declarator_list",
+        _with_runner_vector_declaration(
+            "static irq_handler_t original_u85_handler, v14_spare, v14_tail;\n",
+            "    v14_tail();\n",
+            RUNNER_RECORD_CLOSURE_ANCHOR,
+        ),
+        "calls through a function pointer",
+    ),
+    (
+        "runner_calls_a_slot_declared_after_an_initialised_stock_slot",
+        _with_runner_vector_declaration(
+            "static irq_handler_t original_u85_handler = 0, v14_late = 0;\n",
+            "    v14_late();\n",
+            RUNNER_RECORD_CLOSURE_ANCHOR,
+        ),
+        "calls through a function pointer",
+    ),
+)
+
+# B. ``require_transport_reset_polarity`` searches for the *substring*
+# ``pmu_diag_v14_transport_valid = 0U``, so any initialiser that begins with
+# ``0U`` contains it while evaluating to something else -- the same defect the
+# rule was written to close, one token to the right.
+RUNNER_RESET_VALUE_MUTATIONS = (
+    (
+        "runner_reset_asserts_the_flag_through_an_addition_beginning_in_zero",
+        _rt_swap(
+            RUNNER_RESET_CLEAR,
+            "    v14_mailbox_reset();\n    pmu_diag_v14_transport_valid = 0U + 1U;",
+            "runner reset clear",
+        ),
+        "does not clear the transport flag",
+    ),
+    (
+        "runner_reset_asserts_the_flag_through_a_bitwise_or_beginning_in_zero",
+        _rt_swap(
+            RUNNER_RESET_CLEAR,
+            "    v14_mailbox_reset();\n    pmu_diag_v14_transport_valid = 0U | 1U;",
+            "runner reset clear",
+        ),
+        "does not clear the transport flag",
+    ),
+    (
+        "runner_reset_asserts_the_flag_through_a_ternary_beginning_in_zero",
+        _rt_swap(
+            RUNNER_RESET_CLEAR,
+            "    v14_mailbox_reset();\n    pmu_diag_v14_transport_valid = 0U ? 0U : 1U;",
+            "runner reset clear",
+        ),
+        "does not clear the transport flag",
+    ),
+    (
+        "runner_reset_widens_the_clear_into_a_shifted_sentinel",
+        _rt_swap(
+            RUNNER_RESET_CLEAR,
+            "    v14_mailbox_reset();\n    pmu_diag_v14_transport_valid = 0U + (1U << 0);",
+            "runner reset clear",
+        ),
+        "does not clear the transport flag",
+    ),
+)
+
+# C. ``ANY_OWNER`` admits QREAD MMIO anywhere in the unit, which is not the
+# stated ground -- that ground is an argument about the two measured loops. The
+# refusal string added beside it is unreachable, because ``owner in allowed`` is
+# always true.
+QREAD_OWNER_MUTATIONS = (
+    (
+        "running_path_qread_load_inside_the_primary_publisher",
+        _rt_before(
+            RT_PUBLISH_PRIMARY_FIRST_STORE,
+            "    (void)read_reg(NPU_REG_QREAD);\n",
+            "primary publisher head",
+        ),
+        "QREAD is designated in a function the contract does not poll it from",
+    ),
+    (
+        "running_path_qread_load_inside_the_npu_interrupt_handler",
+        _rt_after(
+            RT_ISR_STATUS_READ,
+            "\n    (void)read_reg(NPU_REG_QREAD);",
+            "isr status read",
+        ),
+        "QREAD is designated in a function the contract does not poll it from",
+    ),
+    (
+        "running_path_qread_load_inside_the_success_publisher",
+        _rt_after(
+            RT_PUBLISH_SUCCESS_OPEN,
+            "    (void)read_reg(NPU_REG_QREAD);\n",
+            "success publisher body",
+        ),
+        "QREAD is designated in a function the contract does not poll it from",
+    ),
+    (
+        "running_path_qread_load_inside_the_mailbox_publisher",
+        _rt_before(
+            RT_MAILBOX_PUBLISH_MAGIC,
+            "    (void)read_reg(NPU_REG_QREAD);\n",
+            "mailbox publish barrier",
+        ),
+        "QREAD is designated in a function the contract does not poll it from",
+    ),
+    (
+        "qread_pointer_bound_inside_a_publisher",
+        _rt_before(
+            RT_PUBLISH_PRIMARY_FIRST_STORE,
+            "    volatile uint32_t *const v14_qr =\n"
+            "        (volatile uint32_t *)(uintptr_t)(U85_BASE_ADDRESS + NPU_REG_QREAD);\n"
+            "    (void)*v14_qr;\n",
+            "primary publisher head",
+        ),
+        "QREAD is designated in a function the contract does not poll it from",
+    ),
+)
+
+# D. ``require_return_expression_provenance`` compares sorted bags, so any
+# permutation of the codes among the arms is accepted: the table pins which
+# codes appear and never which guard produced which.
+RETURN_GUARD_BINDING_MUTATIONS = (
+    (
+        "command_function_exchanges_the_pre_submit_reset_and_fault_codes",
+        _swap_pair(
+            RT_PRESUBMIT_RESET_RETURN,
+            RT_PRESUBMIT_FAULT_RETURN,
+            "pre-submit reset and fault returns",
+        ),
+        "does not return the value the design returns",
+    ),
+    (
+        "command_function_exchanges_the_primary_and_convergence_timeout_codes",
+        _swap_pair(
+            RT_PRIMARY_TIMEOUT_RETURN,
+            RT_CONVERGENCE_TIMEOUT_RETURN,
+            "timeout returns",
+        ),
+        "does not return the value the design returns",
+    ),
+    (
+        "entry_function_exchanges_the_reset_and_fault_codes",
+        _swap_pair(RT_ENTRY_RESET_RETURN, RT_ENTRY_FAULT_RETURN, "entry reset and fault"),
+        "does not return the value the design returns",
+    ),
+    (
+        "command_function_exchanges_the_pre_submit_and_primary_reset_codes",
+        _swap_pair(
+            RT_PRESUBMIT_RESET_RETURN,
+            RT_PRIMARY_TIMEOUT_RETURN,
+            "pre-submit reset and primary timeout returns",
+        ),
+        "does not return the value the design returns",
+    ),
+)
+
+
 # --- controls: the neighbouring legal sources still pass --------------------
+
+EFF4143_REMEDIATION_CONTROLS = (
+    (
+        "the design's own QREAD designations, in the loops and the cleanup read-back",
+        lambda vendor: vendor,
+    ),
+    (
+        "the design's own guard-to-return mapping, in its own source order",
+        lambda vendor: vendor,
+    ),
+    (
+        "a non-QREAD register load added where the design already reads it",
+        _rt_after(
+            RT_ISR_STATUS_READ,
+            "\n    irq_history_mask = irq_history_mask;",
+            "isr status read",
+        ),
+    ),
+)
+
+RUNNER_EFF4143_REMEDIATION_CONTROLS = (
+    (
+        "a comma declarator list of stock vector slots that is never called through",
+        _rt_before(
+            RUNNER_RESET_HEAD,
+            RUNNER_STOCK_VECTOR_TYPEDEF
+            + "static irq_handler_t original_u85_handler, v14_spare_slot;\n\n",
+            "runner reset definition",
+        ),
+    ),
+    (
+        "a comma-declared stock slot compared and assigned but never called",
+        _with_runner_vector_declaration(
+            "static irq_handler_t original_u85_handler, v14_spare_slot;\n",
+            "    if (v14_spare_slot != original_u85_handler) {\n"
+            "        d.hook_pmu_mmio_read_count = d.hook_pmu_mmio_read_count;\n    }\n",
+            RUNNER_RECORD_CLOSURE_ANCHOR,
+        ),
+    ),
+    (
+        "the runner's reset clearing the transport flag with the design's own 0U",
+        lambda runner: runner,
+    ),
+    (
+        "the reset clear written with redundant parentheses around the same value",
+        _rt_swap(
+            RUNNER_RESET_CLEAR,
+            "    v14_mailbox_reset();\n    pmu_diag_v14_transport_valid = (0U);",
+            "runner reset clear",
+        ),
+    ),
+)
+
 
 C10DA9B_REMEDIATION_CONTROLS = (
     (
@@ -9629,6 +9909,75 @@ def run_a0fe0ab_remediation_suite(gate):
             "accepts %s" % label,
         )
     for label, mutate in RUNNER_A0FE0AB_REMEDIATION_CONTROLS:
+        expect_accept(
+            gate,
+            "Q",
+            mutate(canonical_runner("Q")),
+            canonical_vendor("Q"),
+            "accepts %s" % label,
+        )
+
+
+def run_eff4143_remediation_suite(gate):
+    """The eff4143 acceptance blockers, each reproduced before it was closed.
+
+    Four families. Three of them sit inside rules the previous commit added, and
+    all four are the same shape: a declarator list read one declarator deep, a
+    value proven by substring, a role granted rather than owned, an ordered
+    binding compared as an unordered bag. Each family carries a sibling the
+    reviewer's PoCs did not use, so a rule that passes them is a rule about the
+    construct rather than about the eight sources that were filed.
+    """
+
+    run_runner_mutations(gate, RUNNER_COMMA_DECLARATOR_MUTATIONS, "Q")
+    run_runner_mutations(gate, RUNNER_RESET_VALUE_MUTATIONS, "Q")
+    run_vendor_mutations(gate, QREAD_OWNER_MUTATIONS, "Q")
+    run_vendor_mutations(gate, RETURN_GUARD_BINDING_MUTATIONS, "Q")
+
+    # Replayed on the other two variants: the QREAD owner set names the *active*
+    # primary helper, and the guard-to-return binding is a claim about each
+    # generated unit rather than about Q.
+    for variant in ("QS", "SQ"):
+        for label, mutate, reason in (
+            QREAD_OWNER_MUTATIONS[0],
+            QREAD_OWNER_MUTATIONS[1],
+            RETURN_GUARD_BINDING_MUTATIONS[0],
+            RETURN_GUARD_BINDING_MUTATIONS[2],
+        ):
+            name = "%s_%s" % (variant.lower(), label)
+            REJECTED_FIXTURES.add(name)
+            expect_reject(
+                gate,
+                variant,
+                canonical_runner(variant),
+                mutate(canonical_vendor(variant)),
+                name,
+                reason,
+            )
+        for label, mutate, reason in (
+            RUNNER_COMMA_DECLARATOR_MUTATIONS[0],
+            RUNNER_RESET_VALUE_MUTATIONS[0],
+        ):
+            name = "%s_%s" % (variant.lower(), label)
+            REJECTED_FIXTURES.add(name)
+            expect_reject(
+                gate,
+                variant,
+                mutate(canonical_runner(variant)),
+                canonical_vendor(variant),
+                name,
+                reason,
+            )
+
+    for label, mutate in EFF4143_REMEDIATION_CONTROLS:
+        expect_accept(
+            gate,
+            "Q",
+            canonical_runner("Q"),
+            mutate(canonical_vendor("Q")),
+            "accepts %s" % label,
+        )
+    for label, mutate in RUNNER_EFF4143_REMEDIATION_CONTROLS:
         expect_accept(
             gate,
             "Q",
@@ -10263,6 +10612,7 @@ if __name__ == "__main__":
         run_e6_remediation_suite(gate)
         run_a0fe0ab_remediation_suite(gate)
         run_c10da9b_remediation_suite(gate)
+        run_eff4143_remediation_suite(gate)
         run_coverage_suite()
 
     try:
