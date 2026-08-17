@@ -128,7 +128,7 @@ STATUS_FAULT_MASK = 0x314
 
 # The suite is frozen at this many assertions. Adding a named fixture is a
 # deliberate act, so the count moves with it and never drifts silently.
-EXPECTED_PASS_COUNT = 1076
+EXPECTED_PASS_COUNT = 1094
 
 CHECKER_PATH = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
@@ -3039,8 +3039,81 @@ def run_linked_image_suite(gate):
     except Exception as exc:
         check("QS and SQ differ only in which register is read first", False, ("%s" % exc)[:96])
 
+    # The reset and fault exits have to be upstream of the completion decision,
+    # or a faulted run gets reported as a completion.
+    for variant in ("QS", "SQ"):
+        loop = gate.verify_primary_loop_image(linked_image(variant), variant)
+        priority = loop["fault_priority"]
+        check(
+            "the %s loop decides completion downstream of reset and fault" % variant,
+            bool(priority.get("reset_test"))
+            and bool(priority.get("fault_test"))
+            and len(priority.get("completion_tests", [])) == 2,
+            priority,
+        )
+        check(
+            "the %s loop does not exit on irq_raised" % variant,
+            loop["irq_raised_exit_scope"].startswith("checked"),
+            loop["irq_raised_exit_scope"],
+        )
+    check(
+        "the Q loop says why the irq_raised question does not arise",
+        gate.verify_primary_loop_image(linked_image("Q"), "Q")["irq_raised_exit_scope"]
+        == "no STATUS in the loop",
+    )
+
+    # The campaign's own premise: the two dual-read helpers are one program with
+    # two instructions swapped.
+    try:
+        equivalence = gate.verify_read_order_equivalence(linked_image("QS"), linked_image("SQ"))
+        check(
+            "QS and SQ are one program differing only at the two loads",
+            equivalence["differ_only_in_read_order"]
+            and equivalence["differing_instructions"] == 2
+            and equivalence["qs_reads_first"] != equivalence["sq_reads_first"],
+            "%d instructions, %s" % (equivalence["instructions"], equivalence["swapped_at"]),
+        )
+    except Exception as exc:
+        check("QS and SQ are one program differing only at the two loads", False, ("%s" % exc)[:96])
+
     # --- attacks on the image ------------------------------------------------
     base = linked_image("Q")
+
+    # A third difference between QS and SQ means a read-order result has a second
+    # explanation, so one is enough to refuse the pair.
+    expect_image_reject(
+        lambda: gate.verify_read_order_equivalence(
+            linked_image("QS"),
+            _replace_row(linked_image("SQ"), "310024ee:", "310024ee:\t3a02      \tsubs\tr2, #2"),
+        ),
+        "a QS/SQ pair with a third difference is refused",
+        "differ at",
+    )
+
+    # And an image whose reset check no longer dominates the completion decision
+    # reports a completion it never qualified.
+    expect_image_reject(
+        lambda: gate.verify_primary_loop_image(
+            _replace_row(
+                linked_image("QS"), "310024d4:", "310024d4:\tea13 0f00 \ttst.w\tr3, #0"
+            ),
+            "QS",
+        ),
+        "a QS loop whose reset check is gone is refused",
+        "does not test reset",
+    )
+
+    # irq_raised is observed, never an exit.
+    expect_image_reject(
+        lambda: gate.verify_primary_loop_image(
+            _replace_row(
+                linked_image("QS"), "310024e4:", "310024e4:\tea13 0f02 \ttst.w\tr3, #2"
+            ),
+            "QS",
+        ),
+        "a QS loop that exits on irq_raised is refused",
+        "irq_raised",
+    )
 
     # The gate is the STATUS load that publishes the pre-program mailbox word,
     # and the publication is checked against the address nm gives the mailbox.
@@ -3125,17 +3198,72 @@ def run_linked_image_suite(gate):
             any(entry.startswith(claim + ":") for entry in gate.DEFERRED_TO_LINKED_IMAGE),
             claim,
         )
+    # Every name registered as bound has to correspond to a proof that actually
+    # ran here, so the registry cannot advertise a proof nobody wrote.
+    proved = set(gate.verify_pre_run_dominance(linked_image("Q"), linked_nm("Q")))
+    if (
+        gate.verify_mailbox_publication_image(linked_image("Q"), linked_nm("Q"))[
+            "magic_stores_in_the_modelled_functions"
+        ]
+        == 1
+    ):
+        proved.add("mailbox_magic_published_once")
     check(
-        "the dominance proof covers both claims registered as bound",
-        set(gate.BOUND_ON_LINKED_IMAGE)
-        <= set(gate.verify_pre_run_dominance(linked_image("Q"), linked_nm("Q"))),
-        sorted(gate.BOUND_ON_LINKED_IMAGE),
+        "every claim registered as bound is one a proof here returned",
+        set(gate.BOUND_ON_LINKED_IMAGE) <= proved,
+        sorted(set(gate.BOUND_ON_LINKED_IMAGE) - proved),
     )
     check(
-        "what is still owed to nobody is reported rather than dropped",
-        [c.split(":")[0] for c in gate.unbound_claims()]
-        == ["return_code_not_overwritten_after_the_deciding_branch"],
+        "nothing this contract defers is owed to nobody",
+        list(gate.unbound_claims()) == [],
         [c.split(":")[0] for c in gate.unbound_claims()],
+    )
+    # The one claim that turned out to be false is retired in writing rather than
+    # deleted, and the manifest carries the retirement.
+    check(
+        "the return-code claim is retired with its reason, not dropped",
+        any(
+            entry.startswith("return_code_not_overwritten_after_the_deciding_branch:")
+            and "retired" in entry
+            for entry in gate.RETIRED_CLAIMS
+        )
+        and all(entry in gate.RESIDUAL_LIMITATIONS for entry in gate.RETIRED_CLAIMS),
+        len(gate.RETIRED_CLAIMS),
+    )
+
+    # The verdict channel: one store of the magic, by the publisher, fenced.
+    for variant in ("Q", "QS", "SQ"):
+        try:
+            publication = gate.verify_mailbox_publication_image(
+                linked_image(variant), linked_nm(variant)
+            )
+        except Exception as exc:
+            check("the %s image publishes the magic once" % variant, False, ("%s" % exc)[:96])
+            continue
+        check(
+            "the %s image publishes the magic once, by the publisher, fenced" % variant,
+            publication["magic_stores_in_the_modelled_functions"] == 1
+            and publication["publisher"] == gate.MAILBOX_PUBLISH_SYMBOL
+            and publication["fenced_both_sides"],
+            publication["magic_store_address"],
+        )
+        check(
+            "the %s magic proof names the functions it could not model" % variant,
+            publication["names_the_magic_but_is_not_modelled"] == ["dispatch"],
+            publication["names_the_magic_but_is_not_modelled"],
+        )
+
+    # A second store of the magic hands the host a record nothing filled in. It
+    # is planted in the publisher, where the register provably holds the magic,
+    # so the mutation is a second *store* rather than a second instruction that
+    # happens to look like one.
+    twice = _replace_row(
+        linked_image("Q"), "310023dc:", "310023dc:\tf8c3 2084 \tstr.w\tr2, [r3, #132]"
+    )
+    expect_image_reject(
+        lambda: gate.verify_mailbox_publication_image(twice, linked_nm("Q")),
+        "an image with a second magic store is refused",
+        "store the mailbox magic 2 times",
     )
 
 

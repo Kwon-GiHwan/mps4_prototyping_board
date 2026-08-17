@@ -621,11 +621,21 @@ stopped container, existing root, or insufficient stage space is STOP.
 
 - [ ] **Step 2: Stage only the tracked V14 build files into the container**
 
+**Corrected 2026-08-17.** Three frozen gates are staged alongside the V14 one.
+The checker's linked-image half reads instructions through V12's row parser and
+V13's encoding-column strip, and V13 imports `check_pmu_qual`. All three are
+already inside the container, so only host-side invocations need them -- the
+campaign-level read-order equivalence check is one -- and staging them pins what
+the host ran against what the container ran.
+
 ```bash
 ssh gihwan 'mkdir /home/gihwan/mps4/PMU_COMPLETION_VISIBILITY_V14_PREBOARD_STAGE/SOURCE'
 scp firmware/Makefile.pmu_completion_visibility_v14 \
     firmware/patches/patch_pmu_completion_visibility_v14.py \
     firmware/Selftest_pmu_diag/check_pmu_completion_visibility_v14.py \
+    firmware/Selftest_pmu_diag/check_pmu_completion_poll_count_v13.py \
+    firmware/Selftest_pmu_diag/check_pmu_completion_poll_v12.py \
+    firmware/Selftest_pmu_diag/check_pmu_qual.py \
     host/compare_declared_builds.py \
     gihwan:/home/gihwan/mps4/PMU_COMPLETION_VISIBILITY_V14_PREBOARD_STAGE/SOURCE/
 ssh gihwan 'set -eu

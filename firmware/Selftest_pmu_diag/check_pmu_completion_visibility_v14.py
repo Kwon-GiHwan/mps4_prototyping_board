@@ -297,9 +297,27 @@ DEFERRED_TO_LINKED_IMAGE = (
     "measured path, and the gate itself sits in the caller",
     "no_state_transition_between_gate_and_programming: the part of that window which crosses "
     "the call from the gate frame into the programming frame",
-    "return_code_not_overwritten_after_the_deciding_branch: the frozen vendor stores to "
-    "ret_code on branches of its own after the command function returns, so 'no later store' "
-    "is a reachability question rather than a count",
+    "mailbox_magic_published_once: the runner reads the appendix only when the magic word is "
+    "present, so a second store of it -- on a path that never filled the tuple -- would hand "
+    "the host a record nothing wrote",
+)
+
+# Stated once, retired, and left here rather than deleted.
+#
+# ``return_code_not_overwritten_after_the_deciding_branch`` was carried as a
+# deferred claim until the image was read. It cannot be proven because it is not
+# true and was never meant to be: the frozen vendor rewrites ret_code after the
+# command function returns -- ``= 2`` on an output-verify mismatch, ``= 3`` on an
+# IRQ-mask mismatch, ``++`` when the IRQ never fired -- and V14 does not edit the
+# vendor. It is also not the verdict channel. The runner copies the diagnostic
+# record only behind the mailbox magic and uses the vendor return code for one
+# telemetry flag, so what needed proving was the magic, and that is the claim
+# above. Retiring a claim by replacing it is recorded; retiring one by deleting
+# it is how a gap becomes invisible.
+RETIRED_CLAIMS = (
+    "return_code_not_overwritten_after_the_deciding_branch: retired -- the vendor owns that "
+    "variable and rewrites it by design, and the V14 verdict travels in the mailbox instead. "
+    "Replaced by mailbox_magic_published_once.",
 )
 
 # Of the above, the ones the linked-image contract now actually proves. The two
@@ -310,6 +328,7 @@ DEFERRED_TO_LINKED_IMAGE = (
 BOUND_ON_LINKED_IMAGE = (
     "pre_program_gate_dominates_queue_programming",
     "no_state_transition_between_gate_and_programming",
+    "mailbox_magic_published_once",
 )
 
 
@@ -321,7 +340,7 @@ def unbound_claims() -> tuple[str, ...]:
     )
 
 
-RESIDUAL_LIMITATIONS = DEFERRED_TO_LINKED_IMAGE + (
+RESIDUAL_LIMITATIONS = DEFERRED_TO_LINKED_IMAGE + RETIRED_CLAIMS + (
     "vendor_raw_source_pin_not_checked_here: the frozen u85.c is tracked at "
     "firmware/Drivers/u85_driver/u85.c and pinned by the build's frozen-input evidence and by "
     "the unit suite, but this gate is handed generated text and so does not re-check the pin",
@@ -5917,6 +5936,21 @@ _ELF_MEMORY = re.compile(
 _ELF_WRITEBACK = re.compile(r"\][ \t]*!|\],\s*#")
 _ELF_DESTINATION = re.compile(r"^(\w+?)(?:\.[nw])?\s+(\w+)\s*,")
 _ELF_TEST_MASK = re.compile(r"^tst(?:\.[nw])?\s+(\w+),\s*#(\d+)")
+# ``tst`` is not the only way to test a mask: at -O1 GCC also writes
+# ``ands rX, rS, #mask``, which sets the flags the branch reads and happens to
+# park the result in a register nobody uses. A rule that knew only ``tst`` would
+# have read the reset and cmd_end checks as absent.
+_ELF_MASK_TEST = re.compile(r"^(?:tst|ands)(?:\.[nw])?\s+(?:(\w+),\s*)?(\w+),\s*#(\d+)")
+
+
+def _elf_mask_test(text: str):
+    """``(tested register, mask)`` for a flag-setting mask test, or ``None``."""
+
+    hit = _ELF_MASK_TEST.match(text)
+    if hit is None:
+        return None
+    # ``tst rS, #m`` tests rS; ``ands rD, rS, #m`` tests rS and writes rD.
+    return (hit.group(2), int(hit.group(3)))
 # Instructions whose first operand is read, not written. Reading them as writes
 # is what made a ``tst`` look like it clobbered the register it tests.
 _ELF_NON_WRITING = frozenset(
@@ -6362,6 +6396,66 @@ def verify_primary_loop_image(disassembly_text: str, variant: str) -> dict:
         if store is not None and store.group(1) == "str":
             raise fail("the %s primary loop stores per iteration: %s" % (variant, text))
 
+    # Which register each of the loop's loads landed in, so the tests below are
+    # tied to the load this iteration took rather than to any register that
+    # happens to hold the right number.
+    load_register = {}
+    for index, role, is_write in in_loop:
+        if not is_write:
+            load_register[role] = _elf_written_register(code[index].text)
+
+    fault_priority = {}
+    if variant != "Q":
+        status_register = load_register.get("STATUS")
+        qread_register = load_register.get("QREAD")
+        tests = {}
+        for index in body:
+            test = _elf_mask_test(code[index].text)
+            if test is not None and test[0] == status_register:
+                tests.setdefault(test[1], index)
+        for mask, label in ((STATUS_RESET, "reset"), (STATUS_FAULT_MASK, "fault")):
+            if mask not in tests:
+                raise fail(
+                    "the %s primary loop does not test %s (0x%03X) on the STATUS it loaded"
+                    % (variant, label, mask)
+                )
+        # Completion is decided by the queue cursor and by cmd_end, and both have
+        # to sit downstream of the reset and fault exits -- a run that faulted
+        # must not be reported as a completion first.
+        completion = [
+            index
+            for index in body
+            if (
+                _elf_mask_test(code[index].text) == (status_register, STATUS_CMD_END)
+                or re.match(r"^cmp(?:\.[nw])?\s+%s\s*," % re.escape(qread_register or "\0"), code[index].text)
+            )
+        ]
+        if not completion:
+            raise fail("the %s primary loop decides completion on neither QREAD nor cmd_end" % variant)
+        for mask, label in ((STATUS_RESET, "reset"), (STATUS_FAULT_MASK, "fault")):
+            guard = tests[mask]
+            late = [index for index in completion if guard not in dominators[index]]
+            if late:
+                raise fail(
+                    "the %s primary loop decides completion without the %s check: 0x%08x is "
+                    "reachable without 0x%08x"
+                    % (variant, label, code[late[0]].addr, code[guard].addr)
+                )
+        # irq_raised is recorded, never an exit. Letting it end the loop would
+        # measure the interrupt rather than the completion.
+        for index in body:
+            test = _elf_mask_test(code[index].text)
+            if test == (status_register, STATUS_IRQ_RAISED):
+                raise fail(
+                    "the %s primary loop tests irq_raised at 0x%08x: bit 1 is observed, not an exit"
+                    % (variant, code[index].addr)
+                )
+        fault_priority = {
+            "reset_test": "0x%08X" % code[tests[STATUS_RESET]].addr,
+            "fault_test": "0x%08X" % code[tests[STATUS_FAULT_MASK]].addr,
+            "completion_tests": ["0x%08X" % code[i].addr for i in completion],
+        }
+
     qsize = [index for index, role, _w in accesses if role == "QSIZE"]
     if qsize:
         raise fail(
@@ -6379,6 +6473,14 @@ def verify_primary_loop_image(disassembly_text: str, variant: str) -> dict:
         "loop_mmio_reads_per_iteration": len(order),
         "qsize_accesses": 0,
         "timestamp_reads_outside_the_loop": len(timestamps),
+        # Empty for Q, which has no STATUS in its loop to order anything against.
+        "fault_priority": fault_priority,
+        # Checked where there is a STATUS load in the loop to check it on. Q has
+        # none, so the claim is vacuous there and says so rather than reading as
+        # a proof somebody made.
+        "irq_raised_exit_scope": (
+            "no STATUS in the loop" if variant == "Q" else "checked: irq_raised drives no exit"
+        ),
     }
 
 
@@ -6408,7 +6510,172 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument("--objdump-text", help="path to objdump -d of the linked image")
     parser.add_argument("--nm-text", help="path to nm -n of the linked image")
     parser.add_argument("--elf-evidence-out", help="path the linked-image evidence is written to")
+    parser.add_argument(
+        "--read-order-equivalence",
+        action="store_true",
+        help="prove QS and SQ differ only in read order; needs both disassemblies",
+    )
+    parser.add_argument("--qs-objdump-text", help="path to objdump -d of the QS image")
+    parser.add_argument("--sq-objdump-text", help="path to objdump -d of the SQ image")
     return parser
+
+
+_ELF_ANNOTATION = re.compile(r"\s*(?:@.*|<[^>]*>.*)$")
+
+
+def _elf_normalized(insn) -> str:
+    """One instruction with objdump's commentary removed.
+
+    The commentary is where the helper's own name appears, so leaving it in
+    would make QS and SQ differ on every branch simply for being called
+    different things.
+    """
+
+    return re.sub(r"\s+", " ", _ELF_ANNOTATION.sub("", insn.text)).strip()
+
+
+def verify_read_order_equivalence(qs_text: str, sq_text: str) -> dict:
+    """QS and SQ differ in read order and in nothing else the image can show.
+
+    This is the claim the campaign rests on. If the two helpers differed
+    anywhere else -- a bound, a predicate, an exit, an extra effect -- then a
+    difference in what they observe would have a second explanation, and the
+    read-order result would not be a read-order result.
+    """
+
+    qs, _ = elf_function(qs_text, PRIMARY_SYMBOL["QS"])
+    sq, _ = elf_function(sq_text, PRIMARY_SYMBOL["SQ"])
+    if len(qs) != len(sq):
+        raise fail(
+            "the QS and SQ helpers are not the same length: %d against %d instructions"
+            % (len(qs), len(sq))
+        )
+    if elf_cfg(qs) != elf_cfg(sq):
+        raise fail("the QS and SQ helpers do not share one control-flow graph")
+
+    differing = [
+        index
+        for index, (left, right) in enumerate(zip(qs, sq))
+        if _elf_normalized(left) != _elf_normalized(right)
+    ]
+    if len(differing) != 2:
+        raise fail(
+            "the QS and SQ helpers differ at %d instructions: the variants are defined to "
+            "differ at exactly the two loads" % len(differing)
+        )
+    first, second = differing
+    if second != first + 1:
+        raise fail("the QS and SQ helpers differ at non-adjacent instructions")
+    if not (
+        _elf_normalized(qs[first]) == _elf_normalized(sq[second])
+        and _elf_normalized(qs[second]) == _elf_normalized(sq[first])
+    ):
+        raise fail(
+            "the two instructions QS and SQ differ at are not each other's swap: %s / %s "
+            "against %s / %s"
+            % (
+                _elf_normalized(qs[first]),
+                _elf_normalized(qs[second]),
+                _elf_normalized(sq[first]),
+                _elf_normalized(sq[second]),
+            )
+        )
+    return {
+        "instructions": len(qs),
+        "differing_instructions": len(differing),
+        "swapped_at": ["0x%08X" % qs[first].addr, "0x%08X" % qs[second].addr],
+        "qs_reads_first": _elf_normalized(qs[first]),
+        "sq_reads_first": _elf_normalized(sq[first]),
+        "differ_only_in_read_order": True,
+    }
+
+
+MAILBOX_PUBLISH_SYMBOL = "v14_mailbox_publish"
+MAILBOX_VALID_WORD = APPENDIX_WORDS - 1
+
+
+def verify_mailbox_publication_image(objdump_text: str, nm_text: str) -> dict:
+    """The verdict channel cannot be forged: one store of the magic, in one place.
+
+    This is the claim that matters about integrity, and it replaces one this
+    contract used to state about the vendor's return code. The runner reads the
+    appendix only when the magic word is present, so a second store of the magic
+    anywhere in the image -- on a path that never filled the tuple -- would hand
+    the host a record it never wrote. The return code is not that channel: the
+    frozen vendor rewrites it after the command function returns, by design, and
+    it only raises a telemetry flag on the host.
+    """
+
+    parse_functions, split_code_and_literals = _elf_front_end()
+    mailbox = elf_symbol_address(nm_text, MAILBOX_SYMBOL)
+    target = mailbox + 4 * MAILBOX_VALID_WORD
+    stores = []
+    unmodelled = []
+    for name, rows in parse_functions(objdump_text).items():
+        code, literals = split_code_and_literals(rows)
+        if not code:
+            continue
+        try:
+            successors = elf_cfg(code)
+        except GateError:
+            # A function this gate cannot model is one it cannot clear either.
+            # Where such a function names the magic, that is recorded as the
+            # limit of this proof rather than argued away: the runner's command
+            # dispatcher compares against the magic and reaches it through a
+            # jump table, and no rule here decodes one.
+            #
+            # Refusing outright would refuse the real image; claiming the
+            # whole-image count anyway would be the overclaim this contract
+            # keeps finding in itself. So the count is scoped, and the scope is
+            # published beside it.
+            if any(word == MAILBOX_VALID for _addr, word in literals):
+                unmodelled.append(name)
+            continue
+        states = elf_register_values(code, literals, successors)
+        for index, insn in enumerate(code):
+            hit = _ELF_MEMORY.match(insn.text)
+            if hit is None or hit.group(1) != "str":
+                continue
+            if states[index].get(hit.group(2)) != MAILBOX_VALID:
+                continue
+            base = states[index].get(hit.group(3))
+            address = None if base is None else base + int(hit.group(4) or 0)
+            stores.append((name, insn, address))
+
+    if len(stores) != 1:
+        raise fail(
+            "the modelled functions store the mailbox magic %d times: it is published once, by %s"
+            % (len(stores), MAILBOX_PUBLISH_SYMBOL)
+        )
+    name, insn, address = stores[0]
+    if name != MAILBOX_PUBLISH_SYMBOL:
+        raise fail(
+            "the mailbox magic is stored by %s rather than %s" % (name, MAILBOX_PUBLISH_SYMBOL)
+        )
+    if address != target:
+        raise fail(
+            "the mailbox magic is stored to %s rather than the mailbox validity word 0x%08X"
+            % ("an unresolved address" if address is None else "0x%08X" % address, target)
+        )
+
+    # The tuple has to be visible before the word that says it is there.
+    code, literals = elf_function(objdump_text, MAILBOX_PUBLISH_SYMBOL)
+    publish = next(i for i, row in enumerate(code) if row.addr == insn.addr)
+    if not any(row.mnemonic == "dsb" for row in code[:publish]):
+        raise fail("the mailbox magic is published without a barrier before it")
+    if not any(row.mnemonic == "dsb" for row in code[publish + 1 :]):
+        raise fail("the mailbox magic is published without a barrier after it")
+
+    return {
+        "publisher": name,
+        "magic_store_address": "0x%08X" % insn.addr,
+        "mailbox_validity_word_address": "0x%08X" % target,
+        "magic_stores_in_the_modelled_functions": len(stores),
+        "fenced_both_sides": True,
+        # Named for the scope it is taken over, and the scope is the list below.
+        "scope": "functions this gate can build a control-flow graph for",
+        "names_the_magic_but_is_not_modelled": sorted(unmodelled),
+    }
 
 
 def verify_linked_image(objdump_text: str, nm_text: str, variant: str) -> dict:
@@ -6416,6 +6683,7 @@ def verify_linked_image(objdump_text: str, nm_text: str, variant: str) -> dict:
 
     dominance = verify_pre_run_dominance(objdump_text, nm_text)
     loop = verify_primary_loop_image(objdump_text, variant)
+    publication = verify_mailbox_publication_image(objdump_text, nm_text)
     return {
         "variant": variant,
         "variant_id": VARIANTS[variant],
@@ -6424,7 +6692,9 @@ def verify_linked_image(objdump_text: str, nm_text: str, variant: str) -> dict:
         "proof_scope": "linked_image",
         "pre_run": dominance,
         "primary_loop": loop,
+        "mailbox_publication": publication,
         "claims_bound_here": list(BOUND_ON_LINKED_IMAGE),
+        "retired_claims": list(RETIRED_CLAIMS),
         # Still owed by nobody. The source gate does not make these and this one
         # does not either, so a reader is told rather than left to infer it.
         "unbound_claims": list(unbound_claims()),
@@ -6470,6 +6740,33 @@ def _write_manifest(path: str, doc: dict[str, object]) -> None:
 
 def main(argv: list[str] | None = None) -> int:
     args = build_arg_parser().parse_args(argv)
+    if args.read_order_equivalence:
+        # A campaign-level claim: it needs two images, and no single-variant
+        # build has both. The build graph proves what one image can show; this
+        # is the step that compares the pair the campaign will run.
+        missing = [
+            name
+            for name, value in (
+                ("--qs-objdump-text", args.qs_objdump_text),
+                ("--sq-objdump-text", args.sq_objdump_text),
+                ("--elf-evidence-out", args.elf_evidence_out),
+            )
+            if value in (None, "")
+        ]
+        if missing:
+            print("FAIL read-order equivalence requires %s" % ", ".join(missing))
+            return 2
+        try:
+            document = verify_read_order_equivalence(
+                _read_text(args.qs_objdump_text, "QS disassembly"),
+                _read_text(args.sq_objdump_text, "SQ disassembly"),
+            )
+            _write_manifest(args.elf_evidence_out, document)
+        except GateError as exc:
+            print("FAIL %s" % exc)
+            return 1
+        print("READ_ORDER EQUIVALENT %s" % VARIANT_FAMILY)
+        return 0
     if args.real_elf:
         # The linked image needs no --allow-fixture: it *is* the evidence the
         # flag exists to distinguish fixtures from.
