@@ -302,6 +302,25 @@ DEFERRED_TO_LINKED_IMAGE = (
     "is a reachability question rather than a count",
 )
 
+# Of the above, the ones the linked-image contract now actually proves. The two
+# registries mean different things and both are needed: the first says the
+# source gate does not make the claim, the second says somebody else does. A
+# claim in the first and not the second is owed to nobody yet, which is what
+# `unbound_claims` in the manifest reports.
+BOUND_ON_LINKED_IMAGE = (
+    "pre_program_gate_dominates_queue_programming",
+    "no_state_transition_between_gate_and_programming",
+)
+
+
+def unbound_claims() -> tuple[str, ...]:
+    return tuple(
+        claim
+        for claim in DEFERRED_TO_LINKED_IMAGE
+        if not claim.startswith(tuple(name + ":" for name in BOUND_ON_LINKED_IMAGE))
+    )
+
+
 RESIDUAL_LIMITATIONS = DEFERRED_TO_LINKED_IMAGE + (
     "vendor_raw_source_pin_not_checked_here: the frozen u85.c is tracked at "
     "firmware/Drivers/u85_driver/u85.c and pinned by the build's frozen-input evidence and by "
@@ -5847,6 +5866,522 @@ def verify_runner_contract(runner_masked: str) -> dict[str, object]:
     }
 
 
+# ---------------------------------------------------------------------------
+# The linked image
+#
+# Everything above reads characters. This reads the instructions the CPU will
+# execute, and it exists because the claims it makes cannot be made from text:
+# dominance is a property of a control-flow graph, and the source has none.
+#
+# The parsing front end is the one V13 took to the board rather than a new one.
+# V12's parse_functions keeps objdump's encoding column in ``text``, which is
+# why V13 strips it in _split_code_and_literals; reusing both is what keeps this
+# module's mnemonic classification independent of objdump's flags.
+# ---------------------------------------------------------------------------
+
+U85_BASE_ADDRESS = 0x50004000
+DWT_BASE_ADDRESS = 0xE0001000
+DWT_CYCCNT_ADDRESS = DWT_BASE_ADDRESS + 4
+MMIO_REGION_SIZE = 0x1000
+
+NPU_REGISTER_AT_OFFSET = {
+    0x00: "ID",
+    0x04: "STATUS",
+    0x08: "CMD",
+    0x0C: "RESET",
+    0x10: "QBASE_LSB",
+    0x14: "QBASE_MSB",
+    0x18: "QREAD",
+    0x20: "QSIZE",
+}
+QUEUE_PROGRAMMING_ROLES = ("QBASE_LSB", "QBASE_MSB", "QSIZE")
+
+_CONDITIONS = (
+    "eq", "ne", "cs", "cc", "mi", "pl", "vs", "vc", "hi", "ls", "ge", "lt", "gt", "le",
+)
+_ELF_UNCOND_BRANCH = re.compile(r"^b(?:\.[nw])?\s")
+_ELF_COND_BRANCH = re.compile(r"^b(?:%s)(?:\.[nw])?\s" % "|".join(_CONDITIONS))
+_ELF_CBZ = re.compile(r"^cbn?z\s")
+_ELF_CALL = re.compile(r"^bl(?:\.[nw])?\s|^blx\s")
+_ELF_IT = re.compile(r"^(it[te]{0,3})\s+(?:%s)\b" % "|".join(_CONDITIONS))
+_ELF_RETURN = re.compile(r"^(?:bx\s+lr\b|pop\s*\{[^}]*\bpc\b)")
+_ELF_INDIRECT = re.compile(r"^(?:bx|blx)\s+(?!lr\b)\w|^(?:tbb|tbh)\b")
+_ELF_LOAD_LITERAL = re.compile(r"^ldr(?:\.[nw])?\s+(\w+),\s*\[pc[^\]]*\]")
+_ELF_MOVW = re.compile(r"^movw\s+(\w+),\s*#(\d+)")
+_ELF_MOVT = re.compile(r"^movt\s+(\w+),\s*#(\d+)")
+_ELF_MOV_REG = re.compile(r"^mov(?:\.[nw])?\s+(\w+),\s*(\w+)\s*$")
+_ELF_MOV_IMM = re.compile(r"^movs?(?:\.[nw])?\s+(\w+),\s*#(\d+)")
+_ELF_MEMORY = re.compile(
+    r"^(ldr|str)(?:b|h)?(?:\.[nw])?\s+(\w+),\s*\[(\w+)(?:,\s*#(-?\d+))?\]"
+)
+_ELF_WRITEBACK = re.compile(r"\][ \t]*!|\],\s*#")
+_ELF_DESTINATION = re.compile(r"^(\w+?)(?:\.[nw])?\s+(\w+)\s*,")
+_ELF_TEST_MASK = re.compile(r"^tst(?:\.[nw])?\s+(\w+),\s*#(\d+)")
+# Instructions whose first operand is read, not written. Reading them as writes
+# is what made a ``tst`` look like it clobbered the register it tests.
+_ELF_NON_WRITING = frozenset(
+    ("cmp", "cmn", "tst", "teq", "str", "strb", "strh", "strd", "push", "stm", "stmia", "stmdb")
+)
+
+
+def _elf_written_register(text: str) -> str | None:
+    hit = _ELF_DESTINATION.match(text)
+    if hit is None or hit.group(1).lower() in _ELF_NON_WRITING:
+        return None
+    return hit.group(2)
+
+
+def _elf_front_end():
+    """V12's row parser and V13's encoding-column strip, imported on demand.
+
+    Imported here rather than at module scope so the source-fixture contract
+    keeps working in a tree that has only this file.
+    """
+
+    try:
+        from check_pmu_completion_poll_v12 import parse_functions
+        from check_pmu_completion_poll_count_v13 import _split_code_and_literals
+    except ImportError as exc:  # pragma: no cover - environment, not contract
+        raise fail("linked-image analysis needs the frozen V12/V13 gates: %s" % exc)
+    return parse_functions, _split_code_and_literals
+
+
+def elf_function(disassembly_text: str, name: str):
+    """``(instructions, literal pool)`` for one function of the linked image."""
+
+    parse_functions, split_code_and_literals = _elf_front_end()
+    headers = re.findall(
+        r"(?m)^[0-9a-fA-F]+\s+<%s>:\s*$" % re.escape(name), disassembly_text
+    )
+    if len(headers) != 1:
+        raise fail(
+            "linked image carries %d definitions of %s: expected exactly one"
+            % (len(headers), name)
+        )
+    functions = parse_functions(disassembly_text)
+    if name not in functions:
+        raise fail("linked image has no %s to analyse" % name)
+    code, literals = split_code_and_literals(functions[name])
+    if not code:
+        raise fail("linked image function %s disassembled to nothing" % name)
+    return code, literals
+
+
+def elf_cfg(code) -> tuple[tuple[int, ...], ...]:
+    """Successor indices, refusing every control transfer this gate cannot model.
+
+    A predicated instruction is not a branch. It either takes effect or does
+    not, and control falls through either way, so an IT block is straight line
+    here -- and predication is refused separately, at the instructions a proof
+    actually depends on running.
+    """
+
+    index_of = {insn.addr: index for index, insn in enumerate(code)}
+    successors: list[tuple[int, ...]] = []
+    for index, insn in enumerate(code):
+        text = insn.text
+        fallthrough = (index + 1,) if index + 1 < len(code) else ()
+        if _ELF_INDIRECT.match(text):
+            raise fail(
+                "indirect control transfer at 0x%08x is not modelled: %s" % (insn.addr, text)
+            )
+        if _ELF_RETURN.match(text):
+            successors.append(())
+        elif _ELF_CALL.match(text):
+            successors.append(fallthrough)
+        elif _ELF_COND_BRANCH.match(text) or _ELF_CBZ.match(text):
+            if insn.target is None or insn.target not in index_of:
+                raise fail(
+                    "conditional branch at 0x%08x leaves the function: %s" % (insn.addr, text)
+                )
+            successors.append((index_of[insn.target],) + fallthrough)
+        elif _ELF_UNCOND_BRANCH.match(text):
+            if insn.target is None or insn.target not in index_of:
+                raise fail(
+                    "branch at 0x%08x leaves the function: %s" % (insn.addr, text)
+                )
+            successors.append((index_of[insn.target],))
+        else:
+            successors.append(fallthrough)
+    return tuple(successors)
+
+
+def _predecessors(successors) -> list[list[int]]:
+    preds: list[list[int]] = [[] for _ in successors]
+    for index, outs in enumerate(successors):
+        for out in outs:
+            preds[out].append(index)
+    return preds
+
+
+def elf_dominators(successors, entry: int = 0) -> tuple[frozenset, ...]:
+    """``dom[i]`` is every index that lies on all paths from entry to ``i``.
+
+    An index no path reaches keeps the full set, which makes it dominated by
+    everything and therefore evidence for nothing -- the reachability question
+    is asked separately by whoever cares about it.
+    """
+
+    count = len(successors)
+    preds = _predecessors(successors)
+    everything = frozenset(range(count))
+    dominators = [everything] * count
+    dominators[entry] = frozenset((entry,))
+    changed = True
+    while changed:
+        changed = False
+        for index in range(count):
+            if index == entry or not preds[index]:
+                continue
+            updated = frozenset.intersection(
+                *(dominators[pred] for pred in preds[index])
+            ) | {index}
+            if updated != dominators[index]:
+                dominators[index] = updated
+                changed = True
+    return tuple(dominators)
+
+
+def elf_predicated(code) -> frozenset:
+    """Indices an IT block makes conditional."""
+
+    covered: set[int] = set()
+    for index, insn in enumerate(code):
+        hit = _ELF_IT.match(insn.text)
+        if hit is None:
+            continue
+        for step in range(1, len(hit.group(1))):
+            if index + step < len(code):
+                covered.add(index + step)
+    return frozenset(covered)
+
+
+def elf_register_values(code, literals, successors) -> list[dict]:
+    """Register values known on entry to each instruction, by fixpoint.
+
+    A value survives a merge only when every predecessor agrees on it, so a
+    base materialised on one path and left alone on another is unknown here
+    rather than assumed to be the one this gate would like it to be.
+    """
+
+    pool = {address: word for address, word in literals}
+    count = len(code)
+    preds = _predecessors(successors)
+    entry_state: list[dict | None] = [None] * count
+    exit_state: list[dict | None] = [None] * count
+    changed = True
+    while changed:
+        changed = False
+        for index in range(count):
+            if not preds[index]:
+                state: dict = {}
+            else:
+                known = [exit_state[pred] for pred in preds[index] if exit_state[pred] is not None]
+                if not known:
+                    continue
+                state = dict(known[0])
+                for other in known[1:]:
+                    state = {
+                        name: value for name, value in state.items() if other.get(name) == value
+                    }
+            if entry_state[index] != state:
+                entry_state[index] = state
+                changed = True
+            updated = _elf_transfer(dict(state), code[index], pool)
+            if exit_state[index] != updated:
+                exit_state[index] = updated
+                changed = True
+    return [state if state is not None else {} for state in entry_state]
+
+
+def _elf_transfer(state: dict, insn, pool: dict) -> dict:
+    text = insn.text
+    literal = _ELF_LOAD_LITERAL.match(text)
+    if literal is not None:
+        word = pool.get(insn.target) if insn.target is not None else None
+        if word is None:
+            state.pop(literal.group(1), None)
+        else:
+            state[literal.group(1)] = word
+        return state
+    for pattern, combine in (
+        (_ELF_MOVW, lambda old, imm: imm),
+        (_ELF_MOVT, lambda old, imm: ((old or 0) & 0xFFFF) | (imm << 16)),
+        (_ELF_MOV_IMM, lambda old, imm: imm),
+    ):
+        hit = pattern.match(text)
+        if hit is not None:
+            state[hit.group(1)] = combine(state.get(hit.group(1)), int(hit.group(2)))
+            return state
+    copy = _ELF_MOV_REG.match(text)
+    if copy is not None:
+        source = state.get(copy.group(2))
+        if source is None:
+            state.pop(copy.group(1), None)
+        else:
+            state[copy.group(1)] = source
+        return state
+    memory = _ELF_MEMORY.match(text)
+    written = _elf_written_register(text)
+    if written is not None:
+        state.pop(written, None)
+    if memory is not None and _ELF_WRITEBACK.search(text):
+        state.pop(memory.group(3), None)  # the base moved; it is no longer that value
+    return state
+
+
+def elf_in_modelled_region(address: int) -> bool:
+    return (
+        U85_BASE_ADDRESS <= address < U85_BASE_ADDRESS + MMIO_REGION_SIZE
+        or DWT_BASE_ADDRESS <= address < DWT_BASE_ADDRESS + MMIO_REGION_SIZE
+    )
+
+
+def elf_mmio_accesses(code, states) -> tuple[tuple[int, str, bool], ...]:
+    """``(index, role, is_write)`` for every access this gate can name.
+
+    An access whose base is unresolved reaches nothing nameable and is not
+    counted. It is not refused here either: whether an unresolved access may
+    exist where it does is a confinement question, asked by the rules that own
+    the region rather than by the decoder.
+    """
+
+    found: list[tuple[int, str, bool]] = []
+    for index, insn in enumerate(code):
+        hit = _ELF_MEMORY.match(insn.text)
+        if hit is None:
+            continue
+        base = states[index].get(hit.group(3))
+        if base is None:
+            continue
+        address = base + int(hit.group(4) or 0)
+        if not elf_in_modelled_region(address):
+            continue
+        if _ELF_WRITEBACK.search(insn.text):
+            raise fail(
+                "writeback addressing over the modelled region at 0x%08x is not modelled: %s"
+                % (insn.addr, insn.text)
+            )
+        if U85_BASE_ADDRESS <= address < U85_BASE_ADDRESS + MMIO_REGION_SIZE:
+            offset = address - U85_BASE_ADDRESS
+            role = NPU_REGISTER_AT_OFFSET.get(offset, "NPU+0x%02X" % offset)
+        elif address == DWT_CYCCNT_ADDRESS:
+            role = "DWT_CYCCNT"
+        else:
+            role = "DWT+0x%02X" % (address - DWT_BASE_ADDRESS)
+        found.append((index, role, hit.group(1) == "str"))
+    return tuple(found)
+
+
+PRE_PROGRAM_MAILBOX_WORD = 2
+_GATE_MASKS = (STATUS_STATE, STATUS_RESET, STATUS_FAULT_MASK)
+
+
+MAILBOX_SYMBOL = "pmu_completion_visibility_v14_mailbox"
+
+
+def elf_symbol_address(nm_text: str, symbol: str) -> int:
+    """The one address ``nm`` gives this symbol, or a refusal."""
+
+    hits = [
+        int(parts[0], 16)
+        for parts in (line.split() for line in nm_text.splitlines())
+        if len(parts) == 3 and parts[2] == symbol
+    ]
+    if len(hits) != 1:
+        raise fail("nm gives %s %d addresses: expected exactly one" % (symbol, len(hits)))
+    return hits[0]
+
+
+def _elf_gate_index(code, states, accesses, mailbox_address: int) -> int:
+    """The pre-program gate, found by what it does rather than by where it is.
+
+    A STATUS load is the gate when its value is published to the pre-program
+    mailbox word and then tested against the three masks the design gates on.
+    Taking the first STATUS load instead would have picked the frozen vendor's
+    reset spin, which reads STATUS in a loop of its own a few instructions
+    later.
+
+    The publication is checked against the address ``nm`` gives the mailbox, not
+    against a displacement. A store at offset 8 of some unresolved pointer is
+    not evidence that the pre-program word was written, and reading it as such
+    let a mutated image keep its gate by losing the mailbox base.
+    """
+
+    candidates = []
+    for index, role, is_write in accesses:
+        if role != "STATUS" or is_write:
+            continue
+        register = _elf_written_register(code[index].text)
+        if register is None:
+            continue
+        published = False
+        masks = set()
+        for step in range(index + 1, min(index + 24, len(code))):
+            text = code[step].text
+            store = _ELF_MEMORY.match(text)
+            if store is not None and store.group(1) == "str" and store.group(2) == register:
+                base = states[step].get(store.group(3))
+                if (
+                    base is not None
+                    and base + int(store.group(4) or 0)
+                    == mailbox_address + 4 * PRE_PROGRAM_MAILBOX_WORD
+                ):
+                    published = True
+            test = _ELF_TEST_MASK.match(text)
+            if test is not None and test.group(1) == register:
+                masks.add(int(test.group(2)))
+            if _elf_written_register(text) == register:
+                break  # the loaded value is gone; anything after tests something else
+        if published and set(_GATE_MASKS) <= masks:
+            candidates.append(index)
+    if len(candidates) != 1:
+        raise fail(
+            "linked image does not carry exactly one pre-program gate: %d STATUS loads publish "
+            "the pre-program mailbox word and test all of state, reset and fault"
+            % len(candidates)
+        )
+    return candidates[0]
+
+
+def verify_pre_run_dominance(
+    disassembly_text: str, nm_text: str, entry_symbol: str | None = None
+) -> dict:
+    """Bind the two claims the source gate deliberately does not make.
+
+    The source gate proves the gate exists and is shaped right. This proves it
+    runs before the queue is programmed on *every* path, which is what the
+    design asked for and what character order cannot decide -- the frozen
+    vendor's eU85_TEST0 branch writes QBASE_LSB earlier in the file than the
+    design's programming and never on the measured path.
+    """
+
+    # Resolved here because the symbol constant is declared with the source
+    # contract further down; the default is not a second opinion about it.
+    entry_symbol = entry_symbol or ENTRY_SYMBOL
+    code, literals = elf_function(disassembly_text, entry_symbol)
+    successors = elf_cfg(code)
+    states = elf_register_values(code, literals, successors)
+    accesses = elf_mmio_accesses(code, states)
+    dominators = elf_dominators(successors)
+    predicated = elf_predicated(code)
+
+    mailbox_address = elf_symbol_address(nm_text, MAILBOX_SYMBOL)
+    gate = _elf_gate_index(code, states, accesses, mailbox_address)
+    if gate in predicated:
+        raise fail("the pre-program gate is predicated: it may not run at all")
+
+    programming = [
+        index for index, role, is_write in accesses if is_write and role in QUEUE_PROGRAMMING_ROLES
+    ]
+    if not programming:
+        raise fail("linked image programs no queue register in %s" % entry_symbol)
+    undominated = [index for index in programming if gate not in dominators[index]]
+    if undominated:
+        raise fail(
+            "the pre-program gate does not dominate queue programming: %d of %d writes are "
+            "reachable without it, first at 0x%08x"
+            % (len(undominated), len(programming), code[undominated[0]].addr)
+        )
+
+    # And nothing may start the NPU in between. A CMD write only transitions the
+    # state when it sets bit 0, so the value is read rather than the register.
+    starts = []
+    for index, role, is_write in accesses:
+        if role != "CMD" or not is_write:
+            continue
+        if gate not in dominators[index]:
+            continue
+        if not any(index in dominators[write] for write in programming):
+            continue
+        source = _ELF_MEMORY.match(code[index].text).group(2)
+        value = states[index].get(source)
+        if value is None or value & 1:
+            starts.append((index, value))
+    if starts:
+        index, value = starts[0]
+        raise fail(
+            "a CMD write between the pre-program gate and queue programming may start the NPU: "
+            "0x%08x writes %s"
+            % (code[index].addr, "an unresolved value" if value is None else "0x%08X" % value)
+        )
+
+    return {
+        "entry_symbol": entry_symbol,
+        "mailbox_address": "0x%08X" % mailbox_address,
+        "gate_address": "0x%08X" % code[gate].addr,
+        "queue_programming_writes": len(programming),
+        "queue_programming_addresses": ["0x%08X" % code[i].addr for i in programming],
+        "pre_program_gate_dominates_queue_programming": True,
+        "no_state_transition_between_gate_and_programming": True,
+    }
+
+
+def verify_primary_loop_image(disassembly_text: str, variant: str) -> dict:
+    """What the measured loop actually does, per iteration, in the built image."""
+
+    helper = PRIMARY_SYMBOL[variant]
+    code, literals = elf_function(disassembly_text, helper)
+    successors = elf_cfg(code)
+    states = elf_register_values(code, literals, successors)
+    accesses = elf_mmio_accesses(code, states)
+
+    # A back edge is one whose target dominates its source, not merely one that
+    # points at a lower address: these helpers end with a shared epilogue, and
+    # the branches into it go backwards through the listing without looping.
+    dominators = elf_dominators(successors)
+    back_edges = [
+        (index, out)
+        for index, outs in enumerate(successors)
+        for out in outs
+        if out in dominators[index]
+    ]
+    if len(back_edges) != 1:
+        raise fail(
+            "the %s primary helper does not carry exactly one loop: %d back edges"
+            % (variant, len(back_edges))
+        )
+    latch, head = back_edges[0]
+    body = range(head, latch + 1)
+
+    in_loop = [(index, role, is_write) for index, role, is_write in accesses if index in body]
+    expected = {"Q": ("QREAD",), "QS": ("QREAD", "STATUS"), "SQ": ("STATUS", "QREAD")}[variant]
+    order = tuple(role for _index, role, is_write in in_loop if not is_write)
+    if order != expected:
+        raise fail(
+            "the %s primary loop reads %s per iteration: the variant is defined as %s"
+            % (variant, " then ".join(order) or "nothing", " then ".join(expected))
+        )
+    if any(is_write for _index, _role, is_write in in_loop):
+        raise fail("the %s primary loop writes MMIO per iteration" % variant)
+    for index in body:
+        text = code[index].text
+        if _ELF_CALL.match(text):
+            raise fail("the %s primary loop calls out per iteration: %s" % (variant, text))
+        store = _ELF_MEMORY.match(text)
+        if store is not None and store.group(1) == "str":
+            raise fail("the %s primary loop stores per iteration: %s" % (variant, text))
+
+    qsize = [index for index, role, _w in accesses if role == "QSIZE"]
+    if qsize:
+        raise fail(
+            "the %s primary helper accesses QSIZE at 0x%08x: the snapshot is taken before submit"
+            % (variant, code[qsize[0]].addr)
+        )
+    timestamps = [index for index, role, _w in accesses if role == "DWT_CYCCNT"]
+    if any(index in body for index in timestamps):
+        raise fail("the %s primary loop timestamps per iteration" % variant)
+
+    return {
+        "helper": helper,
+        "loop_reads_in_order": list(order),
+        "loop_instruction_count": latch - head + 1,
+        "loop_mmio_reads_per_iteration": len(order),
+        "qsize_accesses": 0,
+        "timestamp_reads_outside_the_loop": len(timestamps),
+    }
+
+
 def build_arg_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="check_pmu_completion_visibility_v14.py",
@@ -5865,7 +6400,35 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument("--runner-generated", help="path to the generated runner translation unit")
     parser.add_argument("--vendor-generated", help="path to the generated vendor translation unit")
     parser.add_argument("--fixture-manifest-out", help="path the fixture manifest is written to")
+    parser.add_argument(
+        "--real-elf",
+        action="store_true",
+        help="prove the linked-image claims instead of the source contract",
+    )
+    parser.add_argument("--objdump-text", help="path to objdump -d of the linked image")
+    parser.add_argument("--nm-text", help="path to nm -n of the linked image")
+    parser.add_argument("--elf-evidence-out", help="path the linked-image evidence is written to")
     return parser
+
+
+def verify_linked_image(objdump_text: str, nm_text: str, variant: str) -> dict:
+    """Every claim this contract makes about the built image, in one document."""
+
+    dominance = verify_pre_run_dominance(objdump_text, nm_text)
+    loop = verify_primary_loop_image(objdump_text, variant)
+    return {
+        "variant": variant,
+        "variant_id": VARIANTS[variant],
+        "schema_version": SCHEMA_VERSION,
+        "build_id": "0x%08X" % BUILD_ID,
+        "proof_scope": "linked_image",
+        "pre_run": dominance,
+        "primary_loop": loop,
+        "claims_bound_here": list(BOUND_ON_LINKED_IMAGE),
+        # Still owed by nobody. The source gate does not make these and this one
+        # does not either, so a reader is told rather than left to infer it.
+        "unbound_claims": list(unbound_claims()),
+    }
 
 
 def _read_text(path: str, what: str) -> str:
@@ -5907,6 +6470,34 @@ def _write_manifest(path: str, doc: dict[str, object]) -> None:
 
 def main(argv: list[str] | None = None) -> int:
     args = build_arg_parser().parse_args(argv)
+    if args.real_elf:
+        # The linked image needs no --allow-fixture: it *is* the evidence the
+        # flag exists to distinguish fixtures from.
+        missing = [
+            name
+            for name, value in (
+                ("--variant", args.variant),
+                ("--objdump-text", args.objdump_text),
+                ("--nm-text", args.nm_text),
+                ("--elf-evidence-out", args.elf_evidence_out),
+            )
+            if value in (None, "")
+        ]
+        if missing:
+            print("FAIL linked-image mode requires %s" % ", ".join(missing))
+            return 2
+        try:
+            document = verify_linked_image(
+                _read_text(args.objdump_text, "disassembly"),
+                _read_text(args.nm_text, "symbol table"),
+                args.variant,
+            )
+            _write_manifest(args.elf_evidence_out, document)
+        except GateError as exc:
+            print("FAIL %s" % exc)
+            return 1
+        print("REAL_ELF PASS %s variant=%s" % (VARIANT_FAMILY, args.variant))
+        return 0
     if not args.allow_fixture:
         print("FAIL fixture mode requires --allow-fixture; synthetic evidence is refused by default")
         return 2
@@ -8608,6 +9199,10 @@ def verify_generated_sources(runner_text: str, vendor_text: str, variant: str) -
         "vendor_entry_return_code_is_not_the_v14_verdict": True,
         "residual_limitations": list(RESIDUAL_LIMITATIONS),
         "deferred_to_linked_image": list(DEFERRED_TO_LINKED_IMAGE),
+        "bound_on_linked_image": list(BOUND_ON_LINKED_IMAGE),
+        # Named, not proven by anyone yet. An empty list is the goal; a
+        # non-empty one is what a reader of UNIT-QUALIFIED has to weigh.
+        "unbound_claims": list(unbound_claims()),
         "generated_runner_sha256": _sha256_text(runner_text),
         "generated_vendor_sha256": _sha256_text(vendor_text),
         "common_convergence_source_sha256": normalized_digest(converge_body),

@@ -100,6 +100,7 @@ SOURCE_FIXTURE_EVIDENCE := $(BUILD)/pmu_completion_visibility_v14_source_fixture
 MAILBOX_WIRE_EVIDENCE := $(BUILD)/pmu_completion_visibility_v14_mailbox_wire_evidence.json
 RETAINED_BASE_PMU_EVIDENCE := $(BUILD)/pmu_completion_visibility_v14_retained_base_pmu_evidence.json
 FROZEN_INPUT_EVIDENCE := $(BUILD)/pmu_completion_visibility_v14_frozen_input_evidence.json
+LINKED_IMAGE_EVIDENCE := $(BUILD)/pmu_completion_visibility_v14_linked_image_evidence.json
 MANIFEST := $(BUILD)/pmu_completion_visibility_v14_manifest.json
 
 PROFILE_CFLAGS := -DMEASUREMENT_BUILD -DPMU_DIAG_BUILD -DPMU_QUAL_SCHEMA_V8 \
@@ -273,22 +274,38 @@ inlined = sorted(name for name in ["test_commands"] if not present(name)); \
 pathlib.Path("$@").write_text(json.dumps({"retained_symbols": retained, "inlined_into_test_u85": inlined, "variant": "$(V14_VARIANT)"}, indent=2, sort_keys=True) + "\n", encoding="utf-8")'
 	@test -s $@
 
-check: $(SOURCE_FIXTURE_EVIDENCE) $(MAILBOX_WIRE_EVIDENCE) $(RETAINED_BASE_PMU_EVIDENCE) $(FROZEN_INPUT_EVIDENCE)
+# The claims the source gate does not make, made against the image that was
+# actually linked. Ordering and dominance live here because the source has no
+# control-flow graph to decide them on.
+$(LINKED_IMAGE_EVIDENCE): $(TARGET).elf $(V14_OBJDUMP) $(V14_NM) $(GATE)
+	@mkdir -p $(dir $@)
+	python3 $(GATE) \
+	    --real-elf \
+	    --variant $(V14_VARIANT) \
+	    --objdump-text $(V14_OBJDUMP) \
+	    --nm-text $(V14_NM) \
+	    --elf-evidence-out $@
+	@test -s $@
+
+check: $(SOURCE_FIXTURE_EVIDENCE) $(MAILBOX_WIRE_EVIDENCE) $(RETAINED_BASE_PMU_EVIDENCE) $(FROZEN_INPUT_EVIDENCE) $(LINKED_IMAGE_EVIDENCE)
 
 manifest: $(MANIFEST)
 
 # The manifest cannot be produced without every artifact it declares: the ELF,
 # the map, the symbol and disassembly dumps, the DWARF, the generated sources,
-# the preprocessed translation unit, the images, and all four proofs.
+# the preprocessed translation unit, the images, and every proof -- including
+# the linked-image one, because evidence a determinism check does not compare is
+# evidence two builds can disagree about while reporting byte identity.
 $(MANIFEST): $(TARGET).elf $(TARGET).map $(V14_NM) $(V14_OBJDUMP) $(V14_DWARF) \
              $(GEN_RUNNER) $(GEN_VENDOR) $(PREPROCESSED) \
              $(BUILD)/APP.BIN $(BUILD)/VECTORS.BIN $(BUILD)/DDR.BIN \
              $(SOURCE_FIXTURE_EVIDENCE) $(MAILBOX_WIRE_EVIDENCE) \
-             $(RETAINED_BASE_PMU_EVIDENCE) $(FROZEN_INPUT_EVIDENCE) $(GATE)
+             $(RETAINED_BASE_PMU_EVIDENCE) $(FROZEN_INPUT_EVIDENCE) \
+             $(LINKED_IMAGE_EVIDENCE) $(GATE)
 	@mkdir -p $(dir $@)
 	python3 -c 'import hashlib, json, pathlib, sys; \
 build = pathlib.Path("$(BUILD)"); \
-declared = ["APP.BIN", "VECTORS.BIN", "DDR.BIN", pathlib.Path("$(TARGET).elf").name, pathlib.Path("$(TARGET).map").name, pathlib.Path("$(V14_NM)").name, pathlib.Path("$(V14_OBJDUMP)").name, pathlib.Path("$(V14_DWARF)").name, pathlib.Path("$(PREPROCESSED)").name, pathlib.Path("$(SOURCE_FIXTURE_EVIDENCE)").name, pathlib.Path("$(MAILBOX_WIRE_EVIDENCE)").name, pathlib.Path("$(RETAINED_BASE_PMU_EVIDENCE)").name, pathlib.Path("$(FROZEN_INPUT_EVIDENCE)").name]; \
+declared = ["APP.BIN", "VECTORS.BIN", "DDR.BIN", pathlib.Path("$(TARGET).elf").name, pathlib.Path("$(TARGET).map").name, pathlib.Path("$(V14_NM)").name, pathlib.Path("$(V14_OBJDUMP)").name, pathlib.Path("$(V14_DWARF)").name, pathlib.Path("$(PREPROCESSED)").name, pathlib.Path("$(SOURCE_FIXTURE_EVIDENCE)").name, pathlib.Path("$(MAILBOX_WIRE_EVIDENCE)").name, pathlib.Path("$(RETAINED_BASE_PMU_EVIDENCE)").name, pathlib.Path("$(FROZEN_INPUT_EVIDENCE)").name, pathlib.Path("$(LINKED_IMAGE_EVIDENCE)").name]; \
 declared += ["generated/Selftest_pmu_diag/runner_pmu_diag_main.c", "generated/Drivers/u85_driver/u85.c"]; \
 missing = [name for name in declared if not (build / name).is_file()]; \
 sys.exit("declared artifact missing: %s" % missing) if missing else None; \

@@ -128,7 +128,7 @@ STATUS_FAULT_MASK = 0x314
 
 # The suite is frozen at this many assertions. Adding a named fixture is a
 # deliberate act, so the count moves with it and never drifts silently.
-EXPECTED_PASS_COUNT = 1046
+EXPECTED_PASS_COUNT = 1076
 
 CHECKER_PATH = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
@@ -2919,6 +2919,223 @@ def run_deferred_claim_suite(gate):
         set(gate.DEFERRED_TO_LINKED_IMAGE) <= set(gate.RESIDUAL_LIMITATIONS),
         "deferred=%d residual=%d"
         % (len(gate.DEFERRED_TO_LINKED_IMAGE), len(gate.RESIDUAL_LIMITATIONS)),
+    )
+
+
+LINKED_IMAGE_DIR = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "fixtures", "linked_image"
+)
+LINKED_IMAGE_SHA256 = {
+    "Q": "a517fed4b4f0017abb576e17ccd094a34ff1808accf1f7248f2bf66ed5f185cd",
+    "QS": "6f283564e8c9c8b1453efda9595a74f9262a4498435369c46a5fc1789d68df13",
+    "SQ": "4a67a48c26bf9e10e48549fced62dc0d597ef7f8ec424ba383052ac697b4ef86",
+}
+
+
+def linked_image(variant):
+    with open(os.path.join(LINKED_IMAGE_DIR, "%s.objdump" % variant), "rb") as handle:
+        return handle.read().decode("utf-8")
+
+
+def linked_nm(variant):
+    with open(os.path.join(LINKED_IMAGE_DIR, "%s.nm" % variant), "rb") as handle:
+        return handle.read().decode("utf-8")
+
+
+def _asm_line(text, needle):
+    """The one disassembly row containing ``needle``, or a caller error."""
+
+    hits = [line for line in text.splitlines() if needle in line]
+    if len(hits) != 1:
+        raise AssertionError("mutation anchor %r matched %d rows" % (needle, len(hits)))
+    return hits[0]
+
+
+def _replace_row(text, needle, replacement):
+    return text.replace(_asm_line(text, needle), replacement, 1)
+
+
+def expect_image_reject(call, name, fragment):
+    try:
+        call()
+    except Exception as exc:
+        detail = "%s" % exc
+        check(name, fragment in detail, detail[:96])
+        return
+    check(name, False, "accepted")
+
+
+def run_linked_image_suite(gate):
+    """The claims the source gate defers, made against the built image.
+
+    The inputs are real disassembly, and every attack below is a stated edit to
+    it. That is the whole point: the source half of this contract was verified
+    against sources nobody had built, and refused the first real one it saw.
+    """
+
+    for variant in ("Q", "QS", "SQ"):
+        raw = linked_image(variant)
+        check(
+            "the %s linked-image fixture is the pinned build output" % variant,
+            hashlib.sha256(raw.encode("utf-8")).hexdigest() == LINKED_IMAGE_SHA256[variant],
+        )
+
+        try:
+            dominance = gate.verify_pre_run_dominance(raw, linked_nm(variant))
+        except Exception as exc:
+            check("the %s image proves pre-run dominance" % variant, False, ("%s" % exc)[:96])
+            dominance = None
+        if dominance is not None:
+            check(
+                "the %s image proves pre-run dominance" % variant,
+                dominance["pre_program_gate_dominates_queue_programming"]
+                and dominance["no_state_transition_between_gate_and_programming"]
+                and dominance["queue_programming_writes"] > 0,
+                "%d writes under gate %s"
+                % (dominance["queue_programming_writes"], dominance["gate_address"]),
+            )
+            # The frozen vendor's eU85_TEST0 pin toggle writes QBASE_LSB too, and
+            # it is dominated like the rest. A proof that only covered the
+            # design's own writes would be the text-order rule again.
+            check(
+                "the %s image dominates the vendor's diagnostic queue writes too" % variant,
+                dominance["queue_programming_writes"] >= 5,
+                dominance["queue_programming_writes"],
+            )
+
+        try:
+            loop = gate.verify_primary_loop_image(raw, variant)
+        except Exception as exc:
+            check("the %s image proves the primary loop" % variant, False, ("%s" % exc)[:96])
+            loop = None
+        if loop is not None:
+            expected = {"Q": ["QREAD"], "QS": ["QREAD", "STATUS"], "SQ": ["STATUS", "QREAD"]}
+            check(
+                "the %s primary loop reads in the variant's own order" % variant,
+                loop["loop_reads_in_order"] == expected[variant],
+                loop["loop_reads_in_order"],
+            )
+            check(
+                "the %s primary loop takes no timestamp per iteration" % variant,
+                loop["timestamp_reads_outside_the_loop"] >= 1,
+                loop["timestamp_reads_outside_the_loop"],
+            )
+            check(
+                "the %s primary loop never reaches QSIZE" % variant,
+                loop["qsize_accesses"] == 0,
+            )
+
+    # QS and SQ differ in read order and in nothing else the image can show.
+    try:
+        qs = gate.verify_primary_loop_image(linked_image("QS"), "QS")
+        sq = gate.verify_primary_loop_image(linked_image("SQ"), "SQ")
+        check(
+            "QS and SQ differ only in which register is read first",
+            qs["loop_instruction_count"] == sq["loop_instruction_count"]
+            and qs["loop_mmio_reads_per_iteration"] == sq["loop_mmio_reads_per_iteration"]
+            and qs["loop_reads_in_order"] == list(reversed(sq["loop_reads_in_order"])),
+            "qs=%s sq=%s" % (qs["loop_reads_in_order"], sq["loop_reads_in_order"]),
+        )
+    except Exception as exc:
+        check("QS and SQ differ only in which register is read first", False, ("%s" % exc)[:96])
+
+    # --- attacks on the image ------------------------------------------------
+    base = linked_image("Q")
+
+    # The gate is the STATUS load that publishes the pre-program mailbox word,
+    # and the publication is checked against the address nm gives the mailbox.
+    # Losing the mailbox base leaves a store at the right displacement of an
+    # unresolved pointer, which is not evidence that the word was written.
+    lost_base = _replace_row(base, "310026ac:", "310026ac:\t4a9a      \tmov\tr2, r9")
+    expect_image_reject(
+        lambda: gate.verify_pre_run_dominance(lost_base, linked_nm("Q")),
+        "an image whose gate never publishes to the mailbox is refused",
+        "pre-program gate",
+    )
+
+    # A CMD write that sets bit 0 between the gate and the programming starts the
+    # NPU, which is the state transition the design forbids in that window.
+    started = _replace_row(base, "3100272a:", "3100272a:\t2201      \tmovs\tr2, #1")
+    expect_image_reject(
+        lambda: gate.verify_pre_run_dominance(started, linked_nm("Q")),
+        "an image that starts the NPU between the gate and programming is refused",
+        "may start the NPU",
+    )
+
+    # And a CMD write whose value the gate cannot resolve is refused rather than
+    # assumed harmless.
+    unresolved = _replace_row(base, "3100272a:", "3100272a:\t4692      \tmov\tr2, r9")
+    expect_image_reject(
+        lambda: gate.verify_pre_run_dominance(unresolved, linked_nm("Q")),
+        "an image whose CMD value is unresolved in that window is refused",
+        "unresolved value",
+    )
+
+    # An indirect transfer is not modelled, so the CFG the proofs stand on is
+    # refused rather than approximated.
+    indirect = _replace_row(base, "310026ae:", "310026ae:\t4718      \tbx\tr3")
+    expect_image_reject(
+        lambda: gate.verify_pre_run_dominance(indirect, linked_nm("Q")),
+        "an image with an indirect transfer in the anchor is refused",
+        "indirect control transfer",
+    )
+
+    # A STATUS read inside the Q loop makes it a dual-read variant wearing Q's
+    # name, which is the confound the whole campaign exists to separate.
+    expect_image_reject(
+        lambda: gate.verify_primary_loop_image(
+            _replace_row(base, "310024d6:", "310024d6:\tf8dc 1004 \tldr.w\tr1, [ip, #4]"),
+            "Q",
+        ),
+        "a Q loop that also reads STATUS is refused",
+        "primary loop reads",
+    )
+
+    # A per-iteration store is instrumentation inside the measured window.
+    expect_image_reject(
+        lambda: gate.verify_primary_loop_image(
+            _replace_row(base, "310024d8:", "310024d8:\tf8cc 3000 \tstr.w\tr3, [ip]"),
+            "Q",
+        ),
+        "a Q loop that stores per iteration is refused",
+        "primary loop",
+    )
+
+    # And the variant's own order is not negotiable: QS read as SQ is refused.
+    # And the variant's own order is not negotiable. Swapping the two loads in
+    # the QS image gives an image that reads like SQ while carrying QS's symbol,
+    # which is exactly the confound a read-order campaign cannot survive.
+    qs_raw = linked_image("QS")
+    first = _asm_line(qs_raw, "310024d0:")
+    second = _asm_line(qs_raw, "310024d2:")
+    swapped = qs_raw.replace(first, "\x00FIRST\x00", 1).replace(second, first.replace("310024d0:", "310024d2:", 1), 1)
+    swapped = swapped.replace("\x00FIRST\x00", second.replace("310024d2:", "310024d0:", 1), 1)
+    expect_image_reject(
+        lambda: gate.verify_primary_loop_image(swapped, "QS"),
+        "a QS image whose two loads are swapped is refused",
+        "primary loop reads",
+    )
+
+    # A claim the source gate does not make has to be made by somebody. These
+    # two are made above, so they are registered as bound -- and the registry is
+    # checked against the proofs rather than trusted, because a name is cheap.
+    for claim in gate.BOUND_ON_LINKED_IMAGE:
+        check(
+            "%s is a claim the source gate actually defers" % claim,
+            any(entry.startswith(claim + ":") for entry in gate.DEFERRED_TO_LINKED_IMAGE),
+            claim,
+        )
+    check(
+        "the dominance proof covers both claims registered as bound",
+        set(gate.BOUND_ON_LINKED_IMAGE)
+        <= set(gate.verify_pre_run_dominance(linked_image("Q"), linked_nm("Q"))),
+        sorted(gate.BOUND_ON_LINKED_IMAGE),
+    )
+    check(
+        "what is still owed to nobody is reported rather than dropped",
+        [c.split(":")[0] for c in gate.unbound_claims()]
+        == ["return_code_not_overwritten_after_the_deciding_branch"],
+        [c.split(":")[0] for c in gate.unbound_claims()],
     )
 
 
@@ -11495,6 +11712,7 @@ if __name__ == "__main__":
         run_acceptance_grammar_suite(gate)
         run_source_gate_remediation_suite(gate)
         run_deferred_claim_suite(gate)
+        run_linked_image_suite(gate)
         run_value_and_confinement_remediation_suite(gate)
         run_e6_remediation_suite(gate)
         run_a0fe0ab_remediation_suite(gate)
