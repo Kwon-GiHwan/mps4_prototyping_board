@@ -128,7 +128,7 @@ STATUS_FAULT_MASK = 0x314
 
 # The suite is frozen at this many assertions. Adding a named fixture is a
 # deliberate act, so the count moves with it and never drifts silently.
-EXPECTED_PASS_COUNT = 1104
+EXPECTED_PASS_COUNT = 1109
 
 CHECKER_PATH = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
@@ -2942,6 +2942,14 @@ def linked_nm(variant):
         return handle.read().decode("utf-8")
 
 
+def linked_dwarf():
+    # One variant is enough here: the record is the runner's and the three
+    # variants differ only in the vendor helper, so the laid-out layout is
+    # identical. The build checks all three regardless.
+    with open(os.path.join(LINKED_IMAGE_DIR, "Q.dwarf.txt"), "rb") as handle:
+        return handle.read().decode("utf-8")
+
+
 def _asm_line(text, needle):
     """The one disassembly row containing ``needle``, or a caller error."""
 
@@ -3116,6 +3124,62 @@ def run_linked_image_suite(gate):
         )
     except Exception as exc:
         check("the three variants join one convergence tail", False, ("%s" % exc)[:96])
+
+    # The record the compiler laid out, read from DWARF rather than inferred
+    # from the struct's source order.
+    try:
+        layout = gate.verify_record_layout_image(linked_dwarf(), linked_nm("Q"))
+    except Exception as exc:
+        check("the image binds the appendix offsets through DWARF", False, ("%s" % exc)[:96])
+        layout = None
+    if layout is not None:
+        check(
+            "the laid-out appendix is the contract's table, ending the record",
+            layout["appendix_offsets_bound_by_dwarf"]
+            and layout["record_bytes"] == gate.BODY_WORDS * 4
+            and layout["appendix_last_byte_offset"] + 4 == layout["record_bytes"]
+            and layout["appendix_first_field"] == gate.APPENDIX_FIELDS[0]
+            and layout["appendix_last_field"] == gate.APPENDIX_FIELDS[-1],
+            "%d bytes, appendix %d..%d"
+            % (
+                layout["record_bytes"],
+                layout["appendix_first_byte_offset"],
+                layout["appendix_last_byte_offset"],
+            ),
+        )
+        check(
+            "DWARF and nm agree on where the mailbox is",
+            layout["mailbox_address_agreed_by_dwarf_and_nm"]
+            == "0x%08X" % gate.elf_symbol_address(linked_nm("Q"), gate.MAILBOX_SYMBOL),
+            layout["mailbox_address_agreed_by_dwarf_and_nm"],
+        )
+        # The record nests the four snapshots, so it has fewer members than
+        # words. A rule that demanded one member per word would have refused the
+        # real record; this records the shape instead of assuming it.
+        check(
+            "the record is read as nested rather than as one word per member",
+            layout["record_members"] < layout["body_words"],
+            "%d members for %d words" % (layout["record_members"], layout["body_words"]),
+        )
+
+    # Padding before an appendix field shifts every field after it while the
+    # struct's source order still reads exactly as the contract requires.
+    padded = linked_dwarf().replace(
+        "DW_AT_data_member_location: 472", "DW_AT_data_member_location: 476", 1
+    )
+    expect_image_reject(
+        lambda: gate.verify_record_layout_image(padded, linked_nm("Q")),
+        "a record padded before an appendix field is refused",
+        "pads before",
+    )
+    # And a DWARF that describes a different build is refused rather than
+    # merged with the symbol table it disagrees with.
+    moved = linked_dwarf().replace("(DW_OP_addr: 3100578c)", "(DW_OP_addr: 3100578d)", 1)
+    expect_image_reject(
+        lambda: gate.verify_record_layout_image(moved, linked_nm("Q")),
+        "a DWARF that disagrees with nm about the mailbox is refused",
+        "disagree about",
+    )
 
     # --- attacks on the image ------------------------------------------------
     base = linked_image("Q")

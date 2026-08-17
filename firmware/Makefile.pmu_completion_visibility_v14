@@ -277,13 +277,14 @@ pathlib.Path("$@").write_text(json.dumps({"retained_symbols": retained, "inlined
 # The claims the source gate does not make, made against the image that was
 # actually linked. Ordering and dominance live here because the source has no
 # control-flow graph to decide them on.
-$(LINKED_IMAGE_EVIDENCE): $(TARGET).elf $(V14_OBJDUMP) $(V14_NM) $(GATE)
+$(LINKED_IMAGE_EVIDENCE): $(TARGET).elf $(V14_OBJDUMP) $(V14_NM) $(V14_DWARF) $(GATE)
 	@mkdir -p $(dir $@)
 	python3 $(GATE) \
 	    --real-elf \
 	    --variant $(V14_VARIANT) \
 	    --objdump-text $(V14_OBJDUMP) \
 	    --nm-text $(V14_NM) \
+	    --dwarf-text $(V14_DWARF) \
 	    --elf-evidence-out $@
 	@test -s $@
 

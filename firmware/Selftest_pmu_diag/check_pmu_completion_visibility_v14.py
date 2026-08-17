@@ -6530,6 +6530,9 @@ def build_arg_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--objdump-text", help="path to objdump -d of the linked image")
     parser.add_argument("--nm-text", help="path to nm -n of the linked image")
+    parser.add_argument(
+        "--dwarf-text", help="path to readelf --debug-dump of the linked image"
+    )
     parser.add_argument("--elf-evidence-out", help="path the linked-image evidence is written to")
     parser.add_argument(
         "--read-order-equivalence",
@@ -6735,6 +6738,204 @@ def verify_common_tail_is_shared(images: dict) -> dict:
     }
 
 
+# ---------------------------------------------------------------------------
+# The record the compiler actually laid out
+#
+# Every rule about the appendix above reads the *source* -- field order in the
+# struct, call order in the serializer -- and infers the wire from them. What
+# the host parses is neither: it is the bytes the compiler laid out. Padding, a
+# reordered member, a type that is not four bytes wide, and the source still
+# reads exactly as the contract requires while the record on the wire does not
+# match the table the host indexes with.
+#
+# DWARF is where that stops being an inference. -g3 is in CFLAGS, so the build
+# already emits it; this reads the member offsets the compiler recorded.
+# ---------------------------------------------------------------------------
+
+_DWARF_DIE = re.compile(
+    r"^\s*<(\d+)><([0-9a-f]+)>:\s+Abbrev Number:\s+\d+\s+\((DW_TAG_\w+)\)"
+)
+# Two spellings: ``DW_AT_name : (indirect string, offset: 0x...): field`` and the
+# direct ``DW_AT_name : field``. A pattern that required the second colon read
+# the directly-spelled members as nameless.
+_DWARF_NAME = re.compile(r"DW_AT_name\s*:\s*(?:.*:\s*)?(\S+)\s*$")
+_DWARF_MEMBER_OFFSET = re.compile(r"DW_AT_data_member_location:\s*(\d+)")
+_DWARF_TYPE_REF = re.compile(r"DW_AT_type\s*:\s*<0x([0-9a-f]+)>")
+_DWARF_BYTE_SIZE = re.compile(r"DW_AT_byte_size\s*:\s*(\d+)")
+_DWARF_ADDR = re.compile(r"DW_AT_location\s*:.*\(DW_OP_addr:\s*([0-9a-f]+)\)")
+
+RECORD_TYPEDEF = "pmu_diag_record_t"
+
+
+def _dwarf_attributes(lines, start):
+    """The attribute lines of the DIE beginning at ``start``."""
+
+    for index in range(start + 1, len(lines)):
+        if _DWARF_DIE.match(lines[index]):
+            return
+        yield lines[index]
+
+
+def dwarf_record_layout(dwarf_text: str) -> dict:
+    """``{name: byte offset}`` for the diagnostic record, plus its size.
+
+    Read off the typedef rather than off a struct name, because the contract
+    names the typedef and a struct tag is not required to exist.
+    """
+
+    lines = dwarf_text.splitlines()
+    structure = None
+    for index, line in enumerate(lines):
+        if "DW_AT_name" not in line or RECORD_TYPEDEF not in line:
+            continue
+        for attribute in _dwarf_attributes(lines, index - 1):
+            hit = _DWARF_TYPE_REF.search(attribute)
+            if hit is not None:
+                structure = hit.group(1)
+                break
+        if structure is not None:
+            break
+    if structure is None:
+        raise fail("DWARF carries no %s typedef pointing at a structure" % RECORD_TYPEDEF)
+
+    members: list[tuple[int, str]] = []
+    size = None
+    depth = None
+    for index, line in enumerate(lines):
+        die = _DWARF_DIE.match(line)
+        if die is None:
+            continue
+        level, offset, tag = int(die.group(1)), die.group(2), die.group(3)
+        if offset == structure:
+            depth = level
+            for attribute in _dwarf_attributes(lines, index):
+                hit = _DWARF_BYTE_SIZE.search(attribute)
+                if hit is not None:
+                    size = int(hit.group(1))
+                    break
+            continue
+        if depth is None:
+            continue
+        if level <= depth:
+            break
+        if tag != "DW_TAG_member" or level != depth + 1:
+            continue
+        name = member_offset = None
+        for attribute in _dwarf_attributes(lines, index):
+            named = _DWARF_NAME.search(attribute)
+            located = _DWARF_MEMBER_OFFSET.search(attribute)
+            if named is not None:
+                name = named.group(1)
+            if located is not None:
+                member_offset = int(located.group(1))
+        if name is None or member_offset is None:
+            raise fail("DWARF member of %s carries no name or no offset" % RECORD_TYPEDEF)
+        members.append((member_offset, name))
+
+    if size is None:
+        raise fail("DWARF gives %s no byte size" % RECORD_TYPEDEF)
+    return {"byte_size": size, "members": tuple(members)}
+
+
+def dwarf_static_address(dwarf_text: str, symbol: str) -> int:
+    """The absolute address DWARF gives a file-static object."""
+
+    lines = dwarf_text.splitlines()
+    found = []
+    for index, line in enumerate(lines):
+        if "DW_AT_name" not in line or not line.rstrip().endswith(symbol):
+            continue
+        for attribute in _dwarf_attributes(lines, index - 1):
+            hit = _DWARF_ADDR.search(attribute)
+            if hit is not None:
+                found.append(int(hit.group(1), 16))
+    if len(found) != 1:
+        raise fail(
+            "DWARF gives %s %d absolute locations: expected exactly one" % (symbol, len(found))
+        )
+    return found[0]
+
+
+def verify_record_layout_image(dwarf_text: str, nm_text: str | None = None) -> dict:
+    """The laid-out record is the table the host indexes, not a hopeful reading.
+
+    The appendix has to be the *last* thirty-four words, in wire order, four
+    bytes apart, with nothing padded in between -- because the host reads it by
+    index from the end of the frozen body, and a hole would shift every field
+    after it while every source rule stayed satisfied.
+    """
+
+    layout = dwarf_record_layout(dwarf_text)
+    members = layout["members"]
+    if layout["byte_size"] != BODY_WORDS * 4:
+        raise fail(
+            "the laid-out record is %d bytes: the body is %d words, so it is %d"
+            % (layout["byte_size"], BODY_WORDS, BODY_WORDS * 4)
+        )
+    # Not "every member is one word": the record nests the four snapshots as
+    # structures of their own, so it has fewer members than it has words. What
+    # the host indexes is the appendix, and that is what is held to the layout.
+    appendix = members[-APPENDIX_WORDS:]
+    if len(appendix) != APPENDIX_WORDS:
+        raise fail(
+            "the laid-out record has %d members: fewer than the %d appendix words"
+            % (len(members), APPENDIX_WORDS)
+        )
+    for position in range(1, len(appendix)):
+        if appendix[position][0] - appendix[position - 1][0] != 4:
+            raise fail(
+                "the laid-out appendix pads before %s: it sits %d bytes after %s rather than 4"
+                % (
+                    appendix[position][1],
+                    appendix[position][0] - appendix[position - 1][0],
+                    appendix[position - 1][1],
+                )
+            )
+    if appendix[-1][0] + 4 != layout["byte_size"]:
+        raise fail(
+            "the laid-out appendix does not end the record: %s ends at byte %d of %d"
+            % (appendix[-1][1], appendix[-1][0] + 4, layout["byte_size"])
+        )
+
+    if [name for _offset, name in appendix] != list(APPENDIX_FIELDS):
+        raise fail(
+            "the laid-out appendix is not the contract's table in wire order: %s"
+            % ", ".join(
+                "%s!=%s" % (name, expected)
+                for (_offset, name), expected in zip(appendix, APPENDIX_FIELDS)
+                if name != expected
+            )
+        )
+    agreement = None
+    if nm_text is not None:
+        # Two independent records of where the mailbox is. They are produced by
+        # different parts of the toolchain, so agreement is evidence and
+        # disagreement means one of them is describing a different build.
+        from_dwarf = dwarf_static_address(dwarf_text, MAILBOX_SYMBOL)
+        from_nm = elf_symbol_address(nm_text, MAILBOX_SYMBOL)
+        if from_dwarf != from_nm:
+            raise fail(
+                "DWARF and nm disagree about %s: 0x%08X against 0x%08X"
+                % (MAILBOX_SYMBOL, from_dwarf, from_nm)
+            )
+        agreement = "0x%08X" % from_dwarf
+
+    return {
+        "record_typedef": RECORD_TYPEDEF,
+        "mailbox_address_agreed_by_dwarf_and_nm": agreement,
+        "record_bytes": layout["byte_size"],
+        "record_members": len(members),
+        "body_words": BODY_WORDS,
+        "appendix_first_field": appendix[0][1],
+        "appendix_first_byte_offset": appendix[0][0],
+        "appendix_last_field": appendix[-1][1],
+        "appendix_last_byte_offset": appendix[-1][0],
+        "wire_words": TOTAL_WORDS,
+        "wire_bytes": PAYLOAD_BYTES,
+        "appendix_offsets_bound_by_dwarf": True,
+    }
+
+
 def verify_read_order_equivalence(qs_text: str, sq_text: str) -> dict:
     """QS and SQ differ in read order and in nothing else the image can show.
 
@@ -6879,13 +7080,23 @@ def verify_mailbox_publication_image(objdump_text: str, nm_text: str) -> dict:
     }
 
 
-def verify_linked_image(objdump_text: str, nm_text: str, variant: str) -> dict:
+def verify_linked_image(
+    objdump_text: str, nm_text: str, variant: str, dwarf_text: str | None = None
+) -> dict:
     """Every claim this contract makes about the built image, in one document."""
 
     dominance = verify_pre_run_dominance(objdump_text, nm_text)
     loop = verify_primary_loop_image(objdump_text, variant)
     publication = verify_mailbox_publication_image(objdump_text, nm_text)
     tail = verify_convergence_tail_image(objdump_text)
+    layout = (
+        verify_record_layout_image(dwarf_text, nm_text)
+        if dwarf_text is not None
+        else {
+            "appendix_offsets_bound_by_dwarf": False,
+            "scope": "not checked: --dwarf-text was not given",
+        }
+    )
     return {
         "variant": variant,
         "variant_id": VARIANTS[variant],
@@ -6895,6 +7106,7 @@ def verify_linked_image(objdump_text: str, nm_text: str, variant: str) -> dict:
         "pre_run": dominance,
         "primary_loop": loop,
         "convergence_tail": tail,
+        "record_layout": layout,
         "mailbox_publication": publication,
         "claims_bound_here": list(BOUND_ON_LINKED_IMAGE),
         "retired_claims": list(RETIRED_CLAIMS),
@@ -6993,6 +7205,7 @@ def main(argv: list[str] | None = None) -> int:
                 ("--variant", args.variant),
                 ("--objdump-text", args.objdump_text),
                 ("--nm-text", args.nm_text),
+                ("--dwarf-text", args.dwarf_text),
                 ("--elf-evidence-out", args.elf_evidence_out),
             )
             if value in (None, "")
@@ -7005,6 +7218,7 @@ def main(argv: list[str] | None = None) -> int:
                 _read_text(args.objdump_text, "disassembly"),
                 _read_text(args.nm_text, "symbol table"),
                 args.variant,
+                _read_text(args.dwarf_text, "debug info") if args.dwarf_text else None,
             )
             _write_manifest(args.elf_evidence_out, document)
         except GateError as exc:
