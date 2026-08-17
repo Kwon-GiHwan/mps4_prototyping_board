@@ -7128,6 +7128,78 @@ def verify_runner_mailbox_gate_image(objdump_text: str, nm_text: str) -> dict:
     }
 
 
+SERIALIZER_SYMBOL = "build_pmu_diag_payload"
+WORD_WRITER_SYMBOL = "put32"
+_ELF_CALLEE = re.compile(r"^bl(?:\.[nw])?\s+[0-9a-f]+\s*<([^>+]+)")
+
+
+def _elf_word_writes(objdump_text: str, name: str, seen: frozenset) -> int:
+    """How many frame words a call to ``name`` writes, counted on the image.
+
+    Counting calls is only counting words while the counting path is straight
+    line: a loop or a recursion would make the number depend on data this gate
+    cannot see, so both are refused rather than assumed to run once.
+    """
+
+    if name == WORD_WRITER_SYMBOL:
+        return 1
+    if name in seen:
+        raise fail("the serializer recurses through %s: its word count is not a constant" % name)
+    code, _literals, data = elf_function(objdump_text, name)
+    successors = elf_cfg(code, data)
+    dominators = elf_dominators(successors)
+    if any(out in dominators[index] for index, outs in enumerate(successors) for out in outs):
+        raise fail(
+            "%s loops: the number of words it writes is not something this gate can count" % name
+        )
+    total = 0
+    for insn in code:
+        if not _ELF_CALL.match(insn.text):
+            continue
+        callee = _ELF_CALLEE.match(insn.text)
+        if callee is None:
+            raise fail(
+                "%s makes a call this gate cannot name at 0x%08x: it may write frame words"
+                % (name, insn.addr)
+            )
+        total += _elf_word_writes(objdump_text, callee.group(1), seen | {name})
+    return total
+
+
+def verify_serialization_image(objdump_text: str) -> dict:
+    """The frame the runner sends is exactly the frame the contract declares.
+
+    Field order and record layout are proven elsewhere; this is the length.
+    A serializer that emits one word too few leaves the host reading a field
+    short for the rest of the frame, and every rule about *which* field goes
+    where stays satisfied while it does.
+    """
+
+    words = _elf_word_writes(objdump_text, SERIALIZER_SYMBOL, frozenset())
+    if words != TOTAL_WORDS:
+        raise fail(
+            "the serializer writes %d frame words: the contract's frame is %d words of %d bytes"
+            % (words, TOTAL_WORDS, PAYLOAD_BYTES)
+        )
+    code, _literals, data = elf_function(objdump_text, SERIALIZER_SYMBOL)
+    successors = elf_cfg(code, data)
+    stores = [
+        insn
+        for insn in code
+        if (hit := _ELF_MEMORY.match(insn.text)) is not None and hit.group(1) == "str"
+    ]
+    return {
+        "serializer": SERIALIZER_SYMBOL,
+        "word_writer": WORD_WRITER_SYMBOL,
+        "frame_words_written": words,
+        "frame_bytes": words * 4,
+        "contract_words": TOTAL_WORDS,
+        "contract_bytes": PAYLOAD_BYTES,
+        "serializer_is_straight_line": True,
+        "serializer_direct_stores": len(stores),
+    }
+
+
 def verify_read_order_equivalence(qs_text: str, sq_text: str) -> dict:
     """QS and SQ differ in read order and in nothing else the image can show.
 
@@ -7280,6 +7352,7 @@ def verify_linked_image(
     loop = verify_primary_loop_image(objdump_text, variant)
     publication = verify_mailbox_publication_image(objdump_text, nm_text)
     runner_gate = verify_runner_mailbox_gate_image(objdump_text, nm_text)
+    serialization = verify_serialization_image(objdump_text)
     tail = verify_convergence_tail_image(objdump_text)
     layout = (
         verify_record_layout_image(dwarf_text, nm_text)
@@ -7301,6 +7374,7 @@ def verify_linked_image(
         "record_layout": layout,
         "mailbox_publication": publication,
         "runner_mailbox_gate": runner_gate,
+        "serialization": serialization,
         "claims_bound_here": list(BOUND_ON_LINKED_IMAGE),
         "retired_claims": list(RETIRED_CLAIMS),
         # Still owed by nobody. The source gate does not make these and this one

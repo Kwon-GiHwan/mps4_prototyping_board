@@ -128,7 +128,7 @@ STATUS_FAULT_MASK = 0x314
 
 # The suite is frozen at this many assertions. Adding a named fixture is a
 # deliberate act, so the count moves with it and never drifts silently.
-EXPECTED_PASS_COUNT = 1117
+EXPECTED_PASS_COUNT = 1121
 
 CHECKER_PATH = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
@@ -3223,6 +3223,37 @@ def run_linked_image_suite(gate):
         lambda: gate.verify_runner_mailbox_gate_image(unbounded, linked_nm("Q")),
         "a switch table with no compare bound is refused",
         "not bounded by a compare",
+    )
+
+    # The frame's length, counted on the image rather than asserted in a header.
+    for variant in ("Q", "QS", "SQ"):
+        try:
+            frame = gate.verify_serialization_image(linked_image(variant))
+        except Exception as exc:
+            check("the %s image counts its frame words" % variant, False, ("%s" % exc)[:96])
+            continue
+        check(
+            "the %s serializer writes exactly the contract's frame" % variant,
+            frame["frame_words_written"] == gate.TOTAL_WORDS
+            and frame["frame_bytes"] == gate.PAYLOAD_BYTES,
+            "%d words / %d bytes" % (frame["frame_words_written"], frame["frame_bytes"]),
+        )
+
+    # One word short leaves the host reading a field behind for the rest of the
+    # frame, with every rule about *which* field goes where still satisfied.
+    short = linked_image("Q")
+    dropped = _asm_line(short, "31002be0:") if "31002be0:" in short else None
+    one_call = [
+        line
+        for line in short.splitlines()
+        if "\tbl\t" in line and "<put32>" in line
+    ]
+    expect_image_reject(
+        lambda: gate.verify_serialization_image(
+            short.replace(one_call[0], one_call[0].split("\t")[0] + "\t4770      \tnop", 1)
+        ),
+        "a serializer one word short is refused",
+        "frame words",
     )
 
     # --- attacks on the image ------------------------------------------------
