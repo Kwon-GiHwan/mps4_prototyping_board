@@ -7200,6 +7200,78 @@ def verify_serialization_image(objdump_text: str) -> dict:
     }
 
 
+NVIC_ISER_BASE = 0xE000E100
+NVIC_ISER_WORDS = 16
+NPU_IRQ_NUMBER = 16
+
+
+def verify_npu_irq_never_enabled_image(objdump_text: str) -> dict:
+    """The V12 hard bypass, retained and -- for the first time -- executed.
+
+    V12 established that the NPU interrupt is never enabled, and V13 carried a
+    whole-image rule for it that was never wired to anything: running it against
+    V13's own board-qualified image refuses it. It is also broader than the
+    claim, refusing *any* write into the NVIC enable bank, and the runner
+    restores an unrelated interrupt through one.
+
+    So the claim is made about the bit that matters. NPU0_IRQn is 16, which is
+    bit 16 of ISER[0]; a write that sets it -- or any write to ISER[0] whose
+    value this gate cannot resolve -- is refused, and writes to the other banks
+    are recorded rather than refused because they cannot reach the NPU.
+    """
+
+    parse_functions, split_code_and_literals = _elf_front_end()
+    npu_word, npu_bit = divmod(NPU_IRQ_NUMBER, 32)
+    npu_address = NVIC_ISER_BASE + 4 * npu_word
+    unrelated = []
+    for name, rows in parse_functions(objdump_text).items():
+        code, literals = split_code_and_literals(rows)
+        if not code:
+            continue
+        try:
+            successors = elf_cfg(code, _elf_data_bytes(objdump_text, name))
+        except GateError:
+            continue
+        states = elf_register_values(code, literals, successors)
+        for index, insn in enumerate(code):
+            hit = _ELF_MEMORY.match(insn.text)
+            if hit is None or hit.group(1) != "str":
+                continue
+            base = states[index].get(hit.group(3))
+            if base is None:
+                continue
+            address = base + int(hit.group(4) or 0)
+            if not NVIC_ISER_BASE <= address < NVIC_ISER_BASE + 4 * NVIC_ISER_WORDS:
+                continue
+            value = states[index].get(hit.group(2))
+            if address != npu_address:
+                unrelated.append(
+                    "%s writes 0x%08X" % (name, address)
+                    if value is None
+                    else "%s writes 0x%08X <- 0x%08X" % (name, address, value)
+                )
+                continue
+            if value is None:
+                raise fail(
+                    "%s writes the NPU's own interrupt-enable word at 0x%08x with a value this "
+                    "gate cannot resolve: the bypass is not provable" % (name, insn.addr)
+                )
+            if value & (1 << npu_bit):
+                raise fail(
+                    "%s enables the NPU interrupt at 0x%08x: 0x%08X sets bit %d of ISER[%d]"
+                    % (name, insn.addr, value, npu_bit, npu_word)
+                )
+    return {
+        "npu_irq": NPU_IRQ_NUMBER,
+        "npu_enable_word": "0x%08X" % npu_address,
+        "npu_enable_bit": npu_bit,
+        "npu_interrupt_never_enabled": True,
+        # Recorded, not refused: these cannot reach the NPU, and refusing them is
+        # what made the inherited rule unable to pass its own image.
+        "writes_to_other_enable_words": sorted(set(unrelated)),
+    }
+
+
 def verify_read_order_equivalence(qs_text: str, sq_text: str) -> dict:
     """QS and SQ differ in read order and in nothing else the image can show.
 
@@ -7353,6 +7425,7 @@ def verify_linked_image(
     publication = verify_mailbox_publication_image(objdump_text, nm_text)
     runner_gate = verify_runner_mailbox_gate_image(objdump_text, nm_text)
     serialization = verify_serialization_image(objdump_text)
+    retained = verify_npu_irq_never_enabled_image(objdump_text)
     tail = verify_convergence_tail_image(objdump_text)
     layout = (
         verify_record_layout_image(dwarf_text, nm_text)
@@ -7375,6 +7448,7 @@ def verify_linked_image(
         "mailbox_publication": publication,
         "runner_mailbox_gate": runner_gate,
         "serialization": serialization,
+        "retained_v12_hard_bypass": retained,
         "claims_bound_here": list(BOUND_ON_LINKED_IMAGE),
         "retired_claims": list(RETIRED_CLAIMS),
         # Still owed by nobody. The source gate does not make these and this one

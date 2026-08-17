@@ -128,7 +128,7 @@ STATUS_FAULT_MASK = 0x314
 
 # The suite is frozen at this many assertions. Adding a named fixture is a
 # deliberate act, so the count moves with it and never drifts silently.
-EXPECTED_PASS_COUNT = 1121
+EXPECTED_PASS_COUNT = 1128
 
 CHECKER_PATH = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
@@ -3254,6 +3254,39 @@ def run_linked_image_suite(gate):
         ),
         "a serializer one word short is refused",
         "frame words",
+    )
+
+    # The V12 hard bypass, retained. V13 carried a whole-image rule for this and
+    # never wired it to anything; run against V13's own board-qualified image it
+    # refuses it, because it refuses every write into the enable bank and the
+    # runner restores an unrelated interrupt through one.
+    for variant in ("Q", "QS", "SQ"):
+        try:
+            bypass = gate.verify_npu_irq_never_enabled_image(linked_image(variant))
+        except Exception as exc:
+            check("the %s image keeps the NPU interrupt disabled" % variant, False, ("%s" % exc)[:96])
+            continue
+        check(
+            "the %s image never enables the NPU interrupt" % variant,
+            bypass["npu_interrupt_never_enabled"]
+            and bypass["npu_irq"] == 16
+            and bypass["npu_enable_word"] == "0xE000E100",
+            "bit %d of %s" % (bypass["npu_enable_bit"], bypass["npu_enable_word"]),
+        )
+        check(
+            "the %s image records the unrelated enable it does carry" % variant,
+            any("0xE000E104" in entry for entry in bypass["writes_to_other_enable_words"]),
+            bypass["writes_to_other_enable_words"],
+        )
+
+    # Setting the NPU's own bit is the regression the bypass exists to catch.
+    enabled = _replace_row(
+        linked_image("Q"), "31001fda:", "31001fda:\tf44f 3180 \tmov.w\tr1, #65536"
+    ).replace("str\tr1, [r2, #4]", "str\tr1, [r2, #0]", 1)
+    expect_image_reject(
+        lambda: gate.verify_npu_irq_never_enabled_image(enabled),
+        "an image that enables the NPU interrupt is refused",
+        "enables the NPU interrupt",
     )
 
     # --- attacks on the image ------------------------------------------------
