@@ -128,7 +128,7 @@ STATUS_FAULT_MASK = 0x314
 
 # The suite is frozen at this many assertions. Adding a named fixture is a
 # deliberate act, so the count moves with it and never drifts silently.
-EXPECTED_PASS_COUNT = 1109
+EXPECTED_PASS_COUNT = 1117
 
 CHECKER_PATH = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
@@ -3181,6 +3181,50 @@ def run_linked_image_suite(gate):
         "disagree about",
     )
 
+    # The runner's own gate. This is the clearest case for a graph over
+    # positions: the compiler lays the copy earlier in the function than the
+    # check that guards it.
+    for variant in ("Q", "QS", "SQ"):
+        try:
+            runner = gate.verify_runner_mailbox_gate_image(linked_image(variant), linked_nm(variant))
+        except Exception as exc:
+            check("the %s runner gates its mailbox reads" % variant, False, ("%s" % exc)[:96])
+            continue
+        check(
+            "the %s runner reads the whole tuple, only behind the magic, and writes none of it"
+            % variant,
+            runner["every_tuple_read_dominated_by_the_magic_check"]
+            and runner["tuple_words_read"] == gate.APPENDIX_WORDS - 1
+            and runner["mailbox_writes_by_the_runner"] == 0,
+            "%d words behind %s" % (runner["tuple_words_read"], runner["magic_check_address"]),
+        )
+        check(
+            "the %s copy really does precede its check in listing order" % variant,
+            runner["copy_precedes_the_check_in_listing_order"],
+            "a scan over positions would have called this ungated",
+        )
+
+    # The two switch tables are decoded, so the magic count is over the whole
+    # image rather than over the part this gate could model.
+    whole = gate.verify_mailbox_publication_image(linked_image("Q"), linked_nm("Q"))
+    check(
+        "the magic count covers every function in the image",
+        whole["names_the_magic_but_is_not_modelled"] == []
+        and whole["scope"] == "every function in the image",
+        whole["scope"],
+    )
+
+    # A table read past its bound invents an edge and a dominance proof believes
+    # it, so the bound has to come from the guard rather than from a guess.
+    unbounded = _replace_row(
+        linked_image("Q"), "310010d2:", "310010d2:\t4291      \tcmp\tr1, r2"
+    )
+    expect_image_reject(
+        lambda: gate.verify_runner_mailbox_gate_image(unbounded, linked_nm("Q")),
+        "a switch table with no compare bound is refused",
+        "not bounded by a compare",
+    )
+
     # --- attacks on the image ------------------------------------------------
     base = linked_image("Q")
 
@@ -3391,9 +3435,13 @@ def run_linked_image_suite(gate):
             and publication["fenced_both_sides"],
             publication["magic_store_address"],
         )
+        # This list carried "dispatch" until its switch table was decoded. It
+        # stays in the document: the next image may hold a form this gate has
+        # not met, and an empty list is a fact worth publishing rather than a
+        # field worth deleting.
         check(
-            "the %s magic proof names the functions it could not model" % variant,
-            publication["names_the_magic_but_is_not_modelled"] == ["dispatch"],
+            "the %s magic count leaves no function unexamined" % variant,
+            publication["names_the_magic_but_is_not_modelled"] == [],
             publication["names_the_magic_but_is_not_modelled"],
         )
 

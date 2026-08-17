@@ -5998,10 +5998,99 @@ def elf_function(disassembly_text: str, name: str):
     code, literals = split_code_and_literals(functions[name])
     if not code:
         raise fail("linked image function %s disassembled to nothing" % name)
-    return code, literals
+    return code, literals, _elf_data_bytes(disassembly_text, name)
 
 
-def elf_cfg(code) -> tuple[tuple[int, ...], ...]:
+_ELF_DATA_ROW = re.compile(
+    r"^\s*([0-9a-fA-F]+):\s+[0-9a-fA-F ]+\t\.(word|short|byte)\s+0x([0-9a-fA-F]+)"
+)
+_ELF_DATA_WIDTH = {"word": 4, "short": 2, "byte": 1}
+
+
+def _elf_data_bytes(disassembly_text: str, name: str) -> dict:
+    """Address -> byte, for the data objdump printed inside this function.
+
+    A jump table's tail is emitted as ``.byte`` rows, and the frozen V13 splitter
+    keeps only ``.word`` ones, so reading the table from the literal pool alone
+    lost its last entries. This reads whatever width objdump chose.
+    """
+
+    section = _function_body_text(disassembly_text, name)
+    data: dict[int, int] = {}
+    for line in section.splitlines():
+        hit = _ELF_DATA_ROW.match(line)
+        if hit is None:
+            continue
+        address = int(hit.group(1), 16)
+        width = _ELF_DATA_WIDTH[hit.group(2)]
+        value = int(hit.group(3), 16)
+        for offset in range(width):
+            data[address + offset] = (value >> (8 * offset)) & 0xFF
+    return data
+
+
+def _function_body_text(disassembly_text: str, name: str) -> str:
+    start = re.search(r"(?m)^[0-9a-fA-F]+\s+<%s>:\s*$" % re.escape(name), disassembly_text)
+    if start is None:
+        raise fail("linked image has no %s section" % name)
+    # Past the header's own newline first: a blank-line search that starts on it
+    # ends the section before it begins, and an empty section reads as a
+    # function with no data in it rather than as a bug.
+    rest = disassembly_text[start.end() :].lstrip("\n")
+    end = rest.find("\n\n")
+    return rest if end < 0 else rest[:end]
+
+
+_ELF_TABLE_BRANCH = re.compile(r"^(tbb|tbh)\s+\[pc,\s*(\w+)(?:,\s*lsl\s*#1)?\]")
+_ELF_TABLE_GUARD = re.compile(r"^cmp(?:\.[nw])?\s+(\w+),\s*#(\d+)")
+_ELF_TABLE_DEFAULT = re.compile(r"^bhi(?:\.[nw])?\s")
+
+
+def _elf_table_targets(code, data, index) -> tuple[int, ...]:
+    """Every case a ``tbb``/``tbh`` can reach, or a refusal.
+
+    The table is only decodable because the compiler guards it the same way
+    every time: ``cmp rIndex, #N`` then ``bhi default`` then the table branch on
+    that same register, so it has exactly N+1 entries. Anything else is refused
+    rather than guessed at -- a table read one entry too long invents an edge,
+    and one entry too short hides one, and a dominance proof believes both.
+    """
+
+    insn = code[index]
+    hit = _ELF_TABLE_BRANCH.match(insn.text)
+    if hit is None:
+        raise fail("table branch at 0x%08x is not a form this gate reads" % insn.addr)
+    halfword = hit.group(1) == "tbh"
+    register = hit.group(2)
+    if index < 2:
+        raise fail("table branch at 0x%08x has no room for its bound" % insn.addr)
+    guard = _ELF_TABLE_GUARD.match(code[index - 2].text)
+    if guard is None or guard.group(1) != register:
+        raise fail(
+            "table branch at 0x%08x is not bounded by a compare on %s" % (insn.addr, register)
+        )
+    if not _ELF_TABLE_DEFAULT.match(code[index - 1].text):
+        raise fail(
+            "table branch at 0x%08x is not guarded by an unsigned-higher branch" % insn.addr
+        )
+    count = int(guard.group(2)) + 1
+    base = insn.addr + 4
+    targets = []
+    for entry in range(count):
+        at = base + (2 * entry if halfword else entry)
+        width = 2 if halfword else 1
+        octets = [data.get(at + offset) for offset in range(width)]
+        if any(octet is None for octet in octets):
+            raise fail(
+                "table branch at 0x%08x reads entry %d outside the data objdump printed"
+                % (insn.addr, entry)
+            )
+        value = sum(octet << (8 * offset) for offset, octet in enumerate(octets))
+        targets.append(base + 2 * value)
+    return tuple(targets)
+
+
+def elf_cfg(code, data=None) -> tuple[tuple[int, ...], ...]:
     """Successor indices, refusing every control transfer this gate cannot model.
 
     A predicated instruction is not a branch. It either takes effect or does
@@ -6015,6 +6104,18 @@ def elf_cfg(code) -> tuple[tuple[int, ...], ...]:
     for index, insn in enumerate(code):
         text = insn.text
         fallthrough = (index + 1,) if index + 1 < len(code) else ()
+        if _ELF_TABLE_BRANCH.match(text):
+            targets = _elf_table_targets(code, data or {}, index)
+            unknown = [target for target in targets if target not in index_of]
+            if unknown:
+                raise fail(
+                    "table branch at 0x%08x reaches 0x%08x outside the function"
+                    % (insn.addr, unknown[0])
+                )
+            # The default arm is the guard's own branch, already an edge of its
+            # own, so the table contributes its cases and nothing else.
+            successors.append(tuple(sorted({index_of[target] for target in targets})))
+            continue
         if _ELF_INDIRECT.match(text):
             raise fail(
                 "indirect control transfer at 0x%08x is not modelled: %s" % (insn.addr, text)
@@ -6314,8 +6415,8 @@ def verify_pre_run_dominance(
     # Resolved here because the symbol constant is declared with the source
     # contract further down; the default is not a second opinion about it.
     entry_symbol = entry_symbol or ENTRY_SYMBOL
-    code, literals = elf_function(disassembly_text, entry_symbol)
-    successors = elf_cfg(code)
+    code, literals, data = elf_function(disassembly_text, entry_symbol)
+    successors = elf_cfg(code, data)
     states = elf_register_values(code, literals, successors)
     accesses = elf_mmio_accesses(code, states)
     dominators = elf_dominators(successors)
@@ -6376,8 +6477,8 @@ def verify_primary_loop_image(disassembly_text: str, variant: str) -> dict:
     """What the measured loop actually does, per iteration, in the built image."""
 
     helper = PRIMARY_SYMBOL[variant]
-    code, literals = elf_function(disassembly_text, helper)
-    successors = elf_cfg(code)
+    code, literals, data = elf_function(disassembly_text, helper)
+    successors = elf_cfg(code, data)
     states = elf_register_values(code, literals, successors)
     accesses = elf_mmio_accesses(code, states)
 
@@ -6622,8 +6723,8 @@ def verify_convergence_tail_image(objdump_text: str) -> dict:
     exists to avoid.
     """
 
-    code, literals = elf_function(objdump_text, CONVERGE_SYMBOL)
-    successors = elf_cfg(code)
+    code, literals, data = elf_function(objdump_text, CONVERGE_SYMBOL)
+    successors = elf_cfg(code, data)
     states = elf_register_values(code, literals, successors)
     accesses = elf_mmio_accesses(code, states)
     dominators = elf_dominators(successors)
@@ -6709,7 +6810,7 @@ def verify_common_tail_is_shared(images: dict) -> dict:
 
     rendered = {}
     for variant, text in sorted(images.items()):
-        code, _literals = elf_function(text, CONVERGE_SYMBOL)
+        code, _literals, _data = elf_function(text, CONVERGE_SYMBOL)
         rendered[variant] = _elf_relocatable(code)
     shapes = {variant: _sha256_text("\n".join(rows)) for variant, rows in rendered.items()}
     if len(set(shapes.values())) != 1:
@@ -6936,6 +7037,97 @@ def verify_record_layout_image(dwarf_text: str, nm_text: str | None = None) -> d
     }
 
 
+RUNNER_DISPATCH_SYMBOL = "dispatch"
+_ELF_COMPARE_REGISTERS = re.compile(r"^cmp(?:\.[nw])?\s+(\w+),\s*(\w+)\s*$")
+
+
+def verify_runner_mailbox_gate_image(objdump_text: str, nm_text: str) -> dict:
+    """The runner reads the tuple only where the magic said there is one.
+
+    The mailbox is written by the firmware between runs and read by the runner
+    after them, so the magic word is the only thing standing between a stale
+    frame and a diagnostic record the host believes. This proves the standing
+    happens on every path.
+
+    It also happens to be the clearest case for doing this on a graph rather
+    than on positions: the compiler lays the copy *earlier* in the function than
+    the check it is guarded by, so index order says the runner reads first and
+    asks afterwards. Dominance says otherwise, and dominance is what runs.
+    """
+
+    mailbox = elf_symbol_address(nm_text, MAILBOX_SYMBOL)
+    code, literals, data = elf_function(objdump_text, RUNNER_DISPATCH_SYMBOL)
+    successors = elf_cfg(code, data)
+    states = elf_register_values(code, literals, successors)
+    dominators = elf_dominators(successors)
+
+    accesses = []
+    for index, insn in enumerate(code):
+        hit = _ELF_MEMORY.match(insn.text)
+        if hit is None:
+            continue
+        base = states[index].get(hit.group(3))
+        if base is None:
+            continue
+        word, remainder = divmod(base + int(hit.group(4) or 0) - mailbox, 4)
+        if remainder or not 0 <= word < APPENDIX_WORDS:
+            continue
+        accesses.append((index, word, hit.group(1) == "str"))
+
+    written = [(index, word) for index, word, is_write in accesses if is_write]
+    if written:
+        raise fail(
+            "the runner writes mailbox word %d at 0x%08x: the mailbox is the firmware's to fill"
+            % (written[0][1], code[written[0][0]].addr)
+        )
+
+    compares = []
+    for index, insn in enumerate(code):
+        hit = _ELF_COMPARE_REGISTERS.match(insn.text)
+        if hit is None:
+            continue
+        values = (states[index].get(hit.group(1)), states[index].get(hit.group(2)))
+        if MAILBOX_VALID in values:
+            compares.append(index)
+    if len(compares) != 1:
+        raise fail(
+            "the runner compares against the mailbox magic %d times: it gates the copy once"
+            % len(compares)
+        )
+    gate = compares[0]
+
+    tuple_words = sorted({word for _index, word, _w in accesses if word != MAILBOX_VALID_WORD})
+    if tuple_words != list(range(APPENDIX_WORDS - 1)):
+        raise fail(
+            "the runner reads %d of the %d appendix words before the validity word: the record "
+            "it publishes would carry fields it never copied"
+            % (len(tuple_words), APPENDIX_WORDS - 1)
+        )
+    ungated = [
+        index
+        for index, word, is_write in accesses
+        if word != MAILBOX_VALID_WORD and gate not in dominators[index]
+    ]
+    if ungated:
+        raise fail(
+            "the runner reads the mailbox tuple without the magic check: 0x%08x is reachable "
+            "without 0x%08x" % (code[ungated[0]].addr, code[gate].addr)
+        )
+
+    return {
+        "dispatcher": RUNNER_DISPATCH_SYMBOL,
+        "magic_check_address": "0x%08X" % code[gate].addr,
+        "tuple_words_read": len(tuple_words),
+        "mailbox_writes_by_the_runner": 0,
+        "every_tuple_read_dominated_by_the_magic_check": True,
+        # Recorded because it is the reason this proof is a graph and not a scan.
+        "copy_precedes_the_check_in_listing_order": min(
+            index for index, word, _w in accesses if word != MAILBOX_VALID_WORD
+        )
+        < gate,
+    }
+
+
 def verify_read_order_equivalence(qs_text: str, sq_text: str) -> dict:
     """QS and SQ differ in read order and in nothing else the image can show.
 
@@ -6945,14 +7137,14 @@ def verify_read_order_equivalence(qs_text: str, sq_text: str) -> dict:
     read-order result would not be a read-order result.
     """
 
-    qs, _ = elf_function(qs_text, PRIMARY_SYMBOL["QS"])
-    sq, _ = elf_function(sq_text, PRIMARY_SYMBOL["SQ"])
+    qs, _qsp, qs_data = elf_function(qs_text, PRIMARY_SYMBOL["QS"])
+    sq, _sqp, sq_data = elf_function(sq_text, PRIMARY_SYMBOL["SQ"])
     if len(qs) != len(sq):
         raise fail(
             "the QS and SQ helpers are not the same length: %d against %d instructions"
             % (len(qs), len(sq))
         )
-    if elf_cfg(qs) != elf_cfg(sq):
+    if elf_cfg(qs, qs_data) != elf_cfg(sq, sq_data):
         raise fail("the QS and SQ helpers do not share one control-flow graph")
 
     differing = [
@@ -7018,18 +7210,13 @@ def verify_mailbox_publication_image(objdump_text: str, nm_text: str) -> dict:
         if not code:
             continue
         try:
-            successors = elf_cfg(code)
+            successors = elf_cfg(code, _elf_data_bytes(objdump_text, name))
         except GateError:
-            # A function this gate cannot model is one it cannot clear either.
-            # Where such a function names the magic, that is recorded as the
-            # limit of this proof rather than argued away: the runner's command
-            # dispatcher compares against the magic and reaches it through a
-            # jump table, and no rule here decodes one.
-            #
-            # Refusing outright would refuse the real image; claiming the
-            # whole-image count anyway would be the overclaim this contract
-            # keeps finding in itself. So the count is scoped, and the scope is
-            # published beside it.
+            # A function this gate cannot model is one it cannot clear either,
+            # so where such a function names the magic the scope is recorded
+            # rather than argued away. With the two switch tables decoded there
+            # is nothing left in this list, but the list stays: the next image
+            # may hold a form this gate has not met.
             if any(word == MAILBOX_VALID for _addr, word in literals):
                 unmodelled.append(name)
             continue
@@ -7061,7 +7248,7 @@ def verify_mailbox_publication_image(objdump_text: str, nm_text: str) -> dict:
         )
 
     # The tuple has to be visible before the word that says it is there.
-    code, literals = elf_function(objdump_text, MAILBOX_PUBLISH_SYMBOL)
+    code, literals, data = elf_function(objdump_text, MAILBOX_PUBLISH_SYMBOL)
     publish = next(i for i, row in enumerate(code) if row.addr == insn.addr)
     if not any(row.mnemonic == "dsb" for row in code[:publish]):
         raise fail("the mailbox magic is published without a barrier before it")
@@ -7075,7 +7262,11 @@ def verify_mailbox_publication_image(objdump_text: str, nm_text: str) -> dict:
         "magic_stores_in_the_modelled_functions": len(stores),
         "fenced_both_sides": True,
         # Named for the scope it is taken over, and the scope is the list below.
-        "scope": "functions this gate can build a control-flow graph for",
+        "scope": (
+            "every function in the image"
+            if not unmodelled
+            else "functions this gate can build a control-flow graph for"
+        ),
         "names_the_magic_but_is_not_modelled": sorted(unmodelled),
     }
 
@@ -7088,6 +7279,7 @@ def verify_linked_image(
     dominance = verify_pre_run_dominance(objdump_text, nm_text)
     loop = verify_primary_loop_image(objdump_text, variant)
     publication = verify_mailbox_publication_image(objdump_text, nm_text)
+    runner_gate = verify_runner_mailbox_gate_image(objdump_text, nm_text)
     tail = verify_convergence_tail_image(objdump_text)
     layout = (
         verify_record_layout_image(dwarf_text, nm_text)
@@ -7108,6 +7300,7 @@ def verify_linked_image(
         "convergence_tail": tail,
         "record_layout": layout,
         "mailbox_publication": publication,
+        "runner_mailbox_gate": runner_gate,
         "claims_bound_here": list(BOUND_ON_LINKED_IMAGE),
         "retired_claims": list(RETIRED_CLAIMS),
         # Still owed by nobody. The source gate does not make these and this one
