@@ -6076,6 +6076,27 @@ def elf_dominators(successors, entry: int = 0) -> tuple[frozenset, ...]:
     return tuple(dominators)
 
 
+def elf_natural_loop(successors, latch: int, head: int) -> frozenset:
+    """The body of the loop closed by ``latch -> head``.
+
+    Not ``range(head, latch + 1)``: at -O1 the convergence tail is rotated, so
+    its entry jumps into the middle and the increment block sits at a *lower*
+    index than the header. Reading the body as an address range made it empty,
+    and an empty body satisfies every per-iteration rule there is.
+    """
+
+    preds = _predecessors(successors)
+    loop = {head, latch}
+    pending = [latch]
+    while pending:
+        node = pending.pop()
+        for pred in preds[node]:
+            if pred not in loop:
+                loop.add(pred)
+                pending.append(pred)
+    return frozenset(loop)
+
+
 def elf_predicated(code) -> frozenset:
     """Indices an IT block makes conditional."""
 
@@ -6376,7 +6397,7 @@ def verify_primary_loop_image(disassembly_text: str, variant: str) -> dict:
             % (variant, len(back_edges))
         )
     latch, head = back_edges[0]
-    body = range(head, latch + 1)
+    body = elf_natural_loop(successors, latch, head)
 
     in_loop = [(index, role, is_write) for index, role, is_write in accesses if index in body]
     expected = {"Q": ("QREAD",), "QS": ("QREAD", "STATUS"), "SQ": ("STATUS", "QREAD")}[variant]
@@ -6469,7 +6490,7 @@ def verify_primary_loop_image(disassembly_text: str, variant: str) -> dict:
     return {
         "helper": helper,
         "loop_reads_in_order": list(order),
-        "loop_instruction_count": latch - head + 1,
+        "loop_instruction_count": len(body),
         "loop_mmio_reads_per_iteration": len(order),
         "qsize_accesses": 0,
         "timestamp_reads_outside_the_loop": len(timestamps),
@@ -6517,6 +6538,10 @@ def build_arg_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--qs-objdump-text", help="path to objdump -d of the QS image")
     parser.add_argument("--sq-objdump-text", help="path to objdump -d of the SQ image")
+    parser.add_argument(
+        "--q-objdump-text",
+        help="path to objdump -d of the Q image; adds the shared-tail proof",
+    )
     return parser
 
 
@@ -6532,6 +6557,182 @@ def _elf_normalized(insn) -> str:
     """
 
     return re.sub(r"\s+", " ", _ELF_ANNOTATION.sub("", insn.text)).strip()
+
+
+def _elf_relocatable(code) -> tuple[str, ...]:
+    """Each instruction with branch targets read as positions, not addresses.
+
+    The convergence helper is linked at a different address in each variant --
+    Q's primary helper is shorter, so everything after it shifts -- and every
+    branch inside it then differs by that shift. Comparing raw text would call
+    three identical tails three different programs; comparing a raw object
+    digest would do the same. What has to match is the instruction and, where it
+    branches, which instruction it branches to.
+    """
+
+    index_of = {insn.addr: index for index, insn in enumerate(code)}
+    rendered = []
+    for insn in code:
+        text = _elf_normalized(insn)
+        if insn.target is not None and insn.target in index_of:
+            text = "%s ->#%d" % (text.split()[0], index_of[insn.target])
+        rendered.append(text)
+    return tuple(rendered)
+
+
+def _elf_status_bits_tested(code, body, status_register) -> set:
+    """Every STATUS bit the loop body decides on, however GCC spelled the test.
+
+    ``-O1`` merges ``cmd_end`` and ``irq_raised`` into one ``and rD, rS, #0x22``
+    followed by ``cmp rD, #0x22``, so a rule that only counted single-bit tests
+    would report the design's four-condition predicate as two conditions.
+    """
+
+    bits = 0
+    merged = re.compile(r"^and(?:s)?(?:\.[nw])?\s+(\w+),\s*(\w+),\s*#(\d+)")
+    for index in body:
+        test = _elf_mask_test(code[index].text)
+        if test is not None and test[0] == status_register:
+            bits |= test[1]
+            continue
+        hit = merged.match(code[index].text)
+        if hit is not None and hit.group(2) == status_register:
+            destination, mask = hit.group(1), int(hit.group(3))
+            for step in range(index + 1, min(index + 4, len(code))):
+                compare = re.match(
+                    r"^cmp(?:\.[nw])?\s+%s\s*,\s*#(\d+)" % re.escape(destination),
+                    code[step].text,
+                )
+                if compare is not None:
+                    bits |= mask
+                    break
+    return bits
+
+
+def verify_convergence_tail_image(objdump_text: str) -> dict:
+    """The common tail, as the image runs it.
+
+    The design joins every variant to one bounded tail whose iteration reads
+    QREAD then STATUS and declares convergence only when a single tuple carries
+    all four conditions. Accumulating them across iterations would report a
+    convergence that never happened at one instant, which is the thing the tail
+    exists to avoid.
+    """
+
+    code, literals = elf_function(objdump_text, CONVERGE_SYMBOL)
+    successors = elf_cfg(code)
+    states = elf_register_values(code, literals, successors)
+    accesses = elf_mmio_accesses(code, states)
+    dominators = elf_dominators(successors)
+
+    back_edges = [
+        (index, out)
+        for index, outs in enumerate(successors)
+        for out in outs
+        if out in dominators[index]
+    ]
+    if len(back_edges) != 1:
+        raise fail(
+            "the convergence tail does not carry exactly one loop: %d back edges" % len(back_edges)
+        )
+    latch, head = back_edges[0]
+    body = elf_natural_loop(successors, latch, head)
+
+    in_loop = [(index, role, is_write) for index, role, is_write in accesses if index in body]
+    order = tuple(role for _index, role, is_write in in_loop if not is_write)
+    if order != ("QREAD", "STATUS"):
+        raise fail(
+            "the convergence tail reads %s per iteration: the tail order is fixed as QREAD then "
+            "STATUS for every variant" % (" then ".join(order) or "nothing")
+        )
+    if any(is_write for _index, _role, is_write in in_loop):
+        raise fail("the convergence tail writes MMIO per iteration")
+    for index in body:
+        text = code[index].text
+        if _ELF_CALL.match(text):
+            raise fail("the convergence tail calls out per iteration: %s" % text)
+        store = _ELF_MEMORY.match(text)
+        if store is not None and store.group(1) == "str":
+            raise fail("the convergence tail stores per iteration: %s" % text)
+    if any(role in ("QSIZE", "DWT_CYCCNT") for _index, role, _w in in_loop):
+        raise fail("the convergence tail reaches QSIZE or the cycle counter per iteration")
+
+    status_register = next(
+        _elf_written_register(code[index].text)
+        for index, role, is_write in in_loop
+        if role == "STATUS" and not is_write
+    )
+    bits = _elf_status_bits_tested(code, body, status_register)
+    required = {
+        "cmd_end_reached": STATUS_CMD_END,
+        "irq_raised": STATUS_IRQ_RAISED,
+        "state": STATUS_STATE,
+        "reset_status": STATUS_RESET,
+    }
+    for label, mask in required.items():
+        if not bits & mask:
+            raise fail(
+                "the convergence tail never decides on %s (0x%03X): the tail requires all four "
+                "conditions in one tuple" % (label, mask)
+            )
+    if not bits & STATUS_FAULT_MASK:
+        raise fail("the convergence tail never decides on the vendor fault mask")
+
+    bound = [
+        int(hit.group(2))
+        for index in range(len(code))
+        if index not in body
+        for hit in (_ELF_MOVW.match(code[index].text) or _ELF_MOV_IMM.match(code[index].text),)
+        if hit is not None
+    ]
+    if ITERATION_BOUND not in bound:
+        raise fail(
+            "the convergence tail does not materialise the %d iteration bound outside its loop"
+            % ITERATION_BOUND
+        )
+
+    return {
+        "helper": CONVERGE_SYMBOL,
+        "loop_reads_in_order": list(order),
+        "loop_instruction_count": len(body),
+        "status_bits_decided": "0x%03X" % bits,
+        "iteration_bound": ITERATION_BOUND,
+        "per_iteration_stores": 0,
+    }
+
+
+def verify_common_tail_is_shared(images: dict) -> dict:
+    """One tail, three variants, differing only by where it was linked."""
+
+    rendered = {}
+    for variant, text in sorted(images.items()):
+        code, _literals = elf_function(text, CONVERGE_SYMBOL)
+        rendered[variant] = _elf_relocatable(code)
+    shapes = {variant: _sha256_text("\n".join(rows)) for variant, rows in rendered.items()}
+    if len(set(shapes.values())) != 1:
+        first = sorted(rendered)[0]
+        for variant in sorted(rendered):
+            if rendered[variant] == rendered[first]:
+                continue
+            difference = next(
+                (
+                    "#%d %s against %s" % (index, left, right)
+                    for index, (left, right) in enumerate(zip(rendered[first], rendered[variant]))
+                    if left != right
+                ),
+                "a different instruction count",
+            )
+            raise fail(
+                "the convergence tail is not shared: %s and %s differ at %s"
+                % (first, variant, difference)
+            )
+    return {
+        "helper": CONVERGE_SYMBOL,
+        "variants": sorted(rendered),
+        "instructions": len(next(iter(rendered.values()))),
+        "relocation_invariant_sha256": next(iter(shapes.values())),
+        "shared_by_every_variant": True,
+    }
 
 
 def verify_read_order_equivalence(qs_text: str, sq_text: str) -> dict:
@@ -6684,6 +6885,7 @@ def verify_linked_image(objdump_text: str, nm_text: str, variant: str) -> dict:
     dominance = verify_pre_run_dominance(objdump_text, nm_text)
     loop = verify_primary_loop_image(objdump_text, variant)
     publication = verify_mailbox_publication_image(objdump_text, nm_text)
+    tail = verify_convergence_tail_image(objdump_text)
     return {
         "variant": variant,
         "variant_id": VARIANTS[variant],
@@ -6692,6 +6894,7 @@ def verify_linked_image(objdump_text: str, nm_text: str, variant: str) -> dict:
         "proof_scope": "linked_image",
         "pre_run": dominance,
         "primary_loop": loop,
+        "convergence_tail": tail,
         "mailbox_publication": publication,
         "claims_bound_here": list(BOUND_ON_LINKED_IMAGE),
         "retired_claims": list(RETIRED_CLAIMS),
@@ -6757,10 +6960,24 @@ def main(argv: list[str] | None = None) -> int:
             print("FAIL read-order equivalence requires %s" % ", ".join(missing))
             return 2
         try:
-            document = verify_read_order_equivalence(
-                _read_text(args.qs_objdump_text, "QS disassembly"),
-                _read_text(args.sq_objdump_text, "SQ disassembly"),
-            )
+            qs_text = _read_text(args.qs_objdump_text, "QS disassembly")
+            sq_text = _read_text(args.sq_objdump_text, "SQ disassembly")
+            document = {"read_order": verify_read_order_equivalence(qs_text, sq_text)}
+            if args.q_objdump_text:
+                # The tail is a claim about all three, so it is made only when
+                # all three are on the table rather than inferred from two.
+                document["common_tail"] = verify_common_tail_is_shared(
+                    {
+                        "Q": _read_text(args.q_objdump_text, "Q disassembly"),
+                        "QS": qs_text,
+                        "SQ": sq_text,
+                    }
+                )
+            else:
+                document["common_tail"] = {
+                    "shared_by_every_variant": False,
+                    "scope": "not checked: --q-objdump-text was not given",
+                }
             _write_manifest(args.elf_evidence_out, document)
         except GateError as exc:
             print("FAIL %s" % exc)

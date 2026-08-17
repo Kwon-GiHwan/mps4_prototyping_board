@@ -128,7 +128,7 @@ STATUS_FAULT_MASK = 0x314
 
 # The suite is frozen at this many assertions. Adding a named fixture is a
 # deliberate act, so the count moves with it and never drifts silently.
-EXPECTED_PASS_COUNT = 1094
+EXPECTED_PASS_COUNT = 1104
 
 CHECKER_PATH = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
@@ -3076,8 +3076,88 @@ def run_linked_image_suite(gate):
     except Exception as exc:
         check("QS and SQ are one program differing only at the two loads", False, ("%s" % exc)[:96])
 
+    # The common tail: one helper, joined by every variant, deciding all four
+    # conditions in a single tuple.
+    for variant in ("Q", "QS", "SQ"):
+        try:
+            tail = gate.verify_convergence_tail_image(linked_image(variant))
+        except Exception as exc:
+            check("the %s image proves the convergence tail" % variant, False, ("%s" % exc)[:96])
+            continue
+        check(
+            "the %s tail reads QREAD then STATUS and stores nothing per iteration" % variant,
+            tail["loop_reads_in_order"] == ["QREAD", "STATUS"]
+            and tail["per_iteration_stores"] == 0
+            and tail["iteration_bound"] == gate.ITERATION_BOUND,
+            "%s bound=%s" % (tail["loop_reads_in_order"], tail["iteration_bound"]),
+        )
+        decided = int(tail["status_bits_decided"], 16)
+        required = (
+            gate.STATUS_CMD_END
+            | gate.STATUS_IRQ_RAISED
+            | gate.STATUS_STATE
+            | gate.STATUS_RESET
+            | gate.STATUS_FAULT_MASK
+        )
+        check(
+            "the %s tail decides every condition the design requires" % variant,
+            decided & required == required,
+            "0x%03X against 0x%03X" % (decided, required),
+        )
+
+    try:
+        shared = gate.verify_common_tail_is_shared(
+            {variant: linked_image(variant) for variant in ("Q", "QS", "SQ")}
+        )
+        check(
+            "the three variants join one convergence tail",
+            shared["shared_by_every_variant"] and shared["variants"] == ["Q", "QS", "SQ"],
+            "%d instructions, %s" % (shared["instructions"], shared["relocation_invariant_sha256"][:16]),
+        )
+    except Exception as exc:
+        check("the three variants join one convergence tail", False, ("%s" % exc)[:96])
+
     # --- attacks on the image ------------------------------------------------
     base = linked_image("Q")
+
+    # A tail that differs between variants is not a common tail, whatever the
+    # sources say. The mutation changes an instruction rather than an address,
+    # because addresses are what relocation is allowed to change.
+    expect_image_reject(
+        lambda: gate.verify_common_tail_is_shared(
+            {
+                "Q": _replace_row(
+                    linked_image("Q"), "31002548:", "31002548:\tf242 7211 \tmovw\tr2, #10001"
+                ),
+                "QS": linked_image("QS"),
+                "SQ": linked_image("SQ"),
+            }
+        ),
+        "a tail that differs between variants is refused",
+        "not shared",
+    )
+
+    # Dropping the stopped-state test leaves a tail that declares convergence
+    # while the NPU is still running.
+    expect_image_reject(
+        lambda: gate.verify_convergence_tail_image(
+            _replace_row(base, "31002572:", "31002572:\tf013 0f00 \ttst.w\tr3, #0")
+        ),
+        "a tail that stops deciding on state is refused",
+        "state",
+    )
+
+    # And a tail that stores inside its loop is instrumentation in the window
+    # the design keeps clean. The store goes to the stack rather than to MMIO,
+    # so it is the per-iteration-store rule that has to catch it and not the
+    # MMIO one.
+    expect_image_reject(
+        lambda: gate.verify_convergence_tail_image(
+            _replace_row(base, "31002552:", "31002552:\t9301      \tstr\tr3, [sp, #4]")
+        ),
+        "a tail that stores to memory per iteration is refused",
+        "stores per iteration",
+    )
 
     # A third difference between QS and SQ means a read-order result has a second
     # explanation, so one is enough to refuse the pair.
