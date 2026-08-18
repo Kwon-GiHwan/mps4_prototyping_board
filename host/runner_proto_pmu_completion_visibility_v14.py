@@ -429,7 +429,7 @@ def manifest_self_hash(document: dict) -> str:
     return hashlib.sha256(canonical_json_bytes(preimage)).hexdigest()
 
 
-def verify_manifest(document: dict, artifact_root: str) -> dict:
+def verify_manifest(document: dict, artifact_root: str, *, allow_undeclared: bool = False) -> dict:
     """Recompute everything the manifest asserts, or refuse it by name."""
 
     for key in ("variant", "schema_version", "build_id", "declared_artifacts"):
@@ -472,6 +472,13 @@ def verify_manifest(document: dict, artifact_root: str) -> dict:
         path = os.path.join(root, name)
         if not os.path.isfile(path):
             raise ProtocolError("artifact %s is declared and absent" % name)
+        # A declared artifact has to be the build's own file. A symlink out of
+        # the tree hashes clean and means the manifest stopped certifying what
+        # was actually built -- the digest describes a file somewhere else.
+        if os.path.islink(path):
+            raise ProtocolError("artifact %s is a symlink, not a build output" % name)
+        if os.path.realpath(path) != os.path.join(os.path.realpath(root), *name.split("/")):
+            raise ProtocolError("artifact %s resolves outside the build root" % name)
         with open(path, "rb") as handle:
             payload = handle.read()
         digest = hashlib.sha256(payload).hexdigest()
@@ -496,15 +503,35 @@ def verify_manifest(document: dict, artifact_root: str) -> dict:
             relative = os.path.relpath(os.path.join(directory, filename), root)
             present.add(relative.replace(os.sep, "/"))
     undeclared = sorted(present - set(table))
+    if undeclared and not allow_undeclared:
+        # Reporting was not enough. A reader that hashes only what it was told
+        # about cannot notice a second image sitting beside the first, and the
+        # contract says an extra artifact is a mismatch rather than a note.
+        raise ProtocolError(
+            "the build root carries %d files the manifest does not declare, first %s"
+            % (len(undeclared), undeclared[0])
+        )
+
+    bundle = hashlib.sha256(
+        canonical_json_bytes({name: checked[name] for name in sorted(checked)})
+    ).hexdigest()
+    stored_bundle = document.get("artifact_bundle_sha256")
+    if stored_bundle is not None and stored_bundle != bundle:
+        raise ProtocolError(
+            "artifact bundle hash mismatch: stored %s, recomputed %s" % (stored_bundle, bundle)
+        )
 
     return {
         "variant": document["variant"],
         "artifacts_verified": len(checked),
         "manifest_self_hash_recomputed": recomputed,
         "undeclared_files_present": undeclared,
-        "artifact_bundle_sha256": hashlib.sha256(
-            canonical_json_bytes({name: checked[name] for name in sorted(checked)})
-        ).hexdigest(),
+        # Which question was actually answered. A tree verified with
+        # undeclared files allowed is a tree where "these artifacts are what
+        # the manifest says" was checked and "these are the only artifacts"
+        # was not, and the difference is the second image nobody looked for.
+        "containment": "declared artifacts only" if not allow_undeclared else "declared artifacts verified; the tree was not required to hold only them",
+        "artifact_bundle_sha256": bundle,
     }
 
 
@@ -514,12 +541,19 @@ def _main(argv=None) -> int:
     manifest = sub.add_parser("verify-manifest", help="recompute a build manifest's claims")
     manifest.add_argument("--manifest", required=True)
     manifest.add_argument("--artifact-root", required=True)
+    manifest.add_argument(
+        "--allow-undeclared",
+        action="store_true",
+        help="verify a raw build tree, which carries intermediates the manifest never declares",
+    )
     args = parser.parse_args(argv)
     if args.command == "verify-manifest":
         try:
             with open(args.manifest, "r", encoding="utf-8") as handle:
                 document = json.load(handle)
-            report = verify_manifest(document, args.artifact_root)
+            report = verify_manifest(
+                document, args.artifact_root, allow_undeclared=args.allow_undeclared
+            )
         except (ProtocolError, OSError, ValueError) as exc:
             print("MANIFEST FAIL %s" % exc)
             return 1
@@ -528,7 +562,10 @@ def _main(argv=None) -> int:
             % (report["variant"], report["artifacts_verified"], report["artifact_bundle_sha256"][:16])
         )
         if report["undeclared_files_present"]:
-            print("  note: %d undeclared files present" % len(report["undeclared_files_present"]))
+            print(
+                "  note: %d undeclared files present; containment was not checked"
+                % len(report["undeclared_files_present"])
+            )
         return 0
     return 2
 

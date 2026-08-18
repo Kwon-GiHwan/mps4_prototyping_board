@@ -470,13 +470,17 @@ class ManifestRedTests(unittest.TestCase):
             with self.assertRaises(v8.ProtocolError):
                 v14.verify_manifest(document, root)
 
-    def test_an_undeclared_file_is_reported_rather_than_ignored(self):
+    def test_an_undeclared_file_is_reported_when_containment_is_waived(self):
+        # This test used to assert that reporting was enough. It is not: the
+        # contract rejects an extra artifact, and only a caller that says so
+        # explicitly gets the weaker answer.
         with tempfile.TemporaryDirectory() as root:
             document = build_manifest(root)
             with open(os.path.join(root, "SECOND.BIN"), "wb") as handle:
                 handle.write(b"another image")
-            report = v14.verify_manifest(document, root)
+            report = v14.verify_manifest(document, root, allow_undeclared=True)
             self.assertEqual(report["undeclared_files_present"], ["SECOND.BIN"])
+            self.assertIn("not required", report["containment"])
 
     def test_an_artifact_name_that_escapes_the_build_is_refused(self):
         with tempfile.TemporaryDirectory() as root:
@@ -511,3 +515,61 @@ class ManifestRedTests(unittest.TestCase):
         payload = v14.canonical_json_bytes({"b": 1, "a": [2, 3]})
         self.assertEqual(payload, b'{"a":[2,3],"b":1}\n')
         self.assertEqual(payload, v14.canonical_json_bytes({"a": [2, 3], "b": 1}))
+
+
+class ManifestContainmentTests(unittest.TestCase):
+    """What MANIFEST PASS has to mean about the tree it was run against."""
+
+    def test_a_symlinked_artifact_pointing_outside_the_build_is_refused(self):
+        with tempfile.TemporaryDirectory() as root, tempfile.TemporaryDirectory() as elsewhere:
+            payload = b"outside-the-build"
+            external = os.path.join(elsewhere, "real.bin")
+            with open(external, "wb") as handle:
+                handle.write(payload)
+            document = {
+                "variant": "Q",
+                "schema_version": 14,
+                "build_id": "0x34314950",
+                "canonical_json": "v14-canonical-json-v1",
+                "frozen_input_sha256": {"runner": "0" * 64},
+                "declared_artifacts": {
+                    "APP.BIN": {
+                        "sha256": hashlib.sha256(payload).hexdigest(),
+                        "bytes": len(payload),
+                    }
+                },
+            }
+            document["manifest_self_hash"] = v14.manifest_self_hash(document)
+            os.symlink(external, os.path.join(root, "APP.BIN"))
+            with self.assertRaises(v8.ProtocolError):
+                v14.verify_manifest(document, root)
+
+    def test_an_undeclared_file_beside_the_declared_ones_is_refused(self):
+        with tempfile.TemporaryDirectory() as root:
+            document = build_manifest(root)
+            with open(os.path.join(root, "SECOND.BIN"), "wb") as handle:
+                handle.write(b"another image")
+            with self.assertRaises(v8.ProtocolError):
+                v14.verify_manifest(document, root)
+
+    def test_a_stored_bundle_hash_that_disagrees_is_refused(self):
+        with tempfile.TemporaryDirectory() as root:
+            document = build_manifest(root)
+            document["artifact_bundle_sha256"] = "f" * 64
+            document["manifest_self_hash"] = v14.manifest_self_hash(document)
+            with self.assertRaises(v8.ProtocolError):
+                v14.verify_manifest(document, root)
+
+    def test_a_stored_bundle_hash_that_agrees_is_accepted(self):
+        with tempfile.TemporaryDirectory() as root:
+            document = build_manifest(root)
+            report = v14.verify_manifest(document, root)
+            document["artifact_bundle_sha256"] = report["artifact_bundle_sha256"]
+            document["manifest_self_hash"] = v14.manifest_self_hash(document)
+            again = v14.verify_manifest(document, root)
+            self.assertEqual(again["artifact_bundle_sha256"], report["artifact_bundle_sha256"])
+
+    def test_a_declared_artifact_may_still_live_in_a_subdirectory(self):
+        with tempfile.TemporaryDirectory() as root:
+            document = build_manifest(root, artifacts={"generated/u85.c": b"source"})
+            self.assertEqual(v14.verify_manifest(document, root)["artifacts_verified"], 1)
