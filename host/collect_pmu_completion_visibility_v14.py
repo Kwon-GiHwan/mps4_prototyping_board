@@ -52,6 +52,7 @@ class Cell:
         self.attempt = attempt
         self.samples: list[dict] = []
         self.boot_id: str | None = None
+        self.dead: str | None = None
         os.makedirs(self.attempt_path(attempt), exist_ok=True)
 
     @property
@@ -66,35 +67,54 @@ class Cell:
         return len(self.samples) == RUNS_PER_CELL
 
     def record(self, sample: dict) -> None:
-        """Accept one run, or refuse it for a named reason."""
+        """Accept one run, or end the attempt.
+
+        Every refusal here quarantines the attempt and stops the campaign before
+        it raises. Raising alone was the defect: the caller could catch the
+        error, offer the run again, and turn nine good runs and one bad one into
+        a ten-run cell -- the exact thing this module's docstring says it
+        prevents. A run that is not acceptable is not a run to be retried; it is
+        the end of the attempt.
+        """
 
         if self.campaign.stopped:
             raise CollectorError("the campaign is stopped: %s" % self.campaign.stop_reason)
+        if self.dead:
+            raise CollectorError("cell %s is over: %s" % (self.name, self.dead))
         if self.complete:
             raise CollectorError(
                 "cell %s already carries its %d runs" % (self.name, RUNS_PER_CELL)
             )
         if not sample.get("sample_valid"):
-            # An invalid sample is not a run that can be repeated quietly. The
-            # campaign's own rule is that the cell fails.
-            raise CollectorError("run %s is not a valid sample" % sample.get("run_id"))
+            self._end("run %s is not a valid sample" % sample.get("run_id"))
+        variant = sample.get("variant")
+        if variant is not None and variant != self.variant:
+            self._end(
+                "run %s carries variant %s in a %s cell" % (sample.get("run_id"), variant, self.variant)
+            )
         expected = len(self.samples) + 1
         if sample.get("run_id") != expected:
-            raise CollectorError(
+            self._end(
                 "cell %s expected run %d, was offered %s"
                 % (self.name, expected, sample.get("run_id"))
             )
         boot = sample.get("boot_id")
-        if self.boot_id is None:
-            self.boot_id = boot
-        elif boot != self.boot_id:
-            raise CollectorError(
+        if self.boot_id is not None and boot != self.boot_id:
+            self._end(
                 "cell %s changed boot mid-cell: %s then %s" % (self.name, self.boot_id, boot)
             )
+        if self.boot_id is None:
+            self.boot_id = boot
         self.samples.append(dict(sample))
         self._write()
         if self.complete:
             self.campaign._cell_completed(self)
+
+    def _end(self, reason: str):
+        """Quarantine, stop, then raise. Never raise without the first two."""
+
+        self.fail(reason)
+        raise CollectorError(reason)
 
     def fail(self, reason: str) -> None:
         """Quarantine this whole attempt and stop the campaign."""
@@ -102,6 +122,7 @@ class Cell:
         self.campaign._quarantine(self, reason)
         self.samples = []
         self.boot_id = None
+        self.dead = reason
 
     def _write(self) -> None:
         path = os.path.join(self.attempt_path(self.attempt), "samples.json")
@@ -155,6 +176,7 @@ class Campaign:
         self.stop_reason = None
         self._attempts: dict[str, int] = {}
         self._completed: list[str] = []
+        self._disposed: dict[str, bool] = {}
         if not os.path.isfile(self._state_path):
             return
         with open(self._state_path, "r", encoding="utf-8") as handle:
@@ -163,12 +185,14 @@ class Campaign:
         self.stop_reason = state.get("stop_reason")
         self._attempts = dict(state.get("attempts", {}))
         self._completed = list(state.get("completed", []))
+        self._disposed = dict(state.get("disposed", {}))
 
     def _save_state(self) -> None:
         with open(self._state_path, "w", encoding="utf-8") as handle:
             json.dump(
                 {"stopped": self.stopped, "stop_reason": self.stop_reason,
-                 "attempts": self._attempts, "completed": sorted(self._completed)},
+                 "attempts": self._attempts, "completed": sorted(self._completed),
+                 "disposed": self._disposed},
                 handle,
                 indent=2,
                 sort_keys=True,
@@ -184,8 +208,20 @@ class Campaign:
                 "the campaign is stopped and needs a disposition: %s" % self.stop_reason
             )
         name = "%d-%d-%s" % (round_index, position, variant)
-        attempt = self._attempts.get(name, 0) + 1
+        if name in self._completed:
+            raise CollectorError("cell %s is already complete" % name)
+        # Attempts advance only after a failure was disposed of. Handing out a
+        # fresh attempt on request is retry-until-clean: a cell could be run
+        # until it happened to yield ten good samples, with the abandoned
+        # attempts sitting in cells/ rather than quarantine/.
+        attempt = self._attempts.get(name, 0)
+        if attempt and not self._disposed.get(name):
+            raise CollectorError(
+                "cell %s already has attempt %d and no disposition released it" % (name, attempt)
+            )
+        attempt += 1
         self._attempts[name] = attempt
+        self._disposed.pop(name, None)
         self._save_state()
         return Cell(self, round_index, position, variant, attempt)
 
@@ -255,6 +291,10 @@ class Campaign:
                 with open(stop_file, "w", encoding="utf-8") as handle:
                     json.dump(record, handle, indent=2, sort_keys=True)
                     handle.write("\n")
+        # The cell that failed is the one a retry is released for, and only it.
+        for path in self.quarantined():
+            name = os.path.basename(path).rsplit("-attempt-", 1)[0]
+            self._disposed[name] = True
         self.stopped = False
         self.stop_reason = None
         self._save_state()

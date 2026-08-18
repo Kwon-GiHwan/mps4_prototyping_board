@@ -172,3 +172,77 @@ class CollectorRedTests(unittest.TestCase):
 
 if __name__ == "__main__":  # pragma: no cover
     unittest.main()
+
+
+class CollectorFailClosedTests(unittest.TestCase):
+    """The rules the module's own docstring promised and did not keep.
+
+    Every one of these was demonstrated against the shipped collector during
+    review: it raised on a bad run and then let the caller carry on as if the
+    run had never been offered.
+    """
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.campaign = collector.Campaign(self._tmp.name, IDENTITY)
+
+    def tearDown(self):
+        self._tmp.cleanup()
+
+    def test_an_invalid_run_ends_the_attempt_rather_than_being_re_offered(self):
+        cell = self.campaign.cell(1, 1, "Q")
+        for run_id in range(1, 5):
+            cell.record(sample(run_id))
+        with self.assertRaises(collector.CollectorError):
+            cell.record(sample(5, valid=False))
+        # The cell is over. Offering run 5 again is offering it to a dead cell.
+        with self.assertRaises(collector.CollectorError):
+            cell.record(sample(5))
+        self.assertTrue(self.campaign.stopped)
+        self.assertEqual(len(self.campaign.quarantined()), 1)
+        self.assertEqual(cell.samples, [])
+        self.assertFalse(cell.complete)
+
+    def test_a_boot_change_ends_the_attempt_the_same_way(self):
+        cell = self.campaign.cell(1, 1, "Q")
+        cell.record(sample(1))
+        with self.assertRaises(collector.CollectorError):
+            cell.record(sample(2, boot_id="boot-2"))
+        self.assertTrue(self.campaign.stopped)
+        self.assertEqual(len(self.campaign.quarantined()), 1)
+
+    def test_a_run_out_of_sequence_ends_the_attempt(self):
+        cell = self.campaign.cell(1, 1, "Q")
+        cell.record(sample(1))
+        with self.assertRaises(collector.CollectorError):
+            cell.record(sample(3))
+        self.assertTrue(self.campaign.stopped)
+
+    def test_a_sample_from_another_variant_is_refused(self):
+        cell = self.campaign.cell(1, 1, "Q")
+        with self.assertRaises(collector.CollectorError):
+            cell.record(dict(sample(1), variant="SQ"))
+        self.assertTrue(self.campaign.stopped)
+
+    def test_a_cell_is_not_retried_without_a_failure_and_a_disposition(self):
+        first = self.campaign.cell(1, 1, "Q")
+        first.record(sample(1))
+        # Asking for the same cell again, with no failure recorded, is the
+        # retry-until-clean move. It is refused.
+        with self.assertRaises(collector.CollectorError):
+            self.campaign.cell(1, 1, "Q")
+
+    def test_a_completed_cell_cannot_be_reopened(self):
+        cell = self.campaign.cell(1, 1, "Q")
+        for run_id in range(1, RUNS_PER_CELL + 1):
+            cell.record(sample(run_id))
+        with self.assertRaises(collector.CollectorError):
+            self.campaign.cell(1, 1, "Q")
+
+    def test_quarantine_moves_the_attempt_out_of_the_cell_tree(self):
+        cell = self.campaign.cell(1, 1, "Q")
+        path = cell.attempt_path(cell.attempt)
+        cell.record(sample(1))
+        self.assertTrue(os.path.isdir(path))
+        cell.fail("something")
+        self.assertFalse(os.path.exists(path), "the failed attempt is still in cells/")
