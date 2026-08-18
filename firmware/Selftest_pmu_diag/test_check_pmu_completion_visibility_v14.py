@@ -128,7 +128,7 @@ STATUS_FAULT_MASK = 0x314
 
 # The suite is frozen at this many assertions. Adding a named fixture is a
 # deliberate act, so the count moves with it and never drifts silently.
-EXPECTED_PASS_COUNT = 1130
+EXPECTED_PASS_COUNT = 1133
 
 CHECKER_PATH = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
@@ -3293,7 +3293,7 @@ def run_linked_image_suite(gate):
     # these passed until the addressing forms the real image actually uses were
     # surveyed: three of its stores go through [rB, rI, lsl #2], which the
     # address matcher never matched and therefore never examined.
-    def _after(text, anchor, inserted):
+    def _after(text, anchor, inserted):  # noqa: F811 - defined once, used above too
         rows = []
         for line in text.splitlines():
             rows.append(line)
@@ -3317,6 +3317,41 @@ def run_linked_image_suite(gate):
         ),
         "a register-indexed write into the interrupt-enable bank is refused",
         "cannot resolve",
+    )
+
+    # Three rules had no negative fixture at all until a mutation sweep found
+    # them: neutering the dominance check, dropping the predication refusal and
+    # dropping the jump-table range guard each left the whole suite green.
+    # These are the images that make each of them earn its keep.
+
+    # A path that reaches queue programming without passing the gate.
+    skipped = _replace_row(
+        linked_image("Q"), "310026a6:", "310026a6:\td157      \tbne.n\t31002758 <test_u85+0x140>"
+    )
+    expect_image_reject(
+        lambda: gate.verify_pre_run_dominance(skipped, linked_nm("Q")),
+        "an image with a path around the gate is refused",
+        "does not dominate",
+    )
+
+    # A gate inside an IT block runs only when the condition holds, so it is not
+    # a gate. Nothing else in the suite planted one.
+    predicated = _after(linked_image("Q"), "310026a8:", "310026a9:\tbf18      \tit\tne")
+    expect_image_reject(
+        lambda: gate.verify_pre_run_dominance(predicated, linked_nm("Q")),
+        "a predicated pre-program gate is refused",
+        "predicated",
+    )
+
+    # A table bound wider than the table data invents edges out of whatever
+    # follows it in memory.
+    overrun = _replace_row(
+        linked_image("Q"), "310010d2:", "310010d2:\t29c8      \tcmp\tr1, #200\t@ 0xc8"
+    )
+    expect_image_reject(
+        lambda: gate.verify_runner_mailbox_gate_image(overrun, linked_nm("Q")),
+        "a switch table read past its data is refused",
+        "outside the data",
     )
 
     # --- attacks on the image ------------------------------------------------
