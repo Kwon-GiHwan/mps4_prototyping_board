@@ -410,6 +410,19 @@ RESIDUAL_LIMITATIONS = DEFERRED_TO_LINKED_IMAGE + RETIRED_CLAIMS + (
 MAILBOX_SYMBOL = "pmu_completion_visibility_v14_mailbox"
 MAILBOX_RESET_SYMBOL = "v14_mailbox_reset"
 MAILBOX_PUBLISH_SYMBOL = "v14_mailbox_publish"
+# The functions the design lets write the mailbox at all. Everything else that
+# touches the magic is reading it, and "the runner never writes the mailbox" is
+# a claim of its own rather than a special case of this one.
+MAILBOX_WRITER_SYMBOLS = frozenset(
+    (
+        "v14_mailbox_publish",
+        "v14_mailbox_reset",
+        "v14_publish_failure",
+        "v14_publish_cleanup_failure",
+        "v14_publish_success",
+        "v14_publish_primary",
+    )
+)
 CONVERGE_SYMBOL = "v14_converge"
 PRIMARY_SYMBOL = {"Q": "v14_primary_q", "QS": "v14_primary_qs", "SQ": "v14_primary_sq"}
 
@@ -5941,32 +5954,104 @@ _ELF_TEST_MASK = re.compile(r"^tst(?:\.[nw])?\s+(\w+),\s*#(\d+)")
 # it does not see them. The real image stores through ``[rB, rI, lsl #2]`` in
 # three places, so this is a form the gate has to account for rather than one it
 # can pretend does not occur.
-_ELF_ANY_STORE = re.compile(
-    r"^(?:str|strb|strh|strd|stm[a-z]*|push)(?:\.[nw])?\s+(?:(\w+)\s*,\s*)?\[?(\w+)"
-)
-_ELF_STORE_MNEMONICS = ("str", "strb", "strh", "strd", "stm", "stmia", "stmdb", "push")
+_ELF_STORE_STEMS = ("str", "strb", "strh", "strd", "stm", "stmia", "stmdb", "stmea", "push")
+# The mnemonic carries its condition: ``it ne`` + ``strne.w`` disassembles with
+# mnemonic ``strne``, which a membership test against the bare stems misses
+# entirely -- so a predicated store was invisible to a rule that thought it was
+# looking at every store.
+_ELF_CONDITION_SUFFIX = re.compile(r"^(%s)(?:%s)?$" % ("|".join(_ELF_STORE_STEMS), "|".join(_CONDITIONS)))
+_ELF_REGISTER_LIST = re.compile(r"\{([^}]*)\}")
+_ELF_STORE_BASE = re.compile(r"\[\s*(\w+)")
+_ELF_STORE_OPERANDS = re.compile(r"^\w+(?:\.[nw])?\s+(.*)$")
 
 
 def _elf_is_store(insn) -> bool:
-    return insn.mnemonic in _ELF_STORE_MNEMONICS
+    return _ELF_CONDITION_SUFFIX.match(insn.mnemonic) is not None
+
+
+def _elf_store_registers(text: str) -> tuple[tuple[str, ...], str]:
+    """``(value registers, base register)`` for any store form.
+
+    Every register that could carry the stored value counts, because the rules
+    above ask "is the magic in there" and the forms differ in where they put it:
+    ``strd`` puts two registers before the bracket, ``stm`` puts a whole list
+    after the base, and ``push`` names no base at all. Reading only the first
+    operand is what let ``strd r5, r2, [r3, #132]`` through.
+    """
+
+    operands = _ELF_STORE_OPERANDS.match(text)
+    if operands is None:
+        return ((), "")
+    body = operands.group(1)
+
+    listed = _ELF_REGISTER_LIST.search(body)
+    if listed is not None:
+        # ``stm rB!, {rs}`` / ``push {rs}``: the list is the values, and
+        # whatever precedes it is the base -- sp when nothing precedes it.
+        values = [name.strip() for name in listed.group(1).split(",") if name.strip()]
+        head = body[: listed.start()].strip().rstrip(",").strip()
+        base = head.rstrip("!").strip() if head else "sp"
+        return (tuple(dict.fromkeys(values)), base)
+
+    base_hit = _ELF_STORE_BASE.search(body)
+    base = base_hit.group(1) if base_hit is not None else ""
+    head = body[: base_hit.start()] if base_hit is not None else body
+    values = [name.strip().rstrip("!") for name in head.split(",") if name.strip()]
+    return (tuple(dict.fromkeys(name for name in values if name)), base)
 
 
 def _elf_unresolved_store(code, states, index):
-    """``(value register, base register)`` when a store's address is unreadable.
+    """``(value registers, base register)`` when a store's address is unreadable.
 
-    Returns ``None`` when the store is one ``_ELF_MEMORY`` can resolve, which is
-    the only case the address-based rules are entitled to reason about.
+    Returns ``None`` only when ``_ELF_MEMORY`` can resolve the store, which is
+    the one case the address-based rules are entitled to reason about.
     """
 
     insn = code[index]
     if not _elf_is_store(insn):
         return None
-    if _ELF_MEMORY.match(insn.text):
+    if _ELF_MEMORY.match(insn.text) and not _ELF_REGISTER_LIST.search(insn.text):
         return None
-    hit = _ELF_ANY_STORE.match(insn.text)
-    if hit is None:
-        return ("", "")
-    return (hit.group(1) or "", hit.group(2) or "")
+    return _elf_store_registers(insn.text)
+
+
+def _elf_can_materialise(code, literals, value: int) -> bool:
+    """Whether this function can produce ``value`` at all.
+
+    A store cannot carry a constant the function has no way to make. Bounding
+    the fail-closed rule this way is what keeps it from refusing the whole C
+    runtime: every function has stores whose value this gate cannot read, and
+    refusing all of them refuses the image rather than an attack.
+
+    What it does not cover, and what the manifest says so: a value that arrives
+    from memory into a function that never names it.
+    """
+
+    if any(word == value for _address, word in literals):
+        return True
+    low, high = value & 0xFFFF, (value >> 16) & 0xFFFF
+    halves = set()
+    for insn in code:
+        for pattern in (_ELF_MOVW, _ELF_MOVT, _ELF_MOV_IMM):
+            hit = pattern.match(insn.text)
+            if hit is not None:
+                halves.add(int(hit.group(2)))
+    return value in halves or (low in halves and high in halves)
+
+
+def _elf_store_may_carry(states, index, registers, value: int) -> bool:
+    """Whether any of ``registers`` could hold ``value`` here.
+
+    A register the analysis cannot read counts as "could", because the
+    alternative is to skip it -- and skipping is how a magic assembled with
+    ``mov``+``orr`` walked past a rule that only refused registers it could
+    read as the magic.
+    """
+
+    for register in registers:
+        if register not in states[index] or states[index][register] == value:
+            return True
+    return not registers
 # ``tst`` is not the only way to test a mask: at -O1 GCC also writes
 # ``ands rX, rS, #mask``, which sets the flags the branch reads and happens to
 # park the result in a register nobody uses. A rule that knew only ``tst`` would
@@ -6458,6 +6543,22 @@ def verify_pre_run_dominance(
     if gate in predicated:
         raise fail("the pre-program gate is predicated: it may not run at all")
 
+    for index, insn in enumerate(code):
+        unresolved = _elf_unresolved_store(code, states, index)
+        if unresolved is None:
+            continue
+        base = states[index].get(unresolved[1])
+        if unresolved[1] in ("sp", "pc"):
+            continue
+        if base is None or elf_in_modelled_region(base):
+            # A store this gate cannot place, through a base that could be the
+            # NPU, is a queue write it cannot rule out -- and the whole claim
+            # below is about which writes exist.
+            raise fail(
+                "%s stores through an addressing form this gate cannot resolve at 0x%08x: %s"
+                % (entry_symbol, insn.addr, insn.text)
+            )
+
     programming = [
         index for index, role, is_write in accesses if is_write and role in QUEUE_PROGRAMMING_ROLES
     ]
@@ -6545,8 +6646,10 @@ def verify_primary_loop_image(disassembly_text: str, variant: str) -> dict:
         text = code[index].text
         if _ELF_CALL.match(text):
             raise fail("the %s primary loop calls out per iteration: %s" % (variant, text))
-        store = _ELF_MEMORY.match(text)
-        if store is not None and store.group(1) == "str":
+        # Any store, in any addressing form. Matching only [rB, #imm] meant a
+        # register-indexed, predicated or multiple store was not refused here --
+        # it was not seen.
+        if _elf_is_store(code[index]):
             raise fail("the %s primary loop stores per iteration: %s" % (variant, text))
 
     # Which register each of the loop's loads landed in, so the tests below are
@@ -6786,8 +6889,7 @@ def verify_convergence_tail_image(objdump_text: str) -> dict:
         text = code[index].text
         if _ELF_CALL.match(text):
             raise fail("the convergence tail calls out per iteration: %s" % text)
-        store = _ELF_MEMORY.match(text)
-        if store is not None and store.group(1) == "str":
+        if _elf_is_store(code[index]):
             raise fail("the convergence tail stores per iteration: %s" % text)
     if any(role in ("QSIZE", "DWT_CYCCNT") for _index, role, _w in in_loop):
         raise fail("the convergence tail reaches QSIZE or the cycle counter per iteration")
@@ -7105,6 +7207,17 @@ def verify_runner_mailbox_gate_image(objdump_text: str, nm_text: str) -> dict:
             continue
         accesses.append((index, word, hit.group(1) == "str"))
 
+    for index, insn in enumerate(code):
+        unresolved = _elf_unresolved_store(code, states, index)
+        if unresolved is None or unresolved[1] in ("sp", "pc"):
+            continue
+        base = states[index].get(unresolved[1])
+        if base is not None and mailbox <= base < mailbox + 4 * APPENDIX_WORDS:
+            raise fail(
+                "the runner stores into the mailbox at 0x%08x through an addressing form this "
+                "gate cannot resolve: %s" % (insn.addr, insn.text)
+            )
+
     written = [(index, word) for index, word, is_write in accesses if is_write]
     if written:
         raise fail(
@@ -7410,6 +7523,7 @@ def verify_mailbox_publication_image(objdump_text: str, nm_text: str) -> dict:
                 unmodelled.append(name)
             continue
         states = elf_register_values(code, literals, successors)
+        reachable_magic = _elf_can_materialise(code, literals, MAILBOX_VALID)
         for index, insn in enumerate(code):
             unresolved = _elf_unresolved_store(code, states, index)
             if unresolved is not None:
@@ -7417,17 +7531,48 @@ def verify_mailbox_publication_image(objdump_text: str, nm_text: str) -> dict:
                 # store it through an addressing form the gate skips. So a store
                 # carrying the magic is refused whenever its destination cannot
                 # be read, whatever shape it is written in.
-                value_register = unresolved[0]
-                if value_register and states[index].get(value_register) == MAILBOX_VALID:
+                # A store can only reach the mailbox through a base that could
+                # be the mailbox. The stack pointer never is, and a base that
+                # resolves elsewhere is elsewhere; what is left is a base this
+                # gate cannot read, and that one is refused.
+                # Scoped to the design's own mailbox writers. The runner
+                # legitimately moves the magic -- it copies mailbox word 33 into
+                # its record through `stmia ip!, {r0-r3}` with an unresolved
+                # base -- so refusing every unreadable store that could carry
+                # the magic refuses the real image. That the runner never writes
+                # the mailbox is a separate claim, proven by
+                # verify_runner_mailbox_gate_image over resolved addresses.
+                base = states[index].get(unresolved[1])
+                could_reach_mailbox = unresolved[1] not in ("sp", "pc") and (
+                    base is None
+                    or mailbox <= base < mailbox + 4 * APPENDIX_WORDS
+                )
+                if (
+                    name in MAILBOX_WRITER_SYMBOLS
+                    and reachable_magic
+                    and could_reach_mailbox
+                    and _elf_store_may_carry(states, index, unresolved[0], MAILBOX_VALID)
+                ):
                     raise fail(
-                        "%s stores the mailbox magic at 0x%08x through an addressing form this "
-                        "gate cannot resolve: %s" % (name, insn.addr, insn.text)
+                        "%s may store the mailbox magic at 0x%08x through an addressing form "
+                        "this gate cannot resolve: %s" % (name, insn.addr, insn.text)
                     )
                 continue
             hit = _ELF_MEMORY.match(insn.text)
-            if hit is None or hit.group(1) != "str":
+            if hit is None or not hit.group(1).startswith("str"):
                 continue
-            if states[index].get(hit.group(2)) != MAILBOX_VALID:
+            stored = states[index].get(hit.group(2))
+            if stored is None:
+                # An unreadable value into a readable address is the same gap
+                # from the other side, so it is refused rather than skipped.
+                base = states[index].get(hit.group(3))
+                if base is not None and base + int(hit.group(4) or 0) == target:
+                    raise fail(
+                        "%s stores a value this gate cannot read into the mailbox validity word "
+                        "at 0x%08x: %s" % (name, insn.addr, insn.text)
+                    )
+                continue
+            if stored != MAILBOX_VALID:
                 continue
             base = states[index].get(hit.group(3))
             address = None if base is None else base + int(hit.group(4) or 0)
@@ -7470,6 +7615,15 @@ def verify_mailbox_publication_image(objdump_text: str, nm_text: str) -> dict:
             else "functions this gate can build a control-flow graph for"
         ),
         "names_the_magic_but_is_not_modelled": sorted(unmodelled),
+        # The one way a magic store could still hide: a function that never
+        # names the constant, storing a value it received from memory through an
+        # address this gate cannot read. Stated rather than left implicit.
+        "writer_scope": sorted(MAILBOX_WRITER_SYMBOLS),
+        "residual": (
+            "the unreadable-store refusal is scoped to the design's mailbox writers; a magic "
+            "arriving from memory into one of them, or a write from outside that set through an "
+            "address this gate cannot read, is outside it"
+        ),
     }
 
 

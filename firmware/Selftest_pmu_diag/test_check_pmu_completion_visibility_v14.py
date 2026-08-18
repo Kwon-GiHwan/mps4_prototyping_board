@@ -128,7 +128,7 @@ STATUS_FAULT_MASK = 0x314
 
 # The suite is frozen at this many assertions. Adding a named fixture is a
 # deliberate act, so the count moves with it and never drifts silently.
-EXPECTED_PASS_COUNT = 1138
+EXPECTED_PASS_COUNT = 1146
 
 CHECKER_PATH = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
@@ -3424,6 +3424,73 @@ def run_linked_image_suite(gate):
         lambda: gate.verify_record_layout_image(shifted, linked_nm("Q")),
         "a record whose appendix does not end it is refused",
         "does not end the record",
+    )
+
+    # Independent review evaded the first store-form fix four ways. Each is a
+    # store the gate has to see; the shapes are what differ.
+    for label, rows in (
+        ("IT-predicated", ["310023d5:\tbf18      \tit\tne",
+                           "310023d6:\tf8c3 2084 \tstrne.w\tr2, [r3, #132]"]),
+        ("stm with writeback", ["310023d5:\te8a3 0004 \tstmia.w\tr3!, {r2}"]),
+        ("strd second register", ["310023d5:\te9c3 5284 \tstrd\tr5, r2, [r3, #132]"]),
+    ):
+        expect_image_reject(
+            lambda rows=rows: gate.verify_mailbox_publication_image(
+                _after(linked_image("Q"), "310023d4:", "\n".join(rows)), linked_nm("Q")
+            ),
+            "a second magic store written as %s is refused" % label,
+            "magic",
+        )
+
+    # And a magic the value analysis cannot follow, stored with a plain str:
+    # the value side was fail-open, so an unreadable value was skipped.
+    expect_image_reject(
+        lambda: gate.verify_mailbox_publication_image(
+            _after(linked_image("Q"), "310023d4:",
+                   "310023d5:\tf04f 5456 \tmov.w\tr4, #1446232064\n"
+                   "310023d6:\tf044 444d \torr.w\tr4, r4, #1279262720\n"
+                   "310023d7:\tf8c3 4084 \tstr.w\tr4, [r3, #132]"),
+            linked_nm("Q"),
+        ),
+        "a magic built from an unreadable value is refused",
+        "cannot read",
+    )
+
+    # The same blind spot in the four rules the first fix did not reach.
+    expect_image_reject(
+        lambda: gate.verify_pre_run_dominance(
+            _after(linked_image("Q"), "310026a6:",
+                   "310026a7:\tf843 2023 \tstr.w\tr2, [r3, r3, lsl #2]"),
+            linked_nm("Q"),
+        ),
+        "a queue write before the gate written register-indexed is refused",
+        "resolve",
+    )
+    expect_image_reject(
+        lambda: gate.verify_convergence_tail_image(
+            _after(linked_image("Q"), "31002552:",
+                   "31002553:\tf841 2003 \tstr.w\tr2, [r1, r3, lsl #2]")
+        ),
+        "a per-iteration store written register-indexed is refused",
+        "stores per iteration",
+    )
+    expect_image_reject(
+        lambda: gate.verify_primary_loop_image(
+            _after(linked_image("Q"), "310024d2:",
+                   "310024d3:\tf84c 2023 \tstr.w\tr2, [ip, r3, lsl #2]"),
+            "Q",
+        ),
+        "a primary-loop store written register-indexed is refused",
+        "stores per iteration",
+    )
+    expect_image_reject(
+        lambda: gate.verify_runner_mailbox_gate_image(
+            _after(linked_image("Q"), "31001962:",
+                   "31001963:\tf842 3023 \tstr.w\tr3, [r2, r3, lsl #2]"),
+            linked_nm("Q"),
+        ),
+        "a runner write to the mailbox written register-indexed is refused",
+        "resolve",
     )
 
     # --- attacks on the image ------------------------------------------------
