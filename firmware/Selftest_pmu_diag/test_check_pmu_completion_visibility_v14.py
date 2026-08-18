@@ -128,7 +128,7 @@ STATUS_FAULT_MASK = 0x314
 
 # The suite is frozen at this many assertions. Adding a named fixture is a
 # deliberate act, so the count moves with it and never drifts silently.
-EXPECTED_PASS_COUNT = 1146
+EXPECTED_PASS_COUNT = 1147
 
 CHECKER_PATH = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
@@ -3491,6 +3491,25 @@ def run_linked_image_suite(gate):
         ),
         "a runner write to the mailbox written register-indexed is refused",
         "resolve",
+    )
+
+    # A start written on a branch arm. It runs after the gate and before every
+    # queue write on that path, but it dominates none of them -- which is what
+    # the filter tested for, so it was skipped. Written by replacing two rows
+    # rather than inserting: a fabricated address that collides with a real one
+    # corrupts the CFG and the fixture then proves nothing.
+    started_on_an_arm = linked_image("Q").replace(
+        _asm_line(linked_image("Q"), "3100271c:") + "\n"
+        + _asm_line(linked_image("Q"), "3100271e:"),
+        "3100271c:\t4b63      \tldr\tr3, [pc, #396]\t@ (310028a8 <test_u85+0x290>)\n"
+        "3100271e:\t2201      \tmovs\tr2, #1\n"
+        "31002720:\t609a      \tstr\tr2, [r3, #8]",
+        1,
+    )
+    expect_image_reject(
+        lambda: gate.verify_pre_run_dominance(started_on_an_arm, linked_nm("Q")),
+        "a start on a branch arm between the gate and programming is refused",
+        "start the NPU",
     )
 
     # --- attacks on the image ------------------------------------------------

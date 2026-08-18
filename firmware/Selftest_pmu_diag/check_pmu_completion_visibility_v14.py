@@ -6257,6 +6257,20 @@ def elf_cfg(code, data=None) -> tuple[tuple[int, ...], ...]:
     return tuple(successors)
 
 
+def elf_reaches(successors, start: int) -> frozenset:
+    """Every index reachable from ``start`` by following control flow."""
+
+    seen = {start}
+    pending = [start]
+    while pending:
+        node = pending.pop()
+        for out in successors[node]:
+            if out not in seen:
+                seen.add(out)
+                pending.append(out)
+    return frozenset(seen)
+
+
 def _predecessors(successors) -> list[list[int]]:
     preds: list[list[int]] = [[] for _ in successors]
     for index, outs in enumerate(successors):
@@ -6580,7 +6594,12 @@ def verify_pre_run_dominance(
             continue
         if gate not in dominators[index]:
             continue
-        if not any(index in dominators[write] for write in programming):
+        # Reachability, not dominance. The design forbids a state transition
+        # between the gate and the programming writes on *any* path; asking
+        # instead whether the CMD write dominates a programming write skips
+        # every one written on a branch arm, which is where anyone putting one
+        # there would put it.
+        if not (elf_reaches(successors, index) & set(programming)):
             continue
         source = _ELF_MEMORY.match(code[index].text).group(2)
         value = states[index].get(source)
