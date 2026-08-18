@@ -61,25 +61,174 @@ SCHEMA_VERSION = 14
 BUILD_ID = 0x34314950
 MAILBOX_VALID = 0x5631344D
 VARIANTS = {"Q": 1, "QS": 2, "SQ": 3}
+QSIZE_EXPECTED = 0x110
+U32_INVALID = 0xFFFFFFFF
+
+# The contract's own STATUS bits and enums, written here rather than imported,
+# for the same reason the appendix order is.
+STATUS_STATE = 0x001
+STATUS_IRQ_RAISED = 0x002
+STATUS_RESET = 0x008
+STATUS_CMD_END = 0x020
+STATUS_FAULT_MASK = 0x314
+PRIMARY_OBSERVED = 1
+CONVERGENCE_SUCCESS = 1
+PHASE_NONE = 0
+REASON_NONE = 0
+CATEGORY_Q_FIRST = "Q_FIRST"
+CATEGORY_S5_FIRST = "S5_FIRST"
+CATEGORY_SAME_ITERATION = "SAME_ITERATION"
 
 
-def canonical_appendix(variant):
-    """A well-formed appendix: distinct values, so a swap cannot go unnoticed."""
+def canonical_appendix(variant, category=None):
+    """The appendix a run that actually succeeded produces.
 
-    values = {name: 0x1000 + index for index, name in enumerate(APPENDIX_ORDER)}
-    values["variant_id"] = VARIANTS[variant]
-    values["qsize_expected"] = 0x110
-    values["primary_result"] = 1                  # completed
-    values["convergence_result"] = 1
-    values["convergence_timeout"] = 0
-    values["failure_phase"] = 0
-    values["failure_reason"] = 0
-    values["first_q_done"] = 1
-    values["first_cmd_end_reached"] = 1
-    values["first_irq_raised"] = 1
-    values["first_state"] = 0
-    values["mailbox_valid"] = MAILBOX_VALID
+    This is the single source of truth for a valid V14 frame, and every
+    positive test builds on it. It used to be `0x1000 + index` filler, which
+    made a "successful" run whose pre-submit STATUS said the NPU was running
+    with a stale interrupt raised, whose first tuple carried reset_status, and
+    whose convergence tuple had a parse fault and no cmd_end. Forty-two tests
+    stood on a frame the firmware contract says must have failed closed at
+    three separate gates, so every one of them was asking the wrong question.
+
+    Each STATUS word below satisfies the gate that reads it:
+
+      pre_program   stopped, no reset, no fault
+      pre_submit    all of the above, plus no stale irq and no stale cmd_end
+      first tuple   whatever the variant observed first, and nothing else
+      convergence   qread complete, cmd_end, irq raised, stopped, no fault
+    """
+
+    if category is None:
+        category = None if variant == "Q" else CATEGORY_SAME_ITERATION
+
+    submit_at = 0x00010000
+    entry_at = submit_at + 66
+    iterations = 41
+    observed_at = entry_at + 26 * iterations
+
+    values = {
+        "variant_id": VARIANTS[variant],
+        "qsize_expected": QSIZE_EXPECTED,
+        # Stopped, nothing raised, nothing faulted: the two pre-run gates.
+        "pre_program_status": 0x000,
+        "pre_submit_status": 0x000,
+        "t_submit_after_cmd": submit_at,
+        "t_primary_entry": entry_at,
+        "t_first_observation": observed_at,
+        "primary_result": PRIMARY_OBSERVED,
+        "primary_iterations": iterations,
+        "convergence_result": CONVERGENCE_SUCCESS,
+        "convergence_iterations": 7,
+        # The tail's own tuple, satisfying all four conditions at once.
+        "convergence_final_qread": QSIZE_EXPECTED,
+        "convergence_final_status": STATUS_CMD_END | STATUS_IRQ_RAISED,
+        "convergence_timeout": 0,
+        # A run that succeeded publishes no failure tuple.
+        "failure_phase": PHASE_NONE,
+        "failure_reason": REASON_NONE,
+        "failure_qread": U32_INVALID,
+        "failure_status": U32_INVALID,
+        # The V12 hard bypass: the vector is installed and never enabled, and
+        # no interrupt is ever delivered.
+        "installed_vector": 0x310025A1,
+        "nvic_enabled_before_submit": 0,
+        "nvic_pending_after_initial_clear": 0,
+        "nvic_active_before_submit": 0,
+        "irq_triggered_before_submit": 0,
+        "nvic_pending_before_final_clear": 0,
+        "nvic_pending_after_final_clear": 0,
+        "nvic_active_after_cleanup": 0,
+        "irq_triggered_after_cleanup": 0,
+        "mailbox_valid": MAILBOX_VALID,
+    }
+    values.update(first_tuple(variant, category))
     return values
+
+
+def first_tuple(variant, category):
+    """The first-observation words for one variant and one read-order outcome.
+
+    Q reads a single register, so it has no STATUS to report and publishes the
+    sentinel rather than a number nobody measured.
+    """
+
+    if variant == "Q":
+        return {
+            "first_qread": QSIZE_EXPECTED,
+            "first_status": U32_INVALID,
+            "first_q_done": 1,
+            "first_cmd_end_reached": U32_INVALID,
+            "first_irq_raised": U32_INVALID,
+            "first_state": U32_INVALID,
+        }
+    q_done = category in (CATEGORY_Q_FIRST, CATEGORY_SAME_ITERATION)
+    cmd_end = category in (CATEGORY_S5_FIRST, CATEGORY_SAME_ITERATION)
+    status = (STATUS_CMD_END if cmd_end else 0) | (STATUS_IRQ_RAISED if cmd_end else 0)
+    return {
+        "first_qread": QSIZE_EXPECTED if q_done else QSIZE_EXPECTED - 1,
+        "first_status": status,
+        "first_q_done": 1 if q_done else 0,
+        "first_cmd_end_reached": 1 if cmd_end else 0,
+        "first_irq_raised": 1 if cmd_end else 0,
+        "first_state": 0,
+    }
+
+
+# --- named mutations -------------------------------------------------------
+#
+# Each takes the canonical appendix and breaks exactly one thing, so a negative
+# fixture is a stated difference from a valid frame rather than a second frame
+# somebody wrote by hand.
+
+def mutate_pre_submit_running(appendix):
+    appendix["pre_submit_status"] |= STATUS_STATE
+    return appendix
+
+
+def mutate_pre_submit_stale_irq(appendix):
+    appendix["pre_submit_status"] |= STATUS_IRQ_RAISED
+    return appendix
+
+
+def mutate_pre_submit_stale_cmd_end(appendix):
+    appendix["pre_submit_status"] |= STATUS_CMD_END
+    return appendix
+
+
+def mutate_pre_program_fault(appendix):
+    appendix["pre_program_status"] |= STATUS_FAULT_MASK & 0x010
+    return appendix
+
+
+def mutate_first_tuple_reset(appendix):
+    appendix["first_status"] |= STATUS_RESET
+    return appendix
+
+
+def mutate_convergence_not_converged(appendix):
+    # cmd_end clear: the tail declared success on a tuple that does not carry
+    # the four conditions.
+    appendix["convergence_final_status"] &= ~STATUS_CMD_END & 0xFFFFFFFF
+    return appendix
+
+
+def mutate_convergence_qread_short(appendix):
+    appendix["convergence_final_qread"] = QSIZE_EXPECTED - 1
+    return appendix
+
+
+def mutate_nvic_enabled(appendix):
+    appendix["nvic_enabled_before_submit"] = 1
+    return appendix
+
+
+def mutate_first_tuple_observed_nothing(appendix):
+    appendix["first_q_done"] = 0
+    appendix["first_cmd_end_reached"] = 0
+    appendix["first_status"] = 0
+    appendix["first_qread"] = QSIZE_EXPECTED - 1
+    return appendix
 
 
 def build_frame(variant="Q", appendix=None, seq=7, rc=0, total_words=TOTAL_WORDS,
@@ -289,13 +438,14 @@ class ClassifierRedTests(unittest.TestCase):
                            v14.CATEGORY_SAME_ITERATION))
 
     def test_the_category_follows_the_first_tuple(self):
-        cases = ((1, 0, v14.CATEGORY_Q_FIRST), (0, 1, v14.CATEGORY_S5_FIRST),
-                 (1, 1, v14.CATEGORY_SAME_ITERATION))
-        for q_done, cmd_end, expected in cases:
-            appendix = canonical_appendix("QS")
-            appendix["first_q_done"] = q_done
-            appendix["first_cmd_end_reached"] = cmd_end
-            self.assertEqual(self.classify("QS", appendix)["category"], expected)
+        # Built through the canonical builder rather than by setting two flags:
+        # the flags, the STATUS they came from and the queue cursor are one
+        # observation, and a fixture that moves only the flags describes a
+        # frame the firmware cannot produce.
+        for category in (v14.CATEGORY_Q_FIRST, v14.CATEGORY_S5_FIRST,
+                         v14.CATEGORY_SAME_ITERATION):
+            appendix = canonical_appendix("QS", category)
+            self.assertEqual(self.classify("QS", appendix)["category"], category)
 
     def test_q_only_first_tuple_has_no_status_derived_fields(self):
         fields = self.classify("Q")["first_tuple_fields"]
@@ -573,3 +723,83 @@ class ManifestContainmentTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as root:
             document = build_manifest(root, artifacts={"generated/u85.c": b"source"})
             self.assertEqual(v14.verify_manifest(document, root)["artifacts_verified"], 1)
+
+
+class ContractValidityTests(unittest.TestCase):
+    """A valid fixture is only worth having if an invalid one is refused.
+
+    Each case takes the canonical frame and breaks one thing the firmware
+    contract says must hold. Before these existed the classifier read none of
+    these words, so the canonical frame could violate three gates at once and
+    still be classified `sample_valid=True`.
+    """
+
+    def classify(self, variant="QS", mutate=None, category=None):
+        appendix = canonical_appendix(variant, category)
+        if mutate is not None:
+            appendix = mutate(appendix)
+        return v14.classify_payload(v14.parse_payload(build_frame(variant, appendix)))
+
+    def test_the_canonical_frame_is_valid_and_carries_no_problems(self):
+        for variant in VARIANTS:
+            doc = self.classify(variant)
+            self.assertEqual(doc["problems"], [], variant)
+            self.assertTrue(doc["sample_valid"], variant)
+
+    def test_a_pre_submit_baseline_that_is_running_is_refused(self):
+        doc = self.classify(mutate=mutate_pre_submit_running)
+        self.assertFalse(doc["sample_valid"])
+        self.assertTrue(doc["problems"])
+
+    def test_a_stale_interrupt_in_the_baseline_is_refused(self):
+        doc = self.classify(mutate=mutate_pre_submit_stale_irq)
+        self.assertFalse(doc["sample_valid"])
+
+    def test_a_stale_cmd_end_in_the_baseline_is_refused(self):
+        doc = self.classify(mutate=mutate_pre_submit_stale_cmd_end)
+        self.assertFalse(doc["sample_valid"])
+
+    def test_a_fault_in_the_pre_program_gate_is_refused(self):
+        doc = self.classify(mutate=mutate_pre_program_fault)
+        self.assertFalse(doc["sample_valid"])
+
+    def test_a_first_tuple_carrying_reset_is_refused(self):
+        doc = self.classify(mutate=mutate_first_tuple_reset)
+        self.assertFalse(doc["sample_valid"])
+
+    def test_a_convergence_tuple_missing_cmd_end_is_refused(self):
+        doc = self.classify(mutate=mutate_convergence_not_converged)
+        self.assertFalse(doc["sample_valid"])
+
+    def test_a_convergence_tuple_whose_queue_is_short_is_refused(self):
+        doc = self.classify(mutate=mutate_convergence_qread_short)
+        self.assertFalse(doc["sample_valid"])
+
+    def test_an_enabled_interrupt_before_submit_is_refused(self):
+        doc = self.classify(mutate=mutate_nvic_enabled)
+        self.assertFalse(doc["sample_valid"])
+
+    def test_a_first_tuple_that_observed_nothing_is_refused(self):
+        doc = self.classify(mutate=mutate_first_tuple_observed_nothing)
+        self.assertFalse(doc["sample_valid"])
+
+    def test_a_first_tuple_that_disagrees_with_its_own_status_is_refused(self):
+        appendix = canonical_appendix("QS", CATEGORY_SAME_ITERATION)
+        # cmd_end asserted in the flag while the STATUS it came from says
+        # otherwise: the two are the same load and cannot disagree.
+        appendix["first_status"] &= ~STATUS_CMD_END & 0xFFFFFFFF
+        doc = v14.classify_payload(v14.parse_payload(build_frame("QS", appendix)))
+        self.assertFalse(doc["sample_valid"])
+
+    def test_q_publishes_the_sentinel_rather_than_a_status_it_never_read(self):
+        appendix = canonical_appendix("Q")
+        self.assertEqual(appendix["first_status"], U32_INVALID)
+        appendix["first_status"] = 0x20
+        doc = v14.classify_payload(v14.parse_payload(build_frame("Q", appendix)))
+        self.assertFalse(doc["sample_valid"])
+
+    def test_timestamps_must_advance_through_the_run(self):
+        appendix = canonical_appendix("QS")
+        appendix["t_first_observation"] = appendix["t_primary_entry"] - 1
+        doc = v14.classify_payload(v14.parse_payload(build_frame("QS", appendix)))
+        self.assertFalse(doc["sample_valid"])

@@ -317,6 +317,89 @@ def classify_payload(result: PmuCompletionVisibilityV14Result) -> dict:
             % (result.convergence_timeout, result.convergence_result)
         )
 
+    q_only = result.variant == "Q"
+
+    # --- the words themselves -------------------------------------------
+    #
+    # Everything above reads results and counts. These read the STATUS values
+    # the firmware published, which is where a frame can satisfy every count
+    # and still describe a run the contract says failed closed. The classifier
+    # read none of them until the canonical fixture turned out to be such a
+    # frame: pre-submit said running with a stale interrupt, the first tuple
+    # carried reset_status, and the convergence tuple had a parse fault and no
+    # cmd_end -- and it was classified valid.
+
+    if submitted:
+        for label, status in (
+            ("pre_program_status", result.pre_program_status),
+            ("pre_submit_status", result.pre_submit_status),
+        ):
+            if status & (STATUS_STATE | STATUS_RESET | STATUS_FAULT_MASK):
+                problems.append("%s is not a stopped, unfaulted baseline: 0x%03X" % (label, status))
+        # The submit-side baseline additionally has to be free of the two stale
+        # bits, because a run that starts on them measures the previous one.
+        if result.pre_submit_status & (STATUS_IRQ_RAISED | STATUS_CMD_END):
+            problems.append(
+                "pre_submit_status carries a stale irq or cmd_end: 0x%03X" % result.pre_submit_status
+            )
+
+    if primary_ok:
+        if q_only:
+            # Q read one register. Anything else in its tuple is a number
+            # nobody measured, so the sentinel is what belongs there.
+            for label, value in (
+                ("first_status", result.first_status),
+                ("first_cmd_end_reached", result.first_cmd_end_reached),
+                ("first_irq_raised", result.first_irq_raised),
+                ("first_state", result.first_state),
+            ):
+                if value != U32_INVALID:
+                    problems.append("Q published %s=0x%X for a register it never read" % (label, value))
+            if result.first_q_done != 1 or result.first_qread != QSIZE_EXPECTED:
+                problems.append("Q observed completion without a complete queue cursor")
+        else:
+            status = result.first_status
+            if status & (STATUS_RESET | STATUS_FAULT_MASK):
+                problems.append("the first tuple carries reset or fault: 0x%03X" % status)
+            # The flags and the STATUS are the same load and cannot disagree.
+            if bool(status & STATUS_CMD_END) != bool(result.first_cmd_end_reached):
+                problems.append("first_cmd_end_reached disagrees with the STATUS it came from")
+            if bool(status & STATUS_IRQ_RAISED) != bool(result.first_irq_raised):
+                problems.append("first_irq_raised disagrees with the STATUS it came from")
+            if (status & STATUS_STATE) != result.first_state:
+                problems.append("first_state disagrees with the STATUS it came from")
+            if bool(result.first_q_done) != (result.first_qread == QSIZE_EXPECTED):
+                problems.append("first_q_done disagrees with the queue cursor it came from")
+            if not result.first_q_done and not result.first_cmd_end_reached:
+                problems.append("the primary loop observed neither register and stopped anyway")
+        # A run cannot observe before it entered, nor enter before it submitted.
+        if not (result.t_submit_after_cmd <= result.t_primary_entry <= result.t_first_observation):
+            problems.append("the run's timestamps do not advance through it")
+
+    if convergence_ok:
+        status = result.convergence_final_status
+        required = STATUS_CMD_END | STATUS_IRQ_RAISED
+        if status & required != required:
+            problems.append("the convergence tuple does not carry cmd_end and irq: 0x%03X" % status)
+        if status & (STATUS_STATE | STATUS_RESET | STATUS_FAULT_MASK):
+            problems.append("the convergence tuple is running, resetting or faulted: 0x%03X" % status)
+        if result.convergence_final_qread != QSIZE_EXPECTED:
+            problems.append(
+                "the convergence tuple's queue cursor is 0x%X, not the workload's 0x%X"
+                % (result.convergence_final_qread, QSIZE_EXPECTED)
+            )
+
+    # The V12 hard bypass, as the frame reports it.
+    if submitted and result.nvic_enabled_before_submit:
+        problems.append("the NPU interrupt was enabled before submit")
+    for label, value in (
+        ("nvic_pending_after_initial_clear", result.nvic_pending_after_initial_clear),
+        ("nvic_active_before_submit", result.nvic_active_before_submit),
+        ("irq_triggered_before_submit", result.irq_triggered_before_submit),
+    ):
+        if submitted and value:
+            problems.append("%s is set: the run did not start from a clean interrupt state" % label)
+
     succeeded = (
         not problems
         and result.failure_phase == PHASE_NONE
@@ -341,7 +424,6 @@ def classify_payload(result: PmuCompletionVisibilityV14Result) -> dict:
 
     # Q observes one register, so its first tuple has no STATUS-derived words to
     # believe even when the tuple itself is valid.
-    q_only = result.variant == "Q"
     tuple_fields = {
         "first_qread": phases["first_tuple"],
         "first_q_done": phases["first_tuple"],
