@@ -13,6 +13,10 @@ below, and only over the prefix this module has verified is unchanged.
 
 from __future__ import annotations
 
+import argparse
+import hashlib
+import json
+import os
 import struct
 from dataclasses import dataclass, field
 
@@ -387,3 +391,147 @@ def classify_payload(result: PmuCompletionVisibilityV14Result) -> dict:
         "not_performance_metric": True,
         "problems": problems,
     }
+
+
+# ---------------------------------------------------------------------------
+# The build manifest
+#
+# The manifest says which artifacts a build declared and what they hashed to.
+# Verifying it means recomputing, not reading: a stored boolean is the build's
+# opinion of itself, and a stored digest is only evidence once the bytes it
+# claims to describe have been hashed again.
+# ---------------------------------------------------------------------------
+
+CANONICAL_JSON = "v14-canonical-json-v1"
+MANIFEST_SELF_HASH_KEY = "manifest_self_hash"
+
+
+def canonical_json_bytes(document: dict) -> bytes:
+    """The one serialisation both sides hash.
+
+    Sorted keys, no incidental whitespace, no NaN, one trailing newline. Two
+    parties that disagree about any of these disagree about every digest they
+    exchange, so the rule is named and written once.
+    """
+
+    return (
+        json.dumps(document, sort_keys=True, separators=(",", ":"), allow_nan=False).encode(
+            "utf-8"
+        )
+        + b"\n"
+    )
+
+
+def manifest_self_hash(document: dict) -> str:
+    """The digest of the manifest with its own hash key removed."""
+
+    preimage = {key: value for key, value in document.items() if key != MANIFEST_SELF_HASH_KEY}
+    return hashlib.sha256(canonical_json_bytes(preimage)).hexdigest()
+
+
+def verify_manifest(document: dict, artifact_root: str) -> dict:
+    """Recompute everything the manifest asserts, or refuse it by name."""
+
+    for key in ("variant", "schema_version", "build_id", "declared_artifacts"):
+        if key not in document:
+            raise ProtocolError("manifest carries no %s" % key)
+    if document.get("canonical_json") != CANONICAL_JSON:
+        raise ProtocolError(
+            "manifest declares canonical form %r, this reader implements %r"
+            % (document.get("canonical_json"), CANONICAL_JSON)
+        )
+    if document["schema_version"] != SCHEMA_VERSION:
+        raise ProtocolError(
+            "manifest declares schema %r, not %d" % (document["schema_version"], SCHEMA_VERSION)
+        )
+    if int(str(document["build_id"]), 16) != BUILD_ID:
+        raise ProtocolError("manifest declares build %r" % (document["build_id"],))
+    if document["variant"] not in VARIANT_BY_ID.values():
+        raise ProtocolError("manifest declares variant %r" % (document["variant"],))
+
+    stored = document.get(MANIFEST_SELF_HASH_KEY)
+    if not isinstance(stored, str) or len(stored) != 64:
+        raise ProtocolError("manifest carries no usable %s" % MANIFEST_SELF_HASH_KEY)
+    recomputed = manifest_self_hash(document)
+    if recomputed != stored:
+        raise ProtocolError(
+            "manifest self-hash mismatch: stored %s, recomputed %s" % (stored, recomputed)
+        )
+
+    table = document["declared_artifacts"]
+    if not isinstance(table, dict) or not table:
+        raise ProtocolError("manifest declares no artifacts")
+    root = os.path.abspath(artifact_root)
+    checked = {}
+    for name in sorted(table):
+        entry = table[name]
+        if not isinstance(entry, dict) or "sha256" not in entry or "bytes" not in entry:
+            raise ProtocolError("artifact %s is not declared with a digest and a size" % name)
+        if os.path.isabs(name) or ".." in name.split("/"):
+            raise ProtocolError("artifact %s is not a path inside the build" % name)
+        path = os.path.join(root, name)
+        if not os.path.isfile(path):
+            raise ProtocolError("artifact %s is declared and absent" % name)
+        with open(path, "rb") as handle:
+            payload = handle.read()
+        digest = hashlib.sha256(payload).hexdigest()
+        if digest != entry["sha256"]:
+            raise ProtocolError(
+                "artifact %s hashes to %s, the manifest declares %s"
+                % (name, digest, entry["sha256"])
+            )
+        if len(payload) != entry["bytes"]:
+            raise ProtocolError(
+                "artifact %s is %d bytes, the manifest declares %s"
+                % (name, len(payload), entry["bytes"])
+            )
+        checked[name] = digest
+
+    # Files the build left behind that the manifest never declared are not a
+    # digest mismatch and are not silence either: a reader that hashes only what
+    # it was told about cannot notice a second image sitting beside the first.
+    present = set()
+    for directory, _subdirectories, files in os.walk(root):
+        for filename in files:
+            relative = os.path.relpath(os.path.join(directory, filename), root)
+            present.add(relative.replace(os.sep, "/"))
+    undeclared = sorted(present - set(table))
+
+    return {
+        "variant": document["variant"],
+        "artifacts_verified": len(checked),
+        "manifest_self_hash_recomputed": recomputed,
+        "undeclared_files_present": undeclared,
+        "artifact_bundle_sha256": hashlib.sha256(
+            canonical_json_bytes({name: checked[name] for name in sorted(checked)})
+        ).hexdigest(),
+    }
+
+
+def _main(argv=None) -> int:
+    parser = argparse.ArgumentParser(prog=NAME, description="Schema-14 frame and manifest reader.")
+    sub = parser.add_subparsers(dest="command", required=True)
+    manifest = sub.add_parser("verify-manifest", help="recompute a build manifest's claims")
+    manifest.add_argument("--manifest", required=True)
+    manifest.add_argument("--artifact-root", required=True)
+    args = parser.parse_args(argv)
+    if args.command == "verify-manifest":
+        try:
+            with open(args.manifest, "r", encoding="utf-8") as handle:
+                document = json.load(handle)
+            report = verify_manifest(document, args.artifact_root)
+        except (ProtocolError, OSError, ValueError) as exc:
+            print("MANIFEST FAIL %s" % exc)
+            return 1
+        print(
+            "MANIFEST PASS variant=%s artifacts=%d bundle=%s"
+            % (report["variant"], report["artifacts_verified"], report["artifact_bundle_sha256"][:16])
+        )
+        if report["undeclared_files_present"]:
+            print("  note: %d undeclared files present" % len(report["undeclared_files_present"]))
+        return 0
+    return 2
+
+
+if __name__ == "__main__":  # pragma: no cover
+    raise SystemExit(_main())

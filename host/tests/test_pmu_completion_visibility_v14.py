@@ -397,3 +397,117 @@ class ClassifierRedTests(unittest.TestCase):
         self.assertFalse(doc["may_publish_distribution"])
         self.assertIsNone(doc["category"])
         self.assertTrue(self.classify("QS")["may_publish_distribution"])
+
+
+import hashlib
+import json
+import os
+import tempfile
+
+
+def build_manifest(root, variant="Q", artifacts=None):
+    """A manifest over real files, self-hashed the way the build self-hashes."""
+
+    artifacts = {"APP.BIN": b"application", "DDR.BIN": b"ddr"} if artifacts is None else artifacts
+    table = {}
+    for name, payload in artifacts.items():
+        path = os.path.join(root, name)
+        os.makedirs(os.path.dirname(path) or root, exist_ok=True)
+        with open(path, "wb") as handle:
+            handle.write(payload)
+        table[name] = {"sha256": hashlib.sha256(payload).hexdigest(), "bytes": len(payload)}
+    document = {
+        "variant": variant,
+        "schema_version": 14,
+        "build_id": "0x34314950",
+        "canonical_json": "v14-canonical-json-v1",
+        "frozen_input_sha256": {"runner": "0" * 64},
+        "declared_artifacts": table,
+    }
+    document["manifest_self_hash"] = v14.manifest_self_hash(document)
+    return document
+
+
+class ManifestRedTests(unittest.TestCase):
+    """The manifest is recomputed, never read."""
+
+    def test_a_real_manifest_verifies(self):
+        with tempfile.TemporaryDirectory() as root:
+            report = v14.verify_manifest(build_manifest(root), root)
+            self.assertEqual(report["artifacts_verified"], 2)
+            self.assertEqual(report["undeclared_files_present"], [])
+
+    def test_the_self_hash_covers_every_other_key(self):
+        with tempfile.TemporaryDirectory() as root:
+            for key, value in (("variant", "QS"), ("schema_version", 14), ("build_id", "0x34314950")):
+                document = build_manifest(root)
+                document[key] = value if key != "schema_version" else 14
+            document = build_manifest(root)
+            document["variant"] = "QS"          # self-hash now stale
+            with self.assertRaises(v8.ProtocolError):
+                v14.verify_manifest(document, root)
+
+    def test_a_substituted_artifact_is_refused(self):
+        with tempfile.TemporaryDirectory() as root:
+            document = build_manifest(root)
+            with open(os.path.join(root, "APP.BIN"), "wb") as handle:
+                handle.write(b"a different application")
+            with self.assertRaises(v8.ProtocolError):
+                v14.verify_manifest(document, root)
+
+    def test_a_missing_artifact_is_refused(self):
+        with tempfile.TemporaryDirectory() as root:
+            document = build_manifest(root)
+            os.unlink(os.path.join(root, "DDR.BIN"))
+            with self.assertRaises(v8.ProtocolError):
+                v14.verify_manifest(document, root)
+
+    def test_a_declared_size_that_disagrees_is_refused(self):
+        with tempfile.TemporaryDirectory() as root:
+            document = build_manifest(root)
+            document["declared_artifacts"]["APP.BIN"]["bytes"] = 1
+            document["manifest_self_hash"] = v14.manifest_self_hash(document)
+            with self.assertRaises(v8.ProtocolError):
+                v14.verify_manifest(document, root)
+
+    def test_an_undeclared_file_is_reported_rather_than_ignored(self):
+        with tempfile.TemporaryDirectory() as root:
+            document = build_manifest(root)
+            with open(os.path.join(root, "SECOND.BIN"), "wb") as handle:
+                handle.write(b"another image")
+            report = v14.verify_manifest(document, root)
+            self.assertEqual(report["undeclared_files_present"], ["SECOND.BIN"])
+
+    def test_an_artifact_name_that_escapes_the_build_is_refused(self):
+        with tempfile.TemporaryDirectory() as root:
+            document = build_manifest(root)
+            document["declared_artifacts"]["../escape"] = {"sha256": "0" * 64, "bytes": 0}
+            document["manifest_self_hash"] = v14.manifest_self_hash(document)
+            with self.assertRaises(v8.ProtocolError):
+                v14.verify_manifest(document, root)
+
+    def test_wrong_variant_schema_build_or_canonical_form_is_refused(self):
+        with tempfile.TemporaryDirectory() as root:
+            for key, value in (
+                ("variant", "ZZ"),
+                ("schema_version", 13),
+                ("build_id", "0x33314950"),
+                ("canonical_json", "v13-canonical-json-v1"),
+            ):
+                document = build_manifest(root)
+                document[key] = value
+                document["manifest_self_hash"] = v14.manifest_self_hash(document)
+                with self.assertRaises(v8.ProtocolError):
+                    v14.verify_manifest(document, root)
+
+    def test_a_manifest_with_no_self_hash_is_refused(self):
+        with tempfile.TemporaryDirectory() as root:
+            document = build_manifest(root)
+            del document["manifest_self_hash"]
+            with self.assertRaises(v8.ProtocolError):
+                v14.verify_manifest(document, root)
+
+    def test_canonical_bytes_are_stable_and_end_in_one_newline(self):
+        payload = v14.canonical_json_bytes({"b": 1, "a": [2, 3]})
+        self.assertEqual(payload, b'{"a":[2,3],"b":1}\n')
+        self.assertEqual(payload, v14.canonical_json_bytes({"a": [2, 3], "b": 1}))

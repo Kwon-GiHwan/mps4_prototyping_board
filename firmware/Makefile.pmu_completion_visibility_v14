@@ -312,7 +312,9 @@ missing = [name for name in declared if not (build / name).is_file()]; \
 sys.exit("declared artifact missing: %s" % missing) if missing else None; \
 table = {name: {"sha256": hashlib.sha256((build / name).read_bytes()).hexdigest(), "bytes": (build / name).stat().st_size} for name in declared}; \
 frozen = json.loads(pathlib.Path("$(FROZEN_INPUT_EVIDENCE)").read_text(encoding="utf-8"))["frozen_inputs"]; \
-document = {"variant": "$(V14_VARIANT)", "schema_version": 14, "build_id": "$(BUILD_ID)", "frozen_input_sha256": frozen, "declared_artifacts": table}; \
+document = {"variant": "$(V14_VARIANT)", "schema_version": 14, "build_id": "$(BUILD_ID)", "canonical_json": "v14-canonical-json-v1", "frozen_input_sha256": frozen, "declared_artifacts": table}; \
+canonical = lambda doc: json.dumps(doc, sort_keys=True, separators=(",", ":"), allow_nan=False).encode("utf-8") + b"\n"; \
+document["manifest_self_hash"] = hashlib.sha256(canonical({k: v for k, v in document.items() if k != "manifest_self_hash"})).hexdigest(); \
 pathlib.Path("$@").write_text(json.dumps(document, indent=2, sort_keys=True) + "\n", encoding="utf-8")'
 	@test -s $(MANIFEST)
 
