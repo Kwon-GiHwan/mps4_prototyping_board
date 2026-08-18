@@ -194,3 +194,65 @@ class AnalyzerRedTests(unittest.TestCase):
 
 if __name__ == "__main__":  # pragma: no cover
     unittest.main()
+
+
+def campaign_with_structure(q_values, dual_values, qs="Q_FIRST", sq="S5_FIRST", q_boots=None):
+    """A balanced campaign with per-boot cycle values chosen by the caller."""
+
+    cells = []
+    q_index = 0
+    for round_index, order in enumerate(ORDERS, start=1):
+        for position, variant in enumerate(order, start=1):
+            boot = "b-%d-%d" % (round_index, position)
+            if variant == "Q":
+                if q_boots is not None:
+                    boot = q_boots[q_index]
+                values = q_values[q_index]
+                q_index += 1
+                entry = cell(round_index, position, "Q", None, boot=boot)
+            else:
+                values = dual_values[(round_index - 1)]
+                entry = cell(round_index, position, variant,
+                             qs if variant == "QS" else sq, boot=boot)
+            for offset, sample in enumerate(entry["samples"]):
+                sample["q_observation_cycles"] = values[offset % len(values)]
+            cells.append(entry)
+    return {"identity": {"image_sha256": "b" * 64}, "cells": cells}
+
+
+class AnalyzerStructureTests(unittest.TestCase):
+    """The two ways a verdict could be published that the design forbids."""
+
+    def test_a_floor_disagreement_forces_the_control_in_both_directions(self):
+        # Q reproduces its floor, QS does not. Excursion is NOT_REPRODUCED on
+        # both, so comparing excursion alone sees no disagreement at all.
+        forward = campaign_with_structure(
+            q_values=[[100, 166], [100, 100], [100, 100]],
+            dual_values=[[100, 100], [200, 200], [300, 300]],
+        )
+        verdict = analyzer.analyze(forward)
+        self.assertEqual(verdict["q_floor"]["status"], analyzer.REPRODUCED)
+        self.assertEqual(verdict["dual_structure"]["QS"]["status"], analyzer.NOT_REPRODUCED)
+        self.assertEqual(verdict["conclusion"], analyzer.CONTROL_REQUIRED)
+
+        mirrored = campaign_with_structure(
+            q_values=[[100, 100], [200, 200], [300, 300]],
+            dual_values=[[100, 166], [100, 100], [100, 100]],
+        )
+        self.assertEqual(analyzer.analyze(mirrored)["conclusion"], analyzer.CONTROL_REQUIRED)
+
+    def test_three_q_cells_on_one_boot_are_not_three_boots(self):
+        pooled = campaign_with_structure(
+            q_values=[[100, 166], [100, 166], [100, 166]],
+            dual_values=[[100, 166], [100, 166], [100, 166]],
+            q_boots=["THE-SAME-BOOT", "THE-SAME-BOOT", "THE-SAME-BOOT"],
+        )
+        with self.assertRaises(analyzer.AnalysisError):
+            analyzer.analyze(pooled)
+
+    def test_a_campaign_whose_cells_are_all_distinct_boots_is_accepted(self):
+        fine = campaign_with_structure(
+            q_values=[[100, 166], [100, 166], [100, 166]],
+            dual_values=[[100, 166], [100, 166], [100, 166]],
+        )
+        self.assertEqual(analyzer.analyze(fine)["conclusion"], analyzer.READ_ORDER_BIAS_DOMINATES)

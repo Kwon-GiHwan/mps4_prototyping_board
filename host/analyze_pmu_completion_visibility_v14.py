@@ -95,6 +95,16 @@ def _validate(campaign: dict) -> list:
             elif category not in CATEGORIES:
                 raise AnalysisError("cell %r carries category %r" % (key, category))
 
+    # Nine cells, nine boots. A floor reproduced across three cells that share
+    # one boot is a floor reproduced once: the design asks for independence
+    # between the boots, and pooling is exactly what the rule exists to refuse.
+    boots = [next(iter({sample["boot_id"] for sample in entry["samples"]})) for entry in cells]
+    if len(set(boots)) != len(cells):
+        raise AnalysisError(
+            "the campaign spans %d boots across %d cells: each cell is its own boot"
+            % (len(set(boots)), len(cells))
+        )
+
     # Balance: each variant occupies each position exactly once across rounds.
     for variant in VARIANTS:
         if positions[variant] != {1, 2, 3}:
@@ -152,10 +162,15 @@ def analyze(campaign: dict) -> dict:
     # A deterministic qualitative disagreement between Q and either dual variant
     # is the dual-read-perturbation trigger: the difference cannot be the
     # hardware, because Q and the dual variants ran the same workload.
+    # Both statuses, not just the excursion. The plan names "floor/excursion",
+    # and comparing excursion alone hides a floor disagreement behind two
+    # matching NOT_REPRODUCED excursions -- which is how a campaign that must
+    # ask for the S5 control instead published read-order bias as a finding.
     disagreement = [
         variant
         for variant, structure in dual_structure.items()
-        if structure["excursion"] != q_structure["excursion"]
+        if (structure["status"], structure["excursion"])
+        != (q_structure["status"], q_structure["excursion"])
     ]
 
     if qs_category is None or sq_category is None:
