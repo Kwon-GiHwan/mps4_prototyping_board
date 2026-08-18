@@ -2796,7 +2796,9 @@ def verify_pre_run_contract(vendor_masked: str, defines: dict[str, int]) -> dict
 
     pre_program_reads = register_access_sites(gate, "STATUS", defines, gate_roles)
     if len(pre_program_reads) != 1:
-        raise fail(
+        raise fail_rule(
+            RULE_PRE_PROGRAM_GATE_SHAPE,
+            
             "pre-program gate does not read STATUS exactly once: %d loads in %s"
             % (len(pre_program_reads), gate_name)
         )
@@ -5911,6 +5913,77 @@ def verify_runner_contract(runner_masked: str) -> dict[str, object]:
 # module's mnemonic classification independent of objdump's flags.
 # ---------------------------------------------------------------------------
 
+# ---------------------------------------------------------------------------
+# Rule identity
+#
+# A refusal has to be attributable. Two negative fixtures written here failed
+# at a rule other than the one they were named for -- a QSIZE load inside the
+# loop was caught by the read-order rule, and a grown record size by the size
+# rule -- and both were green because the process exited non-zero. "The suite
+# went red" is not evidence that the rule under test did anything.
+#
+# So every load-bearing refusal carries an identifier, and a negative fixture
+# names the identifier it expects. A fixture that trips a different rule is a
+# failed fixture, not a passing test.
+# ---------------------------------------------------------------------------
+
+
+def fail_rule(rule: str, message: str) -> GateError:
+    return fail("[%s] %s" % (rule, message))
+
+
+def refusal_rule(error) -> str | None:
+    """The identifier a refusal carries, or None for an unattributed one."""
+
+    text = ("%s" % error).strip()
+    if text.startswith("FAIL "):
+        text = text[len("FAIL ") :].lstrip()
+    if not text.startswith("[") or "]" not in text:
+        return None
+    return text[1 : text.index("]")]
+
+
+# The claims this contract is qualified on. Anything here needs a positive
+# fixture, a negative that fails at its own rule, and application to the real
+# linked image; anything not here is a check, not a claim.
+RULE_PRE_PROGRAM_DOMINANCE = "RULE_PRE_PROGRAM_DOMINANCE"
+RULE_NO_TRANSITION_BEFORE_PROGRAMMING = "RULE_NO_TRANSITION_BEFORE_PROGRAMMING"
+RULE_PRE_PROGRAM_GATE_SHAPE = "RULE_PRE_PROGRAM_GATE_SHAPE"
+RULE_PRIMARY_READ_ORDER = "RULE_PRIMARY_READ_ORDER"
+RULE_PRIMARY_NO_PER_ITERATION_EFFECT = "RULE_PRIMARY_NO_PER_ITERATION_EFFECT"
+RULE_PRIMARY_FAULT_PRIORITY = "RULE_PRIMARY_FAULT_PRIORITY"
+RULE_PRIMARY_IRQ_NOT_AN_EXIT = "RULE_PRIMARY_IRQ_NOT_AN_EXIT"
+RULE_PRIMARY_NO_QSIZE = "RULE_PRIMARY_NO_QSIZE"
+RULE_TAIL_SHARED = "RULE_TAIL_SHARED"
+RULE_TAIL_READ_ORDER = "RULE_TAIL_READ_ORDER"
+RULE_TAIL_FOUR_CONDITIONS = "RULE_TAIL_FOUR_CONDITIONS"
+RULE_TAIL_BOUND = "RULE_TAIL_BOUND"
+RULE_TAIL_NO_PER_ITERATION_EFFECT = "RULE_TAIL_NO_PER_ITERATION_EFFECT"
+RULE_READ_ORDER_EQUIVALENCE = "RULE_READ_ORDER_EQUIVALENCE"
+RULE_MAILBOX_PUBLISHED_ONCE = "RULE_MAILBOX_PUBLISHED_ONCE"
+RULE_MAILBOX_PUBLISHER_IDENTITY = "RULE_MAILBOX_PUBLISHER_IDENTITY"
+RULE_MAILBOX_PUBLISH_ADDRESS = "RULE_MAILBOX_PUBLISH_ADDRESS"
+RULE_MAILBOX_PUBLISH_FENCED = "RULE_MAILBOX_PUBLISH_FENCED"
+RULE_RUNNER_MAILBOX_GATED = "RULE_RUNNER_MAILBOX_GATED"
+RULE_RUNNER_MAILBOX_READONLY = "RULE_RUNNER_MAILBOX_READONLY"
+RULE_RUNNER_MAILBOX_ONE_CHECK = "RULE_RUNNER_MAILBOX_ONE_CHECK"
+RULE_RUNNER_TUPLE_COMPLETE = "RULE_RUNNER_TUPLE_COMPLETE"
+RULE_SERIALIZATION_LENGTH = "RULE_SERIALIZATION_LENGTH"
+RULE_SERIALIZATION_COUNTABLE = "RULE_SERIALIZATION_COUNTABLE"
+RULE_SERIALIZATION_NAMED_CALLEES = "RULE_SERIALIZATION_NAMED_CALLEES"
+RULE_RECORD_SIZE = "RULE_RECORD_SIZE"
+RULE_RECORD_APPENDIX_ORDER = "RULE_RECORD_APPENDIX_ORDER"
+RULE_RECORD_APPENDIX_CONTIGUOUS = "RULE_RECORD_APPENDIX_CONTIGUOUS"
+RULE_RECORD_APPENDIX_ENDS_RECORD = "RULE_RECORD_APPENDIX_ENDS_RECORD"
+RULE_DWARF_RECORD_PRESENT = "RULE_DWARF_RECORD_PRESENT"
+RULE_DWARF_MEMBER_READABLE = "RULE_DWARF_MEMBER_READABLE"
+RULE_DWARF_SIZE_PRESENT = "RULE_DWARF_SIZE_PRESENT"
+RULE_DWARF_NM_AGREE = "RULE_DWARF_NM_AGREE"
+RULE_NPU_IRQ_NEVER_ENABLED = "RULE_NPU_IRQ_NEVER_ENABLED"
+RULE_NPU_IRQ_UNRESOLVED_WRITE = "RULE_NPU_IRQ_UNRESOLVED_WRITE"
+RULE_STORE_FORM_UNREADABLE = "RULE_STORE_FORM_UNREADABLE"
+
+
 U85_BASE_ADDRESS = 0x50004000
 DWT_BASE_ADDRESS = 0xE0001000
 DWT_CYCCNT_ADDRESS = DWT_BASE_ADDRESS + 4
@@ -6080,6 +6153,160 @@ def _elf_written_register(text: str) -> str | None:
         return None
     return hit.group(2)
 
+
+
+# ---------------------------------------------------------------------------
+# Load-bearing claim matrix
+#
+# Six columns per claim, and a claim is QUALIFIED only when all of them hold:
+#
+#   CLAIM             what is being asserted
+#   DETECTOR          which function looks
+#   REJECTION POINT   the rule identifier it refuses with
+#   POSITIVE          the real image passes it
+#   TARGETED NEGATIVE a mutation of the real image fails *at that rule*
+#   REAL ELF          the claim is applied to Q, QS and SQ
+#
+# The fifth column is the one this project had to learn. A negative fixture
+# that makes the suite red proves nothing on its own: two fixtures written
+# here tripped a different rule than the one they were named for and were
+# green for it. So the expectation is the rule identifier, not the exit code.
+# ---------------------------------------------------------------------------
+
+CLAIM_MATRIX = (
+    ("the stopped-state gate runs before the queue is programmed, on every path",
+     "verify_pre_run_dominance", RULE_PRE_PROGRAM_DOMINANCE),
+    ("nothing starts the NPU between that gate and the programming",
+     "verify_pre_run_dominance", RULE_NO_TRANSITION_BEFORE_PROGRAMMING),
+    # Source-side: the shape of the gate is decided on the generated text, and
+    # the matrix said "verify_pre_run_dominance" until a negative aimed at this
+    # rule kept landing somewhere else and the harness said so.
+    ("the gate reads STATUS exactly once, in one function",
+     "verify_pre_run_contract", RULE_PRE_PROGRAM_GATE_SHAPE),
+    ("the measured loop reads what the variant is named for, in that order",
+     "verify_primary_loop_image", RULE_PRIMARY_READ_ORDER),
+    ("the measured loop has no per-iteration effect",
+     "verify_primary_loop_image", RULE_PRIMARY_NO_PER_ITERATION_EFFECT),
+    ("the measured loop never reaches QSIZE",
+     "verify_primary_loop_image", RULE_PRIMARY_NO_QSIZE),
+    ("reset and fault are decided before completion is",
+     "verify_primary_loop_image", RULE_PRIMARY_FAULT_PRIORITY),
+    ("irq_raised is observed, never an exit",
+     "verify_primary_loop_image", RULE_PRIMARY_IRQ_NOT_AN_EXIT),
+    ("every variant joins one convergence tail",
+     "verify_common_tail_is_shared", RULE_TAIL_SHARED),
+    ("the tail reads QREAD then STATUS per iteration",
+     "verify_convergence_tail_image", RULE_TAIL_READ_ORDER),
+    ("the tail decides all four conditions in one tuple",
+     "verify_convergence_tail_image", RULE_TAIL_FOUR_CONDITIONS),
+    ("the tail carries the contract's iteration bound",
+     "verify_convergence_tail_image", RULE_TAIL_BOUND),
+    ("the tail has no per-iteration effect",
+     "verify_convergence_tail_image", RULE_TAIL_NO_PER_ITERATION_EFFECT),
+    ("QS and SQ differ in read order and nothing else",
+     "verify_read_order_equivalence", RULE_READ_ORDER_EQUIVALENCE),
+    ("the mailbox validity word is written once",
+     "verify_mailbox_publication_image", RULE_MAILBOX_PUBLISHED_ONCE),
+    ("it is written by the publisher",
+     "verify_mailbox_publication_image", RULE_MAILBOX_PUBLISHER_IDENTITY),
+    ("it is written to the validity word and nowhere else",
+     "verify_mailbox_publication_image", RULE_MAILBOX_PUBLISH_ADDRESS),
+    ("it is fenced on both sides",
+     "verify_mailbox_publication_image", RULE_MAILBOX_PUBLISH_FENCED),
+    ("the runner reads the tuple only where the magic check dominates",
+     "verify_runner_mailbox_gate_image", RULE_RUNNER_MAILBOX_GATED),
+    ("the runner writes no mailbox word",
+     "verify_runner_mailbox_gate_image", RULE_RUNNER_MAILBOX_READONLY),
+    ("the runner checks the magic once",
+     "verify_runner_mailbox_gate_image", RULE_RUNNER_MAILBOX_ONE_CHECK),
+    ("the runner reads the whole tuple",
+     "verify_runner_mailbox_gate_image", RULE_RUNNER_TUPLE_COMPLETE),
+    ("the serializer writes the contract's frame length",
+     "verify_serialization_image", RULE_SERIALIZATION_LENGTH),
+    ("the word count is countable: no loop, no recursion on the path",
+     "verify_serialization_image", RULE_SERIALIZATION_COUNTABLE),
+    ("every callee on the counting path can be named",
+     "verify_serialization_image", RULE_SERIALIZATION_NAMED_CALLEES),
+    ("the laid-out record is the contract's body",
+     "verify_record_layout_image", RULE_RECORD_SIZE),
+    ("the laid-out appendix is the contract's table in wire order",
+     "verify_record_layout_image", RULE_RECORD_APPENDIX_ORDER),
+    ("the appendix is contiguous",
+     "verify_record_layout_image", RULE_RECORD_APPENDIX_CONTIGUOUS),
+    ("the appendix ends the record",
+     "verify_record_layout_image", RULE_RECORD_APPENDIX_ENDS_RECORD),
+    ("DWARF describes the record this contract names",
+     "dwarf_record_layout", RULE_DWARF_RECORD_PRESENT),
+    ("every member DWARF describes is readable",
+     "dwarf_record_layout", RULE_DWARF_MEMBER_READABLE),
+    ("DWARF gives the record a size",
+     "dwarf_record_layout", RULE_DWARF_SIZE_PRESENT),
+    ("DWARF and nm describe the same build",
+     "verify_record_layout_image", RULE_DWARF_NM_AGREE),
+    ("the NPU interrupt is never enabled",
+     "verify_npu_irq_never_enabled_image", RULE_NPU_IRQ_NEVER_ENABLED),
+    ("a write into its enable word that cannot be read is refused",
+     "verify_npu_irq_never_enabled_image", RULE_NPU_IRQ_UNRESOLVED_WRITE),
+    ("a store whose form this gate cannot read is refused where it matters",
+     "several", RULE_STORE_FORM_UNREADABLE),
+)
+
+
+# Loops inside this gate whose body runs zero times while the real artifacts are
+# verified. The list exists because the worst defect this contract has produced
+# twice is a rule that examines nothing and reports success: a rotated loop whose
+# body set came out empty made every per-iteration rule vacuously true, and it
+# looked exactly like a pass. So the condition is measured rather than trusted --
+# the suite traces the real verification, collects every loop that never entered
+# its body, and refuses any entry that is not named here with a reason. A new
+# vacuous loop is a failure; these ones are alternative spellings and
+# difference-reporting paths that the real sources do not exercise.
+#
+# Keyed by (function, header source, occurrences) so it survives line movement.
+VACUOUS_ON_REAL_ARTIFACTS = {
+    ("_is_whole_rvalue", "while cursor < len(text) and text[cursor] in _INLINE_SPACE:", 1):
+        "the rvalue is not written with inline space before its terminator",
+    ("_member_base_follows", "while cursor < len(text) and text[cursor] in _INLINE_SPACE:", 1):
+        "the member base is written without inline space",
+    ("_publication_symbol_sites",
+     "while cursor < len(vendor_masked) and vendor_masked[cursor] in _INLINE_SPACE:", 2):
+        "the publication call sites are written without inline space around the parenthesis",
+    ("_reaches_without_transfer", "for match in _CONTROL_TRANSFER_RE.finditer(prefix):", 1):
+        "no control transfer stands between the two sites this is asked about",
+    ("_subscript_expression", "while cursor >= 0 and text[cursor] in _INLINE_SPACE:", 1):
+        "the subscripts are written without inline space before the bracket",
+    ("_token_after", "while cursor < len(text) and text[cursor] in _INLINE_SPACE:", 1):
+        "the tokens this looks past are written without inline space",
+    ("cmd_write_values", "for site, role, is_write in dereference_sites(text, defines, roles):", 1):
+        "CMD is written through write_reg in the real sources; the dereference spelling is the "
+        "fail-closed complement and is exercised by its own negatives",
+    ("obs_aliases", "while pending:", 1):
+        "the observation record is aliased directly, so the transitive closure has nothing to add",
+    ("pointer_roles",
+     "for name in compound_assignment_targets(scope + body, tuple(sorted(resolved))):", 1):
+        "no register pointer is reassigned through a compound assignment in the real sources",
+    ("register_access_sites",
+     "for site, role, is_write in dereference_sites(text, defines, roles):", 1):
+        "the same complement as cmd_write_values, for the read/write site scan",
+    ("require_mailbox_storage_closed", "while cursor < len(scan) and scan[cursor] in _INLINE_SPACE:", 1):
+        "the mailbox stores are written without inline space before the assignment",
+    ("require_no_macro_mmio", "for name in macros:", 1):
+        "the real translation units define no MMIO macro at all, which is what this requires",
+    ("require_stable_contract_defines", "for match in _UNDEF_RE.finditer(directive_view(masked)):", 1):
+        "the real sources carry no #undef",
+    ("require_wait_for_irq_unreachable", "while cursor < len(scan) and scan[cursor] in _INLINE_SPACE:", 1):
+        "the scanned sites are written without inline space",
+    ("statement_effects", "for register in _RAW_REGISTER_RE.findall(statement):", 1):
+        "the loop bodies reach the registers through the pointers loaded before them, so the "
+        "bare NPU_REG_ spelling appears in no statement this is given; the dereference path "
+        "above it does produce effects on the real sources",
+    ("verify_convergence_contract", "for effect in effects:", 1):
+        "the nested-depth arm: no statement inside a guard body carries a load on the real "
+        "sources, which is the condition it exists to refuse",
+    ("verify_hard_bypass_contract",
+     "for match in re.finditer(r\"&\\s*(?:\\(\\s*)*irq_triggered(?![A-Za-z0-9_])\", vendor_masked):", 1):
+        "irq_triggered is never address-taken in the real sources",
+}
 
 def _elf_front_end():
     """V12's row parser and V13's encoding-column strip, imported on demand.
@@ -6568,7 +6795,9 @@ def verify_pre_run_dominance(
             # A store this gate cannot place, through a base that could be the
             # NPU, is a queue write it cannot rule out -- and the whole claim
             # below is about which writes exist.
-            raise fail(
+            raise fail_rule(
+            RULE_STORE_FORM_UNREADABLE,
+            
                 "%s stores through an addressing form this gate cannot resolve at 0x%08x: %s"
                 % (entry_symbol, insn.addr, insn.text)
             )
@@ -6580,7 +6809,9 @@ def verify_pre_run_dominance(
         raise fail("linked image programs no queue register in %s" % entry_symbol)
     undominated = [index for index in programming if gate not in dominators[index]]
     if undominated:
-        raise fail(
+        raise fail_rule(
+            RULE_PRE_PROGRAM_DOMINANCE,
+            
             "the pre-program gate does not dominate queue programming: %d of %d writes are "
             "reachable without it, first at 0x%08x"
             % (len(undominated), len(programming), code[undominated[0]].addr)
@@ -6607,7 +6838,9 @@ def verify_pre_run_dominance(
             starts.append((index, value))
     if starts:
         index, value = starts[0]
-        raise fail(
+        raise fail_rule(
+            RULE_NO_TRANSITION_BEFORE_PROGRAMMING,
+            
             "a CMD write between the pre-program gate and queue programming may start the NPU: "
             "0x%08x writes %s"
             % (code[index].addr, "an unresolved value" if value is None else "0x%08X" % value)
@@ -6655,21 +6888,29 @@ def verify_primary_loop_image(disassembly_text: str, variant: str) -> dict:
     expected = {"Q": ("QREAD",), "QS": ("QREAD", "STATUS"), "SQ": ("STATUS", "QREAD")}[variant]
     order = tuple(role for _index, role, is_write in in_loop if not is_write)
     if order != expected:
-        raise fail(
+        raise fail_rule(
+            RULE_PRIMARY_READ_ORDER,
+            
             "the %s primary loop reads %s per iteration: the variant is defined as %s"
             % (variant, " then ".join(order) or "nothing", " then ".join(expected))
         )
     if any(is_write for _index, _role, is_write in in_loop):
-        raise fail("the %s primary loop writes MMIO per iteration" % variant)
+        raise fail_rule(
+            RULE_PRIMARY_NO_PER_ITERATION_EFFECT,
+            "the %s primary loop writes MMIO per iteration" % variant)
     for index in body:
         text = code[index].text
         if _ELF_CALL.match(text):
-            raise fail("the %s primary loop calls out per iteration: %s" % (variant, text))
+            raise fail_rule(
+            RULE_PRIMARY_NO_PER_ITERATION_EFFECT,
+            "the %s primary loop calls out per iteration: %s" % (variant, text))
         # Any store, in any addressing form. Matching only [rB, #imm] meant a
         # register-indexed, predicated or multiple store was not refused here --
         # it was not seen.
         if _elf_is_store(code[index]):
-            raise fail("the %s primary loop stores per iteration: %s" % (variant, text))
+            raise fail_rule(
+            RULE_PRIMARY_NO_PER_ITERATION_EFFECT,
+            "the %s primary loop stores per iteration: %s" % (variant, text))
 
     # Which register each of the loop's loads landed in, so the tests below are
     # tied to the load this iteration took rather than to any register that
@@ -6690,7 +6931,9 @@ def verify_primary_loop_image(disassembly_text: str, variant: str) -> dict:
                 tests.setdefault(test[1], index)
         for mask, label in ((STATUS_RESET, "reset"), (STATUS_FAULT_MASK, "fault")):
             if mask not in tests:
-                raise fail(
+                raise fail_rule(
+            RULE_PRIMARY_FAULT_PRIORITY,
+            
                     "the %s primary loop does not test %s (0x%03X) on the STATUS it loaded"
                     % (variant, label, mask)
                 )
@@ -6711,7 +6954,9 @@ def verify_primary_loop_image(disassembly_text: str, variant: str) -> dict:
             guard = tests[mask]
             late = [index for index in completion if guard not in dominators[index]]
             if late:
-                raise fail(
+                raise fail_rule(
+            RULE_PRIMARY_FAULT_PRIORITY,
+            
                     "the %s primary loop decides completion without the %s check: 0x%08x is "
                     "reachable without 0x%08x"
                     % (variant, label, code[late[0]].addr, code[guard].addr)
@@ -6721,7 +6966,9 @@ def verify_primary_loop_image(disassembly_text: str, variant: str) -> dict:
         for index in body:
             test = _elf_mask_test(code[index].text)
             if test == (status_register, STATUS_IRQ_RAISED):
-                raise fail(
+                raise fail_rule(
+            RULE_PRIMARY_IRQ_NOT_AN_EXIT,
+            
                     "the %s primary loop tests irq_raised at 0x%08x: bit 1 is observed, not an exit"
                     % (variant, code[index].addr)
                 )
@@ -6733,13 +6980,17 @@ def verify_primary_loop_image(disassembly_text: str, variant: str) -> dict:
 
     qsize = [index for index, role, _w in accesses if role == "QSIZE"]
     if qsize:
-        raise fail(
+        raise fail_rule(
+            RULE_PRIMARY_NO_QSIZE,
+            
             "the %s primary helper accesses QSIZE at 0x%08x: the snapshot is taken before submit"
             % (variant, code[qsize[0]].addr)
         )
     timestamps = [index for index, role, _w in accesses if role == "DWT_CYCCNT"]
     if any(index in body for index in timestamps):
-        raise fail("the %s primary loop timestamps per iteration" % variant)
+        raise fail_rule(
+            RULE_PRIMARY_NO_PER_ITERATION_EFFECT,
+            "the %s primary loop timestamps per iteration" % variant)
 
     return {
         "helper": helper,
@@ -6898,20 +7149,30 @@ def verify_convergence_tail_image(objdump_text: str) -> dict:
     in_loop = [(index, role, is_write) for index, role, is_write in accesses if index in body]
     order = tuple(role for _index, role, is_write in in_loop if not is_write)
     if order != ("QREAD", "STATUS"):
-        raise fail(
+        raise fail_rule(
+            RULE_TAIL_READ_ORDER,
+            
             "the convergence tail reads %s per iteration: the tail order is fixed as QREAD then "
             "STATUS for every variant" % (" then ".join(order) or "nothing")
         )
     if any(is_write for _index, _role, is_write in in_loop):
-        raise fail("the convergence tail writes MMIO per iteration")
+        raise fail_rule(
+            RULE_TAIL_NO_PER_ITERATION_EFFECT,
+            "the convergence tail writes MMIO per iteration")
     for index in body:
         text = code[index].text
         if _ELF_CALL.match(text):
-            raise fail("the convergence tail calls out per iteration: %s" % text)
+            raise fail_rule(
+            RULE_TAIL_NO_PER_ITERATION_EFFECT,
+            "the convergence tail calls out per iteration: %s" % text)
         if _elf_is_store(code[index]):
-            raise fail("the convergence tail stores per iteration: %s" % text)
+            raise fail_rule(
+            RULE_TAIL_NO_PER_ITERATION_EFFECT,
+            "the convergence tail stores per iteration: %s" % text)
     if any(role in ("QSIZE", "DWT_CYCCNT") for _index, role, _w in in_loop):
-        raise fail("the convergence tail reaches QSIZE or the cycle counter per iteration")
+        raise fail_rule(
+            RULE_TAIL_NO_PER_ITERATION_EFFECT,
+            "the convergence tail reaches QSIZE or the cycle counter per iteration")
 
     status_register = next(
         _elf_written_register(code[index].text)
@@ -6927,12 +7188,16 @@ def verify_convergence_tail_image(objdump_text: str) -> dict:
     }
     for label, mask in required.items():
         if not bits & mask:
-            raise fail(
+            raise fail_rule(
+            RULE_TAIL_FOUR_CONDITIONS,
+            
                 "the convergence tail never decides on %s (0x%03X): the tail requires all four "
                 "conditions in one tuple" % (label, mask)
             )
     if not bits & STATUS_FAULT_MASK:
-        raise fail("the convergence tail never decides on the vendor fault mask")
+        raise fail_rule(
+            RULE_TAIL_FOUR_CONDITIONS,
+            "the convergence tail never decides on the vendor fault mask")
 
     bound = [
         int(hit.group(2))
@@ -6942,7 +7207,9 @@ def verify_convergence_tail_image(objdump_text: str) -> dict:
         if hit is not None
     ]
     if ITERATION_BOUND not in bound:
-        raise fail(
+        raise fail_rule(
+            RULE_TAIL_BOUND,
+            
             "the convergence tail does not materialise the %d iteration bound outside its loop"
             % ITERATION_BOUND
         )
@@ -6978,7 +7245,9 @@ def verify_common_tail_is_shared(images: dict) -> dict:
                 ),
                 "a different instruction count",
             )
-            raise fail(
+            raise fail_rule(
+            RULE_TAIL_SHARED,
+            
                 "the convergence tail is not shared: %s and %s differ at %s"
                 % (first, variant, difference)
             )
@@ -7049,7 +7318,9 @@ def dwarf_record_layout(dwarf_text: str) -> dict:
         if structure is not None:
             break
     if structure is None:
-        raise fail("DWARF carries no %s typedef pointing at a structure" % RECORD_TYPEDEF)
+        raise fail_rule(
+            RULE_DWARF_RECORD_PRESENT,
+            "DWARF carries no %s typedef pointing at a structure" % RECORD_TYPEDEF)
 
     members: list[tuple[int, str]] = []
     size = None
@@ -7082,11 +7353,15 @@ def dwarf_record_layout(dwarf_text: str) -> dict:
             if located is not None:
                 member_offset = int(located.group(1))
         if name is None or member_offset is None:
-            raise fail("DWARF member of %s carries no name or no offset" % RECORD_TYPEDEF)
+            raise fail_rule(
+            RULE_DWARF_MEMBER_READABLE,
+            "DWARF member of %s carries no name or no offset" % RECORD_TYPEDEF)
         members.append((member_offset, name))
 
     if size is None:
-        raise fail("DWARF gives %s no byte size" % RECORD_TYPEDEF)
+        raise fail_rule(
+            RULE_DWARF_SIZE_PRESENT,
+            "DWARF gives %s no byte size" % RECORD_TYPEDEF)
     return {"byte_size": size, "members": tuple(members)}
 
 
@@ -7121,7 +7396,9 @@ def verify_record_layout_image(dwarf_text: str, nm_text: str | None = None) -> d
     layout = dwarf_record_layout(dwarf_text)
     members = layout["members"]
     if layout["byte_size"] != BODY_WORDS * 4:
-        raise fail(
+        raise fail_rule(
+            RULE_RECORD_SIZE,
+            
             "the laid-out record is %d bytes: the body is %d words, so it is %d"
             % (layout["byte_size"], BODY_WORDS, BODY_WORDS * 4)
         )
@@ -7136,7 +7413,9 @@ def verify_record_layout_image(dwarf_text: str, nm_text: str | None = None) -> d
         )
     for position in range(1, len(appendix)):
         if appendix[position][0] - appendix[position - 1][0] != 4:
-            raise fail(
+            raise fail_rule(
+            RULE_RECORD_APPENDIX_CONTIGUOUS,
+            
                 "the laid-out appendix pads before %s: it sits %d bytes after %s rather than 4"
                 % (
                     appendix[position][1],
@@ -7145,13 +7424,17 @@ def verify_record_layout_image(dwarf_text: str, nm_text: str | None = None) -> d
                 )
             )
     if appendix[-1][0] + 4 != layout["byte_size"]:
-        raise fail(
+        raise fail_rule(
+            RULE_RECORD_APPENDIX_ENDS_RECORD,
+            
             "the laid-out appendix does not end the record: %s ends at byte %d of %d"
             % (appendix[-1][1], appendix[-1][0] + 4, layout["byte_size"])
         )
 
     if [name for _offset, name in appendix] != list(APPENDIX_FIELDS):
-        raise fail(
+        raise fail_rule(
+            RULE_RECORD_APPENDIX_ORDER,
+            
             "the laid-out appendix is not the contract's table in wire order: %s"
             % ", ".join(
                 "%s!=%s" % (name, expected)
@@ -7167,7 +7450,9 @@ def verify_record_layout_image(dwarf_text: str, nm_text: str | None = None) -> d
         from_dwarf = dwarf_static_address(dwarf_text, MAILBOX_SYMBOL)
         from_nm = elf_symbol_address(nm_text, MAILBOX_SYMBOL)
         if from_dwarf != from_nm:
-            raise fail(
+            raise fail_rule(
+            RULE_DWARF_NM_AGREE,
+            
                 "DWARF and nm disagree about %s: 0x%08X against 0x%08X"
                 % (MAILBOX_SYMBOL, from_dwarf, from_nm)
             )
@@ -7232,14 +7517,18 @@ def verify_runner_mailbox_gate_image(objdump_text: str, nm_text: str) -> dict:
             continue
         base = states[index].get(unresolved[1])
         if base is not None and mailbox <= base < mailbox + 4 * APPENDIX_WORDS:
-            raise fail(
+            raise fail_rule(
+            RULE_RUNNER_MAILBOX_READONLY,
+            
                 "the runner stores into the mailbox at 0x%08x through an addressing form this "
                 "gate cannot resolve: %s" % (insn.addr, insn.text)
             )
 
     written = [(index, word) for index, word, is_write in accesses if is_write]
     if written:
-        raise fail(
+        raise fail_rule(
+            RULE_RUNNER_MAILBOX_READONLY,
+            
             "the runner writes mailbox word %d at 0x%08x: the mailbox is the firmware's to fill"
             % (written[0][1], code[written[0][0]].addr)
         )
@@ -7253,7 +7542,9 @@ def verify_runner_mailbox_gate_image(objdump_text: str, nm_text: str) -> dict:
         if MAILBOX_VALID in values:
             compares.append(index)
     if len(compares) != 1:
-        raise fail(
+        raise fail_rule(
+            RULE_RUNNER_MAILBOX_ONE_CHECK,
+            
             "the runner compares against the mailbox magic %d times: it gates the copy once"
             % len(compares)
         )
@@ -7261,7 +7552,9 @@ def verify_runner_mailbox_gate_image(objdump_text: str, nm_text: str) -> dict:
 
     tuple_words = sorted({word for _index, word, _w in accesses if word != MAILBOX_VALID_WORD})
     if tuple_words != list(range(APPENDIX_WORDS - 1)):
-        raise fail(
+        raise fail_rule(
+            RULE_RUNNER_TUPLE_COMPLETE,
+            
             "the runner reads %d of the %d appendix words before the validity word: the record "
             "it publishes would carry fields it never copied"
             % (len(tuple_words), APPENDIX_WORDS - 1)
@@ -7271,8 +7564,9 @@ def verify_runner_mailbox_gate_image(objdump_text: str, nm_text: str) -> dict:
         for index, word, is_write in accesses
         if word != MAILBOX_VALID_WORD and gate not in dominators[index]
     ]
-    if False:
-        raise fail(
+    if ungated:
+        raise fail_rule(
+            RULE_RUNNER_MAILBOX_GATED,
             "the runner reads the mailbox tuple without the magic check: 0x%08x is reachable "
             "without 0x%08x" % (code[ungated[0]].addr, code[gate].addr)
         )
@@ -7282,7 +7576,7 @@ def verify_runner_mailbox_gate_image(objdump_text: str, nm_text: str) -> dict:
         "magic_check_address": "0x%08X" % code[gate].addr,
         "tuple_words_read": len(tuple_words),
         "mailbox_writes_by_the_runner": 0,
-        "every_tuple_read_dominated_by_the_magic_check": True,
+        "every_tuple_read_dominated_by_the_magic_check": not ungated,
         # Recorded because it is the reason this proof is a graph and not a scan.
         "copy_precedes_the_check_in_listing_order": min(
             index for index, word, _w in accesses if word != MAILBOX_VALID_WORD
@@ -7307,12 +7601,16 @@ def _elf_word_writes(objdump_text: str, name: str, seen: frozenset) -> int:
     if name == WORD_WRITER_SYMBOL:
         return 1
     if name in seen:
-        raise fail("the serializer recurses through %s: its word count is not a constant" % name)
+        raise fail_rule(
+            RULE_SERIALIZATION_COUNTABLE,
+            "the serializer recurses through %s: its word count is not a constant" % name)
     code, _literals, data = elf_function(objdump_text, name)
     successors = elf_cfg(code, data)
     dominators = elf_dominators(successors)
     if any(out in dominators[index] for index, outs in enumerate(successors) for out in outs):
-        raise fail(
+        raise fail_rule(
+            RULE_SERIALIZATION_COUNTABLE,
+            
             "%s loops: the number of words it writes is not something this gate can count" % name
         )
     total = 0
@@ -7321,7 +7619,9 @@ def _elf_word_writes(objdump_text: str, name: str, seen: frozenset) -> int:
             continue
         callee = _ELF_CALLEE.match(insn.text)
         if callee is None:
-            raise fail(
+            raise fail_rule(
+            RULE_SERIALIZATION_NAMED_CALLEES,
+            
                 "%s makes a call this gate cannot name at 0x%08x: it may write frame words"
                 % (name, insn.addr)
             )
@@ -7340,7 +7640,9 @@ def verify_serialization_image(objdump_text: str) -> dict:
 
     words = _elf_word_writes(objdump_text, SERIALIZER_SYMBOL, frozenset())
     if words != TOTAL_WORDS:
-        raise fail(
+        raise fail_rule(
+            RULE_SERIALIZATION_LENGTH,
+            
             "the serializer writes %d frame words: the contract's frame is %d words of %d bytes"
             % (words, TOTAL_WORDS, PAYLOAD_BYTES)
         )
@@ -7406,7 +7708,9 @@ def verify_npu_irq_never_enabled_image(objdump_text: str) -> dict:
                 if base is not None and (
                     NVIC_ISER_BASE <= base < NVIC_ISER_BASE + 4 * NVIC_ISER_WORDS
                 ):
-                    raise fail(
+                    raise fail_rule(
+            RULE_NPU_IRQ_UNRESOLVED_WRITE,
+            
                         "%s writes the interrupt-enable bank at 0x%08x through an addressing "
                         "form this gate cannot resolve: %s" % (name, insn.addr, insn.text)
                     )
@@ -7429,12 +7733,16 @@ def verify_npu_irq_never_enabled_image(objdump_text: str) -> dict:
                 )
                 continue
             if value is None:
-                raise fail(
+                raise fail_rule(
+            RULE_NPU_IRQ_UNRESOLVED_WRITE,
+            
                     "%s writes the NPU's own interrupt-enable word at 0x%08x with a value this "
                     "gate cannot resolve: the bypass is not provable" % (name, insn.addr)
                 )
             if value & (1 << npu_bit):
-                raise fail(
+                raise fail_rule(
+            RULE_NPU_IRQ_NEVER_ENABLED,
+            
                     "%s enables the NPU interrupt at 0x%08x: 0x%08X sets bit %d of ISER[%d]"
                     % (name, insn.addr, value, npu_bit, npu_word)
                 )
@@ -7461,12 +7769,16 @@ def verify_read_order_equivalence(qs_text: str, sq_text: str) -> dict:
     qs, _qsp, qs_data = elf_function(qs_text, PRIMARY_SYMBOL["QS"])
     sq, _sqp, sq_data = elf_function(sq_text, PRIMARY_SYMBOL["SQ"])
     if len(qs) != len(sq):
-        raise fail(
+        raise fail_rule(
+            RULE_READ_ORDER_EQUIVALENCE,
+            
             "the QS and SQ helpers are not the same length: %d against %d instructions"
             % (len(qs), len(sq))
         )
     if elf_cfg(qs, qs_data) != elf_cfg(sq, sq_data):
-        raise fail("the QS and SQ helpers do not share one control-flow graph")
+        raise fail_rule(
+            RULE_READ_ORDER_EQUIVALENCE,
+            "the QS and SQ helpers do not share one control-flow graph")
 
     differing = [
         index
@@ -7474,18 +7786,24 @@ def verify_read_order_equivalence(qs_text: str, sq_text: str) -> dict:
         if _elf_normalized(left) != _elf_normalized(right)
     ]
     if len(differing) != 2:
-        raise fail(
+        raise fail_rule(
+            RULE_READ_ORDER_EQUIVALENCE,
+            
             "the QS and SQ helpers differ at %d instructions: the variants are defined to "
             "differ at exactly the two loads" % len(differing)
         )
     first, second = differing
     if second != first + 1:
-        raise fail("the QS and SQ helpers differ at non-adjacent instructions")
+        raise fail_rule(
+            RULE_READ_ORDER_EQUIVALENCE,
+            "the QS and SQ helpers differ at non-adjacent instructions")
     if not (
         _elf_normalized(qs[first]) == _elf_normalized(sq[second])
         and _elf_normalized(qs[second]) == _elf_normalized(sq[first])
     ):
-        raise fail(
+        raise fail_rule(
+            RULE_READ_ORDER_EQUIVALENCE,
+            
             "the two instructions QS and SQ differ at are not each other's swap: %s / %s "
             "against %s / %s"
             % (
@@ -7572,7 +7890,9 @@ def verify_mailbox_publication_image(objdump_text: str, nm_text: str) -> dict:
                     and could_reach_mailbox
                     and _elf_store_may_carry(states, index, unresolved[0], MAILBOX_VALID)
                 ):
-                    raise fail(
+                    raise fail_rule(
+            RULE_STORE_FORM_UNREADABLE,
+            
                         "%s may store the mailbox magic at 0x%08x through an addressing form "
                         "this gate cannot resolve: %s" % (name, insn.addr, insn.text)
                     )
@@ -7586,7 +7906,9 @@ def verify_mailbox_publication_image(objdump_text: str, nm_text: str) -> dict:
                 # from the other side, so it is refused rather than skipped.
                 base = states[index].get(hit.group(3))
                 if base is not None and base + int(hit.group(4) or 0) == target:
-                    raise fail(
+                    raise fail_rule(
+            RULE_STORE_FORM_UNREADABLE,
+            
                         "%s stores a value this gate cannot read into the mailbox validity word "
                         "at 0x%08x: %s" % (name, insn.addr, insn.text)
                     )
@@ -7598,17 +7920,23 @@ def verify_mailbox_publication_image(objdump_text: str, nm_text: str) -> dict:
             stores.append((name, insn, address))
 
     if len(stores) != 1:
-        raise fail(
+        raise fail_rule(
+            RULE_MAILBOX_PUBLISHED_ONCE,
+            
             "the modelled functions store the mailbox magic %d times: it is published once, by %s"
             % (len(stores), MAILBOX_PUBLISH_SYMBOL)
         )
     name, insn, address = stores[0]
     if name != MAILBOX_PUBLISH_SYMBOL:
-        raise fail(
+        raise fail_rule(
+            RULE_MAILBOX_PUBLISHER_IDENTITY,
+            
             "the mailbox magic is stored by %s rather than %s" % (name, MAILBOX_PUBLISH_SYMBOL)
         )
     if address != target:
-        raise fail(
+        raise fail_rule(
+            RULE_MAILBOX_PUBLISH_ADDRESS,
+            
             "the mailbox magic is stored to %s rather than the mailbox validity word 0x%08X"
             % ("an unresolved address" if address is None else "0x%08X" % address, target)
         )
@@ -7617,9 +7945,13 @@ def verify_mailbox_publication_image(objdump_text: str, nm_text: str) -> dict:
     code, literals, data = elf_function(objdump_text, MAILBOX_PUBLISH_SYMBOL)
     publish = next(i for i, row in enumerate(code) if row.addr == insn.addr)
     if not any(row.mnemonic == "dsb" for row in code[:publish]):
-        raise fail("the mailbox magic is published without a barrier before it")
+        raise fail_rule(
+            RULE_MAILBOX_PUBLISH_FENCED,
+            "the mailbox magic is published without a barrier before it")
     if not any(row.mnemonic == "dsb" for row in code[publish + 1 :]):
-        raise fail("the mailbox magic is published without a barrier after it")
+        raise fail_rule(
+            RULE_MAILBOX_PUBLISH_FENCED,
+            "the mailbox magic is published without a barrier after it")
 
     return {
         "publisher": name,

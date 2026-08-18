@@ -6,9 +6,11 @@ the gate, so a gate constant drifting away from the design is a test failure
 instead of a silent agreement.
 """
 
+import ast
 import hashlib
 import json
 import os
+import pathlib
 import re
 import subprocess
 import sys
@@ -128,7 +130,7 @@ STATUS_FAULT_MASK = 0x314
 
 # The suite is frozen at this many assertions. Adding a named fixture is a
 # deliberate act, so the count moves with it and never drifts silently.
-EXPECTED_PASS_COUNT = 1147
+EXPECTED_PASS_COUNT = 1224
 
 CHECKER_PATH = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
@@ -2963,6 +2965,15 @@ def _replace_row(text, needle, replacement):
     return text.replace(_asm_line(text, needle), replacement, 1)
 
 
+def _after(text, anchor, inserted):
+    rows = []
+    for line in text.splitlines():
+        rows.append(line)
+        if line.startswith(anchor):
+            rows.append(inserted)
+    return "\n".join(rows)
+
+
 def expect_image_reject(call, name, fragment):
     try:
         call()
@@ -2971,6 +2982,345 @@ def expect_image_reject(call, name, fragment):
         check(name, fragment in detail, detail[:96])
         return
     check(name, False, "accepted")
+
+
+
+# ---------------------------------------------------------------------------
+# Targeted negatives, one per load-bearing claim
+#
+# Keyed by the rule identifier each is expected to trip. The harness asserts
+# the refusal carries that identifier, so a mutation that trips a neighbouring
+# rule is a failed fixture rather than a passing test -- which is what two
+# fixtures in this file were doing before the identifiers existed.
+# ---------------------------------------------------------------------------
+
+def _img(variant="Q"):
+    return linked_image(variant)
+
+
+def _nm(variant="Q"):
+    return linked_nm(variant)
+
+
+def _swap_two_rows(text, first_anchor, second_anchor):
+    first = _asm_line(text, first_anchor)
+    second = _asm_line(text, second_anchor)
+    marker = "\x00SWAP\x00"
+    text = text.replace(first, marker, 1).replace(second, first.replace(first_anchor, second_anchor, 1), 1)
+    return text.replace(marker, second.replace(second_anchor, first_anchor, 1), 1)
+
+
+def targeted_negatives(gate):
+    """rule identifier -> callable that must refuse with exactly that rule."""
+
+    def dominance():
+        gate.verify_pre_run_dominance(
+            _replace_row(_img(), "310026a6:", "310026a6:\td157      \tbne.n\t31002758 <test_u85+0x140>"),
+            _nm(),
+        )
+
+    def transition():
+        gate.verify_pre_run_dominance(
+            _img().replace(
+                _asm_line(_img(), "3100271c:") + "\n" + _asm_line(_img(), "3100271e:"),
+                "3100271c:\t4b63      \tldr\tr3, [pc, #396]\t@ (310028a8 <test_u85+0x290>)\n"
+                "3100271e:\t2201      \tmovs\tr2, #1\n"
+                "31002720:\t609a      \tstr\tr2, [r3, #8]",
+                1,
+            ),
+            _nm(),
+        )
+
+    def gate_shape():
+        vendor = canonical_vendor("Q")
+        marker = "pre_program_status = read_reg(NPU_REG_STATUS);"
+        gate.verify_pre_run_contract(
+            gate.mask_c_lexical(
+                vendor.replace(marker, marker + "\n        (void)read_reg(NPU_REG_STATUS);", 1)
+            ),
+            gate.parse_defines(gate.mask_c_lexical(vendor)),
+        )
+
+    def read_order():
+        gate.verify_primary_loop_image(linked_image("SQ").replace("v14_primary_sq", "v14_primary_qs"), "QS")
+
+    def per_iteration():
+        gate.verify_primary_loop_image(
+            _after(_img(), "310024d2:", "310024d3:\t9301      \tstr\tr3, [sp, #4]"), "Q"
+        )
+
+    def no_qsize():
+        gate.verify_primary_loop_image(
+            _after(_img(), "310024dc:", "310024dd:\tf8dc 3020 \tldr.w\tr3, [ip, #32]"), "Q"
+        )
+
+    def fault_priority():
+        gate.verify_primary_loop_image(
+            _replace_row(linked_image("QS"), "310024d4:", "310024d4:\tea13 0f00 \ttst.w\tr3, #0"), "QS"
+        )
+
+    def irq_not_exit():
+        gate.verify_primary_loop_image(
+            _replace_row(linked_image("QS"), "310024e4:", "310024e4:\tea13 0f02 \ttst.w\tr3, #2"), "QS"
+        )
+
+    def tail_shared():
+        gate.verify_common_tail_is_shared({
+            "Q": _replace_row(_img(), "31002548:", "31002548:\tf242 7211 \tmovw\tr2, #10001"),
+            "QS": linked_image("QS"),
+            "SQ": linked_image("SQ"),
+        })
+
+    def tail_read_order():
+        gate.verify_convergence_tail_image(_swap_two_rows(_img(), "31002556:", "31002558:"))
+
+    def tail_four():
+        gate.verify_convergence_tail_image(
+            _replace_row(_img(), "31002572:", "31002572:\tf013 0f00 \ttst.w\tr3, #0")
+        )
+
+    def tail_bound():
+        gate.verify_convergence_tail_image(
+            _replace_row(_img(), "31002548:", "31002548:\tf242 720f \tmovw\tr2, #9999")
+        )
+
+    def tail_effect():
+        gate.verify_convergence_tail_image(
+            _after(_img(), "31002552:", "31002553:\t9301      \tstr\tr3, [sp, #4]")
+        )
+
+    def equivalence():
+        gate.verify_read_order_equivalence(
+            linked_image("QS"),
+            _replace_row(linked_image("SQ"), "310024ee:", "310024ee:\t3a02      \tsubs\tr2, #2"),
+        )
+
+    def published_once():
+        gate.verify_mailbox_publication_image(
+            _after(_img(), "310023d4:", "310023d5:\tf8c3 2084 \tstr.w\tr2, [r3, #132]"), _nm()
+        )
+
+    def publisher_identity():
+        # One store, in a function that is not the publisher. Renaming the
+        # section is the way to say that without also changing the count --
+        # planting a second store trips the count rule instead, which is what
+        # the first attempt at this fixture did.
+        gate.verify_mailbox_publication_image(
+            _img().replace("<v14_mailbox_publish>:", "<v14_mailbox_publish_relocated>:", 1), _nm()
+        )
+
+    def publish_address():
+        gate.verify_mailbox_publication_image(
+            _replace_row(_img(), "310023d4:", "310023d4:\tf8c3 2080 \tstr.w\tr2, [r3, #128]"), _nm()
+        )
+
+    def publish_fenced():
+        gate.verify_mailbox_publication_image(
+            _replace_row(_img(), "310023d8:", "310023d8:\tbf00      \tnop"), _nm()
+        )
+
+    def runner_gated():
+        # An extra read of a tuple word at the top of the dispatcher, before the
+        # magic check and on a path that does not pass through it. The tuple
+        # stays complete and the check stays present and singular, so the only
+        # thing broken is the one this rule is about. Two earlier attempts --
+        # removing the check, and branching past it -- tripped the one-check
+        # and tuple-complete rules instead.
+        gate.verify_runner_mailbox_gate_image(
+            _replace_row(
+                _img(), "310010c8:",
+                "310010c8:\t4b20      \tldr\tr3, [pc, #128]\t@ (31001b4c <dispatch+0xa88>)\n"
+                "310010ca:\t681b      \tldr\tr3, [r3, #0]",
+            ),
+            _nm(),
+        )
+
+    def runner_readonly():
+        gate.verify_runner_mailbox_gate_image(
+            _after(_img(), "31001962:", "31001963:\tf8c2 3000 \tstr.w\tr3, [r2]"), _nm()
+        )
+
+    def runner_one_check():
+        gate.verify_runner_mailbox_gate_image(
+            _after(_img(), "31001edc:", "31001edd:\t429a      \tcmp\tr2, r3"), _nm()
+        )
+
+    def tuple_complete():
+        # Word 0 is read exactly once; removing that read leaves the runner
+        # copying 32 of the 33 words it must copy.
+        gate.verify_runner_mailbox_gate_image(
+            _replace_row(_img(), "31001962:", "31001962:\tbf00      \tnop"), _nm()
+        )
+
+    def serialization_length():
+        rows = [line for line in _img().splitlines() if "\tbl\t" in line and "<put32>" in line]
+        return gate.verify_serialization_image(_img().replace(rows[0], rows[0].split("\t")[0] + "\tbf00      \tnop", 1))
+
+    def serialization_countable():
+        gate.verify_serialization_image(
+            _after(_img(), "31000b1c:", "31000b1d:\te7fe      \tb.n\t31000b1c <build_pmu_diag_payload+0x8>")
+        )
+
+    def serialization_named():
+        gate.verify_serialization_image(
+            _replace_row(_img(), "31000b1c:", "31000b1c:\tf000 f800 \tbl\t31000b20")
+        )
+
+    def record_size():
+        gate.verify_record_layout_image(
+            linked_dwarf().replace("DW_AT_byte_size   : 476", "DW_AT_byte_size   : 480", 1), _nm()
+        )
+
+    def appendix_order():
+        text = linked_dwarf()
+        return gate.verify_record_layout_image(
+            text.replace("): mailbox_valid", "): mailbox_invalid", 1), _nm()
+        )
+
+    def appendix_contiguous():
+        gate.verify_record_layout_image(
+            linked_dwarf().replace("DW_AT_data_member_location: 472",
+                                   "DW_AT_data_member_location: 476", 1), _nm())
+
+    def appendix_ends():
+        gate.verify_record_layout_image(_shift_appendix_by_name(linked_dwarf(), -4), _nm())
+
+    def dwarf_record_present():
+        gate.dwarf_record_layout(linked_dwarf().replace("): pmu_diag_record_t", "): other_t", 1))
+
+    def dwarf_member_readable():
+        text = linked_dwarf()
+        anchor = "    <b3b0>   DW_AT_type        : <0x978c>\n    <b3b4>   DW_AT_data_member_location: 472\n"
+        return gate.dwarf_record_layout(text.replace(anchor, "    <b3b0>   DW_AT_type        : <0x978c>\n", 1))
+
+    def dwarf_size_present():
+        gate.dwarf_record_layout(linked_dwarf().replace("DW_AT_byte_size   : 476", "DW_AT_bytesize   : 476", 1))
+
+    def dwarf_nm_agree():
+        gate.verify_record_layout_image(
+            linked_dwarf().replace("(DW_OP_addr: 3100578c)", "(DW_OP_addr: 3100578d)", 1), _nm()
+        )
+
+    def npu_irq():
+        gate.verify_npu_irq_never_enabled_image(
+            _replace_row(
+                _replace_row(_img(), "31001fda:", "31001fda:\tf44f 3180 \tmov.w\tr1, #65536"),
+                "31001fde:", "31001fde:\t6011      \tstr\tr1, [r2, #0]",
+            )
+        )
+
+    def npu_irq_unresolved():
+        gate.verify_npu_irq_never_enabled_image(
+            _after(_img(), "31001fde:", "31001fe0:\tf842 1003 \tstr.w\tr1, [r2, r3, lsl #2]")
+        )
+
+    def store_form():
+        gate.verify_mailbox_publication_image(
+            _after(_img(), "310023d4:",
+                   "310023d5:\tbf18      \tit\tne\n310023d6:\tf8c3 2084 \tstrne.w\tr2, [r3, #132]"),
+            _nm(),
+        )
+
+    return {
+        gate.RULE_PRE_PROGRAM_DOMINANCE: dominance,
+        gate.RULE_NO_TRANSITION_BEFORE_PROGRAMMING: transition,
+        gate.RULE_PRE_PROGRAM_GATE_SHAPE: gate_shape,
+        gate.RULE_PRIMARY_READ_ORDER: read_order,
+        gate.RULE_PRIMARY_NO_PER_ITERATION_EFFECT: per_iteration,
+        gate.RULE_PRIMARY_NO_QSIZE: no_qsize,
+        gate.RULE_PRIMARY_FAULT_PRIORITY: fault_priority,
+        gate.RULE_PRIMARY_IRQ_NOT_AN_EXIT: irq_not_exit,
+        gate.RULE_TAIL_SHARED: tail_shared,
+        gate.RULE_TAIL_READ_ORDER: tail_read_order,
+        gate.RULE_TAIL_FOUR_CONDITIONS: tail_four,
+        gate.RULE_TAIL_BOUND: tail_bound,
+        gate.RULE_TAIL_NO_PER_ITERATION_EFFECT: tail_effect,
+        gate.RULE_READ_ORDER_EQUIVALENCE: equivalence,
+        gate.RULE_MAILBOX_PUBLISHED_ONCE: published_once,
+        gate.RULE_MAILBOX_PUBLISHER_IDENTITY: publisher_identity,
+        gate.RULE_MAILBOX_PUBLISH_ADDRESS: publish_address,
+        gate.RULE_MAILBOX_PUBLISH_FENCED: publish_fenced,
+        gate.RULE_RUNNER_MAILBOX_GATED: runner_gated,
+        gate.RULE_RUNNER_MAILBOX_READONLY: runner_readonly,
+        gate.RULE_RUNNER_MAILBOX_ONE_CHECK: runner_one_check,
+        gate.RULE_RUNNER_TUPLE_COMPLETE: tuple_complete,
+        gate.RULE_SERIALIZATION_LENGTH: serialization_length,
+        gate.RULE_SERIALIZATION_COUNTABLE: serialization_countable,
+        gate.RULE_SERIALIZATION_NAMED_CALLEES: serialization_named,
+        gate.RULE_RECORD_SIZE: record_size,
+        gate.RULE_RECORD_APPENDIX_ORDER: appendix_order,
+        gate.RULE_RECORD_APPENDIX_CONTIGUOUS: appendix_contiguous,
+        gate.RULE_RECORD_APPENDIX_ENDS_RECORD: appendix_ends,
+        gate.RULE_DWARF_RECORD_PRESENT: dwarf_record_present,
+        gate.RULE_DWARF_MEMBER_READABLE: dwarf_member_readable,
+        gate.RULE_DWARF_SIZE_PRESENT: dwarf_size_present,
+        gate.RULE_DWARF_NM_AGREE: dwarf_nm_agree,
+        gate.RULE_NPU_IRQ_NEVER_ENABLED: npu_irq,
+        gate.RULE_NPU_IRQ_UNRESOLVED_WRITE: npu_irq_unresolved,
+        gate.RULE_STORE_FORM_UNREADABLE: store_form,
+    }
+
+
+def _appendix_fields():
+    import check_pmu_completion_visibility_v14 as _gate
+    return _gate.APPENDIX_FIELDS
+
+
+def _shift_appendix_by_name(text, delta):
+    import re as _re
+    rows = text.splitlines(keepends=True)
+    pending = False
+    for index, row in enumerate(rows):
+        named = _re.search(r"DW_AT_name\s*:\s*(?:.*:\s*)?(\S+)\s*$", row)
+        if named is not None:
+            pending = named.group(1) in _appendix_fields()
+            continue
+        located = _re.search(r"(DW_AT_data_member_location:\s*)(\d+)", row)
+        if located is not None and pending:
+            rows[index] = row.replace(
+                located.group(0), "%s%d" % (located.group(1), int(located.group(2)) + delta), 1
+            )
+            pending = False
+    return "".join(rows)
+
+
+def run_claim_matrix_suite(gate):
+    """Every load-bearing claim, all six columns."""
+
+    negatives = targeted_negatives(gate)
+    raised = set()
+    source = open(
+        os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                     "check_pmu_completion_visibility_v14.py"),
+        encoding="utf-8",
+    ).read()
+
+    for claim, detector, rule in gate.CLAIM_MATRIX:
+        # implementation: the rule is raised somewhere
+        check("%s :: the rule exists in %s" % (rule, detector), rule in source, detector)
+        # targeted negative, failing at this rule and no other
+        call = negatives.get(rule)
+        if call is None:
+            check("%s :: has a targeted negative" % rule, False, "none registered")
+            continue
+        try:
+            call()
+            check("%s :: the negative is refused" % rule, False, "accepted")
+            continue
+        except Exception as exc:
+            actual = gate.refusal_rule(exc)
+            check(
+                "%s :: the negative fails at its own rule" % rule,
+                actual == rule,
+                "got %s: %s" % (actual, ("%s" % exc)[:60]),
+            )
+            raised.add(rule)
+
+    check(
+        "every load-bearing claim carries a targeted negative",
+        len(raised) == len(gate.CLAIM_MATRIX),
+        "%d of %d" % (len(raised), len(gate.CLAIM_MATRIX)),
+    )
 
 
 def run_linked_image_suite(gate):
@@ -3293,14 +3643,6 @@ def run_linked_image_suite(gate):
     # these passed until the addressing forms the real image actually uses were
     # surveyed: three of its stores go through [rB, rI, lsl #2], which the
     # address matcher never matched and therefore never examined.
-    def _after(text, anchor, inserted):  # noqa: F811 - defined once, used above too
-        rows = []
-        for line in text.splitlines():
-            rows.append(line)
-            if line.startswith(anchor):
-                rows.append(inserted)
-        return "\n".join(rows)
-
     expect_image_reject(
         lambda: gate.verify_mailbox_publication_image(
             _after(linked_image("Q"), "310023d4:",
@@ -3842,6 +4184,125 @@ def run_real_vendor_source_suite(gate, patcher):
             vendor_out,
             "the source gate accepts the real generated %s pair" % variant,
         )
+
+
+def run_gate_efficacy_suite(gate, patcher):
+    """What the load-bearing rules do when the artifacts that ship go through them.
+
+    The claim matrix proves each rule refuses a fixture aimed at it, which is
+    necessary and not sufficient: a rule can be sound, targeted and still never
+    look at anything on the real artifact. So the real verification is traced --
+    three linked images, the two cross-variant proofs and the three generated
+    source pairs -- and two questions are asked of the trace.
+
+    Was every claim's detector executed against the real artifacts, and did any
+    loop in this gate run zero times while they went through. The second is the
+    general form of the defect that cost the most here: a rotated loop whose body
+    set came out empty made every per-iteration rule vacuously true and looked
+    exactly like a pass.
+    """
+
+    source = pathlib.Path(gate.__file__).read_text()
+    lines = source.splitlines()
+    tree = ast.parse(source)
+    functions = [node for node in ast.walk(tree) if isinstance(node, ast.FunctionDef)]
+
+    def enclosing(lineno):
+        holders = [f for f in functions if f.lineno <= lineno <= f.end_lineno]
+        if not holders:
+            return None
+        return min(holders, key=lambda f: f.end_lineno - f.lineno).name
+
+    raise_sites = {}
+    for index, line in enumerate(lines):
+        hit = re.search(r"raise fail_rule\((RULE_[A-Z0-9_]+)?", line)
+        if hit is None:
+            continue
+        rule = hit.group(1)
+        if rule is None:
+            following = lines[index + 1].strip().rstrip(",")
+            rule = following if following.startswith("RULE_") else None
+        if rule is not None:
+            raise_sites.setdefault(rule, []).append(index + 1)
+
+    executed = set()
+    target = gate.__file__
+
+    def tracer(frame, event, arg):
+        if frame.f_code.co_filename != target:
+            return None
+        if event == "line":
+            executed.add(frame.f_lineno)
+        return tracer
+
+    runner_stock = load_real_runner_stock()
+    vendor_stock = load_real_vendor_stock()
+    generated = []
+    for variant in VARIANTS:
+        runner_out, _ = patcher.patch_runner(runner_stock, variant)
+        vendor_out, _ = patcher.patch_vendor(vendor_stock, variant)
+        generated.append((variant, runner_out, vendor_out))
+
+    sys.settrace(tracer)
+    try:
+        for variant in VARIANTS:
+            gate.verify_linked_image(
+                linked_image(variant),
+                linked_nm(variant),
+                variant,
+                dwarf_text=linked_dwarf() if variant == "Q" else None,
+            )
+        gate.verify_read_order_equivalence(linked_image("QS"), linked_image("SQ"))
+        gate.verify_common_tail_is_shared({name: linked_image(name) for name in VARIANTS})
+        for variant, runner_out, vendor_out in generated:
+            gate.verify_generated_sources(runner_out, vendor_out, variant)
+    finally:
+        sys.settrace(None)
+
+    check("the efficacy trace executed this gate", len(executed) > 1000, len(executed))
+
+    unapplied = []
+    for _claim, detector, rule in gate.CLAIM_MATRIX:
+        # A rule raised from more than one detector is named "several" in the
+        # matrix, so its owners are resolved from where it is actually raised.
+        owners = (
+            {enclosing(site) for site in raise_sites.get(rule, [])}
+            if detector == "several"
+            else {detector}
+        )
+        reached = any(
+            line in executed
+            for function in functions
+            if function.name in owners
+            for line in range(function.lineno, function.end_lineno + 1)
+        )
+        if not reached:
+            unapplied.append((rule, sorted(owner for owner in owners if owner)))
+    check(
+        "every load-bearing claim's detector runs against the real artifacts",
+        not unapplied,
+        unapplied[:3],
+    )
+
+    counted = {}
+    for node in ast.walk(tree):
+        if not isinstance(node, (ast.For, ast.While)):
+            continue
+        if node.lineno in executed and node.body[0].lineno not in executed:
+            key = (enclosing(node.lineno), " ".join(lines[node.lineno - 1].split()))
+            counted[key] = counted.get(key, 0) + 1
+    measured = {(name, head, count) for (name, head), count in counted.items()}
+    declared = set(gate.VACUOUS_ON_REAL_ARTIFACTS)
+    check(
+        "no loop examines nothing on the real artifacts without being declared",
+        measured <= declared,
+        sorted(measured - declared)[:3],
+    )
+    check(
+        "every declared vacuous loop is still vacuous, and still there",
+        declared <= measured,
+        sorted(declared - measured)[:3],
+    )
 
 
 def run_generated_fixture_cli_suite(patcher):
@@ -12320,6 +12781,7 @@ if __name__ == "__main__":
         run_source_gate_remediation_suite(gate)
         run_deferred_claim_suite(gate)
         run_linked_image_suite(gate)
+        run_claim_matrix_suite(gate)
         run_value_and_confinement_remediation_suite(gate)
         run_e6_remediation_suite(gate)
         run_a0fe0ab_remediation_suite(gate)
@@ -12343,6 +12805,7 @@ if __name__ == "__main__":
         if gate is not None:
             run_generator_suite(gate, patcher)
             run_real_vendor_source_suite(gate, patcher)
+            run_gate_efficacy_suite(gate, patcher)
             run_generated_fixture_cli_suite(patcher)
 
     check(
