@@ -128,7 +128,7 @@ STATUS_FAULT_MASK = 0x314
 
 # The suite is frozen at this many assertions. Adding a named fixture is a
 # deliberate act, so the count moves with it and never drifts silently.
-EXPECTED_PASS_COUNT = 1133
+EXPECTED_PASS_COUNT = 1138
 
 CHECKER_PATH = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
@@ -3352,6 +3352,78 @@ def run_linked_image_suite(gate):
         lambda: gate.verify_runner_mailbox_gate_image(overrun, linked_nm("Q")),
         "a switch table read past its data is refused",
         "outside the data",
+    )
+
+    # A second sweep found five more rules with nothing asking them to hold.
+    # The measured loop's cleanliness rules are the ones that matter most here:
+    # every one of them could be deleted and the suite stayed green.
+    loop_anchor = "310024d2:"
+
+    expect_image_reject(
+        lambda: gate.verify_primary_loop_image(
+            _after(linked_image("Q"), loop_anchor,
+                   "310024d3:\tf8cc 2018 \tstr.w\tr2, [ip, #24]"),
+            "Q",
+        ),
+        "a primary loop that writes MMIO per iteration is refused",
+        "writes MMIO",
+    )
+    expect_image_reject(
+        lambda: gate.verify_primary_loop_image(
+            _after(linked_image("Q"), loop_anchor, "310024d3:\t9301      \tstr\tr3, [sp, #4]"),
+            "Q",
+        ),
+        "a primary loop that stores to memory per iteration is refused",
+        "stores per iteration",
+    )
+    # Outside the loop on purpose: inside it, the read-order rule catches the
+    # extra load first and the QSIZE rule is never asked anything.
+    expect_image_reject(
+        lambda: gate.verify_primary_loop_image(
+            _after(linked_image("Q"), "310024dc:",
+                   "310024dd:\tf8dc 3020 \tldr.w\tr3, [ip, #32]"),
+            "Q",
+        ),
+        "a primary helper that reaches QSIZE outside its loop is refused",
+        "QSIZE",
+    )
+    expect_image_reject(
+        lambda: gate.verify_convergence_tail_image(
+            _replace_row(linked_image("Q"), "31002548:",
+                         "31002548:\tf242 720f \tmovw\tr2, #9999\t@ 0x270f")
+        ),
+        "a convergence tail with the wrong bound is refused",
+        "iteration bound",
+    )
+    # The record keeps its size and the appendix keeps its spacing; it simply
+    # stops being the tail of the record. Growing byte_size instead would be
+    # caught by the size rule and this one would never be asked.
+    # Rewritten by member name rather than by offset value: the same numbers
+    # appear elsewhere in the debug info, and a value-based edit moves someone
+    # else's member and trips the contiguity rule before this one is asked.
+    def _shift_appendix(text, delta):
+        rows = text.splitlines(keepends=True)
+        pending = False
+        for index, row in enumerate(rows):
+            named = re.search(r"DW_AT_name\s*:\s*(?:.*:\s*)?(\S+)\s*$", row)
+            if named is not None:
+                pending = named.group(1) in gate.APPENDIX_FIELDS
+                continue
+            located = re.search(r"(DW_AT_data_member_location:\s*)(\d+)", row)
+            if located is not None and pending:
+                rows[index] = row.replace(
+                    located.group(0),
+                    "%s%d" % (located.group(1), int(located.group(2)) + delta),
+                    1,
+                )
+                pending = False
+        return "".join(rows)
+
+    shifted = _shift_appendix(linked_dwarf(), -4)
+    expect_image_reject(
+        lambda: gate.verify_record_layout_image(shifted, linked_nm("Q")),
+        "a record whose appendix does not end it is refused",
+        "does not end the record",
     )
 
     # --- attacks on the image ------------------------------------------------

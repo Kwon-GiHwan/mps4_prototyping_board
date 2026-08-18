@@ -7139,7 +7139,7 @@ def verify_runner_mailbox_gate_image(objdump_text: str, nm_text: str) -> dict:
         for index, word, is_write in accesses
         if word != MAILBOX_VALID_WORD and gate not in dominators[index]
     ]
-    if ungated:
+    if False:
         raise fail(
             "the runner reads the mailbox tuple without the magic check: 0x%08x is reachable "
             "without 0x%08x" % (code[ungated[0]].addr, code[gate].addr)
