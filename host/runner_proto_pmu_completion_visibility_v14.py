@@ -213,3 +213,177 @@ def v8_prefix_view(result: PmuCompletionVisibilityV14Result) -> tuple:
             % (BASE_WORDS, len(result.base_words))
         )
     return result.base_words
+
+
+# ---------------------------------------------------------------------------
+# Phase validity
+#
+# A frame carries words for every stage whether or not that stage ran, so the
+# question a reader actually has is which of them mean anything. That is decided
+# here, once, from the results the firmware published -- not by each consumer
+# noticing that a timestamp looks like 0xFFFFFFFF.
+#
+# The rule throughout: a word is valid when the stage that writes it reached the
+# point of writing it. Everything downstream of a failure is invalid even when
+# the frame happens to carry a plausible number there.
+# ---------------------------------------------------------------------------
+
+PRIMARY_NOT_RUN = 0
+PRIMARY_OBSERVED = 1
+PRIMARY_TIMEOUT = 2
+PRIMARY_RESET = 3
+PRIMARY_FAULT = 4
+
+CONVERGENCE_NOT_RUN = 0
+CONVERGENCE_SUCCESS = 1
+CONVERGENCE_TIMEOUT = 2
+CONVERGENCE_RESET = 3
+CONVERGENCE_FAULT = 4
+
+PHASE_NONE = 0
+PHASE_PRE_PROGRAM = 1
+PHASE_PRE_SUBMIT = 2
+PHASE_PRIMARY = 3
+PHASE_CONVERGENCE = 4
+PHASE_CLEANUP = 5
+
+REASON_NONE = 0
+
+ITERATION_BOUND = 10000
+
+CATEGORY_Q_FIRST = "Q_FIRST"
+CATEGORY_S5_FIRST = "S5_FIRST"
+CATEGORY_SAME_ITERATION = "SAME_ITERATION"
+
+PRIMARY_FAILURES = (PRIMARY_TIMEOUT, PRIMARY_RESET, PRIMARY_FAULT)
+CONVERGENCE_FAILURES = (CONVERGENCE_TIMEOUT, CONVERGENCE_RESET, CONVERGENCE_FAULT)
+
+
+def _iteration_is_well_formed(count: int, succeeded: bool) -> bool:
+    """A stage that ran counts from one; a stage that did not counts zero."""
+
+    return 1 <= count <= ITERATION_BOUND if succeeded else count == 0
+
+
+def classify_payload(result: PmuCompletionVisibilityV14Result) -> dict:
+    """Which phases of one frame mean anything, and what may be published.
+
+    Returns a document rather than a verdict: a consumer that wants the first
+    tuple has to read whether the first tuple is valid, and a consumer that
+    wants a category gets one only where the contract allows a category at all.
+    """
+
+    primary_ok = result.primary_result == PRIMARY_OBSERVED
+    convergence_ok = result.convergence_result == CONVERGENCE_SUCCESS
+    pre_run_failed = result.failure_phase in (PHASE_PRE_PROGRAM, PHASE_PRE_SUBMIT)
+    cleanup_failed = result.failure_phase == PHASE_CLEANUP
+    submitted = not pre_run_failed
+
+    problems = []
+
+    # The stage results and the failure phase are two accounts of the same run,
+    # and they have to agree. Disagreement is not a phase to be classified; it
+    # is a frame nobody should read.
+    if result.primary_result in PRIMARY_FAILURES and result.failure_phase != PHASE_PRIMARY:
+        problems.append("primary failed but the failure phase is %d" % result.failure_phase)
+    if (
+        result.convergence_result in CONVERGENCE_FAILURES
+        and result.failure_phase != PHASE_CONVERGENCE
+    ):
+        problems.append("convergence failed but the failure phase is %d" % result.failure_phase)
+    if result.failure_phase == PHASE_NONE and result.failure_reason != REASON_NONE:
+        problems.append("a failure reason without a failure phase")
+    if pre_run_failed and result.primary_result != PRIMARY_NOT_RUN:
+        problems.append("the primary loop ran after a pre-run failure")
+
+    if not _iteration_is_well_formed(result.primary_iterations, primary_ok):
+        problems.append(
+            "primary_iterations %d does not match primary_result %d"
+            % (result.primary_iterations, result.primary_result)
+        )
+    if not _iteration_is_well_formed(result.convergence_iterations, convergence_ok):
+        problems.append(
+            "convergence_iterations %d does not match convergence_result %d"
+            % (result.convergence_iterations, result.convergence_result)
+        )
+    expected_timeout = 1 if result.convergence_result == CONVERGENCE_TIMEOUT else 0
+    if result.convergence_timeout != expected_timeout:
+        problems.append(
+            "convergence_timeout %d does not match convergence_result %d"
+            % (result.convergence_timeout, result.convergence_result)
+        )
+
+    succeeded = (
+        not problems
+        and result.failure_phase == PHASE_NONE
+        and result.failure_reason == REASON_NONE
+        and primary_ok
+        and convergence_ok
+    )
+
+    phases = {
+        # Submit-side timing exists once the run was allowed to start.
+        "t_submit_after_cmd": submitted,
+        "t_primary_entry": submitted,
+        # The first-observation timestamp is written by the primary loop when it
+        # observed something, so a timeout has no P1.
+        "t_first_observation": primary_ok,
+        "first_tuple": primary_ok,
+        "convergence": convergence_ok,
+        # The failure tuple is the one thing a failure does publish.
+        "failure_tuple": result.failure_phase != PHASE_NONE,
+        "cleanup_readbacks": submitted,
+    }
+
+    # Q observes one register, so its first tuple has no STATUS-derived words to
+    # believe even when the tuple itself is valid.
+    q_only = result.variant == "Q"
+    tuple_fields = {
+        "first_qread": phases["first_tuple"],
+        "first_q_done": phases["first_tuple"],
+        "first_status": phases["first_tuple"] and not q_only,
+        "first_cmd_end_reached": phases["first_tuple"] and not q_only,
+        "first_irq_raised": phases["first_tuple"] and not q_only,
+        "first_state": phases["first_tuple"] and not q_only,
+    }
+
+    category = None
+    if succeeded and not q_only:
+        q_done = result.first_q_done == 1
+        cmd_end = result.first_cmd_end_reached == 1
+        if q_done and cmd_end:
+            category = CATEGORY_SAME_ITERATION
+        elif q_done:
+            category = CATEGORY_Q_FIRST
+        elif cmd_end:
+            category = CATEGORY_S5_FIRST
+        else:
+            problems.append("a successful primary observation that observed neither register")
+            succeeded = False
+
+    return {
+        "variant": result.variant,
+        "sample_valid": succeeded,
+        "phases": phases,
+        "first_tuple_fields": tuple_fields,
+        "primary_result": result.primary_result,
+        "convergence_result": result.convergence_result,
+        "failure_phase": result.failure_phase,
+        "failure_reason": result.failure_reason,
+        # Q is a single-register variant: it has no read order to categorise, so
+        # it never carries a category rather than carrying an empty one.
+        "category": category,
+        "category_scope": (
+            "Q observes one register and has no read order to categorise"
+            if q_only
+            else "read order category, published only for a fully successful sample"
+        ),
+        # Nothing derived from an invalid phase may be published, and that
+        # includes anything that would read like a performance number.
+        "may_publish_distribution": succeeded,
+        "may_publish_pmu_metric": False,
+        "perturbed_by_convergence_tail": True,
+        "not_comparable_to_v13": True,
+        "not_performance_metric": True,
+        "problems": problems,
+    }
