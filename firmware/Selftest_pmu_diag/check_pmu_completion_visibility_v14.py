@@ -5936,6 +5936,37 @@ _ELF_MEMORY = re.compile(
 _ELF_WRITEBACK = re.compile(r"\][ \t]*!|\],\s*#")
 _ELF_DESTINATION = re.compile(r"^(\w+?)(?:\.[nw])?\s+(\w+)\s*,")
 _ELF_TEST_MASK = re.compile(r"^tst(?:\.[nw])?\s+(\w+),\s*#(\d+)")
+# Any store, whatever its addressing form. _ELF_MEMORY reads only the
+# ``[rB, #imm]`` shape, and a rule built on it does not *refuse* the others --
+# it does not see them. The real image stores through ``[rB, rI, lsl #2]`` in
+# three places, so this is a form the gate has to account for rather than one it
+# can pretend does not occur.
+_ELF_ANY_STORE = re.compile(
+    r"^(?:str|strb|strh|strd|stm[a-z]*|push)(?:\.[nw])?\s+(?:(\w+)\s*,\s*)?\[?(\w+)"
+)
+_ELF_STORE_MNEMONICS = ("str", "strb", "strh", "strd", "stm", "stmia", "stmdb", "push")
+
+
+def _elf_is_store(insn) -> bool:
+    return insn.mnemonic in _ELF_STORE_MNEMONICS
+
+
+def _elf_unresolved_store(code, states, index):
+    """``(value register, base register)`` when a store's address is unreadable.
+
+    Returns ``None`` when the store is one ``_ELF_MEMORY`` can resolve, which is
+    the only case the address-based rules are entitled to reason about.
+    """
+
+    insn = code[index]
+    if not _elf_is_store(insn):
+        return None
+    if _ELF_MEMORY.match(insn.text):
+        return None
+    hit = _ELF_ANY_STORE.match(insn.text)
+    if hit is None:
+        return ("", "")
+    return (hit.group(1) or "", hit.group(2) or "")
 # ``tst`` is not the only way to test a mask: at -O1 GCC also writes
 # ``ands rX, rS, #mask``, which sets the flags the branch reads and happens to
 # park the result in a register nobody uses. A rule that knew only ``tst`` would
@@ -7234,6 +7265,20 @@ def verify_npu_irq_never_enabled_image(objdump_text: str) -> dict:
             continue
         states = elf_register_values(code, literals, successors)
         for index, insn in enumerate(code):
+            unresolved = _elf_unresolved_store(code, states, index)
+            if unresolved is not None:
+                # A store into the enable bank through an index register reaches
+                # a word this gate cannot name, and one of those words is the
+                # NPU's. Refused rather than skipped.
+                base = states[index].get(unresolved[1])
+                if base is not None and (
+                    NVIC_ISER_BASE <= base < NVIC_ISER_BASE + 4 * NVIC_ISER_WORDS
+                ):
+                    raise fail(
+                        "%s writes the interrupt-enable bank at 0x%08x through an addressing "
+                        "form this gate cannot resolve: %s" % (name, insn.addr, insn.text)
+                    )
+                continue
             hit = _ELF_MEMORY.match(insn.text)
             if hit is None or hit.group(1) != "str":
                 continue
@@ -7366,6 +7411,19 @@ def verify_mailbox_publication_image(objdump_text: str, nm_text: str) -> dict:
             continue
         states = elf_register_values(code, literals, successors)
         for index, insn in enumerate(code):
+            unresolved = _elf_unresolved_store(code, states, index)
+            if unresolved is not None:
+                # The attacker's move is to get the magic into a register and
+                # store it through an addressing form the gate skips. So a store
+                # carrying the magic is refused whenever its destination cannot
+                # be read, whatever shape it is written in.
+                value_register = unresolved[0]
+                if value_register and states[index].get(value_register) == MAILBOX_VALID:
+                    raise fail(
+                        "%s stores the mailbox magic at 0x%08x through an addressing form this "
+                        "gate cannot resolve: %s" % (name, insn.addr, insn.text)
+                    )
+                continue
             hit = _ELF_MEMORY.match(insn.text)
             if hit is None or hit.group(1) != "str":
                 continue

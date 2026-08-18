@@ -128,7 +128,7 @@ STATUS_FAULT_MASK = 0x314
 
 # The suite is frozen at this many assertions. Adding a named fixture is a
 # deliberate act, so the count moves with it and never drifts silently.
-EXPECTED_PASS_COUNT = 1128
+EXPECTED_PASS_COUNT = 1130
 
 CHECKER_PATH = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
@@ -3287,6 +3287,36 @@ def run_linked_image_suite(gate):
         lambda: gate.verify_npu_irq_never_enabled_image(enabled),
         "an image that enables the NPU interrupt is refused",
         "enables the NPU interrupt",
+    )
+
+    # A store the gate cannot decode is not a store the gate may skip. Both of
+    # these passed until the addressing forms the real image actually uses were
+    # surveyed: three of its stores go through [rB, rI, lsl #2], which the
+    # address matcher never matched and therefore never examined.
+    def _after(text, anchor, inserted):
+        rows = []
+        for line in text.splitlines():
+            rows.append(line)
+            if line.startswith(anchor):
+                rows.append(inserted)
+        return "\n".join(rows)
+
+    expect_image_reject(
+        lambda: gate.verify_mailbox_publication_image(
+            _after(linked_image("Q"), "310023d4:",
+                   "310023d6:\tf843 2023 \tstr.w\tr2, [r3, r3, lsl #2]"),
+            linked_nm("Q"),
+        ),
+        "a second magic store through a register-indexed address is refused",
+        "cannot resolve",
+    )
+    expect_image_reject(
+        lambda: gate.verify_npu_irq_never_enabled_image(
+            _after(linked_image("Q"), "31001fde:",
+                   "31001fe0:\tf842 1003 \tstr.w\tr1, [r2, r3, lsl #2]")
+        ),
+        "a register-indexed write into the interrupt-enable bank is refused",
+        "cannot resolve",
     )
 
     # --- attacks on the image ------------------------------------------------
