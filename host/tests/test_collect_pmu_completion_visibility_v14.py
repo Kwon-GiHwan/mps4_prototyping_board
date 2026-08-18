@@ -313,3 +313,98 @@ class CollectorFrameIngestTests(unittest.TestCase):
         with self.assertRaises(collector.CollectorError):
             self.cell.record_frame(self.frame(variant="Q", seq=1), boot_id="boot-1")
         self.assertTrue(self.campaign.stopped)
+
+
+class EndToEndRejectionTests(unittest.TestCase):
+    """Detection has to reach refusal, and refusal has to reach the campaign.
+
+    The classifier could notice a problem and still return a sample the
+    collector accepted: every test asserted `problems` was non-empty and none
+    asserted `sample_valid` was then False, so the link between the two was
+    untested in both directions. This walks the whole path for one mutation at
+    a time -- raw frame, parse, classify, validity, collector, cell, campaign.
+    """
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.campaign = collector.Campaign(self._tmp.name, IDENTITY)
+
+    def tearDown(self):
+        self._tmp.cleanup()
+
+    def mutations(self):
+        from host.tests import test_pmu_completion_visibility_v14 as frames
+        return (
+            ("pre-submit running", frames.mutate_pre_submit_running),
+            ("stale interrupt", frames.mutate_pre_submit_stale_irq),
+            ("stale cmd_end", frames.mutate_pre_submit_stale_cmd_end),
+            ("pre-program fault", frames.mutate_pre_program_fault),
+            ("reset in the first tuple", frames.mutate_first_tuple_reset),
+            ("convergence without cmd_end", frames.mutate_convergence_not_converged),
+            ("short convergence cursor", frames.mutate_convergence_qread_short),
+            ("interrupt enabled", frames.mutate_nvic_enabled),
+            ("observed nothing", frames.mutate_first_tuple_observed_nothing),
+        )
+
+    def test_every_contract_violation_is_refused_all_the_way_to_the_campaign(self):
+        from host.tests import test_pmu_completion_visibility_v14 as frames
+        from host import runner_proto_pmu_completion_visibility_v14 as proto
+
+        for label, mutate in self.mutations():
+            with self.subTest(label):
+                campaign = collector.Campaign(
+                    tempfile.mkdtemp(dir=self._tmp.name), IDENTITY
+                )
+                cell = campaign.cell(1, 1, "QS")
+                # Four good runs first, so the refusal has something to discard.
+                for run_id in range(1, 5):
+                    cell.record_frame(
+                        frames.build_frame("QS", seq=run_id), boot_id="boot-1"
+                    )
+                self.assertEqual(len(cell.samples), 4)
+
+                payload = frames.build_frame(
+                    "QS", mutate(frames.canonical_appendix("QS")), seq=5
+                )
+                # The parser accepts it: this is a well-formed V14 frame.
+                result = proto.parse_payload(payload)
+                document = proto.classify_payload(result)
+                # The classifier notices...
+                self.assertTrue(document["problems"], "%s: nothing detected" % label)
+                # ...and refuses...
+                self.assertFalse(document["sample_valid"], "%s: detected, not refused" % label)
+                # ...and the refusal reaches the campaign.
+                with self.assertRaises(collector.CollectorError):
+                    cell.record_frame(payload, boot_id="boot-1")
+                self.assertEqual(cell.samples, [], label)
+                self.assertFalse(cell.complete, label)
+                self.assertTrue(campaign.stopped, label)
+                self.assertEqual(len(campaign.quarantined()), 1, label)
+                self.assertEqual(campaign.completed_cells(), [], label)
+
+    def test_a_detected_problem_always_invalidates_the_sample(self):
+        # The link C28 showed was untested, asserted directly: there is no
+        # frame the classifier complains about and still calls a sample.
+        from host.tests import test_pmu_completion_visibility_v14 as frames
+        from host import runner_proto_pmu_completion_visibility_v14 as proto
+
+        for label, mutate in self.mutations():
+            document = proto.classify_payload(
+                proto.parse_payload(
+                    frames.build_frame("QS", mutate(frames.canonical_appendix("QS")))
+                )
+            )
+            self.assertEqual(
+                bool(document["problems"]), not document["sample_valid"], label
+            )
+
+    def test_the_collector_cannot_be_handed_a_verdict(self):
+        # record_frame takes bytes. There is no argument through which a caller
+        # can assert that a bad frame was fine.
+        import inspect
+
+        signature = inspect.signature(collector.Cell.record_frame)
+        self.assertEqual(
+            [name for name in signature.parameters if name != "self"],
+            ["payload", "boot_id", "reread"],
+        )
