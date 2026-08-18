@@ -21,9 +21,15 @@ as the evidence it is.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import shutil
+
+try:
+    from host import runner_proto_pmu_completion_visibility_v14 as v14
+except ModuleNotFoundError:  # pragma: no cover - direct script fallback
+    import runner_proto_pmu_completion_visibility_v14 as v14
 
 VARIANTS = ("Q", "QS", "SQ")
 RUNS_PER_CELL = 10
@@ -38,6 +44,12 @@ IDENTITY_KEYS = (
 
 class CollectorError(RuntimeError):
     """A refusal with a reason. Never raised for something the board did."""
+
+
+def payload_digest(payload: bytes) -> str:
+    """The digest the campaign records for a frame, over the bytes as received."""
+
+    return hashlib.sha256(payload).hexdigest()
 
 
 class Cell:
@@ -109,6 +121,58 @@ class Cell:
         self._write()
         if self.complete:
             self.campaign._cell_completed(self)
+
+    def record_frame(self, payload: bytes, *, boot_id: str, reread: bytes | None = None) -> dict:
+        """Parse, classify and record one frame. The only honest entry point.
+
+        `record()` takes a dict and believes its `sample_valid`. That is the
+        right shape for testing the bookkeeping and the wrong one for a
+        campaign: it lets a run be declared good by whoever offers it. Here the
+        verdict is derived from the bytes -- the parser decides whether it is a
+        V14 frame at all, and the phase classifier decides whether it is a
+        sample -- and the caller supplies only what it alone knows, the boot it
+        came from and the optional second read.
+        """
+
+        digest = payload_digest(payload)
+        if reread is not None and payload_digest(reread) != digest:
+            self._end(
+                "the frame and its re-read differ: %s against %s"
+                % (digest[:16], payload_digest(reread)[:16])
+            )
+        try:
+            result = v14.parse_payload(payload)
+        except v14.ProtocolError as exc:
+            self._end("the frame is not a V14 record: %s" % exc)
+        document = v14.classify_payload(result)
+        if document["variant"] != self.variant:
+            self._end(
+                "the frame carries variant %s in a %s cell" % (document["variant"], self.variant)
+            )
+        if not document["sample_valid"]:
+            self._end(
+                "the frame is not a valid sample: %s"
+                % (document["problems"][0] if document["problems"]
+                   else "phase %d reason %d" % (result.failure_phase, result.failure_reason))
+            )
+        sample = {
+            # The firmware's own run counter, not the caller's idea of one.
+            "run_id": result.run_sequence,
+            "boot_id": boot_id,
+            "variant": document["variant"],
+            "sample_valid": True,
+            "payload_sha256": digest,
+            "reread_matched": reread is not None,
+            "category": document["category"],
+            "primary_iterations": result.primary_iterations,
+            "convergence_iterations": result.convergence_iterations,
+            "convergence_timeout": result.convergence_timeout,
+            "first_q_done": result.first_q_done,
+            "first_cmd_end_reached": result.first_cmd_end_reached,
+            "q_observation_cycles": (result.t_first_observation - result.t_primary_entry) & 0xFFFFFFFF,
+        }
+        self.record(sample)
+        return sample
 
     def _end(self, reason: str):
         """Quarantine, stop, then raise. Never raise without the first two."""

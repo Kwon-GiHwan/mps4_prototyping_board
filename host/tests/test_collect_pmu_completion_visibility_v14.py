@@ -246,3 +246,70 @@ class CollectorFailClosedTests(unittest.TestCase):
         self.assertTrue(os.path.isdir(path))
         cell.fail("something")
         self.assertFalse(os.path.exists(path), "the failed attempt is still in cells/")
+
+
+class CollectorFrameIngestTests(unittest.TestCase):
+    """The collector decides validity from the frame, not from the caller.
+
+    Until this existed, `record()` took `sample_valid` from whoever called it
+    and the phase classifier had no caller anywhere in the tree. A campaign
+    could therefore be assembled entirely out of assertions.
+    """
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.campaign = collector.Campaign(self._tmp.name, IDENTITY)
+        self.cell = self.campaign.cell(1, 1, "Q")
+
+    def tearDown(self):
+        self._tmp.cleanup()
+
+    def frame(self, **kw):
+        from host.tests import test_pmu_completion_visibility_v14 as frames
+        return frames.build_frame(**kw)
+
+    def test_a_frame_is_parsed_classified_and_recorded(self):
+        sample = self.cell.record_frame(self.frame(variant="Q", seq=1), boot_id="boot-1")
+        self.assertEqual(sample["run_id"], 1)
+        self.assertEqual(sample["variant"], "Q")
+        self.assertTrue(sample["sample_valid"])
+        self.assertEqual(sample["payload_sha256"], collector.payload_digest(self.frame(variant="Q", seq=1)))
+        self.assertEqual(len(self.cell.samples), 1)
+
+    def test_the_caller_cannot_assert_validity(self):
+        # A frame whose primary stage failed is not valid however it is offered.
+        from host.tests import test_pmu_completion_visibility_v14 as frames
+        bad = frames.failure_appendix("Q", 3, 7, primary=2)
+        with self.assertRaises(collector.CollectorError):
+            self.cell.record_frame(self.frame(variant="Q", appendix=bad, seq=1), boot_id="boot-1")
+        self.assertTrue(self.campaign.stopped)
+
+    def test_a_frame_the_parser_refuses_ends_the_attempt(self):
+        with self.assertRaises(collector.CollectorError):
+            self.cell.record_frame(b"\x00" * 508, boot_id="boot-1")
+        self.assertTrue(self.campaign.stopped)
+
+    def test_a_frame_whose_variant_is_not_the_cell_s_ends_the_attempt(self):
+        with self.assertRaises(collector.CollectorError):
+            self.cell.record_frame(self.frame(variant="SQ", seq=1), boot_id="boot-1")
+        self.assertTrue(self.campaign.stopped)
+
+    def test_a_reread_that_differs_from_the_first_read_ends_the_attempt(self):
+        first = self.frame(variant="Q", seq=1)
+        other = self.frame(variant="Q", seq=2)
+        with self.assertRaises(collector.CollectorError):
+            self.cell.record_frame(first, boot_id="boot-1", reread=other)
+        self.assertTrue(self.campaign.stopped)
+
+    def test_a_matching_reread_is_accepted(self):
+        frame = self.frame(variant="Q", seq=1)
+        sample = self.cell.record_frame(frame, boot_id="boot-1", reread=frame)
+        self.assertTrue(sample["reread_matched"])
+
+    def test_the_run_sequence_comes_from_the_frame(self):
+        self.cell.record_frame(self.frame(variant="Q", seq=1), boot_id="boot-1")
+        # The firmware's own run_sequence restarted; that is a boot boundary
+        # inside a cell however the caller numbers its runs.
+        with self.assertRaises(collector.CollectorError):
+            self.cell.record_frame(self.frame(variant="Q", seq=1), boot_id="boot-1")
+        self.assertTrue(self.campaign.stopped)
