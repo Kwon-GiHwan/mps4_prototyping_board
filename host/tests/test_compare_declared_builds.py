@@ -12,6 +12,7 @@ determinism.
 """
 
 import json
+import os
 import pathlib
 import subprocess
 import sys
@@ -116,6 +117,90 @@ class ComparatorContract(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(report["mismatches"], [])
         self.assertEqual(sorted(report["variants"]), sorted(VARIANTS))
+
+    # ------------------------------------------------------------------
+    # One tree wearing two names
+    #
+    # Every symlink shape below was already refused, and all four of these were
+    # accepted: the comparator would report ``mismatches=[]`` and exit zero for
+    # a comparison that never had two builds in it. That is the exact shape of
+    # a determinism claim that was never tested, produced by the tool the whole
+    # contract's determinism evidence comes from.
+    # ------------------------------------------------------------------
+
+    def test_the_same_root_on_both_sides_is_refused(self):
+        with tempfile.TemporaryDirectory() as scratch:
+            root = pathlib.Path(scratch)
+            left = root / "BUILD_A"
+            _write_side(left, BASE)
+            result = self.run_comparator(left, left, root / "report.json")
+        self.assertEqual(result.returncode, 2, result.stdout)
+        self.assertIn("same directory", result.stderr)
+
+    def test_a_path_alias_of_one_root_is_refused(self):
+        with tempfile.TemporaryDirectory() as scratch:
+            root = pathlib.Path(scratch)
+            left = root / "BUILD_A"
+            _write_side(left, BASE)
+            for alias in (left / ".", left / "Q" / ".."):
+                result = self.run_comparator(left, alias, root / "report.json")
+                self.assertEqual(result.returncode, 2, "%s: %s" % (alias, result.stdout))
+                self.assertIn("same directory", result.stderr)
+
+    def test_a_root_nested_inside_the_other_is_refused(self):
+        with tempfile.TemporaryDirectory() as scratch:
+            root = pathlib.Path(scratch)
+            left = root / "BUILD_A"
+            inner = left / "inner"
+            _write_side(left, BASE)
+            _write_side(inner, BASE)
+            result = self.run_comparator(left, inner, root / "report.json")
+        self.assertEqual(result.returncode, 2, result.stdout)
+        self.assertIn("nested", result.stderr)
+
+    def test_hardlinked_artifacts_are_not_two_builds(self):
+        # A hardlink carries no marker a path check can see: the file is one
+        # inode under two names, and it agrees with itself forever.
+        with tempfile.TemporaryDirectory() as scratch:
+            root = pathlib.Path(scratch)
+            left, right = root / "BUILD_A", root / "BUILD_B"
+            _write_side(left, BASE)
+            _write_side(right, BASE)
+            linked = right / "Q" / "APP.BIN"
+            linked.unlink()
+            os.link(left / "Q" / "APP.BIN", linked)
+            report = root / "report.json"
+            result = self.run_comparator(left, right, report)
+            payload = json.loads(report.read_text())
+        self.assertNotEqual(result.returncode, 0)
+        self.assertTrue(
+            any(m["kind"] == "alias" and m["artifact"] == "APP.BIN" for m in payload["mismatches"]),
+            payload["mismatches"],
+        )
+
+    def test_a_hardlinked_manifest_is_not_two_builds(self):
+        with tempfile.TemporaryDirectory() as scratch:
+            root = pathlib.Path(scratch)
+            left, right = root / "BUILD_A", root / "BUILD_B"
+            _write_side(left, BASE)
+            _write_side(right, BASE)
+            linked = right / "QS" / MANIFEST_NAME
+            linked.unlink()
+            os.link(left / "QS" / MANIFEST_NAME, linked)
+            report = root / "report.json"
+            result = self.run_comparator(left, right, report)
+            payload = json.loads(report.read_text())
+        self.assertNotEqual(result.returncode, 0)
+        self.assertTrue(
+            any(m["kind"] == "alias" for m in payload["mismatches"]), payload["mismatches"]
+        )
+
+    def test_two_independent_trees_are_still_ordinary(self):
+        # The other half of the same rule: refusing aliases must not refuse the
+        # thing the comparison exists to accept.
+        result, report = self.compare()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(report["mismatches"], [])
 
     def test_missing_declared_artifact_is_a_mismatch(self):
         def drop(right):

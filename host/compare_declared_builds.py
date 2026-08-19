@@ -232,6 +232,47 @@ def load_manifest(root: pathlib.Path, variant: str, name: str, side: str) -> tup
     return document, []
 
 
+def build_root_fault(left: pathlib.Path, right: pathlib.Path):
+    """Why these two roots cannot be two builds, or ``None``.
+
+    Everything below this asks whether two builds produced the same bytes. If
+    both sides are one tree the answer is yes for reasons that have nothing to
+    do with the compiler, and the report says ``mismatches=[]`` -- which is the
+    exact shape of a determinism claim that was never tested. Comparing a
+    directory with itself, or with an alias of itself, is refused here rather
+    than discovered later, and containment is refused too: a side that lives
+    inside the other shares its bytes by construction.
+    """
+
+    try:
+        here, there = left.resolve(strict=True), right.resolve(strict=True)
+    except OSError as exc:
+        return "a build root cannot be resolved: %s" % exc
+    if here == there:
+        return "--left and --right are the same directory (%s)" % here
+    if here in there.parents or there in here.parents:
+        return "--left and --right are nested (%s and %s)" % (here, there)
+    left_id, right_id = here.stat(), there.stat()
+    if (left_id.st_dev, left_id.st_ino) == (right_id.st_dev, right_id.st_ino):
+        return "--left and --right are one directory under two names"
+    return None
+
+
+def _same_file(left: pathlib.Path, right: pathlib.Path) -> bool:
+    """Whether two paths are one file: the same inode on the same device.
+
+    A hardlink carries no marker a path check could see. Two roots whose
+    artifacts are linked to one inode compare byte-identical without a second
+    build ever having run.
+    """
+
+    try:
+        here, there = left.stat(), right.stat()
+    except OSError:
+        return False
+    return (here.st_dev, here.st_ino) == (there.st_dev, there.st_ino)
+
+
 def variant_directory_fault(root: pathlib.Path, variant: str):
     """Why a variant directory cannot be attributed to this build, or ``None``.
 
@@ -269,6 +310,24 @@ def compare_variant(
     if mismatches:
         # Nothing below can be attributed to a build, so nothing below is read.
         return mismatches
+    if _same_file(left / variant, right / variant):
+        return [
+            _mismatch(
+                "alias",
+                variant,
+                "variant directory",
+                "both sides name one directory, so nothing here was built twice",
+            )
+        ]
+    if _same_file(left / variant / manifest_name, right / variant / manifest_name):
+        return [
+            _mismatch(
+                "alias",
+                variant,
+                manifest_name,
+                "both sides name one manifest file, so nothing here was built twice",
+            )
+        ]
     left_manifest, problems = load_manifest(left, variant, manifest_name, "left")
     mismatches.extend(problems)
     right_manifest, problems = load_manifest(right, variant, manifest_name, "right")
@@ -385,6 +444,17 @@ def compare_variant(
                         % (side, on_disk, declared[artifact]["bytes"]),
                     )
                 )
+        # Identical bytes are evidence only when they are two files. A hardlink
+        # is one file under two names and would agree with itself forever.
+        if _same_file(left / variant / artifact, right / variant / artifact):
+            mismatches.append(
+                _mismatch(
+                    "alias",
+                    variant,
+                    artifact,
+                    "both sides name one file, so its bytes are not two builds' agreement",
+                )
+            )
         left_digest = left_declared[artifact].get("sha256")
         right_digest = right_declared[artifact].get("sha256")
         if left_digest != right_digest:
@@ -450,6 +520,11 @@ def main(argv=None) -> int:
         )
         return 2
     variants = requested
+
+    fault = build_root_fault(left, right)
+    if fault is not None:
+        print(fault, file=sys.stderr)
+        return 2
 
     fault = manifest_name_fault(args.manifest_name)
     if fault is not None:
