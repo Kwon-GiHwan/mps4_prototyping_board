@@ -130,7 +130,7 @@ STATUS_FAULT_MASK = 0x314
 
 # The suite is frozen at this many assertions. Adding a named fixture is a
 # deliberate act, so the count moves with it and never drifts silently.
-EXPECTED_PASS_COUNT = 1224
+EXPECTED_PASS_COUNT = 1241
 
 CHECKER_PATH = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
@@ -4186,6 +4186,258 @@ def run_real_vendor_source_suite(gate, patcher):
         )
 
 
+SYNTHETIC_HEADER = (
+    "\nprobe.elf:     file format elf32-littlearm\n\n\n"
+    "Disassembly of section .text:\n\n"
+)
+
+
+def synthetic_image(rows, base=0x40000000, name="probe"):
+    """One function, laid out from ``(size, text)`` rows, as objdump prints it."""
+
+    lines = ["%08x <%s>:" % (base, name)]
+    address = base
+    for size, text in rows:
+        encoding = "%0*x" % (size * 2, 0)
+        if size == 4:
+            encoding = encoding[:4] + " " + encoding[4:]
+        lines.append("%08x:\t%-10s\t%s" % (address, encoding, text))
+        address += size
+    return SYNTHETIC_HEADER + "\n".join(lines) + "\n"
+
+
+def _probe_state(gate, rows, index, register):
+    """What the register model believes ``register`` holds at ``index``."""
+
+    text = synthetic_image(rows)
+    code, literals, data = gate.elf_function(text, "probe")
+    successors = gate.elf_cfg(code, data)
+    states = gate.elf_register_values(code, literals, successors)
+    return states[index].get(register)
+
+
+# (instruction address, resolved address, width, direction, role, reachability)
+# for every MMIO access the gate can name, hashed. Frozen so that a change in
+# the register model has to be looked at rather than absorbed: a count alone
+# would let one access be lost and another gained without anything failing.
+MMIO_ACCESS_IDENTITY = {
+    "Q": ("5ca4394245d8fcb29877924c56e948d5", 74),
+    "QS": ("fe2f139636f1b6ade222d7292347118f", 74),
+    "SQ": ("b738278631abaab34fdee11a0cdb6a31", 74),
+}
+
+_MMIO_WIDTH = {"b": 1, "h": 2, "": 4}
+
+
+def _mmio_access_identity(gate, variant):
+    """The digest of every MMIO access in one image, and how many there were."""
+
+    text = linked_image(variant)
+    parse_functions, split = gate._elf_front_end()
+    rows = []
+    for name, raw in parse_functions(text).items():
+        code, literals = split(raw)
+        if not code:
+            continue
+        try:
+            successors = gate.elf_cfg(code, gate._elf_data_bytes(text, name))
+        except gate.GateError:
+            continue
+        states = gate.elf_register_values(code, literals, successors)
+        reachable = gate.elf_reaches(successors, 0) | {0}
+        for index, role, is_write in gate.elf_mmio_accesses(code, states):
+            insn = code[index]
+            memory = gate._ELF_MEMORY.match(insn.text)
+            suffix = re.match(r"^(?:ldr|str)(b|h)?", insn.text).group(1) or ""
+            address = states[index][memory.group(3)] + int(memory.group(4) or 0)
+            rows.append(
+                "%s|0x%08x|0x%08x|%d|%s|%s|%s"
+                % (
+                    name,
+                    insn.addr,
+                    address,
+                    _MMIO_WIDTH[suffix],
+                    "w" if is_write else "r",
+                    role,
+                    "R" if index in reachable else "U",
+                )
+            )
+    rows.sort()
+    return hashlib.sha256("\n".join(rows).encode("utf-8")).hexdigest()[:32], len(rows)
+
+
+def run_helper_soundness_suite(gate):
+    """The two helpers the whole linked-image layer is built on.
+
+    Every ELF claim in this contract is a claim about what a register holds at
+    an instruction, and every one of them is only as sound as the model that
+    decides it. Two ways that model could be wrong were found by review rather
+    than by a fixture, which is the wrong order, so they are fixtures now.
+
+    Both are fail-open in the direction that matters. A model that keeps a value
+    across something that destroys it does not refuse too much -- it looks at an
+    address that is not there and, worse, fails to look at the one that is.
+    """
+
+    # r3 is caller-saved. A value in it before a call is not in it afterwards,
+    # and a model that says otherwise is reading an address the callee owns.
+    clobber = [
+        (2, "ldr\tr3, [pc, #8]\t@ (4000000c <probe+0xc>)"),
+        (2, "movs\tr0, #0"),
+        (4, "bl\t40000100 <sink>"),
+        (2, "str\tr0, [r3, #0]"),
+        (2, "bx\tlr"),
+        (4, ".word\t0x50004000"),
+    ]
+    check(
+        "a caller-saved register holds its value up to the call",
+        _probe_state(gate, clobber, 2, "r3") == 0x50004000,
+        _probe_state(gate, clobber, 2, "r3"),
+    )
+    check(
+        "a caller-saved register is not believed across a call",
+        _probe_state(gate, clobber, 3, "r3") is None,
+        _probe_state(gate, clobber, 3, "r3"),
+    )
+    check(
+        "the call clobbers the argument registers too",
+        _probe_state(gate, clobber, 3, "r0") is None,
+        _probe_state(gate, clobber, 3, "r0"),
+    )
+
+    # The stack is not modelled, so what comes back off it is not known. A model
+    # that carries the pre-push value through the pop can be handed any value at
+    # all by a push/pop pair around the instruction that changes it.
+    stack = [
+        (2, "movs\tr0, #17"),
+        (2, "push\t{r0}"),
+        (2, "movs\tr0, #0"),
+        (2, "pop\t{r0}"),
+        (2, "str\tr1, [r0, #0]"),
+        (2, "bx\tlr"),
+    ]
+    check(
+        "the value before the push is known",
+        _probe_state(gate, stack, 1, "r0") == 17,
+        _probe_state(gate, stack, 1, "r0"),
+    )
+    check(
+        "what comes back off the stack is not claimed to be known",
+        _probe_state(gate, stack, 4, "r0") is None,
+        _probe_state(gate, stack, 4, "r0"),
+    )
+
+    # Callee-saved is not the same as restored-to-what-this-gate-knows. r4
+    # survives a call, but a pop writes it from memory this gate does not model,
+    # so what it holds afterwards is not the value it held before.
+    restored = [
+        (2, "ldr\tr4, [pc, #8]\t@ (4000000c <probe+0xc>)"),
+        (2, "push\t{r4}"),
+        (2, "pop\t{r4}"),
+        (2, "str\tr1, [r4, #0]"),
+        (2, "bx\tlr"),
+        (2, "nop"),
+        (4, ".word\t0x50004000"),
+    ]
+    check(
+        "a callee-saved register loses its provenance to a pop",
+        _probe_state(gate, restored, 3, "r4") is None,
+        _probe_state(gate, restored, 3, "r4"),
+    )
+
+    # A callee-saved register is untouched by both, so the fix costs nothing it
+    # should not cost: this is the case the model must still resolve.
+    kept = [
+        (2, "ldr\tr4, [pc, #8]\t@ (4000000c <probe+0xc>)"),
+        (2, "push\t{r0}"),
+        (4, "bl\t40000100 <sink>"),
+        (2, "str\tr1, [r4, #0]"),
+        (2, "bx\tlr"),
+        (4, ".word\t0x50004000"),
+    ]
+    check(
+        "a callee-saved register survives a call and a push",
+        _probe_state(gate, kept, 3, "r4") == 0x50004000,
+        _probe_state(gate, kept, 3, "r4"),
+    )
+
+    # The word count is a count of executions, not of call sites. Under a
+    # forward branch the two differ, and the difference is a frame the host
+    # reads one field short for the rest of its length.
+    # The serializer's first `bl put32` sits at 0x31000b1c. Branching over it
+    # from the instruction before leaves the call written and executed on one
+    # path only; every other rule about the frame stays satisfied while the
+    # length it counts stops being the length any execution writes.
+    skipped = _replace_row(
+        linked_image("Q"),
+        "31000b1a:",
+        "31000b1a:\td101      \tbne.n\t31000b20 <build_pmu_diag_payload+0x14>",
+    )
+    expect_image_reject(
+        lambda: gate.verify_serialization_image(skipped),
+        "a call some path skips is not counted as a word",
+        "depends on which path runs",
+    )
+    try:
+        gate.verify_serialization_image(skipped)
+        rule = None
+    except Exception as exc:
+        rule = gate.refusal_rule(exc)
+    check(
+        "and it is refused as an uncountable path, not as a wrong length",
+        rule == gate.RULE_SERIALIZATION_COUNTABLE,
+        rule,
+    )
+
+    # The count is a count of executions, not of call sites, and reachability is
+    # what separates them. A call the entry cannot reach is written and never
+    # runs; counting it would be counting the source. This is the pair that
+    # says so: the same two calls, once with an unconditional branch over the
+    # first and once without.
+    unreachable_call = [
+        (2, "b.n\t40000008 <probe+0x8>"),
+        (4, "bl\t310008b4 <%s>" % gate.WORD_WRITER_SYMBOL),
+        (2, "nop"),
+        (4, "bl\t310008b4 <%s>" % gate.WORD_WRITER_SYMBOL),
+        (2, "bx\tlr"),
+    ]
+    both_reachable = [(2, "nop")] + unreachable_call[1:]
+
+    def words(rows):
+        # A refusal is an answer here too, and reporting it as one keeps a
+        # regression in this helper a failed check rather than a dead suite.
+        try:
+            return gate._elf_word_writes(synthetic_image(rows), "probe", frozenset())
+        except Exception as exc:
+            return "refused: %s" % ("%s" % exc)[:60]
+
+    check(
+        "a call the entry cannot reach writes no word",
+        words(unreachable_call) == 1,
+        words(unreachable_call),
+    )
+    check(
+        "and removing the branch that skipped it makes it count",
+        words(both_reachable) == 2,
+        words(both_reachable),
+    )
+
+    # The invariant both fixes had to preserve. They only ever remove beliefs,
+    # so the risk they carry is losing an access the gate used to name -- or,
+    # worse, losing one and gaining another so the count comes out the same.
+    # The identity of every access is pinned, not the number of them:
+    # instruction address, resolved address, width, direction, role and whether
+    # the entry reaches it.
+    for variant in VARIANTS:
+        digest, total = MMIO_ACCESS_IDENTITY[variant]
+        measured, count = _mmio_access_identity(gate, variant)
+        check(
+            "the %s image's MMIO access set is the one this contract measured" % variant,
+            (measured, count) == (digest, total),
+            "%s n=%d" % (measured, count),
+        )
+
+
 def run_gate_efficacy_suite(gate, patcher):
     """What the load-bearing rules do when the artifacts that ship go through them.
 
@@ -4302,6 +4554,59 @@ def run_gate_efficacy_suite(gate, patcher):
         "every declared vacuous loop is still vacuous, and still there",
         declared <= measured,
         sorted(declared - measured)[:3],
+    )
+    # An allowlist that only ever grew would be the way the next silent gate got
+    # legalised, so the count is frozen as well as the membership.
+    check(
+        "the number of loops that examine nothing has not moved",
+        sum(key[2] for key in measured) == sum(key[2] for key in declared) == 18,
+        (sum(key[2] for key in measured), sum(key[2] for key in declared)),
+    )
+    incomplete = [
+        key
+        for key, entry in gate.VACUOUS_ON_REAL_ARTIFACTS.items()
+        if not all(
+            entry.get(field) for field in ("proves", "scope", "why_vacuous", "evidence_instead")
+        )
+    ]
+    check(
+        "every declared vacuity says what proves its claim instead",
+        not incomplete,
+        [key[0] for key in incomplete][:3],
+    )
+
+    # The condition the allowlist exists to make impossible: a claim whose only
+    # evidence path is one that examined nothing. A detector with no loops at
+    # all is straight-line evidence and fine; a detector with loops must have
+    # entered at least one of them.
+    vacuous_headers = {(key[0], key[1]) for key in measured}
+    resting_on_nothing = []
+    for _claim, detector, rule in gate.CLAIM_MATRIX:
+        owners = (
+            {enclosing(site) for site in raise_sites.get(rule, [])}
+            if detector == "several"
+            else {detector}
+        )
+        loops = [
+            node
+            for node in ast.walk(tree)
+            if isinstance(node, (ast.For, ast.While)) and enclosing(node.lineno) in owners
+        ]
+        if not loops:
+            continue
+        entered = [
+            node
+            for node in loops
+            if (enclosing(node.lineno), " ".join(lines[node.lineno - 1].split()))
+            not in vacuous_headers
+            and node.body[0].lineno in executed
+        ]
+        if not entered:
+            resting_on_nothing.append(rule)
+    check(
+        "no load-bearing claim rests only on a path that examined nothing",
+        not resting_on_nothing,
+        resting_on_nothing[:3],
     )
 
 
@@ -12782,6 +13087,7 @@ if __name__ == "__main__":
         run_deferred_claim_suite(gate)
         run_linked_image_suite(gate)
         run_claim_matrix_suite(gate)
+        run_helper_soundness_suite(gate)
         run_value_and_confinement_remediation_suite(gate)
         run_e6_remediation_suite(gate)
         run_a0fe0ab_remediation_suite(gate)

@@ -6020,6 +6020,17 @@ _ELF_MEMORY = re.compile(
     r"^(ldr|str)(?:b|h)?(?:\.[nw])?\s+(\w+),\s*\[(\w+)(?:,\s*#(-?\d+))?\]"
 )
 _ELF_WRITEBACK = re.compile(r"\][ \t]*!|\],\s*#")
+# AAPCS-defined call clobber. A value this gate is tracking in one of these does
+# not survive a call, and reading it afterwards as if it did is how a register
+# that names an MMIO address can appear to hold something it no longer holds.
+_ELF_CALL_CLOBBERED = ("r0", "r1", "r2", "r3", "r12", "ip", "lr")
+# The multi-register loads. Their destinations come from the stack, which this
+# gate does not model, so every register in the list stops being known -- which
+# is what a push/pop pair around a call would otherwise be able to hide.
+_ELF_MULTI_LOAD = re.compile(
+    r"^(pop|ldm(?:ia|db|ea|fd)?)(?:\.[nw])?\s+(?:(\w+)(!?),\s*)?\{([^}]*)\}"
+)
+_ELF_PUSH = re.compile(r"^(push|stm(?:ia|db|ea|fd)?)(?:\.[nw])?\s")
 _ELF_DESTINATION = re.compile(r"^(\w+?)(?:\.[nw])?\s+(\w+)\s*,")
 _ELF_TEST_MASK = re.compile(r"^tst(?:\.[nw])?\s+(\w+),\s*#(\d+)")
 # Any store, whatever its addressing form. _ELF_MEMORY reads only the
@@ -6256,56 +6267,141 @@ CLAIM_MATRIX = (
 # verified. The list exists because the worst defect this contract has produced
 # twice is a rule that examines nothing and reports success: a rotated loop whose
 # body set came out empty made every per-iteration rule vacuously true, and it
-# looked exactly like a pass. So the condition is measured rather than trusted --
-# the suite traces the real verification, collects every loop that never entered
-# its body, and refuses any entry that is not named here with a reason. A new
-# vacuous loop is a failure; these ones are alternative spellings and
-# difference-reporting paths that the real sources do not exercise.
+# looked exactly like a pass.
+#
+# So the condition is measured rather than trusted. The suite traces the real
+# verification, collects every loop that never entered its body, and refuses any
+# entry not named here -- and any entry named here that starts running, and any
+# change in the count. An allowlist that only grew would be a way to legalise the
+# next silent gate; this one fails in both directions.
+#
+# Each entry says what its owner is proving, why the loop is idle on these
+# artifacts, and -- the part that matters -- what evidence proves that claim
+# instead. Every one of these is a source-side helper, and none of them is the
+# detector of a load-bearing claim: no claim in CLAIM_MATRIX rests on a path
+# that examined nothing. The suite checks that too.
 #
 # Keyed by (function, header source, occurrences) so it survives line movement.
 VACUOUS_ON_REAL_ARTIFACTS = {
-    ("_is_whole_rvalue", "while cursor < len(text) and text[cursor] in _INLINE_SPACE:", 1):
-        "the rvalue is not written with inline space before its terminator",
-    ("_member_base_follows", "while cursor < len(text) and text[cursor] in _INLINE_SPACE:", 1):
-        "the member base is written without inline space",
+    ("_is_whole_rvalue",
+     "while cursor < len(text) and text[cursor] in _INLINE_SPACE:", 1): {
+        "proves": "an assignment's right-hand side is the whole expression and not a fragment of one",
+        "scope": "the three generated source pairs",
+        "why_vacuous": "the rvalue is written with no inline space before its terminator",
+        "evidence_instead": "the sites this decides are read by their own rules, which do run",
+    },
+    ("_member_base_follows",
+     "while cursor < len(text) and text[cursor] in _INLINE_SPACE:", 1): {
+        "proves": "a member access names the object this rule is about",
+        "scope": "the three generated source pairs",
+        "why_vacuous": "the member base is written without inline space",
+        "evidence_instead": "the record and appendix rules resolve every member they need",
+    },
     ("_publication_symbol_sites",
-     "while cursor < len(vendor_masked) and vendor_masked[cursor] in _INLINE_SPACE:", 2):
-        "the publication call sites are written without inline space around the parenthesis",
-    ("_reaches_without_transfer", "for match in _CONTROL_TRANSFER_RE.finditer(prefix):", 1):
-        "no control transfer stands between the two sites this is asked about",
-    ("_subscript_expression", "while cursor >= 0 and text[cursor] in _INLINE_SPACE:", 1):
-        "the subscripts are written without inline space before the bracket",
-    ("_token_after", "while cursor < len(text) and text[cursor] in _INLINE_SPACE:", 1):
-        "the tokens this looks past are written without inline space",
-    ("cmd_write_values", "for site, role, is_write in dereference_sites(text, defines, roles):", 1):
-        "CMD is written through write_reg in the real sources; the dereference spelling is the "
-        "fail-closed complement and is exercised by its own negatives",
-    ("obs_aliases", "while pending:", 1):
-        "the observation record is aliased directly, so the transitive closure has nothing to add",
+     "while cursor < len(vendor_masked) and vendor_masked[cursor] in _INLINE_SPACE:", 2): {
+        "proves": "the publication helpers are called where the design says and nowhere else",
+        "scope": "the three generated source pairs",
+        "why_vacuous": "the call sites are written without inline space around the parenthesis",
+        "evidence_instead": "the sites are found and counted; only the space-skipping arm is idle",
+    },
+    ("_reaches_without_transfer",
+     "for match in _CONTROL_TRANSFER_RE.finditer(prefix):", 1): {
+        "proves": "one statement reaches another with nothing in between that could divert",
+        "scope": "the three generated source pairs",
+        "why_vacuous": "no control transfer stands between the two sites the real sources present",
+        "evidence_instead": "the reachability answer is still computed and used",
+    },
+    ("_subscript_expression",
+     "while cursor >= 0 and text[cursor] in _INLINE_SPACE:", 1): {
+        "proves": "a subscripted access names the array this rule is about",
+        "scope": "the three generated source pairs",
+        "why_vacuous": "the subscripts are written without inline space before the bracket",
+        "evidence_instead": "the appendix producer rules resolve every subscript they need",
+    },
+    ("_token_after",
+     "while cursor < len(text) and text[cursor] in _INLINE_SPACE:", 1): {
+        "proves": "the token following a construct is the one the rule expects",
+        "scope": "the three generated source pairs",
+        "why_vacuous": "the tokens this looks past are written without inline space",
+        "evidence_instead": "every caller gets its token and decides on it",
+    },
+    ("cmd_write_values",
+     "for site, role, is_write in dereference_sites(text, defines, roles):", 1): {
+        "proves": "no CMD write starts the NPU where the contract forbids it",
+        "scope": "the three generated source pairs",
+        "why_vacuous": "CMD is written through write_reg in the real sources, never through a pointer dereference",
+        "evidence_instead": "the write_reg scan above it finds every CMD write there is",
+    },
+    ("obs_aliases",
+     "while pending:", 1): {
+        "proves": "every alias of the observation record is known to the storage rules",
+        "scope": "the three generated source pairs",
+        "why_vacuous": "the record is aliased directly, so the transitive closure has nothing to add",
+        "evidence_instead": "the direct aliases are collected and used",
+    },
     ("pointer_roles",
-     "for name in compound_assignment_targets(scope + body, tuple(sorted(resolved))):", 1):
-        "no register pointer is reassigned through a compound assignment in the real sources",
+     "for name in compound_assignment_targets(scope + body, tuple(sorted(resolved))):", 1): {
+        "proves": "every register pointer's role is known wherever it is used",
+        "scope": "the three generated source pairs",
+        "why_vacuous": "no register pointer is reassigned through a compound assignment",
+        "evidence_instead": "the direct assignments resolve every pointer the rules ask about",
+    },
     ("register_access_sites",
-     "for site, role, is_write in dereference_sites(text, defines, roles):", 1):
-        "the same complement as cmd_write_values, for the read/write site scan",
-    ("require_mailbox_storage_closed", "while cursor < len(scan) and scan[cursor] in _INLINE_SPACE:", 1):
-        "the mailbox stores are written without inline space before the assignment",
-    ("require_no_macro_mmio", "for name in macros:", 1):
-        "the real translation units define no MMIO macro at all, which is what this requires",
-    ("require_stable_contract_defines", "for match in _UNDEF_RE.finditer(directive_view(masked)):", 1):
-        "the real sources carry no #undef",
-    ("require_wait_for_irq_unreachable", "while cursor < len(scan) and scan[cursor] in _INLINE_SPACE:", 1):
-        "the scanned sites are written without inline space",
-    ("statement_effects", "for register in _RAW_REGISTER_RE.findall(statement):", 1):
-        "the loop bodies reach the registers through the pointers loaded before them, so the "
-        "bare NPU_REG_ spelling appears in no statement this is given; the dereference path "
-        "above it does produce effects on the real sources",
-    ("verify_convergence_contract", "for effect in effects:", 1):
-        "the nested-depth arm: no statement inside a guard body carries a load on the real "
-        "sources, which is the condition it exists to refuse",
+     "for site, role, is_write in dereference_sites(text, defines, roles):", 1): {
+        "proves": "every read or write of a register is seen, whatever spelling it uses",
+        "scope": "the three generated source pairs",
+        "why_vacuous": "the same dereference spelling the real sources do not use",
+        "evidence_instead": "the read_reg/write_reg scan finds every access there is",
+    },
+    ("require_mailbox_storage_closed",
+     "while cursor < len(scan) and scan[cursor] in _INLINE_SPACE:", 1): {
+        "proves": "nothing writes the mailbox except the publishers the design names",
+        "scope": "the three generated source pairs",
+        "why_vacuous": "the mailbox stores are written without inline space before the assignment",
+        "evidence_instead": "every store is found and attributed",
+    },
+    ("require_no_macro_mmio",
+     "for name in macros:", 1): {
+        "proves": "no MMIO reaches the registers through a macro this gate cannot expand",
+        "scope": "the three generated source pairs",
+        "why_vacuous": "the real translation units define no MMIO macro at all, which is the condition",
+        "evidence_instead": "the emptiness is the evidence: there is nothing to check because nothing exists",
+    },
+    ("require_stable_contract_defines",
+     "for match in _UNDEF_RE.finditer(directive_view(masked)):", 1): {
+        "proves": "a contract constant means the same thing everywhere in the file",
+        "scope": "the three generated source pairs",
+        "why_vacuous": "the real sources carry no #undef",
+        "evidence_instead": "the emptiness is the evidence: no constant is ever undefined",
+    },
+    ("require_wait_for_irq_unreachable",
+     "while cursor < len(scan) and scan[cursor] in _INLINE_SPACE:", 1): {
+        "proves": "no path waits for an interrupt the contract says never arrives",
+        "scope": "the three generated source pairs",
+        "why_vacuous": "the scanned sites are written without inline space",
+        "evidence_instead": "the sites are found and their reachability decided",
+    },
+    ("statement_effects",
+     "for register in _RAW_REGISTER_RE.findall(statement):", 1): {
+        "proves": "what each statement in a measured loop does to the registers",
+        "scope": "the three generated source pairs",
+        "why_vacuous": "the loop bodies reach the registers through pointers loaded before them, so the bare NPU_REG_ spelling appears in no statement this is given",
+        "evidence_instead": "the dereference arm above it does produce load:QREAD and load:STATUS on the real sources",
+    },
+    ("verify_convergence_contract",
+     "for effect in effects:", 1): {
+        "proves": "no convergence predicate is satisfied by a reread rather than by the loop's tuple",
+        "scope": "the three generated source pairs",
+        "why_vacuous": "no statement inside a guard body carries a load, which is the condition it exists to refuse",
+        "evidence_instead": "the depth-zero arm reads every statement and orders the loads",
+    },
     ("verify_hard_bypass_contract",
-     "for match in re.finditer(r\"&\\s*(?:\\(\\s*)*irq_triggered(?![A-Za-z0-9_])\", vendor_masked):", 1):
-        "irq_triggered is never address-taken in the real sources",
+     "for match in re.finditer(r\"&\\s*(?:\\(\\s*)*irq_triggered(?![A-Za-z0-9_])\", vendor_masked):", 1): {
+        "proves": "the interrupt flag is never taken by address and written from somewhere unseen",
+        "scope": "the three generated source pairs",
+        "why_vacuous": "irq_triggered is never address-taken in the real sources",
+        "evidence_instead": "the emptiness is the evidence: there is no address-taken use to follow",
+    },
 }
 
 def _elf_front_end():
@@ -6609,6 +6705,21 @@ def elf_register_values(code, literals, successors) -> list[dict]:
 
 def _elf_transfer(state: dict, insn, pool: dict) -> dict:
     text = insn.text
+    if _ELF_CALL.match(text) is not None:
+        for register in _ELF_CALL_CLOBBERED:
+            state.pop(register, None)
+        return state
+    multi = _ELF_MULTI_LOAD.match(text)
+    if multi is not None:
+        for register in multi.group(4).split(","):
+            state.pop(register.strip(), None)
+        if multi.group(2) and multi.group(3):
+            state.pop(multi.group(2), None)
+        state.pop("sp", None)
+        return state
+    if _ELF_PUSH.match(text) is not None:
+        state.pop("sp", None)
+        return state
     literal = _ELF_LOAD_LITERAL.match(text)
     if literal is not None:
         word = pool.get(insn.target) if insn.target is not None else None
@@ -7607,16 +7718,50 @@ def _elf_word_writes(objdump_text: str, name: str, seen: frozenset) -> int:
     code, _literals, data = elf_function(objdump_text, name)
     successors = elf_cfg(code, data)
     dominators = elf_dominators(successors)
-    if any(out in dominators[index] for index, outs in enumerate(successors) for out in outs):
+    # Reachability first, and everything after it is asked of reachable code
+    # only. A call the entry cannot reach is written and never runs, so counting
+    # it counts the source rather than any execution -- which is why this is
+    # taken over the CFG and not over the address range, a distinction a linear
+    # scan cannot make. Dominance over unreachable nodes is vacuous besides, so
+    # asking the loop question about them reports back edges that do not exist.
+    reachable = elf_reaches(successors, 0) | {0}
+    if any(
+        out in dominators[index]
+        for index in reachable
+        for out in successors[index]
+    ):
         raise fail_rule(
             RULE_SERIALIZATION_COUNTABLE,
             
             "%s loops: the number of words it writes is not something this gate can count" % name
         )
+    # Counting the calls that are *written* only counts the calls that *run*
+    # while every one of them runs. Refusing loops leaves the other half open:
+    # a call under a forward branch is written once and executed on some paths
+    # and not others, and the count this returns would be a count of the source
+    # rather than of any execution. With no loops left, a call runs on every
+    # path exactly when it dominates every exit.
+    exits = [index for index in reachable if not successors[index]]
+    if not exits:
+        raise fail_rule(
+            RULE_SERIALIZATION_COUNTABLE,
+            "%s has no path that returns: this gate cannot count what it writes" % name
+        )
     total = 0
-    for insn in code:
-        if not _ELF_CALL.match(insn.text):
+    for index, insn in enumerate(code):
+        if index not in reachable or not _ELF_CALL.match(insn.text):
             continue
+        # Reachable is not the same as always: a call under a forward branch
+        # runs on some paths and not others, so the number of words it accounts
+        # for is a property of the path rather than of the function. Refused
+        # rather than counted-or-not, because either answer would be wrong on
+        # half the executions.
+        if any(index not in dominators[exit] for exit in exits):
+            raise fail_rule(
+                RULE_SERIALIZATION_COUNTABLE,
+                "%s makes a call at 0x%08x that some path through it skips: how many words "
+                "it writes depends on which path runs" % (name, insn.addr)
+            )
         callee = _ELF_CALLEE.match(insn.text)
         if callee is None:
             raise fail_rule(
