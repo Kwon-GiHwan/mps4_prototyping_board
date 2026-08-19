@@ -296,6 +296,15 @@ def run_cell(variant, variant_dir, password, runs=10):
         if any(getattr(counters, name) for name in PROTOCOL_COUNTERS):
             raise CellAbort("a protocol counter is not zero before the first run")
 
+        # RUN_PMU_DIAG is accepted only from INPUT_READY or RESULT_READY, so the
+        # runner is walked there first: a dummy blob and an empty input. The
+        # measured inference is compiled in and does not read either of them --
+        # this is the same priming the qualification runs have always used. It
+        # happens after the counter gate, so the gate is about the boot rather
+        # than about what priming left behind.
+        rq.prime(link)
+        evidence["gates"]["primed_to_input_ready"] = True
+
         boot_id = "%s-%d" % (variant, int(time.time()))
         frames = []
         for index in range(runs):
