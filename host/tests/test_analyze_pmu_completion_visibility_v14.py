@@ -215,6 +215,50 @@ class AnalyzerRedTests(unittest.TestCase):
         with self.assertRaises(analyzer.AnalysisError):
             analyzer.analyze(data)
 
+    # --- the observation, kept beside the conclusion ------------------------
+
+    def test_the_dual_order_direction_is_recorded_without_being_promoted(self):
+        # Both dual variants preferring one register is an observation. Which
+        # register is visible first is a claim, and it is not available until a
+        # fresh bit5-only S5 control exists. So the direction is recorded and
+        # the verdict still asks for the control.
+        for qs, sq, pattern in (
+            ("Q_FIRST", "Q_FIRST", analyzer.QREAD_FIRST_IN_BOTH_ORDERS),
+            ("S5_FIRST", "S5_FIRST", analyzer.STATUS_FIRST_IN_BOTH_ORDERS),
+        ):
+            verdict = analyzer.analyze(campaign(qs, sq))
+            self.assertEqual(verdict["conclusion"], analyzer.CONTROL_REQUIRED, pattern)
+            self.assertEqual(verdict["dual_order_pattern"], pattern)
+            self.assertEqual(verdict["required_followup"], analyzer.FRESH_CONTROL)
+
+    def test_the_direction_never_appears_as_a_conclusion(self):
+        for qs, sq in (("Q_FIRST", "Q_FIRST"), ("S5_FIRST", "S5_FIRST")):
+            verdict = analyzer.analyze(campaign(qs, sq))
+            self.assertNotIn("EARLIER", verdict["conclusion"])
+            self.assertNotIn(verdict["conclusion"], (analyzer.READ_ORDER_BIAS_DOMINATES,))
+
+    def test_read_order_bias_names_its_own_pattern_and_needs_no_control(self):
+        verdict = analyzer.analyze(campaign("Q_FIRST", "S5_FIRST"))
+        self.assertEqual(verdict["dual_order_pattern"], analyzer.FOLLOWS_READ_ORDER)
+        self.assertIsNone(verdict["required_followup"])
+
+    def test_same_iteration_and_mixed_campaigns_name_their_patterns(self):
+        self.assertEqual(
+            analyzer.analyze(campaign("SAME_ITERATION", "SAME_ITERATION"))["dual_order_pattern"],
+            analyzer.SAME_ITERATION_IN_BOTH_ORDERS,
+        )
+        data = campaign("Q_FIRST", "S5_FIRST")
+        for entry in data["cells"]:
+            if entry["variant"] == "QS" and entry["round"] == 2:
+                for sample in entry["samples"]:
+                    sample["category"] = "SAME_ITERATION"
+                    sample["first_cmd_end_reached"] = 1
+                    sample["first_status"] = STATUS_CMD_END
+                break
+        self.assertEqual(
+            analyzer.analyze(data)["dual_order_pattern"], analyzer.MIXED_ACROSS_CELLS
+        )
+
     # --- what it must never say -------------------------------------------
     def test_the_verdict_never_carries_a_latency_or_a_comparison(self):
         verdict = analyzer.analyze(campaign("Q_FIRST", "S5_FIRST"))

@@ -42,6 +42,36 @@ RUNS_PER_CELL = 10
 ROUNDS = 3
 POSITIONS = 3
 
+# What the two dual variants were observed to do, kept apart from what may be
+# concluded from it. Both variants preferring one register is an observation;
+# "that register is visible first" is a claim, and it is not available until a
+# fresh bit5-only S5 control has been run. Recording the direction here means
+# the observation survives without being promoted.
+FOLLOWS_READ_ORDER = "FOLLOWS_READ_ORDER"
+QREAD_FIRST_IN_BOTH_ORDERS = "QREAD_FIRST_IN_BOTH_ORDERS"
+STATUS_FIRST_IN_BOTH_ORDERS = "STATUS_FIRST_IN_BOTH_ORDERS"
+SAME_ITERATION_IN_BOTH_ORDERS = "SAME_ITERATION_IN_BOTH_ORDERS"
+MIXED_ACROSS_CELLS = "MIXED_ACROSS_CELLS"
+
+FRESH_CONTROL = "FRESH_STATUS_BIT5_ONLY_CONTROL"
+
+
+def _dual_order_pattern(qs_category, sq_category) -> str:
+    """What the two dual variants did, named without deciding anything."""
+
+    if qs_category is None or sq_category is None:
+        return MIXED_ACROSS_CELLS
+    if qs_category == CATEGORY_Q_FIRST and sq_category == CATEGORY_S5_FIRST:
+        return FOLLOWS_READ_ORDER
+    if qs_category == sq_category == CATEGORY_Q_FIRST:
+        return QREAD_FIRST_IN_BOTH_ORDERS
+    if qs_category == sq_category == CATEGORY_S5_FIRST:
+        return STATUS_FIRST_IN_BOTH_ORDERS
+    if qs_category == sq_category == CATEGORY_SAME_ITERATION:
+        return SAME_ITERATION_IN_BOTH_ORDERS
+    return MIXED_ACROSS_CELLS
+
+
 CONTROL_TEXT = (
     "a fresh V14-family bit5-only S5 control is required before any visibility-order claim; "
     "historical V13 bit1 data never satisfies it"
@@ -245,8 +275,14 @@ def analyze(campaign: dict) -> dict:
                 Counter(sample["category"] for sample in entry["samples"])
             )
 
+    pattern = _dual_order_pattern(qs_category, sq_category)
     return {
         "conclusion": conclusion,
+        # The observation, beside the conclusion and never instead of it. Both
+        # variants preferring QREAD is a thing that happened; "QREAD is visible
+        # first" is a thing that would need the control below to be true.
+        "dual_order_pattern": pattern,
+        "required_followup": FRESH_CONTROL if conclusion == CONTROL_REQUIRED else None,
         "qs_category": qs_category,
         "sq_category": sq_category,
         "q_floor": q_structure,
