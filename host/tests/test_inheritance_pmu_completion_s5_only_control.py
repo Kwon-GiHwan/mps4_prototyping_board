@@ -118,16 +118,33 @@ class EveryRequalifiedRuleHasSomewhereToBeProved(unittest.TestCase):
         }
         self.assertFalse(set(matrix.APPLICATION) & dropped)
 
-    def test_every_entry_names_a_layer_and_a_task(self):
+    def test_every_entry_names_a_layer_a_task_and_a_status(self):
         for rule, entry in matrix.APPLICATION.items():
-            layer, task = entry
+            layer, task, status = entry
             self.assertTrue(layer, rule)
             self.assertTrue(task.startswith("Task "), rule)
+            self.assertIn(status, matrix.STATUSES, rule)
+
+    def test_nothing_claims_to_be_requalified_before_a_v15_artifact_exists(self):
+        # There is no V15 source and no V15 image yet, so every carried rule is
+        # NOT_YET_APPLIED. This test is what stops the table drifting into
+        # optimism ahead of the evidence -- and it will fail, correctly, the day
+        # a status is advanced without the artifact to justify it.
+        for rule, (_layer, _task, status) in matrix.APPLICATION.items():
+            self.assertEqual(status, matrix.NOT_YET_APPLIED, rule)
+
+    def test_the_source_layer_never_claims_the_final_word(self):
+        # A source-layer entry may reach SOURCE_CONTRACT_REQUALIFIED and no
+        # further: the compiler has not been asked yet, and calling that
+        # QUALIFIED would retire the claim early.
+        self.assertNotIn("QUALIFIED", matrix.STATUSES)
+        self.assertIn(matrix.SOURCE_REQUALIFIED, matrix.STATUSES)
+        self.assertNotEqual(matrix.SOURCE_REQUALIFIED, matrix.ELF_REQUALIFIED)
 
     def test_the_layers_are_the_ones_this_experiment_has(self):
         # A rule assigned to a layer V15 does not build would be an application
         # entry that can never be satisfied.
-        layers = {layer for layer, _task in matrix.APPLICATION.values()}
+        layers = {layer for layer, _task, _status in matrix.APPLICATION.values()}
         self.assertTrue(layers <= {"source/generator", "linked ELF"}, layers)
 
     def test_almost_all_of_the_inheritance_lands_on_the_image(self):
@@ -135,7 +152,7 @@ class EveryRequalifiedRuleHasSomewhereToBeProved(unittest.TestCase):
         # on the source, and calling the rest "the source contract" overstated
         # what exists at that layer.
         by_layer = {}
-        for layer, _task in matrix.APPLICATION.values():
+        for layer, _task, _status in matrix.APPLICATION.values():
             by_layer[layer] = by_layer.get(layer, 0) + 1
         self.assertEqual(by_layer["source/generator"], 1)
         self.assertEqual(by_layer["linked ELF"], 33)
