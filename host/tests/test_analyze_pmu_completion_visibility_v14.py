@@ -16,6 +16,10 @@ ORDERS = (("Q", "QS", "SQ"), ("QS", "SQ", "Q"), ("SQ", "Q", "QS"))
 RUNS = 10
 
 
+QSIZE_EXPECTED = 0x40
+STATUS_CMD_END = 0x020
+
+
 def cell(round_index, position, variant, category=None, *, boot=None, runs=RUNS,
          first_run=1, attempt=1, p0=100, p1=None, excursion=False):
     """One matrix cell, built the way the collector hands one over."""
@@ -36,6 +40,17 @@ def cell(round_index, position, variant, category=None, *, boot=None, runs=RUNS,
                 "q_observation_cycles": cycles,
                 "first_q_done": 1 if category in ("Q_FIRST", "SAME_ITERATION") else 0,
                 "first_cmd_end_reached": 1 if category in ("S5_FIRST", "SAME_ITERATION") else 0,
+                # The words the two flags above came from. The analyzer derives
+                # the category from these rather than from the label, so a
+                # fixture that carried only the label would be testing a path
+                # the real thing no longer takes.
+                "first_qread": QSIZE_EXPECTED
+                if category in ("Q_FIRST", "SAME_ITERATION")
+                else QSIZE_EXPECTED - 1,
+                "qsize_expected": QSIZE_EXPECTED,
+                "first_status": STATUS_CMD_END
+                if category in ("S5_FIRST", "SAME_ITERATION")
+                else 0,
                 "convergence_iterations": 3,
                 "convergence_timeout": 0,
             }
@@ -87,13 +102,118 @@ class AnalyzerRedTests(unittest.TestCase):
     def test_a_mixed_campaign_is_unresolved(self):
         data = campaign("Q_FIRST", "S5_FIRST")
         # One QS cell disagrees with the other two: nothing stable to conclude.
+        # The disagreement is made in the record's own fields, not in its label.
+        # Writing the label alone used to be enough here, and is now refused --
+        # which is the point of re-deriving: a campaign cannot be talked into a
+        # conclusion by renaming its samples.
         for entry in data["cells"]:
             if entry["variant"] == "QS" and entry["round"] == 2:
                 for sample in entry["samples"]:
                     sample["category"] = "SAME_ITERATION"
                     sample["first_cmd_end_reached"] = 1
+                    sample["first_status"] = STATUS_CMD_END
                 break
         self.assertEqual(analyzer.analyze(data)["conclusion"], analyzer.UNRESOLVED)
+
+    # --- the label is not the evidence -------------------------------------
+    #
+    # The conclusion is drawn from a read-order category, and until now that
+    # category arrived as a field. Whoever computes that field decides the
+    # conclusion, which makes the whole campaign a test of the classifier. So
+    # the analyzer re-derives it from the record's own words, and these are the
+    # attacks on that.
+
+    def test_the_analyzer_rederives_the_category_from_raw_fields(self):
+        # Strip the labels entirely and the verdict must be unchanged: nothing
+        # the analyzer needs was in them.
+        data = campaign("Q_FIRST", "S5_FIRST")
+        derived = [
+            analyzer._derive_category(sample)
+            for entry in data["cells"]
+            if entry["variant"] != "Q"
+            for sample in entry["samples"]
+        ]
+        self.assertEqual(set(derived), {"Q_FIRST", "S5_FIRST"})
+
+    def test_the_stable_category_never_reads_the_label(self):
+        # Validation refuses a disagreeing label, which makes reading the label
+        # afterwards equivalent -- today. It stops being equivalent the moment
+        # that check moves or weakens, and the point of re-deriving is not to be
+        # correct by the grace of a second rule. So the derivation is handed
+        # samples with no label at all: reading one would raise.
+        data = campaign("Q_FIRST", "S5_FIRST")
+        stripped = []
+        for entry in data["cells"]:
+            if entry["variant"] != "QS":
+                continue
+            copy = dict(entry)
+            copy["samples"] = [
+                {key: value for key, value in sample.items() if key != "category"}
+                for sample in entry["samples"]
+            ]
+            stripped.append(copy)
+        self.assertEqual(analyzer._stable_category(stripped), "Q_FIRST")
+
+    def test_a_relabelled_sample_is_refused(self):
+        data = campaign("Q_FIRST", "S5_FIRST")
+        for entry in data["cells"]:
+            if entry["variant"] == "QS":
+                entry["samples"][3]["category"] = "S5_FIRST"
+                break
+        with self.assertRaises(analyzer.AnalysisError):
+            analyzer.analyze(data)
+
+    def test_relabelling_every_sample_cannot_move_the_conclusion(self):
+        # The attack in its strongest form: rewrite every label so the campaign
+        # reads as read-order bias, and leave the words alone.
+        data = campaign("Q_FIRST", "Q_FIRST")
+        for entry in data["cells"]:
+            if entry["variant"] == "SQ":
+                for sample in entry["samples"]:
+                    sample["category"] = "S5_FIRST"
+        with self.assertRaises(analyzer.AnalysisError):
+            analyzer.analyze(data)
+
+    def test_swapping_the_qs_and_sq_labels_changes_the_conclusion(self):
+        # Q_FIRST/S5_FIRST is read-order bias in one direction only. Swap which
+        # variant is which and the same samples must not still say bias.
+        straight = analyzer.analyze(campaign("Q_FIRST", "S5_FIRST"))
+        swapped = analyzer.analyze(campaign("S5_FIRST", "Q_FIRST"))
+        self.assertEqual(straight["conclusion"], analyzer.READ_ORDER_BIAS_DOMINATES)
+        self.assertNotEqual(swapped["conclusion"], analyzer.READ_ORDER_BIAS_DOMINATES)
+
+    def test_flipping_one_first_tuple_flag_is_a_consistency_violation(self):
+        # The flag and the word it came from must agree. One flipped flag is a
+        # record that contradicts itself, and it is refused rather than counted.
+        data = campaign("Q_FIRST", "S5_FIRST")
+        for entry in data["cells"]:
+            if entry["variant"] == "QS":
+                sample = entry["samples"][0]
+                sample["first_cmd_end_reached"] = 1
+                sample["category"] = "SAME_ITERATION"
+                break
+        with self.assertRaises(analyzer.AnalysisError):
+            analyzer.analyze(data)
+
+    def test_a_sample_without_its_raw_fields_cannot_be_categorised(self):
+        data = campaign("Q_FIRST", "S5_FIRST")
+        for entry in data["cells"]:
+            if entry["variant"] == "SQ":
+                del entry["samples"][2]["first_status"]
+                break
+        with self.assertRaises(analyzer.AnalysisError):
+            analyzer.analyze(data)
+
+    def test_a_first_tuple_that_observed_neither_register_is_refused(self):
+        data = campaign("Q_FIRST", "S5_FIRST")
+        for entry in data["cells"]:
+            if entry["variant"] == "QS":
+                sample = entry["samples"][1]
+                sample["first_qread"] = QSIZE_EXPECTED - 1
+                sample["first_status"] = 0
+                break
+        with self.assertRaises(analyzer.AnalysisError):
+            analyzer.analyze(data)
 
     # --- what it must never say -------------------------------------------
     def test_the_verdict_never_carries_a_latency_or_a_comparison(self):

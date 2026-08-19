@@ -169,6 +169,13 @@ class Cell:
             "convergence_timeout": result.convergence_timeout,
             "first_q_done": result.first_q_done,
             "first_cmd_end_reached": result.first_cmd_end_reached,
+            # The words those two flags were derived from, carried so that the
+            # analyzer can re-derive the read-order category rather than trust a
+            # field this collector computed. A verdict that reads a derived
+            # field is a verdict about that field.
+            "first_qread": result.first_qread,
+            "qsize_expected": result.qsize_expected,
+            "first_status": result.first_status,
             "q_observation_cycles": (result.t_first_observation - result.t_primary_entry) & 0xFFFFFFFF,
         }
         self.record(sample)

@@ -92,8 +92,19 @@ def _validate(campaign: dict) -> list:
                 # order it never had.
                 if category is not None:
                     raise AnalysisError("a Q cell carries category %r" % (category,))
-            elif category not in CATEGORIES:
+                continue
+            if category not in CATEGORIES:
                 raise AnalysisError("cell %r carries category %r" % (key, category))
+            # And the label has to be the one the record's own fields produce.
+            # A campaign whose labels were rewritten -- by a bug upstream or by
+            # a hand that edited the file -- is refused here rather than
+            # believed all the way to a conclusion.
+            derived = _derive_category(sample)
+            if derived != category:
+                raise AnalysisError(
+                    "cell %r run %r is labelled %s and its own fields say %s"
+                    % (key, sample.get("run_id"), category, derived)
+                )
 
     # Nine cells, nine boots. A floor reproduced across three cells that share
     # one boot is a floor reproduced once: the design asks for independence
@@ -137,10 +148,49 @@ def _floor_status(cells) -> dict:
     }
 
 
-def _stable_category(cells) -> str | None:
-    """The one category a variant's cells agree on, or None."""
+# The bit the firmware sets when the command stream reached its end. Named here
+# because this analyzer re-derives from the raw word rather than reading a flag.
+STATUS_CMD_END = 0x020
 
-    categories = {sample["category"] for entry in cells for sample in entry["samples"]}
+
+def _derive_category(sample: dict) -> str:
+    """The read-order category, computed from the record's own raw fields.
+
+    Not read from ``sample["category"]``. That field is produced upstream, and a
+    verdict that trusts it is a verdict about the classifier rather than about
+    the run: relabel every sample and the conclusion follows the label. The
+    authoritative fields are the ones the firmware wrote -- the queue cursor it
+    read, the queue size it was told to expect, and the STATUS word it sampled
+    in the same iteration -- and the category follows from those or from nothing.
+    """
+
+    for field in ("first_qread", "qsize_expected", "first_status"):
+        if sample.get(field) is None:
+            raise AnalysisError(
+                "a sample carries no %s: the category cannot be re-derived from it" % field
+            )
+    q_done = sample["first_qread"] == sample["qsize_expected"]
+    cmd_end = bool(sample["first_status"] & STATUS_CMD_END)
+    if q_done and cmd_end:
+        return CATEGORY_SAME_ITERATION
+    if q_done:
+        return CATEGORY_Q_FIRST
+    if cmd_end:
+        return CATEGORY_S5_FIRST
+    raise AnalysisError(
+        "a sample observed neither register in its first tuple: it is not a sample"
+    )
+
+
+def _stable_category(cells) -> str | None:
+    """The one category a variant's cells agree on, or None.
+
+    The categories are the re-derived ones. ``_validate`` has already refused any
+    sample whose recorded label disagreed with them, so by here the two are the
+    same -- which is the point: they were checked, not assumed.
+    """
+
+    categories = {_derive_category(sample) for entry in cells for sample in entry["samples"]}
     return categories.pop() if len(categories) == 1 else None
 
 
