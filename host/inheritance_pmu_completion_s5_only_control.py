@@ -178,3 +178,55 @@ def summary():
 if __name__ == "__main__":
     import json
     print(json.dumps(summary(), indent=2, sort_keys=True))
+
+
+# ---------------------------------------------------------------------------
+# Where each requalified rule is actually re-proved
+#
+# "Inherited" is not a place. Every rule carried over names the layer whose
+# answer will count for V15 and the task that produces it, so that a rule which
+# is never applied shows up as a missing entry rather than as an assumption
+# nobody wrote down.
+#
+# The distribution is worth noticing: of the thirty-four, exactly one is decided
+# on the source. The rest are claims about what the compiler emitted, and the
+# plan's phrase "inherit the rest of the V14 source contract" was larger than
+# what exists at that layer.
+# ---------------------------------------------------------------------------
+
+APPLICATION = {
+    "RULE_PRE_PROGRAM_DOMINANCE": ("linked ELF", "Task 6"),
+    "RULE_NO_TRANSITION_BEFORE_PROGRAMMING": ("linked ELF", "Task 6"),
+    "RULE_PRE_PROGRAM_GATE_SHAPE": ("source/generator", "Task 3"),
+    "RULE_PRIMARY_READ_ORDER": ("linked ELF", "Task 6"),
+    "RULE_PRIMARY_NO_PER_ITERATION_EFFECT": ("linked ELF", "Task 6"),
+    "RULE_PRIMARY_NO_QSIZE": ("linked ELF", "Task 6"),
+    "RULE_PRIMARY_FAULT_PRIORITY": ("linked ELF", "Task 6"),
+    "RULE_PRIMARY_IRQ_NOT_AN_EXIT": ("linked ELF", "Task 6"),
+    "RULE_TAIL_READ_ORDER": ("linked ELF", "Task 8"),
+    "RULE_TAIL_FOUR_CONDITIONS": ("linked ELF", "Task 8"),
+    "RULE_TAIL_BOUND": ("linked ELF", "Task 8"),
+    "RULE_TAIL_NO_PER_ITERATION_EFFECT": ("linked ELF", "Task 8"),
+    "RULE_MAILBOX_PUBLISHED_ONCE": ("linked ELF", "Task 6"),
+    "RULE_MAILBOX_PUBLISHER_IDENTITY": ("linked ELF", "Task 6"),
+    "RULE_MAILBOX_PUBLISH_ADDRESS": ("linked ELF", "Task 6"),
+    "RULE_MAILBOX_PUBLISH_FENCED": ("linked ELF", "Task 6"),
+    "RULE_RUNNER_MAILBOX_GATED": ("linked ELF", "Task 6"),
+    "RULE_RUNNER_MAILBOX_READONLY": ("linked ELF", "Task 6"),
+    "RULE_RUNNER_MAILBOX_ONE_CHECK": ("linked ELF", "Task 6"),
+    "RULE_RUNNER_TUPLE_COMPLETE": ("linked ELF", "Task 6"),
+    "RULE_SERIALIZATION_LENGTH": ("linked ELF", "Task 6"),
+    "RULE_SERIALIZATION_COUNTABLE": ("linked ELF", "Task 6"),
+    "RULE_SERIALIZATION_NAMED_CALLEES": ("linked ELF", "Task 6"),
+    "RULE_RECORD_SIZE": ("linked ELF", "Task 6"),
+    "RULE_RECORD_APPENDIX_ORDER": ("linked ELF", "Task 6"),
+    "RULE_RECORD_APPENDIX_CONTIGUOUS": ("linked ELF", "Task 6"),
+    "RULE_RECORD_APPENDIX_ENDS_RECORD": ("linked ELF", "Task 6"),
+    "RULE_DWARF_RECORD_PRESENT": ("linked ELF", "Task 6"),
+    "RULE_DWARF_MEMBER_READABLE": ("linked ELF", "Task 6"),
+    "RULE_DWARF_SIZE_PRESENT": ("linked ELF", "Task 6"),
+    "RULE_DWARF_NM_AGREE": ("linked ELF", "Task 6"),
+    "RULE_NPU_IRQ_NEVER_ENABLED": ("linked ELF", "Task 6"),
+    "RULE_NPU_IRQ_UNRESOLVED_WRITE": ("linked ELF", "Task 6"),
+    "RULE_STORE_FORM_UNREADABLE": ("linked ELF", "Task 6"),
+}

@@ -99,6 +99,48 @@ class TheConceptsThatDoNotSurvive(unittest.TestCase):
         self.assertEqual(requalified + 2, len(_v14_rules()))
 
 
+class EveryRequalifiedRuleHasSomewhereToBeProved(unittest.TestCase):
+    """"Inherited" is not a place, so each carried rule names one."""
+
+    def test_every_requalified_rule_has_an_application_entry(self):
+        requalified = {
+            row["claim"]
+            for row in matrix.INHERITED_RULES
+            if row["class"] == matrix.REQUALIFIED_FOR_V15
+        }
+        self.assertEqual(set(matrix.APPLICATION), requalified)
+
+    def test_no_application_entry_is_for_a_rule_that_was_dropped(self):
+        dropped = {
+            row["claim"]
+            for row in matrix.INHERITED_RULES
+            if row["class"] == matrix.NOT_APPLICABLE
+        }
+        self.assertFalse(set(matrix.APPLICATION) & dropped)
+
+    def test_every_entry_names_a_layer_and_a_task(self):
+        for rule, entry in matrix.APPLICATION.items():
+            layer, task = entry
+            self.assertTrue(layer, rule)
+            self.assertTrue(task.startswith("Task "), rule)
+
+    def test_the_layers_are_the_ones_this_experiment_has(self):
+        # A rule assigned to a layer V15 does not build would be an application
+        # entry that can never be satisfied.
+        layers = {layer for layer, _task in matrix.APPLICATION.values()}
+        self.assertTrue(layers <= {"source/generator", "linked ELF"}, layers)
+
+    def test_almost_all_of_the_inheritance_lands_on_the_image(self):
+        # Recorded because it corrects the plan: only one carried rule is decided
+        # on the source, and calling the rest "the source contract" overstated
+        # what exists at that layer.
+        by_layer = {}
+        for layer, _task in matrix.APPLICATION.values():
+            by_layer[layer] = by_layer.get(layer, 0) + 1
+        self.assertEqual(by_layer["source/generator"], 1)
+        self.assertEqual(by_layer["linked ELF"], 33)
+
+
 class TheReferenceIsUnambiguous(unittest.TestCase):
     def test_the_v14_reference_names_both_anchors(self):
         for key in ("preboard_anchor", "board_evidence_anchor", "campaign_protocol"):
