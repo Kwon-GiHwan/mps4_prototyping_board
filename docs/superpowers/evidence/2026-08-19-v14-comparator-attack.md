@@ -61,6 +61,13 @@ assumes: `T4_A/Q/APP.BIN` is inode `2053:3052334` and `T4_B/Q/APP.BIN` is
 So today's determinism claims stand, and they now rest on a comparator that is
 able to fail.
 
+What this tool proves, and what it does not: it establishes that the two sides
+are independent artifacts -- distinct files, distinct inodes, distinct roots --
+and that their declared bytes agree. It does not prove that A and B were two
+clean builds run at two times. That is temporal provenance, and it comes from
+the orchestration instead: build A, capture it, clean, build B, capture it, each
+side copied out of the container before the next began.
+
 ## Mutation tests
 
 | Mutation | Caught by |
