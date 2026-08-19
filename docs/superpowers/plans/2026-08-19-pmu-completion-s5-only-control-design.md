@@ -1,6 +1,7 @@
 # PMU_COMPLETION_S5_ONLY_CONTROL — short-term goal and design
 
-**Status: design only, revised after its first attack review** (see
+**Status: design only, revised after a self-attack and an independent attack
+review** (see
 `2026-08-19-pmu-completion-s5-only-control-attack.md`; A1, A2, A4, A6 and A7 are
 closed in the text below, A3 and A5 as wording). No code exists for this yet, and none should until this
 document has been attacked independently and anchored. In particular nothing in
@@ -142,51 +143,160 @@ Fixed here, before any firmware exists, because a control whose interpretation i
 chosen after the data arrives is not a control. This project froze V14's analyzer
 before its data existed for the same reason.
 
-| S5-only result | What it supports | What it does not |
+Six outcomes, because the three-row version hid the distinctions that a post-hoc
+reading would have exploited -- most of all the difference between "no excursions"
+and "different excursions".
+
+**S1 — floor and excursions both reproduce**, per boot, with excursions above the
+floor present in each.
+Supports: a discrete floor-plus-excursion structure exists in S5-only observation
+too. Does **not** support: that Q and S5 are perturbed by the same cause, that
+their floors mean the same hardware timing, or that intrinsic ordering is settled.
+
+**S2 — floor reproduces, no excursion observed.**
+Supports: a reproducible lower observation mode exists in S5-only. Weakens: the
+reading that Q and S5 share one variability structure. Forbidden: "S5 is stable"
+or "STATUS visibility has no excursions" — thirty samples not showing something is
+not an absence proof.
+
+**S3 — floor reproduces, excursion structure qualitatively different** (different
+per-boot excursion frequency, different modality, boot-dependent floor-like
+states).
+Supports: the within-variant observation dynamics of Q and S5 differ. Still not
+evidence about intrinsic ordering.
+
+**S4 — no reproducible floor** (boot minima disagree, distribution continuously
+spread).
+Supports: the hard-floor structure V14 saw in Q does not reproduce under
+S5-only. Does **not** mean "therefore Q is faster".
+
+**S5 — bit5 never observed within the bounded loop.**
+This is a diagnostic failure state, not a characterization result: sample
+invalid, boot aborted, fresh boot required, excluded from the distribution
+dataset.
+
+**S6 — boot-dependent, mixed behaviour** (one boot floor-plus-excursion, another
+floor only, another no reproducible floor).
+Verdict: `BOOT-DEPENDENT / UNRESOLVED`. Registered as its own outcome precisely so
+that "two of three boots showed it, so it reproduces" cannot be invented
+afterwards. No pooling across boots to manufacture a single answer.
+
+Any reading not in this list is post-hoc and is to be labelled as such.
+
+## Three gates this control needs that V14 did not
+
+### 1. Q-to-S5 structural equivalence
+
+The value of the control rests on "the same experiment with one observable
+replaced", and V14 did not leave the analogous claim to trust:
+`RULE_READ_ORDER_EQUIVALENCE` proves QS and SQ differ in read order and nothing
+else. V15 needs `verify_single_register_equivalence(Q, S5)`.
+
+**Not raw instruction equality.** Register allocation and branch encoding are
+free to differ. The gate's authority is a normalized CFG plus semantic
+instruction roles plus the side-effect sequence:
+
+- entry and exit CFG, loop header, success edge, timeout and back edge
+- timestamp placement
+- induction-counter semantics
+- first-observation freeze position
+- helper and call topology
+- per-iteration instruction class and count
+- per-iteration memory side effects
+- tail entry point
+
+The only permitted difference is the observable substitution and the dataflow
+that depends on it:
+
+```
+Q :  load QREAD    ; compare qread == qsize_expected
+S5:  load STATUS   ; test status & 0x20
+```
+
+Per iteration, quantitatively:
+
+| | Q primary | S5 primary |
 | --- | --- | --- |
-| floor and excursion reproduce, structure comparable to Q-only | single-register polling produces this structure whichever register is polled; V14's dual-read pattern is correspondingly less likely to be an artefact of *having* two reads | still says nothing about which observable becomes visible first |
-| no floor reproduces, or the structure differs qualitatively from Q-only | the structure is register-dependent, so cross-variant structural reasoning in V14 is weaker than assumed | does not by itself explain V14's second-read pattern |
-| bit5 cannot be observed at all within the bounded loop | bit5 is not a usable single-register completion observable under this discipline | does not retroactively invalidate V14's dual-read observations |
+| QREAD reads | exactly 1 | **0** |
+| STATUS reads | 0 | exactly 1 |
+| QSIZE reads | 0 | 0 |
+| extra load/store, MMIO, timestamp, call | 0 | 0 |
+| spill/reload delta, barrier delta | — | 0 |
 
-Any reading not in this table is post-hoc and is to be labelled as such.
+**If this gate fails, it is not relaxed.** V15's claims drop to S5-only
+within-variant characterization and the Q-to-S5 structural comparison is
+abandoned. Weakening a gate to make an image pass is the one move this project
+has spent its entire history refusing.
 
-## Two gates this control needs that V14 did not
+**Negative fixtures, each failing at the equivalence detector itself** — not at a
+neighbouring rule that happens to catch it first:
 
-**Equivalence.** The value of the control rests on "the same experiment with one
-observable replaced", and V14 did not leave the analogous claim to trust:
-`RULE_READ_ORDER_EQUIVALENCE` proves QS and SQ differ in read order and in
-nothing else. V15 needs the counterpart --
-`verify_single_register_equivalence(Q, S5)`, proving the two primary loops are
-identical up to the observable's load and test. Without it, "comparable
-structure" is a claim about two loops nobody compared, and the conclusions must
-retreat to within-variant reproducibility.
+| Mutation | Required |
+| --- | --- |
+| an extra per-iteration instruction in S5 | FAIL |
+| an extra SRAM store in S5 | FAIL |
+| a QREAD read added to the S5 primary loop | FAIL |
+| S5 timeout branch topology changed | FAIL |
+| S5 first-freeze position moved | FAIL |
+| only the observable load/test exchanged | PASS |
 
-**No QREAD in the measured loop.** `RULE_PRIMARY_NO_QSIZE` proves V14's measured
-loop never reaches QSIZE. The mirror -- that the S5 measured loop never reaches
-QREAD -- is the central property of this control and does not exist yet. Asserted
-rather than gated is the shape of every silent gate this project has found.
+### 2. The S5-only boundary, as an executable claim
 
-Both belong in the claim matrix with targeted negatives that fail at their own
-rule, on the same terms as V14's thirty-six.
+Writing "S5-only means up to the freeze" in prose is not enough; it is one of the
+load-bearing claims of the whole control, so it is gated on the final ELF and
+split by phase:
+
+```
+PRE-FREEZE PRIMARY PATH        POST-FREEZE CONVERGENCE TAIL
+  QSIZE  reads   0               QREAD   allowed
+  QREAD  reads   0               STATUS  allowed
+  STATUS reads   exactly 1/iter  QSIZE   still 0
+  STATUS mask    bit5 / 0x20
+```
+
+The pre-freeze half is the mirror of V14's `RULE_PRIMARY_NO_QSIZE` and does not
+exist yet. Asserted rather than gated is the shape of all eleven silent gates
+this project has found.
+
+### 3. Both belong to the matrix
+
+On the same terms as V14's thirty-six: a rule identifier, a targeted negative
+that fails at that rule, application to the real images, and inclusion in the
+silent-gate telemetry.
 
 ## Campaign shape
 
 V14's balance came from three variants in a Latin square. V15 has one variant, so
-there is no square, no position axis, and nothing to alternate with. What
-replaces it:
+there is no treatment for position to confound with, and no square is needed. The
+protection comes from boot blocking and sequence preservation instead:
 
-- independent boots, each its own cell, no pooling
-- the floor must reproduce as the minimum of **every boot separately**, which is
-  the rule V14's analyzer already applies rather than pooling minima
-- run count per cell and boot count to be fixed in the implementation plan, not
-  chosen while the campaign runs
+- **3 independent boots x 10 consecutive runs**, fixed before the campaign starts
+- `run_sequence` preserved; no cell completed by topping up a failed attempt
+- **boot-first analysis, pooling last**: per-boot minimum, per-boot median,
+  per-boot excursion count, within-boot dispersion, between-boot dispersion, and
+  the trend across run index 1..N
+- the floor must reproduce as the minimum of **every boot separately**, the rule
+  V14's analyzer already applies
+
+The sample size is fixed at 3x10 rather than extended adaptively. If the boots
+disagree, the result is outcome **S6** — `BOOT-DEPENDENT / UNRESOLVED` — and a
+follow-up is designed separately. Deciding to run more boots after seeing the
+data is how a preregistered outcome table gets quietly unregistered.
 
 ## Deciding whether the poll count is free
 
-"Only if an existing counter yields it without touching the loop body" is the
-right rule and needs an arbiter. It is decided on the linked image -- the measured
-loop's body identical with and without the counter -- and not by judgement at
-authoring time.
+Decided on the linked image after the S5 loop exists, not by judgement at
+authoring time:
+
+- **Case A** — publishing the existing induction counter as a live-out leaves the
+  primary loop semantically and structurally equivalent: zero extra per-iteration
+  instructions, zero spills, zero loads or stores, zero MMIO. Adopt it.
+- **Case B** — publication changes the loop shape at all, by a spill, a reload, an
+  extra move or any bookkeeping. Drop the field.
+
+V15's purpose is a fresh S5 control, not a reproduction of V13's poll-count
+study. A control whose loop differs from the thing it controls for is not a
+control, and no amount of extra characterization is worth that.
 
 ## Forbidden claims
 
@@ -218,6 +328,22 @@ somebody could write from this data that the data does not support.
 6. **No promotion to production or benchmark.** Production END_ONLY stays FROZEN
    and MLEK stays BLOCKED however clean the result is. This is a completion
    observability control, not a measurement candidate.
+7. **S5-only is not an "unperturbed baseline".** STATUS polling is itself repeated
+   MMIO traffic. The accurate name is *single-register STATUS(bit5) polling
+   control*; "natural" or "unperturbed" baseline is forbidden.
+8. **Unobserved excursions are not absent variability.** "No excursion in thirty
+   samples, therefore STATUS visibility is deterministic" is forbidden. What may
+   be written is that no excursion was observed in this campaign.
+9. **Poll count is not visibility latency.** If the count survives the Case A/B
+   decision, it remains a software polling observation count. "200 polls
+   therefore 200xX of hardware latency" is forbidden.
+10. **The convergence tail is not primary ordering evidence.** The tail reads
+    QREAD after the freeze; what it sees is cleanup safety evidence and may not
+    be used to argue about Q-versus-S5 ordering.
+11. **Qualitative similarity is not a common mechanism.** "Q shows floor and
+    excursions, S5 shows floor and excursions, therefore both come from the same
+    NPU execution variability" is forbidden. What may be written is that both
+    single-register observations showed a similar qualitative structure.
 
 ## Sequence
 

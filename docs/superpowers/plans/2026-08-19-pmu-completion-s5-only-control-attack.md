@@ -136,3 +136,37 @@ writing the firmware that day.
 
 Nothing here requires the design to be abandoned. A1, A2 and A6 require it to be
 revised before it is anchored.
+
+
+---
+
+# Independent attack review
+
+The design went out with the seven attacks above already closed or dispositioned.
+The independent pass returned **DESIGN: CONDITIONALLY APPROVED** with three
+blocking items and five additional prohibitions. All are now closed in the design.
+
+| # | Finding | Close |
+| --- | --- | --- |
+| B1 | the equivalence gate was named but not *defined*; requiring raw instruction equality would be wrong and requiring nothing would be useless | defined as relocation- and register-allocation-invariant semantic CFG plus side-effect equivalence, with the permitted difference stated as the observable substitution alone, a per-iteration quantitative table, and six negative fixtures each required to fail at the equivalence detector itself |
+| B2 | three outcomes hid the distinctions a post-hoc reading would exploit | six preregistered outcomes S1–S6, separating "no excursions" from "different excursions", and registering `BOOT-DEPENDENT / UNRESOLVED` so that "two of three boots" cannot become a reproduction criterion after the fact |
+| B3 | "S5-only" was prose, and it is one of the load-bearing claims | split into an executable pre-freeze / post-freeze claim: pre-freeze QSIZE 0, QREAD 0, STATUS exactly one per iteration masked to bit5; post-freeze QREAD and STATUS allowed, QSIZE still 0 |
+
+Non-blocking, also closed:
+
+- **Latin square is not needed.** With one variant there is no treatment for
+  position to confound with. Boot blocking, sequence preservation, boot-first
+  analysis and no early pooling replace it; 3x10 fixed in advance, and boots that
+  disagree produce S6 rather than more boots.
+- **Five further forbidden claims** (F7–F11): S5-only is not an unperturbed
+  baseline; unobserved excursions are not absent variability; poll count is not
+  visibility latency; the convergence tail is not primary ordering evidence;
+  qualitative similarity is not a common mechanism. Eleven in total.
+- **Poll count** decided on the linked image as Case A (adopt only if zero extra
+  per-iteration instructions, spills, memory or MMIO) or Case B (drop the field).
+
+One correction the independent pass made to my own framing, worth recording
+because it is the kind of drift that starts small: the equivalence gate exists to
+let V15 stand *beside* V14's Q, and if it fails the answer is to lower V15's
+claims, never to loosen the gate. I had written the two options as a choice; they
+are a preference and a fallback.
