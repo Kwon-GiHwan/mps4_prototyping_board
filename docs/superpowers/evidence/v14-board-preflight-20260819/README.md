@@ -59,3 +59,80 @@ Either would unblock the storage stage:
   `/dev/sdb` absent
 
 Both are decisions for the operator. Nothing in the qualified code changes.
+
+---
+
+# Second attempt: 12/12 PASS
+
+The two blockers were operational and both were cleared without touching any
+qualified code.
+
+1. **Root-inclusive ownership.** The operator supplied sudo credentials. The
+   credential itself is not recorded here or anywhere in the evidence tree, per
+   the standing rule in `PMU_QUAL_PROCEDURE.md`; only the fact that a
+   root-inclusive check was performed. It found zero holders on `/dev/sdb`,
+   `/dev/sdb1` and all four FTDI ports, and zero mounts.
+2. **USB_OFF.** Re-examined before issuing, because the procedure calls
+   USB_OFF-while-mounted the most dangerous action it defines. The precondition
+   it demands -- not mounted, ownership established -- was satisfied first.
+   `USB_ON`/`USB_OFF` are MCC console commands over serial, so no physical
+   access was required and the action is reversible with `USB_ON`. MCC replied
+   `Disabling debug USB...` and `/dev/sdb*` disappeared.
+
+Ordering mattered: ownership was measured **before** the serial port was
+opened, so the harness would not appear as a holder of the port it was about to
+use. Holders were re-checked after closing it and were still zero.
+
+## Storage stage
+
+| Gate | Verdict |
+| --- | --- |
+| `MOUNT_COUNT` | PASS -- 0 |
+| `BLOCK_WRITE_HOLDERS` | PASS -- 0, root-inclusive |
+| `UART_OWNERSHIP` | PASS -- all four ports free, root-inclusive |
+| `USB_OFF` | PASS -- confirmed, `/dev/sdb` absent |
+
+## Baseline stage
+
+Observed on the known-good image already on the card. Nothing was deployed.
+
+| Gate | Verdict | Observation |
+| --- | --- | --- |
+| `DDR_SELFTEST` | PASS | `DDR memory test at 0x70000000: PASSED` |
+| `CPUWAIT` | PASS | `Clearing SCC CPUWAIT` |
+| `PING_LIVENESS` | PASS | 3/3 answered, every one `state=1` (IDLE) |
+| `PROTOCOL_ERRORS` | PASS | all seven counters zero across all three pings |
+
+`raw_ping_counters.json` carries the three replies verbatim.
+
+## Candidate stage
+
+Run once per variant, binding the four V14 gates to the bytes that would
+actually be written -- `FINAL8_A/<variant>/{APP,VECTORS,DDR}.BIN` -- against the
+digests that variant's manifest declares.
+
+| Variant | Gates | State |
+| --- | --- | --- |
+| Q | 12/12 PASS | `DEPLOYMENT_AUTHORIZED` |
+| QS | 12/12 PASS | `DEPLOYMENT_AUTHORIZED` |
+| SQ | 12/12 PASS | `DEPLOYMENT_AUTHORIZED` |
+
+## Result
+
+```
+ACTUAL BOARD PREFLIGHT
+
+Inherited gates       8/8 PASS
+V14-specific gates    4/4 PASS
+FAIL                  0
+UNPROVEN              0
+
+Final state           DEPLOYMENT_AUTHORIZED   (Q, QS and SQ)
+
+V14 deployment        NOT STARTED
+Board campaign        NOT STARTED
+```
+
+The board was read and transitioned only as the qualified procedure defines --
+`USB_OFF` and `REBOOT`, both MCC console commands. No SD write, no firmware
+replacement, no configuration change, no V14 image deployed.
