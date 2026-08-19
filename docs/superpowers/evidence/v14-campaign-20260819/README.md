@@ -52,3 +52,22 @@ Two observations, stated as observations:
 
 Neither is a verdict. The campaign's verdict comes from the analyzer over all
 nine cells, and this file exists so the rounds can be read before it runs.
+
+## Round 2: QS -> SQ -> Q
+
+30 valid samples from three more independent boots, 10/10 in every cell, every
+gate held, every re-read equal to its first read, run sequences 1..10.
+
+| Cell | Boot | Valid | Categories |
+| --- | --- | --- | --- |
+| QS | `QS-1787115422` | 10/10 | SAME_ITERATION 7, S5_FIRST 3 |
+| SQ | `SQ-1787115490` | 10/10 | SAME_ITERATION 7, Q_FIRST 3 |
+| Q | `Q-1787115558` | 10/10 | none |
+
+The R1 pattern repeats on independent boots and in a different position within
+the round: SAME_ITERATION dominates both dual variants, and the minority in each
+names the register that variant reads second. Still recorded, still not
+concluded -- the balanced design exists so that position and time effects are
+separated from the variant effect, and that separation needs all three rounds.
+
+Running total: 60 of 90 formal samples, 0 contract violations.
