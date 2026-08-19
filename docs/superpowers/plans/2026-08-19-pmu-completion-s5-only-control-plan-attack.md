@@ -86,3 +86,31 @@ comparison.
 | P3 floor/excursion definitions | no | inherit V14's operational definitions explicitly |
 | P4 requirements matrix | no | its own task before the qualification pass |
 | P5 scratch build | no | state that it is scratch and excluded |
+
+
+---
+
+# Independent attack review of the plan
+
+Returned **CONDITIONALLY APPROVED** with P1 and P2 confirmed and two further
+blocking items. All four are now closed in the plan.
+
+| # | Finding | Close |
+| --- | --- | --- |
+| P1 | confirmed; S3 should be `NOT_APPLICABLE` with a reason rather than "void", and the survival table must be an enum the analyzer obeys | `comparison_mode` enum with a per-outcome table; the analyzer refuses to emit S3 in fallback mode and a fixture that tries goes RED |
+| P2 | confirmed; V15 needs its own static-evidence schema, and the required evidence list is larger than I proposed | the schema now also requires the post-freeze tail and cleanup equivalence, the poll-count admission status, the exact V14 reference identity with an evidence hash, and the comparison mode; `UNKNOWN` or `NOT_RUN` is a board-gate FAIL |
+| B3 | **new**: the fallback existed only in prose, so the program could keep comparing while the document said it had stopped | `comparison_mode` is propagated firmware → manifest → parser → classifier → collector → analyzer → preflight → report, and disagreement between layers is a failure; four negatives (N1–N4) enforce it |
+| B4 | **new**: the requirements matrix was scheduled inside the qualification pass, where it would have become a document explaining what was already built | moved to Task 0, before Chunk 1, with four inheritance classes -- `UNCHANGED_AND_HASH_PINNED`, `REQUALIFIED_FOR_V15`, `NOT_APPLICABLE`, `NEW_V15_CLAIM` -- and "V14 already qualified this" is not an accepted answer anywhere |
+
+B3 is the one I would not have found. The fallback was correctly specified and
+completely unenforced: nothing in the plan made any layer behave differently in
+fallback mode, so the retreat to within-variant claims would have been a sentence
+in a document while the analyzer went on comparing.
+
+B4 is the same class of error one level up. A matrix written after the
+implementation describes it; a matrix written before it decides it.
+
+Also closed: the floor and excursion definitions are copied into the V15 contract
+rather than referred to, the counter-less build is marked scratch and
+non-deployable, and the plan grew from 16 tasks to 21 across six chunks -- the
+count was never the question, the dependencies were.
