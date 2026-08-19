@@ -1,6 +1,8 @@
 # PMU_COMPLETION_S5_ONLY_CONTROL — short-term goal and design
 
-**Status: design only.** No code exists for this yet, and none should until this
+**Status: design only, revised after its first attack review** (see
+`2026-08-19-pmu-completion-s5-only-control-attack.md`; A1, A2, A4, A6 and A7 are
+closed in the text below, A3 and A5 as wording). No code exists for this yet, and none should until this
 document has been attacked independently and anchored. In particular nothing in
 V14 is to be modified: V13 and V14 are frozen historical evidence, and this is a
 new independent control beside them, not an extension of either.
@@ -84,6 +86,14 @@ is that only the thing under study differs:
 - the collector's fail-closed behaviour
 - board pre- and post-flight
 
+**Inherited in shape, not in code.** Schema 15 with its own build ID means a new
+parser, a new classifier, a new manifest binding and a new collector
+instantiation. Their *designs* come across unchanged; their *modules* are new
+code and must be requalified to the standard V14's were held to -- claim matrix,
+targeted negatives that fail at their own rule, real-artifact application, and
+silent-gate telemetry. The implementation plan must budget for a host chain, not
+only a firmware change.
+
 ### QSIZE and the convergence tail stay
 
 Being S5-only in the *primary* loop does not mean dropping the QREAD-based tail.
@@ -99,6 +109,12 @@ convergence tail:       QREAD -> STATUS, then
 ```
 
 The observable changes; the cleanup contract does not.
+
+**What "S5-only" means, precisely.** The tail reads QREAD, so this control is
+S5-only *up to the first-observation freeze* and not after it. Since the confound
+under study is QREAD MMIO traffic perturbing the polling environment, that
+boundary is the whole point: the traffic is removed from the measured window, and
+what remains happens after the measurement it could have perturbed.
 
 ## Primary outputs
 
@@ -119,6 +135,58 @@ induction counter with no perturbation.
 
 If it cannot be taken without changing the loop body, it is not taken. A control
 whose loop differs from the thing it is controlling for is not a control.
+
+## Pre-registered interpretation
+
+Fixed here, before any firmware exists, because a control whose interpretation is
+chosen after the data arrives is not a control. This project froze V14's analyzer
+before its data existed for the same reason.
+
+| S5-only result | What it supports | What it does not |
+| --- | --- | --- |
+| floor and excursion reproduce, structure comparable to Q-only | single-register polling produces this structure whichever register is polled; V14's dual-read pattern is correspondingly less likely to be an artefact of *having* two reads | still says nothing about which observable becomes visible first |
+| no floor reproduces, or the structure differs qualitatively from Q-only | the structure is register-dependent, so cross-variant structural reasoning in V14 is weaker than assumed | does not by itself explain V14's second-read pattern |
+| bit5 cannot be observed at all within the bounded loop | bit5 is not a usable single-register completion observable under this discipline | does not retroactively invalidate V14's dual-read observations |
+
+Any reading not in this table is post-hoc and is to be labelled as such.
+
+## Two gates this control needs that V14 did not
+
+**Equivalence.** The value of the control rests on "the same experiment with one
+observable replaced", and V14 did not leave the analogous claim to trust:
+`RULE_READ_ORDER_EQUIVALENCE` proves QS and SQ differ in read order and in
+nothing else. V15 needs the counterpart --
+`verify_single_register_equivalence(Q, S5)`, proving the two primary loops are
+identical up to the observable's load and test. Without it, "comparable
+structure" is a claim about two loops nobody compared, and the conclusions must
+retreat to within-variant reproducibility.
+
+**No QREAD in the measured loop.** `RULE_PRIMARY_NO_QSIZE` proves V14's measured
+loop never reaches QSIZE. The mirror -- that the S5 measured loop never reaches
+QREAD -- is the central property of this control and does not exist yet. Asserted
+rather than gated is the shape of every silent gate this project has found.
+
+Both belong in the claim matrix with targeted negatives that fail at their own
+rule, on the same terms as V14's thirty-six.
+
+## Campaign shape
+
+V14's balance came from three variants in a Latin square. V15 has one variant, so
+there is no square, no position axis, and nothing to alternate with. What
+replaces it:
+
+- independent boots, each its own cell, no pooling
+- the floor must reproduce as the minimum of **every boot separately**, which is
+  the rule V14's analyzer already applies rather than pooling minima
+- run count per cell and boot count to be fixed in the implementation plan, not
+  chosen while the campaign runs
+
+## Deciding whether the poll count is free
+
+"Only if an existing counter yields it without touching the loop body" is the
+right rule and needs an arbiter. It is decided on the linked image -- the measured
+loop's body identical with and without the counter -- and not by judgement at
+authoring time.
 
 ## Forbidden claims
 
