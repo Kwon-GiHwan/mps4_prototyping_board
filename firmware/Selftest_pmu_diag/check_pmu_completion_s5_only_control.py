@@ -144,16 +144,21 @@ def verify_s5_primary_contract(source: str) -> dict:
             "exit" % IRQ_MACRO,
         )
 
-    # irq_raised is supporting evidence taken from the word the deciding test
-    # used. Taken from a fresh read it is a second MMIO access wearing the
-    # clothes of a tidy-up.
-    irq_site = re.search(r"irq_raised_at_success\s*=\s*\(([^)]*)\)", text)
-    if irq_site is None:
+    # irq_raised is supporting evidence from the word the deciding test used.
+    # The firmware is not required to compute it -- publishing the raw deciding
+    # word and letting the host derive bit1 costs the measured loop nothing and
+    # is provably the same word. What is required is that the deciding word
+    # reaches the record, and that any derivation the firmware does do is not
+    # taken from a fresh read.
+    published = re.search(r"obs->status\s*=\s*(\w+)\s*;", body)
+    if published is None or published.group(1) != "status":
         raise fail_rule(
             RULE_S5_IRQ_FROM_DECIDING_WORD,
-            "the source never publishes irq_raised_at_success",
+            "the deciding STATUS word is not published from inside the loop: the host "
+            "cannot derive irq_raised from the word the bit5 test used",
         )
-    if _STATUS_DEREF.search(irq_site.group(1)):
+    irq_site = re.search(r"irq_raised[a-z_]*\s*=\s*\(([^)]*)\)", text)
+    if irq_site is not None and _STATUS_DEREF.search(irq_site.group(1)):
         raise fail_rule(
             RULE_S5_IRQ_FROM_DECIDING_WORD,
             "irq_raised is taken from a fresh STATUS read: it must come from the word "
@@ -165,6 +170,7 @@ def verify_s5_primary_contract(source: str) -> dict:
         "qread_reads_in_loop": qread_reads,
         "qsize_reads_in_loop": qsize_reads,
         "exit_conditions": sorted(set(exits)),
+        "deciding_word_published": True,
         "irq_from_the_deciding_word": True,
         "iteration_bound": ITERATION_BOUND_MACRO,
     }

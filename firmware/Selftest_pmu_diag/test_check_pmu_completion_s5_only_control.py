@@ -39,6 +39,7 @@ static uint32_t v15_primary_observe(void)
         if ((status & V15_STATUS_FAULT_MASK) != 0U) { result = V15_PRIMARY_FAULT; break; }
         if ((status & V15_STATUS_CMD_END) != 0U) {
             observed = status;
+            obs->status = status;
             t_first_observation = read_cycles();
             result = V15_PRIMARY_SUCCESS;
             break;
@@ -118,6 +119,7 @@ class TheCanonicalSourceIsAccepted(unittest.TestCase):
         self.assertEqual(document["qread_reads_in_loop"], 0)
         self.assertEqual(document["qsize_reads_in_loop"], 0)
         self.assertTrue(document["irq_from_the_deciding_word"])
+        self.assertTrue(document["deciding_word_published"])
 
 
 class TheFourThingsThatMustBeImpossible(unittest.TestCase):
