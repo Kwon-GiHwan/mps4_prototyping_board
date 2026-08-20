@@ -31,11 +31,13 @@ import re
 RULE_V15_HELPER_IDENTITY = "RULE_V15_HELPER_IDENTITY"
 RULE_V15_PRIMARY_S5_ONLY = "RULE_V15_PRIMARY_S5_ONLY"
 RULE_V15_POST_FREEZE_SCOPE = "RULE_V15_POST_FREEZE_SCOPE"
+RULE_V15_IRQ_FROM_DECIDING_WORD = "RULE_V15_IRQ_FROM_DECIDING_WORD"
 
 RULES = (
     "RULE_V15_HELPER_IDENTITY",
     "RULE_V15_PRIMARY_S5_ONLY",
     "RULE_V15_POST_FREEZE_SCOPE",
+    "RULE_V15_IRQ_FROM_DECIDING_WORD",
 )
 
 # The load-bearing dependency set, not one top-level file. _elf_transfer and
@@ -230,8 +232,38 @@ def verify_s5_only_boundary_image(objdump_text: str) -> dict:
             "observable is 0x%02X alone" % (tested, CMD_END_MASK),
         )
 
+    # The word the loop decided on has to be the word the record carries. A
+    # second STATUS load would give the record a value the bit5 test never saw,
+    # and the host would then derive irq_raised from a different sample than the
+    # one it is reported beside. This is its own claim and its own rule: passing
+    # the one-read rule does not carry it, and one is not promoted because the
+    # other passed.
+    v14 = _helpers()
+    code, literals, data = v14.elf_function(objdump_text, PRIMARY_SYMBOL)
+    successors = v14.elf_cfg(code, data)
+    states = v14.elf_register_values(code, literals, successors)
+    deciding = status_reads[0]
+    deciding_register = v14._ELF_MEMORY.match(code[deciding["index"]].text).group(2)
+    reloads = [
+        index
+        for index, role, is_write in v14.elf_mmio_accesses(code, states)
+        if role == STATUS_ROLE
+        and not is_write
+        and index != deciding["index"]
+        and v14._ELF_MEMORY.match(code[index].text).group(2) == deciding_register
+    ]
+    if reloads:
+        raise fail_rule(
+            RULE_V15_IRQ_FROM_DECIDING_WORD,
+            "STATUS is reloaded into %s at 0x%08X after the deciding read: the record "
+            "would carry a word the bit5 test never saw"
+            % (deciding_register, code[reloads[0]].addr),
+        )
+
     return {
         "symbol": PRIMARY_SYMBOL,
+        "deciding_register": deciding_register,
+        "status_reloads_into_deciding_register": 0,
         "status_reads_per_iteration": len(status_reads),
         "qread_reads_in_loop": 0,
         "qsize_reads_in_loop": 0,

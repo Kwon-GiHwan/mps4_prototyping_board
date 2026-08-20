@@ -148,7 +148,9 @@ PINNED_OBJECTS = (
 
 NEW_CLAIMS = (
     _row("the S5 primary loop reads STATUS exactly once per iteration and tests bit5",
-         NEW_V15_CLAIM, detector="verify_s5_primary_loop_image"),
+         NEW_V15_CLAIM, detector="verify_s5_only_boundary_image"),
+    _row("the word the loop decided on is the word the record carries",
+         NEW_V15_CLAIM, detector="verify_s5_only_boundary_image"),
     _row("the pre-freeze primary path reads QREAD zero times and QSIZE zero times",
          NEW_V15_CLAIM, detector="verify_s5_only_boundary_image"),
     _row("the post-freeze tail and cleanup match the frozen V14 Q reference semantically",
@@ -238,4 +240,54 @@ APPLICATION = {
     "RULE_NPU_IRQ_NEVER_ENABLED": ("linked ELF", "Task 6", NOT_YET_APPLIED),
     "RULE_NPU_IRQ_UNRESOLVED_WRITE": ("linked ELF", "Task 6", NOT_YET_APPLIED),
     "RULE_STORE_FORM_UNREADABLE": ("linked ELF", "Task 6", NOT_YET_APPLIED),
+}
+
+
+# ---------------------------------------------------------------------------
+# Claims proved on the real V15 image
+#
+# Promoted only after the detector refused a fixture aimed at each of its rules
+# *and* passed the real image. A claim reaching ELF_REQUALIFIED because a
+# neighbouring one did would be the promotion this project keeps refusing.
+# ---------------------------------------------------------------------------
+
+ELF_PROVED = {
+    "S5 primary-only boundary": {
+        "detector": "verify_s5_only_boundary_image",
+        "rule": "RULE_V15_PRIMARY_S5_ONLY",
+        "negatives": (
+            "QREAD read planted in the loop",
+            "QSIZE read planted in the loop",
+            "unrelated MMIO (CMD) read planted in the loop",
+            "mask moved from bit5 to bit1",
+            "a second STATUS read",
+        ),
+        "status": ELF_REQUALIFIED,
+    },
+    "the deciding word is the recorded word": {
+        "detector": "verify_s5_only_boundary_image",
+        "rule": "RULE_V15_IRQ_FROM_DECIDING_WORD",
+        "negatives": ("STATUS reloaded into the deciding register after the loop",),
+        "status": ELF_REQUALIFIED,
+    },
+    "pinned helper identity": {
+        "detector": "verify_helper_identity",
+        "rule": "RULE_V15_HELPER_IDENTITY",
+        "negatives": ("a pinned helper whose digest no longer matches",),
+        "status": ELF_REQUALIFIED,
+    },
+    "Q-to-S5 single-register equivalence": {
+        "detector": "verify_single_register_equivalence",
+        "rule": "RULE_EQUIVALENCE_LOOP_SHAPE",
+        "negatives": (
+            "an extra per-iteration instruction",
+            "an extra SRAM store",
+            "a QREAD read planted in S5",
+            "a changed timeout topology",
+            "a moved first-observation freeze",
+            "the observable load reaching a stack slot rather than MMIO",
+            "a wrong Q reference identity",
+        ),
+        "status": ELF_REQUALIFIED,
+    },
 }
