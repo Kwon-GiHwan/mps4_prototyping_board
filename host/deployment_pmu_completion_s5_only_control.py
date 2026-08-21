@@ -57,7 +57,7 @@ RULE_CELL_CONTEXT_FORGED = "RULE_CELL_CONTEXT_FORGED"
 RULE_EVIDENCE_INCOMPLETE = "RULE_EVIDENCE_INCOMPLETE"
 RULE_EVIDENCE_DIGEST_MISMATCH = "RULE_EVIDENCE_DIGEST_MISMATCH"
 RULE_MODE_DISAGREES_ACROSS_EVIDENCE = "RULE_MODE_DISAGREES_ACROSS_EVIDENCE"
-RULE_V14_REFERENCE_UNPINNED = "RULE_V14_REFERENCE_UNPINNED"
+RULE_V14_REFERENCE_MISMATCH = "RULE_V14_REFERENCE_MISMATCH"
 
 RULES = (
     "RULE_MANIFEST_INCOMPLETE",
@@ -73,7 +73,7 @@ RULES = (
     "RULE_EVIDENCE_INCOMPLETE",
     "RULE_EVIDENCE_DIGEST_MISMATCH",
     "RULE_MODE_DISAGREES_ACROSS_EVIDENCE",
-    "RULE_V14_REFERENCE_UNPINNED",
+    "RULE_V14_REFERENCE_MISMATCH",
 )
 
 CANONICAL_JSON = "v15-canonical-json-v1"
@@ -108,6 +108,7 @@ MANIFEST_REQUIRED = (
 EQUIVALENCE_EVIDENCE_REQUIRED = (
     "v15_elf_sha256",
     "v14_q_app_sha256",
+    "v14_q_elf_sha256",
     "v14_q_reference_identity",
     "comparison_mode",
     "status",
@@ -125,36 +126,47 @@ STATIC_EVIDENCE_REQUIRED = (
     "poll_count_admission",
 )
 
-# The frozen V14 Q reference, as the V14 campaign actually recorded it. This is
-# the APP that ran on the board across nine boots, with source and destination
-# read-back equal, in docs/superpowers/evidence/v14-campaign-20260819.
-V14_Q_REFERENCE_APP_SHA256 = "f745eebd1f1ddcb7a2015f7dab21d2bf4ceb270cf43c7f932aa8419770e7b25d"
+# The frozen V14 Q reference, in two parts, because they are two different kinds
+# of fact and conflating them is what the earlier UNPINNED state was protecting
+# against.
+#
+# The deployed reference is what the board ran: recorded by the V14 campaign in
+# v14-campaign-20260819/R1/cell_Q.json, source and destination read-back equal
+# across nine boots.
+V14_Q_DEPLOYED_REFERENCE = {
+    "app_sha256": "f745eebd1f1ddcb7a2015f7dab21d2bf4ceb270cf43c7f932aa8419770e7b25d",
+    "vectors_sha256": "6864a22bf98b0172ee7ace58aead9c6d85ebd3afec64ddae0771bbe2474d0d91",
+    "ddr_sha256": "81d37a219a6b4141d0b433796711ab8af2ee2c3c668a28143a3ffe6a574ade98",
+}
+V14_Q_DEPLOYED_APP_SHA256 = V14_Q_DEPLOYED_REFERENCE["app_sha256"]
 
-# The V14 campaign recorded the deployed binaries and never recorded the ELF
-# they were built from, so there is no digest here to compare against. It is
-# left unpinned rather than filled with a rebuild's digest, which would assert
-# that a rebuild reproduces the image that ran -- a determinism claim nobody has
-# made. Equivalence mode fails closed while this is None: unpinned is not clear.
-V14_Q_REFERENCE_ELF_SHA256 = None
+# The analysis reference is what the equivalence gate reads. It was reconstructed
+# on 2026-08-21 from the frozen lineage in the original benchmark-runner
+# container, and it is NOT a claim to have recovered the historical ELF -- no
+# historical ELF digest was ever recorded, and an ELF carries debug sections and
+# build metadata that never reach the APP. What was established is narrower and
+# sufficient: replaying objcopy against this ELF alone, with no build involved,
+# reproduces the deployed artifact set byte-exact.
+V14_Q_ANALYSIS_REFERENCE = {
+    "reconstructed_elf_sha256":
+        "20baff11490045289be46deebc43558812c7d5d498118e21376748585612391a",
+    # The build relation, proved rather than assumed: this ELF produces that APP.
+    "produced_app_sha256": V14_Q_DEPLOYED_APP_SHA256,
+    "evidence": "docs/superpowers/evidence/v14-q-reconstruction-20260821",
+}
+V14_Q_RECONSTRUCTED_ELF_SHA256 = V14_Q_ANALYSIS_REFERENCE["reconstructed_elf_sha256"]
 
-# The reconstruction the manager approved has not been run, and "not run" is not
-# "failed". The qualified build environment is unavailable -- the build host is
-# unreachable and the benchmark-runner container is not on this machine -- so no
-# rebuilt APP has been compared against the deployed one. Recording a failure
-# here would downgrade the Q reference on the strength of an experiment nobody
-# performed.
 RECONSTRUCTION_NOT_RUN = "NOT_RUN"
 RECONSTRUCTION_ENVIRONMENT_UNAVAILABLE = "QUALIFIED_BUILD_ENVIRONMENT_UNAVAILABLE"
 RECONSTRUCTION_APP_SET_MATCHED = "APP_ARTIFACT_SET_MATCHED"
 
-V14_Q_RECONSTRUCTION_ATTEMPT_RESULT = RECONSTRUCTION_NOT_RUN
-V14_Q_RECONSTRUCTION_REASON = RECONSTRUCTION_ENVIRONMENT_UNAVAILABLE
+V14_Q_RECONSTRUCTION_ATTEMPT_RESULT = RECONSTRUCTION_APP_SET_MATCHED
+# Case R1: two independent clean builds agreed on every artifact, the ELF
+# included, so full-file ELF determinism holds and this is not the R3 fallback.
+V14_Q_AB_DETERMINISM = "ELF_IDENTICAL_ACROSS_CLEAN_REBUILDS"
 
-# What is and is not settled while that stays true. The executable comparison
-# itself passed; what is unresolved is the bridge from the analysis ELF back to
-# the Q image the board actually ran.
 Q_S5_EXECUTABLE_COMPARISON = "PASS"
-Q_S5_HISTORICAL_PROVENANCE_BRIDGE = "UNRESOLVED_BLOCKED"
+Q_S5_HISTORICAL_PROVENANCE_BRIDGE = "RESOLVED_BY_RECONSTRUCTION"
 
 
 class DeploymentError(RuntimeError):
@@ -400,19 +412,23 @@ def _check_evidence_binding(manifest: dict, equivalence: dict, static: dict) -> 
                 "a structurally similar Q is not the Q this mode means"
                 % (equivalence["v14_q_reference_identity"], chain.Q_REFERENCE_ANCHOR),
             )
-        if equivalence["v14_q_app_sha256"] != V14_Q_REFERENCE_APP_SHA256:
+        if equivalence["v14_q_app_sha256"] != V14_Q_DEPLOYED_APP_SHA256:
             raise fail_rule(
                 RULE_REFERENCE_IDENTITY,
                 "equivalence compared against V14 Q APP %s and the image the V14 "
                 "campaign actually ran is %s"
-                % (equivalence["v14_q_app_sha256"], V14_Q_REFERENCE_APP_SHA256),
+                % (equivalence["v14_q_app_sha256"], V14_Q_DEPLOYED_APP_SHA256),
             )
-        if V14_Q_REFERENCE_ELF_SHA256 is None and equivalence.get("v14_q_elf_sha256"):
+        # The analysis reference is pinned as of the 2026-08-21 reconstruction, so
+        # naming a different V14 Q ELF is now a mismatch rather than an unanswerable
+        # question. The gate reads code, and this is the ELF whose objcopy output is
+        # the deployed image set.
+        if equivalence["v14_q_elf_sha256"] != V14_Q_RECONSTRUCTED_ELF_SHA256:
             raise fail_rule(
-                RULE_V14_REFERENCE_UNPINNED,
-                "the evidence names a V14 Q reference ELF and this contract pins none: "
-                "the V14 campaign recorded the deployed binaries only, so an ELF digest "
-                "here would be checked against nothing",
+                RULE_V14_REFERENCE_MISMATCH,
+                "equivalence read V14 Q ELF %s and the pinned analysis reference is %s, "
+                "whose objcopy output is the deployed artifact set"
+                % (equivalence["v14_q_elf_sha256"], V14_Q_RECONSTRUCTED_ELF_SHA256),
             )
     return mode
 

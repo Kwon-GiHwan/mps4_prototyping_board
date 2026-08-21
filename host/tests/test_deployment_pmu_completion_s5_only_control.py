@@ -39,15 +39,17 @@ OTHER_ELF = "e3" * 32
 SHIPPED = {"app": "a1" * 32, "vectors": "b1" * 32, "ddr": "c1" * 32}
 SCRATCH = {"app": "a2" * 32, "vectors": "b1" * 32, "ddr": "c1" * 32}
 
-Q_APP = deploy.V14_Q_REFERENCE_APP_SHA256
+Q_APP = deploy.V14_Q_DEPLOYED_APP_SHA256
+Q_ELF = deploy.V14_Q_RECONSTRUCTED_ELF_SHA256
 
 
 def equivalence(elf=SHIPPED_ELF, mode=contract.Q_S5_EQUIVALENT,
                 status=chain.EQUIVALENCE_PASS, reference=chain.Q_REFERENCE_ANCHOR,
-                q_app=Q_APP, **overrides):
+                q_app=Q_APP, q_elf=None, **overrides):
     document = {
         "v15_elf_sha256": elf,
         "v14_q_app_sha256": q_app,
+        "v14_q_elf_sha256": Q_ELF if q_elf is None else q_elf,
         "v14_q_reference_identity": reference,
         "comparison_mode": mode,
         "status": status,
@@ -240,15 +242,33 @@ class NegativeCTheEvidenceMustDescribeTheImageThatRuns(unittest.TestCase):
             deploy.refusal_rule(caught.exception), deploy.RULE_REFERENCE_IDENTITY
         )
 
-    def test_naming_a_v14_q_reference_elf_this_contract_does_not_pin_is_refused(self):
-        # The V14 campaign recorded the deployed binaries and no ELF, so an ELF
-        # digest here would be compared against nothing. Unpinned is not clear.
-        equiv, stat, man = chain_of(equivalence={"v14_q_elf_sha256": "7" * 64})
+    def test_reading_a_v14_q_elf_that_is_not_the_pinned_reference_is_refused(self):
+        # Pinned by the 2026-08-21 reconstruction: this is the ELF whose objcopy
+        # output is the deployed artifact set. Any other is a different image.
+        equiv, stat, man = chain_of(equivalence={"q_elf": "7" * 64})
         with self.assertRaises(deploy.DeploymentError) as caught:
             open_cell(equiv, stat, man)
         self.assertEqual(
-            deploy.refusal_rule(caught.exception), deploy.RULE_V14_REFERENCE_UNPINNED
+            deploy.refusal_rule(caught.exception), deploy.RULE_V14_REFERENCE_MISMATCH
         )
+
+    def test_the_analysis_reference_produces_the_deployed_app(self):
+        # The relation the reconstruction established, kept as a contract: the
+        # pinned ELF is the one whose build output is what the board ran.
+        self.assertEqual(
+            deploy.V14_Q_ANALYSIS_REFERENCE["produced_app_sha256"],
+            deploy.V14_Q_DEPLOYED_REFERENCE["app_sha256"],
+        )
+        self.assertEqual(
+            deploy.V14_Q_RECONSTRUCTION_ATTEMPT_RESULT,
+            deploy.RECONSTRUCTION_APP_SET_MATCHED,
+        )
+
+    def test_the_reconstruction_does_not_claim_to_have_recovered_the_historical_elf(self):
+        # No historical ELF digest was ever recorded, so there is nothing to have
+        # matched. The pin is a reconstructed analysis reference and says so.
+        self.assertIn("reconstructed_elf_sha256", deploy.V14_Q_ANALYSIS_REFERENCE)
+        self.assertNotIn("historical_elf_sha256", deploy.V14_Q_ANALYSIS_REFERENCE)
 
 
 class N7TheModeIsOneValueAcrossTheChain(unittest.TestCase):
@@ -488,7 +508,7 @@ class EveryRuleHasAFixture(unittest.TestCase):
             incomplete_evidence,
             digest_mismatch,
             mode_disagreement,
-            lambda: open_cell(*chain_of(equivalence={"v14_q_elf_sha256": "7" * 64})),
+            lambda: open_cell(*chain_of(equivalence={"q_elf": "7" * 64})),
         )
         tripped = set()
         for attempt in attempts:

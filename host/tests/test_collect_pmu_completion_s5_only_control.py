@@ -267,22 +267,21 @@ class TheCollectorDoesNotReadjudicate(unittest.TestCase):
         )
 
 
-class TheReconstructionIsNotRunNotFailed(unittest.TestCase):
-    def test_the_status_says_not_run(self):
-        # "Not run" and "failed" license different conclusions, and only one of
-        # them was earned. No rebuilt APP has been compared against the deployed
-        # one, so the Q reference is not downgraded on the strength of it.
+class TheReconstructionClosedTheBridge(unittest.TestCase):
+    def test_the_reconstruction_matched_the_deployed_artifact_set(self):
         self.assertEqual(
-            deploy.V14_Q_RECONSTRUCTION_ATTEMPT_RESULT, deploy.RECONSTRUCTION_NOT_RUN
-        )
-        self.assertEqual(
-            deploy.V14_Q_RECONSTRUCTION_REASON,
-            deploy.RECONSTRUCTION_ENVIRONMENT_UNAVAILABLE,
+            deploy.V14_Q_RECONSTRUCTION_ATTEMPT_RESULT,
+            deploy.RECONSTRUCTION_APP_SET_MATCHED,
         )
 
-    def test_the_executable_comparison_and_the_provenance_bridge_are_separate(self):
+    def test_ab_determinism_held_so_this_is_case_r1_not_r3(self):
+        self.assertEqual(
+            deploy.V14_Q_AB_DETERMINISM, "ELF_IDENTICAL_ACROSS_CLEAN_REBUILDS"
+        )
+
+    def test_the_provenance_bridge_is_resolved(self):
         self.assertEqual(deploy.Q_S5_EXECUTABLE_COMPARISON, "PASS")
-        self.assertIn("UNRESOLVED", deploy.Q_S5_HISTORICAL_PROVENANCE_BRIDGE)
+        self.assertIn("RESOLVED", deploy.Q_S5_HISTORICAL_PROVENANCE_BRIDGE)
 
 
 class EveryRuleHasAFixture(unittest.TestCase):
