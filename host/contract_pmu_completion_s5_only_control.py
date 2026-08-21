@@ -112,6 +112,34 @@ FORBIDDEN_FIELD_NAMES = (
     "execution_latency",
 )
 
+# ---------------------------------------------------------------------------
+# Poll count: two axes, because one enum told a lie
+#
+# The measured comparison came out against admission -- publishing the count
+# costs one instruction per iteration against a no-publication S5 -- and the
+# criterion that says so is the frozen one and stays. But removing the counter
+# changes the primary loop's shape against the frozen V14 Q reference, which
+# breaks the matched control V15 exists to be. So the instruction stays and the
+# metric does not.
+#
+# A single enum could not say that. "OMITTED" reads as a lie about a field that
+# is present in the record, so presence and admission are separate values.
+# ---------------------------------------------------------------------------
+
+POLL_COUNT_PRESENT = "PRESENT_REFERENCE_MATCHED"
+POLL_COUNT_ABSENT = "ABSENT"
+POLL_COUNT_TRANSPORT = (POLL_COUNT_PRESENT, POLL_COUNT_ABSENT)
+
 POLL_COUNT_ADMITTED = "ADMITTED"
-POLL_COUNT_OMITTED = "OMITTED_DUE_TO_LOOP_PERTURBATION"
-POLL_COUNT_STATES = (POLL_COUNT_ADMITTED, POLL_COUNT_OMITTED)
+POLL_COUNT_NOT_ADMITTED = "NOT_ADMITTED_DUE_TO_LOOP_PERTURBATION"
+POLL_COUNT_ADMISSION = (POLL_COUNT_ADMITTED, POLL_COUNT_NOT_ADMITTED)
+
+# What the analyzer may do with a value that is present and not admitted:
+# record that it is there. Nothing else.
+POLL_COUNT_FORBIDDEN_USES = (
+    "choosing among S1..S6",
+    "regression against cycles",
+    "a histogram offered as evidence",
+    "comparison between Q and S5",
+    "poll count multiplied by loop cost as a visibility latency",
+)

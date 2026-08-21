@@ -134,5 +134,32 @@ class ComparisonMode(unittest.TestCase):
         )
 
 
+class PollCount(unittest.TestCase):
+    """Presence and admission are separate, because one enum could not say both."""
+
+    def test_transport_and_admission_are_different_vocabularies(self):
+        self.assertNotEqual(
+            set(contract.POLL_COUNT_TRANSPORT), set(contract.POLL_COUNT_ADMISSION)
+        )
+
+    def test_a_present_field_is_not_described_as_omitted(self):
+        # The single enum read as a lie: OMITTED about a value the record
+        # carries. Presence says what is in the frame; admission says what may
+        # be concluded from it.
+        for value in contract.POLL_COUNT_TRANSPORT:
+            self.assertNotIn("OMITTED", value)
+
+    def test_not_admitted_names_the_reason(self):
+        self.assertIn("LOOP_PERTURBATION", contract.POLL_COUNT_NOT_ADMITTED)
+
+    def test_the_forbidden_uses_are_enumerated_not_implied(self):
+        # A value that is present and not admitted invites exactly these five
+        # sentences, so they are listed rather than left to judgement.
+        self.assertEqual(len(contract.POLL_COUNT_FORBIDDEN_USES), 5)
+        joined = " ".join(contract.POLL_COUNT_FORBIDDEN_USES)
+        for fragment in ("S1..S6", "regression", "histogram", "Q and S5", "latency"):
+            self.assertIn(fragment, joined)
+
+
 if __name__ == "__main__":
     unittest.main()
