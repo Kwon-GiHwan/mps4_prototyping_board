@@ -29,6 +29,7 @@ sys.path.insert(0, str(REPO / "host"))
 
 import comparison_mode_pmu_completion_s5_only_control as chain  # noqa: E402
 import contract_pmu_completion_s5_only_control as contract  # noqa: E402
+import canonical_elf_pmu_completion_s5_only_control as canonical  # noqa: E402
 import deployment_pmu_completion_s5_only_control as deploy  # noqa: E402
 
 
@@ -40,16 +41,16 @@ SHIPPED = {"app": "a1" * 32, "vectors": "b1" * 32, "ddr": "c1" * 32}
 SCRATCH = {"app": "a2" * 32, "vectors": "b1" * 32, "ddr": "c1" * 32}
 
 Q_APP = deploy.V14_Q_DEPLOYED_APP_SHA256
-Q_ELF = deploy.V14_Q_RECONSTRUCTED_ELF_SHA256
+Q_ELF = canonical.V14_Q_ANALYSIS_ELF_SHA256
 
 
 def equivalence(elf=SHIPPED_ELF, mode=contract.Q_S5_EQUIVALENT,
                 status=chain.EQUIVALENCE_PASS, reference=chain.Q_REFERENCE_ANCHOR,
                 q_app=Q_APP, q_elf=None, **overrides):
     document = {
-        "v15_elf_sha256": elf,
+        "v15_analysis_elf_sha256": elf,
         "v14_q_app_sha256": q_app,
-        "v14_q_elf_sha256": Q_ELF if q_elf is None else q_elf,
+        "v14_q_analysis_elf_sha256": Q_ELF if q_elf is None else q_elf,
         "v14_q_reference_identity": reference,
         "comparison_mode": mode,
         "status": status,
@@ -61,7 +62,8 @@ def equivalence(elf=SHIPPED_ELF, mode=contract.Q_S5_EQUIVALENT,
 
 def static(equiv, elf=None, mode=None, **overrides):
     document = {
-        "v15_elf_sha256": equiv["v15_elf_sha256"] if elf is None else elf,
+        "v15_analysis_elf_sha256":
+            equiv["v15_analysis_elf_sha256"] if elf is None else elf,
         "equivalence_evidence_sha256": deploy.document_digest(equiv),
         "comparison_mode": equiv["comparison_mode"] if mode is None else mode,
         "boundary_image_verdict": "PASS",
@@ -82,7 +84,9 @@ def manifest(equiv, stat, artifacts=None, elf=None, mode=None, **overrides):
         "build_id": "%08x" % contract.BUILD_ID,
         "variant": "S5",
         "comparison_mode": equiv["comparison_mode"] if mode is None else mode,
-        "elf_sha256": equiv["v15_elf_sha256"] if elf is None else elf,
+        "raw_elf_sha256": "ra" * 32,
+        "analysis_elf_sha256":
+            equiv["v15_analysis_elf_sha256"] if elf is None else elf,
         "app_sha256": artifacts["app"],
         "vectors_sha256": artifacts["vectors"],
         "ddr_sha256": artifacts["ddr"],
@@ -90,7 +94,6 @@ def manifest(equiv, stat, artifacts=None, elf=None, mode=None, **overrides):
         "static_evidence_sha256": deploy.document_digest(stat),
         "equivalence_evidence_sha256": deploy.document_digest(equiv),
         "equivalence_status": equiv["status"],
-        "equivalence_elf_sha256": equiv["v15_elf_sha256"],
         "v14_q_reference_identity": equiv["v14_q_reference_identity"],
     }
     document.update(overrides)
@@ -117,7 +120,7 @@ class TheHappyPathIssuesAContext(unittest.TestCase):
         context = open_cell(*chain_of())
         self.assertEqual(context.comparison_mode, contract.Q_S5_EQUIVALENT)
         self.assertEqual(context.app_sha256, SHIPPED["app"])
-        self.assertEqual(context.elf_sha256, SHIPPED_ELF)
+        self.assertEqual(context.analysis_elf_sha256, SHIPPED_ELF)
         self.assertEqual(context.boot_id, "b1")
         self.assertEqual(len(context.manifest_sha256), 64)
         self.assertEqual(len(context.candidate_identity), 64)
@@ -214,6 +217,36 @@ class NegativeBAForgedModeDoesNotSurviveItsOwnEvidence(unittest.TestCase):
 
 
 class NegativeCTheEvidenceMustDescribeTheImageThatRuns(unittest.TestCase):
+    def test_offering_the_raw_elf_digest_as_an_identity_is_refused(self):
+        # N4: the slip this amendment exists to prevent. The raw digest is
+        # path-sensitive and would look entirely correct in this position.
+        raw = canonical.V14_Q_RAW_ELF_SAME_PATH_OBSERVATION
+        equiv, stat, man = chain_of(equivalence={"q_elf": raw})
+        with self.assertRaises(deploy.DeploymentError) as caught:
+            open_cell(equiv, stat, man)
+        self.assertEqual(
+            deploy.refusal_rule(caught.exception), canonical.RULE_RAW_ELF_USED_AS_IDENTITY
+        )
+
+    def test_a_raw_v15_digest_in_the_analysis_position_is_refused(self):
+        raw = canonical.V14_Q_RAW_ELF_SAME_PATH_OBSERVATION
+        equiv = equivalence(elf=raw)
+        stat = static(equiv)
+        man = manifest(equiv, stat)
+        with self.assertRaises(deploy.DeploymentError) as caught:
+            open_cell(equiv, stat, man)
+        self.assertEqual(
+            deploy.refusal_rule(caught.exception), canonical.RULE_RAW_ELF_USED_AS_IDENTITY
+        )
+
+    def test_the_raw_digest_is_carried_but_never_compared(self):
+        # N1 in contract form: raw digests may differ between builds of the same
+        # image, so the chain must not require them equal.
+        equiv, stat, man = chain_of()
+        context = open_cell(equiv, stat, man)
+        self.assertEqual(context.raw_elf_sha256, man["raw_elf_sha256"])
+        self.assertNotEqual(context.raw_elf_sha256, context.analysis_elf_sha256)
+
     def test_equivalence_evidence_computed_over_another_elf_is_refused(self):
         # Everything present, everything well formed, and the comparison was
         # made over a different binary.
@@ -267,8 +300,9 @@ class NegativeCTheEvidenceMustDescribeTheImageThatRuns(unittest.TestCase):
     def test_the_reconstruction_does_not_claim_to_have_recovered_the_historical_elf(self):
         # No historical ELF digest was ever recorded, so there is nothing to have
         # matched. The pin is a reconstructed analysis reference and says so.
-        self.assertIn("reconstructed_elf_sha256", deploy.V14_Q_ANALYSIS_REFERENCE)
+        self.assertIn("analysis_elf_sha256", deploy.V14_Q_ANALYSIS_REFERENCE)
         self.assertNotIn("historical_elf_sha256", deploy.V14_Q_ANALYSIS_REFERENCE)
+        self.assertEqual(deploy.HISTORICAL_RAW_ELF_IDENTITY, "NOT_CLAIMED")
 
 
 class N7TheModeIsOneValueAcrossTheChain(unittest.TestCase):
@@ -465,7 +499,7 @@ class EveryRuleHasAFixture(unittest.TestCase):
     def test_the_fixtures_trip_every_rule_the_module_declares(self):
         def missing_manifest_key():
             equiv, stat, man = chain_of()
-            man = {k: v for k, v in man.items() if k != "elf_sha256"}
+            man = {k: v for k, v in man.items() if k != "analysis_elf_sha256"}
             return open_cell(equiv, stat, man)
 
         def unsealed():
@@ -509,6 +543,11 @@ class EveryRuleHasAFixture(unittest.TestCase):
             digest_mismatch,
             mode_disagreement,
             lambda: open_cell(*chain_of(equivalence={"q_elf": "7" * 64})),
+            lambda: open_cell(
+                *chain_of(
+                    equivalence={"q_elf": canonical.V14_Q_RAW_ELF_SAME_PATH_OBSERVATION}
+                )
+            ),
         )
         tripped = set()
         for attempt in attempts:

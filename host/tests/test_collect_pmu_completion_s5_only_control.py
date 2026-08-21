@@ -217,7 +217,7 @@ class TheBundleCarriesItsProvenance(unittest.TestCase):
         bundle = cell.bundle()
         self.assertEqual(len(bundle["raw_frame_sha256"]), 10)
         self.assertEqual(len(set(bundle["raw_frame_sha256"])), 10)
-        for key in ("app_sha256", "vectors_sha256", "ddr_sha256", "elf_sha256",
+        for key in ("app_sha256", "vectors_sha256", "ddr_sha256", "analysis_elf_sha256",
                     "manifest_sha256", "static_evidence_sha256",
                     "equivalence_evidence_sha256", "v14_q_reference_identity"):
             self.assertTrue(bundle["deployment"][key], key)
@@ -274,14 +274,24 @@ class TheReconstructionClosedTheBridge(unittest.TestCase):
             deploy.RECONSTRUCTION_APP_SET_MATCHED,
         )
 
-    def test_ab_determinism_held_so_this_is_case_r1_not_r3(self):
+    def test_the_raw_ab_claim_is_scoped_to_one_build_path(self):
+        # The original claim was unconditional and wrong: raw ELF digests move
+        # with the build directory, so A == B only holds at a fixed path.
+        self.assertEqual(deploy.V14_Q_RAW_ELF_SAME_PATH_AB, "IDENTICAL")
+        self.assertIn("PATH_INDEPENDENT", deploy.V14_Q_ANALYSIS_ELF_STABILITY)
         self.assertEqual(
-            deploy.V14_Q_AB_DETERMINISM, "ELF_IDENTICAL_ACROSS_CLEAN_REBUILDS"
+            deploy.V14_Q_DEPLOYED_RUNTIME_ARTIFACT_SET, "REPRODUCED_BYTE_EXACT"
         )
 
-    def test_the_provenance_bridge_is_resolved(self):
+    def test_both_provenance_bridges_are_resolved_and_kept_separate(self):
+        # Amendment 3 split one bridge into two: the runtime identity bridge and
+        # the analysis identity bridge are established by different evidence.
         self.assertEqual(deploy.Q_S5_EXECUTABLE_COMPARISON, "PASS")
-        self.assertIn("RESOLVED", deploy.Q_S5_HISTORICAL_PROVENANCE_BRIDGE)
+        self.assertIn("RESOLVED", deploy.Q_S5_RUNTIME_IDENTITY_BRIDGE)
+        self.assertIn("RESOLVED", deploy.Q_S5_ANALYSIS_IDENTITY_BRIDGE)
+        self.assertNotEqual(
+            deploy.Q_S5_RUNTIME_IDENTITY_BRIDGE, deploy.Q_S5_ANALYSIS_IDENTITY_BRIDGE
+        )
 
 
 class EveryRuleHasAFixture(unittest.TestCase):

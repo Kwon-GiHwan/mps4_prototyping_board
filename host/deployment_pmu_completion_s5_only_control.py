@@ -41,6 +41,7 @@ _HOST = os.path.dirname(os.path.abspath(__file__))
 if _HOST not in sys.path:
     sys.path.insert(0, _HOST)
 
+import canonical_elf_pmu_completion_s5_only_control as canonical  # noqa: E402
 import comparison_mode_pmu_completion_s5_only_control as chain  # noqa: E402
 import contract_pmu_completion_s5_only_control as contract  # noqa: E402
 
@@ -58,6 +59,7 @@ RULE_EVIDENCE_INCOMPLETE = "RULE_EVIDENCE_INCOMPLETE"
 RULE_EVIDENCE_DIGEST_MISMATCH = "RULE_EVIDENCE_DIGEST_MISMATCH"
 RULE_MODE_DISAGREES_ACROSS_EVIDENCE = "RULE_MODE_DISAGREES_ACROSS_EVIDENCE"
 RULE_V14_REFERENCE_MISMATCH = "RULE_V14_REFERENCE_MISMATCH"
+RULE_RAW_ELF_USED_AS_IDENTITY = "RULE_RAW_ELF_USED_AS_IDENTITY"
 
 RULES = (
     "RULE_MANIFEST_INCOMPLETE",
@@ -74,6 +76,7 @@ RULES = (
     "RULE_EVIDENCE_DIGEST_MISMATCH",
     "RULE_MODE_DISAGREES_ACROSS_EVIDENCE",
     "RULE_V14_REFERENCE_MISMATCH",
+    "RULE_RAW_ELF_USED_AS_IDENTITY",
 )
 
 CANONICAL_JSON = "v15-canonical-json-v1"
@@ -89,7 +92,9 @@ MANIFEST_REQUIRED = (
     "build_id",
     "variant",
     "comparison_mode",
-    "elf_sha256",
+    # raw_elf_sha256 is informational; analysis_elf_sha256 is load-bearing.
+    "raw_elf_sha256",
+    "analysis_elf_sha256",
     "app_sha256",
     "vectors_sha256",
     "ddr_sha256",
@@ -97,18 +102,17 @@ MANIFEST_REQUIRED = (
     "static_evidence_sha256",
     "equivalence_evidence_sha256",
     "equivalence_status",
-    # The ELF the equivalence gate actually read. Kept separate from elf_sha256
-    # on purpose: equal is the thing being checked, not the thing being assumed.
-    "equivalence_elf_sha256",
     "v14_q_reference_identity",
     MANIFEST_SELF_HASH_KEY,
 )
 
 
 EQUIVALENCE_EVIDENCE_REQUIRED = (
-    "v15_elf_sha256",
+    # The artifacts the checker actually read. Amendment 3: raw ELF digests are
+    # path-sensitive and are provenance, not identity.
+    "v15_analysis_elf_sha256",
+    "v14_q_analysis_elf_sha256",
     "v14_q_app_sha256",
-    "v14_q_elf_sha256",
     "v14_q_reference_identity",
     "comparison_mode",
     "status",
@@ -116,7 +120,7 @@ EQUIVALENCE_EVIDENCE_REQUIRED = (
 )
 
 STATIC_EVIDENCE_REQUIRED = (
-    "v15_elf_sha256",
+    "v15_analysis_elf_sha256",
     "equivalence_evidence_sha256",
     "comparison_mode",
     "boundary_image_verdict",
@@ -140,33 +144,45 @@ V14_Q_DEPLOYED_REFERENCE = {
 }
 V14_Q_DEPLOYED_APP_SHA256 = V14_Q_DEPLOYED_REFERENCE["app_sha256"]
 
-# The analysis reference is what the equivalence gate reads. It was reconstructed
-# on 2026-08-21 from the frozen lineage in the original benchmark-runner
-# container, and it is NOT a claim to have recovered the historical ELF -- no
-# historical ELF digest was ever recorded, and an ELF carries debug sections and
-# build metadata that never reach the APP. What was established is narrower and
-# sufficient: replaying objcopy against this ELF alone, with no build involved,
-# reproduces the deployed artifact set byte-exact.
+# The analysis reference is what the equivalence gate reads. Reconstructed
+# 2026-08-21 from the frozen lineage in the original benchmark-runner container.
+#
+# Amendment 3 superseded the first version of this. It pinned the *raw* ELF
+# digest, which is path-sensitive: three distinct raw digests have since been
+# observed for this same image, so a legitimate rebuild from another directory
+# would have been rejected despite identical code. The pin is now the analysis
+# ELF, and that digest was measured identical across two build paths.
+#
+# Still not claimed: that the historical raw ELF was recovered. None was ever
+# recorded, so there is nothing a reconstruction could have matched.
 V14_Q_ANALYSIS_REFERENCE = {
-    "reconstructed_elf_sha256":
-        "20baff11490045289be46deebc43558812c7d5d498118e21376748585612391a",
-    # The build relation, proved rather than assumed: this ELF produces that APP.
+    "analysis_elf_sha256": canonical.V14_Q_ANALYSIS_ELF_SHA256,
+    # The build relation, proved rather than assumed: replaying objcopy against
+    # the reconstructed ELF alone reproduces the deployed artifact set.
     "produced_app_sha256": V14_Q_DEPLOYED_APP_SHA256,
+    # Informational provenance. Never an identity.
+    "raw_elf_same_path_observation": canonical.V14_Q_RAW_ELF_SAME_PATH_OBSERVATION,
     "evidence": "docs/superpowers/evidence/v14-q-reconstruction-20260821",
 }
-V14_Q_RECONSTRUCTED_ELF_SHA256 = V14_Q_ANALYSIS_REFERENCE["reconstructed_elf_sha256"]
 
 RECONSTRUCTION_NOT_RUN = "NOT_RUN"
 RECONSTRUCTION_ENVIRONMENT_UNAVAILABLE = "QUALIFIED_BUILD_ENVIRONMENT_UNAVAILABLE"
 RECONSTRUCTION_APP_SET_MATCHED = "APP_ARTIFACT_SET_MATCHED"
 
 V14_Q_RECONSTRUCTION_ATTEMPT_RESULT = RECONSTRUCTION_APP_SET_MATCHED
-# Case R1: two independent clean builds agreed on every artifact, the ELF
-# included, so full-file ELF determinism holds and this is not the R3 fallback.
-V14_Q_AB_DETERMINISM = "ELF_IDENTICAL_ACROSS_CLEAN_REBUILDS"
+
+# Three claims, kept apart so none of them borrows another's strength.
+V14_Q_RAW_ELF_SAME_PATH_AB = canonical.V14_Q_RAW_ELF_SAME_PATH_AB
+V14_Q_ANALYSIS_ELF_STABILITY = canonical.V14_Q_ANALYSIS_ELF_STABILITY
+V14_Q_DEPLOYED_RUNTIME_ARTIFACT_SET = canonical.V14_Q_DEPLOYED_RUNTIME_ARTIFACT_SET
+HISTORICAL_RAW_ELF_IDENTITY = canonical.HISTORICAL_RAW_ELF_IDENTITY
 
 Q_S5_EXECUTABLE_COMPARISON = "PASS"
-Q_S5_HISTORICAL_PROVENANCE_BRIDGE = "RESOLVED_BY_RECONSTRUCTION"
+# Two bridges, not one: the runtime identity bridge (reconstructed objcopy
+# output == deployed artifacts) and the analysis identity bridge (canonical
+# analysis ELF == the checkers' input).
+Q_S5_RUNTIME_IDENTITY_BRIDGE = "RESOLVED_BY_RECONSTRUCTION"
+Q_S5_ANALYSIS_IDENTITY_BRIDGE = "RESOLVED_BY_CANONICAL_ANALYSIS_ELF"
 
 
 class DeploymentError(RuntimeError):
@@ -225,7 +241,8 @@ class VerifiedCellContext:
     vectors_sha256: str = ""
     ddr_sha256: str = ""
 
-    elf_sha256: str = ""
+    raw_elf_sha256: str = ""
+    analysis_elf_sha256: str = ""
     manifest_sha256: str = ""
     static_evidence_sha256: str = ""
     equivalence_evidence_sha256: str = ""
@@ -305,7 +322,7 @@ def candidate_identity(manifest: dict) -> str:
         "app_sha256": manifest["app_sha256"],
         "vectors_sha256": manifest["vectors_sha256"],
         "ddr_sha256": manifest["ddr_sha256"],
-        "elf_sha256": manifest["elf_sha256"],
+        "analysis_elf_sha256": manifest["analysis_elf_sha256"],
         "static_evidence_sha256": manifest["static_evidence_sha256"],
         "equivalence_evidence_sha256": manifest["equivalence_evidence_sha256"],
         "comparison_mode": manifest["comparison_mode"],
@@ -355,16 +372,29 @@ def _check_evidence_binding(manifest: dict, equivalence: dict, static: dict) -> 
             "to %s" % (manifest["static_evidence_sha256"], document_digest(static)),
         )
 
-    # The load-bearing equality: one ELF, named identically at all three steps.
+    # The load-bearing equality: one analysis ELF, named identically at all three
+    # steps. Raw digests are deliberately absent from this comparison -- they
+    # move with the build directory, so requiring them equal would reject an
+    # identical image rebuilt elsewhere.
+    for name, offered in (
+        ("equivalence evidence", equivalence["v15_analysis_elf_sha256"]),
+        ("static evidence", static["v15_analysis_elf_sha256"]),
+        ("manifest", manifest["analysis_elf_sha256"]),
+    ):
+        if canonical.is_raw_identity(offered):
+            raise fail_rule(
+                canonical.RULE_RAW_ELF_USED_AS_IDENTITY,
+                canonical.RAW_AS_IDENTITY_MESSAGE % name,
+            )
     elves = {
-        "equivalence evidence": equivalence["v15_elf_sha256"],
-        "static evidence": static["v15_elf_sha256"],
-        "manifest": manifest["elf_sha256"],
+        "equivalence evidence": equivalence["v15_analysis_elf_sha256"],
+        "static evidence": static["v15_analysis_elf_sha256"],
+        "manifest": manifest["analysis_elf_sha256"],
     }
     if len(set(elves.values())) != 1:
         raise fail_rule(
             RULE_EVIDENCE_ELF_UNBOUND,
-            "the V15 ELF is not one object across the chain (%s): good evidence "
+            "the V15 analysis ELF is not one object across the chain (%s): good evidence "
             "attached to a different image is the attack this closes"
             % ", ".join("%s=%s" % (k, v) for k, v in sorted(elves.items())),
         )
@@ -419,16 +449,21 @@ def _check_evidence_binding(manifest: dict, equivalence: dict, static: dict) -> 
                 "campaign actually ran is %s"
                 % (equivalence["v14_q_app_sha256"], V14_Q_DEPLOYED_APP_SHA256),
             )
-        # The analysis reference is pinned as of the 2026-08-21 reconstruction, so
-        # naming a different V14 Q ELF is now a mismatch rather than an unanswerable
-        # question. The gate reads code, and this is the ELF whose objcopy output is
-        # the deployed image set.
-        if equivalence["v14_q_elf_sha256"] != V14_Q_RECONSTRUCTED_ELF_SHA256:
+        # The V14 Q comparison reference, as an analysis ELF. Exact equality is
+        # still required; Amendment 3 changed which object it is required of.
+        if canonical.is_raw_identity(equivalence["v14_q_analysis_elf_sha256"]):
+            raise fail_rule(
+                canonical.RULE_RAW_ELF_USED_AS_IDENTITY,
+                canonical.RAW_AS_IDENTITY_MESSAGE % "the equivalence evidence",
+            )
+        if equivalence["v14_q_analysis_elf_sha256"] != canonical.V14_Q_ANALYSIS_ELF_SHA256:
             raise fail_rule(
                 RULE_V14_REFERENCE_MISMATCH,
-                "equivalence read V14 Q ELF %s and the pinned analysis reference is %s, "
-                "whose objcopy output is the deployed artifact set"
-                % (equivalence["v14_q_elf_sha256"], V14_Q_RECONSTRUCTED_ELF_SHA256),
+                "equivalence read V14 Q analysis ELF %s and the pinned reference is %s"
+                % (
+                    equivalence["v14_q_analysis_elf_sha256"],
+                    canonical.V14_Q_ANALYSIS_ELF_SHA256,
+                ),
             )
     return mode
 
@@ -486,7 +521,8 @@ def open_verified_cell(manifest: dict, equivalence_evidence: dict, static_eviden
         app_sha256=manifest["app_sha256"],
         vectors_sha256=manifest["vectors_sha256"],
         ddr_sha256=manifest["ddr_sha256"],
-        elf_sha256=manifest["elf_sha256"],
+        raw_elf_sha256=manifest["raw_elf_sha256"],
+        analysis_elf_sha256=manifest["analysis_elf_sha256"],
         # Taken over the finished manifest from outside it, rather than read out
         # of a field the manifest carries about itself.
         manifest_sha256=document_digest(manifest),
