@@ -22,6 +22,7 @@ from __future__ import annotations
 import contract_pmu_completion_s5_only_control as contract
 
 RULE_MODE_MISSING_LAYER = "RULE_MODE_MISSING_LAYER"
+RULE_MODE_UNKNOWN_LAYER = "RULE_MODE_UNKNOWN_LAYER"
 RULE_MODE_DISAGREEMENT = "RULE_MODE_DISAGREEMENT"
 RULE_MODE_UNKNOWN_VALUE = "RULE_MODE_UNKNOWN_VALUE"
 RULE_MODE_CONTRADICTS_EVIDENCE = "RULE_MODE_CONTRADICTS_EVIDENCE"
@@ -30,6 +31,7 @@ RULE_MODE_CROSS_VARIANT_LEAK = "RULE_MODE_CROSS_VARIANT_LEAK"
 
 RULES = (
     "RULE_MODE_MISSING_LAYER",
+    "RULE_MODE_UNKNOWN_LAYER",
     "RULE_MODE_DISAGREEMENT",
     "RULE_MODE_UNKNOWN_VALUE",
     "RULE_MODE_CONTRADICTS_EVIDENCE",
@@ -39,16 +41,32 @@ RULES = (
 
 # In the order evidence flows. Every one of them carries the mode, because a
 # layer that does not carry it is a layer where the fallback stops travelling.
+#
+# Amendment 2 corrected the first layer and removed the parser. The chain used
+# to begin at "firmware_evidence", which read as though the mode arrived in the
+# frame; it does not appear in any of the 127 words, and it could not, because
+# the mode says whether this image's loop matches the frozen V14 Q reference and
+# the target cannot determine that. The mode begins in static image evidence and
+# reaches a run through a deployment context verified by hash.
+#
+# The parser is deliberately absent. parse_frame sees bytes and nothing else, so
+# a parser carrying the mode would be a parser asserting something it was not
+# told by the device.
 LAYERS = (
-    "firmware_evidence",
-    "manifest",
-    "parser",
-    "classifier",
+    "static_image_evidence",
+    "build_manifest",
+    "verified_deployment_context",
     "collector",
+    "normalized_record",
+    "classifier",
     "analyzer",
-    "preflight",
     "report",
 )
+
+# Task 11's fixtures pass over synthetic layer dictionaries. That is a proof
+# about the agreement rule, not about the mode reaching a board run, and it stays
+# recorded as such until the collector issues a real context.
+END_TO_END_STATUS = "REQUALIFICATION_PENDING_UNTIL_COLLECTOR_BINDS_CONTEXT"
 
 EQUIVALENCE_PASS = "PASS"
 EQUIVALENCE_FALLBACK = "FALLBACK_WITHIN_VARIANT"
@@ -87,6 +105,17 @@ def resolve(layers: dict, equivalence: dict, cross_variant_claims_enabled=None) 
             RULE_MODE_MISSING_LAYER,
             "these layers carry no comparison mode: %s. A layer that does not carry it "
             "is where the fallback stops travelling" % ", ".join(missing),
+        )
+
+    # A name that is not a layer is not a layer that agreed. When the chain was
+    # renamed, a fixture kept setting the mode on "preflight" and the check
+    # simply stopped seeing it: the test passed by testing nothing.
+    foreign = [name for name in layers if name not in LAYERS]
+    if foreign:
+        raise fail_rule(
+            RULE_MODE_UNKNOWN_LAYER,
+            "these are not layers of this chain: %s. A mode set on a name nobody "
+            "reads is a mode nobody carries" % ", ".join(sorted(foreign)),
         )
 
     unknown = {

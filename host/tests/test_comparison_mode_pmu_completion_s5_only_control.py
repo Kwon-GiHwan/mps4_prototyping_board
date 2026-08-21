@@ -39,11 +39,24 @@ def _equivalence(status="PASS", reference="153f368", evidence="a" * 16):
 
 
 class TheModeIsCarriedByEveryLayer(unittest.TestCase):
-    def test_the_layer_list_spans_firmware_to_report(self):
-        self.assertEqual(chain.LAYERS[0], "firmware_evidence")
+    def test_the_chain_begins_in_static_evidence_and_ends_at_the_report(self):
+        # Amendment 2: the mode is not in the frame and cannot be, so the chain
+        # starts where it is actually decided.
+        self.assertEqual(chain.LAYERS[0], "static_image_evidence")
         self.assertEqual(chain.LAYERS[-1], "report")
-        for expected in ("manifest", "parser", "classifier", "collector", "analyzer", "preflight"):
+        for expected in ("build_manifest", "verified_deployment_context", "collector",
+                         "normalized_record", "classifier", "analyzer"):
             self.assertIn(expected, chain.LAYERS)
+
+    def test_the_parser_is_not_a_layer_that_carries_the_mode(self):
+        # parse_frame sees bytes. A parser carrying the mode would be asserting
+        # something the device never said.
+        self.assertNotIn("parser", chain.LAYERS)
+
+    def test_the_end_to_end_claim_is_recorded_as_pending(self):
+        # These fixtures are synthetic dictionaries. They prove the agreement
+        # rule, not that the mode reaches a board run.
+        self.assertIn("PENDING", chain.END_TO_END_STATUS)
 
     def test_an_agreed_mode_resolves(self):
         document = chain.resolve(_layers(), _equivalence())
@@ -70,9 +83,19 @@ class DisagreementIsAFailureNotAVote(unittest.TestCase):
     def test_the_majority_does_not_win(self):
         # Seven layers saying one thing and one saying another is still a
         # disagreement. A mode decided by counting would be a mode nobody set.
-        layers = _layers(preflight=contract.S5_WITHIN_VARIANT_ONLY)
-        with self.assertRaises(chain.ComparisonModeError):
+        layers = _layers(report=contract.S5_WITHIN_VARIANT_ONLY)
+        with self.assertRaises(chain.ComparisonModeError) as caught:
             chain.resolve(layers, _equivalence())
+        self.assertEqual(chain.refusal_rule(caught.exception), chain.RULE_MODE_DISAGREEMENT)
+
+    def test_a_mode_set_on_a_name_that_is_not_a_layer_is_refused(self):
+        # How the fixture above quietly stopped working: it set the mode on
+        # "preflight" after the chain was renamed, and resolve never looked.
+        layers = _layers()
+        layers["preflight"] = contract.S5_WITHIN_VARIANT_ONLY
+        with self.assertRaises(chain.ComparisonModeError) as caught:
+            chain.resolve(layers, _equivalence())
+        self.assertEqual(chain.refusal_rule(caught.exception), chain.RULE_MODE_UNKNOWN_LAYER)
 
     def test_an_unknown_mode_value_is_refused(self):
         layers = _layers(collector="PROBABLY_EQUIVALENT")
@@ -165,6 +188,7 @@ class EveryRuleHasAFixture(unittest.TestCase):
         tripped = set()
         attempts = (
             (lambda: chain.resolve({k: v for k, v in list(_layers().items())[:-1]}, _equivalence())),
+            (lambda: chain.resolve(dict(_layers(), preflight=contract.Q_S5_EQUIVALENT), _equivalence())),
             (lambda: chain.resolve(_layers(analyzer=contract.S5_WITHIN_VARIANT_ONLY), _equivalence())),
             (lambda: chain.resolve(_layers(collector="MAYBE"), _equivalence())),
             (lambda: chain.resolve(_layers(), _equivalence(status="FAIL"))),
