@@ -54,18 +54,18 @@ class TheObservable(unittest.TestCase):
 
 class TheAppendix(unittest.TestCase):
     def test_the_primary_observation_fields_are_named_for_what_they_are(self):
-        self.assertIn("cmd_end_reached_observed", contract.APPENDIX_FIELDS)
-        self.assertIn("submit_to_s5_observed_cycles", contract.APPENDIX_FIELDS)
+        self.assertIn("cmd_end_reached_observed", contract.RECORD_FIELDS)
+        self.assertIn("submit_to_s5_observed_cycles", contract.RECORD_FIELDS)
 
     def test_field_order_is_frozen_and_has_no_duplicates(self):
         self.assertEqual(
-            len(contract.APPENDIX_FIELDS), len(set(contract.APPENDIX_FIELDS))
+            len(contract.RECORD_FIELDS), len(set(contract.RECORD_FIELDS))
         )
 
     def test_the_appendix_carries_the_comparison_mode(self):
         # The mode has to survive into the record itself, or the propagation
         # chain has a hole exactly where the board data enters it.
-        self.assertIn("comparison_mode", contract.APPENDIX_FIELDS)
+        self.assertIn("comparison_mode", contract.RECORD_FIELDS)
 
 
 class ForbiddenVocabulary(unittest.TestCase):
@@ -82,7 +82,7 @@ class ForbiddenVocabulary(unittest.TestCase):
 
     def test_no_forbidden_name_appears_in_the_appendix(self):
         for name in contract.FORBIDDEN_FIELD_NAMES:
-            self.assertNotIn(name, contract.APPENDIX_FIELDS, name)
+            self.assertNotIn(name, contract.RECORD_FIELDS, name)
 
     def test_no_forbidden_name_appears_in_any_other_v15_module(self):
         # The contract module has to name them in order to refuse them, and this

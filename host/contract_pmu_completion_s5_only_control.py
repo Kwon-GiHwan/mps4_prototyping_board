@@ -64,10 +64,22 @@ OUTCOMES_PERMITTED = {
 }
 
 # ---------------------------------------------------------------------------
-# The appendix, in wire order
+# The normalized host record
+#
+# This list is NOT the wire appendix and never was. The firmware emits 34 words;
+# eleven of the names below are frame header words or values this host derives.
+# It carried a "in wire order" comment until Amendment 2, and the Task 10 parser
+# would have been its first consumer -- zipping 24 names onto 34 words truncates
+# silently and yields plausible numbers from misaligned slots.
+#
+# The wire appendix lives in runner_proto_pmu_completion_s5_only_control and is
+# the firmware tuple exactly. This is what the normalizer produces afterwards.
+# Where each of these comes from is RECORD_FIELD_ORIGINS below, which is a
+# contract rather than a comment: without it the three provenances drift back
+# into one list under a better name.
 # ---------------------------------------------------------------------------
 
-APPENDIX_FIELDS = (
+RECORD_FIELDS = (
     "schema_version",
     "build_id",
     "variant_id",
@@ -93,6 +105,70 @@ APPENDIX_FIELDS = (
     "poll_count_admission",
     "mailbox_magic",
 )
+
+# ---------------------------------------------------------------------------
+# Where each record field comes from
+#
+# Amendment 2 made this a contract rather than a comment. One list held three
+# provenances at once and said "wire order" about all of them; the correction is
+# not a better name but an authoritative mapping, because a renamed list drifts
+# back to mixed exactly as fast as the original did.
+#
+# Declaring a field WIRE_APPENDIX makes a checkable claim: that name must appear
+# in the firmware's 34-word tuple. runner_proto verifies it, so a wrong
+# declaration fails rather than reads well.
+# ---------------------------------------------------------------------------
+
+WIRE_HEADER = "WIRE_HEADER"
+WIRE_APPENDIX = "WIRE_APPENDIX"
+DERIVED_FROM_WIRE = "DERIVED_FROM_WIRE"
+STATIC_IMAGE_EVIDENCE = "STATIC_IMAGE_EVIDENCE"
+QUALIFICATION_METADATA = "QUALIFICATION_METADATA"
+
+FIELD_ORIGINS = (
+    WIRE_HEADER,
+    WIRE_APPENDIX,
+    DERIVED_FROM_WIRE,
+    STATIC_IMAGE_EVIDENCE,
+    QUALIFICATION_METADATA,
+)
+
+RECORD_FIELD_ORIGINS = {
+    "schema_version": WIRE_HEADER,
+    "run_sequence": WIRE_HEADER,
+    # Not in the frame. V14 established that image identity is a manifest field
+    # checked by verify_manifest(), and V15 keeps it there.
+    "build_id": STATIC_IMAGE_EVIDENCE,
+    # Whether the V15 loop matches the frozen V14 Q reference is decided by
+    # host-side ELF analysis. The target cannot determine it, so no wire word
+    # could honestly carry it.
+    "comparison_mode": STATIC_IMAGE_EVIDENCE,
+    "variant_id": WIRE_APPENDIX,
+    "qsize_expected": WIRE_APPENDIX,
+    "pre_submit_status": WIRE_APPENDIX,
+    "primary_iterations": WIRE_APPENDIX,
+    "primary_result": WIRE_APPENDIX,
+    "convergence_iterations": WIRE_APPENDIX,
+    "convergence_result": WIRE_APPENDIX,
+    "convergence_final_status": WIRE_APPENDIX,
+    "convergence_final_qread": WIRE_APPENDIX,
+    "failure_phase": WIRE_APPENDIX,
+    "failure_reason": WIRE_APPENDIX,
+    "t_primary_entry": WIRE_APPENDIX,
+    "t_first_observation": WIRE_APPENDIX,
+    # The firmware word is mailbox_valid; this record names the same word.
+    "mailbox_magic": WIRE_APPENDIX,
+    # Computed by the normalizer from wire words. Named separately from the
+    # words they come from so that a derived value is never mistaken for one
+    # the device reported.
+    "submit_to_s5_observed_cycles": DERIVED_FROM_WIRE,
+    "cmd_end_reached_observed": DERIVED_FROM_WIRE,
+    "status_at_success": DERIVED_FROM_WIRE,
+    "irq_raised_at_success": DERIVED_FROM_WIRE,
+    "cleanup_result": DERIVED_FROM_WIRE,
+    # Present in the record, admitted as a metric in nothing. Amendment 1.
+    "poll_count_admission": QUALIFICATION_METADATA,
+}
 
 # ---------------------------------------------------------------------------
 # Names this contract refuses
