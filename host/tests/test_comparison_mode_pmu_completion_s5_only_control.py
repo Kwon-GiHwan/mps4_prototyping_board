@@ -53,10 +53,23 @@ class TheModeIsCarriedByEveryLayer(unittest.TestCase):
         # something the device never said.
         self.assertNotIn("parser", chain.LAYERS)
 
-    def test_the_end_to_end_claim_is_recorded_as_pending(self):
-        # These fixtures are synthetic dictionaries. They prove the agreement
-        # rule, not that the mode reaches a board run.
-        self.assertIn("PENDING", chain.END_TO_END_STATUS)
+    def test_the_end_to_end_claim_says_how_far_it_actually_got(self):
+        # Requalified against the real candidate up to the manifest, and no
+        # further: a mode that has not reached a run is not an end-to-end mode,
+        # and rounding that up is the thing the status exists to prevent.
+        self.assertIn("REQUALIFIED_TO_MANIFEST", chain.END_TO_END_STATUS)
+        self.assertIn("PENDING_DEPLOYMENT", chain.END_TO_END_STATUS)
+
+    def test_the_requalified_and_pending_layers_are_disjoint_and_real(self):
+        for name in chain.REQUALIFIED_LAYERS + chain.PENDING_LAYERS:
+            self.assertIn(name, chain.LAYERS, name)
+        self.assertEqual(
+            set(chain.REQUALIFIED_LAYERS) & set(chain.PENDING_LAYERS), set()
+        )
+
+    def test_the_deployment_layer_is_still_pending(self):
+        self.assertIn("verified_deployment_context", chain.PENDING_LAYERS)
+        self.assertNotIn("verified_deployment_context", chain.REQUALIFIED_LAYERS)
 
     def test_an_agreed_mode_resolves(self):
         document = chain.resolve(_layers(), _equivalence())

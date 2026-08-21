@@ -63,10 +63,26 @@ LAYERS = (
     "report",
 )
 
-# Task 11's fixtures pass over synthetic layer dictionaries. That is a proof
-# about the agreement rule, not about the mode reaching a board run, and it stays
-# recorded as such until the collector issues a real context.
-END_TO_END_STATUS = "REQUALIFICATION_PENDING_UNTIL_COLLECTOR_BINDS_CONTEXT"
+# Requalified 2026-08-21 against the real candidate: gates re-run on the
+# canonical analysis ELFs, real equivalence and static evidence, a real sealed
+# manifest, and the mode resolved through that chain rather than through
+# synthetic dictionaries.
+#
+# It stops short of a board. verified_deployment_context requires comparing what
+# was deployed against what landed, so the last two layers are not yet carrying
+# a mode that reached a run. The status says so rather than rounding up.
+END_TO_END_STATUS = "REQUALIFIED_TO_MANIFEST_PENDING_DEPLOYMENT"
+REQUALIFIED_LAYERS = (
+    "static_image_evidence",
+    "build_manifest",
+)
+PENDING_LAYERS = (
+    "verified_deployment_context",
+    "collector",
+)
+REQUALIFICATION_EVIDENCE = (
+    "docs/superpowers/evidence/v15-preboard-qualification-20260821"
+)
 
 EQUIVALENCE_PASS = "PASS"
 EQUIVALENCE_FALLBACK = "FALLBACK_WITHIN_VARIANT"

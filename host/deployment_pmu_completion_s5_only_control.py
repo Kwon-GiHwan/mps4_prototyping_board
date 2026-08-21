@@ -498,6 +498,28 @@ def _check_artifacts(document: dict, source: dict, readback: dict) -> None:
             )
 
 
+def verify_evidence_chain(manifest: dict, equivalence_evidence: dict,
+                          static_evidence: dict) -> dict:
+    """Everything that can be established before a board is involved.
+
+    Pre-board qualification stops here on purpose. The remaining gate compares
+    what was deployed against what landed, and there is no honest way to run it
+    without deploying -- so it is absent rather than satisfied with placeholder
+    digests.
+    """
+
+    document = verify_manifest(manifest)
+    mode = _check_evidence_binding(manifest, equivalence_evidence, static_evidence)
+    return {
+        "manifest_sha256": document["manifest_sha256"],
+        "comparison_mode": mode,
+        "analysis_elf_sha256": manifest["analysis_elf_sha256"],
+        "candidate_identity": candidate_identity(manifest),
+        "deployment_verified": False,
+        "remaining_before_a_cell": ("source artifact equality", "destination read-back"),
+    }
+
+
 def open_verified_cell(manifest: dict, equivalence_evidence: dict, static_evidence: dict,
                        source: dict, readback: dict, *, boot_id: str) -> VerifiedCellContext:
     """The only way a cell context comes into being.
