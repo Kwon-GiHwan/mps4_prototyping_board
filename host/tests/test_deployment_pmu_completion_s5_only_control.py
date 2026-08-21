@@ -1,18 +1,22 @@
 """A run is licensed by the image its evidence was computed over, or not at all.
 
 comparison_mode cannot come from the frame, so it comes from static image
-evidence, and the question this file settles is whether that evidence is
-actually attached to the run or merely filed next to it.
+evidence, and the question here is whether that evidence is attached to the run
+or merely filed next to it.
 
-The three attacks are the ones the review named, and the first is not
-hypothetical: Amendment 1's no-count scratch build is schema 15, variant S5, and
-fails equivalence. Its frames parse exactly like the shipped build's. Before the
-deployment gate the only thing keeping it out of an equivalence-mode analysis
-was that nobody had flashed it.
+The chain is walked in the direction it was produced -- equivalence evidence,
+static evidence, build manifest -- with the V15 ELF required to be one object at
+every step and each document named by its digest in the one that cites it.
+Digests sitting side by side would say each document exists; what has to hold is
+that each describes the next.
 
-Tampered manifests are re-sealed before use. An unsealed forgery trips the
-self-hash rule and never reaches the rule under test, which would leave the
-interesting branch unreached and deletable.
+The first attack is not hypothetical. Amendment 1's no-count scratch build is
+schema 15, variant S5, and fails equivalence. Its frames parse exactly like the
+shipped build's, so before the deployment gate the only thing keeping it out of
+an equivalence-mode analysis was that nobody had flashed it.
+
+Tampered manifests are re-sealed before use, or the self-hash rule fires first
+and the rule under test is never reached.
 """
 
 import pathlib
@@ -35,81 +39,133 @@ OTHER_ELF = "e3" * 32
 SHIPPED = {"app": "a1" * 32, "vectors": "b1" * 32, "ddr": "c1" * 32}
 SCRATCH = {"app": "a2" * 32, "vectors": "b1" * 32, "ddr": "c1" * 32}
 
+Q_APP = deploy.V14_Q_REFERENCE_APP_SHA256
 
-def manifest(elf=SHIPPED_ELF, artifacts=None, mode=contract.Q_S5_EQUIVALENT,
-             status=chain.EQUIVALENCE_PASS, evidence_elf=None,
-             reference=chain.Q_REFERENCE_ANCHOR, **overrides):
+
+def equivalence(elf=SHIPPED_ELF, mode=contract.Q_S5_EQUIVALENT,
+                status=chain.EQUIVALENCE_PASS, reference=chain.Q_REFERENCE_ANCHOR,
+                q_app=Q_APP, **overrides):
+    document = {
+        "v15_elf_sha256": elf,
+        "v14_q_app_sha256": q_app,
+        "v14_q_reference_identity": reference,
+        "comparison_mode": mode,
+        "status": status,
+        "detector_identity": "check_single_register_equivalence",
+    }
+    document.update(overrides)
+    return document
+
+
+def static(equiv, elf=None, mode=None, **overrides):
+    document = {
+        "v15_elf_sha256": equiv["v15_elf_sha256"] if elf is None else elf,
+        "equivalence_evidence_sha256": deploy.document_digest(equiv),
+        "comparison_mode": equiv["comparison_mode"] if mode is None else mode,
+        "boundary_image_verdict": "PASS",
+        "equivalence_verdict": "PASS",
+        "post_freeze_verdict": "PASS",
+        "poll_count_transport": contract.POLL_COUNT_PRESENT,
+        "poll_count_admission": contract.POLL_COUNT_NOT_ADMITTED,
+    }
+    document.update(overrides)
+    return document
+
+
+def manifest(equiv, stat, artifacts=None, elf=None, mode=None, **overrides):
     artifacts = artifacts or SHIPPED
     document = {
         "canonical_json": deploy.CANONICAL_JSON,
         "schema_version": contract.SCHEMA_VERSION,
         "build_id": "%08x" % contract.BUILD_ID,
         "variant": "S5",
-        "comparison_mode": mode,
-        "elf_sha256": elf,
+        "comparison_mode": equiv["comparison_mode"] if mode is None else mode,
+        "elf_sha256": equiv["v15_elf_sha256"] if elf is None else elf,
         "app_sha256": artifacts["app"],
         "vectors_sha256": artifacts["vectors"],
         "ddr_sha256": artifacts["ddr"],
         "generated_source_sha256": {"runner": "0" * 64},
-        "static_evidence_sha256": "5" * 64,
-        "equivalence_evidence_sha256": "6" * 64,
-        "equivalence_status": status,
-        "equivalence_elf_sha256": elf if evidence_elf is None else evidence_elf,
-        "v14_q_reference_identity": reference,
+        "static_evidence_sha256": deploy.document_digest(stat),
+        "equivalence_evidence_sha256": deploy.document_digest(equiv),
+        "equivalence_status": equiv["status"],
+        "equivalence_elf_sha256": equiv["v15_elf_sha256"],
+        "v14_q_reference_identity": equiv["v14_q_reference_identity"],
     }
     document.update(overrides)
     return deploy.seal_manifest(document)
 
 
-def open_cell(document, source=None, readback=None, boot_id="b1"):
+def chain_of(**kwargs):
+    """The three documents, consistent unless a test makes them otherwise."""
+
+    equiv = equivalence(**kwargs.pop("equivalence", {}))
+    stat = static(equiv, **kwargs.pop("static", {}))
+    man = manifest(equiv, stat, **kwargs.pop("manifest", {}))
+    return equiv, stat, man
+
+
+def open_cell(equiv, stat, man, source=None, readback=None, boot_id="b1"):
     source = SHIPPED if source is None else source
     readback = source if readback is None else readback
-    return deploy.open_verified_cell(document, source, readback, boot_id=boot_id)
+    return deploy.open_verified_cell(man, equiv, stat, source, readback, boot_id=boot_id)
 
 
 class TheHappyPathIssuesAContext(unittest.TestCase):
     def test_a_qualified_image_opens_a_cell(self):
-        context = open_cell(manifest())
+        context = open_cell(*chain_of())
         self.assertEqual(context.comparison_mode, contract.Q_S5_EQUIVALENT)
         self.assertEqual(context.app_sha256, SHIPPED["app"])
         self.assertEqual(context.elf_sha256, SHIPPED_ELF)
         self.assertEqual(context.boot_id, "b1")
         self.assertEqual(len(context.manifest_sha256), 64)
+        self.assertEqual(len(context.candidate_identity), 64)
+
+    def test_the_manifest_digest_is_taken_from_outside_the_manifest(self):
+        equiv, stat, man = chain_of()
+        context = open_cell(equiv, stat, man)
+        self.assertEqual(context.manifest_sha256, deploy.document_digest(man))
+        self.assertNotEqual(context.manifest_sha256, man[deploy.MANIFEST_SELF_HASH_KEY])
+
+    def test_candidate_identity_is_computed_not_chosen(self):
+        equiv, stat, man = chain_of()
+        other_equiv, other_stat, other_man = chain_of(
+            equivalence={"elf": OTHER_ELF}, manifest={"artifacts": SCRATCH}
+        )
+        self.assertNotEqual(
+            deploy.candidate_identity(man), deploy.candidate_identity(other_man)
+        )
 
     def test_the_fallback_opens_a_cell_in_the_fallback_mode(self):
-        document = manifest(
-            mode=contract.S5_WITHIN_VARIANT_ONLY, status=chain.EQUIVALENCE_FALLBACK
+        equiv, stat, man = chain_of(
+            equivalence={"mode": contract.S5_WITHIN_VARIANT_ONLY,
+                         "status": chain.EQUIVALENCE_FALLBACK}
         )
-        self.assertEqual(open_cell(document).comparison_mode, contract.S5_WITHIN_VARIANT_ONLY)
+        self.assertEqual(
+            open_cell(equiv, stat, man).comparison_mode, contract.S5_WITHIN_VARIANT_ONLY
+        )
 
 
 class NegativeATheScratchBuildCannotBorrowTheShippedEvidence(unittest.TestCase):
-    def test_deploying_the_no_count_scratch_app_under_the_shipped_manifest_is_refused(self):
-        # Schema 15, variant S5, equivalence FAIL. Indistinguishable at the frame
-        # level from the shipped build; caught here or nowhere.
+    def test_deploying_the_scratch_app_under_the_shipped_manifest_is_refused(self):
         with self.assertRaises(deploy.DeploymentError) as caught:
-            open_cell(manifest(), source=SCRATCH)
+            open_cell(*chain_of(), source=SCRATCH)
         self.assertEqual(
             deploy.refusal_rule(caught.exception), deploy.RULE_ARTIFACT_NOT_DECLARED
         )
 
     def test_the_scratch_app_landing_on_the_board_is_refused_at_readback(self):
-        # The manifest and the source agree; what actually reached the device
-        # does not.
         with self.assertRaises(deploy.DeploymentError) as caught:
-            open_cell(manifest(), source=SHIPPED, readback=SCRATCH)
+            open_cell(*chain_of(), source=SHIPPED, readback=SCRATCH)
         self.assertEqual(
             deploy.refusal_rule(caught.exception), deploy.RULE_READBACK_MISMATCH
         )
 
     def test_a_vectors_or_ddr_swap_is_refused_too(self):
-        # The board loads three artifacts. Binding only the APP would leave the
-        # other two free to differ from the qualified set.
         for name in ("vectors", "ddr"):
             swapped = dict(SHIPPED)
             swapped[name] = "f" * 64
             with self.assertRaises(deploy.DeploymentError) as caught:
-                open_cell(manifest(), source=SHIPPED, readback=swapped)
+                open_cell(*chain_of(), source=SHIPPED, readback=swapped)
             self.assertEqual(
                 deploy.refusal_rule(caught.exception), deploy.RULE_READBACK_MISMATCH, name
             )
@@ -117,104 +173,237 @@ class NegativeATheScratchBuildCannotBorrowTheShippedEvidence(unittest.TestCase):
 
 class NegativeBAForgedModeDoesNotSurviveItsOwnEvidence(unittest.TestCase):
     def test_claiming_equivalence_over_fallback_evidence_is_refused(self):
-        # The scratch build's own manifest, re-sealed, with only the mode moved
-        # to the one it did not earn.
-        document = manifest(
-            elf=SCRATCH_ELF,
-            artifacts=SCRATCH,
-            mode=contract.Q_S5_EQUIVALENT,
-            status=chain.EQUIVALENCE_FALLBACK,
+        # The whole chain agrees on the mode; the equivalence result does not
+        # license it. The mode is evidence-constrained, not declared.
+        equiv, stat, man = chain_of(
+            equivalence={"mode": contract.Q_S5_EQUIVALENT,
+                         "status": chain.EQUIVALENCE_FALLBACK}
         )
         with self.assertRaises(deploy.DeploymentError) as caught:
-            open_cell(document, source=SCRATCH)
+            open_cell(equiv, stat, man)
         self.assertEqual(
             deploy.refusal_rule(caught.exception), deploy.RULE_MODE_CONTRADICTS_EVIDENCE
         )
 
-    def test_the_forgery_is_properly_sealed_so_the_self_hash_is_not_what_caught_it(self):
-        document = manifest(
-            elf=SCRATCH_ELF, artifacts=SCRATCH,
-            mode=contract.Q_S5_EQUIVALENT, status=chain.EQUIVALENCE_FALLBACK,
+    def test_the_forgery_is_sealed_so_the_self_hash_is_not_what_caught_it(self):
+        _, _, man = chain_of(
+            equivalence={"mode": contract.Q_S5_EQUIVALENT,
+                         "status": chain.EQUIVALENCE_FALLBACK}
         )
         self.assertEqual(
-            deploy.manifest_self_hash(document), document[deploy.MANIFEST_SELF_HASH_KEY]
+            deploy.manifest_self_hash(man), man[deploy.MANIFEST_SELF_HASH_KEY]
         )
 
     def test_an_equivalence_status_that_licenses_nothing_is_refused(self):
-        document = manifest(status="PROBABLY_FINE")
+        equiv, stat, man = chain_of(equivalence={"status": "PROBABLY_FINE"})
         with self.assertRaises(deploy.DeploymentError) as caught:
-            open_cell(document)
-        self.assertEqual(
-            deploy.refusal_rule(caught.exception), deploy.RULE_EQUIVALENCE_EVIDENCE_UNUSABLE
-        )
-
-    def test_a_pass_with_no_evidence_digest_is_refused(self):
-        document = manifest(equivalence_evidence_sha256="")
-        with self.assertRaises(deploy.DeploymentError) as caught:
-            open_cell(document)
+            open_cell(equiv, stat, man)
         self.assertEqual(
             deploy.refusal_rule(caught.exception), deploy.RULE_EQUIVALENCE_EVIDENCE_UNUSABLE
         )
 
     def test_an_unknown_comparison_mode_is_refused(self):
-        document = manifest(mode="MOSTLY_EQUIVALENT")
+        equiv, stat, man = chain_of(equivalence={"mode": "MOSTLY_EQUIVALENT"})
         with self.assertRaises(deploy.DeploymentError) as caught:
-            open_cell(document)
+            open_cell(equiv, stat, man)
         self.assertEqual(
             deploy.refusal_rule(caught.exception), deploy.RULE_MODE_CONTRADICTS_EVIDENCE
         )
 
 
 class NegativeCTheEvidenceMustDescribeTheImageThatRuns(unittest.TestCase):
-    def test_equivalence_evidence_from_another_elf_is_refused(self):
-        # The dangerous shape: everything present, everything well formed, and
-        # the comparison was made over a different binary.
-        document = manifest(elf=SHIPPED_ELF, evidence_elf=OTHER_ELF)
+    def test_equivalence_evidence_computed_over_another_elf_is_refused(self):
+        # Everything present, everything well formed, and the comparison was
+        # made over a different binary.
+        equiv = equivalence(elf=OTHER_ELF)
+        stat = static(equiv, elf=SHIPPED_ELF)
+        man = manifest(equiv, stat, elf=SHIPPED_ELF)
         with self.assertRaises(deploy.DeploymentError) as caught:
-            open_cell(document)
+            open_cell(equiv, stat, man)
         self.assertEqual(
             deploy.refusal_rule(caught.exception), deploy.RULE_EVIDENCE_ELF_UNBOUND
         )
 
     def test_a_structurally_similar_q_is_not_the_qualified_q(self):
-        document = manifest(reference="deadbee")
+        equiv, stat, man = chain_of(equivalence={"reference": "deadbee"})
         with self.assertRaises(deploy.DeploymentError) as caught:
-            open_cell(document)
+            open_cell(equiv, stat, man)
         self.assertEqual(
             deploy.refusal_rule(caught.exception), deploy.RULE_REFERENCE_IDENTITY
+        )
+
+    def test_comparing_against_a_v14_q_that_is_not_the_one_that_ran_is_refused(self):
+        equiv, stat, man = chain_of(equivalence={"q_app": "9" * 64})
+        with self.assertRaises(deploy.DeploymentError) as caught:
+            open_cell(equiv, stat, man)
+        self.assertEqual(
+            deploy.refusal_rule(caught.exception), deploy.RULE_REFERENCE_IDENTITY
+        )
+
+    def test_naming_a_v14_q_reference_elf_this_contract_does_not_pin_is_refused(self):
+        # The V14 campaign recorded the deployed binaries and no ELF, so an ELF
+        # digest here would be compared against nothing. Unpinned is not clear.
+        equiv, stat, man = chain_of(equivalence={"v14_q_elf_sha256": "7" * 64})
+        with self.assertRaises(deploy.DeploymentError) as caught:
+            open_cell(equiv, stat, man)
+        self.assertEqual(
+            deploy.refusal_rule(caught.exception), deploy.RULE_V14_REFERENCE_UNPINNED
+        )
+
+
+class N7TheModeIsOneValueAcrossTheChain(unittest.TestCase):
+    def test_static_evidence_disagreeing_with_the_manifest_is_refused(self):
+        equiv = equivalence()
+        stat = static(equiv, mode=contract.S5_WITHIN_VARIANT_ONLY)
+        man = manifest(equiv, stat)
+        with self.assertRaises(deploy.DeploymentError) as caught:
+            open_cell(equiv, stat, man)
+        self.assertEqual(
+            deploy.refusal_rule(caught.exception),
+            deploy.RULE_MODE_DISAGREES_ACROSS_EVIDENCE,
+        )
+
+    def test_the_manifest_disagreeing_with_both_documents_is_refused(self):
+        equiv = equivalence()
+        stat = static(equiv)
+        man = manifest(equiv, stat, mode=contract.S5_WITHIN_VARIANT_ONLY)
+        with self.assertRaises(deploy.DeploymentError) as caught:
+            open_cell(equiv, stat, man)
+        self.assertEqual(
+            deploy.refusal_rule(caught.exception),
+            deploy.RULE_MODE_DISAGREES_ACROSS_EVIDENCE,
+        )
+
+    def test_two_against_one_does_not_carry_the_vote(self):
+        # Whichever way the majority falls, the answer is the same refusal.
+        equiv = equivalence(mode=contract.S5_WITHIN_VARIANT_ONLY,
+                            status=chain.EQUIVALENCE_FALLBACK)
+        stat = static(equiv, mode=contract.Q_S5_EQUIVALENT)
+        man = manifest(equiv, stat, mode=contract.Q_S5_EQUIVALENT)
+        with self.assertRaises(deploy.DeploymentError) as caught:
+            open_cell(equiv, stat, man)
+        self.assertEqual(
+            deploy.refusal_rule(caught.exception),
+            deploy.RULE_MODE_DISAGREES_ACROSS_EVIDENCE,
+        )
+
+
+class TheDocumentsMustCiteEachOther(unittest.TestCase):
+    def test_a_manifest_citing_a_different_equivalence_document_is_refused(self):
+        equiv = equivalence()
+        stat = static(equiv)
+        man = manifest(equiv, stat, equivalence_evidence_sha256="4" * 64)
+        man = deploy.seal_manifest(man)
+        with self.assertRaises(deploy.DeploymentError) as caught:
+            open_cell(equiv, stat, man)
+        self.assertEqual(
+            deploy.refusal_rule(caught.exception), deploy.RULE_EVIDENCE_DIGEST_MISMATCH
+        )
+
+    def test_static_evidence_citing_a_different_equivalence_document_is_refused(self):
+        equiv = equivalence()
+        stat = static(equiv, equivalence_evidence_sha256="4" * 64)
+        man = manifest(equiv, stat)
+        with self.assertRaises(deploy.DeploymentError) as caught:
+            open_cell(equiv, stat, man)
+        self.assertEqual(
+            deploy.refusal_rule(caught.exception), deploy.RULE_EVIDENCE_DIGEST_MISMATCH
+        )
+
+    def test_a_manifest_citing_a_different_static_document_is_refused(self):
+        # Without this the manifest-to-static citation is a branch no fixture
+        # reaches: deleting it changed nothing until this test existed.
+        equiv = equivalence()
+        stat = static(equiv)
+        man = deploy.seal_manifest(
+            manifest(equiv, stat, static_evidence_sha256="3" * 64)
+        )
+        with self.assertRaises(deploy.DeploymentError) as caught:
+            open_cell(equiv, stat, man)
+        self.assertEqual(
+            deploy.refusal_rule(caught.exception), deploy.RULE_EVIDENCE_DIGEST_MISMATCH
+        )
+
+    def test_an_edited_static_document_no_longer_matches_its_digest(self):
+        equiv = equivalence()
+        stat = static(equiv)
+        man = manifest(equiv, stat)
+        stat["boundary_image_verdict"] = "FAIL"
+        with self.assertRaises(deploy.DeploymentError) as caught:
+            open_cell(equiv, stat, man)
+        self.assertEqual(
+            deploy.refusal_rule(caught.exception), deploy.RULE_EVIDENCE_DIGEST_MISMATCH
+        )
+
+    def test_an_edited_evidence_document_no_longer_matches_its_digest(self):
+        equiv = equivalence()
+        stat = static(equiv)
+        man = manifest(equiv, stat)
+        equiv["detector_identity"] = "something_else"
+        with self.assertRaises(deploy.DeploymentError) as caught:
+            open_cell(equiv, stat, man)
+        self.assertEqual(
+            deploy.refusal_rule(caught.exception), deploy.RULE_EVIDENCE_DIGEST_MISMATCH
+        )
+
+    def test_an_incomplete_evidence_document_is_refused(self):
+        equiv = equivalence()
+        del equiv["detector_identity"]
+        stat = static(equiv)
+        man = manifest(equiv, stat)
+        with self.assertRaises(deploy.DeploymentError) as caught:
+            open_cell(equiv, stat, man)
+        self.assertEqual(
+            deploy.refusal_rule(caught.exception), deploy.RULE_EVIDENCE_INCOMPLETE
+        )
+
+    def test_incomplete_static_evidence_is_refused(self):
+        equiv = equivalence()
+        stat = static(equiv)
+        del stat["poll_count_admission"]
+        man = manifest(equiv, stat)
+        with self.assertRaises(deploy.DeploymentError) as caught:
+            open_cell(equiv, stat, man)
+        self.assertEqual(
+            deploy.refusal_rule(caught.exception), deploy.RULE_EVIDENCE_INCOMPLETE
         )
 
 
 class TheManifestMustBeWhatItSaysItIs(unittest.TestCase):
     def test_a_missing_key_is_refused(self):
-        document = dict(manifest())
-        del document["static_evidence_sha256"]
+        equiv, stat, man = chain_of()
+        man = dict(man)
+        del man["static_evidence_sha256"]
         with self.assertRaises(deploy.DeploymentError) as caught:
-            open_cell(document)
+            open_cell(equiv, stat, man)
         self.assertEqual(
             deploy.refusal_rule(caught.exception), deploy.RULE_MANIFEST_INCOMPLETE
         )
 
     def test_an_edited_manifest_that_was_not_resealed_is_refused(self):
-        document = dict(manifest())
-        document["app_sha256"] = SCRATCH["app"]
+        equiv, stat, man = chain_of()
+        man = dict(man)
+        man["app_sha256"] = SCRATCH["app"]
         with self.assertRaises(deploy.DeploymentError) as caught:
-            open_cell(document, source=SCRATCH)
+            open_cell(equiv, stat, man, source=SCRATCH)
         self.assertEqual(deploy.refusal_rule(caught.exception), deploy.RULE_MANIFEST_SELF_HASH)
 
     def test_a_foreign_schema_is_refused(self):
+        equiv, stat, man = chain_of(manifest={"schema_version": 14})
         with self.assertRaises(deploy.DeploymentError) as caught:
-            open_cell(manifest(schema_version=14))
+            open_cell(equiv, stat, man)
         self.assertEqual(deploy.refusal_rule(caught.exception), deploy.RULE_MANIFEST_IDENTITY)
 
     def test_a_foreign_build_id_is_refused(self):
+        equiv, stat, man = chain_of(manifest={"build_id": "34314950"})
         with self.assertRaises(deploy.DeploymentError) as caught:
-            open_cell(manifest(build_id="34314950"))
+            open_cell(equiv, stat, man)
         self.assertEqual(deploy.refusal_rule(caught.exception), deploy.RULE_MANIFEST_IDENTITY)
 
     def test_a_variant_that_is_not_s5_is_refused(self):
+        equiv, stat, man = chain_of(manifest={"variant": "Q"})
         with self.assertRaises(deploy.DeploymentError) as caught:
-            open_cell(manifest(variant="Q"))
+            open_cell(equiv, stat, man)
         self.assertEqual(deploy.refusal_rule(caught.exception), deploy.RULE_MANIFEST_IDENTITY)
 
 
@@ -232,21 +421,21 @@ class TheContextCannotBeAsserted(unittest.TestCase):
 
     def test_a_cell_without_a_boot_is_refused(self):
         with self.assertRaises(deploy.DeploymentError) as caught:
-            open_cell(manifest(), boot_id="")
+            open_cell(*chain_of(), boot_id="")
         self.assertEqual(
             deploy.refusal_rule(caught.exception), deploy.RULE_CELL_CONTEXT_FORGED
         )
 
     def test_a_missing_source_digest_is_refused(self):
         with self.assertRaises(deploy.DeploymentError) as caught:
-            open_cell(manifest(), source={"app": SHIPPED["app"]})
+            open_cell(*chain_of(), source={"app": SHIPPED["app"]})
         self.assertEqual(
             deploy.refusal_rule(caught.exception), deploy.RULE_ARTIFACT_NOT_DECLARED
         )
 
     def test_a_missing_readback_digest_is_refused(self):
         with self.assertRaises(deploy.DeploymentError) as caught:
-            open_cell(manifest(), source=SHIPPED, readback={"app": SHIPPED["app"]})
+            open_cell(*chain_of(), source=SHIPPED, readback={"app": SHIPPED["app"]})
         self.assertEqual(
             deploy.refusal_rule(caught.exception), deploy.RULE_READBACK_MISMATCH
         )
@@ -254,17 +443,52 @@ class TheContextCannotBeAsserted(unittest.TestCase):
 
 class EveryRuleHasAFixture(unittest.TestCase):
     def test_the_fixtures_trip_every_rule_the_module_declares(self):
+        def missing_manifest_key():
+            equiv, stat, man = chain_of()
+            man = {k: v for k, v in man.items() if k != "elf_sha256"}
+            return open_cell(equiv, stat, man)
+
+        def unsealed():
+            equiv, stat, man = chain_of()
+            man = dict(man, app_sha256=SCRATCH["app"])
+            return open_cell(equiv, stat, man)
+
+        def wrong_elf():
+            equiv = equivalence(elf=OTHER_ELF)
+            stat = static(equiv, elf=SHIPPED_ELF)
+            return open_cell(equiv, stat, manifest(equiv, stat, elf=SHIPPED_ELF))
+
+        def mode_disagreement():
+            equiv = equivalence()
+            stat = static(equiv, mode=contract.S5_WITHIN_VARIANT_ONLY)
+            return open_cell(equiv, stat, manifest(equiv, stat))
+
+        def digest_mismatch():
+            equiv = equivalence()
+            stat = static(equiv, equivalence_evidence_sha256="4" * 64)
+            return open_cell(equiv, stat, manifest(equiv, stat))
+
+        def incomplete_evidence():
+            equiv = equivalence()
+            del equiv["detector_identity"]
+            stat = static(equiv)
+            return open_cell(equiv, stat, manifest(equiv, stat))
+
         attempts = (
-            lambda: open_cell({k: v for k, v in manifest().items() if k != "elf_sha256"}),
-            lambda: open_cell(dict(manifest(), app_sha256=SCRATCH["app"])),
-            lambda: open_cell(manifest(schema_version=14)),
-            lambda: open_cell(manifest(status="PROBABLY_FINE")),
-            lambda: open_cell(manifest(mode="MOSTLY_EQUIVALENT")),
-            lambda: open_cell(manifest(reference="deadbee")),
-            lambda: open_cell(manifest(evidence_elf=OTHER_ELF)),
-            lambda: open_cell(manifest(), source=SCRATCH),
-            lambda: open_cell(manifest(), source=SHIPPED, readback=SCRATCH),
+            missing_manifest_key,
+            unsealed,
+            lambda: open_cell(*chain_of(manifest={"schema_version": 14})),
+            lambda: open_cell(*chain_of(equivalence={"status": "PROBABLY_FINE"})),
+            lambda: open_cell(*chain_of(equivalence={"mode": "MOSTLY_EQUIVALENT"})),
+            lambda: open_cell(*chain_of(equivalence={"reference": "deadbee"})),
+            wrong_elf,
+            lambda: open_cell(*chain_of(), source=SCRATCH),
+            lambda: open_cell(*chain_of(), source=SHIPPED, readback=SCRATCH),
             lambda: deploy.VerifiedCellContext(issued_by=object()),
+            incomplete_evidence,
+            digest_mismatch,
+            mode_disagreement,
+            lambda: open_cell(*chain_of(equivalence={"v14_q_elf_sha256": "7" * 64})),
         )
         tripped = set()
         for attempt in attempts:

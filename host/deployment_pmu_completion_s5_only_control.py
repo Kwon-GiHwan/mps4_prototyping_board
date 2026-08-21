@@ -54,6 +54,10 @@ RULE_EVIDENCE_ELF_UNBOUND = "RULE_EVIDENCE_ELF_UNBOUND"
 RULE_ARTIFACT_NOT_DECLARED = "RULE_ARTIFACT_NOT_DECLARED"
 RULE_READBACK_MISMATCH = "RULE_READBACK_MISMATCH"
 RULE_CELL_CONTEXT_FORGED = "RULE_CELL_CONTEXT_FORGED"
+RULE_EVIDENCE_INCOMPLETE = "RULE_EVIDENCE_INCOMPLETE"
+RULE_EVIDENCE_DIGEST_MISMATCH = "RULE_EVIDENCE_DIGEST_MISMATCH"
+RULE_MODE_DISAGREES_ACROSS_EVIDENCE = "RULE_MODE_DISAGREES_ACROSS_EVIDENCE"
+RULE_V14_REFERENCE_UNPINNED = "RULE_V14_REFERENCE_UNPINNED"
 
 RULES = (
     "RULE_MANIFEST_INCOMPLETE",
@@ -66,6 +70,10 @@ RULES = (
     "RULE_ARTIFACT_NOT_DECLARED",
     "RULE_READBACK_MISMATCH",
     "RULE_CELL_CONTEXT_FORGED",
+    "RULE_EVIDENCE_INCOMPLETE",
+    "RULE_EVIDENCE_DIGEST_MISMATCH",
+    "RULE_MODE_DISAGREES_ACROSS_EVIDENCE",
+    "RULE_V14_REFERENCE_UNPINNED",
 )
 
 CANONICAL_JSON = "v15-canonical-json-v1"
@@ -95,6 +103,39 @@ MANIFEST_REQUIRED = (
     "v14_q_reference_identity",
     MANIFEST_SELF_HASH_KEY,
 )
+
+
+EQUIVALENCE_EVIDENCE_REQUIRED = (
+    "v15_elf_sha256",
+    "v14_q_app_sha256",
+    "v14_q_reference_identity",
+    "comparison_mode",
+    "status",
+    "detector_identity",
+)
+
+STATIC_EVIDENCE_REQUIRED = (
+    "v15_elf_sha256",
+    "equivalence_evidence_sha256",
+    "comparison_mode",
+    "boundary_image_verdict",
+    "equivalence_verdict",
+    "post_freeze_verdict",
+    "poll_count_transport",
+    "poll_count_admission",
+)
+
+# The frozen V14 Q reference, as the V14 campaign actually recorded it. This is
+# the APP that ran on the board across nine boots, with source and destination
+# read-back equal, in docs/superpowers/evidence/v14-campaign-20260819.
+V14_Q_REFERENCE_APP_SHA256 = "f745eebd1f1ddcb7a2015f7dab21d2bf4ceb270cf43c7f932aa8419770e7b25d"
+
+# The V14 campaign recorded the deployed binaries and never recorded the ELF
+# they were built from, so there is no digest here to compare against. It is
+# left unpinned rather than filled with a rebuild's digest, which would assert
+# that a rebuild reproduces the image that ran -- a determinism claim nobody has
+# made. Equivalence mode fails closed while this is None: unpinned is not clear.
+V14_Q_REFERENCE_ELF_SHA256 = None
 
 
 class DeploymentError(RuntimeError):
@@ -160,6 +201,7 @@ class VerifiedCellContext:
 
     comparison_mode: str = ""
     v14_q_reference_identity: str = ""
+    candidate_identity: str = ""
     boot_id: str = ""
 
     def __post_init__(self):
@@ -214,16 +256,110 @@ def verify_manifest(document: dict) -> dict:
     return {"manifest_sha256": stored}
 
 
-def _check_equivalence_binding(document: dict) -> str:
-    """The mode against the evidence, and the evidence against the ELF."""
+def document_digest(document: dict) -> str:
+    """The digest of a completed document, taken from outside it."""
 
-    mode = document["comparison_mode"]
+    return hashlib.sha256(canonical_json_bytes(document)).hexdigest()
+
+
+def candidate_identity(manifest: dict) -> str:
+    """One name for this candidate, computed rather than chosen.
+
+    A hand-written identity string is a label somebody picked; this is the
+    artifact and evidence set itself, so two candidates differ here exactly when
+    they differ in something that matters.
+    """
+
+    tuple_ = {
+        "app_sha256": manifest["app_sha256"],
+        "vectors_sha256": manifest["vectors_sha256"],
+        "ddr_sha256": manifest["ddr_sha256"],
+        "elf_sha256": manifest["elf_sha256"],
+        "static_evidence_sha256": manifest["static_evidence_sha256"],
+        "equivalence_evidence_sha256": manifest["equivalence_evidence_sha256"],
+        "comparison_mode": manifest["comparison_mode"],
+    }
+    return hashlib.sha256(canonical_json_bytes(tuple_)).hexdigest()
+
+
+def _require_keys(document, required, name):
+    missing = [key for key in required if key not in document]
+    if missing:
+        raise fail_rule(
+            RULE_EVIDENCE_INCOMPLETE,
+            "the %s carries no %s" % (name, ", ".join(sorted(missing))),
+        )
+
+
+def _check_evidence_binding(manifest: dict, equivalence: dict, static: dict) -> str:
+    """The binding graph, walked in the direction the evidence was produced.
+
+    equivalence -> static evidence -> manifest, with the V15 ELF the same object
+    at every step. Digests recorded side by side would say each document exists;
+    what has to hold is that each one describes the next.
+    """
+
+    _require_keys(equivalence, EQUIVALENCE_EVIDENCE_REQUIRED, "equivalence evidence")
+    _require_keys(static, STATIC_EVIDENCE_REQUIRED, "static evidence")
+
+    # Each document is named by its digest in the one that cites it.
+    if document_digest(equivalence) != static["equivalence_evidence_sha256"]:
+        raise fail_rule(
+            RULE_EVIDENCE_DIGEST_MISMATCH,
+            "the static evidence cites equivalence evidence %s and the document "
+            "offered digests to %s"
+            % (static["equivalence_evidence_sha256"], document_digest(equivalence)),
+        )
+    if document_digest(equivalence) != manifest["equivalence_evidence_sha256"]:
+        raise fail_rule(
+            RULE_EVIDENCE_DIGEST_MISMATCH,
+            "the manifest cites equivalence evidence %s and the document offered "
+            "digests to %s"
+            % (manifest["equivalence_evidence_sha256"], document_digest(equivalence)),
+        )
+    if document_digest(static) != manifest["static_evidence_sha256"]:
+        raise fail_rule(
+            RULE_EVIDENCE_DIGEST_MISMATCH,
+            "the manifest cites static evidence %s and the document offered digests "
+            "to %s" % (manifest["static_evidence_sha256"], document_digest(static)),
+        )
+
+    # The load-bearing equality: one ELF, named identically at all three steps.
+    elves = {
+        "equivalence evidence": equivalence["v15_elf_sha256"],
+        "static evidence": static["v15_elf_sha256"],
+        "manifest": manifest["elf_sha256"],
+    }
+    if len(set(elves.values())) != 1:
+        raise fail_rule(
+            RULE_EVIDENCE_ELF_UNBOUND,
+            "the V15 ELF is not one object across the chain (%s): good evidence "
+            "attached to a different image is the attack this closes"
+            % ", ".join("%s=%s" % (k, v) for k, v in sorted(elves.items())),
+        )
+
+    # N7: the mode is a value carried by each document, and disagreement is a
+    # refusal. No majority, no most-recent-wins -- a mode settled by
+    # reconciliation is a mode nobody established.
+    modes = {
+        "equivalence evidence": equivalence["comparison_mode"],
+        "static evidence": static["comparison_mode"],
+        "manifest": manifest["comparison_mode"],
+    }
+    if len(set(modes.values())) != 1:
+        raise fail_rule(
+            RULE_MODE_DISAGREES_ACROSS_EVIDENCE,
+            "the comparison mode differs across the evidence chain (%s) and is not "
+            "reconciled by vote or recency"
+            % ", ".join("%s=%s" % (k, v) for k, v in sorted(modes.items())),
+        )
+
+    mode = manifest["comparison_mode"]
     if mode not in contract.COMPARISON_MODES:
         raise fail_rule(
-            RULE_MODE_CONTRADICTS_EVIDENCE,
-            "the manifest declares comparison mode %r" % (mode,),
+            RULE_MODE_CONTRADICTS_EVIDENCE, "the manifest declares comparison mode %r" % (mode,)
         )
-    status = document["equivalence_status"]
+    status = equivalence["status"]
     if status not in chain.MODE_FOR_EVIDENCE:
         raise fail_rule(
             RULE_EQUIVALENCE_EVIDENCE_UNUSABLE,
@@ -233,35 +369,31 @@ def _check_equivalence_binding(document: dict) -> str:
     if mode != licensed:
         raise fail_rule(
             RULE_MODE_CONTRADICTS_EVIDENCE,
-            "the manifest claims %s and its equivalence evidence is %s, which licenses %s"
+            "the chain claims %s and the equivalence result is %s, which licenses %s"
             % (mode, status, licensed),
         )
 
-    digest = document["equivalence_evidence_sha256"]
-    if not isinstance(digest, str) or len(digest) != 64:
-        raise fail_rule(
-            RULE_EQUIVALENCE_EVIDENCE_UNUSABLE,
-            "the manifest carries no usable equivalence evidence digest: a mode resting "
-            "on an unrecorded comparison rests on nothing",
-        )
-
-    # The comparison has to have been made over the image being deployed. Two
-    # digests sitting side by side say both exist, not that they belong together.
-    if document["equivalence_elf_sha256"] != document["elf_sha256"]:
-        raise fail_rule(
-            RULE_EVIDENCE_ELF_UNBOUND,
-            "the equivalence gate analysed ELF %s and the manifest deploys ELF %s: the "
-            "evidence describes an image that is not the one being run"
-            % (document["equivalence_elf_sha256"], document["elf_sha256"]),
-        )
-
     if status == chain.EQUIVALENCE_PASS:
-        if document["v14_q_reference_identity"] != chain.Q_REFERENCE_ANCHOR:
+        if equivalence["v14_q_reference_identity"] != chain.Q_REFERENCE_ANCHOR:
             raise fail_rule(
                 RULE_REFERENCE_IDENTITY,
-                "equivalence passed against reference %r and the qualified one is %r: a "
-                "structurally similar Q is not the Q this mode means"
-                % (document["v14_q_reference_identity"], chain.Q_REFERENCE_ANCHOR),
+                "equivalence passed against reference %r and the qualified one is %r: "
+                "a structurally similar Q is not the Q this mode means"
+                % (equivalence["v14_q_reference_identity"], chain.Q_REFERENCE_ANCHOR),
+            )
+        if equivalence["v14_q_app_sha256"] != V14_Q_REFERENCE_APP_SHA256:
+            raise fail_rule(
+                RULE_REFERENCE_IDENTITY,
+                "equivalence compared against V14 Q APP %s and the image the V14 "
+                "campaign actually ran is %s"
+                % (equivalence["v14_q_app_sha256"], V14_Q_REFERENCE_APP_SHA256),
+            )
+        if V14_Q_REFERENCE_ELF_SHA256 is None and equivalence.get("v14_q_elf_sha256"):
+            raise fail_rule(
+                RULE_V14_REFERENCE_UNPINNED,
+                "the evidence names a V14 Q reference ELF and this contract pins none: "
+                "the V14 campaign recorded the deployed binaries only, so an ELF digest "
+                "here would be checked against nothing",
             )
     return mode
 
@@ -292,22 +424,21 @@ def _check_artifacts(document: dict, source: dict, readback: dict) -> None:
             raise fail_rule(
                 RULE_READBACK_MISMATCH,
                 "%s reads back from the destination as %s, not the qualified %s: what "
-                "landed is not what was verified"
-                % (name, readback[name], declared),
+                "landed is not what was verified" % (name, readback[name], declared),
             )
 
 
-def open_verified_cell(manifest: dict, source: dict, readback: dict, *, boot_id: str) -> VerifiedCellContext:
+def open_verified_cell(manifest: dict, equivalence_evidence: dict, static_evidence: dict,
+                       source: dict, readback: dict, *, boot_id: str) -> VerifiedCellContext:
     """The only way a cell context comes into being.
 
-    Order matters and is the order of the procedure: the manifest is checked
-    against itself, then the mode against its evidence and the evidence against
-    the ELF, then what is about to be written against what was qualified, and
-    only then what actually landed.
+    The order is the order of the procedure: the manifest against itself, the
+    evidence chain against the ELF it describes, what is about to be written
+    against what was qualified, and only then what actually landed.
     """
 
-    document = verify_manifest(manifest)
-    mode = _check_equivalence_binding(manifest)
+    verify_manifest(manifest)
+    mode = _check_evidence_binding(manifest, equivalence_evidence, static_evidence)
     _check_artifacts(manifest, source, readback)
     if not boot_id:
         raise fail_rule(
@@ -321,10 +452,13 @@ def open_verified_cell(manifest: dict, source: dict, readback: dict, *, boot_id:
         vectors_sha256=manifest["vectors_sha256"],
         ddr_sha256=manifest["ddr_sha256"],
         elf_sha256=manifest["elf_sha256"],
-        manifest_sha256=document["manifest_sha256"],
+        # Taken over the finished manifest from outside it, rather than read out
+        # of a field the manifest carries about itself.
+        manifest_sha256=document_digest(manifest),
         static_evidence_sha256=manifest["static_evidence_sha256"],
         equivalence_evidence_sha256=manifest["equivalence_evidence_sha256"],
         comparison_mode=mode,
-        v14_q_reference_identity=manifest["v14_q_reference_identity"],
+        v14_q_reference_identity=equivalence_evidence["v14_q_reference_identity"],
+        candidate_identity=candidate_identity(manifest),
         boot_id=boot_id,
     )
