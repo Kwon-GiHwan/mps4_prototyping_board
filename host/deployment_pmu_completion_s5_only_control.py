@@ -137,6 +137,25 @@ V14_Q_REFERENCE_APP_SHA256 = "f745eebd1f1ddcb7a2015f7dab21d2bf4ceb270cf43c7f932a
 # made. Equivalence mode fails closed while this is None: unpinned is not clear.
 V14_Q_REFERENCE_ELF_SHA256 = None
 
+# The reconstruction the manager approved has not been run, and "not run" is not
+# "failed". The qualified build environment is unavailable -- the build host is
+# unreachable and the benchmark-runner container is not on this machine -- so no
+# rebuilt APP has been compared against the deployed one. Recording a failure
+# here would downgrade the Q reference on the strength of an experiment nobody
+# performed.
+RECONSTRUCTION_NOT_RUN = "NOT_RUN"
+RECONSTRUCTION_ENVIRONMENT_UNAVAILABLE = "QUALIFIED_BUILD_ENVIRONMENT_UNAVAILABLE"
+RECONSTRUCTION_APP_SET_MATCHED = "APP_ARTIFACT_SET_MATCHED"
+
+V14_Q_RECONSTRUCTION_ATTEMPT_RESULT = RECONSTRUCTION_NOT_RUN
+V14_Q_RECONSTRUCTION_REASON = RECONSTRUCTION_ENVIRONMENT_UNAVAILABLE
+
+# What is and is not settled while that stays true. The executable comparison
+# itself passed; what is unresolved is the bridge from the analysis ELF back to
+# the Q image the board actually ran.
+Q_S5_EXECUTABLE_COMPARISON = "PASS"
+Q_S5_HISTORICAL_PROVENANCE_BRIDGE = "UNRESOLVED_BLOCKED"
+
 
 class DeploymentError(RuntimeError):
     """A run this module will not license."""
