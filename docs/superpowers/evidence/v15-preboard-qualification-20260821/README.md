@@ -68,3 +68,50 @@ has not reached a run is not an end-to-end mode.
 | Board | NOT TOUCHED |
 | Production `END_ONLY` | FROZEN |
 | MLEK | BLOCKED |
+
+## Pre-board gate
+
+`preflight_result.json`, produced by `host/preflight_pmu_completion_s5_only_control.py`
+against the documents above and the measured artifact digests.
+
+| check | |
+| --- | --- |
+| artifacts match the built candidate | PASS |
+| gates passed | PASS |
+| gates ran on the analysis ELF | PASS |
+| reference is the pinned V14 Q analysis ELF | PASS |
+| evidence binding | PASS |
+| comparison mode established | PASS |
+| candidate identity recomputes | PASS |
+| poll count contract | PASS |
+| source artifact equality | PENDING_DEPLOYMENT |
+| destination read-back equality | PENDING_DEPLOYMENT |
+| verified cell context issued | PENDING_DEPLOYMENT |
+| fresh boot | PENDING_DEPLOYMENT |
+| campaign, three boots × ten runs | PENDING_DEPLOYMENT |
+| original image restored | PENDING_DEPLOYMENT |
+
+**overall: `PENDING_DEPLOYMENT`** — not PASS, and unreachable as PASS while any
+board-dependent check is outstanding. Each of the six is named rather than
+omitted, because a reader who counts eight PASSes and sees nothing else would
+conclude the candidate is cleared.
+
+`board_authorization: NOT_REQUESTED`. No SD write, no deploy, no UART campaign
+has been performed or attempted.
+
+## The anchor
+
+This directory, with the state below, is the pre-board anchor. It is fixed
+*before* any board authorization is sought, so that it records what was known in
+advance rather than being written up afterwards.
+
+| | |
+| --- | --- |
+| Task 6/7/8 on canonical artifacts | PASS |
+| Task 11 | `REQUALIFIED_TO_MANIFEST_PENDING_DEPLOYMENT` |
+| Task 14A collector mechanics | PASS |
+| Task 14B final positive path | `BLOCKED_PENDING_DEPLOYMENT` |
+| `deployment_verified` | `False` — not a PASS |
+| V15 board work | NOT AUTHORIZED |
+| Production `END_ONLY` | FROZEN |
+| MLEK | BLOCKED |
