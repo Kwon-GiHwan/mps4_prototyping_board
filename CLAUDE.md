@@ -114,6 +114,25 @@ normalize(parsed, cell_context)     -> NormalizedRecord   + static/derived facts
 A parser that reads a manifest has re-mixed the provenances. See
 `docs/superpowers/plans/2026-08-21-*-amendment-2.md`.
 
+## Where the work stands
+
+V13, V14 and V15 are closed. `v15-frozen` is the final tag; the closing state is
+`docs/superpowers/evidence/v15-campaign-20260823/CLOSING_STATEMENT.md` and the
+combined narrative is `docs/superpowers/evidence/V13_V15_CHARACTERIZATION.md`.
+
+Further completion-observability board work is **not recommended** — the
+question is characterized as far as the observation boundary allows.
+
+Two claims that look available and are not:
+
+- **The V14 Q floor (732) minus the V15 S5 floor (754) is not a result.**
+  `RULE_CROSS_VARIANT_ABSOLUTE_COMPARISON` refuses it, and the vocabulary guard
+  refuses the sentence. `Q_S5_EQUIVALENT` means the control structures are
+  matched, not that counts against two different MMIO observables share an axis.
+- **"Falsified as a necessary condition" is not "falsified."** The structure no
+  longer *requires* QREAD; whether Q and S5 share a mechanism is
+  `NOT ESTABLISHED`.
+
 ## Standing constraints
 
 - Pushing to `origin/main` — **HOLD**.
