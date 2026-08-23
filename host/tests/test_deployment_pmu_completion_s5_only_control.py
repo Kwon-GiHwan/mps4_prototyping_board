@@ -131,6 +131,26 @@ class TheHappyPathIssuesAContext(unittest.TestCase):
         self.assertEqual(context.manifest_sha256, deploy.document_digest(man))
         self.assertNotEqual(context.manifest_sha256, man[deploy.MANIFEST_SELF_HASH_KEY])
 
+    def test_the_preflight_and_the_context_agree_about_the_manifest_digest(self):
+        # They report it under the same name, so reporting different values --
+        # the self-hash in one and the external digest in the other -- would
+        # make a preflight and a context look like they saw different documents.
+        equiv, stat, man = chain_of()
+        chain_result = deploy.verify_evidence_chain(man, equiv, stat)
+        context = open_cell(equiv, stat, man)
+        self.assertEqual(chain_result["manifest_sha256"], context.manifest_sha256)
+        self.assertEqual(chain_result["manifest_sha256"], deploy.document_digest(man))
+
+    def test_the_self_hash_is_reported_separately_rather_than_conflated(self):
+        equiv, stat, man = chain_of()
+        chain_result = deploy.verify_evidence_chain(man, equiv, stat)
+        self.assertEqual(
+            chain_result["manifest_self_hash"], man[deploy.MANIFEST_SELF_HASH_KEY]
+        )
+        self.assertNotEqual(
+            chain_result["manifest_self_hash"], chain_result["manifest_sha256"]
+        )
+
     def test_candidate_identity_is_computed_not_chosen(self):
         equiv, stat, man = chain_of()
         other_equiv, other_stat, other_man = chain_of(

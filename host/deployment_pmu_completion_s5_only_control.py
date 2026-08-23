@@ -511,7 +511,13 @@ def verify_evidence_chain(manifest: dict, equivalence_evidence: dict,
     document = verify_manifest(manifest)
     mode = _check_evidence_binding(manifest, equivalence_evidence, static_evidence)
     return {
-        "manifest_sha256": document["manifest_sha256"],
+        # The same digest a cell context carries: taken over the finished
+        # manifest from outside it. verify_manifest also returns the manifest's
+        # own self-hash, which is a different value for a different purpose --
+        # reporting that one here under this name would make a preflight and a
+        # context disagree about the identity of one document.
+        "manifest_sha256": document_digest(manifest),
+        "manifest_self_hash": document["manifest_sha256"],
         "comparison_mode": mode,
         "analysis_elf_sha256": manifest["analysis_elf_sha256"],
         "candidate_identity": candidate_identity(manifest),
