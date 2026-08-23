@@ -41,6 +41,8 @@ def appendix(**overrides):
     values["t_primary_entry"] = 1100
     values["t_first_observation"] = 1732
     values["primary_iterations"] = 7
+    values["primary_result"] = wire.PRIMARY_OBSERVED
+    values["convergence_result"] = wire.CONVERGENCE_SUCCESS
     values["first_status"] = wire.STATUS_CMD_END
     values["first_cmd_end_reached"] = 1
     values["mailbox_valid"] = wire.MAILBOX_VALID
@@ -115,7 +117,10 @@ class WireFieldsTravelUnchanged(unittest.TestCase):
 
     def test_the_header_fields_come_from_the_header(self):
         record = normalizer.normalize(parsed(), context())
-        self.assertEqual(record.fields["schema_version"], 15)
+        # Amendment 4: the wire schema is 14. 15 is the qualification
+        # generation and never appears in a frame.
+        self.assertEqual(record.fields["schema_version"], wire.SCHEMA_VERSION)
+        self.assertEqual(record.fields["schema_version"], 14)
         self.assertEqual(record.fields["run_sequence"], 3)
         self.assertEqual(record.origin_of("run_sequence"), contract.WIRE_HEADER)
 
@@ -126,14 +131,24 @@ class WireFieldsTravelUnchanged(unittest.TestCase):
         self.assertEqual(record.fields["mailbox_magic"], wire.MAILBOX_VALID)
         self.assertEqual(record.origin_of("mailbox_magic"), contract.WIRE_APPENDIX)
 
-    def test_the_legacy_magic_does_not_make_this_a_v14_record(self):
-        # 0x5631344D spells "V14M". It marks a filled-in appendix and is not a
-        # schema, a build or an image identity.
+    def test_the_frame_does_not_establish_which_experiment_produced_it(self):
+        # Amendment 4, learned from a live frame. The wire schema is 14, the
+        # mailbox marker is "V14M", the geometry and appendix are V14's. A V15
+        # frame is shaped exactly like a V14 frame, so nothing in it says which
+        # experiment ran. Amendment 2 claimed schema_version did; it does not.
         record = normalizer.normalize(parsed(), context())
         self.assertEqual(record.fields["mailbox_magic"], 0x5631344D)
-        self.assertEqual(record.fields["schema_version"], 15)
+        self.assertEqual(record.fields["schema_version"], 14)
+        self.assertFalse(contract.FRAME_ESTABLISHES_EXPERIMENT_IDENTITY)
+        self.assertEqual(contract.EXPERIMENT_IDENTITY_AUTHORITY, "VerifiedCellContext")
+
+    def test_experiment_identity_comes_from_the_context_instead(self):
+        # build_id is not in the frame either; it reaches the record from the
+        # cell context, which is where experiment identity now lives.
+        record = normalizer.normalize(parsed(), context())
         self.assertEqual(record.fields["build_id"], contract.BUILD_ID)
-        self.assertNotEqual(record.fields["build_id"], 0x34314950)
+        self.assertEqual(record.origin_of("build_id"), contract.STATIC_IMAGE_EVIDENCE)
+        self.assertNotIn("build_id", wire.ParsedFrame.__dataclass_fields__)
 
 
 class StaticFieldsComeFromTheContext(unittest.TestCase):
@@ -241,7 +256,7 @@ class ClassificationNamesWhyASampleDoesNotCount(unittest.TestCase):
 
     def test_a_primary_timeout_is_invalid_and_says_so(self):
         sample = normalizer.classify(
-            normalizer.normalize(parsed(primary_result=3), context())
+            normalizer.normalize(parsed(primary_result=wire.PRIMARY_TIMEOUT), context())
         )
         self.assertFalse(sample["sample_valid"])
         self.assertIn(normalizer.INVALID_PRIMARY_FAILED, sample["invalid_reasons"])
@@ -264,12 +279,12 @@ class ClassificationNamesWhyASampleDoesNotCount(unittest.TestCase):
 
     def test_every_invalid_reason_is_reachable(self):
         cases = (
-            (dict(primary_result=3), normalizer.INVALID_PRIMARY_FAILED),
+            (dict(primary_result=wire.PRIMARY_TIMEOUT), normalizer.INVALID_PRIMARY_FAILED),
             (dict(first_status=0, first_cmd_end_reached=0),
              normalizer.INVALID_CMD_END_NOT_OBSERVED),
             (dict(first_status=wire.STATUS_CMD_END | 0x100),
              normalizer.INVALID_FAULT_BITS),
-            (dict(convergence_result=6), normalizer.INVALID_CONVERGENCE_FAILED),
+            (dict(convergence_result=wire.CONVERGENCE_TIMEOUT), normalizer.INVALID_CONVERGENCE_FAILED),
             (dict(nvic_pending_after_final_clear=1), normalizer.INVALID_CLEANUP_FAILED),
             (dict(failure_phase=2), normalizer.INVALID_FAILURE_RECORDED),
         )
@@ -346,7 +361,7 @@ class TheChainRunsFromBytesToAVerdict(unittest.TestCase):
             normalizer.normalize(parsed(t_first_observation=1732), cell)
         )
         bad = normalizer.classify(
-            normalizer.normalize(parsed(t_first_observation=1100, primary_result=3), cell)
+            normalizer.normalize(parsed(t_first_observation=1100, primary_result=wire.PRIMARY_TIMEOUT), cell)
         )
         self.assertTrue(good["sample_valid"])
         self.assertFalse(bad["sample_valid"])

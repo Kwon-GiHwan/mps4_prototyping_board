@@ -38,6 +38,8 @@ def frame(run_id, cycles=732, **overrides):
     values["t_first_observation"] = 1000 + cycles
     values["t_primary_entry"] = 1100
     values["primary_iterations"] = 7
+    values["primary_result"] = wire.PRIMARY_OBSERVED
+    values["convergence_result"] = wire.CONVERGENCE_SUCCESS
     values["first_status"] = wire.STATUS_CMD_END
     values["first_cmd_end_reached"] = 1
     values["mailbox_valid"] = wire.MAILBOX_VALID
@@ -120,7 +122,7 @@ class AnUnacceptableRunEndsTheAttempt(unittest.TestCase):
         cell = collector.Cell(context())
         fill(cell, count=4)
         with self.assertRaises(collector.CollectorError) as caught:
-            cell.record(frame(5, primary_result=3))
+            cell.record(frame(5, primary_result=wire.PRIMARY_TIMEOUT))
         self.assertEqual(
             collector.refusal_rule(caught.exception),
             collector.RULE_INVALID_SAMPLE_ENDS_ATTEMPT,
@@ -132,7 +134,7 @@ class AnUnacceptableRunEndsTheAttempt(unittest.TestCase):
         cell = collector.Cell(context())
         fill(cell, count=4)
         try:
-            cell.record(frame(5, primary_result=3))
+            cell.record(frame(5, primary_result=wire.PRIMARY_TIMEOUT))
         except collector.CollectorError:
             pass
         for attempt in range(6):
@@ -303,12 +305,12 @@ class EveryRuleHasAFixture(unittest.TestCase):
 
         def invalid_run():
             cell = collector.Cell(context())
-            cell.record(frame(1, primary_result=3))
+            cell.record(frame(1, primary_result=wire.PRIMARY_TIMEOUT))
 
         def attempt_over():
             cell = collector.Cell(context())
             try:
-                cell.record(frame(1, primary_result=3))
+                cell.record(frame(1, primary_result=wire.PRIMARY_TIMEOUT))
             except collector.CollectorError:
                 pass
             cell.record(frame(1))

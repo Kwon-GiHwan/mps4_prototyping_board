@@ -98,6 +98,23 @@ class TheSixOutcomesAreReachable(unittest.TestCase):
         self.assertEqual(analyzer.analyze(campaign(boots))["outcome"], "S6")
 
 
+class TheQualificationFrameIsNotCampaignData(unittest.TestCase):
+    def test_a_qualification_boot_in_a_campaign_is_refused(self):
+        # The one live run exists to show the transport works. Counting it as a
+        # measurement is how "just one run to check" turns into a sample.
+        boots = [dict(S1_BOOTS[0]), S1_BOOTS[1], S1_BOOTS[2]]
+        boots[0]["boot_id"] = "v15-qualification-20260823-%s" % contract.QUALIFICATION_BOOT_MARKER
+        with self.assertRaises(analyzer.AnalysisError) as caught:
+            analyzer.analyze(campaign(boots))
+        self.assertEqual(
+            analyzer.refusal_rule(caught.exception),
+            analyzer.RULE_QUALIFICATION_FRAME_IN_CAMPAIGN,
+        )
+
+    def test_an_ordinary_campaign_is_unaffected(self):
+        self.assertEqual(analyzer.analyze(campaign(S1_BOOTS))["outcome"], "S1")
+
+
 class TheFloorIsDefinedNotJudged(unittest.TestCase):
     def test_a_floor_must_be_the_minimum_of_every_boot_separately(self):
         # One boot never reaching the others' minimum means no reproduced floor,

@@ -22,6 +22,7 @@ declarations have to be kept equal. Nothing here zips names onto words --
 
 from __future__ import annotations
 
+import re
 import struct
 from dataclasses import dataclass, field
 
@@ -33,7 +34,13 @@ except ModuleNotFoundError:  # pragma: no cover - direct script fallback
 ProtocolError = v8.ProtocolError
 
 NAME = "PMU_COMPLETION_S5_ONLY_CONTROL_V15"
-SCHEMA_VERSION = 15
+
+# Amendment 4: the wire ABI version, as the firmware actually emits it. The
+# generated C defines PMU_DIAG_SCHEMA_VERSION as 14U and static-asserts it, and
+# this parser previously read 15 -- so it rejected every real frame the board
+# produced. 15 is the qualification generation and is not a wire number.
+SCHEMA_VERSION = 14
+QUALIFICATION_GENERATION = 15
 BUILD_ID = 0x49503531                                   # 'IP51', manifest-side
 MAGIC = v8.PMU_DIAG_MAGIC
 
@@ -90,6 +97,36 @@ APPENDIX_FIELDS = (
     "mailbox_valid",
 )
 
+# The result encodings the firmware actually writes into the mailbox. These are
+# NOT the runner's VENDOR_RETURN codes, and assuming they were is what made the
+# classifier read a successful run as a failed one: VENDOR_RETURN has SUCCESS=0,
+# while here 0 means the phase never ran. Verified against the emitted C by
+# verify_result_enums rather than transcribed and trusted.
+PRIMARY_NOT_RUN = 0
+PRIMARY_OBSERVED = 1
+PRIMARY_TIMEOUT = 2
+PRIMARY_RESET = 3
+PRIMARY_FAULT = 4
+
+CONVERGENCE_NOT_RUN = 0
+CONVERGENCE_SUCCESS = 1
+CONVERGENCE_TIMEOUT = 2
+CONVERGENCE_RESET = 3
+CONVERGENCE_FAULT = 4
+
+RESULT_ENUMS = {
+    "V15_PRIMARY_NOT_RUN": PRIMARY_NOT_RUN,
+    "V15_PRIMARY_OBSERVED": PRIMARY_OBSERVED,
+    "V15_PRIMARY_TIMEOUT": PRIMARY_TIMEOUT,
+    "V15_PRIMARY_RESET": PRIMARY_RESET,
+    "V15_PRIMARY_FAULT": PRIMARY_FAULT,
+    "V15_CONVERGENCE_NOT_RUN": CONVERGENCE_NOT_RUN,
+    "V15_CONVERGENCE_SUCCESS": CONVERGENCE_SUCCESS,
+    "V15_CONVERGENCE_TIMEOUT": CONVERGENCE_TIMEOUT,
+    "V15_CONVERGENCE_RESET": CONVERGENCE_RESET,
+    "V15_CONVERGENCE_FAULT": CONVERGENCE_FAULT,
+}
+
 STATUS_STATE = 0x001
 STATUS_IRQ_RAISED = 0x002
 STATUS_RESET = 0x008
@@ -97,50 +134,142 @@ STATUS_CMD_END = 0x020
 STATUS_FAULT_MASK = 0x314
 
 
-def verify_wire_contract() -> dict:
-    """This module's appendix against the firmware generator's, name for name."""
+GENERATED_RUNNER_EVIDENCE = (
+    "docs/superpowers/evidence/v15-wire-contract-20260823/"
+    "generated_runner_pmu_diag_main.c"
+)
 
-    import os
-    import sys
 
-    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    firmware = os.path.join(root, "firmware")
-    if firmware not in sys.path:
-        sys.path.insert(0, firmware)
-    from patches import patch_pmu_completion_s5_only_control_source as generator
+def emitted_wire_contract(generated_c: str) -> dict:
+    """What the compiled firmware says about the wire, read out of its own C.
 
-    theirs = tuple(generator.APPENDIX_FIELDS)
-    if len(theirs) != APPENDIX_WORDS:
+    This exists because the previous check did not do it. It compared the
+    generator's Python constant SCHEMA_VERSION against this module's, found 15
+    on both sides, and passed -- while the C those same files emit defines the
+    schema as 14. Two host-side declarations descended from one assumption are
+    not two independent declarations, and a live frame proved it.
+
+    So the authority here is the generated source that was actually compiled,
+    parsed for the values the firmware will put on the wire.
+    """
+
+    block = re.search(
+        r"#if defined\(PMU_QUAL_SCHEMA_V15\)(.*?)#elif", generated_c, re.S
+    )
+    if not block:
         raise ProtocolError(
-            "the firmware generator emits %d appendix words, this parser reads %d"
-            % (len(theirs), APPENDIX_WORDS)
+            "the generated source carries no PMU_QUAL_SCHEMA_V15 block, so nothing "
+            "here describes what the firmware emits"
         )
-    if theirs != APPENDIX_FIELDS:
-        differing = [
-            "word %d: firmware %r, parser %r" % (index, a, b)
-            for index, (a, b) in enumerate(zip(theirs, APPENDIX_FIELDS))
-            if a != b
-        ]
-        raise ProtocolError(
-            "the appendix order does not match the firmware's: %s"
-            % ("; ".join(differing) or "same names, different order")
-        )
-    if generator.SCHEMA_VERSION != SCHEMA_VERSION:
-        raise ProtocolError(
-            "the firmware generator emits schema %d, this parser reads %d"
-            % (generator.SCHEMA_VERSION, SCHEMA_VERSION)
-        )
-    if generator.BUILD_ID != BUILD_ID:
-        raise ProtocolError(
-            "the firmware generator declares build 0x%08X, this parser expects 0x%08X"
-            % (generator.BUILD_ID, BUILD_ID)
-        )
+    head = block.group(1)
+
+    schema = re.search(r"#define\s+PMU_DIAG_SCHEMA_VERSION\s+(\d+)U", head)
+    if not schema:
+        raise ProtocolError("the V15 block defines no PMU_DIAG_SCHEMA_VERSION")
+
+    words = re.search(r"#define\s+V15_APPENDIX_WORDS\s+(\d+)U", head)
+    magic = re.search(r"#define\s+V15_MAILBOX_VALID\s+0x([0-9A-Fa-f]+)U", head)
+
+    asserted = re.search(
+        r"_Static_assert\(PMU_DIAG_SCHEMA_VERSION == (\d+)U", generated_c
+    )
+
+    # The appendix as the firmware fills it: mailbox index -> record field.
+    assigns = re.findall(
+        r"d\.(\w+)\s*=\s*pmu_completion_visibility_v15_mailbox\[(\d+)\]", generated_c
+    )
+    by_index = {}
+    for field, index in assigns:
+        by_index[int(index)] = field
+
     return {
-        "appendix_words": APPENDIX_WORDS,
-        "firmware_appendix_words": len(theirs),
-        "tuples_equal": True,
-        "schema_version": SCHEMA_VERSION,
+        "schema_version": int(schema.group(1)),
+        "schema_version_asserted": int(asserted.group(1)) if asserted else None,
+        "appendix_words": int(words.group(1)) if words else None,
+        "mailbox_valid": int(magic.group(1), 16) if magic else None,
+        "appendix_by_index": by_index,
     }
+
+
+def verify_wire_contract(generated_c: str) -> dict:
+    """This module's wire declarations against the firmware's own emitted C.
+
+    Not against the generator's Python constants. That is the check that let a
+    schema mismatch reach the board.
+    """
+
+    emitted = emitted_wire_contract(generated_c)
+
+    if emitted["schema_version"] != SCHEMA_VERSION:
+        raise ProtocolError(
+            "the firmware emits wire schema %d and this parser reads %d"
+            % (emitted["schema_version"], SCHEMA_VERSION)
+        )
+    if emitted["schema_version_asserted"] not in (None, SCHEMA_VERSION):
+        raise ProtocolError(
+            "the firmware static-asserts wire schema %d and this parser reads %d"
+            % (emitted["schema_version_asserted"], SCHEMA_VERSION)
+        )
+    if emitted["appendix_words"] not in (None, APPENDIX_WORDS):
+        raise ProtocolError(
+            "the firmware emits %d appendix words, this parser reads %d"
+            % (emitted["appendix_words"], APPENDIX_WORDS)
+        )
+    if emitted["mailbox_valid"] not in (None, MAILBOX_VALID):
+        raise ProtocolError(
+            "the firmware writes mailbox magic 0x%08X, this parser expects 0x%08X"
+            % (emitted["mailbox_valid"], MAILBOX_VALID)
+        )
+
+    by_index = emitted["appendix_by_index"]
+    if by_index:
+        if len(by_index) != APPENDIX_WORDS:
+            raise ProtocolError(
+                "the firmware fills %d appendix slots and this parser names %d"
+                % (len(by_index), APPENDIX_WORDS)
+            )
+        for index in range(APPENDIX_WORDS):
+            if index not in by_index:
+                raise ProtocolError("the firmware fills no appendix slot %d" % index)
+            if by_index[index] != APPENDIX_FIELDS[index]:
+                raise ProtocolError(
+                    "appendix word %d: the firmware writes %r, this parser names %r"
+                    % (index, by_index[index], APPENDIX_FIELDS[index])
+                )
+
+    return {
+        "source": "emitted firmware C",
+        "wire_schema_version": SCHEMA_VERSION,
+        "appendix_words": APPENDIX_WORDS,
+        "appendix_order_verified": bool(by_index),
+        "mailbox_valid": "0x%08X" % MAILBOX_VALID,
+    }
+
+
+def verify_result_enums(generated_u85_c: str) -> dict:
+    """The host's result encodings against the firmware's own #defines.
+
+    Nothing here is transcribed on trust. The classifier read a successful run
+    as a failed one because it borrowed VENDOR_RETURN, where SUCCESS is 0, while
+    the firmware writes 0 for a phase that never ran.
+    """
+
+    found = {}
+    for name in RESULT_ENUMS:
+        match = re.search(r"#define\s+%s\s+(\d+)U" % re.escape(name), generated_u85_c)
+        if not match:
+            raise ProtocolError(
+                "the emitted firmware defines no %s, so this host constant describes "
+                "nothing" % name
+            )
+        found[name] = int(match.group(1))
+    wrong = {n: (found[n], RESULT_ENUMS[n]) for n in RESULT_ENUMS if found[n] != RESULT_ENUMS[n]}
+    if wrong:
+        name, (theirs, ours) = sorted(wrong.items())[0]
+        raise ProtocolError(
+            "%s is %d in the firmware and %d here" % (name, theirs, ours)
+        )
+    return {"result_enums_checked": len(found), "source": "emitted firmware C"}
 
 
 def verify_record_field_origins() -> dict:

@@ -45,7 +45,12 @@ RULES = (
     "RULE_RECORD_FIELD_MISSING",
 )
 
-VENDOR_SUCCESS = 0
+# Amendment 4: these come from the firmware's own encoding, not from the
+# runner's VENDOR_RETURN table. Borrowing that table -- where SUCCESS is 0 --
+# made a successful run classify as failed, and made a phase that never ran
+# classify as successful. The firmware writes 0 for NOT_RUN and 1 for success.
+PRIMARY_SUCCESS = wire.PRIMARY_OBSERVED
+CONVERGENCE_SUCCESS = wire.CONVERGENCE_SUCCESS
 CLEANUP_PASS = 0
 CLEANUP_FAIL = 1
 
@@ -213,13 +218,13 @@ def classify(record: NormalizedRecord) -> dict:
 
     fields = record.fields
     reasons = []
-    if fields["primary_result"] != VENDOR_SUCCESS:
+    if fields["primary_result"] != PRIMARY_SUCCESS:
         reasons.append(INVALID_PRIMARY_FAILED)
     if not fields["cmd_end_reached_observed"]:
         reasons.append(INVALID_CMD_END_NOT_OBSERVED)
     if fields["status_at_success"] & wire.STATUS_FAULT_MASK:
         reasons.append(INVALID_FAULT_BITS)
-    if fields["convergence_result"] != VENDOR_SUCCESS:
+    if fields["convergence_result"] != CONVERGENCE_SUCCESS:
         reasons.append(INVALID_CONVERGENCE_FAILED)
     if fields["cleanup_result"] != CLEANUP_PASS:
         reasons.append(INVALID_CLEANUP_FAILED)

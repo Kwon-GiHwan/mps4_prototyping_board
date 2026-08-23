@@ -11,6 +11,7 @@ tuple, and a provenance declaration that claims the wire carries something it
 does not.
 """
 
+import pathlib
 import struct
 import unittest
 from unittest import mock
@@ -22,6 +23,13 @@ from unittest import mock
 from host import contract_pmu_completion_s5_only_control as contract
 from host import runner_proto as v8
 from host import runner_proto_pmu_completion_s5_only_control as v15
+
+
+GENERATED_C = (
+    pathlib.Path(__file__).resolve().parents[2]
+    / "docs/superpowers/evidence/v15-wire-contract-20260823"
+    / "generated_runner_pmu_diag_main.c"
+).read_text()
 
 
 def appendix_words(**overrides):
@@ -68,11 +76,111 @@ def frame(appendix=None, schema=v15.SCHEMA_VERSION, seq=1, rc=0, magic=None,
 
 
 class TheWireContractIsTheFirmwares(unittest.TestCase):
-    def test_the_parser_tuple_equals_the_firmware_tuple(self):
-        document = v15.verify_wire_contract()
-        self.assertTrue(document["tuples_equal"])
+    def test_the_contract_is_checked_against_the_emitted_firmware_c(self):
+        # Amendment 4. This used to compare the generator's Python constant
+        # against this module's, found 15 on both sides, and passed -- while the
+        # C those files emit says 14. Two declarations sharing one assumption are
+        # not two declarations. The authority is now the compiled source.
+        document = v15.verify_wire_contract(GENERATED_C)
+        self.assertEqual(document["source"], "emitted firmware C")
+        self.assertEqual(document["wire_schema_version"], 14)
         self.assertEqual(document["appendix_words"], 34)
-        self.assertEqual(document["firmware_appendix_words"], 34)
+        self.assertTrue(document["appendix_order_verified"])
+
+    def test_the_emitted_c_says_schema_fourteen(self):
+        emitted = v15.emitted_wire_contract(GENERATED_C)
+        self.assertEqual(emitted["schema_version"], 14)
+        self.assertEqual(emitted["schema_version_asserted"], 14)
+        self.assertEqual(emitted["appendix_words"], 34)
+        self.assertEqual(emitted["mailbox_valid"], v15.MAILBOX_VALID)
+
+    def test_every_appendix_slot_is_checked_against_the_firmwares_own_writes(self):
+        emitted = v15.emitted_wire_contract(GENERATED_C)
+        self.assertEqual(len(emitted["appendix_by_index"]), 34)
+        for index, name in enumerate(v15.APPENDIX_FIELDS):
+            self.assertEqual(emitted["appendix_by_index"][index], name, index)
+
+    def _c_with(self, **repl):
+        """The real emitted C with one thing changed, so one branch is reached."""
+        text = GENERATED_C
+        for old, new in repl.items():
+            text = text.replace(old.replace("__", " "), new.replace("__", " "), 1)
+        return text
+
+    def test_a_define_disagreeing_with_this_parser_is_refused(self):
+        # Only the #define moves; the static assert is left alone, so this
+        # reaches the define branch rather than the assert branch.
+        c = GENERATED_C.replace("#define PMU_DIAG_SCHEMA_VERSION 14U",
+                                "#define PMU_DIAG_SCHEMA_VERSION 12U", 1)
+        with self.assertRaises(v8.ProtocolError) as caught:
+            v15.verify_wire_contract(c)
+        self.assertIn("emits wire schema 12", "%s" % caught.exception)
+
+    def test_a_static_assert_disagreeing_with_the_define_is_refused(self):
+        # The define stays at 14 and only the assert moves, so this reaches the
+        # assert branch. A firmware whose define and assert disagree is one
+        # nobody should trust either half of.
+        c = GENERATED_C.replace("_Static_assert(PMU_DIAG_SCHEMA_VERSION == 14U",
+                                "_Static_assert(PMU_DIAG_SCHEMA_VERSION == 13U", 1)
+        with self.assertRaises(v8.ProtocolError) as caught:
+            v15.verify_wire_contract(c)
+        self.assertIn("static-asserts wire schema 13", "%s" % caught.exception)
+
+    def test_a_firmware_filling_fewer_appendix_slots_is_refused(self):
+        c = GENERATED_C.replace(
+            "d.mailbox_valid = pmu_completion_visibility_v15_mailbox[33];", "", 1)
+        with self.assertRaises(v8.ProtocolError) as caught:
+            v15.verify_wire_contract(c)
+        self.assertIn("appendix slots", "%s" % caught.exception)
+
+    def test_a_different_mailbox_magic_in_the_firmware_is_refused(self):
+        c = GENERATED_C.replace("#define V15_MAILBOX_VALID 0x5631344DU",
+                                "#define V15_MAILBOX_VALID 0xDEADBEEFU", 1)
+        with self.assertRaises(v8.ProtocolError) as caught:
+            v15.verify_wire_contract(c)
+        self.assertIn("mailbox magic", "%s" % caught.exception)
+
+    def test_a_different_appendix_word_count_in_the_firmware_is_refused(self):
+        c = GENERATED_C.replace("#define V15_APPENDIX_WORDS 34U",
+                                "#define V15_APPENDIX_WORDS 33U", 1)
+        with self.assertRaises(v8.ProtocolError) as caught:
+            v15.verify_wire_contract(c)
+        self.assertIn("appendix words", "%s" % caught.exception)
+
+    def test_a_result_enum_disagreeing_with_the_firmware_is_refused(self):
+        # The defect that made a successful run classify as failed, as a
+        # regression: the host's success value must be the firmware's.
+        vendor = (
+            pathlib.Path(__file__).resolve().parents[2]
+            / "docs/superpowers/evidence/v15-wire-contract-20260823/generated_u85.c"
+        ).read_text()
+        moved = vendor.replace("#define V15_PRIMARY_OBSERVED 1U",
+                               "#define V15_PRIMARY_OBSERVED 7U", 1)
+        with self.assertRaises(v8.ProtocolError) as caught:
+            v15.verify_result_enums(moved)
+        self.assertIn("V15_PRIMARY_OBSERVED", "%s" % caught.exception)
+
+    def test_the_result_enums_match_the_firmware_today(self):
+        vendor = (
+            pathlib.Path(__file__).resolve().parents[2]
+            / "docs/superpowers/evidence/v15-wire-contract-20260823/generated_u85.c"
+        ).read_text()
+        self.assertEqual(v15.verify_result_enums(vendor)["result_enums_checked"], 10)
+        self.assertEqual(v15.PRIMARY_OBSERVED, 1)
+        self.assertEqual(v15.CONVERGENCE_SUCCESS, 1)
+        self.assertEqual(v15.PRIMARY_NOT_RUN, 0)
+
+    def test_a_missing_result_enum_is_refused(self):
+        with self.assertRaises(v8.ProtocolError):
+            v15.verify_result_enums("/* nothing */")
+
+    def test_a_host_parser_reading_schema_fifteen_would_be_refused(self):
+        # The defect itself, as a regression: a parser that reads 15 cannot read
+        # the firmware's frames, and the contract check must say so.
+        with mock.patch.object(v15, "SCHEMA_VERSION", 15):
+            with self.assertRaises(v8.ProtocolError) as caught:
+                v15.verify_wire_contract(GENERATED_C)
+        self.assertIn("14", "%s" % caught.exception)
 
     def test_geometry_is_eight_plus_eightyfive_plus_thirtyfour(self):
         self.assertEqual(v15.HEADER_WORDS, 8)
@@ -83,7 +191,7 @@ class TheWireContractIsTheFirmwares(unittest.TestCase):
 
     def test_a_healthy_frame_parses(self):
         parsed = v15.parse_frame(frame())
-        self.assertEqual(parsed.schema_version, 15)
+        self.assertEqual(parsed.schema_version, 14)  # wire ABI, not the generation
         self.assertEqual(parsed.variant, "S5")
         self.assertEqual(parsed.primary_iterations, 7)
         self.assertEqual(parsed.mailbox_valid, v15.MAILBOX_VALID)
@@ -147,14 +255,14 @@ class N4TheHostMayNotReorderTheWire(unittest.TestCase):
         swapped[7], swapped[8] = swapped[8], swapped[7]
         with mock.patch.object(v15, "APPENDIX_FIELDS", tuple(swapped)):
             with self.assertRaises(v8.ProtocolError) as caught:
-                v15.verify_wire_contract()
-        self.assertIn("order", "%s" % caught.exception)
+                v15.verify_wire_contract(GENERATED_C)
+        self.assertIn("appendix word", "%s" % caught.exception)
 
     def test_dropping_a_name_fails_the_firmware_identity_gate(self):
         with mock.patch.object(v15, "APPENDIX_FIELDS", v15.APPENDIX_FIELDS[:-1]):
             with mock.patch.object(v15, "APPENDIX_WORDS", 33):
                 with self.assertRaises(v8.ProtocolError):
-                    v15.verify_wire_contract()
+                    v15.verify_wire_contract(GENERATED_C)
 
 
 class N5AndN6ProvenanceIsCheckedNotDeclared(unittest.TestCase):
@@ -209,10 +317,16 @@ class N5AndN6ProvenanceIsCheckedNotDeclared(unittest.TestCase):
 
 
 class TheFrameIsRefusedWhenItIsNotOurs(unittest.TestCase):
-    def test_a_schema_fourteen_frame_is_refused(self):
+    def test_a_schema_fifteen_frame_is_refused(self):
+        # 15 is the qualification generation and never appears on the wire, so a
+        # frame carrying it is not a frame this firmware produced.
         with self.assertRaises(v8.ProtocolError) as caught:
-            v15.parse_frame(frame(schema=14))
+            v15.parse_frame(frame(schema=15))
         self.assertIn("schema", "%s" % caught.exception)
+
+    def test_a_schema_eight_frame_is_refused(self):
+        with self.assertRaises(v8.ProtocolError):
+            v15.parse_frame(frame(schema=8))
 
     def test_a_frame_without_the_mailbox_magic_is_refused(self):
         with self.assertRaises(v8.ProtocolError):

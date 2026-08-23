@@ -16,7 +16,33 @@ check the refusal instead of trusting it.
 from __future__ import annotations
 
 EXPERIMENT_NAME = "PMU_COMPLETION_S5_ONLY_CONTROL"
-SCHEMA_VERSION = 15
+# Amendment 4. Two numbers that were one, and conflating them meant the host
+# parser could not read a single real frame from the board.
+#
+# The wire ABI version is what the firmware writes into the frame header, and it
+# is 14 -- the format genuinely is V14's: same 8-word header, same 85-word body,
+# same 34-word appendix, 127 words either way. "V15" was never a wire schema.
+#
+# The qualification generation is the experiment: the S5-only control, its
+# helper, its evidence and its manifest. It is 15 and it never appears on the
+# wire.
+WIRE_SCHEMA_VERSION = 14
+QUALIFICATION_GENERATION = 15
+
+# A schema-14 frame establishes the wire format and nothing about which
+# experiment produced it. V14 and V15 frames are shaped identically -- same
+# magic, same schema, same geometry, same appendix, same V14M mailbox marker --
+# so experiment identity comes from the VerifiedCellContext and from nowhere
+# else. Amendment 2 claimed schema_version told them apart; it does not.
+FRAME_ESTABLISHES_EXPERIMENT_IDENTITY = False
+EXPERIMENT_IDENTITY_AUTHORITY = "VerifiedCellContext"
+
+# The live E2E qualification run is not campaign data. Its boot carries this
+# marker so that a frame taken to prove the transport cannot later be counted as
+# a measurement -- which is the way a "just one run to check" becomes a sample.
+QUALIFICATION_BOOT_MARKER = "not-a-campaign-boot"
+
+SCHEMA_VERSION = QUALIFICATION_GENERATION
 
 # 'PI15' little-endian, in the family the earlier experiments used. Distinct from
 # V14's build id so a V14 frame can never be read as a V15 one.

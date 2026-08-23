@@ -19,12 +19,14 @@ RULE_OUTCOME_UNKNOWN = "RULE_OUTCOME_UNKNOWN"
 RULE_OUTCOME_NOT_PERMITTED = "RULE_OUTCOME_NOT_PERMITTED"
 RULE_POLL_COUNT_NOT_ADMITTED = "RULE_POLL_COUNT_NOT_ADMITTED"
 RULE_FORBIDDEN_VOCABULARY = "RULE_FORBIDDEN_VOCABULARY"
+RULE_QUALIFICATION_FRAME_IN_CAMPAIGN = "RULE_QUALIFICATION_FRAME_IN_CAMPAIGN"
 
 RULES = (
     "RULE_OUTCOME_UNKNOWN",
     "RULE_OUTCOME_NOT_PERMITTED",
     "RULE_POLL_COUNT_NOT_ADMITTED",
     "RULE_FORBIDDEN_VOCABULARY",
+    "RULE_QUALIFICATION_FRAME_IN_CAMPAIGN",
 )
 
 FLOOR_DEFINITION = (
@@ -120,6 +122,19 @@ def _boot_structure(entry: dict) -> dict:
 
 def analyze(campaign: dict) -> dict:
     """Which of the six this campaign is, and nothing beyond it."""
+
+    # A qualification boot is not a campaign boot. The frame taken to prove the
+    # transport was never a measurement, and this is what stops it becoming one
+    # by being carried along in a dataset.
+    for entry in campaign.get("boots", ()):
+        boot = "%s" % entry.get("boot_id", "")
+        if contract.QUALIFICATION_BOOT_MARKER in boot:
+            raise fail_rule(
+                RULE_QUALIFICATION_FRAME_IN_CAMPAIGN,
+                "boot %r is a live E2E qualification boot and its frames are not "
+                "campaign samples: they were taken to show the transport works, not "
+                "to measure anything" % boot,
+            )
 
     mode = campaign.get("comparison_mode")
     if mode not in contract.COMPARISON_MODES:
