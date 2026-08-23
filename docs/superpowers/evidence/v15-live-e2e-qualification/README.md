@@ -1,96 +1,88 @@
-# V15 live E2E qualification — one run, and what it found
+# V15 live E2E qualification — one run, two defects, path closed to the analyzer
 
 Authorized: exactly one `CB_RUN_PMU_DIAG` as a live E2E qualification probe.
 **Not a campaign sample.**
 
 ```
-formal_campaign_sample = false
-campaign_id            = none
-campaign_sample_count  = 0
-qualification_runs     = 1
+formal_campaign_sample = false      qualification_runs    = 1
+campaign_id            = none       campaign_sample_count = 0
 purpose                = LIVE_E2E_QUALIFICATION
 ```
 
-## Result: the production path does not close
+## What the run found
 
-The run succeeded. The board answered with a 508-byte frame and the independent
-re-read returned the same bytes. Then the production parser **rejected it**:
+The board answered with a 508-byte frame whose independent re-read matched. The
+production parser then rejected it, and the classifier misread it. Both were
+host defects; the firmware was correct throughout and was never redeployed.
 
-```
-unsupported schema 14: PMU_COMPLETION_S5_ONLY_CONTROL_V15 reads schema 15 only
-```
+**1. Wire schema.** The firmware writes 14; the host read 15 only. See
+Amendment 4. The check that should have caught it compared two host-side Python
+constants instead of the emitted C.
 
-| frame header | |
+**2. Result encoding, inverted.** The classifier used `VENDOR_SUCCESS = 0`.
+The firmware writes `0 = NOT_RUN`, `1 = OBSERVED/SUCCESS`. It would have
+rejected every valid run and accepted a phase that never ran. This run reported
+`primary_result = 1`, `convergence_result = 1` — **it succeeded**, and was being
+read as a failure.
+
+## The frame
+
+| | |
 | --- | --- |
-| magic | `0x31474450` — correct |
-| **schema_version** | **14** |
-| total_words | 127 |
-| header_words | 8 |
+| magic | `0x31474450` |
+| wire schema | 14 |
+| total words | 127 (508 bytes) |
+| variant_id | 1 (S5) |
 | run_sequence | 1 |
 | run_rc | 0 |
+| primary_result | 1 — `V15_PRIMARY_OBSERVED` |
+| convergence_result | 1 — `V15_CONVERGENCE_SUCCESS` |
+| first_cmd_end_reached | 1 |
+| mailbox_valid | `0x5631344D` |
 
-The deployed V15 firmware emits **schema 14** on the wire. The host V15 contract
-reads schema 15 only, so no real V15 frame can be parsed by it.
+No cycle or poll value has been read, interpreted, or carried into analysis.
 
-## Why nothing caught this before
+## Reprocessed through the corrected path
 
-The V15 generator carries a Python module constant `SCHEMA_VERSION = 15`, and
-that is what `verify_wire_contract()` compares against the parser's 15. But the
-C it emits says:
+Same frame, no redeploy, no second run:
 
-```c
-#if defined(PMU_QUAL_SCHEMA_V15)
-#define PMU_DIAG_SCHEMA_VERSION 14U
-...
-_Static_assert(PMU_DIAG_SCHEMA_VERSION == 14U,
-               "PMU_COMPLETION_VISIBILITY_DIAG_V15: schema must be 14");
+| stage | result |
+| --- | --- |
+| verified deployment context | `Q_S5_EQUIVALENT` |
+| parser | accepted |
+| collector | accepted, `sample_valid = True` |
+| normalized record | mode carried, origin `STATIC_IMAGE_EVIDENCE` |
+| classifier | valid |
+| **analyzer** | **refused — `RULE_CELL_INCOMPLETE`, 1 of 10** |
+
+The analyzer refusing is the correct behaviour, not a shortfall. No one-shot
+mode was added, the collector was not bypassed, and no cell was dressed up as
+complete.
+
+```
+TASK11 = LIVE_PATH_VERIFIED_PENDING_CAMPAIGN
 ```
 
-So the wire-contract check compared **two host-side Python constants** and never
-looked at what the firmware actually writes into the header. The appendix check
-next to it compares two Python name tuples and has the same blind spot.
+## Isolation
 
-And every V15 host test built its frames from `wire.SCHEMA_VERSION`, so both
-sides of every fixture came from the same wrong number. 245 tests agreed with
-themselves. This is the project's recurring defect in its purest form: a
-contract "verified" between two things that were never independent.
+`RULE_QUALIFICATION_FRAME_IN_CAMPAIGN` refuses any campaign containing a
+qualification boot. The boot id carries the marker, so this frame cannot be
+counted as a measurement later.
 
-## A documented claim that is false
-
-Amendment 2 states that *"schema_version is what separates a V15 frame from a
-V14 one, and it is checked before any appendix word is believed."*
-
-It does not. V15 emits 14. Together with the identical 34-word appendix, the
-identical 127-word geometry and the same `V14M` mailbox magic, **a V15 frame is
-shaped identically to a V14 frame** — there is no in-frame discriminator at all.
-
-This does not weaken the deployment binding, which is what actually ties frames
-to an image; it removes a claim that was resting on nothing.
-
-## Which side is wrong is not decided here
-
-The static assert requires 14 and names V15, and the wire format genuinely *is*
-V14's — same appendix, same geometry — so "schema 14" may describe the wire
-correctly while "15" is the qualification generation. Under that reading the
-host contract is the error. But `SCHEMA_VERSION = 15` was frozen at Task 1 and
-Amendment 2 reasoned from it, so this is a frozen-contract decision and was
-referred rather than taken.
+This boot is **not** a campaign boot. When the campaign is authorized it starts
+from a fresh full boot as formal Boot 1, `run_sequence 1..10`. The nine
+remaining runs are not to be taken here.
 
 ## State
 
 ```
-V15_DEPLOYED              YES
-SOURCE_DESTINATION_HASHES MATCH
+V15_DEPLOYED              YES        QUALIFICATION_RUNS 1
+SOURCE_DESTINATION_HASHES MATCH      CAMPAIGN_SAMPLES   0
 VERIFIED_CELL_CONTEXT     PRODUCTION_ISSUED
-QUALIFICATION_RUNS        1
-CAMPAIGN_SAMPLES          0
 V15_3x10_CAMPAIGN         NOT_STARTED
-TASK11                    LIVE_PATH_BLOCKED_AT_PARSER_SCHEMA_MISMATCH
 ```
 
-Task 11 is **not** `REQUALIFIED` and not `LIVE_PATH_VERIFIED`. The chain reaches
-the verified deployment context and stops at the parser.
+Candidate identity `0c3ac91a…` and manifest `4be8f268…` are unchanged by the
+correction, so the cell context did not need reissuing.
 
-No cycle or poll value from this frame has been read or interpreted.
-
-Board left closed: USB_OFF, `/dev/sdb*` absent, four UART ports free.
+Board closed: USB_OFF, `/dev/sdb*` absent, four UART ports free.
