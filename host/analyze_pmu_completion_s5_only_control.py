@@ -20,6 +20,7 @@ RULE_OUTCOME_NOT_PERMITTED = "RULE_OUTCOME_NOT_PERMITTED"
 RULE_POLL_COUNT_NOT_ADMITTED = "RULE_POLL_COUNT_NOT_ADMITTED"
 RULE_FORBIDDEN_VOCABULARY = "RULE_FORBIDDEN_VOCABULARY"
 RULE_QUALIFICATION_FRAME_IN_CAMPAIGN = "RULE_QUALIFICATION_FRAME_IN_CAMPAIGN"
+RULE_CROSS_VARIANT_ABSOLUTE_COMPARISON = "RULE_CROSS_VARIANT_ABSOLUTE_COMPARISON"
 
 RULES = (
     "RULE_OUTCOME_UNKNOWN",
@@ -27,6 +28,7 @@ RULES = (
     "RULE_POLL_COUNT_NOT_ADMITTED",
     "RULE_FORBIDDEN_VOCABULARY",
     "RULE_QUALIFICATION_FRAME_IN_CAMPAIGN",
+    "RULE_CROSS_VARIANT_ABSOLUTE_COMPARISON",
 )
 
 FLOOR_DEFINITION = (
@@ -39,6 +41,10 @@ FLOOR_DEFINITION = (
 # event, or one variant as faster than another. Checked against the analyzer's
 # own output rather than against a document.
 FORBIDDEN_TERMS = (
+    "cycles later than",
+    "cycles earlier than",
+    "cycles behind",
+    "cycles ahead of",
     "latency",
     "t_npu",
     "faster",
@@ -47,6 +53,20 @@ FORBIDDEN_TERMS = (
     "npu completion",
     "execution time",
 )
+
+
+# The measured floors, kept here so the refusal below can name them. They are
+# not for arithmetic.
+V14_Q_FLOOR_CYCLES = 732
+V15_S5_FLOOR_CYCLES = 754
+
+# What Q_S5_EQUIVALENT licenses and what it does not. It is evidence that the
+# two control structures are matched -- same loop shape, same instruction count,
+# same role sequence -- and it is not evidence that cycle counts taken against
+# two different MMIO observables lie on one physical latency axis. Subtracting
+# them produces a number with no established meaning.
+CROSS_VARIANT_COMPARISON_PERMITTED = "QUALITATIVE_STRUCTURE_ONLY"
+ABSOLUTE_CYCLE_COMPARISON_PERMITTED = False
 
 
 class AnalysisError(RuntimeError):
@@ -87,6 +107,25 @@ def emit(outcome: str, comparison_mode: str, decided_by: str | None = None) -> s
             "nothing: it may not decide an outcome",
         )
     return outcome
+
+
+def compare_across_variants(q_cycles: int, s5_cycles: int, *, kind: str) -> None:
+    """Refuse the subtraction, by name, because it is the tempting one.
+
+    754 - 732 = 22 is arithmetic anyone can do and it reads like a result: that
+    STATUS becomes visible 22 cycles after QREAD. It is not one. The two figures
+    were measured against different observables, and equivalence of the control
+    structures does not put them on a shared axis.
+    """
+
+    raise fail_rule(
+        RULE_CROSS_VARIANT_ABSOLUTE_COMPARISON,
+        "an absolute %s between the V14 Q floor (%d) and the V15 S5 floor (%d) is not "
+        "admitted: Q_S5_EQUIVALENT establishes that the controls are matched, not that "
+        "cycle counts against two different MMIO observables share a latency axis. "
+        "What the two campaigns support is %s"
+        % (kind, q_cycles, s5_cycles, CROSS_VARIANT_COMPARISON_PERMITTED),
+    )
 
 
 def narrate(outcome: str, text: str) -> str:

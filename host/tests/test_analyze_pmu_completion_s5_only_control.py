@@ -115,6 +115,55 @@ class TheQualificationFrameIsNotCampaignData(unittest.TestCase):
         self.assertEqual(analyzer.analyze(campaign(S1_BOOTS))["outcome"], "S1")
 
 
+class TheTwoFloorsMayNotBeSubtracted(unittest.TestCase):
+    def test_the_measured_floors_are_recorded(self):
+        # Real values: Q from the V14 campaign's thirty samples, S5 from V15's.
+        self.assertEqual(analyzer.V14_Q_FLOOR_CYCLES, 732)
+        self.assertEqual(analyzer.V15_S5_FLOOR_CYCLES, 754)
+
+    def test_a_difference_between_them_is_refused(self):
+        # 754 - 732 = 22 is arithmetic anyone can do and it reads like a result.
+        with self.assertRaises(analyzer.AnalysisError) as caught:
+            analyzer.compare_across_variants(
+                analyzer.V14_Q_FLOOR_CYCLES, analyzer.V15_S5_FLOOR_CYCLES,
+                kind="difference")
+        self.assertEqual(
+            analyzer.refusal_rule(caught.exception),
+            analyzer.RULE_CROSS_VARIANT_ABSOLUTE_COMPARISON,
+        )
+
+    def test_a_ratio_is_refused_the_same_way(self):
+        with self.assertRaises(analyzer.AnalysisError) as caught:
+            analyzer.compare_across_variants(732, 754, kind="ratio")
+        self.assertEqual(
+            analyzer.refusal_rule(caught.exception),
+            analyzer.RULE_CROSS_VARIANT_ABSOLUTE_COMPARISON,
+        )
+
+    def test_only_qualitative_structure_is_permitted(self):
+        self.assertFalse(analyzer.ABSOLUTE_CYCLE_COMPARISON_PERMITTED)
+        self.assertEqual(
+            analyzer.CROSS_VARIANT_COMPARISON_PERMITTED, "QUALITATIVE_STRUCTURE_ONLY"
+        )
+
+    def test_saying_one_observable_is_n_cycles_later_is_refused(self):
+        # The sentence the subtraction would license.
+        with self.assertRaises(analyzer.AnalysisError) as caught:
+            analyzer.narrate("S1", "STATUS becomes visible 22 cycles later than QREAD")
+        self.assertEqual(
+            analyzer.refusal_rule(caught.exception), analyzer.RULE_FORBIDDEN_VOCABULARY
+        )
+
+    def test_the_permitted_closing_sentence_passes(self):
+        text = analyzer.narrate(
+            "S1",
+            "the floor-plus-excursion structure reproduces under both single-register "
+            "completion observables, while the underlying mechanism and intrinsic "
+            "QREAD-versus-STATUS ordering remain unresolved",
+        )
+        self.assertIn("S1", text)
+
+
 class TheFloorIsDefinedNotJudged(unittest.TestCase):
     def test_a_floor_must_be_the_minimum_of_every_boot_separately(self):
         # One boot never reaching the others' minimum means no reproduced floor,
