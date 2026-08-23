@@ -53,23 +53,15 @@ class TheModeIsCarriedByEveryLayer(unittest.TestCase):
         # something the device never said.
         self.assertNotIn("parser", chain.LAYERS)
 
-    def test_the_end_to_end_claim_says_how_far_it_actually_got(self):
-        # Requalified against the real candidate up to the manifest, and no
-        # further: a mode that has not reached a run is not an end-to-end mode,
-        # and rounding that up is the thing the status exists to prevent.
-        self.assertIn("REQUALIFIED_TO_MANIFEST", chain.END_TO_END_STATUS)
-        self.assertIn("PENDING_DEPLOYMENT", chain.END_TO_END_STATUS)
+    def test_the_end_to_end_claim_is_closed_by_a_real_campaign(self):
+        # Closed only once the mode reached the analyzer's verdict on thirty
+        # real frames. Until then it said how far it had actually got.
+        self.assertEqual(chain.END_TO_END_STATUS, "E2E_REQUALIFIED")
+        self.assertIn("campaign", chain.REQUALIFICATION_EVIDENCE)
 
-    def test_the_requalified_and_pending_layers_are_disjoint_and_real(self):
-        for name in chain.REQUALIFIED_LAYERS + chain.PENDING_LAYERS:
-            self.assertIn(name, chain.LAYERS, name)
-        self.assertEqual(
-            set(chain.REQUALIFIED_LAYERS) & set(chain.PENDING_LAYERS), set()
-        )
-
-    def test_the_deployment_layer_is_still_pending(self):
-        self.assertIn("verified_deployment_context", chain.PENDING_LAYERS)
-        self.assertNotIn("verified_deployment_context", chain.REQUALIFIED_LAYERS)
+    def test_every_layer_is_requalified_and_none_is_pending(self):
+        self.assertEqual(tuple(chain.REQUALIFIED_LAYERS), chain.LAYERS)
+        self.assertEqual(chain.PENDING_LAYERS, ())
 
     def test_an_agreed_mode_resolves(self):
         document = chain.resolve(_layers(), _equivalence())

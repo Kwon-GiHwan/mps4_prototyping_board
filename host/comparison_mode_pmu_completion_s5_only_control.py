@@ -71,18 +71,13 @@ LAYERS = (
 # It stops short of a board. verified_deployment_context requires comparing what
 # was deployed against what landed, so the last two layers are not yet carrying
 # a mode that reached a run. The status says so rather than rounding up.
-END_TO_END_STATUS = "REQUALIFIED_TO_MANIFEST_PENDING_DEPLOYMENT"
-REQUALIFIED_LAYERS = (
-    "static_image_evidence",
-    "build_manifest",
-)
-PENDING_LAYERS = (
-    "verified_deployment_context",
-    "collector",
-)
-REQUALIFICATION_EVIDENCE = (
-    "docs/superpowers/evidence/v15-preboard-qualification-20260821"
-)
+END_TO_END_STATUS = "E2E_REQUALIFIED"
+# Closed 2026-08-23 by the formal campaign: thirty samples across three fresh
+# boots, the mode carried from static image evidence through to the analyzer's
+# verdict on real frames rather than synthetic dictionaries.
+REQUALIFIED_LAYERS = LAYERS
+PENDING_LAYERS = ()
+REQUALIFICATION_EVIDENCE = "docs/superpowers/evidence/v15-campaign-20260823"
 
 EQUIVALENCE_PASS = "PASS"
 EQUIVALENCE_FALLBACK = "FALLBACK_WITHIN_VARIANT"
