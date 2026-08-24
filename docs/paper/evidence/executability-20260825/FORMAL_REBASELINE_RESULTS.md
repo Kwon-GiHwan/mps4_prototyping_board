@@ -46,7 +46,7 @@ identities are kept side by side rather than one overwriting the other.
 
 ```
 paper-fvp-formal-presweep-anchor
-ANCHOR_DIGEST  eb3abec46147cc5376fa6c7dcf6dff90ded5f10be687d705d0687d87da7a25b2
+ANCHOR_DIGEST  5dae05d24d0e3fd87a7a4b964693c52b284055a47a7061046f40ea1efd40d8ef
 ```
 
 Binding: `E_primary = 74`, formal target 222, the 133-cell executability evidence
