@@ -31,16 +31,29 @@ Intersection of Vela support and FVP-stated support. **Not** a Cartesian product
 
 | # | platform | NPU | MAC configs | status |
 | --- | --- | --- | --- | --- |
-| C1 | SSE-300 | U55 | 32, 64, 128, 256 | **UNVERIFIED** — FVP does not state a range; boot-probe required |
-| C2 | SSE-300 | U65 | 256, 512 | **UNVERIFIED** — same |
+| C1 | SSE-300 | U55 | 32, 64, 128, 256 | **verified by capability probe** (512 rejected) |
+| C2 | SSE-300 | U65 | 256, 512 | **verified by capability probe** (128 and 1024 rejected) |
 | C3 | SSE-310 | U55 | 32, 64, 128, 256 | verified, both sides agree |
 | C4 | SSE-310 | U65 | 256, 512 | verified |
 | C5 | SSE-315 | U65 | 256, 512 | verified |
 | C6 | SSE-320 | U85 | 128, 256, 512, 1024, 2048 | verified |
 | **B1** | **MPS4 board** | **U85** | **1024 only** | verified from vendor config |
 
-**19 simulated platform × MAC configurations**, of which 13 are fully verified and
-6 (C1, C2) need a boot probe.
+**19 simulated platform × MAC configurations, all now verified.** The six C1/C2
+cells were resolved by capability probe on 2026-08-24: each candidate value was
+offered to the FVP and accepted or rejected at init time.
+
+### A nuance the probe exposed
+
+`FVP_Corstone_SSE-300_Ethos-U55` **accepts `num_macs=100`.** The FVP range-checks
+only the bounds; it does not validate the discrete set of legal MAC
+configurations. So *"the FVP accepted it"* is not sufficient evidence that a
+configuration is real.
+
+The authoritative discrete set is Vela's `--accelerator-config` enumeration. A
+configuration is valid only where **both** hold: Vela can target it, and the FVP
+accepts it. The 19 cells satisfy both. Nothing in the sweep may use a MAC value
+outside Vela's list merely because an FVP tolerates it.
 
 ### Two comparisons this inventory happens to enable
 
@@ -95,19 +108,56 @@ config, scaling efficiency (speedup ÷ MAC ratio), saturation point (first confi
 where efficiency falls below a threshold fixed **before** the sweep), and the
 memory-bandwidth share of `cycles_total`.
 
-## Procedure, per configuration
+## Procedure — frozen before the sweep
 
-Warm-up policy, repetitions and validity are inherited from the board campaigns
-rather than reinvented:
+- **Warm-up:** exactly **one discarded inference** per configuration, carrying
+  cold-cache and first-touch effects. Applied uniformly; the discarded run is
+  recorded as discarded, never reported.
+- **Measured runs:** **three deterministic FVP runs** per configuration. The FVP
+  is deterministic, so repetition tests the harness rather than the device.
+- **Agreement:** the three must be **exactly equal**. Disagreement is a **hard
+  stop** for that configuration — never averaged, never median-filtered. A
+  deterministic model that disagrees with itself means the harness is wrong, and
+  averaging would hide exactly that.
+- **Board:** 3 fresh boots × 10 consecutive runs, per-boot minima, no pooling
+  before classification. Inherited from the qualified campaign design.
+- **Invalid runs:** discarded with a named reason, never down-weighted, no
+  top-up.
 
-- **Warm-up:** discard the first inference; it carries cold-cache and first-touch
-  effects. Fixed before the sweep, applied uniformly.
-- **Repetitions:** FVP is deterministic per configuration, so repetition tests the
-  harness, not the device — **3 repetitions**, required to be identical, with any
-  disagreement a hard stop rather than an average.
-- **Board:** the campaign design already qualified — 3 fresh boots × 10
-  consecutive runs, per-boot minima, no pooling before classification.
-- **Invalid runs:** discarded with a named reason, never down-weighted. No top-up.
+## Scaling definitions — frozen before results
+
+Fixed now so that no threshold is chosen to fit a curve.
+
+For model *m* on platform *p*, with MAC configurations `M₀ < M₁ < … < Mₙ` where
+`M₀` is the smallest supported on that platform:
+
+```
+raw_speedup(Mᵢ)        = cycles(M₀) / cycles(Mᵢ)
+mac_ratio(Mᵢ)          = Mᵢ / M₀
+scaling_efficiency(Mᵢ) = raw_speedup(Mᵢ) / mac_ratio(Mᵢ)
+```
+
+`scaling_efficiency` is 1.0 for ideal linear scaling and falls as MAC count stops
+translating into throughput.
+
+```
+saturation_point(m,p) = the smallest Mᵢ with scaling_efficiency(Mᵢ) < 0.50
+                      = NONE_OBSERVED if no configuration falls below it
+```
+
+**The 0.50 threshold is fixed now, before any result is seen.** It is a
+declaration of what "saturated" will mean, not a description of a curve. If it
+proves uninformative the finding is reported as such — the threshold is not
+retuned to produce a more interesting saturation point.
+
+`NONE_OBSERVED` is a real outcome and is reported as one. It means scaling had
+not saturated within the configurations the platform supports, not that
+saturation is absent.
+
+Baselines are **per platform**, since `M₀` differs (SSE-300/310 U55 start at 32,
+SSE-320 at 128). Efficiency values are therefore comparable within a platform and
+are **not** comparable across platforms as absolutes — consistent with the
+cross-generation prohibition.
 
 ## Provenance required per run
 
@@ -167,6 +217,43 @@ would be choosing a standard to fit them.
 | FVP runs | 133 × 3 repetitions = **399** |
 | board runs | 7 models × 30 runs = **210** (needs separate authorization) |
 
-Vela compile time is seconds per model. **FVP runtime is UNMEASURED** — a timing
-probe on one small and one large model is proposed before committing, since
-`wav2letter` at 17.7M cycles may dominate wall-clock.
+Vela compile time is seconds per model. **FVP runtime remains UNMEASURED**, and
+the attempt to measure it surfaced a blocker — see below.
+
+## Blocker: the sweep needs MLEK builds, and MLEK is BLOCKED
+
+An FVP run needs an application. The vehicle is MLEK's
+`mlek_inference_runner.axf`, and it is built **per platform and per accelerator
+configuration** — the memory map differs between Corstone generations.
+
+72 prior build directories exist in the container (MLEK `26.03-8-gb2c0bb2`), but
+a timing probe using `build-kws-256` on `FVP_Corstone_SSE-320` failed at image
+load:
+
+```
+Warning: Failed to write bytes at address range [0x00008000..0x0006DC4B]
+         when loading image "…/build-kws-256/bin/mlek_inference_runner.axf"
+```
+
+That build targets a different platform. Only two existing builds target SSE-320
+(`build-prof-320-cpu`, `build-prof-320-cpu-scalar`) and both are CPU-only, with
+no NPU configuration.
+
+So the sweep requires **new MLEK builds — roughly one per (platform, accelerator
+config), on the order of 19** — and MLEK is a standing BLOCKED constraint.
+
+**This is the gating question for execution.** Runtime cannot be estimated
+without at least one successful NPU-configured run, and that run cannot be
+produced without a build. Three ways forward, for decision:
+
+1. Lift the MLEK block for build purposes only, scoped to this sweep.
+2. Authorize a single build + timing probe, enough to produce a runtime estimate
+   without committing to the sweep.
+3. Keep MLEK blocked and restrict the paper's simulation layer to **Vela
+   estimates only**, dropping FVP-measured cycles. This is coherent — Vela
+   estimates are uniformly defined across all 19 configs, which the PMU counters
+   are not — but it removes the simulated-observation tier and weakens RQ3 to a
+   Vela-versus-board comparison.
+
+Until one is chosen, the FVP run count of 399 is **provisional** and its runtime
+is **UNKNOWN**.
