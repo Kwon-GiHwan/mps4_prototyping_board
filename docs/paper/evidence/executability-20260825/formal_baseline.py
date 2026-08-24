@@ -7,6 +7,9 @@ Does not touch the executability AXF digests; those stay as historical evidence.
 """
 import json, os, shutil, subprocess, sys, time
 
+sys.path.insert(0, "/tmp/xqbin")
+import ccident
+
 KIT = "/opt/arm/ml-embedded-evaluation-kit"
 ROOT = "/tmp/xq"
 ARENA = 0x00200000
@@ -48,15 +51,11 @@ def free_bytes():
 
 
 def generated_cc_body_sha(path):
-    """The generator stamps wall-clock time into a leading comment. Hash the
-    body after that comment so the model bytes can be compared separately."""
+    """Narrow canonical identity: removes exactly the generator's wall-clock
+    Date field, asserted against the pinned template grammar. Fails closed."""
     if not path or not os.path.exists(path):
         return None
-    txt = open(path, "rb").read()
-    i = txt.find(b"*/")
-    body = txt[i + 2:] if i != -1 else txt
-    import hashlib
-    return hashlib.sha256(body).hexdigest()
+    return ccident.body_sha256(open(path, "rb").read())
 
 
 def embedded_build_stamp(axf):
@@ -186,9 +185,10 @@ def main():
                "FORMAL_REFERENCE_AXF_SHA256": r["axf_sha256"],
                "formal_vela_sha256": r["vela_sha256"],
                "vela_reproduces_qualification": r["vela_sha256"] == c["qual_vela_sha256"],
-               "formal_generated_cc_sha256": r["generated_cc_sha256"],
-               "formal_generated_cc_body_sha256": r["generated_cc_body_sha256"],
-               "qualification_generated_cc_sha256": c["qual_generated_cc_sha256"],
+               "FORMAL_GENERATED_CC_RAW_SHA256": r["generated_cc_sha256"],
+               "FORMAL_GENERATED_CC_BODY_SHA256": r["generated_cc_body_sha256"],
+               "EXECUTABILITY_GENERATED_CC_RAW_SHA256": c["qual_generated_cc_sha256"],
+               "generated_cc_identity_transform": ccident.transform_identity(),
                "canonical_build_path": r["build_dir"],
                "build_args": r["build_args"], "arena": ARENA,
                "timing_adapter_cache": r["timing_adapter_cache"],
