@@ -47,7 +47,12 @@ identities are kept side by side rather than one overwriting the other.
 ```
 paper-fvp-formal-presweep-anchor
 ANCHOR_DIGEST  5dae05d24d0e3fd87a7a4b964693c52b284055a47a7061046f40ea1efd40d8ef
+supersedes     eb3abec46147cc53…  (SUPERSEDED BEFORE FORMAL DATA)
+status         FROZEN
 ```
+
+See `ANCHOR_SUPERSESSION.md`. The anchor is frozen: a further missing field is a
+STOP, not an amendment.
 
 Binding: `E_primary = 74`, formal target 222, the 133-cell executability evidence
 digests, the formal harness digests, MLEK commit + 9 dependency pins + 4 target
