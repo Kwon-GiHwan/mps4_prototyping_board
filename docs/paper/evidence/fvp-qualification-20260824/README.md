@@ -67,25 +67,61 @@ produced the full inference. The sweep harness must detach, and must distinguish
 
 ## Sweep projection
 
-One measured point: **112 s** for the heaviest of the seven models, at one of the
-19 configurations.
+One measured point: **112 s** for `wav2letter` at **one** configuration
+(SSE-320 / U85-1024).
 
-| | |
-| --- | --- |
-| naive upper bound | 399 × 112 s ≈ **12.4 hours** |
+```
+naive reference projection   399 × 112 s ≈ 12.4 h
+                             NOT an upper bound
+                             NOT a validated full-sweep estimate
+```
 
-That bound is loose. `wav2letter` accounts for **70.6 %** of the seven models'
-combined Vela cycle estimate (17.72 M of 25.09 M at u85-256), so most runs will be
-far shorter.
+**Correction.** An earlier draft called this an upper bound. It is not, and the
+reasoning that made it look like one was wrong. `wav2letter` is the heaviest
+*workload*, but heaviest workload does not mean longest *simulation*:
 
-A defensible projection needs two things, neither of which is the sweep:
+- A **lower-MAC configuration** does the same work with fewer MACs per cycle, so
+  it simulates **more** cycles. `u85-128` on the same model may run considerably
+  longer than the 1024-MAC point measured here.
+- A **different FVP binary or Fast Models version** simulates at its own speed.
+  The installed set spans 11.22.35 to 11.31.28, and nothing measured here says
+  they are comparably fast.
+
+So 112 s is one sample from one cell, not a maximum over the matrix. It is a
+reference point for scaling arithmetic and nothing more.
+
+A defensible planning range needs:
 
 1. **Vela cycle estimates for all 133 model × config pairs** — compilation only,
-   seconds each, no FVP involved.
-2. **One light-model FVP probe** (`rnnoise_INT8`, ~0.2 % of wav2letter's cycles)
-   to separate fixed per-run overhead from per-cycle simulation cost. With two
-   points, `T = fixed + k·cycles` is solvable; with one, it is not.
+   no FVP. Gives the simulated-cycle distribution the runtime depends on.
+2. **A second wall-clock point on the same FVP and configuration** — a short
+   workload (`rnnoise_INT8`) at SSE-320 / U85-1024, to separate fixed per-run
+   overhead from per-cycle cost **locally**.
 
-Until then the projection is stated as a **bound, not an estimate**: the sweep is
-**at most ~12.4 hours** of FVP wall-clock, likely substantially less, and the
-error bars cannot be narrowed from a single observation.
+The resulting `T = fixed + k·cycles` fit is **local to SSE-320 / U85-1024** and
+must not be generalized across other FVP binaries, Fast Models versions, or MAC
+configurations.
+
+## Formal harness requirements — frozen
+
+Derived from the two failures this probe exposed. These are requirements, not
+recommendations.
+
+```
+SUCCESS  =  UART "Inference completed."
+         +  expected inference count
+         +  no fatal / NPU error
+
+SUCCESS  ≠  FVP process exit
+```
+
+- **The FVP must be detached from the SSH session.** A run dies with its session,
+  and its truncated UART is indistinguishable from a quiet success.
+- **Record the owned PID / process group** at launch.
+- **Wait on the UART completion marker**, never on process exit — the FVP does
+  not exit when the application finishes.
+- **Output silence is not success.** A run whose output merely stopped is a
+  failure until the marker says otherwise.
+- **Process death before the marker is a failure**, recorded as one.
+- **Explicit process-group termination after completion**, followed by a
+  **cleanup check**.
