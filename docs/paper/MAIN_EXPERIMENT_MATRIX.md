@@ -132,27 +132,35 @@ For model *m* on platform *p*, with MAC configurations `M₀ < M₁ < … < Mₙ
 `M₀` is the smallest supported on that platform:
 
 ```
-raw_speedup(Mᵢ)        = cycles(M₀) / cycles(Mᵢ)
-mac_ratio(Mᵢ)          = Mᵢ / M₀
-scaling_efficiency(Mᵢ) = raw_speedup(Mᵢ) / mac_ratio(Mᵢ)
+cumulative_efficiency(Mᵢ)
+  = (cycles(M₀) / cycles(Mᵢ)) / (Mᵢ / M₀)
+
+incremental_efficiency(Mᵢ₋₁ → Mᵢ)
+  = (cycles(Mᵢ₋₁) / cycles(Mᵢ)) / (Mᵢ / Mᵢ₋₁)
+
+saturation_point
+  = the first Mᵢ where incremental_efficiency(Mᵢ₋₁ → Mᵢ) < 0.50
+  = NONE_OBSERVED if no step falls below it
 ```
 
-`scaling_efficiency` is 1.0 for ideal linear scaling and falls as MAC count stops
-translating into throughput.
+Both are reported. They answer different questions and the distinction matters:
 
-```
-saturation_point(m,p) = the smallest Mᵢ with scaling_efficiency(Mᵢ) < 0.50
-                      = NONE_OBSERVED if no configuration falls below it
-```
+- **cumulative** — how much of the ideal speedup has been realised *overall* by
+  the time you reach `Mᵢ`. It decays smoothly and is dominated by early steps, so
+  it can stay respectable well past the point where extra MACs have stopped
+  paying.
+- **incremental** — whether *this particular doubling* paid for itself. This is
+  the one that identifies where scaling stops, which is why saturation is defined
+  on it.
 
-**The 0.50 threshold is fixed now, before any result is seen.** It is a
-declaration of what "saturated" will mean, not a description of a curve. If it
-proves uninformative the finding is reported as such — the threshold is not
-retuned to produce a more interesting saturation point.
+Using cumulative for saturation would systematically place the knee too late: a
+strong first doubling props the cumulative figure up across later steps that
+returned almost nothing.
 
-`NONE_OBSERVED` is a real outcome and is reported as one. It means scaling had
-not saturated within the configurations the platform supports, not that
-saturation is absent.
+**The 0.50 threshold is fixed now, before any result is seen.** It declares what
+"saturated" will mean; it is not a description of a curve. If it proves
+uninformative that is reported, not retuned. `NONE_OBSERVED` is a real outcome —
+scaling had not saturated within the configurations the platform supports.
 
 Baselines are **per platform**, since `M₀` differs (SSE-300/310 U55 start at 32,
 SSE-320 at 128). Efficiency values are therefore comparable within a platform and
@@ -178,6 +186,27 @@ physical-validation layer for the Corstone-320 simulation characterization. It i
 configuration other than 1024.
 
 Concretely, board validation touches exactly one cell of the matrix: C6 @ 1024.
+
+The 1024 figure is confirmed by two independent sources: the vendor header
+(`CFG__NPU0_NUM_MACS 0x400`) and MLEK's own build logic, which states *"FPGA is
+fixed at 1024 MACs"* and defaults that platform to config `Z1024`.
+
+### The FVP and board binaries are not the same binary
+
+MLEK's platform configuration carries this, verbatim:
+
+> *"For sse-320 specifically, binaries built for FVP will not work on FPGA and
+> vice versa."*
+
+A separate `FPGA_PLATFORM_SSE_320` build option selects between them. So RQ3 does
+not compare one artifact across two execution targets — it compares **two builds
+of the same source**, each targeting its own memory map.
+
+This is a stated limitation, not a defect: it means "same binary, different
+platform" is unavailable as a control, and any FVP-versus-board deviation
+includes whatever the two builds differ in. It reinforces the decision to treat
+RQ3 as qualitative validation rather than numeric agreement, and both build
+identities must be recorded in the provenance for every comparison.
 
 ## Research questions
 
