@@ -1,0 +1,14 @@
+{
+ "freeze": "paper-board-validation-plan-frozen",
+ "created": "2026-08-25",
+ "plan_sha256": "14b63c50a3447be77a00cc52a3053511ea176f2996929d67c1275ab58466b78d",
+ "target": "Corstone-320 / Ethos-U85 / 1024 MAC",
+ "workloads": 7,
+ "formal_protocol": "7 x 3 boots x 10 runs = 210 (NOT AUTHORIZED)",
+ "canonical_value": "median of the three per-boot medians",
+ "normalization": "cost_i / geomean(cost_1..cost_7), computed within each domain",
+ "primary": "workload-ranking preservation (Spearman rho + rank inversions)",
+ "blocking_prerequisite": "FPGA measurement path qualification via one rnnoise probe",
+ "stop_condition": "stock runner reporting zero/stale PMU -> HOLD, do not patch the runner",
+ "status": "PLAN_FROZEN / BOARD_MEASUREMENTS_HOLD"
+}
