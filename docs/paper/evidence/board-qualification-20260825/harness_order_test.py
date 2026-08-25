@@ -76,3 +76,39 @@ B.mcc = real_mcc
 
 for k in sorted(R): print("  %-46s %s" % (k, "PASS" if R[k] else "FAIL"))
 print("ALL_PASS" if all(R.values()) else "SOME_FAILED")
+
+# --- postflight ordering: USB_OFF must FOLLOW the postflight REBOOT ---------
+# Both probe attempts showed the reboot re-presents the debug USB card, so
+# "USB_OFF -> REBOOT -> assert absent" leaves it exposed.
+B.PF["reboot_at"] = None
+B.PF["usb_off_at"] = None
+try:
+    B.assert_postflight_usb_off_order()
+    ok("MUT_usb_off_before_postflight_reboot_rejected", False)
+except B.PostflightOrderViolation:
+    ok("MUT_usb_off_before_postflight_reboot_rejected", True)
+
+# postflight_usb_off() must refuse before touching the serial port
+touched["serial"] = False
+try:
+    B.postflight_usb_off()
+    ok("MUT_postflight_usb_off_guarded", False)
+except B.PostflightOrderViolation:
+    ok("MUT_postflight_usb_off_guarded", True)
+ok("MUT_no_serial_io_before_postflight_guard", touched["serial"] is False)
+
+# positive: after a recorded postflight reboot the order is accepted
+B.PF["reboot_at"] = time.monotonic()
+try:
+    ok("POS_usb_off_after_reboot_accepted", B.assert_postflight_usb_off_order() is True)
+except B.PostflightOrderViolation:
+    ok("POS_usb_off_after_reboot_accepted", False)
+ok("POS_usb_off_time_after_reboot_time",
+   B.PF["usb_off_at"] is not None and B.PF["usb_off_at"] >= B.PF["reboot_at"])
+
+print()
+for k in sorted(R):
+    if k.startswith(("MUT_usb", "MUT_postflight", "MUT_no_serial_io_before_postflight", "POS_usb")):
+        print("  %-46s %s" % (k, "PASS" if R[k] else "FAIL"))
+print("POSTFLIGHT_ALL_PASS" if all(R[k] for k in R if "usb" in k or "postflight" in k)
+      else "POSTFLIGHT_SOME_FAILED")

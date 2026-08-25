@@ -18,11 +18,13 @@ import pmuparse
 MCC_PORT = "/dev/serial/by-id/usb-FTDI_USB__-__Serial_Converter_00FT46259002B-if00-port0"
 APP_PORT = "/dev/serial/by-id/usb-FTDI_USB__-__Serial_Converter_00FT46259002B-if01-port0"
 UART_PORTS = ["/dev/ttyUSB0", "/dev/ttyUSB1", "/dev/ttyUSB2", "/dev/ttyUSB3"]
-SRC = "/tmp/probe_src"                       # anchored artifact staged here
-OUT = "/tmp/probe_out"
+WORKLOAD = sys.argv[1] if len(sys.argv) > 1 else "rnnoise_INT8"
+SRC = "/tmp/probe_src/%s" % WORKLOAD          # anchored artifact staged here
+OUT = "/tmp/probe_out/%s" % WORKLOAD
 BIN_NAMES = ("boot.bin", "bram.bin", "ddr.bin")
 ANCHORED_AXF_SHA = "83a69be4620ad1a6997efa17b5cebbe9"   # prefix check only
-EV = {"probe": "rnnoise_INT8_board_integration_qualification",
+EV = {"probe": "board_executability_qualification",
+      "workload": WORKLOAD,
       "attempt": 2,
       "attempt_1": {"deployment_boot_restore": "PASS",
                     "measurement_observation": "NOT_OBSERVED",
@@ -45,6 +47,34 @@ class CaptureOrderViolation(RuntimeError):
 
 
 ORDER = {"capture_started_at": None, "reboot_issued_at": None}
+PF = {"reboot_at": None, "usb_off_at": None}
+
+
+class PostflightOrderViolation(RuntimeError):
+    """USB_OFF must follow the postflight REBOOT, not precede it.
+
+    The reboot re-presents the debug USB card, so `USB_OFF -> REBOOT -> assert
+    absent` leaves the card exposed. Both probe attempts showed this.
+    """
+
+
+def postflight_reboot():
+    ddr, cpu, log = boot_and_gate(require_capture=False)
+    PF["reboot_at"] = time.monotonic()
+    return ddr, cpu, log
+
+
+def assert_postflight_usb_off_order():
+    if PF["reboot_at"] is None:
+        raise PostflightOrderViolation(
+            "USB_OFF requested before the postflight REBOOT")
+    PF["usb_off_at"] = time.monotonic()
+    return True
+
+
+def postflight_usb_off():
+    assert_postflight_usb_off_order()      # before any serial I/O
+    usb_off()
 
 
 def assert_capture_before_reset(capture):
@@ -237,6 +267,7 @@ def find_destinations(mp):
 
 def main():
     os.makedirs(OUT, exist_ok=True)
+    print("=== workload: %s ===" % WORKLOAD, flush=True)
     backup_dir = os.path.join(OUT, "backup"); os.makedirs(backup_dir, exist_ok=True)
     # tty -> prompt; no tty -> first stdin line. Held in memory only; never
     # placed on a command line, written to disk, or copied into the evidence.
@@ -465,9 +496,11 @@ def main():
             EV["restore_error"] = repr(e)
         print("\n== POSTFLIGHT ==", flush=True)
         try:
-            ddr2, cpu2, _ = boot_and_gate(require_capture=False)   # postflight: no app capture
+            ddr2, cpu2, _ = postflight_reboot()      # REBOOT first
             step("postflight DDR", "PASS" if ddr2 else "FAIL")
             step("postflight CPUWAIT", "PASS" if cpu2 else "FAIL")
+            postflight_usb_off()                     # ...then USB_OFF, enforced
+            step("postflight USB_OFF after reboot", "ENFORCED")
             step("postflight /dev/sdb absent", "PASS" if not sdb_present() else "FAIL")
             step("postflight mounts", "PASS" if not sh("findmnt","-rn","-S","/dev/sdb1").stdout.strip() else "FAIL")
             l2 = sudo(pw, "lsof", "/dev/sdb", "/dev/sdb1", *UART_PORTS)
