@@ -157,10 +157,14 @@ preregistered saturation threshold, while most adjacent transitions remained in
 the strong or partial regimes. Scaling response was workload-dependent rather
 than converging on a single universal saturation point.
 
-**RQ3 — board validation.**
-On HOLD. The expectation framework is unchanged: compare workload ranking,
-relative workload cost, repeatability, and qualitative bottleneck consistency;
-do **not** compare absolute FVP-versus-board cycles or MAC scaling.
+**RQ3 — board validation. `PENDING_VALIDATION`.**
+Not answered by this dataset. The expectation framework is unchanged: compare
+workload ranking, relative workload cost, repeatability, and qualitative
+bottleneck consistency; do **not** compare absolute FVP-versus-board cycles or
+MAC scaling.
+
+This interpretation is frozen **before** any board result exists. Board findings
+may fill in RQ3; they do not retroactively revise the FVP interpretation above.
 
 ---
 
