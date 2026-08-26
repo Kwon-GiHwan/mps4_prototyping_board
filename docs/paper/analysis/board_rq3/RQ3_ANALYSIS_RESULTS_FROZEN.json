@@ -1,0 +1,44 @@
+{
+ "freeze": "paper-board-rq3-analysis-results-frozen",
+ "created": "2026-08-26",
+ "plan_anchor": "671f35efe30b6e82c6433f88dff793c5b09e2c062947e91c6d1f8c2bf7f640b4",
+ "inputs": {
+  "fvp": "2dd77839432ac22ce21c31063456c18645465bb10d937f2fbd8f28c504b6aaba",
+  "board": "abe945700781d79bbd34eeb96cc2997b13c25d1c4a3a0164f4e7e07a3ad8865a"
+ },
+ "applied": "ONCE",
+ "rule_failures": 0,
+ "primary": {
+  "spearman_rho": 1.0,
+  "inversion_count": 0,
+  "inversion_pairs": [],
+  "threshold": "NONE"
+ },
+ "secondary": "normalized cost vectors, each domain separately; no aggregate deviation metric",
+ "board_repeatability": "raw triplet + canonical median only",
+ "pmu_cross_target": "MEASUREMENT PATH QUALIFIED / COMMON RAW FIELDS AVAILABLE / QUANTITATIVE COMPARISON NOT_PREREGISTERED",
+ "not_evaluable": [
+  "SRAM/EXT cross-target consistency"
+ ],
+ "not_computed": [
+  "absolute difference",
+  "absolute ratio",
+  "percent error",
+  "aggregate shape distance",
+  "repeatability variability statistic",
+  "quantitative PMU cross-target metric"
+ ],
+ "narrative_status": "NOT_STARTED",
+ "artifacts": {
+  "RQ3_ANALYSIS_PLAN.md": "4cdd25911e71a18d904a758d2a076b72bf457da0980883774c5d4a6724ebacff",
+  "RQ3_DERIVED_RESULTS.md": "2bc77b9339d65d913ef135b5dd94d199d8583b4d808f3edc85228854c97408bf",
+  "canonical_board_cost.csv": "a8ab3aacc95fb6fc1ce4b28871f520cea4f82fe3af1433b9ee7a396a8a37b229",
+  "fvp_board_ranking.csv": "fc56061c539a5a256fe04dc9b6015ac23c6d7efc0635f7a16823b7eaabb2d827",
+  "normalized_relative_cost.csv": "90c51c328a6533005b61888e856be5f40aa1128c1b60b188b2b7d7fe4a8ebf61",
+  "ranking_preservation.json": "097af11f27b7fd0cc229a9d848ede85b0a0c38eef8484dbbeea370f56fe87482",
+  "rq3_analysis_meta.json": "d412343e8e1ba6b2c1e4ecd703603d911da6056ec42b012150fc9bcc959b8b60",
+  "rq3_analysis_plan_anchor.json": "c5bd69cab7314afdce5075f56eeb03af78c17f61896852de381af5be1c90cdd9",
+  "rq3_analyzer.py": "d962ce56535cdf5ecd0dd531e92c548d6b34f4a8da408a3a842acd4bf3f10599",
+  "rq3_analyzer_test.py": "8c5e5866a509e2b3bb223b0811d98abfe77b50c0e75934e65f8a75a416f0539a"
+ }
+}
