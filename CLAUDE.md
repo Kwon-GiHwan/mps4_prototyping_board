@@ -133,13 +133,48 @@ Two claims that look available and are not:
   longer *requires* QREAD; whether Q and S5 share a mechanism is
   `NOT ESTABLISHED`.
 
+## Paper campaign — what carries forward
+
+Full record in `docs/paper/PROJECT_RECORD.md`; every digest and tag in
+`docs/paper/EVIDENCE_INDEX.md`. The traps worth knowing before touching this
+again:
+
+- **A build that compiles is not a cell that runs.** 133 cells compiled, 6 could
+  not run. `NOT_EXECUTABLE_MEMORY` is a result; never drop such a cell silently
+  or rebase a scaling ladder onto a higher MAC to fill the hole.
+- **Timing adapter state changes what is being measured.** It is forced OFF for
+  `sse-310`/`sse-315` — visible as *absent compiled source files*, not merely a
+  flag. Those 56 cells are executability evidence, never performance data.
+- **The firmware embeds its own build time** (`Main.cc:38`), so no AXF is
+  reproducible without `SOURCE_DATE_EPOCH` pinned to the MLEK commit timestamp.
+- **The stock MLEK runner does exactly one inference per boot.** Any protocol
+  wanting N runs per boot is a V15 custom-runner idea and does not apply here.
+- **The generated model `.cc` carries a wall-clock comment** that never reaches
+  the binary. Hash the canonical body; the raw hash is informational only.
+- **PMU event names are generation-conditional** — U55/U65 emit `AXI*`, U85 emits
+  `SRAM_*`/`EXT_*`. Discover the emitted set; never hardcode names.
+- **Board restore is not "write the backups back."** The card may not contain the
+  files being deployed, so restore includes deleting created files. Discover the
+  destination set from the card and abort before writing if it is ambiguous.
+- **Order matters where hardware is concerned**: the UART listener must be alive
+  *before* `REBOOT`, and postflight `USB_OFF` must come *after* the reboot, which
+  re-presents the card. Both are enforced by guards, not by call order.
+
+Contracts are frozen before the data exists, and a superseded contract is
+recorded as an amendment — never edited away. If a metric was not preregistered,
+it is not computed after seeing the values; it may only be run later, labelled
+`POST_HOC_DESCRIPTIVE`.
+
 ## Standing constraints
 
-- Pushing to `origin/main` — **HOLD**.
+- Pushing to `origin/main` — **HOLD**. Feature branches may be pushed.
 - Production `END_ONLY` — **FROZEN**.
-- MLEK — **BLOCKED**.
+- MLEK — was globally **BLOCKED**; the paper campaign proceeded under narrow,
+  per-step manager authorizations. Treat it as blocked again absent a new one.
 - Board access is granted per named step, never standing. V15 board work is not
   authorized.
+- Never patch `inference_runner` to obtain a metric. If the stock path cannot
+  produce an observation, that is the finding.
 - Never issue `USB_OFF` while the card is mounted.
 - Operator credentials are never written to documents, evidence, commits,
   history, environment variables or files. Record only that approval was given.
