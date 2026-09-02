@@ -100,3 +100,27 @@ Final report fields: clean/A/B cells; no-op roundtrip; exact boundary,
 attribution, PMU-vector, output matches; perturbation observations; rule
 failures; verdict `MEASUREMENT_EQUIVALENT` or `NOT_EQUIVALENT`; frozen
 tags/hashes.
+
+---
+
+## Amendment 1 (2026-09-02, pre-acquisition) — stack fact discovered at E0
+
+Vela 5.0.0 routes **all** targets through regor by default; the legacy
+Python core is deprecated and reachable only via
+`--debug-force-legacy-core` (U55/U65 + TFLite only). Two consequences,
+recorded before any runtime data:
+
+1. The frozen formal U55/U65 sweep artifacts of this paper are **regor
+   outputs** (verified: the plag-free C0 regeneration hash-matched the
+   frozen vela sha). Any manuscript statement about the U55/U65 compile
+   path must say regor, not legacy.
+2. Method A (compiler-internal insertion) only exists on the legacy core.
+   Per this plan's own isolation principle, **C0 is therefore defined as
+   the `--debug-force-legacy-core` output** under the otherwise identical
+   frozen contract, and BOTH methods derive from it. C0's identity is
+   frozen anew (it is a different program from the frozen regor artifact;
+   the E0 "must hash-match the frozen formal vela shas" gate is
+   superseded by "C0 hash frozen at generation", since matching a regor
+   artifact would reintroduce exactly the compiler-mixing this plan
+   forbids). The regor↔legacy program difference is out of scope for the
+   bridge and noted for the limitations file.
