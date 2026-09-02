@@ -1,19 +1,10 @@
 #!/usr/bin/env python3
-"""Mutation/negative tests for pd_analyzer: every rejection rule must be
-provably able to fire, and the mapping/boolean derivations must be exact."""
-import copy
+"""Mutation/negative tests for pd_analyzer v2 (debug_db mapping)."""
+import os
+import tempfile
 import unittest
 
 import pd_analyzer as A
-
-
-def op(idx, typ="Conv2D", ofm="1, 4, 4, 8", kernel="size=1,1 stride=1,1",
-       slices=1, ublock="[2, 2, 8]", block="OFM[1] IFM[1]", stripes="OFM[x] ",
-       cascade="0", weight_buf="0", vela=100, tidx=0):
-    return {"idx": idx, "type": typ, "ofm": ofm, "kernel": kernel,
-            "slices": slices, "ublock": ublock, "block": block,
-            "stripes": stripes, "cascade": cascade, "weight_buf": weight_buf,
-            "vela_cycles": vela, "time_index": tidx}
 
 
 def prof(records, tail_total):
@@ -25,88 +16,92 @@ def prof(records, tail_total):
             "total": tail_total}
 
 
-class TestMapping(unittest.TestCase):
-    def test_tail_maps_to_last_launch(self):
-        ops = [op(0), op(1)]
-        p = prof([(50, [40, 1, 2, 3, 4])], 70)   # 1 record + tail
-        out = A.op_cycles(ops, p)
-        self.assertEqual(out[0]["ccnt"], 50)
-        self.assertEqual(out[1]["ccnt"], 70)
-        self.assertTrue(out[1]["tail_in_op"])
+class TestSegments(unittest.TestCase):
+    def test_tail_added_when_one_short(self):
+        s = A.segments(prof([(50, [1] * 5)], 70), 2)
+        self.assertEqual([x["ccnt"] for x in s], [50, 70])
+        self.assertTrue(s[1]["tail"])
 
-    def test_slice_aggregation(self):
-        ops = [op(0, slices=2), op(1)]
-        p = prof([(10, [1] * 5), (20, [2] * 5)], 30)
-        out = A.op_cycles(ops, p)
-        self.assertEqual(out[0]["ccnt"], 30)      # two slices summed
-        self.assertEqual(out[0]["evt"], [3, 3, 3, 3, 3])
-        self.assertEqual(out[1]["ccnt"], 30)
+    def test_exact_count_no_tail(self):
+        s = A.segments(prof([(50, [1] * 5), (60, [2] * 5)], 999), 2)
+        self.assertFalse(s[1]["tail"])
+        self.assertEqual(s[1]["ccnt"], 60)
 
-    def test_full_records_no_tail(self):
-        ops = [op(0), op(1)]
-        p = prof([(10, [1] * 5), (20, [2] * 5)], 999)
-        out = A.op_cycles(ops, p)
-        self.assertEqual(out[1]["ccnt"], 20)
-        self.assertFalse(out[1]["tail_in_op"])
-
-    def test_record_count_mismatch_rejects(self):
-        ops = [op(0), op(1), op(2)]
-        p = prof([(10, [0] * 5)], 99)             # 1 record, 3 launches
+    def test_count_mismatch_rejects(self):
         with self.assertRaises(A.Reject):
-            A.op_cycles(ops, p)
+            A.segments(prof([(50, [1] * 5)], 70), 4)
 
     def test_plcount_field_mismatch_rejects(self):
-        ops = [op(0)]
-        p = prof([(10, [0] * 5)], 99)
-        p["pl_count"] = 2
+        p = prof([(50, [1] * 5)], 70)
+        p["pl_count"] = 3
         with self.assertRaises(A.Reject):
-            A.op_cycles(ops, p)
+            A.segments(p, 2)
 
 
-class TestIdentity(unittest.TestCase):
-    def test_identity_ignores_ublock(self):
-        a, b = op(0), op(0, ublock="[1, 1, 1]")
-        self.assertEqual(A.identity(a), A.identity(b))
+class TestPerSource(unittest.TestCase):
+    def cell(self):
+        return {
+            "queue": [(100, 1), (200, 2), (300, 3)],
+            "optimised": {1: {"source_id": 10, "operator": "Add"},
+                          2: {"source_id": 10, "operator": "Rescale"},
+                          3: {"source_id": 11, "operator": "Conv2D"}},
+            "source": {10: {"operator": "Add", "kernel": "1x1",
+                            "ofm": "1x1x24", "ext_key": "5"},
+                       11: {"operator": "Conv2D", "kernel": "3x3",
+                            "ofm": "1x1x8", "ext_key": "6"}},
+            "prof": prof([(10, [1] * 5), (20, [2] * 5)], 30),
+        }
 
-    def test_identity_distinguishes_kernel(self):
-        a, b = op(0), op(0, kernel="size=3,3 stride=1,1")
-        self.assertNotEqual(A.identity(a), A.identity(b))
+    def test_multi_launch_source_aggregation(self):
+        agg = A.per_source(self.cell())
+        self.assertEqual(agg[10]["ccnt"], 30)      # two launches summed
+        self.assertEqual(agg[10]["launches"], 2)
+        self.assertEqual(agg[10]["evt"], [3, 3, 3, 3, 3])
+        self.assertEqual(agg[11]["ccnt"], 30)      # tail launch
+        self.assertTrue(agg[11]["tail_in_op"])
+        self.assertIsNone(agg[11]["evt"])
+
+    def test_none_prof_passthrough(self):
+        c = self.cell()
+        c["prof"] = None
+        self.assertIsNone(A.per_source(c))
 
 
-class TestScheduleParse(unittest.TestCase):
-    SAMPLE = """Schedule: 'g'
-\t0: Operation Conv2D  - OFM 1, 49, 10, 140
-\t\tKernel: size=4,10 stride=1,1, dilation=1,1 padding=[t:4]
-\t\tTime index = 0
-\t\tOperator Config = OFM Block=[1, 24, 10, 16], IFM Block=[1, 32, 14, 16], OFM UBlock=[2, 2, 16] Traversal=PartKernel, AccType=Acc32
-\t\tIFM Stripe   = [1, 49, 10, 1]
-\t\tOFM Stripe   = [1, 49, 10, 140]
-\t\tAssigned Cascade = 0
-\t\tWeight buffer = 10816 bytes
-\t\tDepth slices = [0, 16, 140]
-\t\tEstimated Perf: Macs=2744000 Cycles=46040
-"""
+class TestParseDb(unittest.TestCase):
+    XML = """<x><table name="queue">
+<![CDATA[
+"offset","cmdstream_id","optimised_id","scheduled_id"
+300,1,2,9
+100,1,1,8
+]]>
+</table><table name="optimised">
+<![CDATA[
+"id","source_id","operator","kernel_w","kernel_h","ofm_w","ofm_h","ofm_d"
+1,7,"Conv2D",3,3,4,4,8
+2,7,"Rescale",1,1,4,4,8
+]]>
+</table><table name="source">
+<![CDATA[
+"id","operator","kernel_w","kernel_h","ofm_w","ofm_h","ofm_d","ext_key"
+7,"Conv2D",3,3,4,4,8,"2"
+]]>
+</table></x>"""
 
-    def test_fields(self):
-        import io, tempfile, os
-        f = tempfile.NamedTemporaryFile("w", suffix=".log", delete=False)
-        f.write(self.SAMPLE); f.close()
-        ops = A.parse_schedule(f.name)
+    def test_queue_sorted_by_offset(self):
+        f = tempfile.NamedTemporaryFile("w", suffix=".xml", delete=False)
+        f.write(self.XML); f.close()
+        q, opt, src = A.parse_db(f.name)
         os.unlink(f.name)
-        self.assertEqual(len(ops), 1)
-        o = ops[0]
-        self.assertEqual(o["slices"], 2)
-        self.assertEqual(o["ublock"], "[2, 2, 16]")
-        self.assertEqual(o["vela_cycles"], 46040)
-        self.assertIn("OFM[1, 24, 10, 16]", o["block"])
-        self.assertIn("IFM[1, 49, 10, 1]", o["stripes"])
+        self.assertEqual(q, [(100, 1), (300, 2)])
+        self.assertEqual(opt[2]["source_id"], 7)
+        self.assertEqual(src[7]["ofm"], "4x4x8")
 
-    def test_empty_rejects(self):
-        import tempfile, os
-        f = tempfile.NamedTemporaryFile("w", suffix=".log", delete=False)
-        f.write("nothing here\n"); f.close()
+    def test_missing_table_rejects(self):
+        f = tempfile.NamedTemporaryFile("w", suffix=".xml", delete=False)
+        f.write("<x></x>"); f.close()
         with self.assertRaises(A.Reject):
-            A.parse_schedule(f.name)
+            A.parse_db(f.name)
+        os.unlink(f.name)
 
 
 if __name__ == "__main__":

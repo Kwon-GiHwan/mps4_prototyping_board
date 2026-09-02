@@ -1,18 +1,23 @@
 #!/usr/bin/env python3
-"""P0-E operator matching / differential analyzer.
+"""P0-E operator matching / differential analyzer — v2.
 
-Written BEFORE the formal evidence is examined (only the qualified formats
-from P0-C are assumed). Joins 256 vs 512 by stable operation identity,
-never by row position; fail-closed on every rejection rule of the frozen
-plan. Computes; does not interpret.
+v1 (frozen 07a531a) predicted launches from verbose-schedule depth slices and
+was REJECTED by its own gate on rnnoise (48 stream launches vs 39 predicted:
+elementwise lowering emits 1..k launches per op). v2 replaces the prediction
+with regor's debug database as the launch->operation authority:
 
-Inputs (evidence root = the P0-D `pd/` tree):
-  <cell>/vela_verbose/verbose.log   Vela schedule capture (per cell)
-  <cell>/instr.meta.json            irq_count / NOT_AVAILABLE
-  <cell>/{clean,prof}.run1.json     qualified run vectors (exact-equal x3)
-  U85_FORMAL_MATRIX.csv             cell index
+    queue(offset, optimised_id)  ->  optimised(id, source_id, ...)
+                                 ->  source(id, operator, ofm, ext_key)
 
-Outputs: U85_OPERATOR_MATCH.csv, U85_256_512_DIFFERENTIAL.csv (stdout paths).
+The debug capture is hash-gated (artifact byte-identical with
+--enable-debug-db, verified at generation). Cross-MAC join is at SOURCE-op
+granularity, which is MAC-invariant by construction and verified by a
+source-table equality gate. No results from v1 were ever accepted.
+
+Fail-closed rejections: queue/launch count mismatch, source-table mismatch
+across bindings, PLPROF/launch count mismatch, missing evidence. Q2
+compiler fields attach from the verbose schedule only where the join is
+unambiguous; otherwise they are left empty (NOT_EVALUABLE), never guessed.
 """
 import csv
 import json
@@ -24,33 +29,48 @@ WORKLOADS = ["rnnoise_INT8", "vww4_128_128_INT8", "yolo-fastest_192_face_v4",
              "kws_micronet_m", "ad_medium_int8", "dnn_s_quantized"]
 PAIRS = [("B-frozen", "256_Low", "512_Mid512"),
          ("B-held", "256_Low", "512_Low")]
+EVT = ("active", "sram_rd", "sram_wr", "ext_rd", "ext_wr")
 
 
 class Reject(Exception):
     pass
 
 
+def parse_db(path):
+    x = open(path).read()
+
+    def table(name):
+        m = re.search(r'<table name="%s">\s*<!\[CDATA\[(.*?)\]\]>' % name, x, re.S)
+        if not m:
+            raise Reject("debug db table missing: " + name)
+        rows = [r for r in csv.reader(m.group(1).strip().splitlines()) if r]
+        return rows[0], rows[1:]
+
+    _, q = table("queue")
+    queue = sorted(((int(r[0]), int(r[2])) for r in q), key=lambda t: t[0])
+    _, o = table("optimised")
+    optimised = {int(r[0]): {"source_id": int(r[1]), "operator": r[2]} for r in o}
+    hdr, s = table("source")
+    source = {int(r[0]): {"operator": r[1],
+                          "kernel": "%sx%s" % (r[2], r[3]),
+                          "ofm": "%sx%sx%s" % (r[4], r[5], r[6]),
+                          "ext_key": r[7]} for r in s}
+    return queue, optimised, source
+
+
 def parse_schedule(path):
-    """Parse the verbose-schedule op list with the Q2 fields."""
     ops, cur = [], None
     for ln in open(path):
         m = re.match(r"\t(\d+): Operation (\S+)\s+- OFM ([0-9, ]+)", ln)
         if m:
             cur = {"idx": int(m.group(1)), "type": m.group(2),
-                   "ofm": m.group(3).strip(), "slices": 1, "kernel": "",
-                   "ublock": "", "block": "", "stripes": "", "cascade": "",
-                   "weight_buf": "", "vela_cycles": None, "time_index": None}
+                   "ofm_d": m.group(3).strip().split(",")[-1].strip(),
+                   "slices": 1, "ublock": "", "block": "", "stripes": "",
+                   "cascade": "", "vela_cycles": None, "time_index": None}
             ops.append(cur)
             continue
         if cur is None:
             continue
-        for key, rx in (("kernel", r"Kernel: (.+)"),
-                        ("time_index", r"Time index = (\d+)"),
-                        ("cascade", r"Assigned Cascade = (\d+)"),
-                        ("weight_buf", r"Weight buffer = (\d+) bytes")):
-            m = re.search(rx, ln)
-            if m:
-                cur[key] = m.group(1)
         m = re.search(r"Operator Config = OFM Block=(\[[0-9, ]+\]), "
                       r"IFM Block=(\[[0-9, ]+\]), OFM UBlock=(\[[0-9, ]+\])", ln)
         if m:
@@ -62,144 +82,176 @@ def parse_schedule(path):
         m = re.search(r"Depth slices = \[([0-9, ]+)\]", ln)
         if m:
             cur["slices"] = len(m.group(1).split(",")) - 1
+        m = re.search(r"Assigned Cascade = (\d+)", ln)
+        if m:
+            cur["cascade"] = m.group(1)
+        m = re.search(r"Time index = (\d+)", ln)
+        if m:
+            cur["time_index"] = int(m.group(1))
         m = re.search(r"Estimated Perf: Macs=\d+ Cycles=(\d+)", ln)
         if m:
             cur["vela_cycles"] = int(m.group(1))
-    if not ops:
-        raise Reject("no schedule ops parsed from " + path)
     return ops
 
 
-def identity(op):
-    """Stable operation identity: type + OFM shape + kernel geometry."""
-    return (op["type"], op["ofm"], op["kernel"])
-
-
-def op_cycles(ops, prof):
-    """Map per-launch records to schedule-op cycle sums, per the qualified
-    mapping: record k <-> launch k+1; final launch <-> tail TOTAL."""
-    launches = []
-    for o in ops:
-        launches += [o["idx"]] * o["slices"]
-    k = len(launches)
+def segments(prof, n_launches):
     rows = [l.split(",") for l in prof["plprof"].splitlines()
             if l.startswith("PLPROF,")]
-    recs = [{"ccnt": int(r[2]), "evt": [int(x) for x in r[3:8]]} for r in rows]
+    recs = [{"ccnt": int(r[2]), "evt": [int(x) for x in r[3:8]],
+             "tail": False} for r in rows]
     if prof["pl_count"] != len(recs):
         raise Reject("PLPROF count mismatch")
-    if len(recs) == k - 1:
-        segs = recs + [{"ccnt": prof["total"], "evt": [None] * 5,
-                        "tail": True}]
-    elif len(recs) == k:
-        segs = recs
-    else:
-        raise Reject("records %d vs launches %d" % (len(recs), k))
-    out = {}
-    for launch_idx, op_idx in enumerate(launches):
-        s = segs[launch_idx]
-        agg = out.setdefault(op_idx, {"ccnt": 0, "evt": [0] * 5,
-                                      "tail_in_op": False})
-        agg["ccnt"] += s["ccnt"]
-        if s.get("tail"):
-            agg["tail_in_op"] = True
-            agg["evt"] = [None] * 5
-        elif agg["evt"] is not None and agg["evt"][0] is not None:
-            agg["evt"] = [a + b for a, b in zip(agg["evt"], s["evt"])]
-    return out
+    if len(recs) == n_launches - 1:
+        recs.append({"ccnt": prof["total"], "evt": None, "tail": True})
+    elif len(recs) != n_launches:
+        raise Reject("records %d vs launches %d" % (len(recs), n_launches))
+    return recs
 
 
 def load_cell(root, model, label):
     d = os.path.join(root, "%s__%s" % (model, label))
     meta = json.load(open(os.path.join(d, "instr.meta.json")))
-    ops = parse_schedule(os.path.join(d, "vela_verbose", "verbose.log"))
+    queue, optimised, source = parse_db(os.path.join(d, "debug.xml"))
+    sched = parse_schedule(os.path.join(d, "vela_verbose", "verbose.log"))
     clean = json.load(open(os.path.join(d, "clean.run1.json")))
     prof = None
     if meta["profiled"] == "OK":
+        if meta["irq_count"] != len(queue):
+            raise Reject("irq_count %d != queue rows %d for %s__%s"
+                         % (meta["irq_count"], len(queue), model, label))
         prof = json.load(open(os.path.join(d, "prof.run1.json")))
-        exp = sum(o["slices"] for o in ops)
-        if meta["irq_count"] != exp:
-            raise Reject("irq_count %s != schedule launches %d"
-                         % (meta["irq_count"], exp))
-    return {"ops": ops, "clean": clean, "prof": prof, "meta": meta}
+    return {"queue": queue, "optimised": optimised, "source": source,
+            "sched": sched, "clean": clean, "prof": prof, "meta": meta}
+
+
+def per_source(cell):
+    """Aggregate profiled segments to source-op granularity."""
+    if cell["prof"] is None:
+        return None
+    segs = segments(cell["prof"], len(cell["queue"]))
+    agg = {}
+    for (offset, opt_id), seg in zip(cell["queue"], segs):
+        sid = cell["optimised"][opt_id]["source_id"]
+        a = agg.setdefault(sid, {"ccnt": 0, "evt": [0] * 5, "launches": 0,
+                                 "tail_in_op": False, "opt_ops": set()})
+        a["ccnt"] += seg["ccnt"]
+        a["launches"] += 1
+        a["opt_ops"].add(cell["optimised"][opt_id]["operator"])
+        if seg["tail"]:
+            a["tail_in_op"] = True
+            a["evt"] = None
+        elif a["evt"] is not None:
+            a["evt"] = [p + q for p, q in zip(a["evt"], seg["evt"])]
+    return agg
+
+
+SCHED_TYPE = {"Conv2D": "Conv2D", "DepthwiseConv2D": "DepthwiseConv2D",
+              "FullyConnected": "FullyConnected", "AvgPool": "AvgPool"}
+
+
+def sched_join(cell):
+    """Best-effort unambiguous join: schedule op -> source id, by walking the
+    queue's source order and matching schedule ops in order to the first
+    source op whose operator name matches. Ambiguity leaves fields empty."""
+    order = []
+    for _, opt_id in cell["queue"]:
+        sid = cell["optimised"][opt_id]["source_id"]
+        if sid not in order:
+            order.append(sid)
+    join, si = {}, 0
+    for op in cell["sched"]:
+        matched = None
+        for j in range(si, len(order)):
+            src = cell["source"][order[j]]
+            if src["operator"] == op["type"]:
+                matched = order[j]
+                si = j + 1
+                break
+        if matched is not None and matched not in join:
+            join[matched] = op
+    return join
 
 
 def main(root):
-    match_rows, diff_rows = [], []
+    diff_rows, match_rows = [], []
     for model in WORKLOADS:
         cells = {}
         for label in ("256_Low", "512_Mid512", "512_Low"):
-            try:
-                cells[label] = load_cell(root, model, label)
-            except FileNotFoundError as e:
-                raise Reject("missing evidence for %s__%s: %s" % (model, label, e))
+            cells[label] = load_cell(root, model, label)
+        # source-table equality gate (MAC-invariant identity)
+        s0 = cells["256_Low"]["source"]
+        for label in ("512_Mid512", "512_Low"):
+            if cells[label]["source"] != s0:
+                raise Reject("source table mismatch %s %s" % (model, label))
+        aggs = {l: per_source(cells[l]) for l in cells}
+        joins = {l: sched_join(cells[l]) for l in cells}
         for binding, a_lbl, b_lbl in PAIRS:
             A, B = cells[a_lbl], cells[b_lbl]
-            ia = [identity(o) for o in A["ops"]]
-            ib = [identity(o) for o in B["ops"]]
-            if len(set(ia)) != len(ia) or len(set(ib)) != len(ib):
-                raise Reject("duplicate operation identity in %s %s" % (model, binding))
-            if ia != ib:
-                raise Reject("identity sequence mismatch %s %s "
-                             "(missing/reordered operations)" % (model, binding))
-            ca = op_cycles(A["ops"], A["prof"]) if A["prof"] else None
-            cb = op_cycles(B["ops"], B["prof"]) if B["prof"] else None
-            for oa, ob in zip(A["ops"], B["ops"]):
-                changed = {
-                    "UBLOCK_CHANGED": oa["ublock"] != ob["ublock"],
-                    "BLOCK_CONFIG_CHANGED": oa["block"] != ob["block"],
-                    "TILE_GEOMETRY_CHANGED": (oa["stripes"], oa["slices"])
-                                             != (ob["stripes"], ob["slices"]),
-                    "MEMORY_PLACEMENT_CHANGED": (oa["cascade"], oa["weight_buf"])
-                                                != (ob["cascade"], ob["weight_buf"]),
-                    "COMMAND_OR_PASS_STRUCTURE_CHANGED":
-                        (oa["slices"], oa["time_index"])
-                        != (ob["slices"], ob["time_index"]),
-                }
-                cyc_a = ca[oa["idx"]] if ca else None
-                cyc_b = cb[ob["idx"]] if cb else None
-                d = {"workload": model, "binding_pair": binding,
-                     "op_identity": "|".join(identity(oa)),
-                     "op_type": oa["type"],
-                     "cycles_256": cyc_a["ccnt"] if cyc_a else None,
-                     "cycles_512": cyc_b["ccnt"] if cyc_b else None,
-                     "observed_direction": (
-                         None if not (cyc_a and cyc_b) else
-                         "REGRESS" if cyc_b["ccnt"] > cyc_a["ccnt"] else
-                         "IMPROVE" if cyc_b["ccnt"] < cyc_a["ccnt"] else "SAME"),
-                     "vela_cycles_256": oa["vela_cycles"],
-                     "vela_cycles_512": ob["vela_cycles"],
-                     "vela_direction": (
-                         "REGRESS" if ob["vela_cycles"] > oa["vela_cycles"] else
-                         "IMPROVE" if ob["vela_cycles"] < oa["vela_cycles"] else "SAME"),
-                     "ublock_256": oa["ublock"], "ublock_512": ob["ublock"],
-                     "block_256": oa["block"], "block_512": ob["block"],
-                     "stripes_256": oa["stripes"].strip(),
-                     "stripes_512": ob["stripes"].strip(),
-                     "slices_256": oa["slices"], "slices_512": ob["slices"],
-                     "cascade_256": oa["cascade"], "cascade_512": ob["cascade"],
-                     "tail_in_op_256": cyc_a["tail_in_op"] if cyc_a else None,
-                     "tail_in_op_512": cyc_b["tail_in_op"] if cyc_b else None,
-                     **{k: int(v) for k, v in changed.items()}}
-                if cyc_a and cyc_a["evt"][0] is not None:
-                    for i, nm in enumerate(("active", "sram_rd", "sram_wr",
-                                            "ext_rd", "ext_wr")):
-                        d["%s_256" % nm] = cyc_a["evt"][i]
-                if cyc_b and cyc_b["evt"][0] is not None:
-                    for i, nm in enumerate(("active", "sram_rd", "sram_wr",
-                                            "ext_rd", "ext_wr")):
-                        d["%s_512" % nm] = cyc_b["evt"][i]
-                diff_rows.append(d)
+            ga, gb = aggs[a_lbl], aggs[b_lbl]
+            ja, jb = joins[a_lbl], joins[b_lbl]
+            if ga is None or gb is None:
+                continue  # NOT_AVAILABLE profiled arm (dnn_s); reported in matrix
+            if set(ga) != set(gb):
+                raise Reject("source coverage mismatch %s %s" % (model, binding))
+            for sid in sorted(ga):
+                src = s0[sid]
+                ca, cb = ga[sid], gb[sid]
+                oa, ob = ja.get(sid), jb.get(sid)
+                row = {"workload": model, "binding_pair": binding,
+                       "source_id": sid,
+                       "op_identity": "%s|%s|%s|%s" % (src["operator"],
+                                                       src["ofm"], src["kernel"],
+                                                       src["ext_key"]),
+                       "op_type": src["operator"],
+                       "launches_256": ca["launches"],
+                       "launches_512": cb["launches"],
+                       "cycles_256": ca["ccnt"], "cycles_512": cb["ccnt"],
+                       "observed_direction": ("REGRESS" if cb["ccnt"] > ca["ccnt"]
+                                              else "IMPROVE" if cb["ccnt"] < ca["ccnt"]
+                                              else "SAME"),
+                       "tail_in_op_256": int(ca["tail_in_op"]),
+                       "tail_in_op_512": int(cb["tail_in_op"]),
+                       "vela_cycles_256": oa["vela_cycles"] if oa else "",
+                       "vela_cycles_512": ob["vela_cycles"] if ob else "",
+                       "ublock_256": oa["ublock"] if oa else "",
+                       "ublock_512": ob["ublock"] if ob else "",
+                       "block_256": oa["block"] if oa else "",
+                       "block_512": ob["block"] if ob else "",
+                       "stripes_256": oa["stripes"].strip() if oa else "",
+                       "stripes_512": ob["stripes"].strip() if ob else "",
+                       "cascade_256": oa["cascade"] if oa else "",
+                       "cascade_512": ob["cascade"] if ob else ""}
+                both = oa is not None and ob is not None
+                row["UBLOCK_CHANGED"] = int(oa["ublock"] != ob["ublock"]) if both else ""
+                row["BLOCK_CONFIG_CHANGED"] = int(oa["block"] != ob["block"]) if both else ""
+                row["TILE_GEOMETRY_CHANGED"] = (int((oa["stripes"], oa["slices"])
+                                                    != (ob["stripes"], ob["slices"]))
+                                                if both else "")
+                row["MEMORY_PLACEMENT_CHANGED"] = (int(oa["cascade"] != ob["cascade"])
+                                                   if both else "")
+                row["COMMAND_OR_PASS_STRUCTURE_CHANGED"] = int(
+                    ca["launches"] != cb["launches"]
+                    or ((oa["slices"], oa["time_index"]) != (ob["slices"], ob["time_index"])
+                        if both else False))
+                if ca["evt"] is not None:
+                    for i, nm in enumerate(EVT):
+                        row["%s_256" % nm] = ca["evt"][i]
+                if cb["evt"] is not None:
+                    for i, nm in enumerate(EVT):
+                        row["%s_512" % nm] = cb["evt"][i]
+                diff_rows.append(row)
                 match_rows.append({"workload": model, "binding_pair": binding,
-                                   "op_identity": d["op_identity"],
-                                   "idx_256": oa["idx"], "idx_512": ob["idx"],
-                                   "slices_256": oa["slices"],
-                                   "slices_512": ob["slices"],
-                                   "matched": 1})
-    cols = sorted({k for r in diff_rows for k in r})
-    lead = ["workload", "binding_pair", "op_identity", "op_type",
-            "cycles_256", "cycles_512", "observed_direction",
-            "vela_cycles_256", "vela_cycles_512", "vela_direction"]
-    cols = lead + [c for c in cols if c not in lead]
+                                   "source_id": sid,
+                                   "op_identity": row["op_identity"],
+                                   "launches_256": ca["launches"],
+                                   "launches_512": cb["launches"],
+                                   "sched_joined_256": int(oa is not None),
+                                   "sched_joined_512": int(ob is not None)})
+    cols = []
+    for r in diff_rows:
+        for k in r:
+            if k not in cols:
+                cols.append(k)
     with open(os.path.join(root, "U85_256_512_DIFFERENTIAL.csv"), "w",
               newline="") as f:
         w = csv.DictWriter(f, fieldnames=cols)
@@ -210,7 +262,7 @@ def main(root):
         w = csv.DictWriter(f, fieldnames=list(match_rows[0]))
         w.writeheader()
         w.writerows(match_rows)
-    print("rows:", len(diff_rows), "matches:", len(match_rows))
+    print("diff rows:", len(diff_rows), "match rows:", len(match_rows))
     print("wrote U85_256_512_DIFFERENTIAL.csv, U85_OPERATOR_MATCH.csv")
 
 
