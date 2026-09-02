@@ -134,6 +134,8 @@ def units(prof, n_launches):
     return out
 
 
+SYNC_SID = -1
+
 def load_cell(root, model, label):
     d = os.path.join(root, "%s__%s" % (model, label))
     meta = json.load(open(os.path.join(d, "instr.meta.json")))
@@ -141,13 +143,30 @@ def load_cell(root, model, label):
     sched = parse_schedule(os.path.join(d, "vela_verbose", "verbose.log"))
     clean = json.load(open(os.path.join(d, "clean.run1.json")))
     prof = None
+    launch_map = None
     if meta["profiled"] == "OK":
-        if meta["irq_count"] != len(queue):
-            raise Reject("irq_count %d != queue rows %d for %s__%s"
-                         % (meta["irq_count"], len(queue), model, label))
+        launches = json.load(open(os.path.join(d, "launches.json")))
+        if meta["irq_count"] != len(launches):
+            raise Reject("irq_count %d != enumerated launches %d for %s__%s"
+                         % (meta["irq_count"], len(launches), model, label))
+        by_off = dict(queue)
+        launch_map = []
+        for off, kind in launches:
+            if kind == "KERNEL_WAIT":
+                launch_map.append(SYNC_SID)
+            elif off in by_off:
+                launch_map.append(optimised[by_off[off]]["source_id"])
+            else:
+                raise Reject("launch offset %d (%s) missing from debug queue"
+                             % (off, kind))
+        nonsync = sum(1 for x in launch_map if x != SYNC_SID)
+        if nonsync != len(queue):
+            raise Reject("non-sync launches %d != queue rows %d for %s__%s"
+                         % (nonsync, len(queue), model, label))
         prof = json.load(open(os.path.join(d, "prof.run1.json")))
     return {"queue": queue, "optimised": optimised, "source": source,
-            "sched": sched, "clean": clean, "prof": prof, "meta": meta}
+            "sched": sched, "clean": clean, "prof": prof, "meta": meta,
+            "launch_map": launch_map}
 
 
 def per_source(cell):
@@ -156,8 +175,8 @@ def per_source(cell):
     unit rows carry the lossless view."""
     if cell["prof"] is None:
         return None, None
-    us = units(cell["prof"], len(cell["queue"]))
-    launch_src = [cell["optimised"][oid]["source_id"] for _, oid in cell["queue"]]
+    launch_src = cell["launch_map"]
+    us = units(cell["prof"], len(launch_src))
     unit_rows = []
     agg = {}
     for ui, u in enumerate(us):
@@ -235,7 +254,10 @@ def main(root):
                                      "unit": ur["unit"],
                                      "launches": ur["launches"],
                                      "source_ids": " ".join(map(str, ur["source_ids"])),
-                                     "op_types": " ".join(sorted({s0[i]["operator"] for i in ur["source_ids"]})),
+                                     "op_types": " ".join(sorted(
+                                         ("KERNEL_WAIT" if i == SYNC_SID
+                                          else s0[i]["operator"])
+                                         for i in ur["source_ids"])),
                                      "ccnt": ur["ccnt"], "tail": int(ur["tail"]),
                                      **({("evt_%s" % n): ur["evt"][i]
                                          for i, n in enumerate(EVT)} if ur["evt"] else {})})
@@ -246,9 +268,11 @@ def main(root):
             ja, jb = joins[a_lbl], joins[b_lbl]
             if ga is None or gb is None:
                 continue  # NOT_AVAILABLE profiled arm (dnn_s); reported in matrix
-            if set(ga) != set(gb):
+            if set(k for k in ga if k != SYNC_SID) != set(k for k in gb if k != SYNC_SID):
                 raise Reject("source coverage mismatch %s %s" % (model, binding))
-            for sid in sorted(ga):
+            for sid in sorted(k for k in ga if k != SYNC_SID):
+                if sid not in gb:
+                    raise Reject("source %d missing on 512 side %s %s" % (sid, model, binding))
                 src = s0[sid]
                 ca, cb = ga[sid], gb[sid]
                 oa, ob = ja.get(sid), jb.get(sid)

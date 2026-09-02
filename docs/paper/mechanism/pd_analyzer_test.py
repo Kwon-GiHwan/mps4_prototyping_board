@@ -53,36 +53,35 @@ class TestUnits(unittest.TestCase):
 
 
 class TestPerSource(unittest.TestCase):
-    def cell(self, records, tail, queue, opt):
-        return {"queue": queue,
-                "optimised": opt,
-                "source": {},
+    def cell(self, records, tail, launch_map):
+        return {"launch_map": launch_map, "source": {},
                 "prof": prof(records, tail)}
 
     def test_exact_and_mixed(self):
         # launches: L0->srcA, L1->srcA, L2->srcB, L3->srcB
         # units: [L0,L1] (pure A), [L2] (pure B), tail [L3] (pure B)
-        q = [(10, 1), (20, 1), (30, 2), (40, 3)]
-        opt = {1: {"source_id": 7, "operator": "Add"},
-               2: {"source_id": 8, "operator": "Conv2D"},
-               3: {"source_id": 8, "operator": "Rescale"}}
         agg, urows = A.per_source(self.cell(
-            [(100, [1] * 5, 0x0003), (200, [2] * 5, 0x0004)], 300, q, opt))
+            [(100, [1] * 5, 0x0003), (200, [2] * 5, 0x0004)], 300,
+            [7, 7, 8, 8]))
         self.assertEqual(agg[7]["ccnt"], 100)
         self.assertEqual(agg[8]["ccnt"], 500)     # 200 + tail 300
         self.assertTrue(agg[8]["tail_in_op"])
         self.assertEqual(len(urows), 3)
 
     def test_mixed_unit_not_separated(self):
-        # one window covers launches of two different source ops
-        q = [(10, 1), (20, 2)]
-        opt = {1: {"source_id": 7, "operator": "Add"},
-               2: {"source_id": 8, "operator": "Mul"}}
         agg, urows = A.per_source(self.cell(
-            [(100, [1] * 5, 0x0003)], 999, q, opt))
+            [(100, [1] * 5, 0x0003)], 999, [7, 8]))
         self.assertIsNone(agg[7]["ccnt"])
         self.assertIsNone(agg[8]["ccnt"])
         self.assertEqual(urows[0]["source_ids"], [7, 8])
+
+    def test_sync_pseudo_op_window(self):
+        # window mixing a real op with a KERNEL_WAIT: membership recorded,
+        # op becomes NOT_SEPARATED, SYNC id present in unit row
+        agg, urows = A.per_source(self.cell(
+            [(100, [1] * 5, 0x0003)], 999, [7, A.SYNC_SID]))
+        self.assertIsNone(agg[7]["ccnt"])
+        self.assertIn(A.SYNC_SID, urows[0]["source_ids"])
 
     def test_none_prof(self):
         c = {"prof": None}
