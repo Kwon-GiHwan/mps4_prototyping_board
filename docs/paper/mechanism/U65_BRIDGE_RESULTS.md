@@ -32,19 +32,39 @@ rule failures  0  (two pre-runtime fail-closed catches, both fixed before data)
   the container re-serialization alone moves counters at this order of
   magnitude with zero IRQs present.
 
-## Verdict
+## Verdict (manager decision, 2026-09-02)
 
-Strict plan criterion ("PMU vector exact" over ALL fields):
-**NOT met** — the AXI beat fields differ.
+**Overall bridge verdict: `NOT_EQUIVALENT`.** Exact equality of the
+complete PMU vector was a frozen, preregistered criterion and the AXI-beat
+fields did not satisfy it. That criterion is **not** redefined post hoc,
+and no cycle-domain-only restatement replaces it.
 
-Evidence-weighted reading, surfaced for the manager's classification:
-every quantity that defines the measurement boundary — segmentation,
-ordering, per-segment CYCLE/ACTIVE, sums, tails, outputs — is **exactly
-equivalent**, and the residual beat differences are `ASSOCIATED_WITH`
-container re-serialization (address/layout) rather than the insertion
-method: the two methods' streams are byte-identical, and the no-IRQ
-container control reproduces same-order counter sensitivity. Per the
-plan's stop rule this report STOPs **without** self-declaring
-`MEASUREMENT_EQUIVALENT`; the binary classification (strict
-`NOT_EQUIVALENT` vs cycle-domain `MEASUREMENT_EQUIVALENT` with a declared
-beat-attribution caveat) is the manager's call.
+Component-level conclusions, recorded alongside the overall verdict:
+
+```
+STRUCTURAL_EQUIVALENCE          ESTABLISHED
+SEMANTIC_BOUNDARY_EQUIVALENCE   ESTABLISHED
+ATTRIBUTION_EQUIVALENCE         ESTABLISHED
+CYCLE_DOMAIN_EQUIVALENCE        ESTABLISHED
+ACTIVE_DOMAIN_EQUIVALENCE       ESTABLISHED
+AXI_BEAT_EXACT_EQUIVALENCE      NOT_ESTABLISHED
+```
+
+**The AXI-beat residual cannot be attributed specifically to the
+instrumentation backend**, because an uninstrumented re-containerization
+control (C0′, zero IRQs inserted) reproduced comparable beat-level and
+±1-cycle variation. The residual is therefore `ASSOCIATED_WITH`
+container re-serialization; container layout is **not** claimed as a
+uniquely proven causal mechanism, and no other single mechanism is
+claimed either.
+
+### What the bridge permits, and what it does not
+
+Permitted, under the tested U65 conditions (U65-256, the two frozen
+cells, the forced-legacy C0 program): cross-backend comparison of
+**execution boundaries**, **attribution**, and **cycle-domain mechanism
+observations**.
+
+Not qualified by this bridge: **exact cross-backend memory-traffic
+comparison** (the AXI-beat domain) and **cross-generation PMU-event
+equivalence** (which the event audit already classified independently).
