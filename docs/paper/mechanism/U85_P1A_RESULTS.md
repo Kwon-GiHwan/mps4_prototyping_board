@@ -56,11 +56,18 @@ them. The memory-mode axis does not enjoy that invariance anywhere.)
 
 ## Answer to the primary question (computed form)
 
-The direction of the U85 256→512 whole-model change **persists across every
-admitted memory configuration** for all four workloads; configuration
-modulates magnitude only. No configuration turns the operator-level
-regressions of vww/yolo (P0-E) into whole-model non-monotonicity, and none
-suppresses the rnnoise/dnn_s reversals.
+Across the three tested memory configurations, the direction of the
+256→512 change was **invariant**, while the observed magnitude varied.
+**The contribution of memory-system behavior versus compiler-generated
+program changes remains NOT_SEPARATED** (every mode pair is
+DIFFERENT_ARTIFACT). No configuration turns the operator-level regressions
+of vww/yolo (P0-E) into whole-model non-monotonicity, and none suppresses
+the rnnoise/dnn_s reversals.
+
+*(Amendment 2026-09-02, manager review: an earlier phrasing —
+"configuration modulates magnitude only" — overstated separation and is
+corrected above; the artifact-identity table already recorded the
+non-separation.)*
 
 ## State
 
