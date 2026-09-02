@@ -8,63 +8,85 @@ import pd_analyzer as A
 
 
 def prof(records, tail_total):
+    """records: list of (ccnt, evt5, hist)."""
     lines = ["PLPROF_BEGIN,%d" % len(records)]
-    for i, (c, e) in enumerate(records):
-        lines.append("PLPROF,%d,%d,%s" % (i, c, ",".join(map(str, e))))
+    for i, (c, e, h) in enumerate(records):
+        lines.append("PLPROF,%d,%d,%s,0x%04X" % (i, c, ",".join(map(str, e)), h))
+    lines.append("PLPROF_FINAL_HIST,0xFFFF")
     lines.append("PLPROF_END")
     return {"plprof": "\n".join(lines), "pl_count": len(records),
             "total": tail_total}
 
 
-class TestSegments(unittest.TestCase):
-    def test_tail_added_when_one_short(self):
-        s = A.segments(prof([(50, [1] * 5)], 70), 2)
-        self.assertEqual([x["ccnt"] for x in s], [50, 70])
-        self.assertTrue(s[1]["tail"])
+class TestUnits(unittest.TestCase):
+    def test_ring_decode_with_tail(self):
+        # windows: [0,1], [2], remainder [3] -> tail
+        p = prof([(50, [1] * 5, 0x0003), (60, [2] * 5, 0x0004)], 70)
+        u = A.units(p, 4)
+        self.assertEqual([x["launches"] for x in u], [[0, 1], [2], [3]])
+        self.assertTrue(u[2]["tail"])
+        self.assertEqual(u[2]["ccnt"], 70)
 
-    def test_exact_count_no_tail(self):
-        s = A.segments(prof([(50, [1] * 5), (60, [2] * 5)], 999), 2)
-        self.assertFalse(s[1]["tail"])
-        self.assertEqual(s[1]["ccnt"], 60)
+    def test_ring_wrap(self):
+        # 17 launches: first window bits 0..15 (16 launches), then bit 0 again
+        p = prof([(10, [0] * 5, 0xFFFF), (20, [0] * 5, 0x0001)], 99)
+        u = A.units(p, 17)
+        self.assertEqual(u[0]["launches"], list(range(16)))
+        self.assertEqual(u[1]["launches"], [16])
+        self.assertEqual(len(u), 2)
 
-    def test_count_mismatch_rejects(self):
+    def test_noncontiguous_rejects(self):
+        p = prof([(10, [0] * 5, 0x0005)], 9)      # bits 0 and 2: gap
         with self.assertRaises(A.Reject):
-            A.segments(prof([(50, [1] * 5)], 70), 4)
+            A.units(p, 9)
 
-    def test_plcount_field_mismatch_rejects(self):
-        p = prof([(50, [1] * 5)], 70)
+    def test_overflow_rejects(self):
+        p = prof([(10, [0] * 5, 0x0003)], 9)      # decodes 2 > inserted 1
+        with self.assertRaises(A.Reject):
+            A.units(p, 1)
+
+    def test_plcount_mismatch_rejects(self):
+        p = prof([(10, [0] * 5, 0x0001)], 9)
         p["pl_count"] = 3
         with self.assertRaises(A.Reject):
-            A.segments(p, 2)
+            A.units(p, 2)
 
 
 class TestPerSource(unittest.TestCase):
-    def cell(self):
-        return {
-            "queue": [(100, 1), (200, 2), (300, 3)],
-            "optimised": {1: {"source_id": 10, "operator": "Add"},
-                          2: {"source_id": 10, "operator": "Rescale"},
-                          3: {"source_id": 11, "operator": "Conv2D"}},
-            "source": {10: {"operator": "Add", "kernel": "1x1",
-                            "ofm": "1x1x24", "ext_key": "5"},
-                       11: {"operator": "Conv2D", "kernel": "3x3",
-                            "ofm": "1x1x8", "ext_key": "6"}},
-            "prof": prof([(10, [1] * 5), (20, [2] * 5)], 30),
-        }
+    def cell(self, records, tail, queue, opt):
+        return {"queue": queue,
+                "optimised": opt,
+                "source": {},
+                "prof": prof(records, tail)}
 
-    def test_multi_launch_source_aggregation(self):
-        agg = A.per_source(self.cell())
-        self.assertEqual(agg[10]["ccnt"], 30)      # two launches summed
-        self.assertEqual(agg[10]["launches"], 2)
-        self.assertEqual(agg[10]["evt"], [3, 3, 3, 3, 3])
-        self.assertEqual(agg[11]["ccnt"], 30)      # tail launch
-        self.assertTrue(agg[11]["tail_in_op"])
-        self.assertIsNone(agg[11]["evt"])
+    def test_exact_and_mixed(self):
+        # launches: L0->srcA, L1->srcA, L2->srcB, L3->srcB
+        # units: [L0,L1] (pure A), [L2] (pure B), tail [L3] (pure B)
+        q = [(10, 1), (20, 1), (30, 2), (40, 3)]
+        opt = {1: {"source_id": 7, "operator": "Add"},
+               2: {"source_id": 8, "operator": "Conv2D"},
+               3: {"source_id": 8, "operator": "Rescale"}}
+        agg, urows = A.per_source(self.cell(
+            [(100, [1] * 5, 0x0003), (200, [2] * 5, 0x0004)], 300, q, opt))
+        self.assertEqual(agg[7]["ccnt"], 100)
+        self.assertEqual(agg[8]["ccnt"], 500)     # 200 + tail 300
+        self.assertTrue(agg[8]["tail_in_op"])
+        self.assertEqual(len(urows), 3)
 
-    def test_none_prof_passthrough(self):
-        c = self.cell()
-        c["prof"] = None
-        self.assertIsNone(A.per_source(c))
+    def test_mixed_unit_not_separated(self):
+        # one window covers launches of two different source ops
+        q = [(10, 1), (20, 2)]
+        opt = {1: {"source_id": 7, "operator": "Add"},
+               2: {"source_id": 8, "operator": "Mul"}}
+        agg, urows = A.per_source(self.cell(
+            [(100, [1] * 5, 0x0003)], 999, q, opt))
+        self.assertIsNone(agg[7]["ccnt"])
+        self.assertIsNone(agg[8]["ccnt"])
+        self.assertEqual(urows[0]["source_ids"], [7, 8])
+
+    def test_none_prof(self):
+        c = {"prof": None}
+        self.assertEqual(A.per_source(c), (None, None))
 
 
 class TestParseDb(unittest.TestCase):

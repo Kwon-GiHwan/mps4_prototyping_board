@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""P0-E operator matching / differential analyzer — v2.
+"""P0-E operator matching / differential analyzer — v3.
 
 v1 (frozen 07a531a) predicted launches from verbose-schedule depth slices and
 was REJECTED by its own gate on rnnoise (48 stream launches vs 39 predicted:
@@ -18,6 +18,16 @@ Fail-closed rejections: queue/launch count mismatch, source-table mismatch
 across bindings, PLPROF/launch count mismatch, missing evidence. Q2
 compiler fields attach from the verbose schedule only where the join is
 unambiguous; otherwise they are left empty (NOT_EVALUABLE), never guessed.
+
+v3 (after the v2 gate fired on merged IRQ services: 48 IRQs -> 17 records on
+rnnoise): profiled arms are re-acquired with one-hot IRQ params and a driver
+that records STATUS.irq_history_mask per service. Attribution is by
+ATTRIBUTION UNIT = one service window, ring-decoded from the history bits
+(fail-closed on non-contiguous windows). A source op whose launches all lie
+in unmixed units gets exact cycles; an op sharing any unit with another op is
+NOT_SEPARATED at op level (the unit row remains lossless). The remainder
+after the last decoded launch is the tail unit. PLPROF_FINAL_HIST is
+diagnostic only (reads 0xFFFF at completion on the FVP).
 """
 import csv
 import json
@@ -94,18 +104,34 @@ def parse_schedule(path):
     return ops
 
 
-def segments(prof, n_launches):
+def units(prof, n_launches):
+    """Ring-decode history-attributed records into attribution units.
+    Returns [{launches:[...], ccnt, evt|None, tail}]. Fail-closed on
+    non-contiguous windows or launch-count overflow."""
     rows = [l.split(",") for l in prof["plprof"].splitlines()
             if l.startswith("PLPROF,")]
     recs = [{"ccnt": int(r[2]), "evt": [int(x) for x in r[3:8]],
-             "tail": False} for r in rows]
+             "hist": int(r[8], 16), "tail": False} for r in rows]
     if prof["pl_count"] != len(recs):
         raise Reject("PLPROF count mismatch")
-    if len(recs) == n_launches - 1:
-        recs.append({"ccnt": prof["total"], "evt": None, "tail": True})
-    elif len(recs) != n_launches:
-        raise Reject("records %d vs launches %d" % (len(recs), n_launches))
-    return recs
+    seq = 0
+    out = []
+    for i, rec in enumerate(recs):
+        n = bin(rec["hist"]).count("1")
+        expect = 0
+        for k in range(n):
+            expect |= 1 << ((seq + k) % 16)
+        if expect != rec["hist"]:
+            raise Reject("non-contiguous history window at record %d" % i)
+        out.append({"launches": list(range(seq, seq + n)),
+                    "ccnt": rec["ccnt"], "evt": rec["evt"], "tail": False})
+        seq += n
+    if seq > n_launches:
+        raise Reject("decoded %d launches > inserted %d" % (seq, n_launches))
+    if seq < n_launches:
+        out.append({"launches": list(range(seq, n_launches)),
+                    "ccnt": prof["total"], "evt": None, "tail": True})
+    return out
 
 
 def load_cell(root, model, label):
@@ -125,24 +151,41 @@ def load_cell(root, model, label):
 
 
 def per_source(cell):
-    """Aggregate profiled segments to source-op granularity."""
+    """Aggregate attribution units to source-op granularity. An op sharing
+    any unit with a different source op is NOT_SEPARATED (cycles None);
+    unit rows carry the lossless view."""
     if cell["prof"] is None:
-        return None
-    segs = segments(cell["prof"], len(cell["queue"]))
+        return None, None
+    us = units(cell["prof"], len(cell["queue"]))
+    launch_src = [cell["optimised"][oid]["source_id"] for _, oid in cell["queue"]]
+    unit_rows = []
     agg = {}
-    for (offset, opt_id), seg in zip(cell["queue"], segs):
-        sid = cell["optimised"][opt_id]["source_id"]
-        a = agg.setdefault(sid, {"ccnt": 0, "evt": [0] * 5, "launches": 0,
-                                 "tail_in_op": False, "opt_ops": set()})
-        a["ccnt"] += seg["ccnt"]
-        a["launches"] += 1
-        a["opt_ops"].add(cell["optimised"][opt_id]["operator"])
-        if seg["tail"]:
-            a["tail_in_op"] = True
+    for ui, u in enumerate(us):
+        srcs = [launch_src[l] for l in u["launches"]]
+        uniq = sorted(set(srcs))
+        unit_rows.append({"unit": ui, "launches": len(u["launches"]),
+                          "source_ids": uniq, "ccnt": u["ccnt"],
+                          "evt": u["evt"], "tail": u["tail"]})
+        for sid in uniq:
+            a = agg.setdefault(sid, {"ccnt": 0, "evt": [0] * 5, "launches": 0,
+                                     "mixed": False, "tail_in_op": False})
+            a["launches"] += srcs.count(sid)
+            if len(uniq) > 1:
+                a["mixed"] = True
+            else:
+                a["ccnt"] += u["ccnt"]
+                if u["tail"]:
+                    a["tail_in_op"] = True
+                    a["evt"] = None
+                elif a["evt"] is not None:
+                    a["evt"] = [p + q for p, q in zip(a["evt"], u["evt"])]
+            if u["tail"]:
+                a["tail_in_op"] = True
+    for sid, a in agg.items():
+        if a["mixed"]:
+            a["ccnt"] = None
             a["evt"] = None
-        elif a["evt"] is not None:
-            a["evt"] = [p + q for p, q in zip(a["evt"], seg["evt"])]
-    return agg
+    return agg, unit_rows
 
 
 SCHED_TYPE = {"Conv2D": "Conv2D", "DepthwiseConv2D": "DepthwiseConv2D",
@@ -173,7 +216,7 @@ def sched_join(cell):
 
 
 def main(root):
-    diff_rows, match_rows = [], []
+    diff_rows, match_rows, unit_out = [], [], []
     for model in WORKLOADS:
         cells = {}
         for label in ("256_Low", "512_Mid512", "512_Low"):
@@ -183,7 +226,19 @@ def main(root):
         for label in ("512_Mid512", "512_Low"):
             if cells[label]["source"] != s0:
                 raise Reject("source table mismatch %s %s" % (model, label))
-        aggs = {l: per_source(cells[l]) for l in cells}
+        pu = {l: per_source(cells[l]) for l in cells}
+        aggs = {l: pu[l][0] for l in pu}
+        for l in pu:
+            if pu[l][1] is not None:
+                for ur in pu[l][1]:
+                    unit_out.append({"workload": model, "binding": l,
+                                     "unit": ur["unit"],
+                                     "launches": ur["launches"],
+                                     "source_ids": " ".join(map(str, ur["source_ids"])),
+                                     "op_types": " ".join(sorted({s0[i]["operator"] for i in ur["source_ids"]})),
+                                     "ccnt": ur["ccnt"], "tail": int(ur["tail"]),
+                                     **({("evt_%s" % n): ur["evt"][i]
+                                         for i, n in enumerate(EVT)} if ur["evt"] else {})})
         joins = {l: sched_join(cells[l]) for l in cells}
         for binding, a_lbl, b_lbl in PAIRS:
             A, B = cells[a_lbl], cells[b_lbl]
@@ -205,10 +260,13 @@ def main(root):
                        "op_type": src["operator"],
                        "launches_256": ca["launches"],
                        "launches_512": cb["launches"],
-                       "cycles_256": ca["ccnt"], "cycles_512": cb["ccnt"],
-                       "observed_direction": ("REGRESS" if cb["ccnt"] > ca["ccnt"]
-                                              else "IMPROVE" if cb["ccnt"] < ca["ccnt"]
-                                              else "SAME"),
+                       "cycles_256": "" if ca["ccnt"] is None else ca["ccnt"],
+                       "cycles_512": "" if cb["ccnt"] is None else cb["ccnt"],
+                       "separable": int(ca["ccnt"] is not None and cb["ccnt"] is not None),
+                       "observed_direction": (
+                           "NOT_SEPARATED" if ca["ccnt"] is None or cb["ccnt"] is None
+                           else "REGRESS" if cb["ccnt"] > ca["ccnt"]
+                           else "IMPROVE" if cb["ccnt"] < ca["ccnt"] else "SAME"),
                        "tail_in_op_256": int(ca["tail_in_op"]),
                        "tail_in_op_512": int(cb["tail_in_op"]),
                        "vela_cycles_256": oa["vela_cycles"] if oa else "",
@@ -233,10 +291,10 @@ def main(root):
                     ca["launches"] != cb["launches"]
                     or ((oa["slices"], oa["time_index"]) != (ob["slices"], ob["time_index"])
                         if both else False))
-                if ca["evt"] is not None:
+                if ca["evt"]:
                     for i, nm in enumerate(EVT):
                         row["%s_256" % nm] = ca["evt"][i]
-                if cb["evt"] is not None:
+                if cb["evt"]:
                     for i, nm in enumerate(EVT):
                         row["%s_512" % nm] = cb["evt"][i]
                 diff_rows.append(row)
@@ -262,7 +320,19 @@ def main(root):
         w = csv.DictWriter(f, fieldnames=list(match_rows[0]))
         w.writeheader()
         w.writerows(match_rows)
-    print("diff rows:", len(diff_rows), "match rows:", len(match_rows))
+    if unit_out:
+        ucols = []
+        for r in unit_out:
+            for k in r:
+                if k not in ucols:
+                    ucols.append(k)
+        with open(os.path.join(root, "U85_ATTRIBUTION_UNITS.csv"), "w",
+                  newline="") as f:
+            w = csv.DictWriter(f, fieldnames=ucols)
+            w.writeheader()
+            w.writerows(unit_out)
+    print("diff rows:", len(diff_rows), "match rows:", len(match_rows),
+          "unit rows:", len(unit_out))
     print("wrote U85_256_512_DIFFERENTIAL.csv, U85_OPERATOR_MATCH.csv")
 
 
