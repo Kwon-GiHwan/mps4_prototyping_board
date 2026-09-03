@@ -1,0 +1,1 @@
+{"cell": "vww4_128_128_INT8__Sram_Only__256", "model": "vww4_128_128_INT8", "mode": "Sram_Only", "macs": 256, "system_config": "Ethos_U85_SYS_DRAM_Low", "status": "OK", "vela_sha256": "0ea31d00ba9c7040dc38a4f567d6c9c4327d1e676ab143418b26ce898bfbea9c", "axf_sha256": "45b1be16a5cea091929c272f31094cced898429f4315dc343f8697194523d5c7", "total": 262068, "crc": "0:2:0x823CFFFB"}

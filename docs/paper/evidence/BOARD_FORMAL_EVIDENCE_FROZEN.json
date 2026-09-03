@@ -1,0 +1,486 @@
+{
+ "freeze": "paper-board-formal-evidence-frozen",
+ "created": "2026-08-26",
+ "precampaign_anchor": "56ffc1494d7f22a5b71438f38779947faf0dd80526d870134bdffea15f932453",
+ "deployment_identity": "148566904420d85e5140eae746cf839f2978002b82ccaf9f97fa82f9d5a26d9e",
+ "stage_b1_frozen": "caadc7bcc16166be993c533346d1fcb248cd8436728601b2d81a84c63a536a58",
+ "stage_b2_frozen": "039ac9a651c03824dc4307e1089e5c7b631efb14177abab24ff3295e396cd4f4",
+ "stage_b3_raw_sha256": "937525a16f009368f095a7d860a703b8f9deb8342e522d166e8e311fcecad49b",
+ "stage_b3_console_sha256": "aa583f9426b6d98de9d0aedda64f77ec9512bb665b7de0fae14002771f18d303",
+ "FORMAL_BOARD_SAMPLES": 21,
+ "workloads_at_3_of_3": 7,
+ "protocol": "7 workloads x 3 independent fresh boots x 1 stock inference",
+ "canonical_rule": "median(B1,B2,B3), frozen before any formal board data",
+ "reporting_scope": {
+  "permitted": [
+   "raw B1/B2/B3 triplet",
+   "canonical median"
+  ],
+  "not_permitted": [
+   "relative_spread",
+   "CV",
+   "% deviation",
+   "any variability statistic chosen after B1/B2 were observed"
+  ],
+  "amendment": "BOARD_REPEATABILITY_SCOPE_AMENDMENT.md"
+ },
+ "equality_not_required": "independent physical observations; numeric inequality between boots is not a failure condition",
+ "records": [
+  {
+   "workload": "rnnoise_INT8",
+   "B1": {
+    "total": 55151,
+    "active": 49072,
+    "idle": 6079,
+    "events": {
+     "ACTIVE": 49072,
+     "SRAM_RD_DATA_BEAT_RECEIVED": 143,
+     "SRAM_WR_DATA_BEAT_WRITTEN": 135,
+     "EXT_RD_DATA_BEAT_RECEIVED": 7838,
+     "EXT_WR_DATA_BEAT_WRITTEN": 36,
+     "IDLE": 6079,
+     "TOTAL": 55151
+    }
+   },
+   "B2": {
+    "total": 55149,
+    "active": 49075,
+    "idle": 6074,
+    "events": {
+     "ACTIVE": 49075,
+     "SRAM_RD_DATA_BEAT_RECEIVED": 143,
+     "SRAM_WR_DATA_BEAT_WRITTEN": 135,
+     "EXT_RD_DATA_BEAT_RECEIVED": 7838,
+     "EXT_WR_DATA_BEAT_WRITTEN": 36,
+     "IDLE": 6074,
+     "TOTAL": 55149
+    }
+   },
+   "B3": {
+    "total": 54672,
+    "active": 48596,
+    "idle": 6076,
+    "events": {
+     "ACTIVE": 48596,
+     "SRAM_RD_DATA_BEAT_RECEIVED": 143,
+     "SRAM_WR_DATA_BEAT_WRITTEN": 135,
+     "EXT_RD_DATA_BEAT_RECEIVED": 7838,
+     "EXT_WR_DATA_BEAT_WRITTEN": 36,
+     "IDLE": 6076,
+     "TOTAL": 54672
+    }
+   },
+   "canonical_board_cost_total": 55149,
+   "artifact_identity": {
+    "deployment_set": {
+     "boot.bin": "9dc61053ad9f4dd799c0bb4c5031caaa5224b97d074398927ff2ab83b925837f",
+     "bram.bin": "eb851d082bdb2628bd9e0b01fd42f056e48e28fdfc5e0f6b5d1057298d5421c4",
+     "ddr.bin": "b8a49739dadbb68679b8197e5e266579a9af05808970bf0fec9464f95e9d5521",
+     "images.txt": "af688281435a73dda3b2247845149817ecc7a9bbdff5a3ccd2e4dfa52875423f"
+    },
+    "staged_matches_build_output": true,
+    "model_sha256": "9c582545b7c13af44616c44b654f4fe721aa2585630b0ca173ca3589f6f11c2c",
+    "vela_sha256": "5bc1ee088fd731dbb9fed4a0d8ddcea92c11600e82b5041371149465510bee79",
+    "axf_sha256": "83a69be4620ad1a6997efa17b5cebbe92838f94cb49bef4f2974cb0f416c9cf7",
+    "generated_cc_body_sha256": "bd04a8dd23e7f22ea541e93d600f6480e2df1064f9c38ed502f9c3e31d94bea1",
+    "vela_cpu_operators": 0,
+    "fpga_flag": "FPGA_PLATFORM_SSE_320:UNINITIALIZED=ON",
+    "npu_config_id": "ETHOS_U_NPU_CONFIG_ID:UNINITIALIZED=Z1024",
+    "source_date_epoch": 1776763519
+   },
+   "all_valid": true
+  },
+  {
+   "workload": "kws_micronet_m",
+   "B1": {
+    "total": 97362,
+    "active": 91431,
+    "idle": 5931,
+    "events": {
+     "ACTIVE": 91431,
+     "SRAM_RD_DATA_BEAT_RECEIVED": 22664,
+     "SRAM_WR_DATA_BEAT_WRITTEN": 17760,
+     "EXT_RD_DATA_BEAT_RECEIVED": 15815,
+     "EXT_WR_DATA_BEAT_WRITTEN": 1,
+     "IDLE": 5931,
+     "TOTAL": 97362
+    }
+   },
+   "B2": {
+    "total": 96841,
+    "active": 90915,
+    "idle": 5926,
+    "events": {
+     "ACTIVE": 90915,
+     "SRAM_RD_DATA_BEAT_RECEIVED": 22664,
+     "SRAM_WR_DATA_BEAT_WRITTEN": 17760,
+     "EXT_RD_DATA_BEAT_RECEIVED": 15815,
+     "EXT_WR_DATA_BEAT_WRITTEN": 1,
+     "IDLE": 5926,
+     "TOTAL": 96841
+    }
+   },
+   "B3": {
+    "total": 97427,
+    "active": 91501,
+    "idle": 5926,
+    "events": {
+     "ACTIVE": 91501,
+     "SRAM_RD_DATA_BEAT_RECEIVED": 22664,
+     "SRAM_WR_DATA_BEAT_WRITTEN": 17760,
+     "EXT_RD_DATA_BEAT_RECEIVED": 15815,
+     "EXT_WR_DATA_BEAT_WRITTEN": 1,
+     "IDLE": 5926,
+     "TOTAL": 97427
+    }
+   },
+   "canonical_board_cost_total": 97362,
+   "artifact_identity": {
+    "deployment_set": {
+     "boot.bin": "9dc61053ad9f4dd799c0bb4c5031caaa5224b97d074398927ff2ab83b925837f",
+     "bram.bin": "6cd617ca77639a57f52fca4214e9b3f180425b344ddb5f97bdf3f63f44aca6b7",
+     "ddr.bin": "7c71b5517e2fdfa7d858eb4946db9338bc62a8171fc514752a56c95634a66516",
+     "images.txt": "af688281435a73dda3b2247845149817ecc7a9bbdff5a3ccd2e4dfa52875423f"
+    },
+    "staged_matches_build_output": true,
+    "model_sha256": "c1feed3af5dac44de7477fb4161670ba18a3fc06039e4a14da41b1c4dd454cb4",
+    "vela_sha256": "f9575c36651efe0dc3798135f4bc8f9e3fd3614a75f7ad16377994616d18a069",
+    "axf_sha256": "d3a2739e8929c90b234e392df569c42f8af9c052e5fecd14aa7eaa4f63bd3874",
+    "generated_cc_body_sha256": "899f8423d70c56b1514e433b5d8f506d21ed24c0fc4fa1d500e19fd21db99bc2",
+    "vela_cpu_operators": 0,
+    "fpga_flag": "FPGA_PLATFORM_SSE_320:UNINITIALIZED=ON",
+    "npu_config_id": "ETHOS_U_NPU_CONFIG_ID:UNINITIALIZED=Z1024",
+    "source_date_epoch": 1776763519
+   },
+   "all_valid": true
+  },
+  {
+   "workload": "ad_medium_int8",
+   "B1": {
+    "total": 152977,
+    "active": 147041,
+    "idle": 5936,
+    "events": {
+     "ACTIVE": 147041,
+     "SRAM_RD_DATA_BEAT_RECEIVED": 70538,
+     "SRAM_WR_DATA_BEAT_WRITTEN": 41888,
+     "EXT_RD_DATA_BEAT_RECEIVED": 44084,
+     "EXT_WR_DATA_BEAT_WRITTEN": 1,
+     "IDLE": 5936,
+     "TOTAL": 152977
+    }
+   },
+   "B2": {
+    "total": 151876,
+    "active": 145935,
+    "idle": 5941,
+    "events": {
+     "ACTIVE": 145935,
+     "SRAM_RD_DATA_BEAT_RECEIVED": 70538,
+     "SRAM_WR_DATA_BEAT_WRITTEN": 41888,
+     "EXT_RD_DATA_BEAT_RECEIVED": 44084,
+     "EXT_WR_DATA_BEAT_WRITTEN": 1,
+     "IDLE": 5941,
+     "TOTAL": 151876
+    }
+   },
+   "B3": {
+    "total": 151918,
+    "active": 145976,
+    "idle": 5942,
+    "events": {
+     "ACTIVE": 145976,
+     "SRAM_RD_DATA_BEAT_RECEIVED": 70538,
+     "SRAM_WR_DATA_BEAT_WRITTEN": 41888,
+     "EXT_RD_DATA_BEAT_RECEIVED": 44084,
+     "EXT_WR_DATA_BEAT_WRITTEN": 1,
+     "IDLE": 5942,
+     "TOTAL": 151918
+    }
+   },
+   "canonical_board_cost_total": 151918,
+   "artifact_identity": {
+    "deployment_set": {
+     "boot.bin": "9dc61053ad9f4dd799c0bb4c5031caaa5224b97d074398927ff2ab83b925837f",
+     "bram.bin": "4195d90c5fdc220f1fc7adaef1329d5e80bb91d578373f109220268bab36a36a",
+     "ddr.bin": "cce505414191a99702e6f75a7f84303ee247003cd5cd005f48d8d3a0094a54e0",
+     "images.txt": "af688281435a73dda3b2247845149817ecc7a9bbdff5a3ccd2e4dfa52875423f"
+    },
+    "staged_matches_build_output": true,
+    "model_sha256": "a8b1c9037c2a80e6ff770f0a550777cf744a52850bed6545b2bfc9bacf604c98",
+    "vela_sha256": "b83f28f2e5adc7fad13a41441578c95020c9c178e43d52dbf6b2bac2d789bb54",
+    "axf_sha256": "f390530637412683f8109b1cc5e13dcc5bf0238dffd8c196235532e0ac6fd836",
+    "generated_cc_body_sha256": "1c1badcfd5ea898722335491fa993c3fe067c68b43a0d0053369e17fb7e7b653",
+    "vela_cpu_operators": 0,
+    "fpga_flag": "FPGA_PLATFORM_SSE_320:UNINITIALIZED=ON",
+    "npu_config_id": "ETHOS_U_NPU_CONFIG_ID:UNINITIALIZED=Z1024",
+    "source_date_epoch": 1776763519
+   },
+   "all_valid": true
+  },
+  {
+   "workload": "vww4_128_128_INT8",
+   "B1": {
+    "total": 239394,
+    "active": 233445,
+    "idle": 5949,
+    "events": {
+     "ACTIVE": 233445,
+     "SRAM_RD_DATA_BEAT_RECEIVED": 69326,
+     "SRAM_WR_DATA_BEAT_WRITTEN": 60045,
+     "EXT_RD_DATA_BEAT_RECEIVED": 23761,
+     "EXT_WR_DATA_BEAT_WRITTEN": 1,
+     "IDLE": 5949,
+     "TOTAL": 239394
+    }
+   },
+   "B2": {
+    "total": 240725,
+    "active": 234780,
+    "idle": 5945,
+    "events": {
+     "ACTIVE": 234780,
+     "SRAM_RD_DATA_BEAT_RECEIVED": 69326,
+     "SRAM_WR_DATA_BEAT_WRITTEN": 60045,
+     "EXT_RD_DATA_BEAT_RECEIVED": 23761,
+     "EXT_WR_DATA_BEAT_WRITTEN": 1,
+     "IDLE": 5945,
+     "TOTAL": 240725
+    }
+   },
+   "B3": {
+    "total": 238765,
+    "active": 232818,
+    "idle": 5947,
+    "events": {
+     "ACTIVE": 232818,
+     "SRAM_RD_DATA_BEAT_RECEIVED": 69326,
+     "SRAM_WR_DATA_BEAT_WRITTEN": 60045,
+     "EXT_RD_DATA_BEAT_RECEIVED": 23761,
+     "EXT_WR_DATA_BEAT_WRITTEN": 1,
+     "IDLE": 5947,
+     "TOTAL": 238765
+    }
+   },
+   "canonical_board_cost_total": 239394,
+   "artifact_identity": {
+    "deployment_set": {
+     "boot.bin": "9dc61053ad9f4dd799c0bb4c5031caaa5224b97d074398927ff2ab83b925837f",
+     "bram.bin": "5cf53eafde53bdf34bda095de84d1920b66fdabbc9e9c3931b098679f800a80a",
+     "ddr.bin": "6f0e7e1dff211f7fbe25b124072282e77a61d46dc1177c5dbb7e2e892f585c76",
+     "images.txt": "af688281435a73dda3b2247845149817ecc7a9bbdff5a3ccd2e4dfa52875423f"
+    },
+    "staged_matches_build_output": true,
+    "model_sha256": "5e76364e80c45776b735563679d45f611cab7ce7fef2ec4e2db088afe009ccae",
+    "vela_sha256": "637711c9bb5046bbf7f9010d1e1f1c25e9ea6cf643d74e8eb225c66b4ba6fed7",
+    "axf_sha256": "c420aae236b6ca7500ae9c34da7ed77093c29ed9a7c97dc06ebde3bedbd34f4e",
+    "generated_cc_body_sha256": "603af847c8ff275eb5425ff00feacc104d1e9581eb6eb8ad536e8a376c96d749",
+    "vela_cpu_operators": 0,
+    "fpga_flag": "FPGA_PLATFORM_SSE_320:UNINITIALIZED=ON",
+    "npu_config_id": "ETHOS_U_NPU_CONFIG_ID:UNINITIALIZED=Z1024",
+    "source_date_epoch": 1776763519
+   },
+   "all_valid": true
+  },
+  {
+   "workload": "yolo-fastest_192_face_v4",
+   "B1": {
+    "total": 455358,
+    "active": 449373,
+    "idle": 5985,
+    "events": {
+     "ACTIVE": 449373,
+     "SRAM_RD_DATA_BEAT_RECEIVED": 236070,
+     "SRAM_WR_DATA_BEAT_WRITTEN": 188708,
+     "EXT_RD_DATA_BEAT_RECEIVED": 29347,
+     "EXT_WR_DATA_BEAT_WRITTEN": 517,
+     "IDLE": 5985,
+     "TOTAL": 455358
+    }
+   },
+   "B2": {
+    "total": 453389,
+    "active": 447401,
+    "idle": 5988,
+    "events": {
+     "ACTIVE": 447401,
+     "SRAM_RD_DATA_BEAT_RECEIVED": 236070,
+     "SRAM_WR_DATA_BEAT_WRITTEN": 188708,
+     "EXT_RD_DATA_BEAT_RECEIVED": 29347,
+     "EXT_WR_DATA_BEAT_WRITTEN": 517,
+     "IDLE": 5988,
+     "TOTAL": 453389
+    }
+   },
+   "B3": {
+    "total": 452701,
+    "active": 446706,
+    "idle": 5995,
+    "events": {
+     "ACTIVE": 446706,
+     "SRAM_RD_DATA_BEAT_RECEIVED": 236070,
+     "SRAM_WR_DATA_BEAT_WRITTEN": 188708,
+     "EXT_RD_DATA_BEAT_RECEIVED": 29347,
+     "EXT_WR_DATA_BEAT_WRITTEN": 517,
+     "IDLE": 5995,
+     "TOTAL": 452701
+    }
+   },
+   "canonical_board_cost_total": 453389,
+   "artifact_identity": {
+    "deployment_set": {
+     "boot.bin": "9dc61053ad9f4dd799c0bb4c5031caaa5224b97d074398927ff2ab83b925837f",
+     "bram.bin": "b3c5854a513f6cbf81aa0f33218c62936e37705a15f4ed0c8875c165f5d5c233",
+     "ddr.bin": "a50ad9d2178091c19d51946c45d905badf0836ecc2da937da97dc6ace1630f2c",
+     "images.txt": "af688281435a73dda3b2247845149817ecc7a9bbdff5a3ccd2e4dfa52875423f"
+    },
+    "staged_matches_build_output": true,
+    "model_sha256": "e94bcdb011784bead70ab0c0e9d2dae1a9ea5f103b43e1e6fac3019302cf71ab",
+    "vela_sha256": "aa143485cf3e64da4d46b58fe7cb2dbeab95193740ee0e13815ce3c0bdd1238b",
+    "axf_sha256": "a24bd80f7cb2d7efa80675c3c0311da028f48cd0c869efc061beeb6d0481363d",
+    "generated_cc_body_sha256": "c03dde02bd4ec2301822f1d41ef91b47aab8aa91057d09201efb7859a9670d8b",
+    "vela_cpu_operators": 0,
+    "fpga_flag": "FPGA_PLATFORM_SSE_320:UNINITIALIZED=ON",
+    "npu_config_id": "ETHOS_U_NPU_CONFIG_ID:UNINITIALIZED=Z1024",
+    "source_date_epoch": 1776763519
+   },
+   "all_valid": true
+  },
+  {
+   "workload": "mobilenet_v2_1.0_224_INT8",
+   "B1": {
+    "total": 1453996,
+    "active": 1448049,
+    "idle": 5947,
+    "events": {
+     "ACTIVE": 1448049,
+     "SRAM_RD_DATA_BEAT_RECEIVED": 672948,
+     "SRAM_WR_DATA_BEAT_WRITTEN": 401443,
+     "EXT_RD_DATA_BEAT_RECEIVED": 301217,
+     "EXT_WR_DATA_BEAT_WRITTEN": 47887,
+     "IDLE": 5947,
+     "TOTAL": 1453996
+    }
+   },
+   "B2": {
+    "total": 1452766,
+    "active": 1446821,
+    "idle": 5945,
+    "events": {
+     "ACTIVE": 1446821,
+     "SRAM_RD_DATA_BEAT_RECEIVED": 672948,
+     "SRAM_WR_DATA_BEAT_WRITTEN": 401443,
+     "EXT_RD_DATA_BEAT_RECEIVED": 301217,
+     "EXT_WR_DATA_BEAT_WRITTEN": 47887,
+     "IDLE": 5945,
+     "TOTAL": 1452766
+    }
+   },
+   "B3": {
+    "total": 1456450,
+    "active": 1450501,
+    "idle": 5949,
+    "events": {
+     "ACTIVE": 1450501,
+     "SRAM_RD_DATA_BEAT_RECEIVED": 672948,
+     "SRAM_WR_DATA_BEAT_WRITTEN": 401443,
+     "EXT_RD_DATA_BEAT_RECEIVED": 301217,
+     "EXT_WR_DATA_BEAT_WRITTEN": 47887,
+     "IDLE": 5949,
+     "TOTAL": 1456450
+    }
+   },
+   "canonical_board_cost_total": 1453996,
+   "artifact_identity": {
+    "deployment_set": {
+     "boot.bin": "9dc61053ad9f4dd799c0bb4c5031caaa5224b97d074398927ff2ab83b925837f",
+     "bram.bin": "b914e8c0bc5c6b16d40e380b428b2e5f3bbb75f24cdbbf46ebf48c687f10ce2e",
+     "ddr.bin": "a2b4f397443c86d64638f324792a4396bc7fc7d5890ff480da94bb52ffeeb6b3",
+     "images.txt": "af688281435a73dda3b2247845149817ecc7a9bbdff5a3ccd2e4dfa52875423f"
+    },
+    "staged_matches_build_output": true,
+    "model_sha256": "bd8d56b80557a5fca7acf14f61e5339285c02810f7d7afa714b9763fc4b86e95",
+    "vela_sha256": "031fade0e9b7136e2ed55a23422efbcc7aba28a32c8ebd3e043afbcc2f44bb75",
+    "axf_sha256": "7deaa14c5e8ba0034182d77aec0a833adc127014a741f1bc627fb37f642a3390",
+    "generated_cc_body_sha256": "99ce17fb63d4ed46f4ad2eb4a267cd4cd0f1984442110113e3fcd8d12dd2bfff",
+    "vela_cpu_operators": 0,
+    "fpga_flag": "FPGA_PLATFORM_SSE_320:UNINITIALIZED=ON",
+    "npu_config_id": "ETHOS_U_NPU_CONFIG_ID:UNINITIALIZED=Z1024",
+    "source_date_epoch": 1776763519
+   },
+   "all_valid": true
+  },
+  {
+   "workload": "wav2letter_pruned_int8",
+   "B1": {
+    "total": 4136849,
+    "active": 4130911,
+    "idle": 5938,
+    "events": {
+     "ACTIVE": 4130911,
+     "SRAM_RD_DATA_BEAT_RECEIVED": 463085,
+     "SRAM_WR_DATA_BEAT_WRITTEN": 40950,
+     "EXT_RD_DATA_BEAT_RECEIVED": 1836882,
+     "EXT_WR_DATA_BEAT_WRITTEN": 19045,
+     "IDLE": 5938,
+     "TOTAL": 4136849
+    }
+   },
+   "B2": {
+    "total": 4136385,
+    "active": 4130438,
+    "idle": 5947,
+    "events": {
+     "ACTIVE": 4130438,
+     "SRAM_RD_DATA_BEAT_RECEIVED": 463085,
+     "SRAM_WR_DATA_BEAT_WRITTEN": 40950,
+     "EXT_RD_DATA_BEAT_RECEIVED": 1836882,
+     "EXT_WR_DATA_BEAT_WRITTEN": 19045,
+     "IDLE": 5947,
+     "TOTAL": 4136385
+    }
+   },
+   "B3": {
+    "total": 4141149,
+    "active": 4135179,
+    "idle": 5970,
+    "events": {
+     "ACTIVE": 4135179,
+     "SRAM_RD_DATA_BEAT_RECEIVED": 463085,
+     "SRAM_WR_DATA_BEAT_WRITTEN": 40950,
+     "EXT_RD_DATA_BEAT_RECEIVED": 1836882,
+     "EXT_WR_DATA_BEAT_WRITTEN": 19045,
+     "IDLE": 5970,
+     "TOTAL": 4141149
+    }
+   },
+   "canonical_board_cost_total": 4136849,
+   "artifact_identity": {
+    "deployment_set": {
+     "boot.bin": "9dc61053ad9f4dd799c0bb4c5031caaa5224b97d074398927ff2ab83b925837f",
+     "bram.bin": "4e112520087434dd99e8cb66cb18aa9197b04760b255735bf0a9231f420dee5e",
+     "ddr.bin": "e57a6546fbb30c67e5f3b448addffd9ae83be4e1b67913a793b4596bb48c2ed2",
+     "images.txt": "af688281435a73dda3b2247845149817ecc7a9bbdff5a3ccd2e4dfa52875423f"
+    },
+    "staged_matches_build_output": true,
+    "model_sha256": "e0814a0e586f2f2881f7fe96e6bc0b8e4cfecc8d64ced56d8f7ca85b9b7ab257",
+    "vela_sha256": "4c5b640211f0aaa60eaf65ee5c9c4096a43022fd2c34127042e1304bf45def7b",
+    "axf_sha256": "1081d815ac3770a3096cb19321a45ce0ef33484c10492938966b24b2139b8cd6",
+    "generated_cc_body_sha256": "bf965705ccdeeb8feec951ece6b36c9dc98bfc245783f4645171705017876878",
+    "vela_cpu_operators": 0,
+    "fpga_flag": "FPGA_PLATFORM_SSE_320:UNINITIALIZED=ON",
+    "npu_config_id": "ETHOS_U_NPU_CONFIG_ID:UNINITIALIZED=Z1024",
+    "source_date_epoch": 1776763519
+   },
+   "all_valid": true
+  }
+ ],
+ "analysis_status": "NOT_STARTED",
+ "prohibitions": [
+  "no FVP-vs-board absolute comparison",
+  "no board MAC-scaling",
+  "no cross-generation board claim",
+  "no same-binary phrasing",
+  "SRAM/EXT cross-target consistency NOT_EVALUABLE"
+ ]
+}

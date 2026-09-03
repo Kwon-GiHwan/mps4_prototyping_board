@@ -1,0 +1,25 @@
+# raw observations, gihwan, read-only
+
+$ ls -l /dev/sdb*
+brw-rw---- 1 root disk 8, 16 Aug 16 17:22 /dev/sdb
+brw-rw---- 1 root disk 8, 17 Aug 16 17:22 /dev/sdb1
+
+$ findmnt -rn | grep -i sdb
+(no rows)
+
+$ ls -l /dev/ttyUSB*
+crw-rw---- 1 root dialout 188, 0 Aug 16 17:22 /dev/ttyUSB0
+crw-rw---- 1 root dialout 188, 1 Aug 16 17:22 /dev/ttyUSB1
+crw-rw---- 1 root dialout 188, 2 Aug 16 17:22 /dev/ttyUSB2
+crw-rw---- 1 root dialout 188, 3 Aug 16 17:22 /dev/ttyUSB3
+
+$ sudo -n true
+sudo: a password is required
+
+$ lsof /dev/ttyUSB0..3 (non-root)
+(no rows visible without root)
+
+$ fuser -v /dev/ttyUSB0..3 (non-root)
+
+$ uname -a
+Linux home 6.8.0-137-generic #137-Ubuntu SMP PREEMPT_DYNAMIC Fri Jul 17 20:28:23 UTC 2026 x86_64 x86_64 x86_64 GNU/Linux
