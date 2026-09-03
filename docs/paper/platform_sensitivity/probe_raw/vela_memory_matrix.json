@@ -1,0 +1,75 @@
+[
+ {
+  "accelerator_config": "ethos-u55-256",
+  "system_config": "Ethos_U55_High_End_Embedded",
+  "memory_mode": "Sram_Only",
+  "compile": "OK",
+  "artifact_sha256": "ad5a5ab358aca78e3d695d8d96243ef633d80eb6e093ce0e09301581f8d0ab52",
+  "bytes": 140528
+ },
+ {
+  "accelerator_config": "ethos-u55-256",
+  "system_config": "Ethos_U55_High_End_Embedded",
+  "memory_mode": "Shared_Sram",
+  "compile": "OK",
+  "artifact_sha256": "bfbeaedf0e11e287334519e9347ac74044a7f4b462372c167f5240e755ed02bc",
+  "bytes": 142128
+ },
+ {
+  "accelerator_config": "ethos-u55-256",
+  "system_config": "Ethos_U55_High_End_Embedded",
+  "memory_mode": "Dedicated_Sram",
+  "compile": "FAILED",
+  "artifact_sha256": "",
+  "bytes": 0,
+  "error": "mem_area\", self._mem_port_mapping(self.arena_mem_area).name, \"Sram or Dram\") ethosu.vela.errors.ConfigOptionError: 'Error: Invalid configuration of arena_mem_area=OffChipFlash (must be Sram or Dram)' "
+ },
+ {
+  "accelerator_config": "ethos-u65-256",
+  "system_config": "Ethos_U65_High_End",
+  "memory_mode": "Sram_Only",
+  "compile": "OK",
+  "artifact_sha256": "d81b7b2780b6558e6b3764bd2d76e3e7b71c567799797430747d7e645ec674d3",
+  "bytes": 140528
+ },
+ {
+  "accelerator_config": "ethos-u65-256",
+  "system_config": "Ethos_U65_High_End",
+  "memory_mode": "Shared_Sram",
+  "compile": "OK",
+  "artifact_sha256": "a839498ebb52e8e98f6d415fe73a66bac2eeedfca6bc11c52805d763e528b18b",
+  "bytes": 141152
+ },
+ {
+  "accelerator_config": "ethos-u65-256",
+  "system_config": "Ethos_U65_High_End",
+  "memory_mode": "Dedicated_Sram",
+  "compile": "OK",
+  "artifact_sha256": "8b7930df8bb7ff522beb03199b725cf3a920fe6cf465df13a880d0f87a202d74",
+  "bytes": 140992
+ },
+ {
+  "accelerator_config": "ethos-u85-256",
+  "system_config": "Ethos_U85_SYS_DRAM_Low",
+  "memory_mode": "Sram_Only",
+  "compile": "OK",
+  "artifact_sha256": "94a3e304fb7fa9548da6bca9a0397cf78e785d16496505c1ac216c07bb3c2a5b",
+  "bytes": 275296
+ },
+ {
+  "accelerator_config": "ethos-u85-256",
+  "system_config": "Ethos_U85_SYS_DRAM_Low",
+  "memory_mode": "Shared_Sram",
+  "compile": "OK",
+  "artifact_sha256": "30107e35fb9b9dd40aeba8572977f79de7c77011363fd85fb6e489fb92374013",
+  "bytes": 144448
+ },
+ {
+  "accelerator_config": "ethos-u85-256",
+  "system_config": "Ethos_U85_SYS_DRAM_Low",
+  "memory_mode": "Dedicated_Sram",
+  "compile": "OK",
+  "artifact_sha256": "7d1431a8bc9cd5ec3735e9c1f8c91cd8d1e4496286147ee5a1adec1acd72ce92",
+  "bytes": 144256
+ }
+]
