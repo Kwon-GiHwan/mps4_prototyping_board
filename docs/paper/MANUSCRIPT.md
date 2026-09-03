@@ -80,13 +80,12 @@ support.
 
 ### 3.1 Platforms and configurations
 
-Valid configurations are the intersection of Vela support and FVP-accepted
-parameters, established by capability probe rather than from documentation.
-The probe exposed a trap: `FVP_Corstone_SSE-300_Ethos-U55` accepts
-`num_macs=100`, because the model range-checks bounds without validating the
-discrete legal set. Acceptance by an FVP is therefore not evidence that a
-configuration is real; Vela's `--accelerator-config` enumeration is the
-authority, and a configuration is admitted only where both hold.
+Valid configurations are established by capability audit rather than from
+documentation. FVP parameter acceptance is not used as the authority for
+discrete MAC support. Supported MAC configurations are established from the
+Vela/source-defined discrete configuration set and independently confirmed by
+FVP initialization probes; a configuration is admitted only where both agree.
+On the pinned stack the two authorities agree on every probed cell.
 
 That yields **19 simulated configurations** (SSE-300/U55 at 32–256,
 SSE-300/U65 at 256/512, SSE-310/U55 at 32–256, SSE-310/U65 at 256/512,
@@ -636,7 +635,17 @@ and is not an exact decomposition of the frozen regor formal executables.
 **8.11 Hardware geometry versus compiler scheduling is not causally
 separated** anywhere in this work, and no claim in Section 6 asserts otherwise.
 
-**8.12 Scope.** All simulated values are cycle-model observations on TA-enabled
+**8.12 A withdrawn auxiliary observation.** An earlier auxiliary record
+reported that an FVP accepted an unsupported `num_macs` value, and was used to
+argue that the model range-checks bounds without validating the discrete set.
+The exact probe invocation was not archived, the observation could not be
+reproduced under the same Fast Models build during the X0 capability audit
+(three invocation styles all reject, and the model enumerates the legal set in
+its own error), and it is classified `NOT_REPRODUCIBLE` / `NOT_LOAD_BEARING`.
+No argument in this paper rests on it; §3.1 states the authority rule directly
+instead.
+
+**8.13 Scope.** All simulated values are cycle-model observations on TA-enabled
 configurations with a stock single-inference runner; all board values are
 software-visible observations on one physical configuration. Workloads are the
 MLEK set — representative of embedded ML, not exhaustive.
