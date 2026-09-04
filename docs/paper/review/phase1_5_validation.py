@@ -12,13 +12,18 @@ so renumbering (Phase-2 action 8 promotes the robustness study to its own
 section) cannot silently invalidate a check.
 """
 import json
+import os
 import re
 import sys
 
 from manuscript_text import Manuscript
 
+# default resolves relative to this file, so the suite runs from anywhere
+DEFAULT = os.path.join(os.path.dirname(os.path.dirname(
+    os.path.abspath(__file__))), "MANUSCRIPT.md")
 
-def main(path="docs/paper/MANUSCRIPT.md"):
+
+def main(path=DEFAULT):
     m = Manuscript.load(path)
     raw, prose = m.raw, m.prose
     secs = m.sections()

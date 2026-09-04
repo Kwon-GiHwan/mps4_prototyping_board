@@ -10,10 +10,15 @@ so a hard-wrapped phrase can never again look absent. Findings report the
 manuscript line they occur on.
 """
 import json
+import os
 import re
 import sys
 
 from manuscript_text import Manuscript
+
+# default resolves relative to this file, so the suite runs from anywhere
+DEFAULT = os.path.join(os.path.dirname(os.path.dirname(
+    os.path.abspath(__file__))), "MANUSCRIPT.md")
 
 # --- F15: causal isolation beyond "X caused" -------------------------------
 # A causal connective alone is not a defect; the paper legitimately uses these
@@ -52,7 +57,7 @@ def causal_isolation_hits(text, window=260):
     return out
 
 
-def main(path="docs/paper/MANUSCRIPT.md"):
+def main(path=DEFAULT):
     m = Manuscript.load(path)
     raw, prose = m.raw, m.prose
     body_end = prose.index("## References")
