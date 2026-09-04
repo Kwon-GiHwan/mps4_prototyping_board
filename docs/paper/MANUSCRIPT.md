@@ -360,25 +360,11 @@ preregistered verdict is `NOT_EQUIVALENT` on the full PMU vector, with
 component-level equivalence established for execution boundaries, attribution,
 and the cycle and active-cycle domains.
 
-### 3.6 Provenance and procedure
+**Provenance and procedure** — the identity chain each formal cell carries, the
+build-reproducibility condition, the repetition and invalid-run rules, and the
+analysis-plan discipline — are set out in Appendix B.
 
-Every formal cell carries an identity chain: model SHA → Vela artifact SHA →
-generated model-source body SHA → linked executable SHA → execution. Builds are
-byte-reproducible after pinning `SOURCE_DATE_EPOCH` to the source-tree commit
-timestamp — necessary because the firmware embeds `__DATE__`/`__TIME__`, which
-made every binary unique until pinned.
-
-Simulated cells use one discarded warm-up inference and three deterministic
-runs required to be **exactly equal**; disagreement is a hard stop, never an
-average, because a deterministic model disagreeing with itself indicates a
-harness fault. Board cells use three independent fresh boots. Invalid runs are
-discarded with a named reason and never down-weighted.
-
-Analysis plans were frozen before the data they read, applied exactly once, and
-amended only by recorded supersession. Analyzers carry mutation tests proving
-each rejection rule can fire.
-
-### 3.7 Cross-platform sensitivity validation design
+### 3.6 Cross-platform sensitivity validation design
 
 The structural metrics above are used to compare configurations that do not
 share an absolute cycle axis, which raises a validity question: do those
@@ -563,9 +549,9 @@ score is defined.
 
 ![Agreement of each structural metric across a change of Corstone platform,
 CLASS A and CLASS B shown separately and never pooled. The only disagreements
-are eight threshold scaling-class labels, all in CLASS B.](figures/fig5_platform_sensitivity.svg)
+are eight threshold scaling-class labels, all in CLASS B.](figures/fig2_platform_sensitivity.svg)
 
-**Figure 5.** Metric agreement across the tested platform pairs, same NPU and
+**Figure 2.** Metric agreement across the tested platform pairs, same NPU and
 byte-identical Vela artifact. Not a platform performance comparison.
 
 ## 6. Corstone-320 hardware validation (RQ3)
@@ -586,7 +572,7 @@ simulated and the physical ordering. The rank pairs are tabulated in
 Appendix A.
 
 **Relative cost shape (secondary).** Each domain is normalized by its own
-geometric mean; Figure 4 shows the two vectors and Appendix A gives the exact
+geometric mean; Figure 3 shows the two vectors and Appendix A gives the exact
 values.
 
 The two vectors are presented side by side. **No aggregate deviation metric is
@@ -597,9 +583,9 @@ raw triplet plus median, with no spread statistic, for the same reason.
 
 ![Simulated and physical relative workload cost, each normalized within its own
 domain by its own geometric mean. Ranking is preserved exactly. No deviation,
-ratio or error statistic is shown.](figures/fig4_board_relative_cost.svg)
+ratio or error statistic is shown.](figures/fig3_board_relative_cost.svg)
 
-**Figure 4.** Relative cost shape, FVP and board, independently normalized. The
+**Figure 3.** Relative cost shape, FVP and board, independently normalized. The
 two vectors are shapes to compare, not magnitudes; absolute
 simulation-versus-hardware comparison is refused by construction.
 
@@ -650,7 +636,10 @@ and profiled outputs bit-identical to the clean outputs on every profiled cell.
 
 For `rnnoise` at the sweep baseline, the +19,000-cycle reversal decomposes into
 **ten regressing groups of +1,000 to +4,030 cycles each**, with a single
-improving group (−1,000). The largest contributor accounts for roughly a fifth
+improving group (−1,000). The profiled groups sum to +19,060 rather than the
++19,000 observed without instrumentation; the 60-cycle difference is the
+deterministic profiling-boundary residual of Section 9.5, and the two figures
+are reported separately rather than as one number. The largest contributor accounts for roughly a fifth
 of the whole-model delta. **No single pathological operation or group explains
 the reversal.** The regressing groups comprise small elementwise clusters
 (Add/Mul/Sub/Pack), small fully-connected operations, and Concat/Quantize —
@@ -658,14 +647,19 @@ the workload's abundant low-arithmetic operations rather than its few large
 matrix operations.
 
 ![Per-operation-group cycle change for rnnoise at the Ethos-U85 256 to 512
-transition: ten groups regress, one improves, three are unchanged, summing to
-the whole-model +19,060. Bars show where cycles moved, not
-why.](figures/fig2_u85_group_delta.svg)
+transition: ten groups regress, one improves, three are unchanged. The
+reconstructed profiled-group delta is +19,060 against a whole-model observed
+delta of +19,000, a residual of 60 cycles. Bars show where cycles moved, not
+why.](figures/fig4_u85_group_delta.svg)
 
-**Figure 2.** Distribution of the reversal across the frozen 14-group common
-attribution partition. No group is claimed as the cause of the whole-model
-change; inside a merged interrupt-service window only the group effect is
-evaluable.
+**Figure 4.** Distribution of the reversal across the frozen 14-group common
+attribution partition. The **whole-model observed delta is +19,000** cycles
+(Section 7.1); the **reconstructed profiled-group delta is +19,060**, and the
+**60-cycle residual** is the deterministic profiling-boundary
+(interrupt-service) residual described in Section 9.5 — the two measurement
+boundaries are not identical and the figure does not treat them as one. No group
+is claimed as the cause of the whole-model change; inside a merged
+interrupt-service window only the group effect is evaluable.
 
 Two further observations bound interpretation. First, `UBLOCK_CHANGED`
 co-occurs with roughly 95 % of operations in **every** direction class (41/43
@@ -710,9 +704,9 @@ Concat/FC/Quantize     +1k → +3k → +2k
 
 ![rnnoise operation-group deltas under Sram_Only, Shared_Sram and
 Dedicated_Sram. The same groups regress in every configuration; magnitude
-changes, direction does not.](figures/fig3_u85_memory_robustness.svg)
+changes, direction does not.](figures/fig5_u85_memory_robustness.svg)
 
-**Figure 3.** Cross-memory robustness of the regressing groups. Every mode
+**Figure 5.** Cross-memory robustness of the regressing groups. Every mode
 compiles to a different artifact, so memory-system behaviour and
 compiler-generated program change remain `NOT_SEPARATED`; this is a
 configuration intervention, not a bandwidth intervention.
@@ -1071,10 +1065,10 @@ lose more on those operations than it gains elsewhere, and the compiler estimate
 will not necessarily reveal it: Vela predicted improvement for the one workload
 that regressed.
 
-## Appendix A. Exact values behind Figure 4
+## Appendix A. Exact values behind the board validation
 
-Reproduced from `docs/paper/analysis/board_rq3/` so that the figure's underlying
-numbers remain available without re-running the frozen analysis. Corstone-320 /
+Reproduced from `docs/paper/analysis/board_rq3/` so that the numbers behind
+Section 6 and Figure 3 remain available without re-running the frozen analysis. Corstone-320 /
 Ethos-U85 @ 1024 MACs, 21 formal samples, canonical value per workload
 `median(B1,B2,B3)`.
 
@@ -1103,6 +1097,24 @@ ratio, difference, or error between them is computed anywhere in this paper.
 | `yolo-fastest_192_face_v4` | 1.3606 | 1.3309 |
 | `mobilenet_v2_1.0_224_INT8` | 4.3570 | 4.2680 |
 | `wav2letter_pruned_int8` | 12.7514 | 12.1432 |
+
+## Appendix B. Provenance and procedure
+
+Every formal cell carries an identity chain: model SHA → Vela artifact SHA →
+generated model-source body SHA → linked executable SHA → execution. Builds are
+byte-reproducible after pinning `SOURCE_DATE_EPOCH` to the source-tree commit
+timestamp — necessary because the firmware embeds `__DATE__`/`__TIME__`, which
+made every binary unique until pinned.
+
+Simulated cells use one discarded warm-up inference and three deterministic
+runs required to be **exactly equal**; disagreement is a hard stop, never an
+average, because a deterministic model disagreeing with itself indicates a
+harness fault. Board cells use three independent fresh boots. Invalid runs are
+discarded with a named reason and never down-weighted.
+
+Analysis plans were frozen before the data they read, applied exactly once, and
+amended only by recorded supersession. Analyzers carry mutation tests proving
+each rejection rule can fire.
 
 ---
 

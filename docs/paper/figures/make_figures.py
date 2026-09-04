@@ -193,15 +193,28 @@ def fig_mechanism():
             if r["workload"] == "rnnoise_INT8" and r["binding_pair"] == "B-frozen"]
     rows.sort(key=lambda r: int(r["delta"]))
     total = sum(int(r["delta"]) for r in rows)
-    bh, gap, top, lab = 17, 7, 96, 250
+    WHOLE_MODEL_DELTA = 19000     # 7.1: rnnoise 36,086 -> 55,086, uninstrumented
+    bh, gap, top, lab = 17, 7, 132, 250
     s = SVG(940, top + len(rows) * (bh + gap) + 132)
     s.text(40, 26, "Ethos-U85 256 → 512 MACs: per-operation-group cycle "
                    "change for rnnoise", size=14, weight="bold")
-    s.text(40, 45, "Ten groups regress, one improves, three are unchanged; the "
-                   "whole-model change is +%s cycles." % format(total, ","),
-           size=10.5, fill=MUTE)
-    s.text(40, 62, "No single group accounts for the reversal — the largest "
+    s.text(40, 45, "Ten groups regress, one improves, three are unchanged. "
+                   "No single group accounts for the reversal \u2014 the largest "
                    "is about a fifth of it.", size=10.5, fill=MUTE)
+    # The profiled-group sum and the whole-model delta are different measurement
+    # boundaries and must not be shown as one number (finding MOD-2).
+    s.text(40, 66, "whole-model observed delta", size=10, fill=MUTE)
+    s.text(300, 66, "+%s" % format(WHOLE_MODEL_DELTA, ","), size=10,
+           anchor="end", fill=INK)
+    s.text(40, 81, "reconstructed profiled-group delta", size=10, fill=MUTE)
+    s.text(300, 81, "+%s" % format(total, ","), size=10, anchor="end", fill=INK)
+    s.text(40, 96, "residual", size=10, fill=MUTE)
+    s.text(300, 96, "%d" % (total - WHOLE_MODEL_DELTA), size=10, anchor="end",
+           fill=INK)
+    s.line(40, 87, 300, 87, MUTE)
+    s.text(312, 96, "deterministic profiling-boundary (interrupt-service) "
+                    "residual \u2014 the two boundaries are not identical",
+           size=9.5, fill=MUTE)
     mx = max(abs(int(r["delta"])) for r in rows) or 1
     zero, half = lab + 250, 250.0
     s.line(zero, top - 10, zero, top + len(rows) * (bh + gap) - gap + 4, MUTE)
@@ -231,17 +244,20 @@ def fig_mechanism():
            "effect is evaluable, not per-operation cause. Bars show where cycles "
            "moved, not why \u2014 no group is claimed as the cause of the "
            "whole-model reversal.")
-    prov(figure="fig2_u85_group_delta", source_tag="paper-u85-mechanism-derived-frozen",
+    prov(figure="fig4_u85_group_delta", source_tag="paper-u85-mechanism-derived-frozen",
          source="docs/paper/mechanism/U85_GROUP_DIFFERENTIAL.csv",
          columns="workload, binding_pair, n_ops, member_types, delta, direction",
          transformation="filter workload==rnnoise_INT8 and binding_pair==B-frozen "
                         "(14 groups); sort by frozen delta; plot delta as-is",
          metric="per-group cycle delta, 512 minus 256, frozen",
          claim="the reversal is distributed across operation groups "
-               "(Section 6.3 / 7.3)",
+               "(Section 7.3); the profiled-group sum (+19,060) is a different "
+               "measurement boundary from the whole-model delta (+19,000), the "
+               "60-cycle difference being the deterministic profiling-boundary "
+               "residual of Section 9.5",
          forbidden="reading any single bar as the cause of the whole-model "
                    "regression; per-operation attribution inside a merged group")
-    return s.save(os.path.join(HERE, "fig2_u85_group_delta.svg"))
+    return s.save(os.path.join(HERE, "fig4_u85_group_delta.svg"))
 
 
 # =========================================================================
@@ -291,7 +307,7 @@ def fig_memory():
            "compiles to a different artifact, so memory-system behaviour and "
            "compiler-generated program change remain NOT_SEPARATED: this is a "
            "configuration intervention, not a bandwidth intervention.")
-    prov(figure="fig3_u85_memory_robustness", source_tag="paper-u85-p1b-frozen",
+    prov(figure="fig5_u85_memory_robustness", source_tag="paper-u85-p1b-frozen",
          source="docs/paper/mechanism/U85_P1B_CROSSMODE_GROUPS.csv",
          columns="workload, n_ops, member_types, SO_delta, SH_delta, DS_delta, "
                  "SO_dir, SH_dir, DS_dir",
@@ -303,7 +319,7 @@ def fig_memory():
                "magnitude is not (Section 6.4 / 7.4)",
          forbidden="attributing the modulation to memory bandwidth; the modes "
                    "are different artifacts")
-    return s.save(os.path.join(HERE, "fig3_u85_memory_robustness.svg"))
+    return s.save(os.path.join(HERE, "fig5_u85_memory_robustness.svg"))
 
 
 # =========================================================================
@@ -343,7 +359,7 @@ def fig_board():
                 "is refused by construction: the two builds are target-specific.")
     s.para(40, yy + 6, "One physical configuration only \u2014 Corstone-320 / "
                        "Ethos-U85 @ 1024 MACs, 21 formal samples.")
-    prov(figure="fig4_board_relative_cost",
+    prov(figure="fig3_board_relative_cost",
          source_tag="paper-board-rq3-analysis-results-frozen",
          source="docs/paper/analysis/board_rq3/normalized_relative_cost.csv "
                 "(+ fvp_board_ranking.csv for the ordering claim)",
@@ -360,7 +376,7 @@ def fig_board():
                      "fvp_board_ranking.csv: %d workloads, %d inversions"
                      % (len(rank), sum(1 for r in rank
                                        if r.get("fvp_rank") != r.get("board_rank"))))
-    return s.save(os.path.join(HERE, "fig4_board_relative_cost.svg"))
+    return s.save(os.path.join(HERE, "fig3_board_relative_cost.svg"))
 
 
 # =========================================================================
@@ -423,7 +439,7 @@ def fig_platform():
            "In CLASS B the timing-adapter state, the subsystem and the Fast "
            "Models implementation change together: the disagreements are "
            "ASSOCIATED_WITH those comparisons, never attributed to one factor.")
-    prov(figure="fig5_platform_sensitivity",
+    prov(figure="fig2_platform_sensitivity",
          source_tag="paper-platform-sensitivity-x3-results-frozen",
          source="docs/paper/platform_sensitivity/X3_METRIC_QUALIFICATION.csv",
          columns="metric, class, tested_universe, agreement, disagreement, "
@@ -437,12 +453,13 @@ def fig_platform():
                "(Section 5 / 7.5)",
          forbidden="pooling CLASS A with CLASS B; reading the bars as a "
                    "platform-performance ranking; any raw-cycle comparison")
-    return s.save(os.path.join(HERE, "fig5_platform_sensitivity.svg"))
+    return s.save(os.path.join(HERE, "fig2_platform_sensitivity.svg"))
 
 
 def main():
-    made = [fig_scaling(), fig_mechanism(), fig_memory(), fig_board(),
-            fig_platform()]
+    # emitted in order of first appearance in the manuscript
+    made = [fig_scaling(), fig_platform(), fig_board(), fig_mechanism(),
+            fig_memory()]
     with open(os.path.join(HERE, "FIGURE_PROVENANCE.json"), "w") as fh:
         json.dump({"generated_by": "docs/paper/figures/make_figures.py",
                    "class": "EXISTING_DATA_ONLY",

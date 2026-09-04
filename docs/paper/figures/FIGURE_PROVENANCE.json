@@ -14,27 +14,17 @@
    "forbidden": "reading values across panels as a cross-generation performance comparison; panels share no absolute axis"
   },
   {
-   "figure": "fig2_u85_group_delta",
-   "source_tag": "paper-u85-mechanism-derived-frozen",
-   "source": "docs/paper/mechanism/U85_GROUP_DIFFERENTIAL.csv",
-   "columns": "workload, binding_pair, n_ops, member_types, delta, direction",
-   "transformation": "filter workload==rnnoise_INT8 and binding_pair==B-frozen (14 groups); sort by frozen delta; plot delta as-is",
-   "metric": "per-group cycle delta, 512 minus 256, frozen",
-   "claim": "the reversal is distributed across operation groups (Section 6.3 / 7.3)",
-   "forbidden": "reading any single bar as the cause of the whole-model regression; per-operation attribution inside a merged group"
+   "figure": "fig2_platform_sensitivity",
+   "source_tag": "paper-platform-sensitivity-x3-results-frozen",
+   "source": "docs/paper/platform_sensitivity/X3_METRIC_QUALIFICATION.csv",
+   "columns": "metric, class, tested_universe, agreement, disagreement, qualification",
+   "transformation": "plot the frozen agreement/tested_universe counts per metric per class; classes drawn separately and never pooled into one rate",
+   "metric": "agreement counts under the frozen X1 comparison universe",
+   "claim": "ordinal and directional metrics were robust across the tested pairs; thresholded classes were TA-state sensitive (Section 5 / 7.5)",
+   "forbidden": "pooling CLASS A with CLASS B; reading the bars as a platform-performance ranking; any raw-cycle comparison"
   },
   {
-   "figure": "fig3_u85_memory_robustness",
-   "source_tag": "paper-u85-p1b-frozen",
-   "source": "docs/paper/mechanism/U85_P1B_CROSSMODE_GROUPS.csv",
-   "columns": "workload, n_ops, member_types, SO_delta, SH_delta, DS_delta, SO_dir, SH_dir, DS_dir",
-   "transformation": "filter workload==rnnoise_INT8; drop groups whose delta is zero in all three modes; sort by frozen DS_delta; plot the frozen deltas as-is",
-   "metric": "per-group cycle delta, 512 minus 256, per memory configuration",
-   "claim": "direction is invariant across tested memory configurations while magnitude is not (Section 6.4 / 7.4)",
-   "forbidden": "attributing the modulation to memory bandwidth; the modes are different artifacts"
-  },
-  {
-   "figure": "fig4_board_relative_cost",
+   "figure": "fig3_board_relative_cost",
    "source_tag": "paper-board-rq3-analysis-results-frozen",
    "source": "docs/paper/analysis/board_rq3/normalized_relative_cost.csv (+ fvp_board_ranking.csv for the ordering claim)",
    "columns": "workload, fvp_normalized_cost, board_normalized_cost",
@@ -45,14 +35,24 @@
    "cross_check": "row count and ranking cross-checked against fvp_board_ranking.csv: 7 workloads, 0 inversions"
   },
   {
-   "figure": "fig5_platform_sensitivity",
-   "source_tag": "paper-platform-sensitivity-x3-results-frozen",
-   "source": "docs/paper/platform_sensitivity/X3_METRIC_QUALIFICATION.csv",
-   "columns": "metric, class, tested_universe, agreement, disagreement, qualification",
-   "transformation": "plot the frozen agreement/tested_universe counts per metric per class; classes drawn separately and never pooled into one rate",
-   "metric": "agreement counts under the frozen X1 comparison universe",
-   "claim": "ordinal and directional metrics were robust across the tested pairs; thresholded classes were TA-state sensitive (Section 5 / 7.5)",
-   "forbidden": "pooling CLASS A with CLASS B; reading the bars as a platform-performance ranking; any raw-cycle comparison"
+   "figure": "fig4_u85_group_delta",
+   "source_tag": "paper-u85-mechanism-derived-frozen",
+   "source": "docs/paper/mechanism/U85_GROUP_DIFFERENTIAL.csv",
+   "columns": "workload, binding_pair, n_ops, member_types, delta, direction",
+   "transformation": "filter workload==rnnoise_INT8 and binding_pair==B-frozen (14 groups); sort by frozen delta; plot delta as-is",
+   "metric": "per-group cycle delta, 512 minus 256, frozen",
+   "claim": "the reversal is distributed across operation groups (Section 7.3); the profiled-group sum (+19,060) is a different measurement boundary from the whole-model delta (+19,000), the 60-cycle difference being the deterministic profiling-boundary residual of Section 9.5",
+   "forbidden": "reading any single bar as the cause of the whole-model regression; per-operation attribution inside a merged group"
+  },
+  {
+   "figure": "fig5_u85_memory_robustness",
+   "source_tag": "paper-u85-p1b-frozen",
+   "source": "docs/paper/mechanism/U85_P1B_CROSSMODE_GROUPS.csv",
+   "columns": "workload, n_ops, member_types, SO_delta, SH_delta, DS_delta, SO_dir, SH_dir, DS_dir",
+   "transformation": "filter workload==rnnoise_INT8; drop groups whose delta is zero in all three modes; sort by frozen DS_delta; plot the frozen deltas as-is",
+   "metric": "per-group cycle delta, 512 minus 256, per memory configuration",
+   "claim": "direction is invariant across tested memory configurations while magnitude is not (Section 6.4 / 7.4)",
+   "forbidden": "attributing the modulation to memory bandwidth; the modes are different artifacts"
   }
  ]
 }
