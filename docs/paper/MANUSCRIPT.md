@@ -48,7 +48,10 @@ Contributions:
    simulator timing adapter can silently change what is being measured; a
    compiler backend change can silently change which program is being
    instrumented; and instrumentation backends must be cross-validated before
-   their per-layer numbers are joined.
+   their per-layer numbers are joined. A same-artifact platform-sensitivity
+   study further shows that workload ordering, scaling direction, saturation
+   and normalized ordering are preserved across the tested U55/U65 FVP pairs,
+   while threshold-based efficiency classes are more timing-model-sensitive.
 
 ## 2. Background
 
@@ -217,6 +220,45 @@ Analysis plans were frozen before the data they read, applied exactly once, and
 amended only by recorded supersession. Analyzers carry mutation tests proving
 each rejection rule can fire.
 
+### 3.7 Cross-platform sensitivity validation design
+
+The structural metrics above are used to compare configurations that do not
+share an absolute cycle axis, which raises a validity question: do those
+metrics survive a change of host platform at all? A separate same-artifact
+validation answers it for the pairs this stack supports.
+
+Each validation cell holds **model, NPU, MAC configuration and the exact Vela
+NPU artifact fixed**, and changes only the Corstone/FVP platform. Artifact
+identity is a hard gate: one artifact is compiled per (workload, NPU, MAC),
+its SHA-256 must match across every platform in its comparison set, and the
+identical artifact file is built into each platform's firmware. The complete
+executable necessarily differs — the host firmware is platform-specific — so
+the relation is recorded as
+`FIRMWARE_PLATFORM_SPECIFIC_BUT_NPU_ARTIFACT_IDENTICAL` and never as "the same
+binary".
+
+Because timing-adapter state is not free to vary independently (Section 3.1),
+comparisons are split and never pooled:
+
+```
+CLASS A   same TA state      U65: SSE-310 ↔ SSE-315   (TA_OFF ↔ TA_OFF)
+CLASS B   TA state differs   U55: SSE-300 ↔ SSE-310
+                             U65: SSE-300 ↔ SSE-310, SSE-300 ↔ SSE-315
+```
+
+Universe: 92 cells — U55 across MAC {32,64,128,256} on two platforms, U65
+across MAC {256,512} on three — with the workload set per MAC point taken from
+the frozen executability intersection. Acquisition reuses the qualified clean
+whole-model path (three fresh simulator processes per cell, exact vector
+equality required); determinism was re-qualified on a representative subset
+before the formal contract was applied. Metric definitions are reused
+unchanged; no aggregate robustness score is defined.
+
+Note the deliberate boundary: the TA-OFF platforms enter this study as
+**validation** subjects for metric behaviour, not as sources of performance
+figures. They remain excluded from the performance analysis of Section 4, and
+no cross-platform cycle ratio is computed anywhere.
+
 ## 4. Cross-generation simulated characterization (RQ1, RQ2)
 
 Formal sweep: 74 executable TA-ON cells, 222 samples, `M1 == M2 == M3` on
@@ -287,6 +329,56 @@ than in directly comparable absolute cycle values. *Not established:* any "U85
 is faster than U55" statement — Fast Models version skew and timing-adapter
 differences make absolute cross-generation comparison unsupportable on this
 data.
+
+### 4.6 Robustness of the structural metrics across tested FVP variants
+
+92 cells, 276 samples, all vector-exact; 39/39 artifacts reproduced their
+frozen hashes, so every comparison below is a same-NPU-artifact comparison.
+Zero artifact-identity failures and zero rule failures.
+
+| metric | CLASS A (same TA state) | CLASS B (TA state differs) |
+| --- | --- | --- |
+| workload ranking | 2/2 MAC points | 8/8 MAC points |
+| MAC-step direction | 7/7 steps | 32/32 steps |
+| scaling class (STRONG/PARTIAL/WEAK) | 7/7 steps | **24/32 steps** |
+| saturation verdict | 7/7 ladders | 20/20 ladders |
+| normalized workload ordering | 2/2 MAC points | 8/8 MAC points |
+
+Ranking agreement means identical order *and* Spearman `rho = 1.0` at that MAC
+point. The two classes are reported separately and are not combined into a
+single rate.
+
+**The only disagreements are eight scaling-class labels**, all in CLASS B, and
+every one is `PARTIAL` on the TA_ON side and `STRONG` on the TA_OFF side —
+adjacent efficiencies of 0.64–0.75 against 0.77–0.86, i.e. crossings of the
+frozen 0.75 cut point in a single direction. No ranking, direction or
+saturation verdict changed anywhere.
+
+In CLASS A the agreement is exact in a stronger sense: **14/14 tested cells had
+exactly identical canonical NPU cycles** on SSE-310 and SSE-315. Stated
+narrowly — under the tested TA-OFF condition, changing from SSE-310 to SSE-315
+produced no observable change in canonical NPU cycles for any of the 14
+evaluated cells (`NO_OBSERVED_CYCLE_DIFFERENCE_UNDER_TESTED_TA_OFF_PAIR`).
+This observation does not establish that subsystem or Fast-Models differences
+are generally irrelevant, nor does it transfer to TA-ON conditions, which is
+`NOT_EVALUABLE` here because no platform pair on this stack holds TA constant
+at TA_ON.
+
+All observed scaling-class disagreements occurred in comparisons where TA state
+also differed; they are `ASSOCIATED_WITH` those comparisons. They are not
+attributed to the timing adapter: in CLASS B the subsystem, the Fast Models
+implementation and the TA state change together, and those contributions
+remain `NOT_SEPARATED`.
+
+Resulting qualification of the metrics, as categories rather than scores:
+
+```
+workload ranking · MAC-step direction · saturation verdict ·
+normalized workload ordering              ROBUST_IN_TESTED_PAIRS
+threshold scaling class                   TA_STATE_SENSITIVE
+raw cross-platform cycles                 NOT_COMPARABLE
+memory PMU counters                       GENERATION_SPECIFIC_NOT_COMMON
+```
 
 ## 5. Corstone-320 hardware validation (RQ3)
 
@@ -552,6 +644,19 @@ many small, low-arithmetic operations can lose more on those operations than
 they gain elsewhere, and a compiler estimate will not necessarily reveal it —
 Vela predicted improvement for the one workload that regressed.
 
+**Which metrics transfer across platform and timing conditions.** The
+same-artifact validation turns a previously implicit assumption into a measured
+one. Ordinal and directional conclusions were preserved across the tested
+platform pairs, whereas threshold-based scaling classes were more sensitive to
+timing-model configuration. That yields a practical hierarchy: workload
+ordering, scaling direction, saturation verdicts and normalized ordering
+carried across every tested pair; a class label defined by a fixed efficiency
+cut point did not, because values sitting near the cut point can cross it;
+and raw cross-platform cycles remain outside the comparable set entirely.
+Readers reproducing this kind of study on a different simulator stack should
+expect the ordinal layer to travel and the thresholded layer to need
+re-qualification.
+
 **Measurement methodology results.** Four are reusable beyond this study.
 (i) A simulator's timing adapter can silently change what is being measured:
 two platforms running a byte-identical command stream differed ~4× purely by
@@ -645,7 +750,18 @@ its own error), and it is classified `NOT_REPRODUCIBLE` / `NOT_LOAD_BEARING`.
 No argument in this paper rests on it; §3.1 states the authority rule directly
 instead.
 
-**8.13 Scope.** All simulated values are cycle-model observations on TA-enabled
+**8.13 Platform-sensitivity validation bounds.** The validation covers U55 and
+U65 on the platform pairs this stack supports; three bounds follow. There is
+**no same-platform U65-versus-U85 controlled pair**, so cross-generation
+statements involving U85 rest on structural metrics rather than a controlled
+substrate. There is **no TA_ON cross-FVP control pair**, so the CLASS A result
+exists only under TA_OFF and its transfer to TA_ON is `NOT_EVALUABLE`. In
+CLASS B the timing-adapter state, the subsystem and the Fast Models
+implementation change together, so their contributions are `NOT_SEPARATED`;
+the eight class disagreements are reported as associated with those
+comparisons, never as caused by any one of the three.
+
+**8.14 Scope.** All simulated values are cycle-model observations on TA-enabled
 configurations with a stock single-inference runner; all board values are
 software-visible observations on one physical configuration. Workloads are the
 MLEK set — representative of embedded ML, not exhaustive.
