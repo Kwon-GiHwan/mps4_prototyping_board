@@ -545,7 +545,8 @@ results should not give a threshold class the same weight as an ordinal one.
 | transfer of the CLASS A result to TA_ON | — | — | `NOT_EVALUABLE` |
 
 CLASS A and CLASS B counts are listed side by side. No aggregate robustness
-score is defined.
+score is defined. Figure 2 summarizes these agreement counts metric by metric,
+with the two classes drawn separately.
 
 ![Agreement of each structural metric across a change of Corstone platform,
 CLASS A and CLASS B shown separately and never pooled. The only disagreements
@@ -644,7 +645,10 @@ of the whole-model delta. **No single pathological operation or group explains
 the reversal.** The regressing groups comprise small elementwise clusters
 (Add/Mul/Sub/Pack), small fully-connected operations, and Concat/Quantize —
 the workload's abundant low-arithmetic operations rather than its few large
-matrix operations.
+matrix operations. Figure 4 shows how that change is distributed across the
+groups, and places the +19,000 whole-model observed delta beside the +19,060
+profiled-group sum so that the 60-cycle residual between the two measurement
+boundaries stays visible.
 
 ![Per-operation-group cycle change for rnnoise at the Ethos-U85 256 to 512
 transition: ten groups regress, one improves, three are unchanged. The
@@ -701,6 +705,9 @@ Add/FC/Mul/Pack        +1k → +4k → +7k     (Sram_Only → Shared_Sram → De
 Add/FC/Mul/Pack        +1k → +5k → +6k
 Concat/FC/Quantize     +1k → +3k → +2k
 ```
+
+Figure 5 shows those group deltas side by side across the three configurations,
+where the magnitudes move and the directions do not.
 
 ![rnnoise operation-group deltas under Sram_Only, Shared_Sram and
 Dedicated_Sram. The same groups regress in every configuration; magnitude

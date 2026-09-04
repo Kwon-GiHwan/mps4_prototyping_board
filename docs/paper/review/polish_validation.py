@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
-"""FINAL POLISHING PASS checks A-F (manager decision section 9).
+"""FINAL POLISHING PASS checks A-G.
 
-Closes MOD-1, MOD-2, MIN-1, MIN-2 and pins the three delta semantics so the
-MOD-2 defect cannot silently return. Runs on top of the existing suites, which
-it does not duplicate.
+A-F close MOD-1, MOD-2, MIN-1, MIN-2 and pin the three delta semantics so the
+MOD-2 defect cannot silently return. G, added for NEW-1, requires every
+main-text figure to carry at least one explicit PROSE reference: a caption or an
+image insertion containing "Figure X" does not satisfy it. Runs on top of the
+existing suites, which it does not duplicate.
 """
 import json
 import os
@@ -48,6 +50,33 @@ def main(path=DEFAULT):
           len(pairs) == 5 and all(p[1] == p[2] for p in pairs),
           str([(p[0], p[2]) for p in pairs]))
 
+    # ---- G. every figure carries a prose reference (NEW-1) ---------------
+    # Strip the two places "Figure X" occurs structurally rather than as prose:
+    # the image insertion (alt text) and the caption block. What remains is
+    # running text, so a caption alone can never satisfy this check.
+    prose_only = re.sub(r"!\[[^\]]*\]\([^)]*\)", "", raw)
+    prose_only = re.sub(r"\*\*Figure \d\.\*\*[^\n]*(\n(?!\n)[^\n]*)*", "",
+                        prose_only)
+    referenced = {int(x) for x in re.findall(r"Figure (\d)", prose_only)}
+    for i in range(1, 6):
+        check("G", "Figure %d has an explicit prose reference" % i,
+              i in referenced, "only caption/insertion found")
+    check("G", "all five figures referenced in prose",
+          referenced >= {1, 2, 3, 4, 5}, "referenced=%s" % sorted(referenced))
+    # the stripping must be real: captions alone must NOT satisfy the rule
+    caption_only = re.sub(r"!\[[^\]]*\]\([^)]*\)", "", raw)
+    check("G", "caption text is excluded from the prose set",
+          "**Figure 1.**" in caption_only and "**Figure 1.**" not in prose_only,
+          "caption stripping is not working")
+    # a prose reference must sit outside any caption block
+    for i in (2, 4, 5):
+        check("G", "Figure %d prose reference is a real sentence" % i,
+              bool(re.search(r"Figure %d (shows|summarizes|gives|reports)" % i,
+                             prose_only)),
+              "must explain the figure's role, not merely 'See Figure X'")
+    check("G", "no bare 'See Figure X' reference",
+          not re.search(r"(?<![a-zA-Z])See Figure \d\.?\s*$", prose_only, re.M))
+
     # ---- B. every Figure reference resolves ------------------------------
     refs = {int(x) for x in re.findall(r"Figure (\d)", raw)}
     check("B", "every Figure reference resolves to an existing figure",
@@ -67,9 +96,36 @@ def main(path=DEFAULT):
                   os.path.join(PAPER, "figures", stale + ".svg")))
 
     # ---- C. no "whole-model +19,060" claim remains -----------------------
-    bad = m.find(r"whole-model (observed )?(change|delta)[^.]{0,40}19,?060")
-    check("C", "no whole-model +19,060 claim in the manuscript", not bad,
-          str([h.text for h in bad]))
+    # The defect is EQUATING the two, not mentioning them together: the
+    # reconciliation sentence and caption legitimately name both numbers in one
+    # breath in order to distinguish them. So the rule fires only on an
+    # equating construction with no distinguishing connective between the two.
+    EQUATES = (r"whole-model\s+(?:observed\s+)?(?:change|delta)\s+"
+               r"(?:is|was|=|of|:)\s*\+?19,?060")
+    DISTINGUISHES = r"beside|against|versus|vs\.|rather than|not|residual"
+
+    def equates_the_two(text):
+        flat = re.sub(r"\s+", " ", text)
+        out = []
+        for mm in re.finditer(EQUATES, flat, re.I):
+            span = flat[max(0, mm.start() - 60):mm.end() + 60]
+            if not re.search(DISTINGUISHES, span, re.I):
+                out.append(span)
+        return out
+
+    # mutation test: the rule must still fire on the sentence it was written for
+    _defect = ("two platforms ... ten groups regress; "
+               "the whole-model change is +19,060 cycles.")
+    check("C", "rule still fires on the original MOD-2 defect",
+          bool(equates_the_two(_defect)),
+          "a check that cannot fail is worse than no check")
+    check("C", "rule does not fire on the reconciliation sentence",
+          not equates_the_two(
+              "places the +19,000 whole-model observed delta beside the "
+              "+19,060 profiled-group sum so that the 60-cycle residual "
+              "between the two measurement boundaries stays visible"))
+    check("C", "no whole-model +19,060 claim in the manuscript",
+          not equates_the_two(raw), str(equates_the_two(raw)[:2]))
     figsvg = open(os.path.join(PAPER, "figures", "fig4_u85_group_delta.svg")).read()
     figtext = re.sub(r"<[^>]+>", " ", figsvg)
     figtext = re.sub(r"\s+", " ", figtext)
