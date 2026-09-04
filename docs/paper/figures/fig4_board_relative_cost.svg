@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="610" viewBox="0 0 900 610"><rect width="900" height="610" fill="#ffffff"/>
+<text x="40.0" y="26.0" font-family="Helvetica,Arial,sans-serif" font-size="14" font-weight="bold" text-anchor="start" fill="#1a1a1a">Simulated and physical relative workload cost, each normalized within its own domain</text>
+<text x="40.0" y="45.0" font-family="Helvetica,Arial,sans-serif" font-size="10.5" font-weight="normal" text-anchor="start" fill="#6b6b6b">Ranking is preserved exactly: Spearman rho = 1.0, zero rank inversions across all seven workloads.</text>
+<text x="40.0" y="62.0" font-family="Helvetica,Arial,sans-serif" font-size="10.5" font-weight="normal" text-anchor="start" fill="#6b6b6b">Each domain is divided by its own geometric mean, so the two bars are shapes to compare, not magnitudes.</text>
+<text x="168.0" y="121.0" font-family="Helvetica,Arial,sans-serif" font-size="10.5" font-weight="normal" text-anchor="end" fill="#1a1a1a">rnnoise</text>
+<rect x="178.0" y="106.0" width="7.0" height="11.0" fill="#0072b2" opacity="0.9"/>
+<text x="192.0" y="114.5" font-family="Helvetica,Arial,sans-serif" font-size="9" font-weight="normal" text-anchor="start" fill="#6b6b6b">FVP 0.1521</text>
+<rect x="178.0" y="121.0" width="7.5" height="11.0" fill="#d55e00" opacity="0.9"/>
+<text x="192.5" y="129.5" font-family="Helvetica,Arial,sans-serif" font-size="9" font-weight="normal" text-anchor="start" fill="#6b6b6b">board 0.1619</text>
+<text x="168.0" y="175.0" font-family="Helvetica,Arial,sans-serif" font-size="10.5" font-weight="normal" text-anchor="end" fill="#1a1a1a">kws_micronet</text>
+<rect x="178.0" y="160.0" width="12.9" height="11.0" fill="#0072b2" opacity="0.9"/>
+<text x="197.9" y="168.5" font-family="Helvetica,Arial,sans-serif" font-size="9" font-weight="normal" text-anchor="start" fill="#6b6b6b">FVP 0.2791</text>
+<rect x="178.0" y="175.0" width="13.2" height="11.0" fill="#d55e00" opacity="0.9"/>
+<text x="198.2" y="183.5" font-family="Helvetica,Arial,sans-serif" font-size="9" font-weight="normal" text-anchor="start" fill="#6b6b6b">board 0.2858</text>
+<text x="168.0" y="229.0" font-family="Helvetica,Arial,sans-serif" font-size="10.5" font-weight="normal" text-anchor="end" fill="#1a1a1a">ad_medium</text>
+<rect x="178.0" y="214.0" width="20.2" height="11.0" fill="#0072b2" opacity="0.9"/>
+<text x="205.2" y="222.5" font-family="Helvetica,Arial,sans-serif" font-size="9" font-weight="normal" text-anchor="start" fill="#6b6b6b">FVP 0.4371</text>
+<rect x="178.0" y="229.0" width="20.6" height="11.0" fill="#d55e00" opacity="0.9"/>
+<text x="205.6" y="237.5" font-family="Helvetica,Arial,sans-serif" font-size="9" font-weight="normal" text-anchor="start" fill="#6b6b6b">board 0.4459</text>
+<text x="168.0" y="283.0" font-family="Helvetica,Arial,sans-serif" font-size="10.5" font-weight="normal" text-anchor="end" fill="#1a1a1a">vww4</text>
+<rect x="178.0" y="268.0" width="32.9" height="11.0" fill="#0072b2" opacity="0.9"/>
+<text x="217.9" y="276.5" font-family="Helvetica,Arial,sans-serif" font-size="9" font-weight="normal" text-anchor="start" fill="#6b6b6b">FVP 0.7129</text>
+<rect x="178.0" y="283.0" width="32.4" height="11.0" fill="#d55e00" opacity="0.9"/>
+<text x="217.4" y="291.5" font-family="Helvetica,Arial,sans-serif" font-size="9" font-weight="normal" text-anchor="start" fill="#6b6b6b">board 0.7027</text>
+<text x="168.0" y="337.0" font-family="Helvetica,Arial,sans-serif" font-size="10.5" font-weight="normal" text-anchor="end" fill="#1a1a1a">yolo-fastest</text>
+<rect x="178.0" y="322.0" width="62.7" height="11.0" fill="#0072b2" opacity="0.9"/>
+<text x="247.7" y="330.5" font-family="Helvetica,Arial,sans-serif" font-size="9" font-weight="normal" text-anchor="start" fill="#6b6b6b">FVP 1.3606</text>
+<rect x="178.0" y="337.0" width="61.4" height="11.0" fill="#d55e00" opacity="0.9"/>
+<text x="246.4" y="345.5" font-family="Helvetica,Arial,sans-serif" font-size="9" font-weight="normal" text-anchor="start" fill="#6b6b6b">board 1.3309</text>
+<text x="168.0" y="391.0" font-family="Helvetica,Arial,sans-serif" font-size="10.5" font-weight="normal" text-anchor="end" fill="#1a1a1a">mobilenet_v2</text>
+<rect x="178.0" y="376.0" width="200.9" height="11.0" fill="#0072b2" opacity="0.9"/>
+<text x="385.9" y="384.5" font-family="Helvetica,Arial,sans-serif" font-size="9" font-weight="normal" text-anchor="start" fill="#6b6b6b">FVP 4.3570</text>
+<rect x="178.0" y="391.0" width="196.8" height="11.0" fill="#d55e00" opacity="0.9"/>
+<text x="381.8" y="399.5" font-family="Helvetica,Arial,sans-serif" font-size="9" font-weight="normal" text-anchor="start" fill="#6b6b6b">board 4.2680</text>
+<text x="168.0" y="445.0" font-family="Helvetica,Arial,sans-serif" font-size="10.5" font-weight="normal" text-anchor="end" fill="#1a1a1a">wav2letter</text>
+<rect x="178.0" y="430.0" width="588.0" height="11.0" fill="#0072b2" opacity="0.9"/>
+<text x="773.0" y="438.5" font-family="Helvetica,Arial,sans-serif" font-size="9" font-weight="normal" text-anchor="start" fill="#6b6b6b">FVP 12.7514</text>
+<rect x="178.0" y="445.0" width="560.0" height="11.0" fill="#d55e00" opacity="0.9"/>
+<text x="745.0" y="453.5" font-family="Helvetica,Arial,sans-serif" font-size="9" font-weight="normal" text-anchor="start" fill="#6b6b6b">board 12.1432</text>
+<text x="40.0" y="498.0" font-family="Helvetica,Arial,sans-serif" font-size="10" font-weight="normal" text-anchor="start" fill="#6b6b6b">No aggregate deviation statistic is shown: L1, L2, RMSE, MAPE and the board/FVP ratio were never preregistered, and choosing one with both vectors</text>
+<text x="40.0" y="514.0" font-family="Helvetica,Arial,sans-serif" font-size="10" font-weight="normal" text-anchor="start" fill="#6b6b6b">visible would be selecting a statistic to fit the result. Absolute simulation-versus-hardware comparison is refused by construction: the two builds</text>
+<text x="40.0" y="530.0" font-family="Helvetica,Arial,sans-serif" font-size="10" font-weight="normal" text-anchor="start" fill="#6b6b6b">are target-specific.</text>
+<text x="40.0" y="552.0" font-family="Helvetica,Arial,sans-serif" font-size="10" font-weight="normal" text-anchor="start" fill="#6b6b6b">One physical configuration only — Corstone-320 / Ethos-U85 @ 1024 MACs, 21 formal samples.</text>
+</svg>

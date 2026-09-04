@@ -3,8 +3,11 @@
 Integrated manuscript draft. Assembled from frozen evidence only
 (`paper-fvp-*`, `paper-board-*`, `paper-u85-*`, `paper-u65-bridge-*`,
 `paper-platform-sensitivity-*`); last revised 2026-09-04. No new metric,
-threshold, correlation, or measurement is introduced by revision. Statements
-carry the evidence vocabulary used throughout the campaign:
+threshold, correlation, or measurement is introduced by revision. All five
+figures are regenerated from the frozen CSVs by
+`docs/paper/figures/make_figures.py`, whose per-figure provenance records name
+the source artifact, the columns used and the interpretation each figure
+refuses. Statements carry the evidence vocabulary used throughout the campaign:
 `ASSOCIATED_WITH`, `CONSISTENT_WITH`, `NOT_SEPARATED`, `NOT_EVALUABLE`.
 
 ---
@@ -123,7 +126,7 @@ respective technical reference manuals: the `macs_per_cc` field admits 32–256
 MACs/clock cycle on Ethos-U55 [16], and 256 or 512 on Ethos-U65 [17], the
 latter also differing in shared-buffer size between its two configurations.
 Which PMU event names a generation actually emits is not taken from
-documentation in this work but established empirically (Section 8.4).
+documentation in this work but established empirically (Section 9.4).
 Vela compiles a quantized TFLite
 network into an Ethos-U command stream embedded as a custom operator payload;
 the core driver submits that payload and the NPU executes it.
@@ -132,6 +135,17 @@ the core driver submits that payload and the NPU executes it.
 subsystems pairing a Cortex-M host with an Ethos-U NPU, each available as a
 Fast Models FVP and, for Corstone-320, as an MPS4 FPGA implementation.
 
+**The four subsystems do not play the same role here.** They are not four
+interchangeable measurement platforms, and this paper never presents them as one
+performance series. Two of them carry an enabled timing adapter and serve as
+*primary measurement substrates* — Corstone-300 for Ethos-U55 and U65, and
+Corstone-320 for Ethos-U85, which is also the configuration validated on
+physical hardware. The other two have the adapter disabled and appear only as
+*diagnostic substrates*: they are used to ask whether a structural conclusion
+survives a change of host platform, never as a source of performance figures.
+Section 3.1 states the roles and the reason; Section 9.1 states the consequence
+for what the matrix can support.
+
 **Timing adapter.** Verification platforms do not reproduce target-silicon
 memory timing: an FVP models ideal memory by default, and an FPGA runs the NPU
 at a low clock where memory appears disproportionately fast. The Ethos-U timing
@@ -139,7 +153,7 @@ adapter (TA) sits on the NPU's AXI paths and injects latency and bandwidth
 constraints so that measurements reflect a modelled memory system. It is a
 verification component, not part of production silicon. Its presence or absence
 determines whether a cycle count means anything as a performance figure —
-Section 3.1 and Section 8.1.
+Section 3.1 and Section 9.1.
 
 ### 2.1 Related work
 
@@ -162,7 +176,7 @@ use are drawn from that lineage, including MicroNet keyword spotting [14], and
 run on TensorFlow Lite Micro [15]. MLPerf Tiny reports system-level outcomes by
 design, at whole-inference granularity [13]; this work additionally decomposes
 one configuration transition to the operation level on a specific NPU
-(Section 6).
+(Section 7).
 
 **Simulator-versus-hardware validation.** Validating a simulator against
 silicon is an established methodology concern: Gutierrez et al. validate a
@@ -170,7 +184,7 @@ full-system CPU simulator against an Arm development board and report mean
 absolute runtime errors in the 13–17 % range after targeted corrections [12].
 Our board work is deliberately weaker in its claim — we validate *ordinal and
 relative-cost structure* at the one physically available configuration rather
-than absolute cycle agreement (Section 5) — because the simulated and physical
+than absolute cycle agreement (Section 6) — because the simulated and physical
 builds are target-specific and the two do not share a timing domain.
 
 **Arm Ethos-U toolchain.** The platform documentation is primary evidence for
@@ -214,7 +228,7 @@ roles are not interchangeable:
 The distinction that matters throughout is **primary measurement substrate**
 versus **diagnostic/robustness substrate**. Performance results are reported
 only from the former; the latter appear only where a comparison is explicitly
-structural (Section 4.6). The four platforms are never presented as one
+structural (Section 5). The four platforms are never presented as one
 absolute-performance series.
 
 That yields **19 simulated configurations** (SSE-300/U55 at 32–256,
@@ -232,10 +246,24 @@ the 56 TA-OFF cells are retained as capability and diagnostic evidence only.
 
 ### 3.2 Workloads
 
-Seven fully NPU-placed INT8 models from the MLEK resource set span 467× in
-estimated cycles: `rnnoise_INT8`, `kws_micronet_m`, `ad_medium_int8`,
-`vww4_128_128_INT8`, `yolo-fastest_192_face_v4`, `mobilenet_v2_1.0_224_INT8`,
-`wav2letter_pruned_int8`. `dnn_s_quantized` is excluded from scaling analysis
+Seven fully NPU-placed INT8 models from the MLEK resource set span **468×** in
+Vela-estimated cycles, which is the dynamic range the scaling and saturation
+questions need:
+
+| model | domain | Vela `cycles_total` |
+| --- | --- | ---: |
+| `rnnoise_INT8` | noise reduction | 37,836 |
+| `kws_micronet_m` | keyword spotting | 217,565 |
+| `ad_medium_int8` | anomaly detection | 452,112 |
+| `vww4_128_128_INT8` | visual wake words | 477,109 |
+| `yolo-fastest_192_face_v4` | object detection | 1,300,857 |
+| `mobilenet_v2_1.0_224_INT8` | image classification | 4,896,641 |
+| `wav2letter_pruned_int8` | speech recognition | 17,718,837 |
+
+Estimates are the frozen Vela matrix at `SSE-320 / ethos-u85-256 /
+Dedicated_Sram`, one configuration chosen so the column is internally
+comparable; the span is the ratio of the largest to the smallest entry. All
+seven place 100 % of their operators on the NPU. `dnn_s_quantized` is excluded from scaling analysis
 because ~9.5 % of its operators run on the CPU, so its total does not scale
 with MAC count; where it appears in the mechanism study it is reported on a
 separate track and never pooled.
@@ -298,7 +326,10 @@ that the formal path also compiles, plus declared interrupts.
 ### 3.5 Measurement-boundary qualification
 
 **What a polled completion interval measures.** Three board campaigns
-(V13–V15) established the boundary. V13 showed the observed timing variation
+(V13–V15) established the boundary; their closing statements and per-campaign
+evidence are frozen under `docs/superpowers/evidence/` rather than reproduced
+here, and the tags are listed with the other frozen sources at the end of this
+document. V13 showed the observed timing variation
 was accounted for by poll count — how often the CPU looked, not what the device
 did between looks. V14 (90/90 valid samples, nine boots) falsified a
 first-read advantage and confirmed an inter-read sampling effect, leaving
@@ -324,7 +355,7 @@ threshold is attached, and the prior study's U55 figure is not imported.
 cross-backend bridge experiment on Ethos-U65 compared the compiler-internal
 method against the post-compilation method **on the same underlying program**
 (a forced-legacy-core clean stream, so that no compiler-backend difference
-enters the comparison). Results and their limits are in Section 6.5; the
+enters the comparison). Results and their limits are in Section 7.5; the
 preregistered verdict is `NOT_EQUIVALENT` on the full PMU vector, with
 component-level equivalence established for execution boundaries, attribution,
 and the cycle and active-cycle domains.
@@ -393,7 +424,8 @@ Formal sweep: 74 executable TA-ON cells, 222 samples, `M1 == M2 == M3` on
 
 ### 4.1 MAC scaling and saturation (RQ2)
 
-Across 21 preregistered ladders, 53 adjacent MAC transitions were evaluable:
+Figure 1 shows the scaling ladders, one panel per platform/NPU. Across 21
+preregistered ladders, 53 adjacent MAC transitions were evaluable:
 
 | incremental efficiency class | count |
 | --- | --- |
@@ -414,7 +446,15 @@ workloads do not saturate — `NONE_OBSERVED` means not seen within the tested
 range — or that scaling is "mostly linear", since `STRONG` is a threshold at
 0.75 efficiency, not ideal scaling.
 
-The single observed saturation point is the entry point for Section 6.
+![Cumulative scaling efficiency within each platform and NPU. Each panel is
+normalized to its own MAC baseline; the panels share no absolute axis and must
+not be read across as a cross-generation performance comparison. Dashed line:
+the frozen 0.75 `STRONG` threshold.](figures/fig1_mac_scaling.svg)
+
+**Figure 1.** Cumulative scaling efficiency, timing-adapter-enabled platforms
+only. Within-platform comparison only.
+
+The single observed saturation point is the entry point for Section 7.
 
 ### 4.2 Compiler estimates versus simulated observation
 
@@ -463,23 +503,23 @@ is faster than U55" statement — Fast Models version skew and timing-adapter
 differences make absolute cross-generation comparison unsupportable on this
 data.
 
-### 4.6 Robustness of the structural metrics across tested FVP variants
+## 5. Validity of the structural metrics across platform and timing conditions
+
+**This section answers no research question.** Sections 4, 6 and 7 use
+normalized, ordinal and threshold metrics to compare configurations that share
+no absolute cycle axis; this section asks whether those metrics survive a change
+of host platform at all. It is a validity check on the instruments of the study,
+reported before the results that depend on it, and it is deliberately not
+numbered among RQ1–RQ4.
 
 92 cells, 276 samples, all vector-exact; 39/39 artifacts reproduced their
 frozen hashes, so every comparison below is a same-NPU-artifact comparison.
 Zero artifact-identity failures and zero rule failures.
 
-| metric | CLASS A (same TA state) | CLASS B (TA state differs) |
-| --- | --- | --- |
-| workload ranking | 2/2 MAC points | 8/8 MAC points |
-| MAC-step direction | 7/7 steps | 32/32 steps |
-| scaling class (STRONG/PARTIAL/WEAK) | 7/7 steps | **24/32 steps** |
-| saturation verdict | 7/7 ladders | 20/20 ladders |
-| normalized workload ordering | 2/2 MAC points | 8/8 MAC points |
-
 Ranking agreement means identical order *and* Spearman `rho = 1.0` at that MAC
 point. The two classes are reported separately and are not combined into a
-single rate.
+single rate; per-metric agreement counts and their qualification are given
+together below.
 
 **The only disagreements are eight scaling-class labels**, all in CLASS B, and
 every one is `PARTIAL` on the TA_ON side and `STRONG` on the TA_OFF side —
@@ -498,22 +538,37 @@ are generally irrelevant, nor does it transfer to TA-ON conditions, which is
 at TA_ON.
 
 All observed scaling-class disagreements occurred in comparisons where TA state
-also differed; they are `ASSOCIATED_WITH` those comparisons. They are not
-attributed to the timing adapter: in CLASS B the subsystem, the Fast Models
-implementation and the TA state change together, and those contributions
-remain `NOT_SEPARATED`.
+also differed; they are `ASSOCIATED_WITH` those comparisons and are not
+attributed to any one factor, because in CLASS B the subsystem, the Fast Models
+implementation and the TA state change together and remain `NOT_SEPARATED`.
+What this does and does not license is discussed in Section 8.
 
-Resulting qualification of the metrics, as categories rather than scores:
+Resulting qualification of the metrics, as categories rather than scores. This
+table is the metric hierarchy the rest of the paper relies on: a reader scanning
+results should not give a threshold class the same weight as an ordinal one.
 
-```
-workload ranking · MAC-step direction · saturation verdict ·
-normalized workload ordering              ROBUST_IN_TESTED_PAIRS
-threshold scaling class                   TA_STATE_SENSITIVE
-raw cross-platform cycles                 NOT_COMPARABLE
-memory PMU counters                       GENERATION_SPECIFIC_NOT_COMMON
-```
+| metric | tested universe | agreement | qualification |
+| --- | --- | ---: | --- |
+| workload ranking | 2 (A) + 8 (B) MAC points | 2/2, 8/8 | `ROBUST_IN_TESTED_PAIRS` |
+| MAC-step direction | 7 (A) + 32 (B) steps | 7/7, 32/32 | `ROBUST_IN_TESTED_PAIRS` |
+| saturation verdict | 7 (A) + 20 (B) ladders | 7/7, 20/20 | `ROBUST_IN_TESTED_PAIRS` |
+| normalized workload ordering | 2 (A) + 8 (B) MAC points | 2/2, 8/8 | `ROBUST_IN_TESTED_PAIRS` |
+| threshold scaling class | 7 (A) + 32 (B) steps | 7/7, **24/32** | `TA_STATE_SENSITIVE` |
+| raw cross-platform cycles | — | — | `NOT_COMPARABLE` |
+| memory PMU counters | — | — | `GENERATION_SPECIFIC_NOT_COMMON` |
+| transfer of the CLASS A result to TA_ON | — | — | `NOT_EVALUABLE` |
 
-## 5. Corstone-320 hardware validation (RQ3)
+CLASS A and CLASS B counts are listed side by side. No aggregate robustness
+score is defined.
+
+![Agreement of each structural metric across a change of Corstone platform,
+CLASS A and CLASS B shown separately and never pooled. The only disagreements
+are eight threshold scaling-class labels, all in CLASS B.](figures/fig5_platform_sensitivity.svg)
+
+**Figure 5.** Metric agreement across the tested platform pairs, same NPU and
+byte-identical Vela artifact. Not a platform performance comparison.
+
+## 6. Corstone-320 hardware validation (RQ3)
 
 The board contributes exactly one matrix cell: Corstone-320 / U85 @ 1024 MACs,
 seven workloads, three independent fresh boots — **21 formal samples**.
@@ -526,30 +581,13 @@ not authorized, the protocol became 3 boots × 1 stock inference = 21 samples,
 recorded as a supersession. Canonical value per workload is `median(B1,B2,B3)`.
 
 **Ranking preservation (primary).** Spearman `rho = 1.0`, **0 rank inversions**
-across all seven workloads:
+across all seven workloads: every workload holds the same position in the
+simulated and the physical ordering. The rank pairs are tabulated in
+Appendix A.
 
-| workload | FVP rank | board rank |
-| --- | --- | --- |
-| `rnnoise_INT8` | 1 | 1 |
-| `kws_micronet_m` | 2 | 2 |
-| `ad_medium_int8` | 3 | 3 |
-| `vww4_128_128_INT8` | 4 | 4 |
-| `yolo-fastest_192_face_v4` | 5 | 5 |
-| `mobilenet_v2_1.0_224_INT8` | 6 | 6 |
-| `wav2letter_pruned_int8` | 7 | 7 |
-
-**Relative cost shape (secondary).** Each domain normalized by its own
-geometric mean:
-
-| workload | FVP normalized | board normalized |
-| --- | --- | --- |
-| `rnnoise_INT8` | 0.1521 | 0.1619 |
-| `kws_micronet_m` | 0.2791 | 0.2858 |
-| `ad_medium_int8` | 0.4371 | 0.4459 |
-| `vww4_128_128_INT8` | 0.7129 | 0.7027 |
-| `yolo-fastest_192_face_v4` | 1.3606 | 1.3309 |
-| `mobilenet_v2_1.0_224_INT8` | 4.3570 | 4.2680 |
-| `wav2letter_pruned_int8` | 12.7514 | 12.1432 |
+**Relative cost shape (secondary).** Each domain is normalized by its own
+geometric mean; Figure 4 shows the two vectors and Appendix A gives the exact
+values.
 
 The two vectors are presented side by side. **No aggregate deviation metric is
 computed**: `L1`, `L2`, RMSE, mean absolute percentage, and the board/FVP ratio
@@ -557,13 +595,17 @@ were never preregistered, and selecting one with both vectors visible would be
 choosing a statistic to fit the result. Board repeatability is reported as the
 raw triplet plus median, with no spread statistic, for the same reason.
 
+![Simulated and physical relative workload cost, each normalized within its own
+domain by its own geometric mean. Ranking is preserved exactly. No deviation,
+ratio or error statistic is shown.](figures/fig4_board_relative_cost.svg)
+
+**Figure 4.** Relative cost shape, FVP and board, independently normalized. The
+two vectors are shapes to compare, not magnitudes; absolute
+simulation-versus-hardware comparison is refused by construction.
+
 Whether `rho = 1.0` constitutes strong validation is a judgement, not a
 threshold result: no pass/fail criterion was invented to declare it one. What
-the comparison establishes is that **ordinal structure and relative cost shape
-transfer from the cycle model to this hardware configuration**, while absolute
-comparison remains refused — the two builds are target-specific (FVP and FPGA
-binaries are not interchangeable for Corstone-320), so any absolute deviation
-would also include whatever those builds differ in.
+this transfer does and does not establish is discussed in Section 8.
 
 PMU cross-target status: `TOTAL`/`ACTIVE`/`IDLE` are present in both frozen
 sets but no board canonicalization across boots was preregistered;
@@ -571,11 +613,11 @@ sets but no board canonicalization across boots was preregistered;
 records, hence `NOT_EVALUABLE`. The frozen stages were not re-run to obtain
 them.
 
-## 6. Operator-level mechanism study: U85 256 → 512 (RQ4)
+## 7. Operator-level mechanism study: U85 256 → 512 (RQ4)
 
-### 6.1 The anomaly and its scope
+### 7.1 The anomaly and its scope
 
-In the formal sweep, exactly one workload becomes slower when the U85 doubles
+Among the seven scaling workloads, exactly one becomes slower when the U85 doubles
 from 256 to 512 MACs: `rnnoise_INT8`, 36,086 → 55,086 cycles (+19,000). Vela
 predicts improvement for every workload including this one, so the reversal is
 also a compiler-estimate/simulation disagreement point. `dnn_s_quantized`, on
@@ -589,7 +631,7 @@ fixed — as a registered dual binding. For `rnnoise` and `dnn_s` the two 512
 bindings produce **byte-identical artifacts**, which excludes the system-config
 choice as the varying factor for exactly those workloads.
 
-### 6.2 Instrumentation
+### 7.2 Instrumentation
 
 Per-layer decomposition uses the post-compilation instrumentation path of
 Section 3.4, qualified as described in Section 3.5. Attribution uses the U85
@@ -604,7 +646,7 @@ Formal acquisition: 18 cells (6 workloads × 3 artifacts), clean and profiled
 arms, three fresh simulator processes per arm with full-vector exact equality,
 and profiled outputs bit-identical to the clean outputs on every profiled cell.
 
-### 6.3 The reversal is distributed, not localized
+### 7.3 The reversal is distributed, not localized
 
 For `rnnoise` at the sweep baseline, the +19,000-cycle reversal decomposes into
 **ten regressing groups of +1,000 to +4,030 cycles each**, with a single
@@ -614,6 +656,16 @@ the reversal.** The regressing groups comprise small elementwise clusters
 (Add/Mul/Sub/Pack), small fully-connected operations, and Concat/Quantize —
 the workload's abundant low-arithmetic operations rather than its few large
 matrix operations.
+
+![Per-operation-group cycle change for rnnoise at the Ethos-U85 256 to 512
+transition: ten groups regress, one improves, three are unchanged, summing to
+the whole-model +19,060. Bars show where cycles moved, not
+why.](figures/fig2_u85_group_delta.svg)
+
+**Figure 2.** Distribution of the reversal across the frozen 14-group common
+attribution partition. No group is claimed as the cause of the whole-model
+change; inside a merged interrupt-service window only the group effect is
+evaluable.
 
 Two further observations bound interpretation. First, `UBLOCK_CHANGED`
 co-occurs with roughly 95 % of operations in **every** direction class (41/43
@@ -626,7 +678,7 @@ inside workloads whose whole-model result improves — 19 regressing operations
 summing +31,015 in `vww4` against −56,000 of improvements, 21 summing +40,985
 in `yolo` against −140,000.
 
-### 6.4 Robustness to memory configuration
+### 7.4 Robustness to memory configuration
 
 A capability audit of the memory configurations admitted three tuples on this
 stack (`Sram_Only`, `Shared_Sram`, `Dedicated_Sram`); no Ethos-U85 Flash system
@@ -656,6 +708,15 @@ Add/FC/Mul/Pack        +1k → +5k → +6k
 Concat/FC/Quantize     +1k → +3k → +2k
 ```
 
+![rnnoise operation-group deltas under Sram_Only, Shared_Sram and
+Dedicated_Sram. The same groups regress in every configuration; magnitude
+changes, direction does not.](figures/fig3_u85_memory_robustness.svg)
+
+**Figure 3.** Cross-memory robustness of the regressing groups. Every mode
+compiles to a different artifact, so memory-system behaviour and
+compiler-generated program change remain `NOT_SEPARATED`; this is a
+configuration intervention, not a bandwidth intervention.
+
 The control workload `vww4` behaves differently and instructively: its
 whole-model result improves in every mode, yet local regressions persist in
 every mode (a single Conv2D at +2,000 in all three), and **11 of 33 groups are
@@ -667,7 +728,7 @@ cause inside such multi-operation windows is `NOT_EVALUABLE`; only the group
 effect is evaluable, and claims are phrased as "the multi-operation execution
 group containing …" accordingly.
 
-### 6.5 Cross-backend instrumentation bridge (U65)
+### 7.5 Cross-backend instrumentation bridge (U65)
 
 Because the historical U55/U65 per-layer method and the U85 method are
 different instrumentation backends (Section 3.4), we tested whether they
@@ -710,46 +771,24 @@ tested U65 conditions. It does **not** qualify exact cross-backend
 memory-traffic comparison, and it does not establish cross-generation
 PMU-event equivalence, which the event audit treats separately.
 
-### 6.6 Mechanism framing
+### 7.6 Summary of the mechanism measurements
 
-The evidence supports one framing and retires another.
+Three measurement outcomes close this section.
 
-**Supported — emergence from heterogeneous local changes.** The 256 → 512
-transition induces widespread, heterogeneous operator-level cost changes: some
-operations gain from the larger MAC array, others lose. Whether a whole model
-improves or regresses is the **aggregate outcome of that balance**:
+1. The 256 → 512 transition produces **heterogeneous operator-level cost changes
+   in both directions**: some operations gain from the larger MAC array, others
+   lose, and the whole-model outcome is the aggregate of that balance rather
+   than the behaviour of any single group.
+2. `UBLOCK_CHANGED` accompanies roughly 95 % of operations in **every** direction
+   class, so it does not discriminate regressing operations from improving ones.
+3. Memory configuration modulates the magnitude of the group deltas and, for
+   some groups, their direction, while every memory mode compiles to a different
+   artifact.
 
-```
-              U85 256 → 512 transition
-                        ↓
-      heterogeneous operator-level cost changes
-                        ↓
-        ┌───────────────┴───────────────┐
-  persistent regressions          config-sensitive
-  (same groups, every mode)       local changes
-        │                               │
-     rnnoise                          vww4
-  regressions outweigh gains    gains still outweigh regressions
-        ↓                               ↓
-  whole-model REGRESSION          whole-model IMPROVEMENT
-```
+The framing these outcomes support, and the single-factor account they retire,
+are in Section 8.
 
-**Retired — the single-factor ublock account.** "Ublock enlargement causes the
-regression" is not supported: ublock change is a ~95 % background rate in every
-direction class. What the small-operation composition of the regressing
-clusters does license is that the observations are `CONSISTENT_WITH` a
-small-spatial / low-arithmetic-utilization account, while remaining
-`NOT_SEPARATED` from the compiler-scheduling changes that accompany the same
-transition.
-
-**Memory configuration — modulation without separation.** Memory configuration
-modulates both the magnitude and, for some operation groups, the direction of
-the cost change; compiler-generated program changes and runtime memory-system
-effects remain inseparable here. Single-factor claims ("shared-SRAM contention
-causes…", "bandwidth causes…") are unavailable: the memory-mode axis is a
-configuration intervention, not a bandwidth intervention.
-
-## 7. Discussion
+## 8. Discussion
 
 **The compiler predicts shape better than steps.** Vela matched saturation
 classification in 19/20 ladders and preserved speedup ordering in 19/20, while
@@ -777,6 +816,45 @@ many small, low-arithmetic operations can lose more on those operations than
 they gain elsewhere, and a compiler estimate will not necessarily reveal it —
 Vela predicted improvement for the one workload that regressed.
 
+**What the mechanism evidence supports, and what it retires.** The evidence
+supports one framing and retires another. *Supported — emergence from
+heterogeneous local changes.* Whether a whole model improves or regresses across
+a MAC transition is the aggregate outcome of a balance between operation groups
+that gain and operation groups that lose:
+
+```
+              U85 256 → 512 transition
+                        ↓
+      heterogeneous operator-level cost changes
+                        ↓
+        ┌───────────────┴───────────────┐
+  persistent regressions          config-sensitive
+  (same groups, every mode)       local changes
+        │                               │
+     rnnoise                          vww4
+  regressions outweigh gains    gains still outweigh regressions
+        ↓                               ↓
+  whole-model REGRESSION          whole-model IMPROVEMENT
+```
+
+*Retired — the single-factor ublock account.* "Ublock enlargement causes the
+regression" is not supported: ublock change is a ~95 % background rate in every
+direction class. What the small-operation composition of the regressing clusters
+licenses is that the observations are `CONSISTENT_WITH` a small-spatial /
+low-arithmetic-utilization account, while remaining `NOT_SEPARATED` from the
+compiler-scheduling changes that accompany the same transition. Memory
+configuration modulates both magnitude and, for some groups, direction, but
+single-factor claims ("shared-SRAM contention causes…", "bandwidth causes…") are
+unavailable: the memory-mode axis is a configuration intervention, not a
+bandwidth intervention, and every mode is a different artifact.
+
+**What the board comparison establishes.** It establishes that **ordinal
+structure and relative cost shape transfer from the cycle model to this hardware
+configuration**, and nothing about absolute agreement. The two builds are
+target-specific — FVP and FPGA binaries are not interchangeable for
+Corstone-320 — so any absolute deviation would also include whatever those
+builds differ in, which is why no deviation statistic is reported at all.
+
 **Which metrics transfer across platform and timing conditions.** The
 same-artifact validation turns a previously implicit assumption into a measured
 one. Ordinal and directional conclusions were preserved across the tested
@@ -788,7 +866,11 @@ cut point did not, because values sitting near the cut point can cross it;
 and raw cross-platform cycles remain outside the comparable set entirely.
 Readers reproducing this kind of study on a different simulator stack should
 expect the ordinal layer to travel and the thresholded layer to need
-re-qualification.
+re-qualification. The eight disagreements license a scoped statement and no
+more: they occurred only where timing-adapter state also differed, and since the
+subsystem, the Fast Models implementation and the adapter state change together
+in those comparisons, no one of the three can be named as the factor
+responsible.
 
 **Measurement methodology results.** Four are reusable beyond this study.
 (i) A simulator's timing-adapter configuration can silently change what is
@@ -797,7 +879,7 @@ byte-identical command stream measured ~4× apart — between the SSE-300 and
 SSE-310 conditions, and nothing in the cycle counts signalled it. Because
 timing-adapter state, subsystem and Fast Models timing implementation differ
 together across that pair, the magnitude cannot be attributed to the timing
-adapter alone; the three contributions are `NOT_SEPARATED` (Section 8.13). The
+adapter alone; the three contributions are `NOT_SEPARATED` (Section 9.2). The
 observation is therefore treated as a methodology warning against raw
 cross-platform cycle comparison, not as a performance result. (ii) A compiler
 backend change can silently change which program is instrumented: the default
@@ -808,65 +890,60 @@ byte-reproducible until the build epoch is pinned to source identity. (iv)
 Executability classification belongs before the sweep: the formal sample count
 could not be fixed until the filter ran (399 assumed; 222 actual).
 
-## 8. Limitations
+## 9. Limitations
 
-**8.1 The timing adapter splits the matrix.** Only 11 of 19 configurations are
+Fourteen limitations are recorded, grouped here under six themes. The grouping
+changes their presentation only; none has been withdrawn or softened. Read as a
+whole they say something specific rather than something global: the ordinal and
+structural results of this paper are established, the threshold-based labels are
+established only under the timing conditions tested, and a small number of
+questions — chiefly which of several co-varying factors produces an observed
+effect — remain **not separable** with this evidence and are marked as such
+wherever they arise.
+
+### 9.1 Simulation and timing-model validity
+
+**The timing adapter splits the matrix.** Only 11 of 19 configurations are
 benchmarking-valid; the 56 TA-OFF cells are capability and diagnostic evidence
 only. A claim retracted during this work: "same NPU across different Corstone
 generations" is not a clean platform isolation, because the two sides differ in
 adapter state — a memory-constrained model against an unconstrained one.
 
-**8.2 Absolute cross-generation comparison is unsupportable.** Fast Models
-version skew and platform configuration differences confound it; comparisons are
-restricted to normalized scaling and ordinal ranking.
-
-**8.3 `SSE-300 / U55@256` versus `U65@256` is a system-level configuration
-comparison**, not a microarchitecture result: the memory mode differs by NPU
-(`Shared_Sram` versus `Dedicated_Sram`), moving weights between SRAM and DRAM.
-
-**8.4 PMU semantics are generation-conditional.** Only `CYCLE`, `NPU_IDLE`, and
-`CC_STALLED_ON_BLOCKDEP` were verified as common-semantics across generations;
-of 22 shared event names, 18 differ in ordinal, so event numbers never cross a
-generation boundary. `CC_STALLED_ON_BLOCKDEP` cross-generation and the U85
-`EXT*`/`SRAM*` family were `NOT_EVALUABLE` — absences in what the stock runner
-prints, and obtaining them would break the stock-runner contract under which
-every formal measurement was taken. U85 stall-family events remain
-`SEMANTICS_UNVERIFIED` and were never collected, so stall-based causal
-attribution is `NOT_EVALUABLE` throughout Section 6.
-
-**8.5 The inference-count check is a completion check.** The stock runner prints
-`Total number of inferences: 1` as a string literal, not a counter; requiring it
-verifies that execution reached post-inference code, and must not be described
-as counting inferences.
-
-**8.6 Determinism is exact, and that is the point.** `M1 == M2 == M3` held on
+**Determinism is exact, and that is the point.** `M1 == M2 == M3` held on
 74/74 simulated cells, so the repetitions are not a statistical sample; no mean,
 median, or confidence interval is reported for them. Board repetitions are
 physical observations where equality is not required, and are reported as raw
 triplets with a median.
 
-**8.7 Board scope.** One physical configuration (U85 @ 1024) means no physical
-scaling validation is possible; simulation and board binaries are
-target-specific, so any absolute deviation would include build differences;
-board `SRAM_*`/`EXT_*` counters have no counterpart in the frozen simulated
-records. No aggregate deviation or repeatability-variability statistic is
-reported, because none was preregistered.
+**Scope.** All simulated values are cycle-model observations on TA-enabled
+configurations with a stock single-inference runner; all board values are
+software-visible observations on one physical configuration. Workloads are the
+MLEK set — representative of embedded ML, not exhaustive.
 
-**8.8 Mechanism-study attribution bounds.** Where small operations merge into
-one interrupt-service window, per-operation cause is `NOT_EVALUABLE` and only
-the operation-group effect is evaluable — for `rnnoise`, only 3 of 44
-operations are individually separable, and its decomposition floor is the
-14-group common partition. Each service boundary carries a small deterministic
-cycle residual, so group and whole-model sums agree within that residual.
-`dnn_s` profiled arms are `NOT_AVAILABLE`: its CPU-operator container uses a
-schema feature outside the audited rewrite subset, and the instrumentation
-failed closed rather than guessing.
+### 9.2 Cross-platform and cross-generation comparability
 
-**8.9 Memory-mode is not a bandwidth intervention.** It jointly moves weight
-placement, arena headroom, compiler scheduling, and the generated command
-stream; all mode pairs are different artifacts.
+**Absolute cross-generation comparison is unsupportable.** Fast Models version
+skew and platform configuration differences confound it; comparisons are
+restricted to normalized scaling and ordinal ranking.
 
-**8.10 Instrumentation-bridge bounds.** The overall U65 bridge verdict is
+**`SSE-300 / U55@256` versus `U65@256` is a system-level configuration
+comparison**, not a microarchitecture result: the memory mode differs by NPU
+(`Shared_Sram` versus `Dedicated_Sram`), moving weights between SRAM and DRAM.
+
+**Platform-sensitivity validation bounds.** The validation covers U55 and U65 on
+the platform pairs this stack supports; three bounds follow. There is **no
+same-platform U65-versus-U85 controlled pair**, so cross-generation statements
+involving U85 rest on structural metrics rather than a controlled substrate.
+There is **no TA_ON cross-FVP control pair**, so the CLASS A result exists only
+under TA_OFF and its transfer to TA_ON is `NOT_EVALUABLE`. In CLASS B the
+timing-adapter state, the subsystem and the Fast Models implementation change
+together, so their contributions are `NOT_SEPARATED`; the eight class
+disagreements are reported as associated with those comparisons, never as caused
+by any one of the three.
+
+### 9.3 Compiler and instrumentation paths
+
+**Instrumentation-bridge bounds.** The overall U65 bridge verdict is
 `NOT_EQUIVALENT` under its preregistered full-PMU-vector criterion. Execution
 boundaries, attribution, and the cycle and active-cycle domains are established
 as equivalent; exact cross-backend memory-traffic comparison is not qualified,
@@ -876,34 +953,156 @@ command structures were not exercised. Historical U55/U65 per-layer data is
 therefore usable for cycle-domain mechanism observations on its own program,
 and is not an exact decomposition of the frozen regor formal executables.
 
-**8.11 Hardware geometry versus compiler scheduling is not causally
-separated** anywhere in this work, and no claim in Section 6 asserts otherwise.
+**A withdrawn auxiliary observation.** An earlier auxiliary record reported that
+an FVP accepted an unsupported `num_macs` value, and was used to argue that the
+model range-checks bounds without validating the discrete set. The exact probe
+invocation was not archived, the observation could not be reproduced under the
+same Fast Models build during the X0 capability audit (three invocation styles
+all reject, and the model enumerates the legal set in its own error), and it is
+classified `NOT_REPRODUCIBLE` / `NOT_LOAD_BEARING`. No argument in this paper
+rests on it; Section 3.1 states the authority rule directly instead.
 
-**8.12 A withdrawn auxiliary observation.** An earlier auxiliary record
-reported that an FVP accepted an unsupported `num_macs` value, and was used to
-argue that the model range-checks bounds without validating the discrete set.
-The exact probe invocation was not archived, the observation could not be
-reproduced under the same Fast Models build during the X0 capability audit
-(three invocation styles all reject, and the model enumerates the legal set in
-its own error), and it is classified `NOT_REPRODUCIBLE` / `NOT_LOAD_BEARING`.
-No argument in this paper rests on it; §3.1 states the authority rule directly
-instead.
+### 9.4 PMU and runner-output semantic coverage
 
-**8.13 Platform-sensitivity validation bounds.** The validation covers U55 and
-U65 on the platform pairs this stack supports; three bounds follow. There is
-**no same-platform U65-versus-U85 controlled pair**, so cross-generation
-statements involving U85 rest on structural metrics rather than a controlled
-substrate. There is **no TA_ON cross-FVP control pair**, so the CLASS A result
-exists only under TA_OFF and its transfer to TA_ON is `NOT_EVALUABLE`. In
-CLASS B the timing-adapter state, the subsystem and the Fast Models
-implementation change together, so their contributions are `NOT_SEPARATED`;
-the eight class disagreements are reported as associated with those
-comparisons, never as caused by any one of the three.
+**PMU semantics are generation-conditional.** Only `CYCLE`, `NPU_IDLE`, and
+`CC_STALLED_ON_BLOCKDEP` were verified as common-semantics across generations;
+of 22 shared event names, 18 differ in ordinal, so event numbers never cross a
+generation boundary. `CC_STALLED_ON_BLOCKDEP` cross-generation and the U85
+`EXT*`/`SRAM*` family were `NOT_EVALUABLE` — absences in what the stock runner
+prints, and obtaining them would break the stock-runner contract under which
+every formal measurement was taken. U85 stall-family events remain
+`SEMANTICS_UNVERIFIED` and were never collected, so stall-based causal
+attribution is `NOT_EVALUABLE` throughout Section 7.
 
-**8.14 Scope.** All simulated values are cycle-model observations on TA-enabled
-configurations with a stock single-inference runner; all board values are
-software-visible observations on one physical configuration. Workloads are the
-MLEK set — representative of embedded ML, not exhaustive.
+**The inference-count check is a completion check.** The stock runner prints
+`Total number of inferences: 1` as a string literal, not a counter; requiring it
+verifies that execution reached post-inference code, and must not be described
+as counting inferences.
+
+### 9.5 Causal identifiability
+
+**Mechanism-study attribution bounds.** Where small operations merge into one
+interrupt-service window, per-operation cause is `NOT_EVALUABLE` and only the
+operation-group effect is evaluable — for `rnnoise`, only 3 of 44 operations are
+individually separable, and its decomposition floor is the 14-group common
+partition. Each service boundary carries a small deterministic cycle residual,
+so group and whole-model sums agree within that residual. `dnn_s` profiled arms
+are `NOT_AVAILABLE`: its CPU-operator container uses a schema feature outside
+the audited rewrite subset, and the instrumentation failed closed rather than
+guessing.
+
+**Memory-mode is not a bandwidth intervention.** It jointly moves weight
+placement, arena headroom, compiler scheduling, and the generated command
+stream; all mode pairs are different artifacts.
+
+**Hardware geometry versus compiler scheduling is not causally separated**
+anywhere in this work, and no claim in Section 7 asserts otherwise.
+
+### 9.6 Physical-board scope
+
+**Board scope.** One physical configuration (U85 @ 1024) means no physical
+scaling validation is possible; simulation and board binaries are
+target-specific, so any absolute deviation would include build differences;
+board `SRAM_*`/`EXT_*` counters have no counterpart in the frozen simulated
+records. No aggregate deviation or repeatability-variability statistic is
+reported, because none was preregistered.
+
+## 10. Conclusion
+
+We set out to characterize what an embedded ML deployment toolchain actually
+supports across the configurations a practitioner must choose between, and to
+be explicit about which comparisons the resulting evidence cannot carry.
+
+**MAC scaling is workload-dependent and frequently sub-linear (RQ2).** Of 53
+adjacent MAC transitions, 28 retained at least 75 % efficiency and 23 fell
+between 50 % and 75 %; saturation appeared in one of 21 ladders within the
+tested range. More MAC capacity generally helps, and it generally helps less
+than proportionally, by an amount that depends on the workload rather than on a
+common saturation point.
+
+**Structural conclusions travel better than thresholded labels (RQ1).**
+Across a same-artifact study over the supported Corstone FVPs, workload ranking,
+MAC-step direction, saturation verdict and normalized ordering were preserved in
+every tested pair, while the threshold-based efficiency class disagreed in 8 of
+32 CLASS B steps — all of them crossings of the frozen 0.75 cut point in one
+direction. The configurations therefore differ in normalized scaling behaviour,
+in deployability, and not in any directly comparable absolute cycle value:
+deployability differed (six non-executable cells), saturation differed (one U85
+ladder), and workload ordering did not differ at all.
+
+**The one non-monotonic boundary is distributed, not localized (RQ4).**
+Direct operation-group profiling of the Ethos-U85 256 → 512 transition shows
+the +19,060-cycle `rnnoise` reversal spread across ten regressing groups against
+one improving group, the largest about a fifth of the whole; the same groups
+regress under every memory configuration tested while their magnitudes change.
+A compiler-visible ublock change accompanies roughly 95 % of operations in every
+direction class, so it does not discriminate regressing operations from
+improving ones, and no single group or single compiler-visible transition
+accounts for the reversal. Which of the co-varying factors produces it remains
+`NOT_SEPARATED`.
+
+**The three kinds of number are not interchangeable (RQ2, RQ3).** A Vela
+estimate, an FVP observation and a physical observation play different
+evidentiary roles here and are never placed on one axis. Vela preserved coarse
+structure — saturation classification and normalized speedup ordering agreed in
+19 of 20 ladders — while per-step class agreement ranged from 4/4 to 0/1, so
+pruning a design space on predicted trend is supported by this data and ranking
+candidates on predicted magnitude is not.
+
+**Physical validation establishes order, not timing accuracy (RQ3).** At the one
+configuration the hardware makes available — Corstone-320 / Ethos-U85 @ 1024
+MACs, 21 formal samples — workload ranking was preserved exactly, with zero
+inversions, and the independently normalized relative-cost vectors have the same
+shape. This is evidence that ordinal structure transfers from the cycle model to
+this hardware point. It is not evidence about absolute simulator timing
+accuracy, which the target-specific builds make unavailable and which no result
+here depends on.
+
+Two limits bound all of the above and are stated in full in Section 9: the
+comparisons rest on cycle-model observations under an enabled timing adapter
+with a stock single-inference runner, and wherever several factors change
+together — timing-adapter state with subsystem and Fast Models implementation,
+memory mode with the compiled artifact, hardware geometry with compiler
+scheduling — the contributions are reported as associated and never as separated.
+
+The practical form of the result is short. A MAC upgrade must be validated per
+workload, because a model dominated by many small, low-arithmetic operations can
+lose more on those operations than it gains elsewhere, and the compiler estimate
+will not necessarily reveal it: Vela predicted improvement for the one workload
+that regressed.
+
+## Appendix A. Exact values behind Figure 4
+
+Reproduced from `docs/paper/analysis/board_rq3/` so that the figure's underlying
+numbers remain available without re-running the frozen analysis. Corstone-320 /
+Ethos-U85 @ 1024 MACs, 21 formal samples, canonical value per workload
+`median(B1,B2,B3)`.
+
+**A.1 Rank preservation.**
+
+| workload | FVP rank | board rank |
+| --- | --- | --- |
+| `rnnoise_INT8` | 1 | 1 |
+| `kws_micronet_m` | 2 | 2 |
+| `ad_medium_int8` | 3 | 3 |
+| `vww4_128_128_INT8` | 4 | 4 |
+| `yolo-fastest_192_face_v4` | 5 | 5 |
+| `mobilenet_v2_1.0_224_INT8` | 6 | 6 |
+| `wav2letter_pruned_int8` | 7 | 7 |
+
+**A.2 Independently normalized relative cost.** Each domain is divided by its
+own geometric mean. The two columns are shapes to compare, not magnitudes: no
+ratio, difference, or error between them is computed anywhere in this paper.
+
+| workload | FVP normalized | board normalized |
+| --- | --- | --- |
+| `rnnoise_INT8` | 0.1521 | 0.1619 |
+| `kws_micronet_m` | 0.2791 | 0.2858 |
+| `ad_medium_int8` | 0.4371 | 0.4459 |
+| `vww4_128_128_INT8` | 0.7129 | 0.7027 |
+| `yolo-fastest_192_face_v4` | 1.3606 | 1.3309 |
+| `mobilenet_v2_1.0_224_INT8` | 4.3570 | 4.2680 |
+| `wav2letter_pruned_int8` | 12.7514 | 12.1432 |
 
 ---
 

@@ -65,12 +65,15 @@ def main(path="docs/paper/MANUSCRIPT.md"):
               % (got, secs.get(got, ""), want, secs.get(want, "")))
 
     # -- 3. no stale pointer from an earlier numbering ---------------------
-    stale = []
-    if m.has("which is the gap Section 7 addresses"):
-        stale.append("Related Work -> Section 7 for decomposition")
-    if m.find(r"absolute cycle agreement \(Section 6\)"):
-        stale.append("Related Work -> Section 6 for board")
-    check("no stale pointer", not stale, str(stale))
+    # Literal number checks were removed in Phase 2: action 8 renumbered the
+    # sections, so a hardcoded "Section 6 is wrong" rule became wrong itself.
+    # Staleness is now defined structurally — every pointer must resolve (check
+    # 1) and the load-bearing ones must land on the right TITLE (check 2) — plus
+    # the retired pre-Phase-1.5 phrasings below, which name no number.
+    stale = [t for t in ("which is the gap Section", "Such suites",
+                         "purely by adapter state")
+             if m.has(t)]
+    check("no retired phrasing", not stale, str(stale))
 
     # -- 4. thesis trace ---------------------------------------------------
     th = re.sub(r"\s+", " ",

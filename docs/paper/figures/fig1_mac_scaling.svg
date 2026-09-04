@@ -1,0 +1,154 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="962" height="372" viewBox="0 0 962 372"><rect width="962" height="372" fill="#ffffff"/>
+<text x="18.0" y="26.0" font-family="Helvetica,Arial,sans-serif" font-size="14" font-weight="bold" text-anchor="start" fill="#1a1a1a">Cumulative scaling efficiency within each platform / NPU</text>
+<text x="18.0" y="45.0" font-family="Helvetica,Arial,sans-serif" font-size="10.5" font-weight="normal" text-anchor="start" fill="#6b6b6b">Each panel is normalized to its own MAC baseline. Panels share no absolute axis and must not be read across.</text>
+<text x="62.0" y="54.0" font-family="Helvetica,Arial,sans-serif" font-size="11.5" font-weight="bold" text-anchor="start" fill="#1a1a1a">SSE-300 / Ethos-u55</text>
+<line x1="62.0" y1="276.0" x2="278.0" y2="276.0" stroke="#6b6b6b" stroke-width="1"/>
+<text x="54.0" y="279.5" font-family="Helvetica,Arial,sans-serif" font-size="9.5" font-weight="normal" text-anchor="end" fill="#6b6b6b">0.00</text>
+<line x1="62.0" y1="223.5" x2="278.0" y2="223.5" stroke="#d8d8d8" stroke-width="1"/>
+<text x="54.0" y="227.0" font-family="Helvetica,Arial,sans-serif" font-size="9.5" font-weight="normal" text-anchor="end" fill="#6b6b6b">0.25</text>
+<line x1="62.0" y1="171.0" x2="278.0" y2="171.0" stroke="#d8d8d8" stroke-width="1"/>
+<text x="54.0" y="174.5" font-family="Helvetica,Arial,sans-serif" font-size="9.5" font-weight="normal" text-anchor="end" fill="#6b6b6b">0.50</text>
+<line x1="62.0" y1="118.5" x2="278.0" y2="118.5" stroke="#d8d8d8" stroke-width="1"/>
+<text x="54.0" y="122.0" font-family="Helvetica,Arial,sans-serif" font-size="9.5" font-weight="normal" text-anchor="end" fill="#6b6b6b">0.75</text>
+<line x1="62.0" y1="66.0" x2="278.0" y2="66.0" stroke="#d8d8d8" stroke-width="1"/>
+<text x="54.0" y="69.5" font-family="Helvetica,Arial,sans-serif" font-size="9.5" font-weight="normal" text-anchor="end" fill="#6b6b6b">1.00</text>
+<line x1="62.0" y1="118.5" x2="278.0" y2="118.5" stroke="#6b6b6b" stroke-width="1" stroke-dasharray="3,3"/>
+<text x="62.0" y="292.0" font-family="Helvetica,Arial,sans-serif" font-size="9.5" font-weight="normal" text-anchor="middle" fill="#6b6b6b">32</text>
+<text x="130.0" y="292.0" font-family="Helvetica,Arial,sans-serif" font-size="9.5" font-weight="normal" text-anchor="middle" fill="#6b6b6b">64</text>
+<text x="198.0" y="292.0" font-family="Helvetica,Arial,sans-serif" font-size="9.5" font-weight="normal" text-anchor="middle" fill="#6b6b6b">128</text>
+<text x="266.0" y="292.0" font-family="Helvetica,Arial,sans-serif" font-size="9.5" font-weight="normal" text-anchor="middle" fill="#6b6b6b">256</text>
+<text x="164.0" y="310.0" font-family="Helvetica,Arial,sans-serif" font-size="10" font-weight="normal" text-anchor="middle" fill="#6b6b6b">MAC configuration</text>
+<path d="M62.0 66.0 L130.0 74.1 L198.0 95.6 L266.0 151.3" fill="none" stroke="#0072b2" stroke-width="1.8" stroke-linejoin="round"/>
+<circle cx="62.0" cy="66.0" r="2.4" fill="#0072b2"/>
+<circle cx="130.0" cy="74.1" r="2.4" fill="#0072b2"/>
+<circle cx="198.0" cy="95.6" r="2.4" fill="#0072b2"/>
+<circle cx="266.0" cy="151.3" r="2.4" fill="#0072b2"/>
+<path d="M62.0 66.0 L130.0 72.3 L198.0 92.5 L266.0 123.7" fill="none" stroke="#d55e00" stroke-width="1.8" stroke-linejoin="round"/>
+<circle cx="62.0" cy="66.0" r="2.4" fill="#d55e00"/>
+<circle cx="130.0" cy="72.3" r="2.4" fill="#d55e00"/>
+<circle cx="198.0" cy="92.5" r="2.4" fill="#d55e00"/>
+<circle cx="266.0" cy="123.7" r="2.4" fill="#d55e00"/>
+<path d="M62.0 66.0 L130.0 78.3 L198.0 113.6 L266.0 166.8" fill="none" stroke="#009e73" stroke-width="1.8" stroke-linejoin="round"/>
+<circle cx="62.0" cy="66.0" r="2.4" fill="#009e73"/>
+<circle cx="130.0" cy="78.3" r="2.4" fill="#009e73"/>
+<circle cx="198.0" cy="113.6" r="2.4" fill="#009e73"/>
+<circle cx="266.0" cy="166.8" r="2.4" fill="#009e73"/>
+<path d="M62.0 66.0 L130.0 168.1 L198.0 220.5 L266.0 248.0" fill="none" stroke="#cc79a7" stroke-width="1.8" stroke-linejoin="round"/>
+<circle cx="62.0" cy="66.0" r="2.4" fill="#cc79a7"/>
+<circle cx="130.0" cy="168.1" r="2.4" fill="#cc79a7"/>
+<circle cx="198.0" cy="220.5" r="2.4" fill="#cc79a7"/>
+<circle cx="266.0" cy="248.0" r="2.4" fill="#cc79a7"/>
+<path d="M62.0 66.0 L130.0 78.9 L198.0 112.6 L266.0 171.6" fill="none" stroke="#e69f00" stroke-width="1.8" stroke-linejoin="round"/>
+<circle cx="62.0" cy="66.0" r="2.4" fill="#e69f00"/>
+<circle cx="130.0" cy="78.9" r="2.4" fill="#e69f00"/>
+<circle cx="198.0" cy="112.6" r="2.4" fill="#e69f00"/>
+<circle cx="266.0" cy="171.6" r="2.4" fill="#e69f00"/>
+<path d="M62.0 66.0 L130.0 70.9 L198.0 86.7 L266.0 134.6" fill="none" stroke="#8c564b" stroke-width="1.8" stroke-linejoin="round"/>
+<circle cx="62.0" cy="66.0" r="2.4" fill="#8c564b"/>
+<circle cx="130.0" cy="70.9" r="2.4" fill="#8c564b"/>
+<circle cx="198.0" cy="86.7" r="2.4" fill="#8c564b"/>
+<circle cx="266.0" cy="134.6" r="2.4" fill="#8c564b"/>
+<text x="312.0" y="54.0" font-family="Helvetica,Arial,sans-serif" font-size="11.5" font-weight="bold" text-anchor="start" fill="#1a1a1a">SSE-300 / Ethos-u65</text>
+<line x1="312.0" y1="276.0" x2="528.0" y2="276.0" stroke="#6b6b6b" stroke-width="1"/>
+<line x1="312.0" y1="223.5" x2="528.0" y2="223.5" stroke="#d8d8d8" stroke-width="1"/>
+<line x1="312.0" y1="171.0" x2="528.0" y2="171.0" stroke="#d8d8d8" stroke-width="1"/>
+<line x1="312.0" y1="118.5" x2="528.0" y2="118.5" stroke="#d8d8d8" stroke-width="1"/>
+<line x1="312.0" y1="66.0" x2="528.0" y2="66.0" stroke="#d8d8d8" stroke-width="1"/>
+<line x1="312.0" y1="118.5" x2="528.0" y2="118.5" stroke="#6b6b6b" stroke-width="1" stroke-dasharray="3,3"/>
+<text x="312.0" y="292.0" font-family="Helvetica,Arial,sans-serif" font-size="9.5" font-weight="normal" text-anchor="middle" fill="#6b6b6b">256</text>
+<text x="516.0" y="292.0" font-family="Helvetica,Arial,sans-serif" font-size="9.5" font-weight="normal" text-anchor="middle" fill="#6b6b6b">512</text>
+<text x="414.0" y="310.0" font-family="Helvetica,Arial,sans-serif" font-size="10" font-weight="normal" text-anchor="middle" fill="#6b6b6b">MAC configuration</text>
+<path d="M312.0 66.0 L516.0 111.7" fill="none" stroke="#0072b2" stroke-width="1.8" stroke-linejoin="round"/>
+<circle cx="312.0" cy="66.0" r="2.4" fill="#0072b2"/>
+<circle cx="516.0" cy="111.7" r="2.4" fill="#0072b2"/>
+<path d="M312.0 66.0 L516.0 100.8" fill="none" stroke="#d55e00" stroke-width="1.8" stroke-linejoin="round"/>
+<circle cx="312.0" cy="66.0" r="2.4" fill="#d55e00"/>
+<circle cx="516.0" cy="100.8" r="2.4" fill="#d55e00"/>
+<path d="M312.0 66.0 L516.0 114.4" fill="none" stroke="#009e73" stroke-width="1.8" stroke-linejoin="round"/>
+<circle cx="312.0" cy="66.0" r="2.4" fill="#009e73"/>
+<circle cx="516.0" cy="114.4" r="2.4" fill="#009e73"/>
+<path d="M312.0 66.0 L516.0 139.6" fill="none" stroke="#cc79a7" stroke-width="1.8" stroke-linejoin="round"/>
+<circle cx="312.0" cy="66.0" r="2.4" fill="#cc79a7"/>
+<circle cx="516.0" cy="139.6" r="2.4" fill="#cc79a7"/>
+<path d="M312.0 66.0 L516.0 121.3" fill="none" stroke="#e69f00" stroke-width="1.8" stroke-linejoin="round"/>
+<circle cx="312.0" cy="66.0" r="2.4" fill="#e69f00"/>
+<circle cx="516.0" cy="121.3" r="2.4" fill="#e69f00"/>
+<path d="M312.0 66.0 L516.0 101.6" fill="none" stroke="#56b4e9" stroke-width="1.8" stroke-linejoin="round"/>
+<circle cx="312.0" cy="66.0" r="2.4" fill="#56b4e9"/>
+<circle cx="516.0" cy="101.6" r="2.4" fill="#56b4e9"/>
+<path d="M312.0 66.0 L516.0 118.7" fill="none" stroke="#8c564b" stroke-width="1.8" stroke-linejoin="round"/>
+<circle cx="312.0" cy="66.0" r="2.4" fill="#8c564b"/>
+<circle cx="516.0" cy="118.7" r="2.4" fill="#8c564b"/>
+<text x="562.0" y="54.0" font-family="Helvetica,Arial,sans-serif" font-size="11.5" font-weight="bold" text-anchor="start" fill="#1a1a1a">SSE-320 / Ethos-u85</text>
+<line x1="562.0" y1="276.0" x2="778.0" y2="276.0" stroke="#6b6b6b" stroke-width="1"/>
+<line x1="562.0" y1="223.5" x2="778.0" y2="223.5" stroke="#d8d8d8" stroke-width="1"/>
+<line x1="562.0" y1="171.0" x2="778.0" y2="171.0" stroke="#d8d8d8" stroke-width="1"/>
+<line x1="562.0" y1="118.5" x2="778.0" y2="118.5" stroke="#d8d8d8" stroke-width="1"/>
+<line x1="562.0" y1="66.0" x2="778.0" y2="66.0" stroke="#d8d8d8" stroke-width="1"/>
+<line x1="562.0" y1="118.5" x2="778.0" y2="118.5" stroke="#6b6b6b" stroke-width="1" stroke-dasharray="3,3"/>
+<text x="562.0" y="292.0" font-family="Helvetica,Arial,sans-serif" font-size="9.5" font-weight="normal" text-anchor="middle" fill="#6b6b6b">128</text>
+<text x="613.0" y="292.0" font-family="Helvetica,Arial,sans-serif" font-size="9.5" font-weight="normal" text-anchor="middle" fill="#6b6b6b">256</text>
+<text x="664.0" y="292.0" font-family="Helvetica,Arial,sans-serif" font-size="9.5" font-weight="normal" text-anchor="middle" fill="#6b6b6b">512</text>
+<text x="715.0" y="292.0" font-family="Helvetica,Arial,sans-serif" font-size="9.5" font-weight="normal" text-anchor="middle" fill="#6b6b6b">1024</text>
+<text x="766.0" y="292.0" font-family="Helvetica,Arial,sans-serif" font-size="9.5" font-weight="normal" text-anchor="middle" fill="#6b6b6b">2048</text>
+<text x="664.0" y="310.0" font-family="Helvetica,Arial,sans-serif" font-size="10" font-weight="normal" text-anchor="middle" fill="#6b6b6b">MAC configuration</text>
+<path d="M562.0 66.0 L613.0 72.4 L664.0 112.7 L715.0 140.0 L766.0 188.8" fill="none" stroke="#0072b2" stroke-width="1.8" stroke-linejoin="round"/>
+<circle cx="562.0" cy="66.0" r="2.4" fill="#0072b2"/>
+<circle cx="613.0" cy="72.4" r="2.4" fill="#0072b2"/>
+<circle cx="664.0" cy="112.7" r="2.4" fill="#0072b2"/>
+<circle cx="715.0" cy="140.0" r="2.4" fill="#0072b2"/>
+<circle cx="766.0" cy="188.8" r="2.4" fill="#0072b2"/>
+<path d="M562.0 66.0 L613.0 81.3 L664.0 106.1 L715.0 168.4 L766.0 203.8" fill="none" stroke="#d55e00" stroke-width="1.8" stroke-linejoin="round"/>
+<circle cx="562.0" cy="66.0" r="2.4" fill="#d55e00"/>
+<circle cx="613.0" cy="81.3" r="2.4" fill="#d55e00"/>
+<circle cx="664.0" cy="106.1" r="2.4" fill="#d55e00"/>
+<circle cx="715.0" cy="168.4" r="2.4" fill="#d55e00"/>
+<circle cx="766.0" cy="203.8" r="2.4" fill="#d55e00"/>
+<path d="M562.0 66.0 L613.0 90.4 L664.0 136.7 L715.0 181.2 L766.0 213.5" fill="none" stroke="#009e73" stroke-width="1.8" stroke-linejoin="round"/>
+<circle cx="562.0" cy="66.0" r="2.4" fill="#009e73"/>
+<circle cx="613.0" cy="90.4" r="2.4" fill="#009e73"/>
+<circle cx="664.0" cy="136.7" r="2.4" fill="#009e73"/>
+<circle cx="715.0" cy="181.2" r="2.4" fill="#009e73"/>
+<circle cx="766.0" cy="213.5" r="2.4" fill="#009e73"/>
+<path d="M562.0 66.0 L613.0 171.0 L664.0 241.6 L715.0 256.7 L766.0 267.2" fill="none" stroke="#cc79a7" stroke-width="1.8" stroke-linejoin="round"/>
+<circle cx="562.0" cy="66.0" r="2.4" fill="#cc79a7"/>
+<circle cx="613.0" cy="171.0" r="2.4" fill="#cc79a7"/>
+<circle cx="664.0" cy="241.6" r="2.4" fill="#cc79a7"/>
+<circle cx="715.0" cy="256.7" r="2.4" fill="#cc79a7"/>
+<circle cx="766.0" cy="267.2" r="2.4" fill="#cc79a7"/>
+<path d="M562.0 66.0 L613.0 89.1 L664.0 172.4 L715.0 217.7 L766.0 244.7" fill="none" stroke="#e69f00" stroke-width="1.8" stroke-linejoin="round"/>
+<circle cx="562.0" cy="66.0" r="2.4" fill="#e69f00"/>
+<circle cx="613.0" cy="89.1" r="2.4" fill="#e69f00"/>
+<circle cx="664.0" cy="172.4" r="2.4" fill="#e69f00"/>
+<circle cx="715.0" cy="217.7" r="2.4" fill="#e69f00"/>
+<circle cx="766.0" cy="244.7" r="2.4" fill="#e69f00"/>
+<path d="M562.0 66.0 L613.0 77.2 L664.0 79.3 L715.0 93.1 L766.0 132.6" fill="none" stroke="#56b4e9" stroke-width="1.8" stroke-linejoin="round"/>
+<circle cx="562.0" cy="66.0" r="2.4" fill="#56b4e9"/>
+<circle cx="613.0" cy="77.2" r="2.4" fill="#56b4e9"/>
+<circle cx="664.0" cy="79.3" r="2.4" fill="#56b4e9"/>
+<circle cx="715.0" cy="93.1" r="2.4" fill="#56b4e9"/>
+<circle cx="766.0" cy="132.6" r="2.4" fill="#56b4e9"/>
+<path d="M562.0 66.0 L613.0 78.6 L664.0 139.4 L715.0 184.7 L766.0 219.6" fill="none" stroke="#8c564b" stroke-width="1.8" stroke-linejoin="round"/>
+<circle cx="562.0" cy="66.0" r="2.4" fill="#8c564b"/>
+<circle cx="613.0" cy="78.6" r="2.4" fill="#8c564b"/>
+<circle cx="664.0" cy="139.4" r="2.4" fill="#8c564b"/>
+<circle cx="715.0" cy="184.7" r="2.4" fill="#8c564b"/>
+<circle cx="766.0" cy="219.6" r="2.4" fill="#8c564b"/>
+<text x="816.0" y="54.0" font-family="Helvetica,Arial,sans-serif" font-size="10.5" font-weight="bold" text-anchor="start" fill="#1a1a1a">workload</text>
+<line x1="816.0" y1="68.0" x2="832.0" y2="68.0" stroke="#0072b2" stroke-width="2.6"/>
+<text x="837.0" y="72.0" font-family="Helvetica,Arial,sans-serif" font-size="10" font-weight="normal" text-anchor="start" fill="#1a1a1a">ad_medium</text>
+<line x1="816.0" y1="85.0" x2="832.0" y2="85.0" stroke="#d55e00" stroke-width="2.6"/>
+<text x="837.0" y="89.0" font-family="Helvetica,Arial,sans-serif" font-size="10" font-weight="normal" text-anchor="start" fill="#1a1a1a">kws_micronet</text>
+<line x1="816.0" y1="102.0" x2="832.0" y2="102.0" stroke="#009e73" stroke-width="2.6"/>
+<text x="837.0" y="106.0" font-family="Helvetica,Arial,sans-serif" font-size="10" font-weight="normal" text-anchor="start" fill="#1a1a1a">mobilenet_v2</text>
+<line x1="816.0" y1="119.0" x2="832.0" y2="119.0" stroke="#cc79a7" stroke-width="2.6"/>
+<text x="837.0" y="123.0" font-family="Helvetica,Arial,sans-serif" font-size="10" font-weight="normal" text-anchor="start" fill="#1a1a1a">rnnoise</text>
+<line x1="816.0" y1="136.0" x2="832.0" y2="136.0" stroke="#e69f00" stroke-width="2.6"/>
+<text x="837.0" y="140.0" font-family="Helvetica,Arial,sans-serif" font-size="10" font-weight="normal" text-anchor="start" fill="#1a1a1a">vww4</text>
+<line x1="816.0" y1="153.0" x2="832.0" y2="153.0" stroke="#56b4e9" stroke-width="2.6"/>
+<text x="837.0" y="157.0" font-family="Helvetica,Arial,sans-serif" font-size="10" font-weight="normal" text-anchor="start" fill="#1a1a1a">wav2letter</text>
+<line x1="816.0" y1="170.0" x2="832.0" y2="170.0" stroke="#8c564b" stroke-width="2.6"/>
+<text x="837.0" y="174.0" font-family="Helvetica,Arial,sans-serif" font-size="10" font-weight="normal" text-anchor="start" fill="#1a1a1a">yolo-fastest</text>
+<text x="18.0" y="338.0" font-family="Helvetica,Arial,sans-serif" font-size="10" font-weight="normal" text-anchor="start" fill="#6b6b6b">Dashed line: the frozen 0.75 STRONG threshold. Only timing-adapter-enabled platforms appear.</text>
+<text x="18.0" y="354.0" font-family="Helvetica,Arial,sans-serif" font-size="10" font-weight="normal" text-anchor="start" fill="#6b6b6b">Cumulative efficiency = (cycles(baseline)/cycles(M)) / (M/baseline MAC); 1.0 is ideal proportional scaling.</text>
+</svg>
