@@ -1,0 +1,31 @@
+section,claim,evidence_source,verdict,note
+1 Intro/RQ1,How do performance characteristics change across Corstone/Ethos-U generations,frozen FVP analysis; §4.5; §8.2,UNDER-SUPPORTED_AS_POSED,paper refuses absolute cross-generation comparison; only 2 TA-ON substrates exist and they differ in FM version. Answerable only in structural/deployability terms
+1 Contributions,4 contributions listed,"§4.2, §4.6, §5, §6",INCOMPLETE,Vela-prediction characterization is a Results+Discussion headline but absent from contributions; item 4 bundles 4 methodology results + platform sensitivity
+3.1,19 simulated configurations; 11 of 19 benchmarking-valid,X0 FVP_CAPABILITY_MATRIX.csv (19 SUPPORTED); frozen TA audit,SUPPORTED,
+3.1,FVP parameter acceptance is not the authority for discrete MAC support,X0 FVP_PARAMETER_AUTHORITY.md,SUPPORTED,X0 correction preserved; num_macs=100 not used
+3.3,Fast Models versions 11.22.35/11.24.13/11.27.25/11.31.28,X0 fvp_inventory.json,SUPPORTED,
+3.4,three compilation/instrumentation paths distinct,U85 capability audit; U65 bridge amendment,SUPPORTED,historical U55/U65 per-layer explicitly not a decomposition of the regor executable
+3.7,92-cell same-artifact validation design; artifact identity hard gate,X1 contract; X1 evidence (39/39 hashes),SUPPORTED,
+3.7,"TA-OFF platforms enter as validation subjects, not performance sources",X1 contract; §3.1,SUPPORTED,resolves the apparent tension with 'only 11/19 benchmarking-valid'
+4.1,28 STRONG / 23 PARTIAL / 2 WEAK / 3 NOT_AVAILABLE over 53 steps,frozen DERIVED_RESULTS.md,SUPPORTED,
+4.1,saturation NONE_OBSERVED 19/21; one at SSE-320/U85/rnnoise@512,frozen DERIVED_RESULTS.md,SUPPORTED,
+4.2,Vela agrees 19/20 on saturation and speedup ordering; per-step 4/4..0/1,frozen DERIVED_RESULTS.md,SUPPORTED,no accuracy/error claim made
+4.3,"55 pairs, rho median 1.0, min 0.9429",frozen DERIVED_RESULTS.md,SUPPORTED,
+4.4,"6 NOT_EXECUTABLE_MEMORY cells, homogeneous",frozen executability.csv,SUPPORTED,
+4.6,92 cells / 276 samples / 39-39 artifacts / 0 rule failures,X1_EVIDENCE_FROZEN.md; X1_FORMAL_CELLS.json,SUPPORTED,re-verified in this review
+4.6,CLASS A 7/7 and CLASS B 24/32 scaling class; other metrics fully preserved,X3_METRIC_QUALIFICATION.csv,SUPPORTED,re-computed in this review
+4.6,"14/14 identical canonical cycles, narrow classification",X1_FORMAL_CELLS.json re-derived,SUPPORTED,non-generalization and NOT_EVALUABLE transfer stated
+4.6,association-only TA statement,X3_METRIC_ROBUSTNESS.md,SUPPORTED_BUT_MISPLACED,interpretation located in Results
+5,"rho = 1.0, 0 inversions, 21 samples, median(B1,B2,B3)",frozen RQ3_DERIVED_RESULTS.md,SUPPORTED,
+5,no aggregate deviation metric computed,frozen RQ3 contract,SUPPORTED,no FVP-accuracy or latency-prediction claim present
+5,ordinal structure and relative cost shape transfer to hardware,frozen RQ3 results,SUPPORTED_BUT_MISPLACED,interpretive sentence inside Results
+6.3,"+19,000 decomposes into ten regressing groups; largest ~1/5",P0-E derived (U85_MECHANISM_RESULTS.md),SUPPORTED,
+6.3,UBLOCK_CHANGED ~95% in every direction class; BLOCK_CONFIG more frequent among improving,P0-E differential,SUPPORTED,
+6.4,direction invariant across 3 memory modes; same groups regress; 11 vww4 groups flip,P1-A + P1-B frozen,SUPPORTED,
+6.5,overall bridge NOT_EQUIVALENT with six component conclusions,U65_BRIDGE_RESULTS.md,SUPPORTED,not collapsed into 'profilers are equivalent'
+6.6,non-monotonicity framed as aggregate of heterogeneous group changes,U85_MECHANISM_NARRATIVE.md,SUPPORTED_BUT_MISPLACED,framing/interpretation inside the mechanism results section
+7 Discussion,metric transfer hierarchy,X3,SUPPORTED,
+8.x,14 limitation items,all frozen limitation docs,SUPPORTED_BUT_UNSTRUCTURED,flat list; grouping recommended
+whole paper,"no citations, no References section",n/a,UNSUPPORTED_GAP,Related work is one uncited paragraph
+whole paper,no Abstract,n/a,GAP,
+whole paper,"no figures (47 table rows, 0 figures)",n/a,GAP,scaling ladders / normalized vectors / group deltas are inherently visual
