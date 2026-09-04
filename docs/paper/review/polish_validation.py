@@ -130,9 +130,13 @@ def main(path=DEFAULT):
         check("F", "MIN-1: guard preserved — %s" % guard[:34], m.has(guard))
     meth = raw[raw.index("## 3. Methodology"):raw.index("## 4. ")]
     body = raw[raw.index("## 1. Introduction"):]
-    check("F", "MIN-1: methodology share reduced",
-          len(meth.split()) / len(body.split()) < 0.19,
-          "%.1f%% of the body" % (100 * len(meth.split()) / len(body.split())))
+    share = 100.0 * len(meth.split()) / len(body.split())
+    # asserted as a narrow band, not an open bound: the reported figure must be
+    # the measured one. A first draft of the polishing record stated an
+    # unobserved 16.2%; the measured value is 18.0%.
+    check("F", "MIN-1: methodology share reduced and as reported",
+          17.5 <= share <= 18.5 and len(meth.split()) == 1580,
+          "%d words, %.1f%% of the body" % (len(meth.split()), share))
     check("F", "MIN-2: appendix A retitled",
           m.has("## Appendix A. Exact values behind the board validation"))
     check("F", "MIN-2: old narrow title gone",

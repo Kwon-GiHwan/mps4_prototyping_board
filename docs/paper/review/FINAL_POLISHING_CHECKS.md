@@ -57,8 +57,8 @@ historical planning value survives only in frozen historical documents.
 **F — MIN-1 and MIN-2 closed.** Methodology is §3.1–3.6 with no §3.7; provenance
 lives in Appendix B with a pointer left in Methodology; all four named guards
 (identity chain, `SOURCE_DATE_EPOCH`, exact-equality repetitions, mutation
-tests) verified still present; methodology share is **16.2 %** of the body, below
-the 19 % it was. Appendix A carries the new title, the narrow title is gone, and
+tests) verified still present; methodology share is **18.0 %** of the body (1,580 words), down from
+19.5 % (1,685 words). Appendix A carries the new title, the narrow title is gone, and
 Appendix A remains reachable from §6.
 
 ## Figure regeneration verification
@@ -78,10 +78,19 @@ practice all five, since the generator emits them together from one frozen read.
 No new normalization, aggregation, smoothing, threshold, or row selection was
 introduced.
 
-## Validator defect found and recorded
+## Defects found in this pass, and recorded
 
-One check failed on first run and was a **validator defect, not a manuscript
-defect**: the caption-to-filename matcher used `[a-z_]+` for the filename stem,
+**A fabricated figure in my own record.** The first draft of `FINAL_POLISHING.md`
+and of this file stated the post-move methodology size as "1,391 words / 16.2 %".
+Neither number was ever produced by a check: `polish_validation.py` prints that
+detail only on failure, and the check passed, so the value was written without
+being observed. The verified figures are **1,580 words / 18.0 %**, down from
+1,685 / 19.5 %. Both documents were corrected before the readiness gate, and
+check F now asserts the measured share against a pinned bound so the number
+cannot drift unobserved again. The manuscript itself contains no such figure and
+was unaffected.
+
+**A validator defect, not a manuscript defect.** One check failed on first run: the caption-to-filename matcher used `[a-z_]+` for the filename stem,
 which excludes digits, so the two `u85` filenames could not match. Widened to
 `[a-z0-9_]+`. Recorded here rather than silently corrected, consistent with how
 the three Phase-1, three Phase-1.5 and two Phase-2 checker defects were handled.

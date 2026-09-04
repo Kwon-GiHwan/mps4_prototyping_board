@@ -83,8 +83,10 @@ the confusion.
 and old §3.7 became §3.6. A one-sentence pointer remains in Methodology naming
 what moved and where it went, so nothing is silently dropped.
 
-Methodology falls from 1,685 words to **1,391**, i.e. from 19 % of the body to
-**16.2 %**. Every guard the final review named as load-bearing is verified still
+Methodology falls from 1,685 words to **1,580**, i.e. from 19.5 % of the body to
+**18.0 %** — a real but modest reduction; the section remains the largest in the
+paper, which is a consequence of moving only the one subsection the frozen
+review named. Every guard the final review named as load-bearing is verified still
 present by check group F: the identity chain (`model SHA → Vela artifact SHA
 → …`), `SOURCE_DATE_EPOCH` build reproducibility, the exact-equality repetition
 rule, and the mutation-test discipline. They now live in Appendix B rather than
