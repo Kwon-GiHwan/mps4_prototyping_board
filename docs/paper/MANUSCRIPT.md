@@ -21,7 +21,7 @@ samples), validate one configuration on physical Corstone-320 / Ethos-U85
 hardware (21 samples), and decompose the single configuration transition where
 more MAC capacity measured *slower*.
 
-Four findings follow. **Scaling is workload-dependent and mostly sub-linear**:
+Three primary findings follow. **Scaling is workload-dependent and mostly sub-linear**:
 of 53 adjacent MAC transitions, 28 retain at least 75 % efficiency and 23 fall
 between 50 % and 75 %, and saturation appears in only one of 21 ladders within
 the tested range. **One boundary is non-monotonic**: Ethos-U85 at 256 → 512
@@ -32,8 +32,10 @@ memory configuration tested, while a compiler-visible ublock change accompanies
 roughly 95 % of operations in every direction class and therefore does not
 discriminate. **Compiler estimates preserve structure better than magnitude**:
 Vela matches the simulated saturation classification and speedup ordering in
-19 of 20 ladders while per-step agreement varies widely. **Structural
-conclusions transfer better than labels**: in a same-artifact study across
+19 of 20 ladders while per-step agreement varies widely.
+
+Two results validate these findings rather than extending them.
+**Structural conclusions transfer better than labels**: in a same-artifact study across
 supported Corstone FVPs, workload ranking, scaling direction, saturation and
 normalized ordering are preserved, whereas threshold-based efficiency classes
 are more sensitive to timing-model configuration; on hardware, workload
@@ -54,11 +56,13 @@ estimates and cycle-model simulation, then discover on hardware what the
 estimates did not carry.
 
 **Thesis.** Increasing MAC capacity does not yield proportional performance
-gains: scaling behaviour is workload-dependent and can become non-monotonic,
-it is shaped by heterogeneous operation-level and memory/compiler interactions
-rather than by any single structural change, and the structural conclusions
-drawn from simulation transfer across tested platform and timing conditions far
-better than raw or thresholded performance labels do.
+gains: scaling behaviour is workload-dependent and can become non-monotonic;
+where it does become non-monotonic, that transition is shaped by heterogeneous
+operation-level and memory/compiler interactions rather than by any single
+structural change; and the structural conclusions drawn from simulation
+transfer across the tested platform and timing conditions, whereas
+threshold-based labels proved sensitive to timing-model configuration and raw
+cross-platform cycles are not comparable at all.
 
 We ask:
 
@@ -113,7 +117,14 @@ is being instrumented.
 ## 2. Background
 
 **Ethos-U family.** Ethos-U55, U65, and U85 differ in MAC array size options,
-memory interfaces, and PMU event spaces. Vela compiles a quantized TFLite
+memory interfaces, and PMU event spaces. For the two generations this study
+sweeps most widely, the discrete MAC configurations are defined in their
+respective technical reference manuals: the `macs_per_cc` field admits 32–256
+MACs/clock cycle on Ethos-U55 [16], and 256 or 512 on Ethos-U65 [17], the
+latter also differing in shared-buffer size between its two configurations.
+Which PMU event names a generation actually emits is not taken from
+documentation in this work but established empirically (Section 8.4).
+Vela compiles a quantized TFLite
 network into an Ethos-U command stream embedded as a custom operator payload;
 the core driver submits that payload and the NPU executes it.
 
@@ -132,9 +143,9 @@ Section 3.1 and Section 8.1.
 
 ### 2.1 Related work
 
-**Accelerator characterization and scaling models.** Systolic-array
-accelerators are commonly characterized with analytical or cycle-level models
-rather than measurement: SCALE-Sim models a configurable systolic array and
+**Accelerator characterization and scaling models.** SCALE-Sim and Timeloop
+characterize systolic-array accelerators with analytical and cycle-level
+models: SCALE-Sim models a configurable systolic array and
 studies how bandwidth, dataflow and array aspect ratio shape runtime [10], and
 Timeloop searches the mapping space to project performance and energy for a
 given architecture [11]. The canonical measured account of a production
@@ -148,9 +159,10 @@ configurations.
 **TinyML benchmarking.** MLPerf Tiny standardizes end-to-end latency, accuracy
 and energy measurement for microcontroller-class systems [13]; the workloads we
 use are drawn from that lineage, including MicroNet keyword spotting [14], and
-run on TensorFlow Lite Micro [15]. Such suites deliberately report system-level
-outcomes and do not decompose an anomaly to the operation level on a specific
-NPU, which is the gap Section 7 addresses.
+run on TensorFlow Lite Micro [15]. MLPerf Tiny reports system-level outcomes by
+design, at whole-inference granularity [13]; this work additionally decomposes
+one configuration transition to the operation level on a specific NPU
+(Section 6).
 
 **Simulator-versus-hardware validation.** Validating a simulator against
 silicon is an established methodology concern: Gutierrez et al. validate a
@@ -158,12 +170,14 @@ full-system CPU simulator against an Arm development board and report mean
 absolute runtime errors in the 13–17 % range after targeted corrections [12].
 Our board work is deliberately weaker in its claim — we validate *ordinal and
 relative-cost structure* at the one physically available configuration rather
-than absolute cycle agreement (Section 6) — because the simulated and physical
+than absolute cycle agreement (Section 5) — because the simulated and physical
 builds are target-specific and the two do not share a timing domain.
 
 **Arm Ethos-U toolchain.** The platform documentation is primary evidence for
-this study rather than related work: the Ethos-U85 NPU manuals define the MAC
-configurations and PMU event space [1, 2], the ML developers guide describes
+this study rather than related work: the Ethos-U85 NPU manuals define its MAC
+configurations and PMU event space [1, 2], the Ethos-U55 and Ethos-U65 manuals
+define the discrete MAC configurations of those generations [16, 17], the ML
+developers guide describes
 the NPU/compiler relationship [3], the Corstone-320 reference package and its
 Fixed Virtual Platform define the simulated subsystem [4, 5, 6], the Vela
 compiler produces both the command stream and the performance estimates we
@@ -200,7 +214,7 @@ roles are not interchangeable:
 The distinction that matters throughout is **primary measurement substrate**
 versus **diagnostic/robustness substrate**. Performance results are reported
 only from the former; the latter appear only where a comparison is explicitly
-structural (Section 5). The four platforms are never presented as one
+structural (Section 4.6). The four platforms are never presented as one
 absolute-performance series.
 
 That yields **19 simulated configurations** (SSE-300/U55 at 32–256,
@@ -370,7 +384,7 @@ unchanged; no aggregate robustness score is defined.
 Note the deliberate boundary: the TA-OFF platforms enter this study as
 **validation** subjects for metric behaviour, not as sources of performance
 figures. They remain excluded from the performance analysis of Section 4, and
-no cross-platform cycle ratio is computed anywhere.
+no cross-platform cycle ratio is computed in this validation.
 
 ## 4. Cross-generation simulated characterization (RQ1, RQ2)
 
@@ -438,7 +452,13 @@ deployability, and a missing cell is a result rather than a gap in collection.
 
 *Supported:* the generations and configurations differ primarily in normalized
 scaling behaviour, workload ordering, and deployability characteristics, rather
-than in directly comparable absolute cycle values. *Not established:* any "U85
+than in directly comparable absolute cycle values. Concretely, across the three
+axes the question names: **deployability differed** — six cells were
+non-executable, all `wav2letter_pruned_int8` × Ethos-U55 × `Shared_Sram`
+(Section 4.4); **saturation differed** — the only observed instance in the
+tested range is one Ethos-U85 ladder (Section 4.1); and **workload ordering did
+not differ**, remaining invariant across configurations (`rho == 1.0` in 31/55
+pairs, minimum 0.9429, median 1.0000; Section 4.3). *Not established:* any "U85
 is faster than U55" statement — Fast Models version skew and timing-adapter
 differences make absolute cross-generation comparison unsupportable on this
 data.
@@ -771,9 +791,15 @@ expect the ordinal layer to travel and the thresholded layer to need
 re-qualification.
 
 **Measurement methodology results.** Four are reusable beyond this study.
-(i) A simulator's timing adapter can silently change what is being measured:
-two platforms running a byte-identical command stream differed ~4× purely by
-adapter state, and nothing in the cycle counts signalled it. (ii) A compiler
+(i) A simulator's timing-adapter configuration can silently change what is
+being measured: the same NPU artifact exhibited a large cycle difference — a
+byte-identical command stream measured ~4× apart — between the SSE-300 and
+SSE-310 conditions, and nothing in the cycle counts signalled it. Because
+timing-adapter state, subsystem and Fast Models timing implementation differ
+together across that pair, the magnitude cannot be attributed to the timing
+adapter alone; the three contributions are `NOT_SEPARATED` (Section 8.13). The
+observation is therefore treated as a methodology warning against raw
+cross-platform cycle comparison, not as a performance result. (ii) A compiler
 backend change can silently change which program is instrumented: the default
 `regor` routing means legacy-core instrumentation decomposes a different binary
 than the formal sweep executes — which is why this paper separates the three
@@ -881,13 +907,15 @@ MLEK set — representative of embedded ML, not exhaustive.
 
 ---
 
-*Integration status: RQ1/RQ2/RQ3 and the U85 mechanism study are integrated
-with their limitations. Frozen sources: `paper-fvp-analysis-results-frozen`,
+*Integration status: RQ1–RQ4 and the U85 mechanism study are integrated with
+their limitations. Frozen sources: `paper-fvp-analysis-results-frozen`,
 `paper-board-rq3-analysis-results-frozen`, `paper-fvp-narrative-frozen`,
 `paper-u85-mechanism-derived-frozen`, `paper-u85-p1a-frozen`,
 `paper-u85-p1b-frozen`, `paper-u85-mechanism-narrative-frozen`,
-`paper-u65-bridge-verdict-frozen`. STOP for full-paper review; no new
-experiment is initiated by this integration.*
+`paper-u65-bridge-verdict-frozen`,
+`paper-platform-sensitivity-x1-results-frozen`,
+`paper-platform-sensitivity-x3-results-frozen`. No new experiment is initiated
+by this integration.*
 
 ---
 
@@ -948,3 +976,9 @@ system; every entry below was verified against its source during review.
 [15] R. David, J. Duke, A. Jain, V. J. Reddi, N. Jeffries, J. Li, N. Kreeger,
      I. Nappier, M. Natraj, T. Wang, P. Warden, R. Rhodes. TensorFlow Lite
      Micro: Embedded Machine Learning for TinyML Systems. *MLSys*, 2021.
+
+[16] Arm Ltd. *Arm Ethos-U55 NPU Technical Reference Manual*, revision r2p0,
+     document ID 102420_0200_02_en. developer.arm.com/documentation/102420
+
+[17] Arm Ltd. *Arm Ethos-U65 NPU Technical Reference Manual*, revision r0p0,
+     document ID 102023_0000_06_en. developer.arm.com/documentation/102023
