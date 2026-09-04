@@ -1,0 +1,91 @@
+{
+ "task": "REVIEW REMEDIATION PHASE 2 — final frozen-paper review",
+ "mode": "REVIEW_ONLY",
+ "date": "2026-09-04",
+ "inputs": {
+  "manuscript_tag": "paper-manuscript-phase2-frozen",
+  "manuscript_commit": "8754295",
+  "prior_manuscript_tag": "paper-manuscript-phase1_5-frozen",
+  "prior_manuscript_commit": "6dce4d8",
+  "action_plan_tag": "paper-full-review-frozen",
+  "action_plan_commit": "9359c7a",
+  "phase1_5_review_commit": "983ef04"
+ },
+ "actions_completed": {
+  "7": "five figures from frozen CSVs, scoped captions",
+  "8": "robustness study promoted to section 5; 5->6, 6->7, 7->8, 8->9",
+  "9": "interpretation moved from Results to Discussion, pointers left",
+  "10": "14 limitations regrouped under six themes, none withdrawn",
+  "11": "platform/TA role paragraph added to Background",
+  "12": "X3 qualification table placed beside the results",
+  "13": "minors mi1-mi4",
+  "14": "suites re-run, manuscript re-frozen, no existing tag moved",
+  "F12": "Conclusion written last from established results only"
+ },
+ "manuscript": {
+  "words": 9040,
+  "sections": 10,
+  "appendices": 1,
+  "figures": 5,
+  "tables": 9,
+  "references": 17
+ },
+ "tables": {"KEEP_MAIN": 7, "MERGE_MAIN": 1, "MOVE_APPENDIX": 2, "REMOVE_REDUNDANT": 0},
+ "conclusion_status": "PRESENT — written last; no new number, no novelty claim, no future-work promise",
+ "rq_closure": {"RQ1": "CLOSED", "RQ2": "CLOSED", "RQ3": "CLOSED", "RQ4": "CLOSED",
+                "all_closed": true,
+                "platform_sensitivity": "NOT_AN_RQ — section 5 states this explicitly"},
+ "thesis": {"supported": 3, "total": 3},
+ "final_findings": {"BLOCKER": 0, "MAJOR": 0, "MODERATE": 2, "MINOR": 2},
+ "findings": [
+  {"id": "MOD-1", "severity": "MODERATE",
+   "issue": "figures appear in the order 1, 5, 4, 2, 3 rather than in order of appearance",
+   "class": "TEXT_ONLY + figure regeneration", "introduced_by": "phase 2 action 7"},
+  {"id": "MOD-2", "severity": "MODERATE",
+   "issue": "Figure 2 labels the instrumented group sum (+19,060) as the whole-model change, which is +19,000; the 60-cycle interrupt-service residual is explained in 9.5 but not adjacent to the figure",
+   "class": "TEXT_ONLY + figure regeneration", "introduced_by": "phase 2 action 7"},
+  {"id": "MIN-1", "severity": "MINOR",
+   "issue": "Methodology is 1,685 of ~9,040 words; section 3.6 could move to the appendix",
+   "class": "TEXT_ONLY"},
+  {"id": "MIN-2", "severity": "MINOR",
+   "issue": "Appendix A titled 'Exact values behind Figure 4' although A.1 supports the section 6 ranking claim as much as the figure",
+   "class": "TEXT_ONLY"}
+ ],
+ "numerical_discrepancies": [
+  {"claim": "seven workloads span 467x in estimated cycles",
+   "status": "RESOLVED in phase 2",
+   "detail": "traced only to the pre-sweep MAIN_EXPERIMENT_MATRIX.md, whose per-model Vela values do not appear in the frozen matrix; recomputed from the frozen matrix as 468x at SSE-320/ethos-u85-256/Dedicated_Sram, confirmed at review to be the only U85-256 configuration containing all seven workloads",
+   "load_bearing": false}
+ ],
+ "claims_audited": 22,
+ "claims_re_derived_from_frozen": 13,
+ "prohibited_claim_scan": {"items": 9, "affirmative_violations": 0},
+ "rule_failures": 0,
+ "scientific_contradictions": 0,
+ "new_experiment_required": false,
+ "x2": "NOT_NEEDED",
+ "holds_unchanged": ["X2", "X4", "X5", "new measurements", "new experimental metrics"],
+ "checker_defects_found_and_recorded": [
+  "executability.csv uses a `classification` column, not an `executable` boolean",
+  "conclusion-versus-body number comparison normalized only one side (\"53\\n\" vs \"53 \")",
+  "the phase-1.5 stale-pointer check hardcoded pre-renumbering section numbers and became wrong itself after action 8"
+ ],
+ "regression_caught_by_checks": "the MERGE_MAIN table edit deleted the invariant sentence 'The two classes are reported separately and are not combined into a single rate'; consistency check 14 and the X1/X3 scope check both failed and the sentence was restored rather than the checks weakened",
+ "suites": {
+  "phase1_consistency_check.py": "16/16",
+  "phase1_5_validation.py": "25/25",
+  "phase2_validation.py": "98/98",
+  "manuscript_text_fixtures.py": "14/14",
+  "phase1_5_checker_fixtures.py": "14/14",
+  "total": "167/167"
+ },
+ "manuscript_modified_during_review": false,
+ "recommendation": "one polishing pass to close MOD-1, MOD-2, MIN-1, MIN-2; not submission-ready until then, by that margin only",
+ "verification_level": "static analysis and automated checking of the frozen tag",
+ "not_executed": [
+  "no build, simulation, FVP run, board run, or measurement",
+  "no frozen analyzer re-run",
+  "no external peer review",
+  "figures visually inspected for 2 of 5; geometry-audited for all 5"
+ ]
+}
