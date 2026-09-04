@@ -1,11 +1,47 @@
 # Characterizing Arm Ethos-U NPU Configurations: Simulated Scaling, Hardware Validation, and an Operator-Level Mechanism Study
 
-Integrated manuscript draft. Assembled 2026-09-02 from frozen evidence only
-(`paper-fvp-*`, `paper-board-*`, `paper-u85-*`, `paper-u65-bridge-*`). No new
-metric, threshold, correlation, or measurement is introduced by this
-integration. Statements carry the evidence vocabulary used throughout the
-campaign: `ASSOCIATED_WITH`, `CONSISTENT_WITH`, `NOT_SEPARATED`,
-`NOT_EVALUABLE`.
+Integrated manuscript draft. Assembled from frozen evidence only
+(`paper-fvp-*`, `paper-board-*`, `paper-u85-*`, `paper-u65-bridge-*`,
+`paper-platform-sensitivity-*`); last revised 2026-09-04. No new metric,
+threshold, correlation, or measurement is introduced by revision. Statements
+carry the evidence vocabulary used throughout the campaign:
+`ASSOCIATED_WITH`, `CONSISTENT_WITH`, `NOT_SEPARATED`, `NOT_EVALUABLE`.
+
+---
+
+## Abstract
+
+Embedded ML deployment on Arm Ethos-U NPUs forces configuration choices —
+NPU generation, MAC count, memory mode, host subsystem — long before hardware
+exists, and those choices are made from compiler estimates and cycle-model
+simulation. We characterize what those tools actually support. Across a
+133-cell capability universe we identify 74 executable, timing-adapter-enabled
+cells and measure them under a byte-reproducible provenance chain (222
+samples), validate one configuration on physical Corstone-320 / Ethos-U85
+hardware (21 samples), and decompose the single configuration transition where
+more MAC capacity measured *slower*.
+
+Four findings follow. **Scaling is workload-dependent and mostly sub-linear**:
+of 53 adjacent MAC transitions, 28 retain at least 75 % efficiency and 23 fall
+between 50 % and 75 %, and saturation appears in only one of 21 ladders within
+the tested range. **One boundary is non-monotonic**: Ethos-U85 at 256 → 512
+MACs makes `rnnoise` slower, and direct operation-group profiling shows the
++19,000-cycle reversal is *distributed* over ten operation groups rather than
+caused by any single structural change — the same groups regress under every
+memory configuration tested, while a compiler-visible ublock change accompanies
+roughly 95 % of operations in every direction class and therefore does not
+discriminate. **Compiler estimates preserve structure better than magnitude**:
+Vela matches the simulated saturation classification and speedup ordering in
+19 of 20 ladders while per-step agreement varies widely. **Structural
+conclusions transfer better than labels**: in a same-artifact study across
+supported Corstone FVPs, workload ranking, scaling direction, saturation and
+normalized ordering are preserved, whereas threshold-based efficiency classes
+are more sensitive to timing-model configuration; on hardware, workload
+ordering is preserved exactly at the one measurable configuration.
+
+We do not compare absolute cycles across generations, simulators or hardware,
+and we do not attribute the non-monotonicity to a single architectural or
+compiler factor; both remain outside what this evidence can separate.
 
 ---
 
@@ -17,41 +53,62 @@ before any hardware exists. Practitioners make those choices from compiler
 estimates and cycle-model simulation, then discover on hardware what the
 estimates did not carry.
 
-This work characterizes that decision space and then examines one anomaly
-inside it in depth. We ask:
+**Thesis.** Increasing MAC capacity does not yield proportional performance
+gains: scaling behaviour is workload-dependent and can become non-monotonic,
+it is shaped by heterogeneous operation-level and memory/compiler interactions
+rather than by any single structural change, and the structural conclusions
+drawn from simulation transfer across tested platform and timing conditions far
+better than raw or thresholded performance labels do.
 
-- **RQ1** — How do performance characteristics change across Corstone/Ethos-U
-  generations for representative workloads?
+We ask:
+
+- **RQ1** — How do normalized scaling behaviour, workload ordering, and
+  deployability differ across the supported Corstone/Ethos-U configurations?
+  *(Deliberately not "which generation is faster": Section 3.3 sets out why
+  absolute cross-generation cycle comparison is not admissible on this stack,
+  and no result in this paper depends on one.)*
 - **RQ2** — How does performance scale with MAC configuration, and where does
   scaling saturate?
 - **RQ3** — To what extent do qualitative trends observed for Corstone-320 /
   Ethos-U85 in simulation reproduce on physical MPS4/FI101 hardware?
-- **RQ4 (mechanism)** — For the one configuration transition where more
-  hardware measured *slower* — Ethos-U85, 256 → 512 MACs — what operator-level
-  behaviour produces that whole-model non-monotonicity, and how robust is it to
-  memory configuration?
+- **RQ4** — For the one configuration transition where more hardware measured
+  *slower* — Ethos-U85, 256 → 512 MACs — what operator-level behaviour produces
+  that whole-model non-monotonicity, and how robust is it to memory
+  configuration?
 
-Contributions:
+**Primary contributions.**
 
-1. A 133-cell capability/executability characterization and a 74-cell formal
-   simulated sweep (222 samples) with byte-level artifact provenance, in which
-   **executability is reported as a first-class result** rather than as missing
-   data.
-2. Physical validation on Corstone-320 / Ethos-U85 hardware (21 formal
-   samples), reporting **ranking preservation and relative-cost shape**, with
-   absolute simulation-versus-hardware comparison refused by construction.
-3. A direct operator-level mechanism study of the U85 256 → 512 reversal,
-   built on a new post-compilation instrumentation path, showing the reversal
-   is **distributed across operation groups** and **persists across every
-   tested memory configuration** with the **same logical groups** regressing.
-4. Measurement-methodology results that generalize beyond this study: a
-   simulator timing adapter can silently change what is being measured; a
-   compiler backend change can silently change which program is being
-   instrumented; and instrumentation backends must be cross-validated before
-   their per-layer numbers are joined. A same-artifact platform-sensitivity
-   study further shows that workload ordering, scaling direction, saturation
-   and normalized ordering are preserved across the tested U55/U65 FVP pairs,
-   while threshold-based efficiency classes are more timing-model-sensitive.
+1. **A systematic MAC-scaling characterization** over a 133-cell capability
+   universe and a 74-cell formal simulated sweep (222 samples) with byte-level
+   artifact provenance, in which **executability is reported as a first-class
+   result** rather than as missing data: all 133 cells compile and 6 cannot
+   run.
+2. **An operator-level mechanism study of a non-monotonic boundary.** Using a
+   post-compilation instrumentation path built and qualified for this purpose,
+   we show the Ethos-U85 256 → 512 reversal is distributed across operation
+   groups, recurs in the same groups under every tested memory configuration,
+   and is not discriminated by any single compiler-visible transition.
+3. **A characterization of compiler cost estimates against simulation**,
+   separating what Vela's performance model predicts well (saturation
+   classification, speedup ordering) from what it does not (individual
+   MAC-step magnitude).
+
+**Validation and supporting results.**
+
+4. **Physical-board ordering validation** on Corstone-320 / Ethos-U85 (21
+   formal samples), reporting ranking preservation and relative-cost shape,
+   with absolute simulation-versus-hardware comparison refused by construction.
+5. **Platform-sensitivity robustness.** A same-artifact study across supported
+   Corstone FVPs establishes which structural metrics survive a change of host
+   platform and which do not.
+6. **Instrumentation qualification**, including a cross-backend bridge that
+   bounds what per-layer numbers from two different instrumentation methods may
+   be used for.
+
+Alongside these we report measurement-methodology results that generalize
+beyond this study: a simulator's timing adapter can silently change what is
+being measured, and a compiler backend change can silently change which program
+is being instrumented.
 
 ## 2. Background
 
@@ -73,11 +130,51 @@ verification component, not part of production silicon. Its presence or absence
 determines whether a cycle count means anything as a performance figure —
 Section 3.1 and Section 8.1.
 
-**Related work.** Prior NPU characterization studies typically report simulated
-cycles across configurations; validation against physical hardware, and
-operator-level decomposition of anomalies, are less common. This work
-contributes both, and is explicit about which comparisons its evidence cannot
-support.
+### 2.1 Related work
+
+**Accelerator characterization and scaling models.** Systolic-array
+accelerators are commonly characterized with analytical or cycle-level models
+rather than measurement: SCALE-Sim models a configurable systolic array and
+studies how bandwidth, dataflow and array aspect ratio shape runtime [10], and
+Timeloop searches the mapping space to project performance and energy for a
+given architecture [11]. The canonical measured account of a production
+systolic accelerator is the TPU analysis [9], which reports datapath and
+memory-system behaviour for a datacenter part. These establish the vocabulary
+we reuse — MAC-array configuration, dataflow, memory-system pressure — but they
+model or measure a design, whereas the question here is what a *deployment
+toolchain* tells a practitioner about a fixed IP across its supported
+configurations.
+
+**TinyML benchmarking.** MLPerf Tiny standardizes end-to-end latency, accuracy
+and energy measurement for microcontroller-class systems [13]; the workloads we
+use are drawn from that lineage, including MicroNet keyword spotting [14], and
+run on TensorFlow Lite Micro [15]. Such suites deliberately report system-level
+outcomes and do not decompose an anomaly to the operation level on a specific
+NPU, which is the gap Section 7 addresses.
+
+**Simulator-versus-hardware validation.** Validating a simulator against
+silicon is an established methodology concern: Gutierrez et al. validate a
+full-system CPU simulator against an Arm development board and report mean
+absolute runtime errors in the 13–17 % range after targeted corrections [12].
+Our board work is deliberately weaker in its claim — we validate *ordinal and
+relative-cost structure* at the one physically available configuration rather
+than absolute cycle agreement (Section 6) — because the simulated and physical
+builds are target-specific and the two do not share a timing domain.
+
+**Arm Ethos-U toolchain.** The platform documentation is primary evidence for
+this study rather than related work: the Ethos-U85 NPU manuals define the MAC
+configurations and PMU event space [1, 2], the ML developers guide describes
+the NPU/compiler relationship [3], the Corstone-320 reference package and its
+Fixed Virtual Platform define the simulated subsystem [4, 5, 6], the Vela
+compiler produces both the command stream and the performance estimates we
+treat as predictions — its own documentation labels those estimates
+experimental [7] — and the ML Embedded Evaluation Kit supplies the runner and
+build system used for every measurement [8].
+
+**Position.** Relative to this body of work we contribute measurement rather
+than modelling, at the configuration granularity a deployer actually chooses,
+with an operator-level decomposition of a specific non-monotonic boundary and
+an explicit account of which comparisons the evidence cannot support.
 
 ## 3. Methodology
 
@@ -89,6 +186,22 @@ discrete MAC support. Supported MAC configurations are established from the
 Vela/source-defined discrete configuration set and independently confirmed by
 FVP initialization probes; a configuration is admitted only where both agree.
 On the pinned stack the two authorities agree on every probed cell.
+
+Each simulated platform therefore plays a distinct role in this study, and the
+roles are not interchangeable:
+
+| platform | NPU | timing adapter | role in this paper |
+| --- | --- | --- | --- |
+| SSE-300 | U55, U65 | `TA_ON` | primary memory-aware simulated substrate |
+| SSE-310 | U55, U65 | `TA_OFF` | diagnostic / platform-sensitivity control |
+| SSE-315 | U65 | `TA_OFF` | U65-specific diagnostic reference substrate |
+| SSE-320 | U85 | `TA_ON` | primary U85 substrate and hardware-validation anchor |
+
+The distinction that matters throughout is **primary measurement substrate**
+versus **diagnostic/robustness substrate**. Performance results are reported
+only from the former; the latter appear only where a comparison is explicitly
+structural (Section 5). The four platforms are never presented as one
+absolute-performance series.
 
 That yields **19 simulated configurations** (SSE-300/U55 at 32–256,
 SSE-300/U65 at 256/512, SSE-310/U55 at 32–256, SSE-310/U65 at 256/512,
@@ -775,3 +888,63 @@ with their limitations. Frozen sources: `paper-fvp-analysis-results-frozen`,
 `paper-u85-p1b-frozen`, `paper-u85-mechanism-narrative-frozen`,
 `paper-u65-bridge-verdict-frozen`. STOP for full-paper review; no new
 experiment is initiated by this integration.*
+
+---
+
+## References
+
+Arm platform documentation is cited as primary evidence for the measured
+system; every entry below was verified against its source during review.
+
+[1] Arm Ltd. *Arm Ethos-U85 NPU Technical Reference Manual*.
+    developer.arm.com/documentation/102685
+
+[2] Arm Ltd. *Arm Ethos-U85 NPU Technical Overview*.
+    developer.arm.com/documentation/102684
+
+[3] Arm Ltd. *ML Developers Guide for Cortex-M Processors and Ethos-U NPU*.
+    developer.arm.com/documentation/109267
+
+[4] Arm Ltd. *Arm Corstone-320 Reference Package Technical Overview*.
+    developer.arm.com/documentation/109761
+
+[5] Arm Ltd. *Fixed Virtual Platforms for Arm Corstone SSE-320*.
+    developer.arm.com/documentation/109760
+
+[6] Arm Ltd. *Fast Models Fixed Virtual Platforms (FVP) Reference Guide*.
+    developer.arm.com/documentation/100966
+
+[7] Arm Ltd. *Ethos-U Vela compiler*.
+    review.mlplatform.org/plugins/gitiles/ml/ethos-u/ethos-u-vela
+
+[8] Arm Ltd. *ML Embedded Evaluation Kit*.
+    review.mlplatform.org/plugins/gitiles/ml/ethos-u/ml-embedded-evaluation-kit
+
+[9] N. P. Jouppi et al. In-Datacenter Performance Analysis of a Tensor
+    Processing Unit. *ISCA*, 2017. arXiv:1704.04760
+
+[10] A. Samajdar, Y. Zhu, P. Whatmough, M. Mattina, T. Krishna. SCALE-Sim:
+     Systolic CNN Accelerator Simulator. arXiv:1811.02883, 2018.
+
+[11] A. Parashar, P. Raina, Y. S. Shao, Y.-H. Chen, V. A. Ying, A. Mukkara,
+     R. Venkatesan, B. Khailany, S. W. Keckler, J. S. Emer. Timeloop: A
+     Systematic Approach to DNN Accelerator Evaluation. *ISPASS*, 2019.
+
+[12] A. Gutierrez, J. Pusdesris, R. G. Dreslinski, T. Mudge, C. Sudanthi,
+     C. D. Emmons, M. Hayenga, N. Paver. Sources of Error in Full-System
+     Simulation. *ISPASS*, 2014.
+
+[13] C. Banbury, V. J. Reddi, P. Torelli, J. Holleman, N. Jeffries, C. Kiraly,
+     P. Montino, D. Kanter, S. Ahmed, D. Pau, U. Thakker, A. Torrini,
+     P. Warden, J. Cordaro, G. Di Guglielmo, J. Duarte, S. Gibellini,
+     V. Parekh, H. Tran, N. Tran, N. Wenxu, X. Xuesong. MLPerf Tiny Benchmark.
+     *NeurIPS Datasets and Benchmarks Track*, 2021. arXiv:2106.07597
+
+[14] C. Banbury, C. Zhou, I. Fedorov, R. Matas, U. Thakker, D. Gope,
+     V. J. Reddi, M. Mattina, P. Whatmough. MicroNets: Neural Network
+     Architectures for Deploying TinyML Applications on Commodity
+     Microcontrollers. *MLSys*, 2021. arXiv:2010.11267
+
+[15] R. David, J. Duke, A. Jain, V. J. Reddi, N. Jeffries, J. Li, N. Kreeger,
+     I. Nappier, M. Natraj, T. Wang, P. Warden, R. Rhodes. TensorFlow Lite
+     Micro: Embedded Machine Learning for TinyML Systems. *MLSys*, 2021.
