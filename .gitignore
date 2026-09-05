@@ -43,3 +43,11 @@ firmware/LinkScripts/region_limits.h
 #   ~/Documents/Obsidian/wiki/projects/npu-benchmark.md
 HANDOFF-snapshot.md
 session-memory/
+
+# project-local TeX toolchain (SE1); large, reproducible from scripts
+.toolchain/
+
+# LaTeX build intermediates (the PDF and .log are kept as build evidence)
+docs/paper/submission/build/*
+!docs/paper/submission/build/paper-review.pdf
+!docs/paper/submission/build/paper-review.log
