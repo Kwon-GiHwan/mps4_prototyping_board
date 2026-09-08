@@ -1,0 +1,8 @@
+workload,fvp_rank,board_rank
+rnnoise_INT8,1,1
+kws_micronet_m,2,2
+ad_medium_int8,3,3
+vww4_128_128_INT8,4,4
+yolo-fastest_192_face_v4,5,5
+mobilenet_v2_1.0_224_INT8,6,6
+wav2letter_pruned_int8,7,7

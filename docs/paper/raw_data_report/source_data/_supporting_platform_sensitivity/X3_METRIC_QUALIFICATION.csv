@@ -1,0 +1,14 @@
+metric,class,tested_universe,agreement,disagreement,qualification,disagreement_cells
+workload_ranking,A,2,2,0,ROBUST_IN_TESTED_PAIRS,
+workload_ranking,B,8,8,0,ROBUST_IN_TESTED_PAIRS,
+mac_step_direction,A,7,7,0,ROBUST_IN_TESTED_PAIRS,
+mac_step_direction,B,32,32,0,ROBUST_IN_TESTED_PAIRS,
+scaling_class,A,7,7,0,TA_STATE_SENSITIVE,
+scaling_class,B,32,24,8,TA_STATE_SENSITIVE,ethos-u55/ad_medium_int8 step 256: PARTIAL(SSE-300) vs STRONG(SSE-310); ethos-u55/mobilenet_v2_1.0_224_INT8 step 256: PARTIAL(SSE-300) vs STRONG(SSE-310); ethos-u55/vww4_128_128_INT8 step 256: PARTIAL(SSE-300) vs STRONG(SSE-310); ethos-u55/yolo-fastest_192_face_v4 step 256: PARTIAL(SSE-300) vs STRONG(SSE-310); ethos-u65/rnnoise_INT8 step 512: PARTIAL(SSE-300) vs STRONG(SSE-310); ethos-u65/vww4_128_128_INT8 step 512: PARTIAL(SSE-300) vs STRONG(SSE-310); ethos-u65/rnnoise_INT8 step 512: PARTIAL(SSE-300) vs STRONG(SSE-315); ethos-u65/vww4_128_128_INT8 step 512: PARTIAL(SSE-300) vs STRONG(SSE-315)
+saturation_verdict,A,7,7,0,ROBUST_IN_TESTED_PAIRS,
+saturation_verdict,B,20,20,0,ROBUST_IN_TESTED_PAIRS,
+normalized_workload_ordering,A,2,2,0,ROBUST_IN_TESTED_PAIRS,
+normalized_workload_ordering,B,8,8,0,ROBUST_IN_TESTED_PAIRS,
+raw_cross_platform_cycles,A+B,n/a,,,NOT_COMPARABLE,"no cross-platform ratio, error or ranking was computed; analyzer rejects requests for one"
+memory_pmu_counters,A+B,n/a,,,GENERATION_SPECIFIC_NOT_COMMON,U55/U65 AXI* vs U85 EXT*/SRAM*; 18 of 22 shared names differ in ordinal (frozen PMU audit)
+transfer_of_class_A_result_to_TA_ON,-,n/a,,,NOT_EVALUABLE,no platform pair on this stack holds TA constant at TA_ON

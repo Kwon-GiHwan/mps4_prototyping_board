@@ -19,6 +19,7 @@ raw/frozen evidence에 실제로 어떤 데이터가 있는지 재집계한 **�
 ```
 REPORT.md                     본문
 CHANGELOG.md                  버전 이력 (수정·재계산 발생 시 기록)
+source_data/                  원본 frozen evidence의 섹션별 사본 (가공 없음)
 provenance/INPUT_MANIFEST.csv 입력 artifact 목록과 해시
 provenance/BASELINE_HASHES.txt 작업 전 frozen evidence 해시 (불변 검증용)
 tables/*.csv                  생성 표

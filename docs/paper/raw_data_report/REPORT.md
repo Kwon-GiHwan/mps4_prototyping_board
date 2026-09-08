@@ -9,7 +9,10 @@ CSV는 `scripts/`로 재생성 가능하다. 기존 evidence는 read-only.
 재생성: `python3 scripts/build_manifest.py && python3 scripts/build_tables.py && python3 scripts/build_figures.py`
 
 Provenance: `provenance/INPUT_MANIFEST.csv` (971 artifact), `provenance/TOOL_VERSIONS.csv`,
-`provenance/BASELINE_HASHES.txt` (541 파일 불변 검증용).
+`provenance/BASELINE_HASHES.txt` (불변 검증용).
+**원본 데이터:** `source_data/` — 각 섹션이 쓰는 frozen evidence를 가공 없이 복사해
+섹션별로 모아 두었다(사본 37개 / 원본 26개, 전부 SHA-256 동일). 목록은
+`source_data/MANIFEST.csv`.
 
 ---
 
