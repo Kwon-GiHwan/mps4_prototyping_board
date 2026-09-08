@@ -43,9 +43,33 @@ FVP_BIN = {("SSE-300","ethos-u55"):"FVP_Corstone_SSE-300_Ethos-U55",
            ("SSE-310","ethos-u65"):"FVP_Corstone_SSE-310_Ethos-U65",
            ("SSE-315","ethos-u65"):"FVP_Corstone_SSE-315",
            ("SSE-320","ethos-u85"):"FVP_Corstone_SSE-320"}
-# TA config file selection is a build-time MLEK choice; not present in local
-# frozen evidence. Recorded as unverified rather than guessed.
-TA_FILE = "NOT_VERIFIED_LOCALLY"
+# TA config file selection, VERIFIED on the server 2026-09-09 against MLEK
+# b2c0bb2 (scripts/cmake/configuration_options/npu_opts.cmake, the three
+# ta_config_u85_* files, and real builds' CMakeCache + generated header).
+# See SERVER_VERIFICATION.md V1. mid and high are byte-identical, so the file
+# NAME and the effective PARAMETERS change at different places.
+TA_BY_NPU_MAC = {
+    ("ethos-u55", None): "ta_config_u55_high_end",
+    ("ethos-u65", None): "ta_config_u65_high_end",
+    ("ethos-u85", 128):  "ta_config_u85_sys_dram_low",
+    ("ethos-u85", 256):  "ta_config_u85_sys_dram_low",
+    ("ethos-u85", 512):  "ta_config_u85_sys_dram_mid",
+    ("ethos-u85", 1024): "ta_config_u85_sys_dram_mid",
+    ("ethos-u85", 2048): "ta_config_u85_sys_dram_high",
+}
+# byte-identical files share a parameter-set id
+TA_PARAM_SET = {
+    "ta_config_u55_high_end":      "u55_high_end",
+    "ta_config_u65_high_end":      "u65_high_end",
+    "ta_config_u85_sys_dram_low":  "u85_low",
+    "ta_config_u85_sys_dram_mid":  "u85_mid_high",   # sha256 176cb1d0...
+    "ta_config_u85_sys_dram_high": "u85_mid_high",   # identical to mid
+}
+def ta_file(npu, mac):
+    return TA_BY_NPU_MAC.get((npu, mac)) or TA_BY_NPU_MAC.get((npu, None), "UNKNOWN")
+def ta_params(npu, mac):
+    return TA_PARAM_SET.get(ta_file(npu, mac), "UNKNOWN")
+TA_FILE = "see ta_config_file column"
 
 n_files = {}
 
@@ -68,14 +92,15 @@ for r in EXEC:
         fvp_binary=FVP_BIN.get((k[0],k[1],),""), fast_models_version=FVP_VER.get(k[0],""),
         system_config=sc, memory_mode=mm,
         timing_adapter_enabled=r["timing_adapter"],
-        ta_config_file=TA_FILE,
+        ta_config_file=ta_file(k[1], k[2]),
+        ta_parameter_set=ta_params(k[1], k[2]),
         workload_count=len(cells), executability_count=len(ok),
         formal_sample_count=len(formal)*3 if formal else 0,
         formal_cell_count=len(formal)))
 rows.sort(key=lambda r:(r["platform"], r["npu"], r["mac"]))
 n_files["3_1_platform_matrix.csv"]=wr("3_1_platform_matrix.csv", rows,
   ["platform","corstone_sse","npu","mac","fvp_binary","fast_models_version",
-   "system_config","memory_mode","timing_adapter_enabled","ta_config_file",
+   "system_config","memory_mode","timing_adapter_enabled","ta_config_file","ta_parameter_set",
    "workload_count","executability_count","formal_cell_count","formal_sample_count"])
 
 # =========================================================================
@@ -242,13 +267,15 @@ for e in TAON:
     k3=(e["platform"],e["npu"],int(e["mac_config"]))
     rows.append(dict(platform=e["platform"], npu=e["npu"], workload=e["workload"],
       mac=int(e["mac_config"]), cycles=CYC.get(key,""),
-      system_config=SYS.get(k3,""), memory_mode=MEM.get(k3,""), ta_config=TA_FILE,
+      system_config=SYS.get(k3,""), memory_mode=MEM.get(k3,""),
+      ta_config=ta_file(e["npu"], int(e["mac_config"])),
+      ta_parameter_set=ta_params(e["npu"], int(e["mac_config"])),
       executability=e["classification"],
       source="analysis/canonical_cells.csv + analysis/executability.csv"))
 rows.sort(key=lambda r:(r["platform"],r["npu"],r["workload"],r["mac"]))
 n_files["3_3_cycles_by_mac.csv"]=wr("3_3_cycles_by_mac.csv", rows,
   ["platform","npu","workload","mac","cycles","system_config","memory_mode",
-   "ta_config","executability","source"])
+   "ta_config","ta_parameter_set","executability","source"])
 
 lad=collections.defaultdict(list)
 for e in TAON:
@@ -268,7 +295,8 @@ for k,v in sorted(lad.items()):
                system_config_prev=SYS.get(kp,""), system_config_next=SYS.get(kn,""),
                system_config_changed=str(SYS.get(kp,"")!=SYS.get(kn,"")),
                memory_mode_changed=str(MEM.get(kp,"")!=MEM.get(kn,"")),
-               ta_config_changed="NOT_VERIFIED_LOCALLY",
+               ta_config_file_changed=str(ta_file(k[1],pm)!=ta_file(k[1],m)),
+               ta_parameters_changed=str(ta_params(k[1],pm)!=ta_params(k[1],m)),
                source="analysis/canonical_cells.csv")
         if pst!="EXECUTABLE" or st!="EXECUTABLE" or pc is None or c is None:
             d.update(cycles_prev="",cycles_next="",cycle_delta="",cycle_delta_pct="",
@@ -301,8 +329,8 @@ n_files["3_3_scaling_transitions.csv"]=wr("3_3_scaling_transitions.csv", trans,
   ["platform","npu","workload","mac_prev","mac_next","cycles_prev","cycles_next",
    "cycle_delta","cycle_delta_pct","adjacent_speedup","incremental_efficiency",
    "speedup_vs_base","cumulative_efficiency","system_config_prev","system_config_next",
-   "system_config_changed","memory_mode_changed","ta_config_changed",
-   "transition_status","legacy_saturation_rule","source"])
+   "system_config_changed","memory_mode_changed","ta_config_file_changed",
+   "ta_parameters_changed","transition_status","legacy_saturation_rule","source"])
 n_files["3_3_ladder_summary.csv"]=wr("3_3_ladder_summary.csv", summary,
   ["platform","npu","workload","mac_points_total","mac_points_executable",
    "transitions_total","transitions_evaluable","improved","plateau","reversed_",
@@ -414,13 +442,15 @@ for d in u85_diff:
       UBLOCK_CHANGED=d["UBLOCK_CHANGED"], BLOCK_CONFIG_CHANGED=d["BLOCK_CONFIG_CHANGED"],
       TILE_GEOMETRY_CHANGED=d["TILE_GEOMETRY_CHANGED"],
       system_config_256="Ethos_U85_SYS_DRAM_Low", system_config_512="Ethos_U85_SYS_DRAM_Mid_512",
-      ta_config_changed="NOT_VERIFIED_LOCALLY",
+      ta_config_file_changed="True (low -> mid)",
+      ta_parameters_changed="True",
       vela_cycles_256=d.get("vela_cycles_256",""), vela_cycles_512=d.get("vela_cycles_512",""),
       source="mechanism/U85_256_512_DIFFERENTIAL.csv"))
 n_files["3_4_u85_256_512_combined.csv"]=wr("3_4_u85_256_512_combined.csv", rows,
   ["workload","source_id","op_type","cycles_256","cycles_512","cycle_delta","direction",
    "ublock_256","ublock_512","UBLOCK_CHANGED","BLOCK_CONFIG_CHANGED",
-   "TILE_GEOMETRY_CHANGED","system_config_256","system_config_512","ta_config_changed",
+   "TILE_GEOMETRY_CHANGED","system_config_256","system_config_512",
+   "ta_config_file_changed","ta_parameters_changed",
    "vela_cycles_256","vela_cycles_512","source"])
 print(json.dumps({k:v for k,v in n_files.items() if k.startswith("3_4")}, indent=1))
 
@@ -520,7 +550,8 @@ for t in trans:
       fvp_reversal=str(t["transition_status"]=="REVERSED"),
       vela_predicted_reversal=("" if not vdir else str(vdir=="REVERSED")),
       system_config_changed=t["system_config_changed"],
-      ta_config_changed=t["ta_config_changed"],
+      ta_config_file_changed=t["ta_config_file_changed"],
+      ta_parameters_changed=t["ta_parameters_changed"],
       ublock_changed=("SEE_3_4_TABLE" if (t["npu"]=="ethos-u85" and t["mac_prev"]==256
                                           and t["mac_next"]==512) else "NOT_COLLECTED"),
       source="analysis/canonical_cells.csv + vela_matrix.csv"))
@@ -528,7 +559,7 @@ n_files["4_2_transition_prediction.csv"]=wr("4_2_transition_prediction.csv", tp,
   ["platform","npu","workload","mac_prev","mac_next","vela_prev","vela_next",
    "fvp_prev","fvp_next","vela_direction","fvp_direction","direction_match",
    "fvp_reversal","vela_predicted_reversal","system_config_changed",
-   "ta_config_changed","ublock_changed","source"])
+   "ta_config_file_changed","ta_parameters_changed","ublock_changed","source"])
 
 assoc=[]
 for t in tp:

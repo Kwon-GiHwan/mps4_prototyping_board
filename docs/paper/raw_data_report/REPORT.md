@@ -1,6 +1,8 @@
 # Raw Data Audit for Current Manuscript Structure
 
-**v1.0 · 2026-09-09.** 기존 frozen evidence를 manuscript 섹션 순서로 재집계한 감사
+**v1.1 · 2026-09-09.** (v1.0에서 서버 검증 결과 반영 — `CHANGELOG.md` 참조.
+V1/V2/V3가 `NOT_VERIFIED` → `VERIFIED`로 바뀌었고, 그로 인해 무효화된 해석을
+"검증으로 무효화된 해석" 절에 명시했다. 근거는 `SERVER_VERIFICATION.md`.) 기존 frozen evidence를 manuscript 섹션 순서로 재집계한 감사
 보고서. **논문 원고가 아니다.** 모든 수치는 `tables/`의 CSV에서 재생성되며, 모든
 CSV는 `scripts/`로 재생성 가능하다. 기존 evidence는 read-only.
 
@@ -31,7 +33,18 @@ Provenance: `provenance/INPUT_MANIFEST.csv` (971 artifact), `provenance/TOOL_VER
 | SSE-320 | u85 | 1024 | `Ethos_U85_SYS_DRAM_Mid_1024` | Dedicated_Sram | ON | 7 |
 | SSE-320 | u85 | 2048 | `Ethos_U85_SYS_DRAM_High_2048` | Dedicated_Sram | ON | 7 |
 
-`ta_config_file`은 전 행 `NOT_VERIFIED_LOCALLY` — MLEK 빌드시 선택값이며 로컬 evidence에 없다.
+`ta_config_file` **VERIFIED** (`SERVER_VERIFICATION.md` V1, MLEK `b2c0bb2`):
+
+| npu | MAC | TA_CONFIG_FILE | 파라미터 집합 |
+|---|---|---|---|
+| u55 | 전체 | `ta_config_u55_high_end` | `u55_high_end` |
+| u65 | 전체 | `ta_config_u65_high_end` | `u65_high_end` |
+| u85 | 128, 256 | `ta_config_u85_sys_dram_low` | `u85_low` |
+| u85 | 512, 1024 | `ta_config_u85_sys_dram_mid` | `u85_mid_high` |
+| u85 | 2048 | `ta_config_u85_sys_dram_high` | `u85_mid_high` (mid와 **바이트 동일**) |
+
+`low → mid` 차이: SRAM latency 16→32, `EXT_MAXR` 24→64, `EXT_MAXW` 12→32,
+EXT latency 250→500, `EXT_BWCAP` 2344→3750.
 
 **Table 3.1-B** `tables/3_1_workload_matrix.csv` — 133행. workload × 설정별로
 model SHA, Vela artifact SHA, npu/cpu operator 수, encoded weight, SRAM/DRAM 사용량.
@@ -47,14 +60,18 @@ DWConv 수·launch 수는 로컬 evidence에 없어 `NOT_COLLECTED`.
 | SSE-310/315 | NOT_COLLECTED | — | — | NOT_COLLECTED | NOT_EVALUABLE | NOT_COLLECTED |
 | SSE-320 / u85 | AVAILABLE | AVAILABLE | AVAILABLE_DERIVED | **PARSER_LOSS** | AVAILABLE_PARTIAL | AVAILABLE |
 
-`IDLE`을 `AVAILABLE_DERIVED`로 표기한 이유: 74/74 셀에서 `TOTAL = ACTIVE + IDLE`이
-정확히 성립하므로 세 값이 독립 카운터라는 증거가 되지 못한다. 산술 일관성 확인일 뿐이다.
+`IDLE`이 `AVAILABLE_DERIVED`인 것은 **VERIFIED**다 (`SERVER_VERIFICATION.md` V2).
+`ethosu_profiler.c:187-189`가 `npu_total_ccnt - npu_evt_counters[0]`로 계산하고
+`:131`에서 `"NPU IDLE"`로 명명한다. 따라서 `TOTAL = ACTIVE + IDLE` 74/74는
+**산술 항등식이며 독립 카운터 일치의 증거가 아니다.**
+측정 창도 확정됐다 — `inference_begin`(Disable→Enable) ~ `inference_end`(Disable),
+즉 드라이버의 추론 호출 구간이지 "첫 NPU 명령 ~ 마지막 NPU 사이클"이 아니다.
 
 **Observed from data:** 19개 설정 중 TA-ON 11개만 formal sweep에 들어갔다. U85는 MAC
 5단계에서 `system_config`가 4종으로 바뀐다. U85 whole-model 메모리 필드는 35/35 셀
 전부 비어 있고, 같은 이벤트군이 mechanism dataset에는 존재한다.
-**Not established from current data:** TA_CONFIG_FILE이 MAC별로 달라지는지; MLEK
-git commit; 컴파일러 버전; 모델 shape·DWConv 수.
+**Not established from current data:** 컴파일러 버전; 모델 shape·DWConv 수.
+(TA_CONFIG_FILE과 MLEK git commit은 v1.1에서 VERIFIED로 이동.)
 **Data/provenance used:** `analysis/executability.csv`, `analysis/canonical_cells.csv`,
 `evidence/vela-matrix-20260824/vela_matrix.csv`, `MAIN_EXPERIMENT_MATRIX.md`(FVP 버전).
 
@@ -122,9 +139,14 @@ legacy <0.50 rule fired     2
 
 | platform/npu | workload | 전이 | cycles | delta | E_inc | system_config 변화 |
 |---|---|---|---|---:|---:|---|
-| SSE-320/u85 | rnnoise | 128→256 | 36,086 → 36,086 | **0** | 0.5000 | **없음** (Low→Low) |
-| SSE-320/u85 | rnnoise | 256→512 | 36,086 → 55,086 | **+19,000** | 0.3275 | Low→Mid_512 |
-| SSE-320/u85 | rnnoise | 1024→2048 | 49,086 → 54,086 | **+5,000** | 0.4538 | Mid_1024→High_2048 |
+| 전이 | cycles | delta | E_inc | system_config | TA 파일 | **TA 파라미터** |
+|---|---|---:|---:|---|---|---|
+| 128→256 | 36,086 → 36,086 | **0** | 0.5000 | 불변 | 불변 | **불변** |
+| 256→512 | 36,086 → 55,086 | **+19,000** | 0.3275 | 변경 | 변경 | **변경** |
+| 512→1024 | 55,086 → 49,086 | −6,000 | 0.5611 | 변경 | 불변 | **불변** |
+| 1024→2048 | 49,086 → 54,086 | **+5,000** | 0.4538 | 변경 | 변경(이름만) | **불변** |
+
+TA 파라미터가 실제로 바뀌는 전이는 **256→512 하나뿐**이다 (`mid`와 `high`는 바이트 동일).
 
 **Figure 3.3-A/B/C** raw cycles (u55/u65/u85 별도) · **3.3-D/E/F** 사다리 자체
 baseline으로 정규화 · **3.3-G** 전이별 incremental efficiency 히트맵 ·
@@ -133,8 +155,10 @@ baseline으로 정규화 · **3.3-G** 전이별 incremental efficiency 히트맵
 **Observed from data:** 53개 평가 가능 전이 중 역전 2건, 평탄 1건. 모두 같은 사다리
 (rnnoise/U85). 역전을 포함한 사다리는 21개 중 1개. 유효 MAC 점이 2개 이상인 사다리는 20개.
 `system_config`가 바뀌지 않은 유일한 U85 전이(128→256)에서 개선이 정확히 0이다.
-**Not established from current data:** 역전의 원인; `system_config` 변경과 사이클
-변화의 관계(표본 4개, 통제 없음); TA 설정이 함께 바뀌었는지.
+**Not established from current data:** 역전의 원인; `system_config`·TA 변경과 사이클
+변화의 관계(표본 4개, controlled intervention 없음).
+**두 역전을 하나의 원인으로 묶을 근거는 없다** — 256→512는 TA 파라미터가 바뀌고
+1024→2048은 바뀌지 않는다.
 **Data/provenance used:** `analysis/canonical_cells.csv`, `analysis/executability.csv`,
 `evidence/vela-matrix-20260824/vela_matrix.csv`.
 
@@ -277,16 +301,42 @@ Vela도 역전을 2건 예측했으나 **위치가 다르다** — 첫 역전은
 
 ## Appendix B. Unresolved / Not-Evaluable Items
 
+**v1.1에서 해소된 항목** (`SERVER_VERIFICATION.md`):
+
+| 항목 | v1.0 | v1.1 |
+|---|---|---|
+| TA_CONFIG_FILE의 MAC별 변화 | NOT_VERIFIED_LOCALLY | **VERIFIED** — MAC별로 달라지며 파라미터는 256→512에서만 변경 |
+| profiler의 IDLE 계산 방식 | NOT_VERIFIED_LOCALLY | **VERIFIED** — `TOTAL − ACTIVE` 소프트웨어 파생 |
+| U85 메모리 필드 손실 원인 | 파서 손실로 추정 | **VERIFIED** — `PARSER_LOSS_BUT_RAW_UART_NOT_RETAINED` |
+| PMU 카운터 reset/enable/read 위치 | NOT_VERIFIED | **VERIFIED** — `inference_begin`/`inference_end` enable-disable 창 |
+| MLEK git commit | NOT_VERIFIED_LOCALLY | **VERIFIED** — `b2c0bb2884698b7328f65c41b7c8c51ca9bec386` |
+
+**남은 미해소 항목**
+
 | 항목 | 상태 | 해소 조건 |
 |---|---|---|
-| TA_CONFIG_FILE의 MAC별 변화 | NOT_VERIFIED_LOCALLY | 서버 `CMakeCache.txt`, 생성된 `timing_adapter_settings.h` |
-| profiler의 IDLE 계산 방식 | NOT_VERIFIED_LOCALLY | 서버 `$KIT/source` profiler 소스 |
-| U85 메모리 필드 손실이 파서 문제인지 미수집인지 | 파서 손실로 추정 | 보존된 원시 UART 재파싱 |
-| PMU 카운터 reset/enable/read 위치 | NOT_VERIFIED | stock runner의 PMU 배치 |
 | 입력 tensor 생성 방식·seed | NOT_COLLECTED | 서버 runner 소스 |
+| counter overflow 경고 | NOT_COLLECTED | `counter_overflow()`가 `warn()`을 내지만 파서가 수집하지 않음 |
 | effective bandwidth | NOT_EVALUABLE | beat 정의·클럭·TA 설정 확인 |
-| MLEK git commit, gcc 버전 | NOT_VERIFIED_LOCALLY | 서버 |
+| gcc 버전 | NOT_VERIFIED_LOCALLY | 서버 |
 | 모델 shape·total MAC·DWConv 수 | NOT_COLLECTED | Vela verbose 출력 재수집 |
+
+## 검증으로 무효화된 해석 (v1.1)
+
+`SERVER_VERIFICATION.md`가 확정한 사실로 인해 **더 이상 성립하지 않는 읽기**들이다.
+어떤 것도 새 인과 주장을 만들지 않는다.
+
+| # | v1.0까지 가능했던 해석 | v1.1 이후 |
+|---|---|---|
+| I1 | "TA=ON 구성은 동일한 memory-service 조건" | **무효.** U85에서 TA 파라미터는 256→512에서 바뀐다 |
+| I2 | 256→512 역전을 **MAC 증가만의 효과**로 읽기 | **무효.** MAC·`system_config`·TA 파라미터가 동시에 바뀐다 |
+| I3 | 두 역전(256→512, 1024→2048)을 **같은 원인**으로 묶기 | **무효.** 후자는 TA 파라미터가 불변이다 |
+| I4 | `TOTAL = ACTIVE + IDLE` 74/74를 **계측 일관성 검증**으로 인용 | **무효.** 산술 항등식이다 |
+| I5 | 측정 구간을 `T_NPU`(첫 명령~마지막 사이클)로 명명 | **무효.** 드라이버 추론 호출 구간이다 |
+| I6 | U85 메모리 공란을 "미수집"으로 처리하거나 재파싱으로 복구 가능하다고 보기 | **무효.** 파서 손실이며 원시 UART 미보존 → 재측정 필요 |
+
+**여전히 성립하는 것:** 128→256이 개선 0이고 그 구간은 `system_config`·TA가 모두
+불변이라는 관찰. 다만 표본 4개에 controlled intervention이 없으므로 인과가 아니다.
 
 ## Appendix C. Generated Tables and Figures
 
