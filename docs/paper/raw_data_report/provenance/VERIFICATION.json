@@ -1,0 +1,12 @@
+{
+ "01 frozen evidence hashes unchanged": "PASS — changed=[] added=0 removed=0",
+ "02 transition rows == raw recount": "PASS — table 56, recount 56, stats 56",
+ "03 every valid adjacent MAC pair present": "PASS — []",
+ "04 reversal/plateau auto-detected": "PASS — recount rev=2 pla=1 vs stats rev=2 pla=1",
+ "05 no missing value coerced to 0": "PASS — []",
+ "06 estimate and observation carry distinct source columns": "PASS",
+ "07 no cross-platform absolute comparison asserted": "PASS — []",
+ "08 mechanism table uses no causal language": "PASS — []",
+ "09 every figure traceable to its input CSV": "PASS — 15 figures, untraced []",
+ "10 report numbers reproduce from CSVs": "PASS — []"
+}

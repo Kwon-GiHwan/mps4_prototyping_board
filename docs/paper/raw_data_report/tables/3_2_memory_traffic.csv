@@ -1,0 +1,75 @@
+platform,npu,mac,workload,event_family,port0_beats,port1_beats,total_beats,port0_share,port1_share,active_over_total,status,note
+SSE-300,ethos-u55,32,ad_medium_int8,AXI0/AXI1 (U55/U65),654329,55740,710069,0.921501,0.078499,0.999913,OK,"AXI1_WR not collected, so port1 is read-only; shares are of the collected subset"
+SSE-300,ethos-u55,32,kws_micronet_m,AXI0/AXI1 (U55/U65),195908,17472,213380,0.918118,0.081882,0.999451,OK,"AXI1_WR not collected, so port1 is read-only; shares are of the collected subset"
+SSE-300,ethos-u55,32,mobilenet_v2_1.0_224_INT8,AXI0/AXI1 (U55/U65),4410068,432248,4842316,0.910735,0.089265,0.999986,OK,"AXI1_WR not collected, so port1 is read-only; shares are of the collected subset"
+SSE-300,ethos-u55,32,rnnoise_INT8,AXI0/AXI1 (U55/U65),940,14178,15118,0.062178,0.937822,0.997127,OK,"AXI1_WR not collected, so port1 is read-only; shares are of the collected subset"
+SSE-300,ethos-u55,32,vww4_128_128_INT8,AXI0/AXI1 (U55/U65),405393,40992,446385,0.908169,0.091831,0.999713,OK,"AXI1_WR not collected, so port1 is read-only; shares are of the collected subset"
+SSE-300,ethos-u55,32,yolo-fastest_192_face_v4,AXI0/AXI1 (U55/U65),1120166,46387,1166553,0.960236,0.039764,0.999901,OK,"AXI1_WR not collected, so port1 is read-only; shares are of the collected subset"
+SSE-300,ethos-u55,64,ad_medium_int8,AXI0/AXI1 (U55/U65),655571,55957,711528,0.921357,0.078643,0.999509,OK,"AXI1_WR not collected, so port1 is read-only; shares are of the collected subset"
+SSE-300,ethos-u55,64,kws_micronet_m,AXI0/AXI1 (U55/U65),196046,17513,213559,0.917995,0.082005,0.998708,OK,"AXI1_WR not collected, so port1 is read-only; shares are of the collected subset"
+SSE-300,ethos-u55,64,mobilenet_v2_1.0_224_INT8,AXI0/AXI1 (U55/U65),4347278,433323,4780601,0.909358,0.090642,0.999933,OK,"AXI1_WR not collected, so port1 is read-only; shares are of the collected subset"
+SSE-300,ethos-u55,64,rnnoise_INT8,AXI0/AXI1 (U55/U65),928,14176,15104,0.061441,0.938559,0.995397,OK,"AXI1_WR not collected, so port1 is read-only; shares are of the collected subset"
+SSE-300,ethos-u55,64,vww4_128_128_INT8,AXI0/AXI1 (U55/U65),403219,41327,444546,0.907035,0.092965,0.999683,OK,"AXI1_WR not collected, so port1 is read-only; shares are of the collected subset"
+SSE-300,ethos-u55,64,yolo-fastest_192_face_v4,AXI0/AXI1 (U55/U65),1118630,46438,1165068,0.960141,0.039859,0.99978,OK,"AXI1_WR not collected, so port1 is read-only; shares are of the collected subset"
+SSE-300,ethos-u55,128,ad_medium_int8,AXI0/AXI1 (U55/U65),605569,56264,661833,0.914988,0.085012,0.999779,OK,"AXI1_WR not collected, so port1 is read-only; shares are of the collected subset"
+SSE-300,ethos-u55,128,kws_micronet_m,AXI0/AXI1 (U55/U65),176428,17563,193991,0.909465,0.090535,0.997635,OK,"AXI1_WR not collected, so port1 is read-only; shares are of the collected subset"
+SSE-300,ethos-u55,128,mobilenet_v2_1.0_224_INT8,AXI0/AXI1 (U55/U65),3949370,434266,4383636,0.900935,0.099065,0.999992,OK,"AXI1_WR not collected, so port1 is read-only; shares are of the collected subset"
+SSE-300,ethos-u55,128,rnnoise_INT8,AXI0/AXI1 (U55/U65),928,14165,15093,0.061485,0.938515,0.990835,OK,"AXI1_WR not collected, so port1 is read-only; shares are of the collected subset"
+SSE-300,ethos-u55,128,vww4_128_128_INT8,AXI0/AXI1 (U55/U65),393956,41650,435606,0.904386,0.095614,0.999883,OK,"AXI1_WR not collected, so port1 is read-only; shares are of the collected subset"
+SSE-300,ethos-u55,128,yolo-fastest_192_face_v4,AXI0/AXI1 (U55/U65),1049116,46671,1095787,0.957409,0.042591,0.999629,OK,"AXI1_WR not collected, so port1 is read-only; shares are of the collected subset"
+SSE-300,ethos-u55,256,ad_medium_int8,AXI0/AXI1 (U55/U65),507997,56187,564184,0.90041,0.09959,0.998724,OK,"AXI1_WR not collected, so port1 is read-only; shares are of the collected subset"
+SSE-300,ethos-u55,256,kws_micronet_m,AXI0/AXI1 (U55/U65),141016,17631,158647,0.888866,0.111134,0.998427,OK,"AXI1_WR not collected, so port1 is read-only; shares are of the collected subset"
+SSE-300,ethos-u55,256,mobilenet_v2_1.0_224_INT8,AXI0/AXI1 (U55/U65),3464592,434483,3899075,0.888568,0.111432,0.999988,OK,"AXI1_WR not collected, so port1 is read-only; shares are of the collected subset"
+SSE-300,ethos-u55,256,rnnoise_INT8,AXI0/AXI1 (U55/U65),928,14165,15093,0.061485,0.938515,0.993385,OK,"AXI1_WR not collected, so port1 is read-only; shares are of the collected subset"
+SSE-300,ethos-u55,256,vww4_128_128_INT8,AXI0/AXI1 (U55/U65),369878,41767,411645,0.898536,0.101464,0.998763,OK,"AXI1_WR not collected, so port1 is read-only; shares are of the collected subset"
+SSE-300,ethos-u55,256,wav2letter_pruned_int8,AXI0/AXI1 (U55/U65),8794657,1732537,10527194,0.835423,0.164577,0.999953,OK,"AXI1_WR not collected, so port1 is read-only; shares are of the collected subset"
+SSE-300,ethos-u55,256,yolo-fastest_192_face_v4,AXI0/AXI1 (U55/U65),993440,46803,1040243,0.955008,0.044992,0.999738,OK,"AXI1_WR not collected, so port1 is read-only; shares are of the collected subset"
+SSE-300,ethos-u65,256,ad_medium_int8,AXI0/AXI1 (U55/U65),215834,28184,244018,0.8845,0.1155,0.998421,OK,"AXI1_WR not collected, so port1 is read-only; shares are of the collected subset"
+SSE-300,ethos-u65,256,kws_micronet_m,AXI0/AXI1 (U55/U65),67703,10173,77876,0.869369,0.130631,0.997627,OK,"AXI1_WR not collected, so port1 is read-only; shares are of the collected subset"
+SSE-300,ethos-u65,256,mobilenet_v2_1.0_224_INT8,AXI0/AXI1 (U55/U65),1273115,254532,1527647,0.833383,0.166617,0.999731,OK,"AXI1_WR not collected, so port1 is read-only; shares are of the collected subset"
+SSE-300,ethos-u65,256,rnnoise_INT8,AXI0/AXI1 (U55/U65),386,7163,7549,0.051133,0.948867,0.991504,OK,"AXI1_WR not collected, so port1 is read-only; shares are of the collected subset"
+SSE-300,ethos-u65,256,vww4_128_128_INT8,AXI0/AXI1 (U55/U65),140006,22045,162051,0.863963,0.136037,0.998456,OK,"AXI1_WR not collected, so port1 is read-only; shares are of the collected subset"
+SSE-300,ethos-u65,256,wav2letter_pruned_int8,AXI0/AXI1 (U55/U65),4204872,1391901,5596773,0.751303,0.248697,0.999972,OK,"AXI1_WR not collected, so port1 is read-only; shares are of the collected subset"
+SSE-300,ethos-u65,256,yolo-fastest_192_face_v4,AXI0/AXI1 (U55/U65),455653,26374,482027,0.945285,0.054715,0.999073,OK,"AXI1_WR not collected, so port1 is read-only; shares are of the collected subset"
+SSE-300,ethos-u65,512,ad_medium_int8,AXI0/AXI1 (U55/U65),217947,28728,246675,0.883539,0.116461,0.997964,OK,"AXI1_WR not collected, so port1 is read-only; shares are of the collected subset"
+SSE-300,ethos-u65,512,kws_micronet_m,AXI0/AXI1 (U55/U65),70013,10257,80270,0.872219,0.127781,0.995318,OK,"AXI1_WR not collected, so port1 is read-only; shares are of the collected subset"
+SSE-300,ethos-u65,512,mobilenet_v2_1.0_224_INT8,AXI0/AXI1 (U55/U65),1281350,254695,1536045,0.834188,0.165812,0.999724,OK,"AXI1_WR not collected, so port1 is read-only; shares are of the collected subset"
+SSE-300,ethos-u65,512,rnnoise_INT8,AXI0/AXI1 (U55/U65),383,7202,7585,0.050494,0.949506,0.987981,OK,"AXI1_WR not collected, so port1 is read-only; shares are of the collected subset"
+SSE-300,ethos-u65,512,vww4_128_128_INT8,AXI0/AXI1 (U55/U65),140299,22326,162625,0.862715,0.137285,0.998997,OK,"AXI1_WR not collected, so port1 is read-only; shares are of the collected subset"
+SSE-300,ethos-u65,512,wav2letter_pruned_int8,AXI0/AXI1 (U55/U65),4181170,1418048,5599218,0.746742,0.253258,0.999896,OK,"AXI1_WR not collected, so port1 is read-only; shares are of the collected subset"
+SSE-300,ethos-u65,512,yolo-fastest_192_face_v4,AXI0/AXI1 (U55/U65),457850,26814,484664,0.944675,0.055325,0.998601,OK,"AXI1_WR not collected, so port1 is read-only; shares are of the collected subset"
+SSE-320,ethos-u85,128,ad_medium_int8,SRAM/EXT (U85),,,,,,0.999122,NOT_EVALUABLE,whole-model memory counters absent (parser loss)
+SSE-320,ethos-u85,128,kws_micronet_m,SRAM/EXT (U85),,,,,,0.998992,NOT_EVALUABLE,whole-model memory counters absent (parser loss)
+SSE-320,ethos-u85,128,mobilenet_v2_1.0_224_INT8,SRAM/EXT (U85),,,,,,0.999833,NOT_EVALUABLE,whole-model memory counters absent (parser loss)
+SSE-320,ethos-u85,128,rnnoise_INT8,SRAM/EXT (U85),,,,,,0.976778,NOT_EVALUABLE,whole-model memory counters absent (parser loss)
+SSE-320,ethos-u85,128,vww4_128_128_INT8,SRAM/EXT (U85),,,,,,0.99793,NOT_EVALUABLE,whole-model memory counters absent (parser loss)
+SSE-320,ethos-u85,128,wav2letter_pruned_int8,SRAM/EXT (U85),,,,,,0.999964,NOT_EVALUABLE,whole-model memory counters absent (parser loss)
+SSE-320,ethos-u85,128,yolo-fastest_192_face_v4,SRAM/EXT (U85),,,,,,0.999853,NOT_EVALUABLE,whole-model memory counters absent (parser loss)
+SSE-320,ethos-u85,256,ad_medium_int8,SRAM/EXT (U85),,,,,,0.997223,NOT_EVALUABLE,whole-model memory counters absent (parser loss)
+SSE-320,ethos-u85,256,kws_micronet_m,SRAM/EXT (U85),,,,,,0.997468,NOT_EVALUABLE,whole-model memory counters absent (parser loss)
+SSE-320,ethos-u85,256,mobilenet_v2_1.0_224_INT8,SRAM/EXT (U85),,,,,,0.999897,NOT_EVALUABLE,whole-model memory counters absent (parser loss)
+SSE-320,ethos-u85,256,rnnoise_INT8,SRAM/EXT (U85),,,,,,0.975614,NOT_EVALUABLE,whole-model memory counters absent (parser loss)
+SSE-320,ethos-u85,256,vww4_128_128_INT8,SRAM/EXT (U85),,,,,,0.996513,NOT_EVALUABLE,whole-model memory counters absent (parser loss)
+SSE-320,ethos-u85,256,wav2letter_pruned_int8,SRAM/EXT (U85),,,,,,0.999977,NOT_EVALUABLE,whole-model memory counters absent (parser loss)
+SSE-320,ethos-u85,256,yolo-fastest_192_face_v4,SRAM/EXT (U85),,,,,,0.999003,NOT_EVALUABLE,whole-model memory counters absent (parser loss)
+SSE-320,ethos-u85,512,ad_medium_int8,SRAM/EXT (U85),,,,,,0.997805,NOT_EVALUABLE,whole-model memory counters absent (parser loss)
+SSE-320,ethos-u85,512,kws_micronet_m,SRAM/EXT (U85),,,,,,0.999281,NOT_EVALUABLE,whole-model memory counters absent (parser loss)
+SSE-320,ethos-u85,512,mobilenet_v2_1.0_224_INT8,SRAM/EXT (U85),,,,,,0.999653,NOT_EVALUABLE,whole-model memory counters absent (parser loss)
+SSE-320,ethos-u85,512,rnnoise_INT8,SRAM/EXT (U85),,,,,,0.986276,NOT_EVALUABLE,whole-model memory counters absent (parser loss)
+SSE-320,ethos-u85,512,vww4_128_128_INT8,SRAM/EXT (U85),,,,,,0.995962,NOT_EVALUABLE,whole-model memory counters absent (parser loss)
+SSE-320,ethos-u85,512,wav2letter_pruned_int8,SRAM/EXT (U85),,,,,,0.999939,NOT_EVALUABLE,whole-model memory counters absent (parser loss)
+SSE-320,ethos-u85,512,yolo-fastest_192_face_v4,SRAM/EXT (U85),,,,,,0.998639,NOT_EVALUABLE,whole-model memory counters absent (parser loss)
+SSE-320,ethos-u85,1024,ad_medium_int8,SRAM/EXT (U85),,,,,,0.994279,NOT_EVALUABLE,whole-model memory counters absent (parser loss)
+SSE-320,ethos-u85,1024,kws_micronet_m,SRAM/EXT (U85),,,,,,0.989674,NOT_EVALUABLE,whole-model memory counters absent (parser loss)
+SSE-320,ethos-u85,1024,mobilenet_v2_1.0_224_INT8,SRAM/EXT (U85),,,,,,0.999617,NOT_EVALUABLE,whole-model memory counters absent (parser loss)
+SSE-320,ethos-u85,1024,rnnoise_INT8,SRAM/EXT (U85),,,,,,0.989284,NOT_EVALUABLE,whole-model memory counters absent (parser loss)
+SSE-320,ethos-u85,1024,vww4_128_128_INT8,SRAM/EXT (U85),,,,,,0.995714,NOT_EVALUABLE,whole-model memory counters absent (parser loss)
+SSE-320,ethos-u85,1024,wav2letter_pruned_int8,SRAM/EXT (U85),,,,,,0.999796,NOT_EVALUABLE,whole-model memory counters absent (parser loss)
+SSE-320,ethos-u85,1024,yolo-fastest_192_face_v4,SRAM/EXT (U85),,,,,,0.99951,NOT_EVALUABLE,whole-model memory counters absent (parser loss)
+SSE-320,ethos-u85,2048,ad_medium_int8,SRAM/EXT (U85),,,,,,0.99623,NOT_EVALUABLE,whole-model memory counters absent (parser loss)
+SSE-320,ethos-u85,2048,kws_micronet_m,SRAM/EXT (U85),,,,,,0.995661,NOT_EVALUABLE,whole-model memory counters absent (parser loss)
+SSE-320,ethos-u85,2048,mobilenet_v2_1.0_224_INT8,SRAM/EXT (U85),,,,,,0.999229,NOT_EVALUABLE,whole-model memory counters absent (parser loss)
+SSE-320,ethos-u85,2048,rnnoise_INT8,SRAM/EXT (U85),,,,,,0.980143,NOT_EVALUABLE,whole-model memory counters absent (parser loss)
+SSE-320,ethos-u85,2048,vww4_128_128_INT8,SRAM/EXT (U85),,,,,,0.997748,NOT_EVALUABLE,whole-model memory counters absent (parser loss)
+SSE-320,ethos-u85,2048,wav2letter_pruned_int8,SRAM/EXT (U85),,,,,,0.999606,NOT_EVALUABLE,whole-model memory counters absent (parser loss)
+SSE-320,ethos-u85,2048,yolo-fastest_192_face_v4,SRAM/EXT (U85),,,,,,0.999228,NOT_EVALUABLE,whole-model memory counters absent (parser loss)

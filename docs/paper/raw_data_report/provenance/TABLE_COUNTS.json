@@ -1,0 +1,17 @@
+{
+ "3_1_platform_matrix.csv": 19,
+ "3_1_workload_matrix.csv": 133,
+ "3_1_measurement_availability.csv": 6,
+ "3_2_whole_model_pmu.csv": 74,
+ "3_2_memory_traffic.csv": 74,
+ "3_2_per_layer_pmu.csv": 656,
+ "3_3_cycles_by_mac.csv": 77,
+ "3_3_scaling_transitions.csv": 56,
+ "3_3_ladder_summary.csv": 21,
+ "3_4_mechanism_evidence_matrix.csv": 7,
+ "3_4_u85_256_512_combined.csv": 251,
+ "4_1_vela_fvp_pairs.csv": 148,
+ "4_1_accuracy_metrics.csv": 11,
+ "4_2_transition_prediction.csv": 53,
+ "4_2_error_associations.csv": 53
+}
