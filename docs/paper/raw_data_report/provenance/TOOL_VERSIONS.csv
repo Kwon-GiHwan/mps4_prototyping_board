@@ -1,0 +1,12 @@
+component,version,source
+Vela,5.0.0,vela_matrix.csv vela_version
+Vela core clock (U85 Mid_512),1000000000.0 Hz,vela_matrix.csv
+FVP SSE-300,11.22.35,MAIN_EXPERIMENT_MATRIX.md
+FVP SSE-310,11.24.13,MAIN_EXPERIMENT_MATRIX.md
+FVP SSE-315,11.31.28,MAIN_EXPERIMENT_MATRIX.md
+FVP SSE-320,11.27.25,MAIN_EXPERIMENT_MATRIX.md
+SOURCE_DATE_EPOCH,1776763519 (2026-04-21 09:25:19 UTC),stage1.py
+activation buffer,0x00200000,stage1.py
+MLEK git commit,NOT_VERIFIED_LOCALLY,remote host only
+arm-none-eabi-gcc,NOT_VERIFIED_LOCALLY,remote host only
+TA_CONFIG_FILE,NOT_VERIFIED_LOCALLY,remote host only

@@ -1,0 +1,12 @@
+platform,npu,mac,n_workloads,metric_pair,spearman_rho_ranking,admissible_analysis,MAPE_percent_LEGACY_ONLY,median_APE_percent_LEGACY_ONLY,absolute_comparison_status,source
+SSE-300,ethos-u55,32,6,vela_cycles_total vs npu_total_cycles,1.0,ranking only,1.4689,1.7428,LEGACY_ONLY - refused by frozen measurement semantics,analysis/canonical_cells.csv + vela_matrix.csv
+SSE-300,ethos-u55,64,6,vela_cycles_total vs npu_total_cycles,1.0,ranking only,3.0405,2.326,LEGACY_ONLY - refused by frozen measurement semantics,analysis/canonical_cells.csv + vela_matrix.csv
+SSE-300,ethos-u55,128,6,vela_cycles_total vs npu_total_cycles,1.0,ranking only,6.5144,4.7457,LEGACY_ONLY - refused by frozen measurement semantics,analysis/canonical_cells.csv + vela_matrix.csv
+SSE-300,ethos-u55,256,7,vela_cycles_total vs npu_total_cycles,0.964286,ranking only,12.5115,6.9269,LEGACY_ONLY - refused by frozen measurement semantics,analysis/canonical_cells.csv + vela_matrix.csv
+SSE-300,ethos-u65,256,7,vela_cycles_total vs npu_total_cycles,0.964286,ranking only,24.1581,27.4432,LEGACY_ONLY - refused by frozen measurement semantics,analysis/canonical_cells.csv + vela_matrix.csv
+SSE-300,ethos-u65,512,7,vela_cycles_total vs npu_total_cycles,0.964286,ranking only,32.3437,28.8743,LEGACY_ONLY - refused by frozen measurement semantics,analysis/canonical_cells.csv + vela_matrix.csv
+SSE-320,ethos-u85,128,7,vela_cycles_total vs npu_total_cycles,1.0,ranking only,31.5779,22.0432,LEGACY_ONLY - refused by frozen measurement semantics,analysis/canonical_cells.csv + vela_matrix.csv
+SSE-320,ethos-u85,256,7,vela_cycles_total vs npu_total_cycles,0.964286,ranking only,35.3979,19.902,LEGACY_ONLY - refused by frozen measurement semantics,analysis/canonical_cells.csv + vela_matrix.csv
+SSE-320,ethos-u85,512,7,vela_cycles_total vs npu_total_cycles,1.0,ranking only,27.5691,37.8789,LEGACY_ONLY - refused by frozen measurement semantics,analysis/canonical_cells.csv + vela_matrix.csv
+SSE-320,ethos-u85,1024,7,vela_cycles_total vs npu_total_cycles,1.0,ranking only,29.5433,32.6896,LEGACY_ONLY - refused by frozen measurement semantics,analysis/canonical_cells.csv + vela_matrix.csv
+SSE-320,ethos-u85,2048,7,vela_cycles_total vs npu_total_cycles,1.0,ranking only,30.4642,11.8926,LEGACY_ONLY - refused by frozen measurement semantics,analysis/canonical_cells.csv + vela_matrix.csv
