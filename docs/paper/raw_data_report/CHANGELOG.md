@@ -60,3 +60,13 @@ C1은 결과적으로 **frozen evidence가 실제로 무수정임을 확인**한
 REPORT.md "검증으로 무효화된 해석" 절에 I1–I6으로 기록. 핵심은 두 가지다 —
 **256→512 역전을 MAC 단독 효과로 읽을 수 없고**, **두 역전을 같은 원인으로 묶을
 근거가 없다**(후자는 TA 파라미터 불변).
+
+## v1.2 — 2026-09-09
+
+`source_data/` 추가. 각 REPORT 섹션이 사용하는 **원본 frozen evidence를 가공 없이
+복사**해 섹션별로 모았다. 사본 37개 / 원본 26개 / 1.19 MB, 전부 원본과 SHA-256 동일
+(`source_data/MANIFEST.csv`가 검증 결과 보유).
+
+- 여러 섹션이 쓰는 파일은 중복 복사했고 `also_in_sections` 컬럼에 기록.
+- 재생성: `scripts/collect_source_data.py` (폴더를 지우고 다시 복사, 복사 후 해시 대조).
+- **원본은 read-only.** 검사 1(evidence 536파일 해시)이 작업 후에도 drift 0.
