@@ -3,6 +3,9 @@
 import csv, os, collections
 import matplotlib; matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+# Deterministic SVG: without these, every run rewrites the embedded date and
+# re-randomizes clip-path ids, producing a large diff with no visual change.
+plt.rcParams["svg.hashsalt"] = "raw_data_report"
 
 HERE=os.path.dirname(os.path.abspath(__file__)); OUT=os.path.dirname(HERE)
 T=os.path.join(OUT,"tables"); F=os.path.join(OUT,"figures"); os.makedirs(F,exist_ok=True)
@@ -14,7 +17,8 @@ SHORT={"rnnoise_INT8":"rnnoise","kws_micronet_m":"kws","ad_medium_int8":"ad_medi
 def save(fig,name,src):
     fig.text(0.01,0.01,"source: tables/%s"%src,fontsize=6,color="#666")
     for ext in ("png","svg"):
-        fig.savefig(os.path.join(F,"%s.%s"%(name,ext)),dpi=160,bbox_inches="tight")
+        kw = {"metadata": {"Date": None}} if ext == "svg" else {}
+        fig.savefig(os.path.join(F,"%s.%s"%(name,ext)),dpi=160,bbox_inches="tight",**kw)
     plt.close(fig); return name
 made=[]
 

@@ -27,3 +27,36 @@
 | C4 | #9 figure 추적 | 태그 제거 정규식이 스탬프(주석 내부)를 함께 삭제 | 원문에서 검색 |
 
 C1은 결과적으로 **frozen evidence가 실제로 무수정임을 확인**한 것이다.
+
+## v1.1 — 2026-09-09
+
+서버 read-only 검증(`SERVER_VERIFICATION.md`, MLEK `b2c0bb2`) 결과 반영.
+**새 측정 없음. frozen evidence 무수정.**
+
+### 상태 변경 NOT_VERIFIED → VERIFIED
+
+| 항목 | 결과 |
+|---|---|
+| TA_CONFIG_FILE | MAC별로 달라짐. `Z128/Z256→low`, `Z512/Z1024→mid`, `Z2048→high`. **mid와 high는 바이트 동일**하므로 파라미터는 256→512에서만 변경 |
+| profiler IDLE | `TOTAL − ACTIVE` 소프트웨어 파생 (`ethosu_profiler.c:187-189`) |
+| U85 메모리 공란 | `PARSER_LOSS_BUT_RAW_UART_NOT_RETAINED` |
+| PMU 측정 창 | `inference_begin`/`inference_end` enable-disable 구간 |
+| MLEK commit | `b2c0bb2884698b7328f65c41b7c8c51ca9bec386` |
+
+### 표 스키마 변경
+
+`ta_config` 플레이스홀더(`NOT_VERIFIED_LOCALLY`)를 실측값으로 교체하고,
+`ta_config_changed` 단일 컬럼을 두 개로 분리했다:
+
+- `ta_config_file_changed` — 파일 **이름**이 바뀌었는가
+- `ta_parameters_changed` — 실효 **파라미터**가 바뀌었는가 (mid≡high 반영)
+
+영향 표: `3_1_platform_matrix.csv`(+`ta_parameter_set`), `3_3_cycles_by_mac.csv`,
+`3_3_scaling_transitions.csv`, `3_4_u85_256_512_combined.csv`,
+`4_2_transition_prediction.csv`.
+
+### 무효화된 해석
+
+REPORT.md "검증으로 무효화된 해석" 절에 I1–I6으로 기록. 핵심은 두 가지다 —
+**256→512 역전을 MAC 단독 효과로 읽을 수 없고**, **두 역전을 같은 원인으로 묶을
+근거가 없다**(후자는 TA 파라미터 불변).
