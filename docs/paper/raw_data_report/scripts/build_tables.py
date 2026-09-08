@@ -33,6 +33,29 @@ SAT  = rd("analysis/saturation.csv")
 VELA = [r for r in rd("evidence/vela-matrix-20260824/vela_matrix.csv") if r["success"]=="True"]
 VFA  = rd("analysis/vela_fvp_trend_agreement.csv")
 DIFF = rd("mechanism/U85_256_512_DIFFERENTIAL.csv")
+
+# ---- R1 re-measurement recovery -----------------------------------------
+# The U85 whole-model memory counters were never wrong; stage1.py matched
+# AXI0_*/AXI1_*, which the U85 runner does not emit, so it recorded None and
+# the raw UART was discarded with the workspace. R1 rebuilt all 35 cells to
+# their frozen artifact hashes and re-read the same counters with a parser
+# that discovers the emitted set. Loaded only if its own gates passed; a
+# failed gate means the values describe a different build and must not be
+# attached to these cells. See remeasure/REMEASURE_CONTRACT.md.
+def _load_r1():
+    d = os.path.join(OUT, "remeasure")
+    g = os.path.join(d, "R1_RESULTS.json")
+    c = os.path.join(d, "R1_MEMORY_COUNTERS.csv")
+    if not (os.path.exists(g) and os.path.exists(c)):
+        return {}, "NOT_RUN"
+    with open(g) as f: res = json.load(f)
+    if res.get("overall") != "PASS":
+        return {}, "GATES_FAILED"
+    with open(c) as f: rows = list(csv.DictReader(f))
+    return {r["cell_id"]: r for r in rows}, "PASS"
+
+R1, R1_STATE = _load_r1()
+R1_SOURCE = "remeasure/R1_MEMORY_COUNTERS.csv"
 ATTR = rd("mechanism/U85_ATTRIBUTION_UNITS.csv")
 FMTX = rd("mechanism/U85_FORMAL_MATRIX.csv")
 
@@ -162,22 +185,35 @@ for plat,npu in sorted({(x["platform"],x["npu"]) for x in EXEC}):
     formal = any(x["platform"]==plat and x["npu"]==npu for x in CELLS)
     base = "AVAILABLE" if formal else "NOT_COLLECTED"
     u85  = (npu=="ethos-u85")
+    # U85 emits SRAM_*/EXT_*, never AXI*: the AXI columns are not a loss on this
+    # generation, they are inapplicable. Before R1 they were mislabelled
+    # PARSER_LOSS, which conflated "we failed to read it" with "it is not there".
+    u85_axi = "NOT_EVALUABLE" if R1_STATE == "PASS" else "PARSER_LOSS"
+    u85_mem = "AVAILABLE" if R1_STATE == "PASS" else "AVAILABLE_PARTIAL"
     rows.append(dict(platform=plat, npu=npu,
       TOTAL=base, ACTIVE=base,
       IDLE=(base if not formal else "AVAILABLE_DERIVED"),
-      AXI0_RD=whole_model_status(npu,"axi0_rd_beats") if not u85 and formal else ("PARSER_LOSS" if u85 and formal else "NOT_COLLECTED"),
-      AXI0_WR=whole_model_status(npu,"axi0_wr_beats") if not u85 and formal else ("PARSER_LOSS" if u85 and formal else "NOT_COLLECTED"),
-      AXI1_RD=whole_model_status(npu,"axi1_rd_beats") if not u85 and formal else ("PARSER_LOSS" if u85 and formal else "NOT_COLLECTED"),
-      AXI1_WR="NOT_COLLECTED",
-      SRAM_RD=("AVAILABLE_PARTIAL" if u85 else "NOT_EVALUABLE"),
-      SRAM_WR=("AVAILABLE_PARTIAL" if u85 else "NOT_EVALUABLE"),
-      EXT_RD=("AVAILABLE_PARTIAL" if u85 else "NOT_EVALUABLE"),
-      EXT_WR=("AVAILABLE_PARTIAL" if u85 else "NOT_EVALUABLE"),
+      AXI0_RD=(whole_model_status(npu,"axi0_rd_beats") if not u85 and formal else (u85_axi if u85 and formal else "NOT_COLLECTED")),
+      AXI0_WR=(whole_model_status(npu,"axi0_wr_beats") if not u85 and formal else (u85_axi if u85 and formal else "NOT_COLLECTED")),
+      AXI1_RD=(whole_model_status(npu,"axi1_rd_beats") if not u85 and formal else (u85_axi if u85 and formal else "NOT_COLLECTED")),
+      AXI1_WR=("NOT_EVALUABLE" if u85 and formal and R1_STATE == "PASS"
+               else "NOT_COLLECTED"),
+      SRAM_RD=(u85_mem if u85 else "NOT_EVALUABLE"),
+      SRAM_WR=(u85_mem if u85 else "NOT_EVALUABLE"),
+      EXT_RD=(u85_mem if u85 else "NOT_EVALUABLE"),
+      EXT_WR=(u85_mem if u85 else "NOT_EVALUABLE"),
       stall_counters="SEMANTICS_UNVERIFIED" if u85 else "NOT_COLLECTED",
       per_layer_cycles=("AVAILABLE" if u85 else "NOT_COLLECTED"),
       ublock_schedule=("AVAILABLE" if u85 else "NOT_COLLECTED"),
-      notes=("whole-model memory fields empty in all %d U85 formal cells; the same "
-             "event family is present in the mechanism dataset" % len([x for x in CELLS if x["npu"]=="ethos-u85"])) if u85
+      notes=(("all four SRAM/EXT counters recovered on %d/%d U85 formal cells by "
+              "re-measurement R1 (frozen artifact hashes reproduced); AXI names "
+              "are not emitted by this generation"
+              % (sum(1 for x in CELLS if x["npu"]=="ethos-u85" and x["cell_id"] in R1),
+                 len([x for x in CELLS if x["npu"]=="ethos-u85"]))
+             ) if R1_STATE == "PASS" else
+             ("whole-model memory fields empty in all %d U85 formal cells; the same "
+              "event family is present in the mechanism dataset"
+              % len([x for x in CELLS if x["npu"]=="ethos-u85"]))) if u85
             else "AXI beats present in whole-model formal cells; SRAM/EXT names do not exist on this generation"))
 n_files["3_1_measurement_availability.csv"]=wr("3_1_measurement_availability.csv", rows,
   ["platform","npu","TOTAL","ACTIVE","IDLE","AXI0_RD","AXI0_WR","AXI1_RD","AXI1_WR",
@@ -195,10 +231,17 @@ for c in CELLS:
       total_cycles=c["canonical_cycles"], active_cycles=c["npu_active_cycles"],
       idle_cycles=c["npu_idle_cycles"],
       memory_event_family=("SRAM/EXT (U85)" if u85 else "AXI0/AXI1 (U55/U65)"),
-      rd_beats_0=c["axi0_rd_beats"], wr_beats_0=c["axi0_wr_beats"],
-      rd_beats_1=c["axi1_rd_beats"], wr_beats_1="",
-      source="analysis/canonical_cells.csv",
-      status=("MEMORY_PARSER_LOSS" if u85 else "OK")))
+      **(dict(rd_beats_0=R1[c["cell_id"]]["sram_rd_beats"],
+              wr_beats_0=R1[c["cell_id"]]["sram_wr_beats"],
+              rd_beats_1=R1[c["cell_id"]]["ext_rd_beats"],
+              wr_beats_1=R1[c["cell_id"]]["ext_wr_beats"],
+              source="analysis/canonical_cells.csv (cycles) + %s (memory)" % R1_SOURCE,
+              status="RECOVERED_BY_REMEASUREMENT_R1")
+         if u85 and c["cell_id"] in R1 else
+         dict(rd_beats_0=c["axi0_rd_beats"], wr_beats_0=c["axi0_wr_beats"],
+              rd_beats_1=c["axi1_rd_beats"], wr_beats_1="",
+              source="analysis/canonical_cells.csv",
+              status=("MEMORY_PARSER_LOSS" if u85 else "OK")))))
 rows.sort(key=lambda r:(r["platform"],r["npu"],r["mac"],r["workload"]))
 n_files["3_2_whole_model_pmu.csv"]=wr("3_2_whole_model_pmu.csv", rows,
   ["platform","npu","mac","workload","memory_mode","total_cycles","active_cycles",
@@ -209,12 +252,30 @@ n_files["3_2_whole_model_pmu.csv"]=wr("3_2_whole_model_pmu.csv", rows,
 rows=[]
 for c in CELLS:
     if c["npu"]=="ethos-u85":
-        rows.append(dict(platform=c["platform"], npu=c["npu"], mac=int(c["mac_config"]),
-          workload=c["workload"], event_family="SRAM/EXT (U85)",
-          port0_beats="", port1_beats="", total_beats="",
-          port0_share="", port1_share="",
-          active_over_total=round(int(c["npu_active_cycles"])/int(c["canonical_cycles"]),6),
-          status="NOT_EVALUABLE", note="whole-model memory counters absent (parser loss)"))
+        r = R1.get(c["cell_id"])
+        if r:
+            # U85 port0 = on-chip SRAM, port1 = external. Unlike U55/U65 both
+            # directions are present, so these shares are of the complete set --
+            # which is exactly why they must not be compared with the AXI rows.
+            r0 = int(r["sram_rd_beats"]) + int(r["sram_wr_beats"])
+            r1 = int(r["ext_rd_beats"]) + int(r["ext_wr_beats"])
+            tot = r0 + r1
+            rows.append(dict(platform=c["platform"], npu=c["npu"], mac=int(c["mac_config"]),
+              workload=c["workload"], event_family="SRAM/EXT (U85)",
+              port0_beats=r0, port1_beats=r1, total_beats=tot,
+              port0_share=round(r0/tot,6) if tot else "",
+              port1_share=round(r1/tot,6) if tot else "",
+              active_over_total=round(int(c["npu_active_cycles"])/int(c["canonical_cycles"]),6),
+              status="OK_RECOVERED_R1",
+              note="all four counters present (rd+wr on both ports); NOT comparable "
+                   "with the AXI rows, whose port1 is read-only"))
+        else:
+            rows.append(dict(platform=c["platform"], npu=c["npu"], mac=int(c["mac_config"]),
+              workload=c["workload"], event_family="SRAM/EXT (U85)",
+              port0_beats="", port1_beats="", total_beats="",
+              port0_share="", port1_share="",
+              active_over_total=round(int(c["npu_active_cycles"])/int(c["canonical_cycles"]),6),
+              status="NOT_EVALUABLE", note="whole-model memory counters absent (parser loss)"))
         continue
     r0=int(c["axi0_rd_beats"])+int(c["axi0_wr_beats"]); r1=int(c["axi1_rd_beats"])
     tot=r0+r1
