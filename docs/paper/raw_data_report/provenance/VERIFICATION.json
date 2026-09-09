@@ -3,7 +3,7 @@
  "02 transition rows == raw recount": "PASS — table 56, recount 56, stats 56",
  "03 every valid adjacent MAC pair present": "PASS — []",
  "04 reversal/plateau auto-detected": "PASS — recount rev=2 pla=1 vs stats rev=2 pla=1",
- "05 no missing value coerced to 0": "PASS — []",
+ "05 no missing value coerced to 0; U85 beats present and sourced": "PASS — ([], [], [])",
  "06 estimate and observation carry distinct source columns": "PASS",
  "07 no cross-platform absolute comparison asserted": "PASS — []",
  "08 mechanism table uses no causal language": "PASS — []",
