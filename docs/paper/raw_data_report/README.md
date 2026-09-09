@@ -1,36 +1,75 @@
-# Raw data audit — working directory
+# Source data — 섹션별 원본 evidence
 
-**이 디렉터리는 논문 원고가 아니다.** 현재 manuscript의 섹션 순서를 따라 기존
-raw/frozen evidence에 실제로 어떤 데이터가 있는지 재집계한 **감사 보고서**다.
+`REPORT.md`의 섹션 구성에 맞춰 **frozen evidence 원본을 그대로 복사해 둔 디렉터리**이다
+(`source_data/`).
 
-## 원칙 (지시문 §0)
+- 원본 파일은 가공·집계·컬럼 추가 없이 복사만 수행
+- 모든 사본은 원본과 **SHA-256이 동일**
+- 검증 결과와 원본 경로는 `source_data/MANIFEST.csv`에 기록
+- 파생 표·집계 결과는 `tables/`에 별도 저장
+- 여러 섹션에서 사용하는 파일은 각 섹션에 중복 배치
+  - 중복 위치는 `MANIFEST.csv`의 `also_in_sections`에 기록
 
-- 기존 manuscript / frozen evidence / CSV / JSON / UART log **수정 금지**
-- 데이터를 보고 threshold를 새로 고르지 않음
-- 누락 데이터를 0으로 간주하지 않음
-- compiler estimate와 runtime observation을 같은 종류로 취급하지 않음
-- cross-platform absolute cycle 비교로 architecture superiority 주장 금지
-- 검증되지 않은 인과를 `caused by` / `memory-bound` / `bandwidth saturation`으로 단정 금지
-- manuscript narrative가 raw data와 충돌하면 **data를 따름**
-- FVP / board 재실행 없음 — 기존 evidence 집계만
+재생성:
 
-## 구성
-
-```
-REPORT.md                     본문
-CHANGELOG.md                  버전 이력 (수정·재계산 발생 시 기록)
-source_data/                  원본 frozen evidence의 섹션별 사본 (가공 없음)
-provenance/INPUT_MANIFEST.csv 입력 artifact 목록과 해시
-provenance/BASELINE_HASHES.txt 작업 전 frozen evidence 해시 (불변 검증용)
-tables/*.csv                  생성 표
-figures/*.png|svg             생성 그림
-scripts/*.py                  모든 표·그림 재생성 코드
+```bash
+python3 scripts/collect_source_data.py
 ```
 
-모든 표와 그림은 `scripts/`로 재생성 가능해야 한다.
+기존 `source_data/`를 삭제한 뒤 frozen evidence에서 다시 복사한다.
 
-## 재생성
+## 폴더 구성
 
-```sh
-python3 docs/paper/raw_data_report/scripts/build_all.py
-```
+| 폴더 | REPORT 대응 | 주요 원본 데이터 |
+|---|---|---|
+| `3_1_methodology/` | §3.1 실험 구성 | `executability.csv` (133 cells), `canonical_cells.csv` (74 cells), `vela_matrix.csv`, `DETERMINISTIC_METRIC_VECTOR.md` |
+| `3_2_inference_time/` | §3.2 실행 시간·PMU | `canonical_cells.csv`, `U85_ATTRIBUTION_UNITS.csv`, `U85_PMU_EVENT_AUTHORITY.csv` |
+| `3_3_scaling/` | §3.3 MAC scaling | `canonical_cells.csv`, `executability.csv`, `scaling.csv`, `saturation.csv`, `vela_matrix.csv` |
+| `3_4_limits/` | §3.4 scaling limitation 분석 | `U85_256_512_DIFFERENTIAL.csv`, `U85_GROUP_DIFFERENTIAL.csv`, `U85_P1B_CROSSMODE_GROUPS.csv` 등 |
+| `4_1_estimation_accuracy/` | §4.1 Vela prediction | `vela_matrix.csv`, `canonical_cells.csv`, `vela_fvp_trend_agreement.csv` |
+| `4_2_error_sources/` | §4.2 prediction error 분석 | §4.1 데이터 + `U85_256_512_DIFFERENTIAL.csv` |
+| `_supporting_board/` | Board validation | MPS4 RQ3 관련 원본 3종 |
+| `_supporting_platform_sensitivity/` | Platform sensitivity | X1 / X3 관련 원본 |
+| `_supporting_instrumentation/` | Instrumentation validation | U65 bridge 관련 원본 2종 |
+
+## 데이터 해석 시 주의사항
+
+### 1. Compiler estimate와 runtime observation 구분
+
+| 파일 | 성격 |
+|---|---|
+| `vela_matrix.csv` | Vela compiler estimate |
+| `canonical_cells.csv` | FVP runtime observation |
+
+두 데이터는 성격이 다르므로 같은 폴더에 있더라도 절대값을 직접 동일한 측정값처럼
+비교하지 않는다.
+
+### 2. Formal sweep과 mechanism dataset 구분
+
+`U85_ATTRIBUTION_UNITS.csv`, `U85_256_512_DIFFERENTIAL.csv` 등 mechanism 관련
+파일은 formal sweep과 다른 instrumentation binary / measurement path에서 생성된
+데이터이다.
+
+따라서:
+
+- formal sweep 결과와 직접 병합하지 않음
+- mechanism evidence는 해당 분석 범위 내에서만 사용
+- 서로 다른 measurement path의 값을 동일한 표본으로 취급하지 않음
+
+### 3. U85 whole-model memory counter 누락
+
+`canonical_cells.csv`의 U85 35 cells에서 `axi*_beats` 필드는 비어 있다.
+
+- 실제 값 0이 아님
+- U85 profiler는 `SRAM_*`, `EXT_*` 이벤트를 사용
+- 기존 parser가 `AXI0_*`, `AXI1_*` 라벨만 인식하여 발생한 parser loss
+- 원시 UART가 보존되지 않아 frozen evidence에서 재파싱 복구 불가
+
+세부 내용은 `SERVER_VERIFICATION.md`의 V3 참고.
+
+## 원칙
+
+- 원본 evidence는 수정하지 않음
+- source copy 역시 내용 변경 없이 유지
+- 계산·집계·재분류는 `tables/` 및 분석 스크립트에서만 수행
+- 측정되지 않은 값은 0으로 대체하지 않고 missing / `NOT_EVALUABLE`로 유지
