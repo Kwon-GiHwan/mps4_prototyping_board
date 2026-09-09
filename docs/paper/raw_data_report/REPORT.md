@@ -319,9 +319,9 @@ Vela도 역전을 2건 예측했으나 **위치가 다르다** — 첫 역전은
 | 항목 | 상태 | 해소 조건 |
 |---|---|---|
 | 입력 tensor 생성 방식·seed | NOT_COLLECTED | 서버 runner 소스 |
-| counter overflow 경고 | NOT_COLLECTED | `counter_overflow()`가 `warn()`을 내지만 파서가 수집하지 않음 |
+| ~~counter overflow 경고~~ | **해소 (v1.3)** | R1 보존 UART 71개 전수 검사 — **0건**. U85 35셀 × 2반복 범위에서 발생하지 않았다 |
 | effective bandwidth | NOT_EVALUABLE | beat 정의·클럭·TA 설정 확인 |
-| gcc 버전 | NOT_VERIFIED_LOCALLY | 서버 |
+| ~~gcc 버전~~ | **해소 (v1.3)** | `arm-none-eabi-gcc 15.2.1 20251203` (Arm GNU Toolchain 15.2.Rel1). 서버에서 직접 확인 |
 | 모델 shape·total MAC·DWConv 수 | NOT_COLLECTED | Vela verbose 출력 재수집 |
 
 ## 검증으로 무효화된 해석 (v1.1)
