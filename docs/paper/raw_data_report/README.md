@@ -56,16 +56,27 @@ python3 scripts/collect_source_data.py
 - mechanism evidence는 해당 분석 범위 내에서만 사용
 - 서로 다른 measurement path의 값을 동일한 표본으로 취급하지 않음
 
-### 3. U85 whole-model memory counter 누락
+### 3. U85 whole-model memory counter — v1.3에서 재측정으로 회수
 
 `canonical_cells.csv`의 U85 35 cells에서 `axi*_beats` 필드는 비어 있다.
+**이 사본은 frozen 원본 그대로이므로 앞으로도 비어 있다** (원본 무수정 원칙).
 
 - 실제 값 0이 아님
-- U85 profiler는 `SRAM_*`, `EXT_*` 이벤트를 사용
-- 기존 parser가 `AXI0_*`, `AXI1_*` 라벨만 인식하여 발생한 parser loss
-- 원시 UART가 보존되지 않아 frozen evidence에서 재파싱 복구 불가
+- U85 profiler는 `SRAM_*`, `EXT_*` 이벤트를 사용하며 **`AXI*`를 방출하지 않는다**.
+  따라서 U85에서 AXI 컬럼은 손실이 아니라 `NOT_EVALUABLE`이다
+- 잃어버린 것은 `SRAM_*`/`EXT_*` 값이었다. 기존 parser가 `AXI0_*`, `AXI1_*` 라벨만
+  인식했고, 원시 UART까지 삭제되어 재파싱이 불가능했다
+- **v1.3에서 재측정(R1)으로 35/35 회수했다.** frozen artifact 해시를 바이트 재현하고
+  사이클 값이 frozen과 일치함을 확인한 뒤(G1–G3) 회수값을 붙였다
 
-세부 내용은 `SERVER_VERIFICATION.md`의 V3 참고.
+| 보려면 | 파일 |
+|---|---|
+| 회수된 값 | `remeasure/R1_MEMORY_COUNTERS.csv` |
+| 게이트 판정 | `remeasure/R1_GATE_REPORT.md` |
+| 파생 표에 결합된 형태 | `tables/3_2_whole_model_pmu.csv` (출처 컬럼 포함) |
+| 원시 UART (보존) | `remeasure/uart/` |
+
+손실 자체의 진단은 `SERVER_VERIFICATION.md` V3, 회수 경위는 `CHANGELOG.md` v1.3 참고.
 
 ## 원칙
 

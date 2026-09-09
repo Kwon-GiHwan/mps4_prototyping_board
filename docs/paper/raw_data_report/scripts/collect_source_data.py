@@ -27,6 +27,11 @@ SECTIONS = {
    ("per-unit PMU incl. SRAM/EXT (mechanism)",  "mechanism/U85_ATTRIBUTION_UNITS.csv"),
    ("PMU event availability authority",         "mechanism/U85_PMU_EVENT_AUTHORITY.csv"),
    ("within-generation PMU comparison",         "analysis/pmu_within_generation.csv"),
+   # v1.3: U85 whole-model memory counters, recovered by re-measurement R1.
+   # Not under analysis/ because the frozen canonical_cells.csv is left untouched
+   # -- the recovery lives in its own file and is joined by source column.
+   ("U85 memory counters recovered (R1)",       "raw_data_report/remeasure/R1_MEMORY_COUNTERS.csv"),
+   ("R1 raw record incl. gates and hashes",     "raw_data_report/remeasure/R1_RAW.json"),
  ],
  "3_3_scaling": [
    ("cycles per cell (point source)",           "analysis/canonical_cells.csv"),
@@ -76,7 +81,15 @@ def sha(p):
     with open(p,"rb") as f: return hashlib.sha256(f.read()).hexdigest()
 
 def main():
+    # The folder is rebuilt from scratch, but README.md is hand-written guidance
+    # that lives here rather than being derived -- rmtree used to delete it, so
+    # every regeneration silently dropped it. Carry it across.
+    keep = os.path.join(DST, "README.md")
+    saved = open(keep, "rb").read() if os.path.exists(keep) else None
     if os.path.isdir(DST): shutil.rmtree(DST)
+    if saved is not None:
+        os.makedirs(DST, exist_ok=True)
+        with open(keep, "wb") as f: f.write(saved)
     where = {}
     for sec, items in SECTIONS.items():
         for _, rel in items: where.setdefault(rel, []).append(sec)
