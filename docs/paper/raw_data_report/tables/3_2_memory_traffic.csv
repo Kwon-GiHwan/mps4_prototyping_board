@@ -38,38 +38,38 @@ SSE-300,ethos-u65,512,rnnoise_INT8,AXI0/AXI1 (U55/U65),383,7202,7585,0.050494,0.
 SSE-300,ethos-u65,512,vww4_128_128_INT8,AXI0/AXI1 (U55/U65),140299,22326,162625,0.862715,0.137285,0.998997,OK,"AXI1_WR not collected, so port1 is read-only; shares are of the collected subset"
 SSE-300,ethos-u65,512,wav2letter_pruned_int8,AXI0/AXI1 (U55/U65),4181170,1418048,5599218,0.746742,0.253258,0.999896,OK,"AXI1_WR not collected, so port1 is read-only; shares are of the collected subset"
 SSE-300,ethos-u65,512,yolo-fastest_192_face_v4,AXI0/AXI1 (U55/U65),457850,26814,484664,0.944675,0.055325,0.998601,OK,"AXI1_WR not collected, so port1 is read-only; shares are of the collected subset"
-SSE-320,ethos-u85,128,ad_medium_int8,SRAM/EXT (U85),,,,,,0.999122,NOT_EVALUABLE,whole-model memory counters absent (parser loss)
-SSE-320,ethos-u85,128,kws_micronet_m,SRAM/EXT (U85),,,,,,0.998992,NOT_EVALUABLE,whole-model memory counters absent (parser loss)
-SSE-320,ethos-u85,128,mobilenet_v2_1.0_224_INT8,SRAM/EXT (U85),,,,,,0.999833,NOT_EVALUABLE,whole-model memory counters absent (parser loss)
-SSE-320,ethos-u85,128,rnnoise_INT8,SRAM/EXT (U85),,,,,,0.976778,NOT_EVALUABLE,whole-model memory counters absent (parser loss)
-SSE-320,ethos-u85,128,vww4_128_128_INT8,SRAM/EXT (U85),,,,,,0.99793,NOT_EVALUABLE,whole-model memory counters absent (parser loss)
-SSE-320,ethos-u85,128,wav2letter_pruned_int8,SRAM/EXT (U85),,,,,,0.999964,NOT_EVALUABLE,whole-model memory counters absent (parser loss)
-SSE-320,ethos-u85,128,yolo-fastest_192_face_v4,SRAM/EXT (U85),,,,,,0.999853,NOT_EVALUABLE,whole-model memory counters absent (parser loss)
-SSE-320,ethos-u85,256,ad_medium_int8,SRAM/EXT (U85),,,,,,0.997223,NOT_EVALUABLE,whole-model memory counters absent (parser loss)
-SSE-320,ethos-u85,256,kws_micronet_m,SRAM/EXT (U85),,,,,,0.997468,NOT_EVALUABLE,whole-model memory counters absent (parser loss)
-SSE-320,ethos-u85,256,mobilenet_v2_1.0_224_INT8,SRAM/EXT (U85),,,,,,0.999897,NOT_EVALUABLE,whole-model memory counters absent (parser loss)
-SSE-320,ethos-u85,256,rnnoise_INT8,SRAM/EXT (U85),,,,,,0.975614,NOT_EVALUABLE,whole-model memory counters absent (parser loss)
-SSE-320,ethos-u85,256,vww4_128_128_INT8,SRAM/EXT (U85),,,,,,0.996513,NOT_EVALUABLE,whole-model memory counters absent (parser loss)
-SSE-320,ethos-u85,256,wav2letter_pruned_int8,SRAM/EXT (U85),,,,,,0.999977,NOT_EVALUABLE,whole-model memory counters absent (parser loss)
-SSE-320,ethos-u85,256,yolo-fastest_192_face_v4,SRAM/EXT (U85),,,,,,0.999003,NOT_EVALUABLE,whole-model memory counters absent (parser loss)
-SSE-320,ethos-u85,512,ad_medium_int8,SRAM/EXT (U85),,,,,,0.997805,NOT_EVALUABLE,whole-model memory counters absent (parser loss)
-SSE-320,ethos-u85,512,kws_micronet_m,SRAM/EXT (U85),,,,,,0.999281,NOT_EVALUABLE,whole-model memory counters absent (parser loss)
-SSE-320,ethos-u85,512,mobilenet_v2_1.0_224_INT8,SRAM/EXT (U85),,,,,,0.999653,NOT_EVALUABLE,whole-model memory counters absent (parser loss)
-SSE-320,ethos-u85,512,rnnoise_INT8,SRAM/EXT (U85),,,,,,0.986276,NOT_EVALUABLE,whole-model memory counters absent (parser loss)
-SSE-320,ethos-u85,512,vww4_128_128_INT8,SRAM/EXT (U85),,,,,,0.995962,NOT_EVALUABLE,whole-model memory counters absent (parser loss)
-SSE-320,ethos-u85,512,wav2letter_pruned_int8,SRAM/EXT (U85),,,,,,0.999939,NOT_EVALUABLE,whole-model memory counters absent (parser loss)
-SSE-320,ethos-u85,512,yolo-fastest_192_face_v4,SRAM/EXT (U85),,,,,,0.998639,NOT_EVALUABLE,whole-model memory counters absent (parser loss)
-SSE-320,ethos-u85,1024,ad_medium_int8,SRAM/EXT (U85),,,,,,0.994279,NOT_EVALUABLE,whole-model memory counters absent (parser loss)
-SSE-320,ethos-u85,1024,kws_micronet_m,SRAM/EXT (U85),,,,,,0.989674,NOT_EVALUABLE,whole-model memory counters absent (parser loss)
-SSE-320,ethos-u85,1024,mobilenet_v2_1.0_224_INT8,SRAM/EXT (U85),,,,,,0.999617,NOT_EVALUABLE,whole-model memory counters absent (parser loss)
-SSE-320,ethos-u85,1024,rnnoise_INT8,SRAM/EXT (U85),,,,,,0.989284,NOT_EVALUABLE,whole-model memory counters absent (parser loss)
-SSE-320,ethos-u85,1024,vww4_128_128_INT8,SRAM/EXT (U85),,,,,,0.995714,NOT_EVALUABLE,whole-model memory counters absent (parser loss)
-SSE-320,ethos-u85,1024,wav2letter_pruned_int8,SRAM/EXT (U85),,,,,,0.999796,NOT_EVALUABLE,whole-model memory counters absent (parser loss)
-SSE-320,ethos-u85,1024,yolo-fastest_192_face_v4,SRAM/EXT (U85),,,,,,0.99951,NOT_EVALUABLE,whole-model memory counters absent (parser loss)
-SSE-320,ethos-u85,2048,ad_medium_int8,SRAM/EXT (U85),,,,,,0.99623,NOT_EVALUABLE,whole-model memory counters absent (parser loss)
-SSE-320,ethos-u85,2048,kws_micronet_m,SRAM/EXT (U85),,,,,,0.995661,NOT_EVALUABLE,whole-model memory counters absent (parser loss)
-SSE-320,ethos-u85,2048,mobilenet_v2_1.0_224_INT8,SRAM/EXT (U85),,,,,,0.999229,NOT_EVALUABLE,whole-model memory counters absent (parser loss)
-SSE-320,ethos-u85,2048,rnnoise_INT8,SRAM/EXT (U85),,,,,,0.980143,NOT_EVALUABLE,whole-model memory counters absent (parser loss)
-SSE-320,ethos-u85,2048,vww4_128_128_INT8,SRAM/EXT (U85),,,,,,0.997748,NOT_EVALUABLE,whole-model memory counters absent (parser loss)
-SSE-320,ethos-u85,2048,wav2letter_pruned_int8,SRAM/EXT (U85),,,,,,0.999606,NOT_EVALUABLE,whole-model memory counters absent (parser loss)
-SSE-320,ethos-u85,2048,yolo-fastest_192_face_v4,SRAM/EXT (U85),,,,,,0.999228,NOT_EVALUABLE,whole-model memory counters absent (parser loss)
+SSE-320,ethos-u85,128,ad_medium_int8,SRAM/EXT (U85),243048,34737,277785,0.87495,0.12505,0.999122,OK_RECOVERED_R1,"all four counters present (rd+wr on both ports); NOT comparable with the AXI rows, whose port1 is read-only"
+SSE-320,ethos-u85,128,kws_micronet_m,SRAM/EXT (U85),84160,10696,94856,0.88724,0.11276,0.998992,OK_RECOVERED_R1,"all four counters present (rd+wr on both ports); NOT comparable with the AXI rows, whose port1 is read-only"
+SSE-320,ethos-u85,128,mobilenet_v2_1.0_224_INT8,SRAM/EXT (U85),1531504,440798,1972302,0.776506,0.223494,0.999833,OK_RECOVERED_R1,"all four counters present (rd+wr on both ports); NOT comparable with the AXI rows, whose port1 is read-only"
+SSE-320,ethos-u85,128,rnnoise_INT8,SRAM/EXT (U85),278,7686,7964,0.034907,0.965093,0.976778,OK_RECOVERED_R1,"all four counters present (rd+wr on both ports); NOT comparable with the AXI rows, whose port1 is read-only"
+SSE-320,ethos-u85,128,vww4_128_128_INT8,SRAM/EXT (U85),148980,33444,182424,0.816669,0.183331,0.99793,OK_RECOVERED_R1,"all four counters present (rd+wr on both ports); NOT comparable with the AXI rows, whose port1 is read-only"
+SSE-320,ethos-u85,128,wav2letter_pruned_int8,SRAM/EXT (U85),4591506,2061146,6652652,0.690177,0.309823,0.999964,OK_RECOVERED_R1,"all four counters present (rd+wr on both ports); NOT comparable with the AXI rows, whose port1 is read-only"
+SSE-320,ethos-u85,128,yolo-fastest_192_face_v4,SRAM/EXT (U85),517114,42251,559365,0.924466,0.075534,0.999853,OK_RECOVERED_R1,"all four counters present (rd+wr on both ports); NOT comparable with the AXI rows, whose port1 is read-only"
+SSE-320,ethos-u85,256,ad_medium_int8,SRAM/EXT (U85),182390,28616,211006,0.864383,0.135617,0.997223,OK_RECOVERED_R1,"all four counters present (rd+wr on both ports); NOT comparable with the AXI rows, whose port1 is read-only"
+SSE-320,ethos-u85,256,kws_micronet_m,SRAM/EXT (U85),65244,10026,75270,0.8668,0.1332,0.997468,OK_RECOVERED_R1,"all four counters present (rd+wr on both ports); NOT comparable with the AXI rows, whose port1 is read-only"
+SSE-320,ethos-u85,256,mobilenet_v2_1.0_224_INT8,SRAM/EXT (U85),1361750,336928,1698678,0.801653,0.198347,0.999897,OK_RECOVERED_R1,"all four counters present (rd+wr on both ports); NOT comparable with the AXI rows, whose port1 is read-only"
+SSE-320,ethos-u85,256,rnnoise_INT8,SRAM/EXT (U85),278,7686,7964,0.034907,0.965093,0.975614,OK_RECOVERED_R1,"all four counters present (rd+wr on both ports); NOT comparable with the AXI rows, whose port1 is read-only"
+SSE-320,ethos-u85,256,vww4_128_128_INT8,SRAM/EXT (U85),144655,23347,168002,0.861031,0.138969,0.996513,OK_RECOVERED_R1,"all four counters present (rd+wr on both ports); NOT comparable with the AXI rows, whose port1 is read-only"
+SSE-320,ethos-u85,256,wav2letter_pruned_int8,SRAM/EXT (U85),3636088,1732081,5368169,0.677342,0.322658,0.999977,OK_RECOVERED_R1,"all four counters present (rd+wr on both ports); NOT comparable with the AXI rows, whose port1 is read-only"
+SSE-320,ethos-u85,256,yolo-fastest_192_face_v4,SRAM/EXT (U85),452408,28585,480993,0.940571,0.059429,0.999003,OK_RECOVERED_R1,"all four counters present (rd+wr on both ports); NOT comparable with the AXI rows, whose port1 is read-only"
+SSE-320,ethos-u85,512,ad_medium_int8,SRAM/EXT (U85),178364,29064,207428,0.859884,0.140116,0.997805,OK_RECOVERED_R1,"all four counters present (rd+wr on both ports); NOT comparable with the AXI rows, whose port1 is read-only"
+SSE-320,ethos-u85,512,kws_micronet_m,SRAM/EXT (U85),39799,15791,55590,0.715938,0.284062,0.999281,OK_RECOVERED_R1,"all four counters present (rd+wr on both ports); NOT comparable with the AXI rows, whose port1 is read-only"
+SSE-320,ethos-u85,512,mobilenet_v2_1.0_224_INT8,SRAM/EXT (U85),1098286,345486,1443772,0.760706,0.239294,0.999653,OK_RECOVERED_R1,"all four counters present (rd+wr on both ports); NOT comparable with the AXI rows, whose port1 is read-only"
+SSE-320,ethos-u85,512,rnnoise_INT8,SRAM/EXT (U85),278,7719,7997,0.034763,0.965237,0.986276,OK_RECOVERED_R1,"all four counters present (rd+wr on both ports); NOT comparable with the AXI rows, whose port1 is read-only"
+SSE-320,ethos-u85,512,vww4_128_128_INT8,SRAM/EXT (U85),129856,24345,154201,0.842122,0.157878,0.995962,OK_RECOVERED_R1,"all four counters present (rd+wr on both ports); NOT comparable with the AXI rows, whose port1 is read-only"
+SSE-320,ethos-u85,512,wav2letter_pruned_int8,SRAM/EXT (U85),949443,1856958,2806401,0.338313,0.661687,0.999939,OK_RECOVERED_R1,"all four counters present (rd+wr on both ports); NOT comparable with the AXI rows, whose port1 is read-only"
+SSE-320,ethos-u85,512,yolo-fastest_192_face_v4,SRAM/EXT (U85),425884,33550,459434,0.926975,0.073025,0.998639,OK_RECOVERED_R1,"all four counters present (rd+wr on both ports); NOT comparable with the AXI rows, whose port1 is read-only"
+SSE-320,ethos-u85,1024,ad_medium_int8,SRAM/EXT (U85),112426,44085,156511,0.718327,0.281673,0.994279,OK_RECOVERED_R1,"all four counters present (rd+wr on both ports); NOT comparable with the AXI rows, whose port1 is read-only"
+SSE-320,ethos-u85,1024,kws_micronet_m,SRAM/EXT (U85),40424,15816,56240,0.718777,0.281223,0.989674,OK_RECOVERED_R1,"all four counters present (rd+wr on both ports); NOT comparable with the AXI rows, whose port1 is read-only"
+SSE-320,ethos-u85,1024,mobilenet_v2_1.0_224_INT8,SRAM/EXT (U85),1074391,349104,1423495,0.754756,0.245244,0.999617,OK_RECOVERED_R1,"all four counters present (rd+wr on both ports); NOT comparable with the AXI rows, whose port1 is read-only"
+SSE-320,ethos-u85,1024,rnnoise_INT8,SRAM/EXT (U85),278,7874,8152,0.034102,0.965898,0.989284,OK_RECOVERED_R1,"all four counters present (rd+wr on both ports); NOT comparable with the AXI rows, whose port1 is read-only"
+SSE-320,ethos-u85,1024,vww4_128_128_INT8,SRAM/EXT (U85),129371,23762,153133,0.844828,0.155172,0.995714,OK_RECOVERED_R1,"all four counters present (rd+wr on both ports); NOT comparable with the AXI rows, whose port1 is read-only"
+SSE-320,ethos-u85,1024,wav2letter_pruned_int8,SRAM/EXT (U85),504035,1855927,2359962,0.213578,0.786422,0.999796,OK_RECOVERED_R1,"all four counters present (rd+wr on both ports); NOT comparable with the AXI rows, whose port1 is read-only"
+SSE-320,ethos-u85,1024,yolo-fastest_192_face_v4,SRAM/EXT (U85),424778,29864,454642,0.934313,0.065687,0.99951,OK_RECOVERED_R1,"all four counters present (rd+wr on both ports); NOT comparable with the AXI rows, whose port1 is read-only"
+SSE-320,ethos-u85,2048,ad_medium_int8,SRAM/EXT (U85),87724,44313,132037,0.66439,0.33561,0.99623,OK_RECOVERED_R1,"all four counters present (rd+wr on both ports); NOT comparable with the AXI rows, whose port1 is read-only"
+SSE-320,ethos-u85,2048,kws_micronet_m,SRAM/EXT (U85),31346,12173,43519,0.720283,0.279717,0.995661,OK_RECOVERED_R1,"all four counters present (rd+wr on both ports); NOT comparable with the AXI rows, whose port1 is read-only"
+SSE-320,ethos-u85,2048,mobilenet_v2_1.0_224_INT8,SRAM/EXT (U85),879070,353229,1232299,0.713358,0.286642,0.999229,OK_RECOVERED_R1,"all four counters present (rd+wr on both ports); NOT comparable with the AXI rows, whose port1 is read-only"
+SSE-320,ethos-u85,2048,rnnoise_INT8,SRAM/EXT (U85),278,8249,8527,0.032602,0.967398,0.980143,OK_RECOVERED_R1,"all four counters present (rd+wr on both ports); NOT comparable with the AXI rows, whose port1 is read-only"
+SSE-320,ethos-u85,2048,vww4_128_128_INT8,SRAM/EXT (U85),122551,24284,146835,0.834617,0.165383,0.997748,OK_RECOVERED_R1,"all four counters present (rd+wr on both ports); NOT comparable with the AXI rows, whose port1 is read-only"
+SSE-320,ethos-u85,2048,wav2letter_pruned_int8,SRAM/EXT (U85),290878,1858204,2149082,0.13535,0.86465,0.999606,OK_RECOVERED_R1,"all four counters present (rd+wr on both ports); NOT comparable with the AXI rows, whose port1 is read-only"
+SSE-320,ethos-u85,2048,yolo-fastest_192_face_v4,SRAM/EXT (U85),394543,30135,424678,0.92904,0.07096,0.999228,OK_RECOVERED_R1,"all four counters present (rd+wr on both ports); NOT comparable with the AXI rows, whose port1 is read-only"

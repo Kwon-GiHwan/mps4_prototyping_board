@@ -38,38 +38,38 @@ SSE-300,ethos-u65,512,rnnoise_INT8,Dedicated_Sram,50086,49484,602,AXI0/AXI1 (U55
 SSE-300,ethos-u65,512,vww4_128_128_INT8,Dedicated_Sram,283068,282784,284,AXI0/AXI1 (U55/U65),76093,64206,22326,,analysis/canonical_cells.csv,OK
 SSE-300,ethos-u65,512,wav2letter_pruned_int8,Dedicated_Sram,9839068,9838044,1024,AXI0/AXI1 (U55/U65),3299579,881591,1418048,,analysis/canonical_cells.csv,OK
 SSE-300,ethos-u65,512,yolo-fastest_192_face_v4,Dedicated_Sram,747074,746029,1045,AXI0/AXI1 (U55/U65),258101,199749,26814,,analysis/canonical_cells.csv,OK
-SSE-320,ethos-u85,128,ad_medium_int8,Dedicated_Sram,731068,730426,642,SRAM/EXT (U85),,,,,analysis/canonical_cells.csv,MEMORY_PARSER_LOSS
-SSE-320,ethos-u85,128,kws_micronet_m,Dedicated_Sram,369068,368696,372,SRAM/EXT (U85),,,,,analysis/canonical_cells.csv,MEMORY_PARSER_LOSS
-SSE-320,ethos-u85,128,mobilenet_v2_1.0_224_INT8,Dedicated_Sram,5079068,5078222,846,SRAM/EXT (U85),,,,,analysis/canonical_cells.csv,MEMORY_PARSER_LOSS
-SSE-320,ethos-u85,128,rnnoise_INT8,Dedicated_Sram,36086,35248,838,SRAM/EXT (U85),,,,,analysis/canonical_cells.csv,MEMORY_PARSER_LOSS
-SSE-320,ethos-u85,128,vww4_128_128_INT8,Dedicated_Sram,511068,510010,1058,SRAM/EXT (U85),,,,,analysis/canonical_cells.csv,MEMORY_PARSER_LOSS
-SSE-320,ethos-u85,128,wav2letter_pruned_int8,Dedicated_Sram,28674068,28673038,1030,SRAM/EXT (U85),,,,,analysis/canonical_cells.csv,MEMORY_PARSER_LOSS
-SSE-320,ethos-u85,128,yolo-fastest_192_face_v4,Dedicated_Sram,1527074,1526850,224,SRAM/EXT (U85),,,,,analysis/canonical_cells.csv,MEMORY_PARSER_LOSS
-SSE-320,ethos-u85,256,ad_medium_int8,Dedicated_Sram,377068,376021,1047,SRAM/EXT (U85),,,,,analysis/canonical_cells.csv,MEMORY_PARSER_LOSS
-SSE-320,ethos-u85,256,kws_micronet_m,Dedicated_Sram,199068,198564,504,SRAM/EXT (U85),,,,,analysis/canonical_cells.csv,MEMORY_PARSER_LOSS
-SSE-320,ethos-u85,256,mobilenet_v2_1.0_224_INT8,Dedicated_Sram,2874068,2873773,295,SRAM/EXT (U85),,,,,analysis/canonical_cells.csv,MEMORY_PARSER_LOSS
-SSE-320,ethos-u85,256,rnnoise_INT8,Dedicated_Sram,36086,35206,880,SRAM/EXT (U85),,,,,analysis/canonical_cells.csv,MEMORY_PARSER_LOSS
-SSE-320,ethos-u85,256,vww4_128_128_INT8,Dedicated_Sram,287068,286067,1001,SRAM/EXT (U85),,,,,analysis/canonical_cells.csv,MEMORY_PARSER_LOSS
-SSE-320,ethos-u85,256,wav2letter_pruned_int8,Dedicated_Sram,15147068,15146719,349,SRAM/EXT (U85),,,,,analysis/canonical_cells.csv,MEMORY_PARSER_LOSS
-SSE-320,ethos-u85,256,yolo-fastest_192_face_v4,Dedicated_Sram,812074,811264,810,SRAM/EXT (U85),,,,,analysis/canonical_cells.csv,MEMORY_PARSER_LOSS
-SSE-320,ethos-u85,512,ad_medium_int8,Dedicated_Sram,235068,234552,516,SRAM/EXT (U85),,,,,analysis/canonical_cells.csv,MEMORY_PARSER_LOSS
-SSE-320,ethos-u85,512,kws_micronet_m,Dedicated_Sram,114068,113986,82,SRAM/EXT (U85),,,,,analysis/canonical_cells.csv,MEMORY_PARSER_LOSS
-SSE-320,ethos-u85,512,mobilenet_v2_1.0_224_INT8,Dedicated_Sram,1914068,1913404,664,SRAM/EXT (U85),,,,,analysis/canonical_cells.csv,MEMORY_PARSER_LOSS
-SSE-320,ethos-u85,512,rnnoise_INT8,Dedicated_Sram,55086,54330,756,SRAM/EXT (U85),,,,,analysis/canonical_cells.csv,MEMORY_PARSER_LOSS
-SSE-320,ethos-u85,512,vww4_128_128_INT8,Dedicated_Sram,259068,258022,1046,SRAM/EXT (U85),,,,,analysis/canonical_cells.csv,MEMORY_PARSER_LOSS
-SSE-320,ethos-u85,512,wav2letter_pruned_int8,Dedicated_Sram,7654068,7653598,470,SRAM/EXT (U85),,,,,analysis/canonical_cells.csv,MEMORY_PARSER_LOSS
-SSE-320,ethos-u85,512,yolo-fastest_192_face_v4,Dedicated_Sram,587074,586275,799,SRAM/EXT (U85),,,,,analysis/canonical_cells.csv,MEMORY_PARSER_LOSS
-SSE-320,ethos-u85,1024,ad_medium_int8,Dedicated_Sram,141068,140261,807,SRAM/EXT (U85),,,,,analysis/canonical_cells.csv,MEMORY_PARSER_LOSS
-SSE-320,ethos-u85,1024,kws_micronet_m,Dedicated_Sram,90068,89138,930,SRAM/EXT (U85),,,,,analysis/canonical_cells.csv,MEMORY_PARSER_LOSS
-SSE-320,ethos-u85,1024,mobilenet_v2_1.0_224_INT8,Dedicated_Sram,1406068,1405529,539,SRAM/EXT (U85),,,,,analysis/canonical_cells.csv,MEMORY_PARSER_LOSS
-SSE-320,ethos-u85,1024,rnnoise_INT8,Dedicated_Sram,49086,48560,526,SRAM/EXT (U85),,,,,analysis/canonical_cells.csv,MEMORY_PARSER_LOSS
-SSE-320,ethos-u85,1024,vww4_128_128_INT8,Dedicated_Sram,230068,229082,986,SRAM/EXT (U85),,,,,analysis/canonical_cells.csv,MEMORY_PARSER_LOSS
-SSE-320,ethos-u85,1024,wav2letter_pruned_int8,Dedicated_Sram,4115068,4114227,841,SRAM/EXT (U85),,,,,analysis/canonical_cells.csv,MEMORY_PARSER_LOSS
-SSE-320,ethos-u85,1024,yolo-fastest_192_face_v4,Dedicated_Sram,439074,438859,215,SRAM/EXT (U85),,,,,analysis/canonical_cells.csv,MEMORY_PARSER_LOSS
-SSE-320,ethos-u85,2048,ad_medium_int8,Dedicated_Sram,110068,109653,415,SRAM/EXT (U85),,,,,analysis/canonical_cells.csv,MEMORY_PARSER_LOSS
-SSE-320,ethos-u85,2048,kws_micronet_m,Dedicated_Sram,67068,66777,291,SRAM/EXT (U85),,,,,analysis/canonical_cells.csv,MEMORY_PARSER_LOSS
-SSE-320,ethos-u85,2048,mobilenet_v2_1.0_224_INT8,Dedicated_Sram,1067068,1066245,823,SRAM/EXT (U85),,,,,analysis/canonical_cells.csv,MEMORY_PARSER_LOSS
-SSE-320,ethos-u85,2048,rnnoise_INT8,Dedicated_Sram,54086,53012,1074,SRAM/EXT (U85),,,,,analysis/canonical_cells.csv,MEMORY_PARSER_LOSS
-SSE-320,ethos-u85,2048,vww4_128_128_INT8,Dedicated_Sram,214068,213586,482,SRAM/EXT (U85),,,,,analysis/canonical_cells.csv,MEMORY_PARSER_LOSS
-SSE-320,ethos-u85,2048,wav2letter_pruned_int8,Dedicated_Sram,2624068,2623033,1035,SRAM/EXT (U85),,,,,analysis/canonical_cells.csv,MEMORY_PARSER_LOSS
-SSE-320,ethos-u85,2048,yolo-fastest_192_face_v4,Dedicated_Sram,355074,354800,274,SRAM/EXT (U85),,,,,analysis/canonical_cells.csv,MEMORY_PARSER_LOSS
+SSE-320,ethos-u85,128,ad_medium_int8,Dedicated_Sram,731068,730426,642,SRAM/EXT (U85),185706,57342,34736,1,analysis/canonical_cells.csv (cycles) + remeasure/R1_MEMORY_COUNTERS.csv (memory),RECOVERED_BY_REMEASUREMENT_R1
+SSE-320,ethos-u85,128,kws_micronet_m,Dedicated_Sram,369068,368696,372,SRAM/EXT (U85),60729,23431,10695,1,analysis/canonical_cells.csv (cycles) + remeasure/R1_MEMORY_COUNTERS.csv (memory),RECOVERED_BY_REMEASUREMENT_R1
+SSE-320,ethos-u85,128,mobilenet_v2_1.0_224_INT8,Dedicated_Sram,5079068,5078222,846,SRAM/EXT (U85),1119525,411979,392911,47887,analysis/canonical_cells.csv (cycles) + remeasure/R1_MEMORY_COUNTERS.csv (memory),RECOVERED_BY_REMEASUREMENT_R1
+SSE-320,ethos-u85,128,rnnoise_INT8,Dedicated_Sram,36086,35248,838,SRAM/EXT (U85),143,135,7650,36,analysis/canonical_cells.csv (cycles) + remeasure/R1_MEMORY_COUNTERS.csv (memory),RECOVERED_BY_REMEASUREMENT_R1
+SSE-320,ethos-u85,128,vww4_128_128_INT8,Dedicated_Sram,511068,510010,1058,SRAM/EXT (U85),88425,60555,33443,1,analysis/canonical_cells.csv (cycles) + remeasure/R1_MEMORY_COUNTERS.csv (memory),RECOVERED_BY_REMEASUREMENT_R1
+SSE-320,ethos-u85,128,wav2letter_pruned_int8,Dedicated_Sram,28674068,28673038,1030,SRAM/EXT (U85),3665492,926014,2023601,37545,analysis/canonical_cells.csv (cycles) + remeasure/R1_MEMORY_COUNTERS.csv (memory),RECOVERED_BY_REMEASUREMENT_R1
+SSE-320,ethos-u85,128,yolo-fastest_192_face_v4,Dedicated_Sram,1527074,1526850,224,SRAM/EXT (U85),326884,190230,41734,517,analysis/canonical_cells.csv (cycles) + remeasure/R1_MEMORY_COUNTERS.csv (memory),RECOVERED_BY_REMEASUREMENT_R1
+SSE-320,ethos-u85,256,ad_medium_int8,Dedicated_Sram,377068,376021,1047,SRAM/EXT (U85),125776,56614,28615,1,analysis/canonical_cells.csv (cycles) + remeasure/R1_MEMORY_COUNTERS.csv (memory),RECOVERED_BY_REMEASUREMENT_R1
+SSE-320,ethos-u85,256,kws_micronet_m,Dedicated_Sram,199068,198564,504,SRAM/EXT (U85),41813,23431,10025,1,analysis/canonical_cells.csv (cycles) + remeasure/R1_MEMORY_COUNTERS.csv (memory),RECOVERED_BY_REMEASUREMENT_R1
+SSE-320,ethos-u85,256,mobilenet_v2_1.0_224_INT8,Dedicated_Sram,2874068,2873773,295,SRAM/EXT (U85),949044,412706,289041,47887,analysis/canonical_cells.csv (cycles) + remeasure/R1_MEMORY_COUNTERS.csv (memory),RECOVERED_BY_REMEASUREMENT_R1
+SSE-320,ethos-u85,256,rnnoise_INT8,Dedicated_Sram,36086,35206,880,SRAM/EXT (U85),143,135,7650,36,analysis/canonical_cells.csv (cycles) + remeasure/R1_MEMORY_COUNTERS.csv (memory),RECOVERED_BY_REMEASUREMENT_R1
+SSE-320,ethos-u85,256,vww4_128_128_INT8,Dedicated_Sram,287068,286067,1001,SRAM/EXT (U85),80960,63695,23346,1,analysis/canonical_cells.csv (cycles) + remeasure/R1_MEMORY_COUNTERS.csv (memory),RECOVERED_BY_REMEASUREMENT_R1
+SSE-320,ethos-u85,256,wav2letter_pruned_int8,Dedicated_Sram,15147068,15146719,349,SRAM/EXT (U85),2709668,926420,1694536,37545,analysis/canonical_cells.csv (cycles) + remeasure/R1_MEMORY_COUNTERS.csv (memory),RECOVERED_BY_REMEASUREMENT_R1
+SSE-320,ethos-u85,256,yolo-fastest_192_face_v4,Dedicated_Sram,812074,811264,810,SRAM/EXT (U85),262176,190232,28068,517,analysis/canonical_cells.csv (cycles) + remeasure/R1_MEMORY_COUNTERS.csv (memory),RECOVERED_BY_REMEASUREMENT_R1
+SSE-320,ethos-u85,512,ad_medium_int8,Dedicated_Sram,235068,234552,516,SRAM/EXT (U85),121842,56522,29063,1,analysis/canonical_cells.csv (cycles) + remeasure/R1_MEMORY_COUNTERS.csv (memory),RECOVERED_BY_REMEASUREMENT_R1
+SSE-320,ethos-u85,512,kws_micronet_m,Dedicated_Sram,114068,113986,82,SRAM/EXT (U85),22294,17505,15790,1,analysis/canonical_cells.csv (cycles) + remeasure/R1_MEMORY_COUNTERS.csv (memory),RECOVERED_BY_REMEASUREMENT_R1
+SSE-320,ethos-u85,512,mobilenet_v2_1.0_224_INT8,Dedicated_Sram,1914068,1913404,664,SRAM/EXT (U85),693520,404766,297599,47887,analysis/canonical_cells.csv (cycles) + remeasure/R1_MEMORY_COUNTERS.csv (memory),RECOVERED_BY_REMEASUREMENT_R1
+SSE-320,ethos-u85,512,rnnoise_INT8,Dedicated_Sram,55086,54330,756,SRAM/EXT (U85),143,135,7683,36,analysis/canonical_cells.csv (cycles) + remeasure/R1_MEMORY_COUNTERS.csv (memory),RECOVERED_BY_REMEASUREMENT_R1
+SSE-320,ethos-u85,512,vww4_128_128_INT8,Dedicated_Sram,259068,258022,1046,SRAM/EXT (U85),70222,59634,24344,1,analysis/canonical_cells.csv (cycles) + remeasure/R1_MEMORY_COUNTERS.csv (memory),RECOVERED_BY_REMEASUREMENT_R1
+SSE-320,ethos-u85,512,wav2letter_pruned_int8,Dedicated_Sram,7654068,7653598,470,SRAM/EXT (U85),908493,40950,1837913,19045,analysis/canonical_cells.csv (cycles) + remeasure/R1_MEMORY_COUNTERS.csv (memory),RECOVERED_BY_REMEASUREMENT_R1
+SSE-320,ethos-u85,512,yolo-fastest_192_face_v4,Dedicated_Sram,587074,586275,799,SRAM/EXT (U85),238513,187371,33033,517,analysis/canonical_cells.csv (cycles) + remeasure/R1_MEMORY_COUNTERS.csv (memory),RECOVERED_BY_REMEASUREMENT_R1
+SSE-320,ethos-u85,1024,ad_medium_int8,Dedicated_Sram,141068,140261,807,SRAM/EXT (U85),70538,41888,44084,1,analysis/canonical_cells.csv (cycles) + remeasure/R1_MEMORY_COUNTERS.csv (memory),RECOVERED_BY_REMEASUREMENT_R1
+SSE-320,ethos-u85,1024,kws_micronet_m,Dedicated_Sram,90068,89138,930,SRAM/EXT (U85),22664,17760,15815,1,analysis/canonical_cells.csv (cycles) + remeasure/R1_MEMORY_COUNTERS.csv (memory),RECOVERED_BY_REMEASUREMENT_R1
+SSE-320,ethos-u85,1024,mobilenet_v2_1.0_224_INT8,Dedicated_Sram,1406068,1405529,539,SRAM/EXT (U85),672948,401443,301217,47887,analysis/canonical_cells.csv (cycles) + remeasure/R1_MEMORY_COUNTERS.csv (memory),RECOVERED_BY_REMEASUREMENT_R1
+SSE-320,ethos-u85,1024,rnnoise_INT8,Dedicated_Sram,49086,48560,526,SRAM/EXT (U85),143,135,7838,36,analysis/canonical_cells.csv (cycles) + remeasure/R1_MEMORY_COUNTERS.csv (memory),RECOVERED_BY_REMEASUREMENT_R1
+SSE-320,ethos-u85,1024,vww4_128_128_INT8,Dedicated_Sram,230068,229082,986,SRAM/EXT (U85),69326,60045,23761,1,analysis/canonical_cells.csv (cycles) + remeasure/R1_MEMORY_COUNTERS.csv (memory),RECOVERED_BY_REMEASUREMENT_R1
+SSE-320,ethos-u85,1024,wav2letter_pruned_int8,Dedicated_Sram,4115068,4114227,841,SRAM/EXT (U85),463085,40950,1836882,19045,analysis/canonical_cells.csv (cycles) + remeasure/R1_MEMORY_COUNTERS.csv (memory),RECOVERED_BY_REMEASUREMENT_R1
+SSE-320,ethos-u85,1024,yolo-fastest_192_face_v4,Dedicated_Sram,439074,438859,215,SRAM/EXT (U85),236070,188708,29347,517,analysis/canonical_cells.csv (cycles) + remeasure/R1_MEMORY_COUNTERS.csv (memory),RECOVERED_BY_REMEASUREMENT_R1
+SSE-320,ethos-u85,2048,ad_medium_int8,Dedicated_Sram,110068,109653,415,SRAM/EXT (U85),46066,41658,44312,1,analysis/canonical_cells.csv (cycles) + remeasure/R1_MEMORY_COUNTERS.csv (memory),RECOVERED_BY_REMEASUREMENT_R1
+SSE-320,ethos-u85,2048,kws_micronet_m,Dedicated_Sram,67068,66777,291,SRAM/EXT (U85),15673,15673,12172,1,analysis/canonical_cells.csv (cycles) + remeasure/R1_MEMORY_COUNTERS.csv (memory),RECOVERED_BY_REMEASUREMENT_R1
+SSE-320,ethos-u85,2048,mobilenet_v2_1.0_224_INT8,Dedicated_Sram,1067068,1066245,823,SRAM/EXT (U85),499795,379275,305342,47887,analysis/canonical_cells.csv (cycles) + remeasure/R1_MEMORY_COUNTERS.csv (memory),RECOVERED_BY_REMEASUREMENT_R1
+SSE-320,ethos-u85,2048,rnnoise_INT8,Dedicated_Sram,54086,53012,1074,SRAM/EXT (U85),143,135,8213,36,analysis/canonical_cells.csv (cycles) + remeasure/R1_MEMORY_COUNTERS.csv (memory),RECOVERED_BY_REMEASUREMENT_R1
+SSE-320,ethos-u85,2048,vww4_128_128_INT8,Dedicated_Sram,214068,213586,482,SRAM/EXT (U85),63743,58808,24283,1,analysis/canonical_cells.csv (cycles) + remeasure/R1_MEMORY_COUNTERS.csv (memory),RECOVERED_BY_REMEASUREMENT_R1
+SSE-320,ethos-u85,2048,wav2letter_pruned_int8,Dedicated_Sram,2624068,2623033,1035,SRAM/EXT (U85),249928,40950,1839159,19045,analysis/canonical_cells.csv (cycles) + remeasure/R1_MEMORY_COUNTERS.csv (memory),RECOVERED_BY_REMEASUREMENT_R1
+SSE-320,ethos-u85,2048,yolo-fastest_192_face_v4,Dedicated_Sram,355074,354800,274,SRAM/EXT (U85),210219,184324,29618,517,analysis/canonical_cells.csv (cycles) + remeasure/R1_MEMORY_COUNTERS.csv (memory),RECOVERED_BY_REMEASUREMENT_R1

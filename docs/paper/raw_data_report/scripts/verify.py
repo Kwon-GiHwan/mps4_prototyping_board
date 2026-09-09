@@ -75,8 +75,17 @@ for c in ("3_2_whole_model_pmu.csv","3_3_cycles_by_mac.csv","3_3_scaling_transit
         for f in ("rd_beats_0","wr_beats_0","rd_beats_1","cycles","cycles_prev","cycles_next"):
             if f in r and r[f]=="0": bad.append((c,f))
 u85=[r for r in rd("3_2_whole_model_pmu.csv") if r["npu"]=="ethos-u85"]
-ck(5,"no missing value coerced to 0", not bad and all(r["rd_beats_0"]=="" for r in u85),
-   str(bad[:3]))
+# Until v1.2 this asserted the U85 beat columns were EMPTY -- the parser loss.
+# R1 recovered them, so the invariant now runs the other way: every U85 row
+# carries all four counters, and each names its source. The 0-coercion scan
+# above is unchanged and still applies (no recovered counter is 0; the smallest
+# is ext_wr = 1, so a literal "0" would still mean a fabricated value).
+BEATS=("rd_beats_0","wr_beats_0","rd_beats_1","wr_beats_1")
+missing=[(r["workload"],r["mac"],f) for r in u85 for f in BEATS if not r[f].strip()]
+unsourced=[r["workload"] for r in u85 if "R1_MEMORY_COUNTERS.csv" not in r["source"]]
+ck(5,"no missing value coerced to 0; U85 beats present and sourced",
+   not bad and len(u85)==35 and not missing and not unsourced,
+   str((bad[:3], missing[:3], unsourced[:3])))
 
 # 6 estimate vs observed separated by source column
 pr=rd("4_1_vela_fvp_pairs.csv")
@@ -122,8 +131,9 @@ bad10=[]
 if "%d" % chk["53"] != "53": bad10.append("evaluable")
 if str(chk["19,000"]) != "19000": bad10.append("max delta")
 if str(chk["5,000"]) != "5000": bad10.append("second reversal delta")
-u85n=len([r for r in rd("3_2_memory_traffic.csv") if r["status"]=="NOT_EVALUABLE"])
-if "35/35" not in rep or u85n!=35: bad10.append("u85 parser-loss count")
+# was: 35 U85 rows NOT_EVALUABLE (the loss). Now: 35 recovered by R1.
+u85n=len([r for r in rd("3_2_memory_traffic.csv") if r["status"]=="OK_RECOVERED_R1"])
+if "35/35" not in rep or u85n!=35: bad10.append("u85 recovered count")
 if "971" not in rep or len(list(csv.DictReader(open(os.path.join(P,"INPUT_MANIFEST.csv")))))!=971:
     bad10.append("manifest count")
 ck(10,"report numbers reproduce from CSVs", not bad10, str(bad10))

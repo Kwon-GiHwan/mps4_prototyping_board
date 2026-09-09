@@ -29,5 +29,10 @@
   거부한다.
 - `U85_ATTRIBUTION_UNITS.csv` 등 mechanism 파일은 formal sweep과 **다른 바이너리**를
   계측한 것이다. `canonical_cells.csv`와 병합하지 말 것.
-- `canonical_cells.csv`의 U85 35셀은 `axi*_beats`가 비어 있다. 파서 손실이며 0이 아니다
+- `canonical_cells.csv`의 U85 35셀은 `axi*_beats`가 비어 있다. **0이 아니다.**
+  U85는 AXI 이름을 방출하지 않으며(`SRAM_*`/`EXT_*` 사용), 잃어버린 것은 그 SRAM/EXT
+  값이었다. v1.3에서 재측정으로 회수했다 — `../remeasure/R1_MEMORY_COUNTERS.csv`.
+  **이 폴더의 `canonical_cells.csv` 사본은 frozen 원본 그대로이므로 여전히 공란이다**
+  (원본 무수정 원칙). 회수값은 `../tables/3_2_whole_model_pmu.csv`에서 출처 컬럼과
+  함께 결합된다
   (`../SERVER_VERIFICATION.md` V3).

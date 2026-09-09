@@ -61,7 +61,7 @@ DWConv 수·launch 수는 로컬 evidence에 없어 `NOT_COLLECTED`.
 | SSE-300 / u55 | AVAILABLE | AVAILABLE | AVAILABLE_DERIVED | AVAILABLE | NOT_EVALUABLE | NOT_COLLECTED |
 | SSE-300 / u65 | AVAILABLE | AVAILABLE | AVAILABLE_DERIVED | AVAILABLE | NOT_EVALUABLE | NOT_COLLECTED |
 | SSE-310/315 | NOT_COLLECTED | — | — | NOT_COLLECTED | NOT_EVALUABLE | NOT_COLLECTED |
-| SSE-320 / u85 | AVAILABLE | AVAILABLE | AVAILABLE_DERIVED | **PARSER_LOSS** | AVAILABLE_PARTIAL | AVAILABLE |
+| SSE-320 / u85 | AVAILABLE | AVAILABLE | AVAILABLE_DERIVED | NOT_EVALUABLE (U85는 AXI 미방출) | **AVAILABLE** (R1 회수) | AVAILABLE |
 
 `IDLE`이 `AVAILABLE_DERIVED`인 것은 **VERIFIED**다 (`SERVER_VERIFICATION.md` V2).
 `ethosu_profiler.c:187-189`가 `npu_total_ccnt - npu_evt_counters[0]`로 계산하고
@@ -71,8 +71,8 @@ DWConv 수·launch 수는 로컬 evidence에 없어 `NOT_COLLECTED`.
 즉 드라이버의 추론 호출 구간이지 "첫 NPU 명령 ~ 마지막 NPU 사이클"이 아니다.
 
 **Observed from data:** 19개 설정 중 TA-ON 11개만 formal sweep에 들어갔다. U85는 MAC
-5단계에서 `system_config`가 4종으로 바뀐다. U85 whole-model 메모리 필드는 35/35 셀
-전부 비어 있고, 같은 이벤트군이 mechanism dataset에는 존재한다.
+5단계에서 `system_config`가 4종으로 바뀐다. U85 whole-model 메모리 필드는 v1.2까지 35/35 셀
+전부 비어 있었으나, v1.3에서 재측정(R1)으로 35/35 회수되었다.
 **Not established from current data:** 컴파일러 버전; 모델 shape·DWConv 수.
 (TA_CONFIG_FILE과 MLEK git commit은 v1.1에서 VERIFIED로 이동.)
 **Data/provenance used:** `analysis/executability.csv`, `analysis/canonical_cells.csv`,
@@ -273,8 +273,8 @@ Vela도 역전을 2건 예측했으나 **위치가 다르다** — 첫 역전은
 | D1 | "One boundary is non-monotonic" (abstract) | 사이클 증가 전이 **2건** (256→512, 1024→2048). 둘 다 같은 사다리 |
 | D2 | "The **single** observed saturation point" (§4.1) | `saturation_point` 정의상 첫 지점만 보고하므로 정의에는 부합. 그러나 `WEAK_OR_SATURATED = 2`가 무엇인지 본문에 설명 없음 |
 | D3 | 128→256 전이 | **개선 0** (36,086 → 36,086). 본문에 언급 없음. `system_config`가 바뀌지 않은 유일한 U85 전이 |
-| D4 | "AXI beat 3종도 함께 기록" | U85 35/35 셀에서 `axi*_beats` = 비어 있음. U85 stock profiler는 SRAM/EXT를 노출(`VERIFIED_AVAILABLE`)하므로 파서 손실로 보인다 |
-| D5 | 결정론 19개 필드 동등성 | U85에서 메모리 3개 필드가 `None == None == None`으로 vacuous 통과 |
+| D4 | "AXI beat 3종도 함께 기록" | U85 35/35 셀에서 `axi*_beats` = 비어 있음. U85 stock profiler는 SRAM/EXT를 노출하므로 파서 손실. **v1.3 해소** — R1 재측정으로 SRAM/EXT 4종 35/35 회수. U85에서 AXI는 손실이 아니라 **미방출**이다 |
+| D5 | 결정론 19개 필드 동등성 | U85에서 메모리 3개 필드가 `None == None == None`으로 vacuous 통과. **v1.3 부분 해소** — R1 2회 반복에서 SRAM/EXT 4종이 실제 값으로 일치 (G4). 다만 이는 R1 재측정에 대한 것이며, **원래의 M1/M2/M3 동등성 주장은 여전히 이 3필드에 대해 vacuous였다** |
 | D6 | "21 ladders" | 사다리 21개 중 **유효 MAC 점 2개 이상은 20개**. 전이 수와 사다리 수는 별개 |
 | D7 | `TOTAL = ACTIVE + IDLE` 74/74 | 산술 항등이며 독립 카운터 일치의 증거가 아님 |
 | D8 | "Vela predicted improvement for ... this one" (§7.1) | 256→512에 대해서는 참. 전체 사다리에서는 4개 중 3개 방향 불일치 |
@@ -290,7 +290,7 @@ Vela도 역전을 2건 예측했으나 **위치가 다르다** — 첫 역전은
 |---|---|---|---|
 | whole-model scaling | AVAILABLE | 사다리 내 사이클 비교 | 세대 간 절대 비교 |
 | memory traffic (U55/U65) | AVAILABLE_PARTIAL | 포트 비중(수집분) | 절대 대역폭 |
-| memory traffic (U85) | **PARSER_LOSS** | 없음 | 0으로 간주 |
+| memory traffic (U85) | **AVAILABLE** (R1 회수) | 포트 비중(SRAM/EXT 완전집합) | U55/U65 AXI 비중과 직접 비교 |
 | stall cycles | NOT_COLLECTED / SEMANTICS_UNVERIFIED | 없음 | stall 기반 원인 귀속 |
 | effective bandwidth | **NOT_EVALUABLE** | 없음 | bandwidth saturation 주장 |
 | per-layer cycles (U85) | AVAILABLE | 그룹 단위 비용 분포 | formal sweep과 병합 |
@@ -310,7 +310,7 @@ Vela도 역전을 2건 예측했으나 **위치가 다르다** — 첫 역전은
 |---|---|---|
 | TA_CONFIG_FILE의 MAC별 변화 | NOT_VERIFIED_LOCALLY | **VERIFIED** — MAC별로 달라지며 파라미터는 256→512에서만 변경 |
 | profiler의 IDLE 계산 방식 | NOT_VERIFIED_LOCALLY | **VERIFIED** — `TOTAL − ACTIVE` 소프트웨어 파생 |
-| U85 메모리 필드 손실 원인 | 파서 손실로 추정 | **VERIFIED** — `PARSER_LOSS_BUT_RAW_UART_NOT_RETAINED` |
+| U85 메모리 필드 손실 원인 | 파서 손실로 추정 | **VERIFIED** — `PARSER_LOSS_BUT_RAW_UART_NOT_RETAINED`, v1.3에서 **재측정으로 회수** (`RECOVERED_BY_REMEASUREMENT_R1`) |
 | PMU 카운터 reset/enable/read 위치 | NOT_VERIFIED | **VERIFIED** — `inference_begin`/`inference_end` enable-disable 창 |
 | MLEK git commit | NOT_VERIFIED_LOCALLY | **VERIFIED** — `b2c0bb2884698b7328f65c41b7c8c51ca9bec386` |
 
