@@ -140,10 +140,33 @@ SSE-315만 이 AVH 번들에서 실행했고 (frozen `cells.json`이 경로로 �
 각각 독립 설치본을 썼다. **단일 버전으로 4개 플랫폼을 모두 돌릴 수 있었는데 그렇게
 하지 않았다.**
 
-- **영향:** 플랫폼 간 비교는 플랫폼 차이와 시뮬레이터 버전 차이가 교락되어 있다.
-- **한정:** 이것이 실제로 수치를 바꾸는지는 **측정하지 않았다.** 바꾸지 않을 수도
-  있다. 현재 상태는 "확인되지 않음"이지 "오염됨"이 아니다.
-- → **추가 측정 A1**
+#### 정정 — 이 항목은 이미 기록되어 있었고, 부분적으로 답이 나와 있다
+
+초판에서 이것을 새 발견처럼 쓰고 A1을 "가장 값어치 있다"고 했다. **둘 다 틀렸다.**
+기존 frozen 기록을 확인한 결과:
+
+1. **이미 기록되어 있다.** X0 산출물
+   `platform_sensitivity/FVP_COMPARABILITY_MATRIX.md`가 FVP별 Fast Models 버전을
+   컬럼으로 갖고 있으며, 비교 등급(CLASS A/B/X)까지 부여해 동결해 두었다.
+2. **교락도 명시되어 있다.** `X1_LIMITATIONS.md` #1 — *"every CLASS B comparison
+   changes subsystem, Fast Models version and TA state together. Attribution to
+   any single factor is `NOT_SEPARATED`."* `X3_LIMITATIONS.md` #2도 같다.
+3. **부분적으로 실측 답이 있다.** CLASS A는 **SSE-310(FM 11.24.13) ↔
+   SSE-315(FM 11.31.28)** 쌍이다. 즉 *서로 다른 Fast Models 버전*을 나머지 조건을
+   맞춘 채 비교한 것이며, 결과는 **14/14 셀 canonical cycle 완전 일치**였다
+   (근사가 아니라 exact).
+
+따라서 "버전이 다르니 수치가 오염됐을 수 있다"는 우려는, **직접 비교가 가능했던
+유일한 조건에서 반증되었다.**
+
+- **남는 한정:** CLASS A는 `TA_OFF`·U65·14셀뿐이다. `TA_ON`이나 U85/SSE-320으로의
+  전이는 `NOT_EVALUABLE`이다. 우려가 완전히 닫힌 것은 아니고 **훨씬 좁아졌다.**
+- **계획서와의 관계:** `docs/FUTURE_EXPERIMENT_PLAN.md` §10은
+  *"immediate FM reinstall/version-unification"*을 **not currently recommended**로
+  명시한다. 버전 통일(Stage X5)은 실행 순서 **10번째**이며, *"only if absolute
+  cross-platform performance becomes a paper goal"* 조건부다. 현재 논문은 절대
+  교차 플랫폼 비교를 하지 않으므로 조건이 성립하지 않는다.
+- → **A1은 권고에서 철회한다.** 아래 §4 참조.
 
 ### F2. PMU 이벤트 이름이 NPU 세대에 따라 다르다 (해결 진행 중)
 
@@ -268,17 +291,25 @@ FVP가 SCC 클럭 레지스터를 제공하지 않아 펌웨어가 **32 MHz를 �
 
 | # | 항목 | 근거 | 펌웨어 수정 필요 | 상태 |
 |---|---|---|---|---|
-| **A1** | 4개 플랫폼을 **단일 Fast Models 11.31.28**(AVH 번들)로 재측정 | F1 | 불필요 | **미착수 — 관리자 판단 필요** |
+| ~~**A1**~~ | ~~4개 플랫폼을 단일 Fast Models로 재측정~~ | F1 | 불필요 | **철회.** 이미 X5로 계획돼 있고, 계획서가 현재 비권고로 분류. CLASS A가 부분 반증 |
 | **A2** | U85 whole-model 메모리 카운터 재측정 (35셀 × 2반복) | F2 | 불필요 | **완료 — G1–G5 전부 PASS 35/35** |
 | **A3** | U55/U65 `AXI1_WR` 수집 | F3 | **필요** | **보류 — 제약 충돌** |
 | **A4** | counter overflow 경고 수집·확인 | F8 | 불필요 (파서만) | **완료 — 71개 UART 전수 0건** |
 | **A5** | 캐시 상태 모델링 ON에서의 영향 확인 | F6 | 불필요 (`-C`) | 미착수 — 필요성 낮음 |
 
-### A1이 가장 값어치 있다
+### A1을 철회한 이유
 
-펌웨어를 건드리지 않고, 기존 빌드 절차를 그대로 쓰며, 이미 설치된 바이너리만 바꾸면
-된다. 결과가 기존과 일치하면 **F1의 교락 우려가 데이터로 해소**되고, 다르면 그 자체가
-중요한 발견이다. 어느 쪽이든 결론이 강해진다.
+초판에서 A1을 최우선으로 권고했으나, frozen 기록을 확인한 뒤 철회한다.
+
+- 이것은 이미 **Stage X5**로 계획되어 있다 (`FUTURE_EXPERIMENT_PLAN.md`).
+- 계획서 §10이 *"immediate FM reinstall/version-unification"*을 **not currently
+  recommended**로 분류했고, X5는 실행 순서 10번째의 조건부 단계다.
+- 그리고 CLASS A(FM 11.24.13 ↔ 11.31.28, 14/14 exact 일치)가 이미 부분적인
+  실측 답을 준다.
+
+**새 측정을 제안하기 전에 기존 계획과 기존 데이터를 먼저 확인했어야 했다.**
+계획서 §11이 요구하는 절차가 정확히 그것이다 — 새 실험을 제안하기 전에
+FUTURE_EXPERIMENT_PLAN과 frozen evidence를 먼저 읽을 것.
 
 ### A3은 프로젝트 제약과 충돌한다
 
