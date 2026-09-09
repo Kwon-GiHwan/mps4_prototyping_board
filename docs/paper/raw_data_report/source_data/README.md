@@ -13,7 +13,7 @@
 | 폴더 | REPORT 대응 | 핵심 파일 |
 |---|---|---|
 | `3_1_methodology/` | 3.1 실험 매트릭스 | `executability.csv`(133셀), `canonical_cells.csv`(74셀), `vela_matrix.csv`, `DETERMINISTIC_METRIC_VECTOR.md` |
-| `3_2_inference_time/` | 3.2 시간의 소재 | `canonical_cells.csv`, `U85_ATTRIBUTION_UNITS.csv`(per-unit SRAM/EXT), `U85_PMU_EVENT_AUTHORITY.csv` |
+| `3_2_inference_time/` | 3.2 시간의 소재 | `canonical_cells.csv`, `U85_ATTRIBUTION_UNITS.csv`(per-unit SRAM/EXT), `U85_PMU_EVENT_AUTHORITY.csv`, **`R1_MEMORY_COUNTERS.csv`·`R1_RAW.json`**(v1.3 회수) |
 | `3_3_scaling/` | 3.3 스케일링 | `canonical_cells.csv`, `executability.csv`, `scaling.csv`, `saturation.csv`, `vela_matrix.csv` |
 | `3_4_limits/` | 3.4 제약 가설 | `U85_256_512_DIFFERENTIAL.csv`, `U85_GROUP_DIFFERENTIAL.csv`, `U85_P1B_CROSSMODE_GROUPS.csv` 외 |
 | `4_1_estimation_accuracy/` | 4.1 Vela 정확도 | `vela_matrix.csv`(추정), `canonical_cells.csv`(관측), `vela_fvp_trend_agreement.csv` |
@@ -36,3 +36,10 @@
   (원본 무수정 원칙). 회수값은 `../tables/3_2_whole_model_pmu.csv`에서 출처 컬럼과
   함께 결합된다
   (`../SERVER_VERIFICATION.md` V3).
+
+## 규모
+
+39 사본 / 28 고유 원본 / 1.40 MB. 전부 원본과 SHA-256 동일 (`MANIFEST.csv`).
+
+`README.md`는 이 폴더에서 유일하게 **복사본이 아닌 파일**이다. 재생성 스크립트가
+폴더를 지우고 다시 만들 때 이 파일만 보존한다.

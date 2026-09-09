@@ -145,10 +145,17 @@ void ethosu_inference_end(struct ethosu_driver* drv, void* userArg) {
 
 ## V3. U85 whole-model memory-counter parser loss
 
+> **[개정 — 2026-09-09, v1.3]** 아래 진단은 그대로 유효하며 수정하지 않는다.
+> 다만 마지막 줄의 *"복구하려면 재측정이 필요하며, 이는 이번 작업 범위 밖이다"*는
+> **재측정 R1로 해소되었다** — 35/35 회수, 게이트 G1–G5 전부 PASS.
+> 회수 경위는 `CHANGELOG.md` v1.3, 판정은 `remeasure/R1_GATE_REPORT.md`.
+> 아래 4단계 진단은 **재측정을 정당화한 근거**로서 기록을 유지한다.
+
 ### 결론
 
 ```
-PARSER_LOSS_BUT_RAW_UART_NOT_RETAINED
+PARSER_LOSS_BUT_RAW_UART_NOT_RETAINED        (2026-09-09 진단)
+RECOVERED_BY_REMEASUREMENT_R1                (2026-09-09 v1.3, 위 진단을 대체)
 ```
 
 ### 1단계 — stock profiler가 이벤트를 설정하는가: **YES**

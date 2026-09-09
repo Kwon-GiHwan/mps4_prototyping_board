@@ -138,3 +138,34 @@ U85의 `AXI0_*`/`AXI1_*`를 `PARSER_LOSS`로 표기한 것은 틀렸다. **"읽�
   출력된다. FVP가 SCC 클럭 레지스터를 제공하지 않아 펌웨어가 32 MHz를 가정한다.
   NPU 사이클 카운트에는 영향이 없으나, **사이클을 시간으로 환산하면 그 32 MHz는
   설정값이 아니라 fallback 가정값**이다. 본 보고서는 시간 환산을 하지 않는다.
+
+### 문서·디렉터리 반영
+
+| 위치 | 반영 |
+|---|---|
+| `README.md` §3 | "복구 불가" → 회수 완료. **이 폴더의 `canonical_cells.csv` 사본은 frozen 원본이므로 여전히 공란**임을 명시 |
+| `SERVER_VERIFICATION.md` V3 | **개정 주석 추가.** 진단 본문은 수정하지 않았다 — 재측정을 정당화한 근거로 기록 유지 |
+| `remeasure/README.md` | 신규. 계약이 데이터보다 먼저라는 순서, 파일별 역할, import 이유, 재현 방법 |
+| `source_data/3_2_inference_time/` | `R1_MEMORY_COUNTERS.csv`, `R1_RAW.json` 추가 (39 사본 / 28 고유 / 1.40 MB) |
+| `source_data/README.md` | 3.2 항목·규모 갱신 |
+| `scripts/collect_source_data.py` | R1 산출물 2건 등록 + **README 보존 결함 수정** |
+
+### 부수 수정 — `collect_source_data.py`가 README를 지우고 있었다
+
+이 스크립트는 `source_data/`를 `rmtree`로 지우고 다시 만든다. 그런데 `README.md`는
+복사본이 아니라 **손으로 쓴 문서**여서, 재생성할 때마다 조용히 삭제되고 있었다.
+(이번에 실행하다 실제로 잃었고 git에서 복원했다.)
+
+폴더를 지우기 전에 `README.md`를 보존하도록 고쳤다. 연속 2회 실행으로 확인했다.
+
+### 원고와의 관계
+
+**원고는 수정하지 않았고, 수정할 필요도 없다.** `MANUSCRIPT.md`에는 U85 whole-model
+메모리 카운터에 대한 주장이 없다. 유일한 beat 관련 서술(L747-765)은 **U65 bridge
+계측 동등성 연구**에 대한 것으로 이번 회수와 무관하다.
+
+즉 회수된 데이터는 **원고가 의존하지 않던 값**이며, 어떤 주장도 바뀌지 않는다.
+새로 가능해진 분석(U85 포트 비중 등)은 별도 판단 사항이다.
+
+한편 F5(FVP 메모리 지연 기본값 0)는 원고 §3.1의 *"an FVP models ideal memory by
+default"* 서술을 **뒷받침한다** — 반박이 아니라 확증이다.
