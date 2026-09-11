@@ -27,19 +27,19 @@ restore_drill:
   date: "2026-08-08"
   from_vendor_tarball: FAILS (67 compile errors)
   from_worktree_archive: PASSES (both images bit-identical)
-  worktree_archive: selftest-worktree.tgz
+  worktree_archive: archive/selftest-worktree.tgz
   worktree_archive_sha256: b85a53aa868f3ef473f68a016242acc6c95da4bdba9a4dcff4106dbf1fce66ff
   procedure: >-
-    tar xzf build-env/selftest-worktree.tgz -C <empty>; cd <empty>/selftest;
+    tar xzf environment/build/archive/selftest-worktree.tgz -C <empty>; cd <empty>/selftest;
     make -f Makefile.measure PROFILE=clean bins;
     make -f Makefile.pmu PROFILE=clean bins; compare against expected_output.
 
 vendor_source:
-  file: fi101-selftest-src.tgz
+  file: archive/fi101-selftest-src.tgz
   status: UPSTREAM REFERENCE ONLY -- does not rebuild, see restore_drill
   sha256: 0811b0b7e5a34f12b87a9db5919bd0bc710b70d798ed14a43621c2d781d55518
   note: >-
-    FI101 Selftest distribution. Extract, then overlay ../firmware/ on top
+    FI101 Selftest distribution. Extract, then overlay firmware/ from the repository root on top
     (Selftest_measure/, Selftest_pmu/, Selftest/runner_v1_main.c,
     Selftest/raw_rx_main.c, LinkScripts/, Makefile.*).
 
@@ -92,7 +92,7 @@ container_reproduction:
 
 # --- gaps found 2026-08-08 while auditing "can another machine reproduce this" -
 host_environment:
-  container_build_context: container-build-context/
+  container_build_context: archive/container-build-context/
   container_build_context_note: >-
     Backed up from /home/gihwan/fpga_simulator/ -- OUTSIDE the mps4 working
     directory, which is why every earlier sweep missed it. Contains the
