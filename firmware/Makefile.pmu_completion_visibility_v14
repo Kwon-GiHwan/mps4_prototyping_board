@@ -72,6 +72,8 @@ GEN := $(BUILD)/generated
 TARGET := $(BUILD)/runner_pmu_completion_visibility_v14
 BUILD_ID := 0x34314950
 
+MANIFEST_WRITER := build_tools/write_completion_manifest.py
+
 PATCHER := patches/patch_pmu_completion_visibility_v14.py
 GATE    := Selftest_pmu_diag/check_pmu_completion_visibility_v14.py
 
@@ -302,21 +304,20 @@ $(MANIFEST): $(TARGET).elf $(TARGET).map $(V14_NM) $(V14_OBJDUMP) $(V14_DWARF) \
              $(BUILD)/APP.BIN $(BUILD)/VECTORS.BIN $(BUILD)/DDR.BIN \
              $(SOURCE_FIXTURE_EVIDENCE) $(MAILBOX_WIRE_EVIDENCE) \
              $(RETAINED_BASE_PMU_EVIDENCE) $(FROZEN_INPUT_EVIDENCE) \
-             $(LINKED_IMAGE_EVIDENCE) $(GATE)
-	@mkdir -p $(dir $@)
-	python3 -c 'import hashlib, json, pathlib, sys; \
-build = pathlib.Path("$(BUILD)"); \
-declared = ["APP.BIN", "VECTORS.BIN", "DDR.BIN", pathlib.Path("$(TARGET).elf").name, pathlib.Path("$(TARGET).map").name, pathlib.Path("$(V14_NM)").name, pathlib.Path("$(V14_OBJDUMP)").name, pathlib.Path("$(V14_DWARF)").name, pathlib.Path("$(PREPROCESSED)").name, pathlib.Path("$(SOURCE_FIXTURE_EVIDENCE)").name, pathlib.Path("$(MAILBOX_WIRE_EVIDENCE)").name, pathlib.Path("$(RETAINED_BASE_PMU_EVIDENCE)").name, pathlib.Path("$(FROZEN_INPUT_EVIDENCE)").name, pathlib.Path("$(LINKED_IMAGE_EVIDENCE)").name]; \
-declared += ["generated/Selftest_pmu_diag/runner_pmu_diag_main.c", "generated/Drivers/u85_driver/u85.c"]; \
-missing = [name for name in declared if not (build / name).is_file()]; \
-sys.exit("declared artifact missing: %s" % missing) if missing else None; \
-table = {name: {"sha256": hashlib.sha256((build / name).read_bytes()).hexdigest(), "bytes": (build / name).stat().st_size} for name in declared}; \
-frozen = json.loads(pathlib.Path("$(FROZEN_INPUT_EVIDENCE)").read_text(encoding="utf-8"))["frozen_inputs"]; \
-document = {"variant": "$(V14_VARIANT)", "schema_version": 14, "build_id": "$(BUILD_ID)", "canonical_json": "v14-canonical-json-v1", "frozen_input_sha256": frozen, "declared_artifacts": table}; \
-canonical = lambda doc: json.dumps(doc, sort_keys=True, separators=(",", ":"), allow_nan=False).encode("utf-8") + b"\n"; \
-document["manifest_self_hash"] = hashlib.sha256(canonical({k: v for k, v in document.items() if k != "manifest_self_hash"})).hexdigest(); \
-pathlib.Path("$@").write_text(json.dumps(document, indent=2, sort_keys=True) + "\n", encoding="utf-8")'
-	@test -s $(MANIFEST)
+             $(LINKED_IMAGE_EVIDENCE) $(GATE) $(MANIFEST_WRITER)
+	@mkdir -p '$(dir $@)'
+	python3 $(MANIFEST_WRITER) --build '$(BUILD)' \
+	    --variant '$(V14_VARIANT)' --build-id '$(BUILD_ID)' \
+	    --frozen-evidence '$(FROZEN_INPUT_EVIDENCE)' --output '$@' \
+	    APP.BIN VECTORS.BIN DDR.BIN \
+	    '$(notdir $(TARGET).elf)' '$(notdir $(TARGET).map)' \
+	    '$(notdir $(V14_NM))' '$(notdir $(V14_OBJDUMP))' \
+	    '$(notdir $(V14_DWARF))' '$(notdir $(PREPROCESSED))' \
+	    '$(notdir $(SOURCE_FIXTURE_EVIDENCE))' '$(notdir $(MAILBOX_WIRE_EVIDENCE))' \
+	    '$(notdir $(RETAINED_BASE_PMU_EVIDENCE))' '$(notdir $(FROZEN_INPUT_EVIDENCE))' \
+	    '$(notdir $(LINKED_IMAGE_EVIDENCE))' \
+	    generated/Selftest_pmu_diag/runner_pmu_diag_main.c generated/Drivers/u85_driver/u85.c
+	@test -s '$(MANIFEST)'
 
 # BUILD is caller-supplied and clean deletes it, so it is validated before rm
 # ever sees it. The guard prints the one path it approved and fails otherwise,
