@@ -17,6 +17,11 @@ import tempfile
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 UNITTEST_MODULES = (
+    "host.tests.campaigns.test_contract",
+    "host.tests.campaigns.test_build",
+    "host.tests.campaigns.test_fvp",
+    "host.tests.campaigns.test_board",
+    "host.tests.campaigns.test_options",
     "host.tests.s5_only.test_analysis",
     "host.tests.s5_only.test_canonical_elf",
     "host.tests.s5_only.test_collector",
