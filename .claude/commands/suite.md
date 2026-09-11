@@ -22,3 +22,18 @@ contract script.
 The runner regression intentionally launches a failing child fixture; its outer
 unittest result is authoritative for that fixture. This is not the full repository
 suite and does not qualify firmware builds or board behavior.
+
+For the modular gate successor, run the separate qualification checks (the full
+fixture subprocess has a 600-second limit and is intentionally outside the
+90-second host baseline):
+
+```sh
+python3 -B -m unittest firmware.gates.tests.test_structure firmware.gates.tests.test_identity firmware.gates.tests.test_s5_boundary firmware.gates.tests.test_mutations
+python3 -B -m unittest firmware.gates.tests.test_completion_visibility
+python3 -B firmware/Selftest_pmu_diag/test_check_pmu_completion_visibility_v14.py
+```
+
+The successor fixture wrapper requires all 1,241 frozen assertions to pass. Its
+source inspections and efficacy trace cover every implementation module. These
+checks establish offline equivalence; successor results still carry
+`UNQUALIFIED_SUCCESSOR` until the build-environment qualification is performed.

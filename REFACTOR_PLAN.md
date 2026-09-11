@@ -1,6 +1,7 @@
 # 소스·설정 리팩토링 작업 기록
 
-작성일: 2026-09-11. 브랜치: `refactor/source-config`.
+작성일: 2026-09-11. 초기 브랜치: `refactor/source-config`.
+현재 브랜치: `refactor/gate-successor` (기준 커밋 `10dd809`).
 분기 기준: `paper/sigmetrics2027-submission`의
 `1ceb5646971e5b2649c3370ae5e1890cd29491b1`.
 
@@ -22,7 +23,7 @@
 | 2 | 완료 | 테스트 실행 경로 정리 | 명시적 오프라인 목록, 테스트별 실행 방식 유지, 실패 종료 코드 전파, 기본 실행에 보드 접근 없음 |
 | 3 | V9~V15 완료; 동결 영역 제외 | 실험별 구조화 및 호스트 import 통일 | 현재 CLI 경로, 모듈·예외 클래스 동일성 및 mock 적용 회귀 검증 |
 | 4 | 완료: 통계·archive·V9~V13 통신 | 호스트 통신·공통 유틸 분리 | ACK 순서·중복·timeout·CRC 음성 테스트, 기존 입력의 결과와 거부 판정 동일 |
-| 5 | 조건부 대기 | 검증기 책임 분리 | 기존 동결 경로 보존, 후속 구현의 전체 의존성 identity 정의, fixture별 판정·rule ID 동일, mutation RED 검증 |
+| 5 | 후속 구현·전체 로컬 재검증 완료 | 검증기 책임 분리 | 기존 동결 경로 보존, 후속 구현의 전체 의존성 identity 정의, fixture별 판정·rule ID 동일, mutation RED 검증 |
 | 6 | 비동결 manifest 정리 완료; 실제 빌드 미검증 | 비동결 빌드·실행 설정 정리 | 생성 C 바이트·해시 동일, Makefile 테스트, 적격 컨테이너 clean build 두 번 비교 |
 
 단계 2부터 작은 변경 단위로 진행한다. 기존 테스트의 실행 형태를 먼저
@@ -476,20 +477,20 @@ manifest/variant/wire 검증과 campaign 분류·보고서 구성은 변경하�
 재현성은 확인하지 않았다. 보드, FVP, 원격 실행도 하지 않았다. 6단계의 이 검증은
 미완료이며 synthetic manifest 검증으로 대체됐다고 간주하지 않는다.
 
-## 재개 지점과 남은 결정
+## 5단계 착수 결정과 범위
 
-구조 변경은 **5단계 검증기 분리 1개 묶음**이 남았다. 별도로 6단계의 실제 빌드
-환경 검증이 남아 있다. V9~V15 구조화와 공통화는 완료했지만 동결·역사 영역을
+구조 변경의 마지막 묶음인 **5단계 검증기 분리와 로컬 재검증**을 완료했다.
+별도로 6단계의 실제 빌드 환경 검증이 남아 있다. V9~V15 구조화와 공통화는 완료했지만 동결·역사 영역을
 일괄 이동하거나 저장소 전체를 동일한 구조로 전환한 것은 아니다.
 
 5단계는 기존 동결 경로를 보존하고 **별도 후속 검증기 버전 및 재자격 경로**를
-추가할지 사용자 결정이 필요하다. 근거는
+추가하기로 사용자가 승인했다. 별도 브랜치에서 진행한다. 분리 근거는
 `firmware/Selftest_pmu_diag/check_s5_only_boundary_image.py`의
 `HELPER_DEPENDENCIES`/`verify_helper_identity`: V12/V13/V14 파일 바이트가
 고정되어 있어 단순 분리도 V15 identity 거부를 유발한다.
 기대 해시만 바꾸어 통과시키는 방식은 사용하지 않는다.
 
-승인 시 작업 묶음:
+승인된 작업 묶음:
 
 1. 후속 checker 의존성 identity와 기존 자격 경로 분리
    → verify: 기존 helper 해시와 기존 실행 결과 유지.
@@ -505,4 +506,76 @@ manifest/variant/wire 검증과 campaign 분류·보고서 구성은 변경하�
 `docs/paper/context/EXTERNAL_REVIEW_20260909_COVERAGE.md`, `docs/presentation/`.
 기존 docs/evidence/provenance/board-config의 tracked diff는 없다.
 `codex-mark-used`는 PATH에서 찾지 못했으며 별도 설치하지 않았다.
-변경은 `refactor/source-config` 작업 트리에 있으며 아직 commit하지 않았다.
+기존 소스·설정 변경은 `refactor/source-config`의 `10dd809`에 커밋했다.
+사용자 문서는 해당 커밋에서 제외했다. 후속 작업은 이 커밋에서 분기했다.
+
+
+## 5단계 구현: 별도 후속 검증기 (2026-09-11)
+
+`refactor/gate-successor`는 완료된 소스·설정 정리 커밋 `10dd809`에서 분기했다.
+기존 frozen 검증기/테스트/Makefile 실행 경로는 유지했다.
+
+구현 구조:
+
+- `firmware/gates/completion_visibility/`: constants/errors, c_lexical/c_addresses,
+  source_loops/source_storage/source_cleanup/source_confinement/source_contracts,
+  elf_analysis/image_contracts/cli의 12개 구현 모듈. 공개 package API는 검증
+  진입점만 제공한다. 내부 586개 정의는 테스트 전용 GateView로 접근한다.
+- `firmware/gates/identity.py`: 후속 버전과 전체 코드 바이트 identity.
+  12개 모듈, package/CLI 진입점, identity/S5 detector, frozen V12/V13 및
+  transitive `check_pmu_qual.py`를 포함한 20개 파일을 기록한다.
+  보관한 caller snapshot과 다른 파일·필드·digest는 거부한다.
+  후속 상태는 `UNQUALIFIED_SUCCESSOR`이며 snapshot 생성 자체가 자격 부여는 아니다.
+- `firmware/gates/s5_boundary.py`: 기존 S5 판정을 새 모듈에 연결한 별도 경로.
+  `expected_identity`를 명시적으로 받아 이미지 해석 전에 대조한다.
+- `firmware/gates/tests/`: 기존 fixture 호출 순서·개수 재사용, 다중 파일
+  AST/source/trace 검사, 실제 owner의 alias 계측, identity·S5 비교와 code mutation.
+
+현재 실행 경로:
+
+```sh
+python3 -m firmware.gates.completion_visibility --help
+python3 firmware/gates/completion_visibility/__main__.py --help
+python3 -B -m unittest firmware.gates.tests.test_structure firmware.gates.tests.test_identity firmware.gates.tests.test_s5_boundary firmware.gates.tests.test_mutations
+python3 -B -m unittest firmware.gates.tests.test_completion_visibility
+```
+
+CLI의 기존 variant/fixture/ELF 옵션과 판정 내용은 유지하며, 출력 JSON에는
+`checker_identity`를 추가한다. 기존 qualified evidence와 동일한 결과로
+오인하지 않도록 새 식별 정보와 `UNQUALIFIED_SUCCESSOR`를 기록한다.
+
+검증 수준: Python 단위·프로세스 통합, 기존 fixture 회귀, 코드 mutation 및
+실제 저장된 disassembly fixture의 downstream 비교. 전체 firmware 빌드/보드 검증은 아니다.
+
+- `python3 -B -m unittest firmware.gates.tests.test_structure firmware.gates.tests.test_identity firmware.gates.tests.test_s5_boundary firmware.gates.tests.test_mutations`:
+  **13 tests OK** (6.7초). 전체 586개 정의 집합과 AST 동일 확인
+  (의존성 로더·출력 provenance 2개 함수만 의도 변경), acyclic imports,
+  repo 밖 direct CLI와 module CLI, 실제 CLI JSON의 identity/원래 판정 동일성 확인.
+- identity의 20개 파일 각각 누락/byte 변조 거부, frozen dependency는 재캡처 시에도
+  변조 거부. caller identity 필드 삭제와 qualified 승격 거부.
+- S5 정상 fixture 판정은 기존과 identity 필드 제외 동일.
+  mask/QREAD/QSIZE/심볼 누락/STATUS 재읽기의 5개 입력 변이 오류 메시지도 동일.
+  S5.nm은 심볼 존재만 확인하며, 원래 boundary API에 없는 nm 분석을 주장하지 않는다.
+- **36개 규칙의 코드 mutation**: 각 규칙의 raise를 메모리에서 비활성화하고
+  실제 owner 및 import alias를 함께 교체했을 때 기존 targeted fixture가 모두 RED.
+  소스 파일은 수정하지 않았다. 정상 상태의 각 negative가 정확한 rule에 도달함도 확인.
+- `python3 -B -m unittest firmware.gates.tests.test_completion_visibility`:
+  **1 outer test OK** (151초), 내부 **1,241 checks PASS** count guard 확인.
+- `python3 -B -u firmware/Selftest_pmu_diag/test_check_pmu_completion_visibility_v14.py`:
+  기존 frozen suite도 **1,241 checks PASS**, exit 0.
+- 초기 전체 실행은 다중 파일 trace가 0을 기록해 실패했다. fixture의 sys.path가
+  `Selftest_pmu_diag/..` 경로를 추가하여 code.co_filename이 정규화 경로와 달랐다.
+  원인을 직접 재현하고 실제 module.__file__ 별칭을 trace map에 등록했다.
+  수정 후 efficacy 7개 모두 통과: 실행 위치 3,313개, 선언된 vacuity 18개 유지.
+  전체 suite도 위와 같이 다시 통과했다. 실패를 제외한 일부 결과만 완료로 보고하지 않았다.
+- 독립 리뷰: import/global 참조, identity 오류의 GateError 변환,
+  전체 module inventory/trace, 실제 owner alias 계측 확인. 구체 결함 없음.
+  리뷰어도 structure 4개(당시), identity/S5 7개, mutation 36개, efficacy 7개를 실행했다.
+- `git diff --cached --check` 통과. 추출된 기존 공백 36줄을 정리했고
+  정리 전후 AST 동일성을 별도 확인했다. 기존 frozen 파일·문서의 diff는 없다.
+
+남은 작업은 적격 빌드 환경의 clean build 및 생성 C/바이너리 재현성 검증이다.
+현재 로컬에는 필요한 vendor tree/toolchain이 없어 실행하지 않았다.
+따라서 production Makefile 연결이나 기존 qualified evidence 교체는 하지 않았고,
+후속 identity의 `UNQUALIFIED_SUCCESSOR` 상태를 유지한다.
+이번 브랜치는 원격에 push하지 않았다.
