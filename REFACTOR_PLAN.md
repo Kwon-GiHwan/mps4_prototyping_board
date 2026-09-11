@@ -1,7 +1,7 @@
 # 소스·설정 리팩토링 작업 기록
 
 작성일: 2026-09-11. 초기 브랜치: `refactor/source-config`.
-현재 브랜치: `refactor/gate-successor` (기준 커밋 `10dd809`).
+현재 브랜치: `refactor/environment-layout` (기준 커밋 `bc126a1`).
 분기 기준: `paper/sigmetrics2027-submission`의
 `1ceb5646971e5b2649c3370ae5e1890cd29491b1`.
 
@@ -40,9 +40,9 @@
 | `firmware/patches/` 현재 생성기 | I/O·정확히 1회 치환 유틸 후보. 버전별 C template·측정 loop 보존 |
 | `firmware/Makefile.*` | 비동결 파일부터 인라인 Python·실제 동일 규칙 추출 검토 |
 | C, assembly, linker 입력 | 첫 작업 범위에서 보존. 바이너리 비교 가능한 별도 단계에서 검토 |
-| `board-config/` | 현재·과거 보드 스냅샷 및 복구 입력으로 보존 |
-| `host-environment/` | 환경 복구 기록으로 보존. 실행 설정처럼 수정하지 않음 |
-| `build-env/` | 환경 provenance·archive 보존. 실행 스크립트와 config는 실제 소비 경로 확인 후 선별 |
+| `environment/board/` | 현재·과거 보드 스냅샷 및 복구 입력. current/history로 구분해 보존 |
+| `environment/host/` | 환경 복구 기록으로 보존. 실행 설정처럼 수정하지 않음 |
+| `environment/build/` | 복구 YAML과 archive 보존. 컨테이너 프로젝트 보관본은 archive/ 아래 유지 |
 | `docs/`, `evidence/`, `provenance/` | 읽기 전용. 내부 `.py`, 생성 C도 일괄 리팩토링 대상에서 제외 |
 
 ## 확인한 동결·호환 제약
@@ -579,3 +579,67 @@ CLI의 기존 variant/fixture/ELF 옵션과 판정 내용은 유지하며, 출�
 따라서 production Makefile 연결이나 기존 qualified evidence 교체는 하지 않았고,
 후속 identity의 `UNQUALIFIED_SUCCESSOR` 상태를 유지한다.
 이번 브랜치는 원격에 push하지 않았다.
+
+
+## 환경 디렉터리 통합 (2026-09-11)
+
+사용자가 승인한 목표 구조에 따라 `refactor/environment-layout`를
+검증기 완료 커밋 `bc126a1`에서 분기했다. 이 변경은 환경 파일 배치와
+경로 안내 정리이며 host/firmware 코드 및 동결 provenance 변경이 아니다.
+
+1. 보드 current/history, 빌드 archive, 호스트 환경으로 27개 파일 이동
+   → verify: 이동 전후 파일 수와 SHA-256 비교, 옛 디렉터리 제거 확인.
+2. 복구 manifest·ignore 규칙·README 및 MIRROR의 경로 안내 갱신
+   → verify: 새 상대 경로, 아카이브 ignore, 현재 안내의 옛 경로 잔존 검사.
+3. 동결 영역·사용자 파일 보존과 결과 기록
+   → verify: 기준 커밋 대비 보호 영역 diff 없음, 최종 diff 공백 검사.
+
+보드 과거 설정의 동일한 바이트 파일도 서로 다른 사건 이름을 유지한다.
+불완전한 devcontainer 설정을 포함한 과거 컨테이너 프로젝트는 실행 설정으로
+승격하거나 수정하지 않고 `archive/` 아래에 원문 그대로 보관한다.
+
+
+환경 통합 결과: **완료**.
+
+```text
+environment/
+  README.md
+  board/
+    RECOVERY_ARCHIVE.sha256
+    current/                    5개 설정
+    history/                    4개 과거 설정
+  build/
+    BUILD_ENVIRONMENT.yaml
+    archive/
+      container-build-context/  13개 보관 파일
+  host/
+    HOST_RESTORE.md
+    host-python.txt
+    serial-bindings.yaml
+```
+
+- 기존 tracked 파일 27개를 모두 이동했다. 기존 세 디렉터리는 제거했다.
+  같은 이름의 호환용 디렉터리·symlink는 새로 만들지 않았다.
+- 이동한 26개 파일의 SHA-256은 이동 전과 동일하다. 빌드 YAML만 경로 5곳
+  (작업 트리 아카이브, 복구 명령, 벤더 배포본, 컨테이너 보관본, firmware overlay 안내)을
+  바꿨다. 기존 원문에 이 5개 치환만 적용한 결과와 전체 문자열이 같음을 확인했다.
+  기록된 hash·version·복구 실험 결과는 바뀌지 않았다.
+- `.gitignore`의 외부 아카이브 경로, README 및 `docs/MIRROR.md`의 경로 안내를 갱신했다.
+  문서 수정은 이 이동에 필요한 안내에 한정했다. 대화 원문·논문·evidence·provenance는
+  수정하지 않았다. 동결 기록의 옛 경로 대응은 `environment/README.md`에 정리했다.
+- Git에 없던 두 `.tgz` 아카이브는 새로 확보하거나 생성하지 않았다.
+  향후 배치 위치는 `environment/build/archive/`이며 기존 제외 규칙을 이 위치로 옮겼다.
+
+검증 수준: 파일 무결성, 정적 경로/ignore/셸 문법 검사.
+
+- Python 검증: 목적지 27개 존재, 옛 파일·디렉터리 부재, SHA-256 및 YAML 5개 치환 비교 PASS.
+- `rg` 및 Python 검증: 현재 README/MIRROR/ignore/YAML에 옛 경로 없음,
+  새 환경 README의 상대 링크 모두 존재. 역사 기록과 이전 경로 대응표의 옛 이름은 의도적으로 유지.
+- `git check-ignore -q --no-index`: 외부 아카이브 2개·보관본 .env·build 산출물은 제외,
+  .env.example·run_sim.sh는 추적 가능 — 6개 확인 PASS.
+- `bash -n`: 보관된 shell script 3개 PASS. 스크립트 자체를 실행하지 않았다.
+- 기준 커밋 대비 firmware/host/provenance/evidence/docs/paper/docs/presentation diff 없음.
+- `git diff --cached --check` PASS.
+
+소스와 실행 동작이 바뀌지 않아 전체 펌웨어/호스트 회귀 테스트는 반복하지 않았다.
+빌드·컨테이너·보드 실행도 하지 않았다. 실제 빌드 환경의 자격 검증은 앞 단계와 같이 남아 있다.

@@ -14,11 +14,11 @@ __pycache__/
 # it may already be cloned, forked or cached.
 #
 # The artifacts still exist locally and are hash-recorded in
-# build-env/BUILD_ENVIRONMENT.yaml, so provenance survives their absence here.
+# environment/build/BUILD_ENVIRONMENT.yaml, so provenance survives their absence here.
 
 # Arm Selftest source distribution and the working tree derived from it
-build-env/fi101-selftest-src.tgz
-build-env/selftest-worktree.tgz
+environment/build/archive/fi101-selftest-src.tgz
+environment/build/archive/selftest-worktree.tgz
 
 # Firmware images: compiled from Arm Selftest sources -> derivative works
 *.BIN

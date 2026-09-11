@@ -17,7 +17,7 @@ qualification 증거.
 
 **보드 복구 아카이브는 별도 디렉터리다.** `fi101_00.bit`(102M) 등 벤더 플랫폼 바이너리는
 여기 없다 — 소스 트리에 넣기에 크고, Arm FI101 재배포 조건이 미확인이다. 해시와 포인터는
-`board-config/RECOVERY_ARCHIVE.sha256`에 있고, 실물과 `FI101_BOARD_RECOVERY_MANIFEST.yaml`은
+`environment/board/RECOVERY_ARCHIVE.sha256`에 있고, 실물과 `FI101_BOARD_RECOVERY_MANIFEST.yaml`은
 위 경로에 있다. **미러만 복원하면 보드를 재구성할 수 없다.**
 
 작업을 이어갈 때는 **위키의 「▶ 다음 세션 시작점」 블록을 먼저 읽는다.** 현재 단계,
@@ -45,9 +45,10 @@ evidence/        실험 원시 증거
                        .raw = 바이트 그대로, .timeline = 타임스탬프 부착
   early-boot-logs/     초기 부팅·전원 사이클 로그 10건 (캡처 체계 정립 이전)
 
-board-config/    실험 시점의 MPS4 SD 설정 스냅샷
-  config.txt.backup-uartmode0 / config.txt.pre-verbose
-  images.txt.operating-ti2 / images.txt.pre-verbose
+environment/board/  실험 시점의 MPS4 SD 설정 스냅샷
+  current/            캡처된 보드 설정
+  history/            과거 설정 (config.txt.* / images.txt.*)
+  RECOVERY_ARCHIVE.sha256  별도 복구 아카이브의 해시와 위치
 
 firmware/        펌웨어 소스. 마일스톤 순서:
   Makefile.gcc           GCC golden baseline (armclang 스캐터 → GNU 링커 포팅)
@@ -76,19 +77,20 @@ firmware/        펌웨어 소스. 마일스톤 순서:
   patches/               펌웨어 파생 이력 (일회성, 이미 적용됨).
                          PMU 트리가 MEASURE 사본에서 어떻게 만들어졌는지의 기록
 
-build-env/       빌드 환경 재현
+environment/build/  빌드 환경 복구 기록
   BUILD_ENVIRONMENT.yaml   툴체인·컨테이너 digest·MLEK 커밋·기대 출력 해시.
                            restore drill 결과와 컨테이너 재현 불가 사실도 여기
-  selftest-worktree.tgz    실제 빌드 트리. **복구는 이걸로 한다** (두 이미지 비트 재현)
-  fi101-selftest-src.tgz   벤더 배포본. UPSTREAM REFERENCE ONLY — 빌드 안 됨
-  container-build-context/ Dockerfile 등. 단 현재 이미지를 재현하지는 못함
+  archive/
+    selftest-worktree.tgz    실제 빌드 트리. 외부에서 확보해야 함 (Git 미포함)
+    fi101-selftest-src.tgz   벤더 배포본. UPSTREAM REFERENCE ONLY (Git 미포함)
+    container-build-context/ 과거 Dockerfile 등. 실제 사용 이미지를 재현하지는 못함
 
 HANDOFF-snapshot.md  위키 프로젝트 페이지 사본. 최상단 「다음 세션 시작점」 블록이
                      작업 재개의 1차 아티팩트인데 Obsidian 에만 있었다. 스냅샷이며
                      원본이 권위 — 둘이 다르면 Obsidian 쪽이 맞다
 session-memory/      세션 메모리 파일 사본 (프로젝트 단계·보고 규율)
 
-host-environment/  호스트 실행 환경 (코드 수정 없이 기록만)
+environment/host/  호스트 실행 환경 (코드 수정 없이 기록만)
   HOST_RESTORE.md      인터프리터 분리, pyserial 출처(apt python3-serial), 미포함 항목
   host-python.txt      원시 조사 결과
   serial-bindings.yaml FTDI 시리얼 하드코딩 29곳 위치
@@ -137,7 +139,7 @@ provenance/      이미지별 증거 (BIN 포함)
 | `SHA256SUMS` | **한 이미지 디렉터리 안**의 무결성 루트. 미러 전체가 아니다 |
 | qualification 항목 | `MANIFEST.yaml`이 선언한 동결 증거 해시. 100% 일치 필수 |
 | working snapshot | 동결 시점 호스트 도구 사본. 작업 사본과의 차이는 정보성 |
-| board recovery | 별도 아카이브의 플랫폼 바이너리·설정 (`board-config/RECOVERY_ARCHIVE.sha256`) |
+| board recovery | 별도 아카이브의 플랫폼 바이너리·설정 (`environment/board/RECOVERY_ARCHIVE.sha256`) |
 
 ## 무결성 확인
 
