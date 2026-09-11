@@ -1,7 +1,7 @@
 # 소스·설정 리팩토링 작업 기록
 
 작성일: 2026-09-11. 초기 브랜치: `refactor/source-config`.
-현재 브랜치: `refactor/environment-layout` (기준 커밋 `bc126a1`).
+현재 브랜치: `refactor/unified-mlek-campaigns` (기준 커밋 `b5e1f98`).
 분기 기준: `paper/sigmetrics2027-submission`의
 `1ceb5646971e5b2649c3370ae5e1890cd29491b1`.
 
@@ -643,3 +643,65 @@ environment/
 
 소스와 실행 동작이 바뀌지 않아 전체 펌웨어/호스트 회귀 테스트는 반복하지 않았다.
 빌드·컨테이너·보드 실행도 하지 않았다. 실제 빌드 환경의 자격 검증은 앞 단계와 같이 남아 있다.
+
+## 공통 MLEK 캠페인 실행기 (2026-09-11)
+
+사용자 목적을 명확히 반영: 설치된 모든 MLEK 모델 × 설정된 모든 보드/FVP ×
+요청 옵션 조합을 같은 측정·판정 계약으로 처리한다. 메모리 제약은 조합별 결과이며
+조합을 사전에 누락하거나 전체 캠페인을 성공으로 위장하지 않는다.
+`refactor/unified-mlek-campaigns`를 환경 통합 완료 커밋에서 분기했다.
+
+1. 기존 실행조건 audit 및 공통 계약/전체 matrix 정의
+   → verify: 모델·target·옵션별 모든 요청 조합에 안정적인 ID와 상태가 존재.
+2. Vela/MLEK 빌드, FVP, MPS4 adapter 연결
+   → verify: fake executable/serial 환경에서 실제 모델 전달, 종료코드, timeout,
+   원본 로그 보존, capture-before-reset 및 finally 복원 검증.
+3. 공통 결과 판정과 재개·오류 분리
+   → verify: 메모리 오류 뒤 다음 조합 실행, 실패 은폐 없음, stale 결과 재사용 거부,
+   실행 중단 후 남은 조합 상태 보존, 복원 실패 target 격리.
+4. 사용 경로/역사 경로 분류 및 미사용 코드 정리
+   → verify: 동결 해시·문서/evidence 원본 보존, 현재 실행기로부터 legacy 의존 없음.
+
+기존 조건은 통합돼 있지 않다: stage1/2/3은 anchored74개 조합·고정arena/옵션,
+보드는MPS4/U85 한 기종이며 formal probe 수정본이 현재 저장소에 없고,
+archive simulator는 입력모델 미주입 및 build/FVP 실패 은폐가 있다.
+원본 캠페인 증거는 그대로 보존하고 후속 유지보수 코드를 host/campaigns에 둔다.
+
+### 로컬 구현·검증 결과
+
+- 단계 1~3의 로컬 구현 완료: `host/campaigns`의 plan/run/resume와
+  `environment/campaigns/mlek.example.json`. 모델 발견은 설치된 resources의
+  전체 `.tflite`(기존 Vela 출력 제외)이며, 원격 미다운로드 모델까지 포함했다고
+  간주하지 않는다. FVP 6종과 현재 MPS4/U85-1024 adapter를 연결했다.
+- 최초 계획에 모든 모델×target×variant×MAC을 기록한다. 미지원 MAC, 메모리
+  부족, 빌드/실행 실패, 측정 오류는 각각 terminal 상태이며 다음 cell로 진행한다.
+  보드 복구 실패 시 동일 장치의 다른 target 별칭까지 격리한다.
+- 선택 모델→Vela→CMake MODEL_PATH→AXF/배포파일 hash를 연결한다. 공통 Git
+  source revision, Vela/CMake/실제 C/C++ compiler identity, 설정·toolchain identity를
+  기록·비교한다. CMake의 실제 cache와 요청 조건도 비교하며 override 우회를 거부한다.
+- raw UART·명령·로그 보존, 재개 시 계획/성공 증거 검증, lock 이후 상태 읽기,
+  예외·중단 attempt 상태 확정, serial by-id 원래 경로 보존을 구현했다.
+- 단계 4 완료: 미사용 `host/bringup/*.py` 25개를 `host/legacy/bringup/`으로
+  바이트 동일하게 이동했다. 동결 serial-bindings의 원래 경로는 수정하지 않고
+  legacy README에 대응을 기록했다. V9~V15·root PMU 도구는 현재 consumer와
+  동결 qualification 의존성 때문에 reference 경로로 유지한다.
+
+실행한 검증:
+
+- `python3 host/run_offline_tests.py`: **39 실행 단위 PASS, 0 FAIL**.
+- 최종 campaign 5개 unittest module 및 `host.tests.test_run_offline_tests`:
+  **50 tests PASS** (runner 검증의 의도적인 child failure를 정상 검출).
+- 실제 CLI plan: 임시 모델 8개×7 targets×2 variants×7 MACs = **784 cells**.
+  실제 CLI run: 미지원 MAC cell 보존 및 exit **1**, 도구/보드 접근 없음.
+- 기존 FVP UART 2개를 새 parser로 읽어 TOTAL 4,115,068 / 49,086 확인.
+  보드 역사 로그의 문자 그대로 `^M` 표기는 raw UART와 달라 새 parser가 거부한다.
+- compileall PASS, bringup 25개 HEAD 대비 byte 동일; 동결 firmware/docs/evidence/
+  provenance 파일 변경 없음. 독립 검토 후 발견된 회귀를 수정했다.
+
+남은 실환경 검증(완료 아님): 이 Mac의 PATH에 Vela/FVP가 없고 `/opt/arm` SDK가
+없다. 새 실행기를 실제 MLEK checkout·FVP 6종·MPS4에 적용한 전체 matrix 결과는
+아직 없다. stock runner 입력 정책을 유지하지만 플랫폼 간 실제 입력 tensor bytes의
+동일성은 검증하지 않았다. 따라서 **완전히 같은 입력을 사용한 전체 실험이 이미
+수행·보장됐다고 주장하지 않는다**. 실제 설치의 source/compiler/config identity,
+FVP capability/TA, MPS4 이미지 layout을 확인하고 matrix 실행과 입력 동일성 검증을
+마쳐야 실환경 qualification을 완료할 수 있다.

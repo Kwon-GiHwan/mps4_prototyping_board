@@ -7,6 +7,12 @@ qualification 증거. 실제 보드에서 실행·검증된 결과다. FVP 시�
 프로젝트 전체(FVP 캠페인, MLEK 7개 모델, per-layer mechanism study)의 맥락은
 `docs/presentation/`과 Obsidian vault `npu_benchmark/`에 있다.
 
+새 MLEK 전체 조합 실행기는 [host/campaigns](host/campaigns/README.md)다.
+[설정 예시](environment/campaigns/mlek.example.json)에서 모델 발견·대상·옵션을
+정하고 `python3 -m host.campaigns plan` / `run`으로 실행한다. 아래 매뉴얼과
+기존 qualification은 역사적 경로이며, 새 실행기의 실환경 자격 검증은 아직 남아 있다.
+과거 bringup 스크립트는 [host/legacy](host/legacy/README.md)로 분류했다.
+
 ---
 
 ## 사용 매뉴얼
