@@ -1,26 +1,24 @@
 ---
-description: Run the V15 + V14 host test suites and report per-module counts
+description: Run the offline baseline and refactoring regression tests
 ---
 
-Run the host test suites from the repo root and report the result.
-
-`pytest` does not work here — several test files call `sys.exit()` at import.
-Use unittest per module, and clear stale bytecode first.
+Run the reviewed offline baseline from the repo root. The runner uses
+explicit test modules and standalone scripts; it does not discover board tests.
+It isolates bytecode in a temporary cache and reports each process exit status.
 
 ```sh
-find . -name __pycache__ -type d -exec rm -rf {} + 2>/dev/null
-total=0
-for f in host/tests/test_*s5_only_control.py; do
-  m="host.tests.$(basename $f .py)"
-  out=$(python3 -m unittest $m 2>&1)
-  n=$(echo "$out" | grep '^Ran' | awk '{print $2}')
-  st=$(echo "$out" | tail -1)
-  total=$((total + n))
-  printf '%-34s %3s %s\n' "$(basename $f .py | sed 's/_pmu_completion_s5_only_control//')" "$n" "$st"
-done
-echo "TOTAL V15: $total"
-python3 -m unittest host.tests.test_pmu_completion_visibility_v14 2>&1 | tail -3
+python3 host/run_offline_tests.py
+python3 -B -m unittest host.tests.test_run_offline_tests host.tests.test_v15_imports
 ```
 
-Report the counts and any failure verbatim. Do not summarise a failure as a
-pass, and do not report a total without the V14 regression line.
+Inspect both exit statuses and report failures. The baseline summary counts
+execution units, not test cases. V15 tests now live in `host/tests/s5_only/`;
+the baseline includes all ten V15 modules and six V14 modules (including the
+offline runner boundary tests) under `host/tests/completion_visibility/`.
+It also runs the five standalone V9-V13 contract scripts in `host/tests/interval/`
+and `host/tests/completion_poll/`, and their package/CLI regression tests. Shared archive/exchange tests and
+synthetic V14/V15 manifest recipe tests are included, along with the V14 Makefile
+contract script.
+The runner regression intentionally launches a failing child fixture; its outer
+unittest result is authoritative for that fixture. This is not the full repository
+suite and does not qualify firmware builds or board behavior.

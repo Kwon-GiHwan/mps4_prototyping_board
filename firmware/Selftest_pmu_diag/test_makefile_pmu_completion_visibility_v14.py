@@ -167,9 +167,10 @@ def validate_manifest_inputs(text: str) -> None:
         ("$(MAILBOX_WIRE_EVIDENCE)", "mailbox/wire proof"),
         ("$(RETAINED_BASE_PMU_EVIDENCE)", "retained base-PMU proof"),
         ("$(FROZEN_INPUT_EVIDENCE)", "frozen-input digests"),
+        ("$(MANIFEST_WRITER)", "manifest writer"),
     ):
         check("the manifest depends on the %s" % label, needed in prerequisites, needed)
-    require(text, "@test -s $(MANIFEST)", "the manifest is proven non-empty")
+    require(text, "@test -s '$(MANIFEST)'", "the manifest is proven non-empty")
     # Every side-effect artifact named as a prerequisite needs a rule of its own,
     # or make refuses the graph with "No rule to make target" even though the
     # link or the image step emits it.
