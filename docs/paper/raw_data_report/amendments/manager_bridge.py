@@ -61,13 +61,16 @@ def send(text):
         raise RuntimeError(r)
 
 
-def wait_answer(before, t0, timeout=2400, poll=5):
-    """Wait until an answer newer than `before` has fully rendered; returns its text."""
+def wait_answer(before, t0, timeout=2400, poll=5, before_text=None):
+    """Wait until an answer newer than `before` has fully rendered; returns its text.
+    ChatGPT virtualises long conversations, so the assistant-node count may not grow: a changed
+    last-assistant text counts as a new answer too."""
     stable, prev = 0, None
     while time.time() - t0 < timeout:
         time.sleep(poll)
         s = status()
-        if s["n"] > before and not s["generating"]:
+        new = s["n"] > before or (before_text is not None and last_text() != before_text)
+        if new and not s["generating"]:
             cur = last_text()
             stable = stable + 1 if cur == prev and cur else 0
             prev = cur
@@ -84,9 +87,9 @@ def log_exchange(question, answer, seconds):
 
 
 def ask(text, timeout=2400, poll=5):
-    before = status()["n"]
+    before = status()["n"]; before_text = last_text()
     t0 = time.time(); send(text)
-    cur = wait_answer(before, t0, timeout, poll)
+    cur = wait_answer(before, t0, timeout, poll, before_text)
     log_exchange(text, cur, time.time() - t0)
     return cur
 

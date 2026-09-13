@@ -4,6 +4,11 @@ Contract: plan 2026-09-14 section 11 (corrected after the manager review: the st
 already uses FIVE event slots, counters 0-4 = NPU_ACTIVE, SRAM_RD, SRAM_WR, EXT_RD, EXT_WR; only
 counters 5-7 are free). The patch programs counters 5-7 BEFORE the HAL's inference_begin hook
 (CCNT and counters 0-4 untouched) and prints them AFTER the HAL's inference_end hook.
+Measurement window (manager review 2): the extra counters are enabled BEFORE the HAL's begin hook
+and explicitly DISABLED after the HAL's end hook, immediately before they are read; the S4 window
+is therefore slightly wider than the stock TOTAL window and is recorded as an S4-specific window,
+never equated with TOTAL. The HAL resets all event counters once at init (EVCNTR_ALL_Reset), and
+the counters start at zero; overflow status is read from PMU_Get_CNTR_OVS and printed.
 Two passes because four events do not fit in three slots:
   pass A: MAC_ACTIVE, MAC_STALLED_BY_W, MAC_STALLED_BY_IB
   pass B: MAC_ACTIVE, AO_STALLED_BY_OB, NPU_IDLE   (MAC_ACTIVE repeated as a cross-pass check)
@@ -32,9 +37,11 @@ def blocks(pass_id):
     for i, e in enumerate(ev):
         begin += "    ETHOSU_PMU_Set_EVTYPER(drv, %d, ETHOSU_PMU_%s);\n" % (5 + i, e)
     begin += "    ETHOSU_PMU_CNTR_Enable(drv, ETHOSU_PMU_CNT6_Msk | ETHOSU_PMU_CNT7_Msk | ETHOSU_PMU_CNT8_Msk);\n#endif\n"
-    end = "#if defined(ETHOSU85)\n        /* S4 pass %s: read after the HAL hook has disabled its own counters. */\n" % pass_id
+    end = ("#if defined(ETHOSU85)\n        /* S4 pass %s: disable the extra counters first (S4 window = before HAL begin .. here), then read. */\n"
+           "        ETHOSU_PMU_CNTR_Disable(drv, ETHOSU_PMU_CNT6_Msk | ETHOSU_PMU_CNT7_Msk | ETHOSU_PMU_CNT8_Msk);\n") % pass_id
     for i, e in enumerate(ev):
         end += '        printf("NPU S4 %s: %%u cycles\\n", (unsigned)ETHOSU_PMU_Get_EVCNTR(drv, %d));\n' % (e, 5 + i)
+    end += '        printf("NPU S4 OVS: 0x%08x\\n", (unsigned)ETHOSU_PMU_Get_CNTR_OVS(drv));\n'
     end += "#endif\n"
     return begin, end
 
