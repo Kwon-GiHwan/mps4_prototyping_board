@@ -22,6 +22,7 @@ CELLS = ["rnnoise_INT8__SSE-320__ethos-u85-256", "rnnoise_INT8__SSE-320__ethos-u
          "kws_micronet_m__SSE-320__ethos-u85-256", "kws_micronet_m__SSE-320__ethos-u85-512",
          "wav2letter_pruned_int8__SSE-320__ethos-u85-256", "wav2letter_pruned_int8__SSE-320__ethos-u85-512"]
 S4_RE = {k: r"NPU S4 %s:\s*(\d+)" % k for k in ("MAC_ACTIVE", "MAC_STALLED_BY_W", "MAC_STALLED_BY_IB", "AO_STALLED_BY_OB", "NPU_IDLE")}
+OVS_RE = r"NPU S4 OVS:\s*0x([0-9a-fA-F]+)"
 STOCK_KEYS = ("npu_total_cycles", "npu_active_cycles", "sram_rd_beats", "sram_wr_beats", "ext_rd_beats", "ext_wr_beats")
 
 
@@ -29,6 +30,7 @@ def parse_s4(txt):
     out = {}
     for k, pat in S4_RE.items():
         m = re.search(pat, txt); out[k] = int(m.group(1)) if m else None
+    m = re.search(OVS_RE, txt); out["OVS"] = int(m.group(1), 16) if m else None
     return out
 
 

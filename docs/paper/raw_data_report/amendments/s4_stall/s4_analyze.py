@@ -7,10 +7,13 @@ Per cell:
           G2 stock counters (total, active, SRAM/EXT beats) exactly equal the R1 values, in both passes
           G3 the REPS runs of each pass are vector-identical (stock + S4 counters)
           G5 MAC_ACTIVE identical across the two passes
-  metric  stall_share = (MAC_STALLED_BY_W + MAC_STALLED_BY_IB + AO_STALLED_BY_OB) / total   (upper bound: events may overlap)
-          mac_active_share = MAC_ACTIVE / total;  npu_idle_event vs HAL-derived idle recorded as a side check
-  outcome MEMORY_WAIT_DOMINANT (>= 0.30) | MEMORY_WAIT_PRESENT (0.05 .. 0.30) | MEMORY_WAIT_NEGLIGIBLE (< 0.05) | NOT_EVALUABLE
+  outcome RAW_PRESERVED | NOT_EVALUABLE      (manager review 2: while the event semantics are unverified the
+          stall events are NOT summed and no share-based verdict is produced; per-event raw counts and
+          per-event ratios to TOTAL are recorded as descriptive values only)
+          G6 overflow status word must be 0 for the S4 counters.
 Every result carries semantics = SEMANTICS_UNVERIFIED until the Arm TRM definitions are confirmed.
+The S4 window (enable before HAL begin .. disable after HAL end) is wider than the stock TOTAL window
+and is never equated with it; derived_idle (TOTAL - ACTIVE) and the NPU_IDLE event are kept apart.
 """
 import json, sys
 from pathlib import Path
@@ -21,22 +24,15 @@ RULE_G3 = "RULE_S4_REPS_DIFFER"
 RULE_G1 = "RULE_S4_ARTIFACT"
 RULE_MISSING = "RULE_S4_COUNTER_MISSING"
 RULE_G5 = "RULE_S4_PASSES_DISAGREE"
-RULES = (RULE_G1, RULE_G2, RULE_G3, RULE_MISSING, RULE_G5)
-OUTCOMES = ("MEMORY_WAIT_DOMINANT", "MEMORY_WAIT_PRESENT", "MEMORY_WAIT_NEGLIGIBLE", "NOT_EVALUABLE")
+RULE_G6 = "RULE_S4_OVERFLOW"
+RULES = (RULE_G1, RULE_G2, RULE_G3, RULE_MISSING, RULE_G5, RULE_G6)
+OUTCOMES = ("RAW_PRESERVED", "NOT_EVALUABLE")
 STALL = ("MAC_STALLED_BY_W", "MAC_STALLED_BY_IB", "AO_STALLED_BY_OB")
 
 
 class Refusal(Exception):
     def __init__(self, rule, msg):
         super().__init__(msg); self.rule = rule
-
-
-def classify(share):
-    if share >= 0.30:
-        return "MEMORY_WAIT_DOMINANT"
-    if share >= 0.05:
-        return "MEMORY_WAIT_PRESENT"
-    return "MEMORY_WAIT_NEGLIGIBLE"
 
 
 PASS_EVENTS = {"A": ("MAC_ACTIVE", "MAC_STALLED_BY_W", "MAC_STALLED_BY_IB"), "B": ("MAC_ACTIVE", "AO_STALLED_BY_OB", "NPU_IDLE")}
@@ -67,18 +63,22 @@ def evaluate_cell(cell_id, runs_by_pass):
         ra = check_pass(runs_by_pass["A"], "A"); rb = check_pass(runs_by_pass["B"], "B")
         if ra["s4_counters"]["MAC_ACTIVE"] != rb["s4_counters"]["MAC_ACTIVE"]:
             raise Refusal(RULE_G5, "MAC_ACTIVE differs across passes: %s vs %s" % (ra["s4_counters"]["MAC_ACTIVE"], rb["s4_counters"]["MAC_ACTIVE"]))
+        for r, pid in ((ra, "A"), (rb, "B")):
+            ovs = r["s4_counters"].get("OVS")
+            if ovs is None or (ovs & 0xE0):  # bits 5-7 = event counters 5-7
+                raise Refusal(RULE_G6, "pass %s: overflow status %s" % (pid, ovs))
         total = ra["stock_counters"]["npu_total_cycles"]
         s4 = {"MAC_ACTIVE": ra["s4_counters"]["MAC_ACTIVE"], "MAC_STALLED_BY_W": ra["s4_counters"]["MAC_STALLED_BY_W"],
               "MAC_STALLED_BY_IB": ra["s4_counters"]["MAC_STALLED_BY_IB"], "AO_STALLED_BY_OB": rb["s4_counters"]["AO_STALLED_BY_OB"],
               "NPU_IDLE": rb["s4_counters"]["NPU_IDLE"]}
-        stall = sum(s4[k] for k in STALL)
     except Refusal as e:
         return {"cell_id": cell_id, "outcome": "NOT_EVALUABLE", "rule": e.rule, "detail": str(e), "semantics": "SEMANTICS_UNVERIFIED"}
-    share = stall / total
     hal_idle = ra["stock_counters"].get("npu_idle_cycles")
-    return {"cell_id": cell_id, "outcome": classify(share), "rule": "", "total": total, "stall_sum": stall,
-            "stall_share_upper_bound": round(share, 4), "mac_active_share": round(s4["MAC_ACTIVE"] / total, 4),
-            "npu_idle_event": s4["NPU_IDLE"], "hal_idle_derived": hal_idle, "counters": s4, "semantics": "SEMANTICS_UNVERIFIED"}
+    return {"cell_id": cell_id, "outcome": "RAW_PRESERVED", "rule": "", "total_stock_window": total,
+            "per_event_ratio_to_total_descriptive": {k: round(v / total, 4) for k, v in s4.items()},
+            "npu_idle_event": s4["NPU_IDLE"], "derived_idle_stock": hal_idle, "counters": s4,
+            "window": "S4: enabled before HAL begin, disabled after HAL end (wider than stock TOTAL)",
+            "semantics": "SEMANTICS_UNVERIFIED"}
 
 
 def main(path=HERE / "results.jsonl"):
@@ -90,8 +90,7 @@ def main(path=HERE / "results.jsonl"):
     results = [evaluate_cell(c, runs) for c, runs in sorted(by.items())]
     json.dump(results, open(HERE / "s4_results.json", "w"), indent=1)
     for r in results:
-        print(r["cell_id"], r["outcome"], r.get("rule", ""), "stall_share<=", r.get("stall_share_upper_bound"),
-              "mac_active", r.get("mac_active_share"), r.get("counters", ""))
+        print(r["cell_id"], r["outcome"], r.get("rule", ""), r.get("counters", ""), r.get("per_event_ratio_to_total_descriptive", ""))
 
 
 if __name__ == "__main__":
