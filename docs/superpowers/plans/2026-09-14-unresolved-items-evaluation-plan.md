@@ -375,6 +375,18 @@ G7의 이름은 `UART_NON_S4_EQ`(`NPU S4 ` 줄을 제외한 UART의 clean/A/B �
 X4 원인의 입증으로 연결하지 않는다. 출력 덤프(DYNAMIC_OFM)는 이번 착수의 필수 조건이 아니며, 하려면
 별도 qualification으로 분리한다. **이 조건으로 매니저 GO (manager_log.md 5번째 교환).**
 
+**Qualification 1 결과 (2026-09-14, RNNoise 256, clean→A→B, `s4_stall/qual1_inference_time_patch/`):**
+clean 3회 = 동결값 정확 재현. 패치 빌드(A·B)는 TOTAL·beat 5종은 동일하지만 **NPU_ACTIVE가 12 사이클
+적고 IDLE이 12 많다**(35,194/892 vs 35,206/880) → G2·G7 실패, `NOT_EVALUABLE`. 게이트를 완화하지
+않는다. 원시값(MAC_ACTIVE 1,590, MAC_STALLED_BY_W 18,818, MAC_STALLED_BY_IB 1,707, AO_STALLED_BY_OB 0,
+NPU_IDLE 이벤트 901, OVS 0, 패스 간 MAC_ACTIVE 동일)은 보존만 하고 사용하지 않는다.
+원인 가설: HAL begin 훅 직전에 넣은 PMU 레지스터 쓰기(EVTYPER×3 + CNTR_Enable)가 측정 창 시작 부근의
+NPU 상태를 12 사이클 바꿨다. **v2**: 같은 레지스터 쓰기를 `ethosu_init()` 끝(추론보다 훨씬 이전)으로
+옮긴다. 읽기 전 disable·읽기 위치는 그대로. 게이트는 그대로(G1–G7). v2도 G2에 실패하면 S4는
+`NOT_EVALUABLE`로 종결하고, 계약 변경(허용 오차)은 매니저 결정 사항으로 남긴다.
+v2의 S4 창은 "드라이버 init 이후 ~ HAL end 이후 disable"로 v1보다 더 넓다(NPU_IDLE 이벤트는 부팅 후
+유휴까지 포함하므로 파생 IDLE과 비교하지 않는다).
+
 ### 11 (원안)
 
 **실행 전 커밋. 5단계 결과를 본 뒤에 커밋해도 되지만, 이 절의 임계값은 지금 고정한다.**

@@ -38,8 +38,8 @@ def parse_s4(txt):
     return out
 
 
-def patch(cmd, pass_id=None):
-    args = [sys.executable, OUT + "/patch_driver.py", cmd] + ([pass_id] if pass_id else [])
+def patch(cmd, pass_id=None, variant=None):
+    args = [sys.executable, OUT + "/patch_driver.py", cmd] + ([pass_id] if pass_id else []) + ([variant] if variant else [])
     r = subprocess.run(args, capture_output=True, text=True)
     print("patch", cmd, r.stdout.strip(), r.stderr.strip(), flush=True)
     if r.returncode != 0:
@@ -47,7 +47,8 @@ def patch(cmd, pass_id=None):
 
 
 def main():
-    only = set(sys.argv[1].split(",")) if len(sys.argv) > 1 else None   # first-cell qualification before the rest
+    only = set(sys.argv[1].split(",")) if len(sys.argv) > 1 and sys.argv[1] != "all" else None   # first-cell qualification first
+    variant = sys.argv[2] if len(sys.argv) > 2 else "v1"                  # patch placement variant (v1 | v2)
     cells_to_run = [c for c in CELLS if only is None or c in only]
     os.makedirs(OUT + "/uart", exist_ok=True)
     cells = {c["cell_id"]: c for c in json.load(open(ANCHOR))["canonical_order"]}
@@ -60,7 +61,7 @@ def main():
           if not st.startswith("stock"):
               raise SystemExit("clean pass refused: driver is not stock")
       else:
-          patch("apply", pass_id)
+          patch("apply", pass_id, variant)
       try:
           for cid in cells_to_run:
               cell = cells[cid]
@@ -78,7 +79,7 @@ def main():
                   keep = os.path.join(OUT, "uart", "%s__pass%s__R%d.txt" % (cid, pass_id, rep)); open(keep, "w").write(txt)
                   stock = parse_uart(txt); exp = expected.get(cid, {})
                   g2 = {k: (stock.get(k) == exp.get(k)) for k in STOCK_KEYS if k in exp}
-                  rec = {"cell_id": cid, "pass": pass_id, "rep": rep, "status": r["status"], "wall_clock_s": r["wall_clock_s"],
+                  rec = {"cell_id": cid, "pass": pass_id, "variant": variant, "rep": rep, "status": r["status"], "wall_clock_s": r["wall_clock_s"],
                          "survivors": r["survivors_after_cleanup"], "stock_counters": stock, "expected_stock": exp,
                          "G2_stock_counters_match": g2, "s4_counters": parse_s4(txt), "uart_file": keep,
                          "artifact": {"vela_sha256": b["vela_sha256"], "frozen_vela_sha256": cell["formal_vela_sha256"],
