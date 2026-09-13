@@ -1,0 +1,1691 @@
+Schedule: 'graph_MAX_BUFFERED'
+	0: Operation Conv2D  - OFM 1, 96, 96, 8
+		Kernel: size=3,3 stride=2,2, dilation=1,1 padding=[t:1,l:1,b:0,r:0,n:0,f:0]
+		Time index = 0
+		Operator Config = OFM Block=[1, 7, 12, 8], IFM Block=[1, 15, 25, 8], Traversal=PartKernel, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 192, 192, 1]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 96, 96, 8]
+		Assigned Cascade = 0
+		Encoded Weights = 224 bytes
+		Weight buffer = 224 bytes
+		Depth slices = [0, 8]
+		sub-operations: [ Relu6 ]
+		Estimated Perf: Macs=663552 Cycles=222528
+		Memory Used: 184544 bytes (op=184320, buf=224, ccd=0, nl=0)
+	1: Operation Conv2D  - OFM 1, 96, 96, 8
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 2
+		Operator Config = OFM Block=[1, 4, 32, 8], IFM Block=[1, 4, 32, 8], Traversal=PartKernel, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 96, 96, 8]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 96, 96, 8]
+		Assigned Cascade = 0
+		Encoded Weights = 208 bytes
+		Weight buffer = 208 bytes
+		Depth slices = [0, 8]
+		sub-operations: [ Relu6 ]
+		Estimated Perf: Macs=589824 Cycles=148480
+		Memory Used: 295120 bytes (op=147456, buf=208, ccd=0, nl=147456)
+	2: Operation DepthwiseConv2D  - OFM 1, 96, 96, 8
+		Kernel: size=3,3 stride=1,1, dilation=1,1 padding=[t:1,l:1,b:1,r:1,n:0,f:0]
+		Time index = 4
+		Operator Config = OFM Block=[1, 9, 14, 8], IFM Block=[1, 11, 16, 8], Traversal=Depthwise, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 96, 96, 8]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 96, 96, 8]
+		Assigned Cascade = 0
+		Encoded Weights = 192 bytes
+		Weight buffer = 192 bytes
+		Depth slices = [0, 8]
+		sub-operations: [ Relu6 ]
+		Estimated Perf: Macs=663552 Cycles=223200
+		Memory Used: 295104 bytes (op=147456, buf=192, ccd=0, nl=147456)
+	3: Operation Conv2D  - OFM 1, 96, 96, 4
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 6
+		Operator Config = OFM Block=[1, 4, 32, 4], IFM Block=[1, 4, 32, 8], Traversal=PartKernel, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 96, 96, 8]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 96, 96, 4]
+		Assigned Cascade = 0
+		Encoded Weights = 128 bytes
+		Weight buffer = 128 bytes
+		Depth slices = [0, 4]
+		sub-operations: -
+		Estimated Perf: Macs=294912 Cycles=74240
+		Memory Used: 184448 bytes (op=36864, buf=128, ccd=0, nl=147456)
+	4: Operation Conv2D  - OFM 1, 96, 96, 8
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 8
+		Operator Config = OFM Block=[1, 4, 32, 8], IFM Block=[1, 4, 32, 8], Traversal=PartKernel, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 96, 96, 4]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 96, 96, 8]
+		Assigned Cascade = 0
+		Encoded Weights = 160 bytes
+		Weight buffer = 160 bytes
+		Depth slices = [0, 8]
+		sub-operations: [ Relu6 ]
+		Estimated Perf: Macs=294912 Cycles=148480
+		Memory Used: 184480 bytes (op=147456, buf=160, ccd=0, nl=36864)
+	5: Operation DepthwiseConv2D  - OFM 1, 96, 96, 8
+		Kernel: size=3,3 stride=1,1, dilation=1,1 padding=[t:1,l:1,b:1,r:1,n:0,f:0]
+		Time index = 10
+		Operator Config = OFM Block=[1, 9, 14, 8], IFM Block=[1, 11, 16, 8], Traversal=Depthwise, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 96, 96, 8]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 96, 96, 8]
+		Assigned Cascade = 0
+		Encoded Weights = 192 bytes
+		Weight buffer = 192 bytes
+		Depth slices = [0, 8]
+		sub-operations: [ Relu6 ]
+		Estimated Perf: Macs=663552 Cycles=223200
+		Memory Used: 331968 bytes (op=147456, buf=192, ccd=0, nl=184320)
+	6: Operation Conv2D  - OFM 1, 96, 96, 4
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 12
+		Operator Config = OFM Block=[1, 4, 32, 4], IFM Block=[1, 4, 32, 8], Traversal=PartKernel, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 96, 96, 8]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 96, 96, 4]
+		Assigned Cascade = 0
+		Encoded Weights = 128 bytes
+		Weight buffer = 128 bytes
+		Depth slices = [0, 4]
+		sub-operations: -
+		Estimated Perf: Macs=294912 Cycles=74240
+		Memory Used: 221312 bytes (op=36864, buf=128, ccd=0, nl=184320)
+	7: Operation Add  - OFM 1, 48, 48, 16
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 14
+		Operator Config = OFM Block=[1, 4, 48, 16], IFM Block=[1, 4, 48, 16], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 48, 48, 16]
+		IFM2 Stripe  = [1, 48, 48, 16]
+		OFM Stripe   = [1, 48, 48, 16]
+		Assigned Cascade = 0
+		sub-operations: -
+		Estimated Perf: Macs=0 Cycles=221184
+		Memory Used: 73728 bytes (op=0, buf=0, ccd=0, nl=73728)
+	8: Operation Conv2D  - OFM 1, 96, 96, 24
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 16
+		Operator Config = OFM Block=[1, 2, 48, 16], IFM Block=[1, 2, 48, 8], Traversal=PartKernel, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 96, 96, 4]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 96, 96, 24]
+		Assigned Cascade = 0
+		Encoded Weights = 416 bytes
+		Weight buffer = 416 bytes
+		Depth slices = [0, 24]
+		sub-operations: [ Relu6 ]
+		Estimated Perf: Macs=884736 Cycles=443904
+		Memory Used: 332192 bytes (op=294912, buf=416, ccd=0, nl=36864)
+	9: Operation DepthwiseConv2D  - OFM 1, 48, 48, 24
+		Kernel: size=3,3 stride=2,2, dilation=1,1 padding=[t:1,l:1,b:0,r:0,n:0,f:0]
+		Time index = 18
+		Operator Config = OFM Block=[1, 5, 8, 16], IFM Block=[1, 11, 17, 16], Traversal=Depthwise, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 96, 96, 24]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 48, 48, 24]
+		Assigned Cascade = 0
+		Encoded Weights = 576 bytes
+		Weight buffer = 576 bytes
+		Depth slices = [0, 24]
+		sub-operations: [ Relu6 ]
+		Estimated Perf: Macs=497664 Cycles=167168
+		Memory Used: 369216 bytes (op=73728, buf=576, ccd=0, nl=294912)
+	10: Operation Conv2D  - OFM 1, 48, 48, 8
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 20
+		Operator Config = OFM Block=[1, 8, 16, 8], IFM Block=[1, 8, 16, 24], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 48, 48, 24]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 48, 48, 8]
+		Assigned Cascade = 0
+		Encoded Weights = 320 bytes
+		Weight buffer = 320 bytes
+		Depth slices = [0, 8]
+		sub-operations: -
+		Estimated Perf: Macs=442368 Cycles=37888
+		Memory Used: 110912 bytes (op=36864, buf=320, ccd=0, nl=73728)
+	11: Operation Conv2D  - OFM 1, 48, 48, 32
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 22
+		Operator Config = OFM Block=[1, 1, 48, 32], IFM Block=[1, 1, 48, 8], Traversal=PartKernel, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 48, 48, 8]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 48, 48, 32]
+		Assigned Cascade = 0
+		Encoded Weights = 704 bytes
+		Weight buffer = 704 bytes
+		Depth slices = [0, 32]
+		sub-operations: [ Relu6 ]
+		Estimated Perf: Macs=589824 Cycles=148992
+		Memory Used: 111296 bytes (op=73728, buf=704, ccd=0, nl=36864)
+	12: Operation DepthwiseConv2D  - OFM 1, 48, 48, 32
+		Kernel: size=3,3 stride=1,1, dilation=1,1 padding=[t:1,l:1,b:1,r:1,n:0,f:0]
+		Time index = 24
+		Operator Config = OFM Block=[1, 8, 8, 16], IFM Block=[1, 10, 10, 16], Traversal=Depthwise, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 48, 48, 32]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 48, 48, 32]
+		Assigned Cascade = 0
+		Encoded Weights = 672 bytes
+		Weight buffer = 672 bytes
+		Depth slices = [0, 32]
+		sub-operations: [ Relu6 ]
+		Estimated Perf: Macs=663552 Cycles=223232
+		Memory Used: 184992 bytes (op=73728, buf=672, ccd=0, nl=110592)
+	13: Operation Conv2D  - OFM 1, 48, 48, 8
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 26
+		Operator Config = OFM Block=[1, 2, 48, 8], IFM Block=[1, 2, 48, 32], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 48, 48, 32]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 48, 48, 8]
+		Assigned Cascade = 0
+		Encoded Weights = 352 bytes
+		Weight buffer = 352 bytes
+		Depth slices = [0, 8]
+		sub-operations: -
+		Estimated Perf: Macs=589824 Cycles=37632
+		Memory Used: 147808 bytes (op=36864, buf=352, ccd=0, nl=110592)
+	14: Operation Add  - OFM 1, 48, 48, 8
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 28
+		Operator Config = OFM Block=[1, 8, 48, 8], IFM Block=[1, 8, 48, 8], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 48, 48, 8]
+		IFM2 Stripe  = [1, 48, 48, 8]
+		OFM Stripe   = [1, 48, 48, 8]
+		Assigned Cascade = 0
+		sub-operations: -
+		Estimated Perf: Macs=0 Cycles=221184
+		Memory Used: 73728 bytes (op=0, buf=0, ccd=0, nl=73728)
+	15: Operation Conv2D  - OFM 1, 48, 48, 32
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 30
+		Operator Config = OFM Block=[1, 1, 48, 32], IFM Block=[1, 1, 48, 8], Traversal=PartKernel, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 48, 48, 8]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 48, 48, 32]
+		Assigned Cascade = 0
+		Encoded Weights = 704 bytes
+		Weight buffer = 704 bytes
+		Depth slices = [0, 32]
+		sub-operations: [ Relu6 ]
+		Estimated Perf: Macs=589824 Cycles=148992
+		Memory Used: 111296 bytes (op=73728, buf=704, ccd=0, nl=36864)
+	16: Operation DepthwiseConv2D  - OFM 1, 48, 48, 32
+		Kernel: size=3,3 stride=1,1, dilation=1,1 padding=[t:1,l:1,b:1,r:1,n:0,f:0]
+		Time index = 32
+		Operator Config = OFM Block=[1, 8, 8, 16], IFM Block=[1, 10, 10, 16], Traversal=Depthwise, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 48, 48, 32]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 48, 48, 32]
+		Assigned Cascade = 0
+		Encoded Weights = 768 bytes
+		Weight buffer = 768 bytes
+		Depth slices = [0, 32]
+		sub-operations: [ Relu6 ]
+		Estimated Perf: Macs=663552 Cycles=223232
+		Memory Used: 185088 bytes (op=73728, buf=768, ccd=0, nl=110592)
+	17: Operation Conv2D  - OFM 1, 48, 48, 8
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 34
+		Operator Config = OFM Block=[1, 2, 48, 8], IFM Block=[1, 2, 48, 32], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 48, 48, 32]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 48, 48, 8]
+		Assigned Cascade = 0
+		Encoded Weights = 352 bytes
+		Weight buffer = 352 bytes
+		Depth slices = [0, 8]
+		sub-operations: -
+		Estimated Perf: Macs=589824 Cycles=37632
+		Memory Used: 147808 bytes (op=36864, buf=352, ccd=0, nl=110592)
+	18: Operation Add  - OFM 1, 48, 48, 8
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 36
+		Operator Config = OFM Block=[1, 8, 48, 8], IFM Block=[1, 8, 48, 8], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 48, 48, 8]
+		IFM2 Stripe  = [1, 48, 48, 8]
+		OFM Stripe   = [1, 48, 48, 8]
+		Assigned Cascade = 0
+		sub-operations: -
+		Estimated Perf: Macs=0 Cycles=221184
+		Memory Used: 73728 bytes (op=0, buf=0, ccd=0, nl=73728)
+	19: Operation Conv2D  - OFM 1, 48, 48, 32
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 38
+		Operator Config = OFM Block=[1, 1, 48, 32], IFM Block=[1, 1, 48, 8], Traversal=PartKernel, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 48, 48, 8]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 48, 48, 32]
+		Assigned Cascade = 0
+		Encoded Weights = 704 bytes
+		Weight buffer = 704 bytes
+		Depth slices = [0, 32]
+		sub-operations: [ Relu6 ]
+		Estimated Perf: Macs=589824 Cycles=148992
+		Memory Used: 111296 bytes (op=73728, buf=704, ccd=0, nl=36864)
+	20: Operation DepthwiseConv2D  - OFM 1, 24, 24, 32
+		Kernel: size=3,3 stride=2,2, dilation=1,1 padding=[t:1,l:1,b:0,r:0,n:0,f:0]
+		Time index = 40
+		Operator Config = OFM Block=[1, 5, 8, 16], IFM Block=[1, 11, 17, 16], Traversal=Depthwise, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 48, 48, 32]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 24, 24, 32]
+		Assigned Cascade = 0
+		Encoded Weights = 672 bytes
+		Weight buffer = 672 bytes
+		Depth slices = [0, 32]
+		sub-operations: [ Relu6 ]
+		Estimated Perf: Macs=165888 Cycles=56576
+		Memory Used: 92832 bytes (op=18432, buf=672, ccd=0, nl=73728)
+	21: Operation Conv2D  - OFM 1, 24, 24, 8
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 42
+		Operator Config = OFM Block=[1, 4, 24, 8], IFM Block=[1, 4, 24, 32], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 24, 24, 32]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 24, 24, 8]
+		Assigned Cascade = 0
+		Encoded Weights = 368 bytes
+		Weight buffer = 368 bytes
+		Depth slices = [0, 8]
+		sub-operations: -
+		Estimated Perf: Macs=147456 Cycles=9984
+		Memory Used: 28016 bytes (op=9216, buf=368, ccd=0, nl=18432)
+	22: Operation Conv2D  - OFM 1, 24, 24, 48
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 44
+		Operator Config = OFM Block=[1, 4, 8, 48], IFM Block=[1, 4, 8, 8], Traversal=PartKernel, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 24, 24, 8]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 24, 24, 48]
+		Assigned Cascade = 0
+		Encoded Weights = 1040 bytes
+		Weight buffer = 1040 bytes
+		Depth slices = [0, 48]
+		sub-operations: [ Relu6 ]
+		Estimated Perf: Macs=221184 Cycles=56832
+		Memory Used: 37904 bytes (op=27648, buf=1040, ccd=0, nl=9216)
+	23: Operation DepthwiseConv2D  - OFM 1, 24, 24, 48
+		Kernel: size=3,3 stride=1,1, dilation=1,1 padding=[t:1,l:1,b:1,r:1,n:0,f:0]
+		Time index = 46
+		Operator Config = OFM Block=[1, 8, 8, 16], IFM Block=[1, 10, 10, 16], Traversal=Depthwise, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 24, 24, 48]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 24, 24, 48]
+		Assigned Cascade = 0
+		Encoded Weights = 992 bytes
+		Weight buffer = 992 bytes
+		Depth slices = [0, 48]
+		sub-operations: [ Relu6 ]
+		Estimated Perf: Macs=248832 Cycles=84992
+		Memory Used: 65504 bytes (op=27648, buf=992, ccd=0, nl=36864)
+	24: Operation Conv2D  - OFM 1, 24, 24, 8
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 48
+		Operator Config = OFM Block=[1, 4, 24, 8], IFM Block=[1, 4, 24, 32], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 24, 24, 48]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 24, 24, 8]
+		Assigned Cascade = 0
+		Encoded Weights = 528 bytes
+		Weight buffer = 528 bytes
+		Depth slices = [0, 8]
+		sub-operations: -
+		Estimated Perf: Macs=221184 Cycles=10752
+		Memory Used: 46608 bytes (op=9216, buf=528, ccd=0, nl=36864)
+	25: Operation Add  - OFM 1, 24, 24, 8
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 50
+		Operator Config = OFM Block=[1, 16, 24, 8], IFM Block=[1, 16, 24, 8], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 24, 24, 8]
+		IFM2 Stripe  = [1, 24, 24, 8]
+		OFM Stripe   = [1, 24, 24, 8]
+		Assigned Cascade = 0
+		sub-operations: -
+		Estimated Perf: Macs=0 Cycles=55296
+		Memory Used: 18432 bytes (op=0, buf=0, ccd=0, nl=18432)
+	26: Operation Conv2D  - OFM 1, 24, 24, 48
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 52
+		Operator Config = OFM Block=[1, 4, 8, 48], IFM Block=[1, 4, 8, 8], Traversal=PartKernel, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 24, 24, 8]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 24, 24, 48]
+		Assigned Cascade = 0
+		Encoded Weights = 1040 bytes
+		Weight buffer = 1040 bytes
+		Depth slices = [0, 48]
+		sub-operations: [ Relu6 ]
+		Estimated Perf: Macs=221184 Cycles=56832
+		Memory Used: 37904 bytes (op=27648, buf=1040, ccd=0, nl=9216)
+	27: Operation DepthwiseConv2D  - OFM 1, 24, 24, 48
+		Kernel: size=3,3 stride=1,1, dilation=1,1 padding=[t:1,l:1,b:1,r:1,n:0,f:0]
+		Time index = 54
+		Operator Config = OFM Block=[1, 8, 8, 16], IFM Block=[1, 10, 10, 16], Traversal=Depthwise, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 24, 24, 48]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 24, 24, 48]
+		Assigned Cascade = 0
+		Encoded Weights = 992 bytes
+		Weight buffer = 992 bytes
+		Depth slices = [0, 48]
+		sub-operations: [ Relu6 ]
+		Estimated Perf: Macs=248832 Cycles=84992
+		Memory Used: 65504 bytes (op=27648, buf=992, ccd=0, nl=36864)
+	28: Operation Conv2D  - OFM 1, 24, 24, 8
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 56
+		Operator Config = OFM Block=[1, 4, 24, 8], IFM Block=[1, 4, 24, 32], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 24, 24, 48]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 24, 24, 8]
+		Assigned Cascade = 0
+		Encoded Weights = 544 bytes
+		Weight buffer = 544 bytes
+		Depth slices = [0, 8]
+		sub-operations: -
+		Estimated Perf: Macs=221184 Cycles=10752
+		Memory Used: 46624 bytes (op=9216, buf=544, ccd=0, nl=36864)
+	29: Operation Add  - OFM 1, 24, 24, 8
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 58
+		Operator Config = OFM Block=[1, 16, 24, 8], IFM Block=[1, 16, 24, 8], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 24, 24, 8]
+		IFM2 Stripe  = [1, 24, 24, 8]
+		OFM Stripe   = [1, 24, 24, 8]
+		Assigned Cascade = 0
+		sub-operations: -
+		Estimated Perf: Macs=0 Cycles=55296
+		Memory Used: 18432 bytes (op=0, buf=0, ccd=0, nl=18432)
+	30: Operation Conv2D  - OFM 1, 24, 24, 48
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 60
+		Operator Config = OFM Block=[1, 4, 8, 48], IFM Block=[1, 4, 8, 8], Traversal=PartKernel, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 24, 24, 8]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 24, 24, 48]
+		Assigned Cascade = 0
+		Encoded Weights = 1040 bytes
+		Weight buffer = 1040 bytes
+		Depth slices = [0, 48]
+		sub-operations: [ Relu6 ]
+		Estimated Perf: Macs=221184 Cycles=56832
+		Memory Used: 37904 bytes (op=27648, buf=1040, ccd=0, nl=9216)
+	31: Operation DepthwiseConv2D  - OFM 1, 24, 24, 48
+		Kernel: size=3,3 stride=1,1, dilation=1,1 padding=[t:1,l:1,b:1,r:1,n:0,f:0]
+		Time index = 62
+		Operator Config = OFM Block=[1, 8, 8, 16], IFM Block=[1, 10, 10, 16], Traversal=Depthwise, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 24, 24, 48]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 24, 24, 48]
+		Assigned Cascade = 0
+		Encoded Weights = 1072 bytes
+		Weight buffer = 1072 bytes
+		Depth slices = [0, 48]
+		sub-operations: [ Relu6 ]
+		Estimated Perf: Macs=248832 Cycles=84992
+		Memory Used: 56368 bytes (op=27648, buf=1072, ccd=0, nl=27648)
+	32: Operation Conv2D  - OFM 1, 24, 24, 16
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 64
+		Operator Config = OFM Block=[1, 8, 8, 16], IFM Block=[1, 8, 8, 32], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 24, 24, 48]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 24, 24, 16]
+		Assigned Cascade = 0
+		Encoded Weights = 1040 bytes
+		Weight buffer = 1040 bytes
+		Depth slices = [0, 16]
+		sub-operations: -
+		Estimated Perf: Macs=442368 Cycles=20480
+		Memory Used: 37904 bytes (op=9216, buf=1040, ccd=0, nl=27648)
+	33: Operation Conv2D  - OFM 1, 24, 24, 96
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 66
+		Operator Config = OFM Block=[1, 2, 24, 32], IFM Block=[1, 2, 24, 16], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 24, 24, 16]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 24, 24, 96]
+		Assigned Cascade = 0
+		Encoded Weights = 2880 bytes
+		Weight buffer = 2880 bytes
+		Depth slices = [0, 96]
+		sub-operations: [ Relu6 ]
+		Estimated Perf: Macs=884736 Cycles=112128
+		Memory Used: 67392 bytes (op=55296, buf=2880, ccd=0, nl=9216)
+	34: Operation DepthwiseConv2D  - OFM 1, 24, 24, 96
+		Kernel: size=3,3 stride=1,1, dilation=1,1 padding=[t:1,l:1,b:1,r:1,n:0,f:0]
+		Time index = 68
+		Operator Config = OFM Block=[1, 8, 8, 16], IFM Block=[1, 10, 10, 16], Traversal=Depthwise, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 24, 24, 96]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 24, 24, 96]
+		Assigned Cascade = 0
+		Encoded Weights = 1968 bytes
+		Weight buffer = 1968 bytes
+		Depth slices = [0, 96]
+		sub-operations: [ Relu6 ]
+		Estimated Perf: Macs=497664 Cycles=167936
+		Memory Used: 121776 bytes (op=55296, buf=1968, ccd=0, nl=64512)
+	35: Operation Conv2D  - OFM 1, 24, 24, 16
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 70
+		Operator Config = OFM Block=[1, 8, 8, 16], IFM Block=[1, 8, 8, 32], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 24, 24, 96]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 24, 24, 16]
+		Assigned Cascade = 0
+		Encoded Weights = 1664 bytes
+		Weight buffer = 1664 bytes
+		Depth slices = [0, 16]
+		sub-operations: -
+		Estimated Perf: Macs=884736 Cycles=29696
+		Memory Used: 75392 bytes (op=9216, buf=1664, ccd=0, nl=64512)
+	36: Operation Add  - OFM 1, 24, 24, 16
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 72
+		Operator Config = OFM Block=[1, 8, 24, 16], IFM Block=[1, 8, 24, 16], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 24, 24, 16]
+		IFM2 Stripe  = [1, 24, 24, 16]
+		OFM Stripe   = [1, 24, 24, 16]
+		Assigned Cascade = 0
+		sub-operations: -
+		Estimated Perf: Macs=0 Cycles=55296
+		Memory Used: 18432 bytes (op=0, buf=0, ccd=0, nl=18432)
+	37: Operation Conv2D  - OFM 1, 24, 24, 96
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 74
+		Operator Config = OFM Block=[1, 2, 24, 32], IFM Block=[1, 2, 24, 16], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 24, 24, 16]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 24, 24, 96]
+		Assigned Cascade = 0
+		Encoded Weights = 2880 bytes
+		Weight buffer = 2880 bytes
+		Depth slices = [0, 96]
+		sub-operations: [ Relu6 ]
+		Estimated Perf: Macs=884736 Cycles=112128
+		Memory Used: 67392 bytes (op=55296, buf=2880, ccd=0, nl=9216)
+	38: Operation DepthwiseConv2D  - OFM 1, 24, 24, 96
+		Kernel: size=3,3 stride=1,1, dilation=1,1 padding=[t:1,l:1,b:1,r:1,n:0,f:0]
+		Time index = 76
+		Operator Config = OFM Block=[1, 8, 8, 16], IFM Block=[1, 10, 10, 16], Traversal=Depthwise, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 24, 24, 96]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 24, 24, 96]
+		Assigned Cascade = 0
+		Encoded Weights = 1968 bytes
+		Weight buffer = 1968 bytes
+		Depth slices = [0, 96]
+		sub-operations: [ Relu6 ]
+		Estimated Perf: Macs=497664 Cycles=167936
+		Memory Used: 121776 bytes (op=55296, buf=1968, ccd=0, nl=64512)
+	39: Operation Conv2D  - OFM 1, 24, 24, 16
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 78
+		Operator Config = OFM Block=[1, 8, 8, 16], IFM Block=[1, 8, 8, 32], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 24, 24, 96]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 24, 24, 16]
+		Assigned Cascade = 0
+		Encoded Weights = 1696 bytes
+		Weight buffer = 1696 bytes
+		Depth slices = [0, 16]
+		sub-operations: -
+		Estimated Perf: Macs=884736 Cycles=29696
+		Memory Used: 75424 bytes (op=9216, buf=1696, ccd=0, nl=64512)
+	40: Operation Add  - OFM 1, 24, 24, 16
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 80
+		Operator Config = OFM Block=[1, 8, 24, 16], IFM Block=[1, 8, 24, 16], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 24, 24, 16]
+		IFM2 Stripe  = [1, 24, 24, 16]
+		OFM Stripe   = [1, 24, 24, 16]
+		Assigned Cascade = 0
+		sub-operations: -
+		Estimated Perf: Macs=0 Cycles=55296
+		Memory Used: 18432 bytes (op=0, buf=0, ccd=0, nl=18432)
+	41: Operation Conv2D  - OFM 1, 24, 24, 96
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 82
+		Operator Config = OFM Block=[1, 2, 24, 32], IFM Block=[1, 2, 24, 16], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 24, 24, 16]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 24, 24, 96]
+		Assigned Cascade = 0
+		Encoded Weights = 2880 bytes
+		Weight buffer = 2880 bytes
+		Depth slices = [0, 96]
+		sub-operations: [ Relu6 ]
+		Estimated Perf: Macs=884736 Cycles=112128
+		Memory Used: 67392 bytes (op=55296, buf=2880, ccd=0, nl=9216)
+	42: Operation DepthwiseConv2D  - OFM 1, 24, 24, 96
+		Kernel: size=3,3 stride=1,1, dilation=1,1 padding=[t:1,l:1,b:1,r:1,n:0,f:0]
+		Time index = 84
+		Operator Config = OFM Block=[1, 8, 8, 16], IFM Block=[1, 10, 10, 16], Traversal=Depthwise, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 24, 24, 96]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 24, 24, 96]
+		Assigned Cascade = 0
+		Encoded Weights = 1984 bytes
+		Weight buffer = 1984 bytes
+		Depth slices = [0, 96]
+		sub-operations: [ Relu6 ]
+		Estimated Perf: Macs=497664 Cycles=167936
+		Memory Used: 121792 bytes (op=55296, buf=1984, ccd=0, nl=64512)
+	43: Operation Conv2D  - OFM 1, 24, 24, 16
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 86
+		Operator Config = OFM Block=[1, 8, 8, 16], IFM Block=[1, 8, 8, 32], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 24, 24, 96]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 24, 24, 16]
+		Assigned Cascade = 0
+		Encoded Weights = 1712 bytes
+		Weight buffer = 1712 bytes
+		Depth slices = [0, 16]
+		sub-operations: -
+		Estimated Perf: Macs=884736 Cycles=29696
+		Memory Used: 75440 bytes (op=9216, buf=1712, ccd=0, nl=64512)
+	44: Operation Add  - OFM 1, 24, 24, 16
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 88
+		Operator Config = OFM Block=[1, 8, 24, 16], IFM Block=[1, 8, 24, 16], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 24, 24, 16]
+		IFM2 Stripe  = [1, 24, 24, 16]
+		OFM Stripe   = [1, 24, 24, 16]
+		Assigned Cascade = 0
+		sub-operations: -
+		Estimated Perf: Macs=0 Cycles=55296
+		Memory Used: 18432 bytes (op=0, buf=0, ccd=0, nl=18432)
+	45: Operation Conv2D  - OFM 1, 24, 24, 96
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 90
+		Operator Config = OFM Block=[1, 2, 24, 32], IFM Block=[1, 2, 24, 16], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 24, 24, 16]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 24, 24, 96]
+		Assigned Cascade = 0
+		Encoded Weights = 2880 bytes
+		Weight buffer = 2880 bytes
+		Depth slices = [0, 96]
+		sub-operations: [ Relu6 ]
+		Estimated Perf: Macs=884736 Cycles=112128
+		Memory Used: 67392 bytes (op=55296, buf=2880, ccd=0, nl=9216)
+	46: Operation DepthwiseConv2D  - OFM 1, 24, 24, 96
+		Kernel: size=3,3 stride=1,1, dilation=1,1 padding=[t:1,l:1,b:1,r:1,n:0,f:0]
+		Time index = 92
+		Operator Config = OFM Block=[1, 8, 8, 16], IFM Block=[1, 10, 10, 16], Traversal=Depthwise, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 24, 24, 96]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 24, 24, 96]
+		Assigned Cascade = 0
+		Encoded Weights = 1968 bytes
+		Weight buffer = 1968 bytes
+		Depth slices = [0, 96]
+		sub-operations: [ Relu6 ]
+		Estimated Perf: Macs=497664 Cycles=167936
+		Memory Used: 121776 bytes (op=55296, buf=1968, ccd=0, nl=64512)
+	47: Operation Conv2D  - OFM 1, 24, 24, 16
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 94
+		Operator Config = OFM Block=[1, 8, 8, 16], IFM Block=[1, 8, 8, 32], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 24, 24, 96]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 24, 24, 16]
+		Assigned Cascade = 0
+		Encoded Weights = 1712 bytes
+		Weight buffer = 1712 bytes
+		Depth slices = [0, 16]
+		sub-operations: -
+		Estimated Perf: Macs=884736 Cycles=29696
+		Memory Used: 75440 bytes (op=9216, buf=1712, ccd=0, nl=64512)
+	48: Operation Add  - OFM 1, 24, 24, 16
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 96
+		Operator Config = OFM Block=[1, 8, 24, 16], IFM Block=[1, 8, 24, 16], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 24, 24, 16]
+		IFM2 Stripe  = [1, 24, 24, 16]
+		OFM Stripe   = [1, 24, 24, 16]
+		Assigned Cascade = 0
+		sub-operations: -
+		Estimated Perf: Macs=0 Cycles=55296
+		Memory Used: 18432 bytes (op=0, buf=0, ccd=0, nl=18432)
+	49: Operation Conv2D  - OFM 1, 24, 24, 96
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 98
+		Operator Config = OFM Block=[1, 2, 24, 32], IFM Block=[1, 2, 24, 16], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 24, 24, 16]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 24, 24, 96]
+		Assigned Cascade = 0
+		Encoded Weights = 2880 bytes
+		Weight buffer = 2880 bytes
+		Depth slices = [0, 96]
+		sub-operations: [ Relu6 ]
+		Estimated Perf: Macs=884736 Cycles=112128
+		Memory Used: 67392 bytes (op=55296, buf=2880, ccd=0, nl=9216)
+	50: Operation DepthwiseConv2D  - OFM 1, 12, 12, 96
+		Kernel: size=3,3 stride=2,2, dilation=1,1 padding=[t:1,l:1,b:0,r:0,n:0,f:0]
+		Time index = 100
+		Operator Config = OFM Block=[1, 6, 6, 16], IFM Block=[1, 13, 13, 16], Traversal=Depthwise, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 24, 24, 96]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 12, 12, 96]
+		Assigned Cascade = 0
+		Encoded Weights = 2272 bytes
+		Weight buffer = 2272 bytes
+		Depth slices = [0, 96]
+		sub-operations: [ Relu6 ]
+		Estimated Perf: Macs=124416 Cycles=42624
+		Memory Used: 71392 bytes (op=13824, buf=2272, ccd=0, nl=55296)
+	51: Operation Conv2D  - OFM 1, 12, 12, 24
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 102
+		Operator Config = OFM Block=[1, 4, 12, 16], IFM Block=[1, 4, 12, 32], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 12, 12, 96]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 12, 12, 24]
+		Assigned Cascade = 0
+		Encoded Weights = 2448 bytes
+		Weight buffer = 2448 bytes
+		Depth slices = [0, 24]
+		sub-operations: -
+		Estimated Perf: Macs=331776 Cycles=11904
+		Memory Used: 20880 bytes (op=4608, buf=2448, ccd=0, nl=13824)
+	52: Operation Conv2D  - OFM 1, 12, 12, 136
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 104
+		Operator Config = OFM Block=[1, 2, 12, 48], IFM Block=[1, 2, 12, 24], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 12, 12, 24]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 12, 12, 136]
+		Assigned Cascade = 0
+		Encoded Weights = 5152 bytes
+		Weight buffer = 5152 bytes
+		Depth slices = [0, 136]
+		sub-operations: [ Relu6 ]
+		Estimated Perf: Macs=470016 Cycles=40320
+		Memory Used: 30496 bytes (op=20736, buf=5152, ccd=0, nl=4608)
+	53: Operation DepthwiseConv2D  - OFM 1, 12, 12, 136
+		Kernel: size=3,3 stride=1,1, dilation=1,1 padding=[t:1,l:1,b:1,r:1,n:0,f:0]
+		Time index = 106
+		Operator Config = OFM Block=[1, 8, 8, 16], IFM Block=[1, 10, 10, 16], Traversal=Depthwise, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 12, 12, 136]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 12, 12, 136]
+		Assigned Cascade = 0
+		Encoded Weights = 2800 bytes
+		Weight buffer = 2800 bytes
+		Depth slices = [0, 136]
+		sub-operations: [ Relu6 ]
+		Estimated Perf: Macs=176256 Cycles=60800
+		Memory Used: 48880 bytes (op=20736, buf=2800, ccd=0, nl=25344)
+	54: Operation Conv2D  - OFM 1, 12, 12, 24
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 108
+		Operator Config = OFM Block=[1, 4, 12, 16], IFM Block=[1, 4, 12, 32], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 12, 12, 136]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 12, 12, 24]
+		Assigned Cascade = 0
+		Encoded Weights = 3888 bytes
+		Weight buffer = 3888 bytes
+		Depth slices = [0, 24]
+		sub-operations: -
+		Estimated Perf: Macs=470016 Cycles=18816
+		Memory Used: 33840 bytes (op=4608, buf=3888, ccd=0, nl=25344)
+	55: Operation Add  - OFM 1, 12, 12, 24
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 110
+		Operator Config = OFM Block=[1, 12, 12, 16], IFM Block=[1, 12, 12, 16], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 12, 12, 24]
+		IFM2 Stripe  = [1, 12, 12, 24]
+		OFM Stripe   = [1, 12, 12, 24]
+		Assigned Cascade = 0
+		sub-operations: -
+		Estimated Perf: Macs=0 Cycles=27648
+		Memory Used: 9216 bytes (op=0, buf=0, ccd=0, nl=9216)
+	56: Operation Conv2D  - OFM 1, 12, 12, 136
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 112
+		Operator Config = OFM Block=[1, 2, 12, 48], IFM Block=[1, 2, 12, 24], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 12, 12, 24]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 12, 12, 136]
+		Assigned Cascade = 0
+		Encoded Weights = 5168 bytes
+		Weight buffer = 5168 bytes
+		Depth slices = [0, 136]
+		sub-operations: [ Relu6 ]
+		Estimated Perf: Macs=470016 Cycles=40320
+		Memory Used: 30512 bytes (op=20736, buf=5168, ccd=0, nl=4608)
+	57: Operation DepthwiseConv2D  - OFM 1, 12, 12, 136
+		Kernel: size=3,3 stride=1,1, dilation=1,1 padding=[t:1,l:1,b:1,r:1,n:0,f:0]
+		Time index = 114
+		Operator Config = OFM Block=[1, 8, 8, 16], IFM Block=[1, 10, 10, 16], Traversal=Depthwise, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 12, 12, 136]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 12, 12, 136]
+		Assigned Cascade = 0
+		Encoded Weights = 2800 bytes
+		Weight buffer = 2800 bytes
+		Depth slices = [0, 136]
+		sub-operations: [ Relu6 ]
+		Estimated Perf: Macs=176256 Cycles=60800
+		Memory Used: 48880 bytes (op=20736, buf=2800, ccd=0, nl=25344)
+	58: Operation Conv2D  - OFM 1, 12, 12, 24
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 116
+		Operator Config = OFM Block=[1, 4, 12, 16], IFM Block=[1, 4, 12, 32], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 12, 12, 136]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 12, 12, 24]
+		Assigned Cascade = 0
+		Encoded Weights = 3888 bytes
+		Weight buffer = 3888 bytes
+		Depth slices = [0, 24]
+		sub-operations: -
+		Estimated Perf: Macs=470016 Cycles=18816
+		Memory Used: 33840 bytes (op=4608, buf=3888, ccd=0, nl=25344)
+	59: Operation Add  - OFM 1, 12, 12, 24
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 118
+		Operator Config = OFM Block=[1, 12, 12, 16], IFM Block=[1, 12, 12, 16], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 12, 12, 24]
+		IFM2 Stripe  = [1, 12, 12, 24]
+		OFM Stripe   = [1, 12, 12, 24]
+		Assigned Cascade = 0
+		sub-operations: -
+		Estimated Perf: Macs=0 Cycles=27648
+		Memory Used: 9216 bytes (op=0, buf=0, ccd=0, nl=9216)
+	60: Operation Conv2D  - OFM 1, 12, 12, 136
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 120
+		Operator Config = OFM Block=[1, 2, 12, 48], IFM Block=[1, 2, 12, 24], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 12, 12, 24]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 12, 12, 136]
+		Assigned Cascade = 0
+		Encoded Weights = 5152 bytes
+		Weight buffer = 5152 bytes
+		Depth slices = [0, 136]
+		sub-operations: [ Relu6 ]
+		Estimated Perf: Macs=470016 Cycles=40320
+		Memory Used: 30496 bytes (op=20736, buf=5152, ccd=0, nl=4608)
+	61: Operation DepthwiseConv2D  - OFM 1, 12, 12, 136
+		Kernel: size=3,3 stride=1,1, dilation=1,1 padding=[t:1,l:1,b:1,r:1,n:0,f:0]
+		Time index = 122
+		Operator Config = OFM Block=[1, 8, 8, 16], IFM Block=[1, 10, 10, 16], Traversal=Depthwise, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 12, 12, 136]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 12, 12, 136]
+		Assigned Cascade = 0
+		Encoded Weights = 2784 bytes
+		Weight buffer = 2784 bytes
+		Depth slices = [0, 136]
+		sub-operations: [ Relu6 ]
+		Estimated Perf: Macs=176256 Cycles=60800
+		Memory Used: 48864 bytes (op=20736, buf=2784, ccd=0, nl=25344)
+	62: Operation Conv2D  - OFM 1, 12, 12, 24
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 124
+		Operator Config = OFM Block=[1, 4, 12, 16], IFM Block=[1, 4, 12, 32], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 12, 12, 136]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 12, 12, 24]
+		Assigned Cascade = 0
+		Encoded Weights = 3888 bytes
+		Weight buffer = 3888 bytes
+		Depth slices = [0, 24]
+		sub-operations: -
+		Estimated Perf: Macs=470016 Cycles=18816
+		Memory Used: 33840 bytes (op=4608, buf=3888, ccd=0, nl=25344)
+	63: Operation Add  - OFM 1, 12, 12, 24
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 126
+		Operator Config = OFM Block=[1, 12, 12, 16], IFM Block=[1, 12, 12, 16], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 12, 12, 24]
+		IFM2 Stripe  = [1, 12, 12, 24]
+		OFM Stripe   = [1, 12, 12, 24]
+		Assigned Cascade = 0
+		sub-operations: -
+		Estimated Perf: Macs=0 Cycles=27648
+		Memory Used: 9216 bytes (op=0, buf=0, ccd=0, nl=9216)
+	64: Operation Conv2D  - OFM 1, 12, 12, 136
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 128
+		Operator Config = OFM Block=[1, 2, 12, 48], IFM Block=[1, 2, 12, 24], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 12, 12, 24]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 12, 12, 136]
+		Assigned Cascade = 0
+		Encoded Weights = 5152 bytes
+		Weight buffer = 5152 bytes
+		Depth slices = [0, 136]
+		sub-operations: [ Relu6 ]
+		Estimated Perf: Macs=470016 Cycles=40320
+		Memory Used: 30496 bytes (op=20736, buf=5152, ccd=0, nl=4608)
+	65: Operation DepthwiseConv2D  - OFM 1, 12, 12, 136
+		Kernel: size=3,3 stride=1,1, dilation=1,1 padding=[t:1,l:1,b:1,r:1,n:0,f:0]
+		Time index = 130
+		Operator Config = OFM Block=[1, 8, 8, 16], IFM Block=[1, 10, 10, 16], Traversal=Depthwise, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 12, 12, 136]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 12, 12, 136]
+		Assigned Cascade = 0
+		Encoded Weights = 2800 bytes
+		Weight buffer = 2800 bytes
+		Depth slices = [0, 136]
+		sub-operations: [ Relu6 ]
+		Estimated Perf: Macs=176256 Cycles=60800
+		Memory Used: 48880 bytes (op=20736, buf=2800, ccd=0, nl=25344)
+	66: Operation Conv2D  - OFM 1, 12, 12, 24
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 132
+		Operator Config = OFM Block=[1, 4, 12, 16], IFM Block=[1, 4, 12, 32], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 12, 12, 136]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 12, 12, 24]
+		Assigned Cascade = 0
+		Encoded Weights = 3856 bytes
+		Weight buffer = 3856 bytes
+		Depth slices = [0, 24]
+		sub-operations: -
+		Estimated Perf: Macs=470016 Cycles=18816
+		Memory Used: 33808 bytes (op=4608, buf=3856, ccd=0, nl=25344)
+	67: Operation Add  - OFM 1, 12, 12, 24
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 134
+		Operator Config = OFM Block=[1, 12, 12, 16], IFM Block=[1, 12, 12, 16], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 12, 12, 24]
+		IFM2 Stripe  = [1, 12, 12, 24]
+		OFM Stripe   = [1, 12, 12, 24]
+		Assigned Cascade = 0
+		sub-operations: -
+		Estimated Perf: Macs=0 Cycles=27648
+		Memory Used: 9216 bytes (op=0, buf=0, ccd=0, nl=9216)
+	68: Operation MemoryCopy  - OFM 1, 12, 12, 120
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 136
+		Operator Config = OFM Block=[1, 4, 4, 16], IFM Block=[1, 4, 4, 16], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 12, 12, 24]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 12, 12, 24]
+		Assigned Cascade = 0
+		sub-operations: -
+		Estimated Perf: Macs=3456 Cycles=7168
+		Memory Used: 23040 bytes (op=18432, buf=0, ccd=0, nl=4608)
+	69: Operation Conv2D  - OFM 1, 12, 12, 136
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 138
+		Operator Config = OFM Block=[1, 2, 12, 48], IFM Block=[1, 2, 12, 24], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 12, 12, 24]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 12, 12, 136]
+		Assigned Cascade = 0
+		Encoded Weights = 5168 bytes
+		Weight buffer = 5168 bytes
+		Depth slices = [0, 136]
+		sub-operations: [ Relu6 ]
+		Estimated Perf: Macs=470016 Cycles=40320
+		Memory Used: 48944 bytes (op=20736, buf=5168, ccd=0, nl=23040)
+	70: Operation DepthwiseConv2D  - OFM 1, 6, 6, 136
+		Kernel: size=3,3 stride=2,2, dilation=1,1 padding=[t:1,l:1,b:0,r:0,n:0,f:0]
+		Time index = 140
+		Operator Config = OFM Block=[1, 6, 6, 16], IFM Block=[1, 13, 13, 16], Traversal=Depthwise, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 12, 12, 136]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 6, 6, 136]
+		Assigned Cascade = 0
+		Encoded Weights = 3152 bytes
+		Weight buffer = 3152 bytes
+		Depth slices = [0, 136]
+		sub-operations: [ Relu6 ]
+		Estimated Perf: Macs=44064 Cycles=15840
+		Memory Used: 47504 bytes (op=5184, buf=3152, ccd=0, nl=39168)
+	71: Operation Conv2D  - OFM 1, 6, 6, 48
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 142
+		Operator Config = OFM Block=[1, 3, 6, 48], IFM Block=[1, 3, 6, 32], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 6, 6, 136]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 6, 6, 48]
+		Assigned Cascade = 0
+		Encoded Weights = 7504 bytes
+		Weight buffer = 7504 bytes
+		Depth slices = [0, 48]
+		sub-operations: -
+		Estimated Perf: Macs=235008 Cycles=10368
+		Memory Used: 32848 bytes (op=1728, buf=7504, ccd=0, nl=23616)
+	72: Operation Conv2D  - OFM 1, 6, 6, 224
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 144
+		Operator Config = OFM Block=[1, 5, 6, 48], IFM Block=[1, 5, 6, 32], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 6, 6, 48]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 6, 6, 224]
+		Assigned Cascade = 0
+		Encoded Weights = 14736 bytes
+		Weight buffer = 14736 bytes
+		Depth slices = [0, 144, 224]
+		sub-operations: [ Relu6 ]
+		Estimated Perf: Macs=387072 Cycles=19008
+		Memory Used: 42960 bytes (op=8064, buf=14736, ccd=0, nl=20160)
+	73: Operation DepthwiseConv2D  - OFM 1, 6, 6, 224
+		Kernel: size=3,3 stride=1,1, dilation=1,1 padding=[t:1,l:1,b:1,r:1,n:0,f:0]
+		Time index = 146
+		Operator Config = OFM Block=[1, 6, 6, 16], IFM Block=[1, 8, 8, 16], Traversal=Depthwise, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 6, 6, 224]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 6, 6, 224]
+		Assigned Cascade = 0
+		Encoded Weights = 4592 bytes
+		Weight buffer = 4592 bytes
+		Depth slices = [0, 224]
+		sub-operations: [ Relu6 ]
+		Estimated Perf: Macs=72576 Cycles=25344
+		Memory Used: 40880 bytes (op=8064, buf=4592, ccd=0, nl=28224)
+	74: Operation Conv2D  - OFM 1, 6, 6, 48
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 148
+		Operator Config = OFM Block=[1, 3, 6, 48], IFM Block=[1, 3, 6, 32], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 6, 6, 224]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 6, 6, 48]
+		Assigned Cascade = 0
+		Encoded Weights = 10704 bytes
+		Weight buffer = 10704 bytes
+		Depth slices = [0, 48]
+		sub-operations: -
+		Estimated Perf: Macs=387072 Cycles=14101
+		Memory Used: 40656 bytes (op=1728, buf=10704, ccd=0, nl=28224)
+	75: Operation Add  - OFM 1, 6, 6, 48
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 150
+		Operator Config = OFM Block=[1, 6, 6, 48], IFM Block=[1, 6, 6, 48], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 6, 6, 48]
+		IFM2 Stripe  = [1, 6, 6, 48]
+		OFM Stripe   = [1, 6, 6, 48]
+		Assigned Cascade = 0
+		sub-operations: -
+		Estimated Perf: Macs=0 Cycles=10368
+		Memory Used: 21888 bytes (op=0, buf=0, ccd=0, nl=21888)
+	76: Operation Conv2D  - OFM 1, 6, 6, 224
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 152
+		Operator Config = OFM Block=[1, 5, 6, 48], IFM Block=[1, 5, 6, 32], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 6, 6, 48]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 6, 6, 224]
+		Assigned Cascade = 0
+		Encoded Weights = 14736 bytes
+		Weight buffer = 14736 bytes
+		Depth slices = [0, 144, 224]
+		sub-operations: [ Relu6 ]
+		Estimated Perf: Macs=387072 Cycles=19008
+		Memory Used: 42960 bytes (op=8064, buf=14736, ccd=0, nl=20160)
+	77: Operation DepthwiseConv2D  - OFM 1, 6, 6, 224
+		Kernel: size=3,3 stride=1,1, dilation=1,1 padding=[t:1,l:1,b:1,r:1,n:0,f:0]
+		Time index = 154
+		Operator Config = OFM Block=[1, 6, 6, 16], IFM Block=[1, 8, 8, 16], Traversal=Depthwise, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 6, 6, 224]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 6, 6, 224]
+		Assigned Cascade = 0
+		Encoded Weights = 4592 bytes
+		Weight buffer = 4592 bytes
+		Depth slices = [0, 224]
+		sub-operations: [ Relu6 ]
+		Estimated Perf: Macs=72576 Cycles=25344
+		Memory Used: 40880 bytes (op=8064, buf=4592, ccd=0, nl=28224)
+	78: Operation Conv2D  - OFM 1, 6, 6, 48
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 156
+		Operator Config = OFM Block=[1, 3, 6, 48], IFM Block=[1, 3, 6, 32], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 6, 6, 224]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 6, 6, 48]
+		Assigned Cascade = 0
+		Encoded Weights = 10800 bytes
+		Weight buffer = 10800 bytes
+		Depth slices = [0, 48]
+		sub-operations: -
+		Estimated Perf: Macs=387072 Cycles=14101
+		Memory Used: 40752 bytes (op=1728, buf=10800, ccd=0, nl=28224)
+	79: Operation Add  - OFM 1, 6, 6, 48
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 158
+		Operator Config = OFM Block=[1, 6, 6, 48], IFM Block=[1, 6, 6, 48], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 6, 6, 48]
+		IFM2 Stripe  = [1, 6, 6, 48]
+		OFM Stripe   = [1, 6, 6, 48]
+		Assigned Cascade = 0
+		sub-operations: -
+		Estimated Perf: Macs=0 Cycles=10368
+		Memory Used: 21888 bytes (op=0, buf=0, ccd=0, nl=21888)
+	80: Operation Conv2D  - OFM 1, 6, 6, 224
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 160
+		Operator Config = OFM Block=[1, 5, 6, 48], IFM Block=[1, 5, 6, 32], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 6, 6, 48]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 6, 6, 224]
+		Assigned Cascade = 0
+		Encoded Weights = 14720 bytes
+		Weight buffer = 14720 bytes
+		Depth slices = [0, 144, 224]
+		sub-operations: [ Relu6 ]
+		Estimated Perf: Macs=387072 Cycles=19008
+		Memory Used: 42944 bytes (op=8064, buf=14720, ccd=0, nl=20160)
+	81: Operation DepthwiseConv2D  - OFM 1, 6, 6, 224
+		Kernel: size=3,3 stride=1,1, dilation=1,1 padding=[t:1,l:1,b:1,r:1,n:0,f:0]
+		Time index = 162
+		Operator Config = OFM Block=[1, 6, 6, 16], IFM Block=[1, 8, 8, 16], Traversal=Depthwise, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 6, 6, 224]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 6, 6, 224]
+		Assigned Cascade = 0
+		Encoded Weights = 5184 bytes
+		Weight buffer = 5184 bytes
+		Depth slices = [0, 224]
+		sub-operations: [ Relu6 ]
+		Estimated Perf: Macs=72576 Cycles=25344
+		Memory Used: 41472 bytes (op=8064, buf=5184, ccd=0, nl=28224)
+	82: Operation Conv2D  - OFM 1, 6, 6, 48
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 164
+		Operator Config = OFM Block=[1, 3, 6, 48], IFM Block=[1, 3, 6, 32], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 6, 6, 224]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 6, 6, 48]
+		Assigned Cascade = 0
+		Encoded Weights = 10672 bytes
+		Weight buffer = 10672 bytes
+		Depth slices = [0, 48]
+		sub-operations: -
+		Estimated Perf: Macs=387072 Cycles=14101
+		Memory Used: 40624 bytes (op=1728, buf=10672, ccd=0, nl=28224)
+	83: Operation Add  - OFM 1, 6, 6, 48
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 166
+		Operator Config = OFM Block=[1, 6, 6, 48], IFM Block=[1, 6, 6, 48], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 6, 6, 48]
+		IFM2 Stripe  = [1, 6, 6, 48]
+		OFM Stripe   = [1, 6, 6, 48]
+		Assigned Cascade = 0
+		sub-operations: -
+		Estimated Perf: Macs=0 Cycles=10368
+		Memory Used: 21888 bytes (op=0, buf=0, ccd=0, nl=21888)
+	84: Operation Conv2D  - OFM 1, 6, 6, 224
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 168
+		Operator Config = OFM Block=[1, 5, 6, 48], IFM Block=[1, 5, 6, 32], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 6, 6, 48]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 6, 6, 224]
+		Assigned Cascade = 0
+		Encoded Weights = 14736 bytes
+		Weight buffer = 14736 bytes
+		Depth slices = [0, 144, 224]
+		sub-operations: [ Relu6 ]
+		Estimated Perf: Macs=387072 Cycles=19008
+		Memory Used: 42960 bytes (op=8064, buf=14736, ccd=0, nl=20160)
+	85: Operation DepthwiseConv2D  - OFM 1, 6, 6, 224
+		Kernel: size=3,3 stride=1,1, dilation=1,1 padding=[t:1,l:1,b:1,r:1,n:0,f:0]
+		Time index = 170
+		Operator Config = OFM Block=[1, 6, 6, 16], IFM Block=[1, 8, 8, 16], Traversal=Depthwise, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 6, 6, 224]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 6, 6, 224]
+		Assigned Cascade = 0
+		Encoded Weights = 5200 bytes
+		Weight buffer = 5200 bytes
+		Depth slices = [0, 224]
+		sub-operations: [ Relu6 ]
+		Estimated Perf: Macs=72576 Cycles=25344
+		Memory Used: 41488 bytes (op=8064, buf=5200, ccd=0, nl=28224)
+	86: Operation Conv2D  - OFM 1, 6, 6, 48
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 172
+		Operator Config = OFM Block=[1, 3, 6, 48], IFM Block=[1, 3, 6, 32], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 6, 6, 224]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 6, 6, 48]
+		Assigned Cascade = 0
+		Encoded Weights = 10656 bytes
+		Weight buffer = 10656 bytes
+		Depth slices = [0, 48]
+		sub-operations: -
+		Estimated Perf: Macs=387072 Cycles=14101
+		Memory Used: 40608 bytes (op=1728, buf=10656, ccd=0, nl=28224)
+	87: Operation Add  - OFM 1, 6, 6, 48
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 174
+		Operator Config = OFM Block=[1, 6, 6, 48], IFM Block=[1, 6, 6, 48], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 6, 6, 48]
+		IFM2 Stripe  = [1, 6, 6, 48]
+		OFM Stripe   = [1, 6, 6, 48]
+		Assigned Cascade = 0
+		sub-operations: -
+		Estimated Perf: Macs=0 Cycles=10368
+		Memory Used: 21888 bytes (op=0, buf=0, ccd=0, nl=21888)
+	88: Operation Conv2D  - OFM 1, 6, 6, 224
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 176
+		Operator Config = OFM Block=[1, 5, 6, 48], IFM Block=[1, 5, 6, 32], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 6, 6, 48]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 6, 6, 224]
+		Assigned Cascade = 0
+		Encoded Weights = 14752 bytes
+		Weight buffer = 14752 bytes
+		Depth slices = [0, 144, 224]
+		sub-operations: [ Relu6 ]
+		Estimated Perf: Macs=387072 Cycles=19008
+		Memory Used: 42976 bytes (op=8064, buf=14752, ccd=0, nl=20160)
+	89: Operation DepthwiseConv2D  - OFM 1, 6, 6, 224
+		Kernel: size=3,3 stride=1,1, dilation=1,1 padding=[t:1,l:1,b:1,r:1,n:0,f:0]
+		Time index = 178
+		Operator Config = OFM Block=[1, 6, 6, 16], IFM Block=[1, 8, 8, 16], Traversal=Depthwise, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 6, 6, 224]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 6, 6, 224]
+		Assigned Cascade = 0
+		Encoded Weights = 4592 bytes
+		Weight buffer = 4592 bytes
+		Depth slices = [0, 224]
+		sub-operations: [ Relu6 ]
+		Estimated Perf: Macs=72576 Cycles=25344
+		Memory Used: 40880 bytes (op=8064, buf=4592, ccd=0, nl=28224)
+	90: Operation Conv2D  - OFM 1, 6, 6, 48
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 180
+		Operator Config = OFM Block=[1, 3, 6, 48], IFM Block=[1, 3, 6, 32], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 6, 6, 224]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 6, 6, 48]
+		Assigned Cascade = 0
+		Encoded Weights = 10496 bytes
+		Weight buffer = 10496 bytes
+		Depth slices = [0, 48]
+		sub-operations: -
+		Estimated Perf: Macs=387072 Cycles=14101
+		Memory Used: 40448 bytes (op=1728, buf=10496, ccd=0, nl=28224)
+	91: Operation Add  - OFM 1, 6, 6, 48
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 182
+		Operator Config = OFM Block=[1, 6, 6, 48], IFM Block=[1, 6, 6, 48], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 6, 6, 48]
+		IFM2 Stripe  = [1, 6, 6, 48]
+		OFM Stripe   = [1, 6, 6, 48]
+		Assigned Cascade = 0
+		sub-operations: -
+		Estimated Perf: Macs=0 Cycles=10368
+		Memory Used: 21888 bytes (op=0, buf=0, ccd=0, nl=21888)
+	92: Operation MemoryCopy  - OFM 1, 6, 6, 192
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 184
+		Operator Config = OFM Block=[1, 4, 5, 48], IFM Block=[1, 4, 5, 48], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 6, 6, 48]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 6, 6, 48]
+		Assigned Cascade = 0
+		sub-operations: -
+		Estimated Perf: Macs=1728 Cycles=4416
+		Memory Used: 27072 bytes (op=6912, buf=0, ccd=0, nl=20160)
+	93: Operation MaxPool  - OFM 1, 6, 6, 48
+		Kernel: size=3,3 stride=1,1, dilation=1,1 padding=[t:1,l:1,b:1,r:1,n:0,f:0]
+		Time index = 186
+		Operator Config = OFM Block=[1, 6, 6, 16], IFM Block=[1, 8, 8, 16], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 6, 6, 48]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 6, 6, 48]
+		Assigned Cascade = 0
+		sub-operations: -
+		Estimated Perf: Macs=15552 Cycles=4464
+		Memory Used: 28800 bytes (op=1728, buf=0, ccd=0, nl=27072)
+	94: Operation MemoryCopy  - OFM 1, 6, 6, 192
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 188
+		Operator Config = OFM Block=[1, 4, 5, 48], IFM Block=[1, 4, 5, 48], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 6, 6, 48]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 6, 6, 48]
+		Assigned Cascade = 0
+		sub-operations: -
+		Estimated Perf: Macs=1728 Cycles=4416
+		Memory Used: 28800 bytes (op=0, buf=0, ccd=0, nl=28800)
+	95: Operation MaxPool  - OFM 1, 6, 6, 48
+		Kernel: size=5,5 stride=1,1, dilation=1,1 padding=[t:2,l:2,b:2,r:2,n:0,f:0]
+		Time index = 190
+		Operator Config = OFM Block=[1, 6, 6, 16], IFM Block=[1, 10, 10, 16], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 6, 6, 48]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 6, 6, 48]
+		Assigned Cascade = 0
+		sub-operations: -
+		Estimated Perf: Macs=43200 Cycles=11896
+		Memory Used: 28800 bytes (op=1728, buf=0, ccd=0, nl=27072)
+	96: Operation MemoryCopy  - OFM 1, 6, 6, 192
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 192
+		Operator Config = OFM Block=[1, 4, 5, 48], IFM Block=[1, 4, 5, 48], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 6, 6, 48]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 6, 6, 48]
+		Assigned Cascade = 0
+		sub-operations: -
+		Estimated Perf: Macs=1728 Cycles=4416
+		Memory Used: 28800 bytes (op=0, buf=0, ccd=0, nl=28800)
+	97: Operation MaxPool  - OFM 1, 6, 6, 48
+		Kernel: size=9,9 stride=1,1, dilation=1,1 padding=[t:4,l:4,b:4,r:4,n:0,f:0]
+		Time index = 194
+		Operator Config = OFM Block=[1, 6, 6, 16], IFM Block=[1, 13, 13, 16], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 6, 6, 48]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 6, 6, 48]
+		Assigned Cascade = 0
+		sub-operations: -
+		Estimated Perf: Macs=139968 Cycles=39508
+		Memory Used: 28800 bytes (op=1728, buf=0, ccd=0, nl=27072)
+	98: Operation MemoryCopy  - OFM 1, 6, 6, 192
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 196
+		Operator Config = OFM Block=[1, 4, 5, 48], IFM Block=[1, 4, 5, 48], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 6, 6, 48]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 6, 6, 48]
+		Assigned Cascade = 0
+		sub-operations: -
+		Estimated Perf: Macs=1728 Cycles=4416
+		Memory Used: 27072 bytes (op=0, buf=0, ccd=0, nl=27072)
+	99: Operation Conv2D  - OFM 1, 6, 6, 96
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 198
+		Operator Config = OFM Block=[1, 3, 6, 48], IFM Block=[1, 3, 6, 32], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 6, 6, 192]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 6, 6, 96]
+		Assigned Cascade = 0
+		Encoded Weights = 18032 bytes
+		Weight buffer = 15024 bytes
+		Depth slices = [0, 16, 64, 96]
+		sub-operations: [ Relu6 ]
+		Estimated Perf: Macs=663552 Cycles=22525
+		Memory Used: 43824 bytes (op=3456, buf=15024, ccd=0, nl=25344)
+	100: Operation AvgPool  - OFM 1, 12, 12, 96
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 200
+		Operator Config = OFM Block=[1, 9, 9, 16], IFM Block=[1, 5, 5, 16], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 6, 6, 96]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 12, 12, 96]
+		Assigned Cascade = 0
+		sub-operations: -
+		Estimated Perf: Macs=13824 Cycles=28944
+		Memory Used: 35712 bytes (op=13824, buf=0, ccd=0, nl=21888)
+	101: Operation MemoryCopy  - OFM 1, 12, 12, 120
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 202
+		Operator Config = OFM Block=[1, 4, 4, 64], IFM Block=[1, 4, 4, 64], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 12, 12, 96]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 12, 12, 96]
+		Assigned Cascade = 0
+		sub-operations: -
+		Estimated Perf: Macs=13824 Cycles=28672
+		Memory Used: 35712 bytes (op=0, buf=0, ccd=0, nl=35712)
+	102: Operation DepthwiseConv2D  - OFM 1, 12, 12, 120
+		Kernel: size=5,5 stride=1,1, dilation=1,1 padding=[t:2,l:2,b:2,r:2,n:0,f:0]
+		Time index = 204
+		Operator Config = OFM Block=[1, 5, 12, 16], IFM Block=[1, 9, 16, 16], Traversal=Depthwise, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 12, 12, 120]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 12, 12, 120]
+		Assigned Cascade = 0
+		Encoded Weights = 4624 bytes
+		Weight buffer = 4624 bytes
+		Depth slices = [0, 120]
+		sub-operations: [ Relu6 ]
+		Estimated Perf: Macs=432000 Cycles=123220
+		Memory Used: 44944 bytes (op=18432, buf=4624, ccd=0, nl=21888)
+	103: Operation Conv2D  - OFM 1, 12, 12, 120
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 206
+		Operator Config = OFM Block=[1, 2, 12, 64], IFM Block=[1, 2, 12, 32], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 12, 12, 120]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 12, 12, 120]
+		Assigned Cascade = 0
+		Encoded Weights = 16064 bytes
+		Weight buffer = 16064 bytes
+		Depth slices = [0, 120]
+		sub-operations: -
+		Estimated Perf: Macs=2073600 Cycles=72192
+		Memory Used: 56384 bytes (op=18432, buf=16064, ccd=0, nl=21888)
+	104: Operation DepthwiseConv2D  - OFM 1, 12, 12, 120
+		Kernel: size=5,5 stride=1,1, dilation=1,1 padding=[t:2,l:2,b:2,r:2,n:0,f:0]
+		Time index = 208
+		Operator Config = OFM Block=[1, 5, 12, 16], IFM Block=[1, 9, 16, 16], Traversal=Depthwise, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 12, 12, 120]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 12, 12, 120]
+		Assigned Cascade = 0
+		Encoded Weights = 4368 bytes
+		Weight buffer = 4368 bytes
+		Depth slices = [0, 120]
+		sub-operations: [ Relu6 ]
+		Estimated Perf: Macs=432000 Cycles=123220
+		Memory Used: 44688 bytes (op=18432, buf=4368, ccd=0, nl=21888)
+	105: Operation Conv2D  - OFM 1, 12, 12, 120
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 210
+		Operator Config = OFM Block=[1, 2, 12, 64], IFM Block=[1, 2, 12, 32], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 12, 12, 120]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 12, 12, 120]
+		Assigned Cascade = 0
+		Encoded Weights = 16720 bytes
+		Weight buffer = 16720 bytes
+		Depth slices = [0, 120]
+		sub-operations: -
+		Estimated Perf: Macs=2073600 Cycles=72192
+		Memory Used: 57040 bytes (op=18432, buf=16720, ccd=0, nl=21888)
+	106: Operation Conv2D  - OFM 1, 12, 12, 18
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 212
+		Operator Config = OFM Block=[1, 3, 12, 20], IFM Block=[1, 3, 12, 32], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 12, 12, 120]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 12, 12, 18]
+		Assigned Cascade = 0
+		Encoded Weights = 2544 bytes
+		Weight buffer = 2544 bytes
+		Depth slices = [0, 18]
+		sub-operations: -
+		Estimated Perf: Macs=311040 Cycles=12816
+		Memory Used: 27024 bytes (op=2592, buf=2544, ccd=0, nl=21888)
+	107: Operation DepthwiseConv2D  - OFM 1, 6, 6, 96
+		Kernel: size=5,5 stride=1,1, dilation=1,1 padding=[t:2,l:2,b:2,r:2,n:0,f:0]
+		Time index = 214
+		Operator Config = OFM Block=[1, 5, 6, 32], IFM Block=[1, 9, 10, 32], Traversal=Depthwise, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 6, 6, 96]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 6, 6, 96]
+		Assigned Cascade = 0
+		Encoded Weights = 3776 bytes
+		Weight buffer = 3776 bytes
+		Depth slices = [0, 96]
+		sub-operations: [ Relu6 ]
+		Estimated Perf: Macs=86400 Cycles=26434
+		Memory Used: 13280 bytes (op=3456, buf=3776, ccd=0, nl=6048)
+	108: Operation Conv2D  - OFM 1, 6, 6, 96
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 216
+		Operator Config = OFM Block=[1, 3, 6, 48], IFM Block=[1, 3, 6, 32], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 6, 6, 96]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 6, 6, 96]
+		Assigned Cascade = 0
+		Encoded Weights = 9600 bytes
+		Weight buffer = 9600 bytes
+		Depth slices = [0, 96]
+		sub-operations: -
+		Estimated Perf: Macs=331776 Cycles=12096
+		Memory Used: 19104 bytes (op=3456, buf=9600, ccd=0, nl=6048)
+	109: Operation DepthwiseConv2D  - OFM 1, 6, 6, 96
+		Kernel: size=5,5 stride=1,1, dilation=1,1 padding=[t:2,l:2,b:2,r:2,n:0,f:0]
+		Time index = 218
+		Operator Config = OFM Block=[1, 5, 6, 32], IFM Block=[1, 9, 10, 32], Traversal=Depthwise, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 6, 6, 96]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 6, 6, 96]
+		Assigned Cascade = 0
+		Encoded Weights = 3680 bytes
+		Weight buffer = 3680 bytes
+		Depth slices = [0, 96]
+		sub-operations: [ Relu6 ]
+		Estimated Perf: Macs=86400 Cycles=26434
+		Memory Used: 13184 bytes (op=3456, buf=3680, ccd=0, nl=6048)
+	110: Operation Conv2D  - OFM 1, 6, 6, 96
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 220
+		Operator Config = OFM Block=[1, 3, 6, 48], IFM Block=[1, 3, 6, 32], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 6, 6, 96]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 6, 6, 96]
+		Assigned Cascade = 0
+		Encoded Weights = 10192 bytes
+		Weight buffer = 10192 bytes
+		Depth slices = [0, 96]
+		sub-operations: -
+		Estimated Perf: Macs=331776 Cycles=12096
+		Memory Used: 19696 bytes (op=3456, buf=10192, ccd=0, nl=6048)
+	111: Operation Conv2D  - OFM 1, 6, 6, 18
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 222
+		Operator Config = OFM Block=[1, 6, 6, 20], IFM Block=[1, 6, 6, 32], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 6, 6, 96]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 6, 6, 18]
+		Assigned Cascade = 0
+		Encoded Weights = 2112 bytes
+		Weight buffer = 2112 bytes
+		Depth slices = [0, 18]
+		sub-operations: -
+		Estimated Perf: Macs=62208 Cycles=3456
+		Memory Used: 8816 bytes (op=656, buf=2112, ccd=0, nl=6048)
+	Cascades:
+
+################################################################################
+Performance for NPU Grap /tmp/vela_verbose/cells/yolo-fastest_192_face_v4__SSE-300__ethos-u55-32/yolo-fastest_192_face_v4
+Original Operator    NNG Operator         Target Staging Usage  Peak% (Staging)  Op Cycles Network% (cycles)        NPU    SRAM AC    DRAM AC OnFlash AC OffFlash AC  MAC Count Network% (MAC)  Util% (MAC) Name                 
+-------------------- -------------------- ------ ------------- ---------------- ---------- ----------------- ---------- ---------- ---------- ---------- ----------- ---------- -------------- ------------ -------------------- 
+Conv2D               Conv2D               NPU           184544            49.94     222816              3.05     222816      41466          0          0        9104     663552           1.69         9.31 model/re_lu/Relu6;model/batch_normalization/FusedBatchNormV3;model/batch_normalization_2/FusedBatchNormV3;model/depthwise_conv2d/depthwise;model/conv2d_16/Conv2D;model/conv2d/Conv2D 
+Conv2D               Relu6                NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 model/re_lu/Relu6;model/batch_normalization/FusedBatchNormV3;model/batch_normalization_2/FusedBatchNormV3;model/depthwise_conv2d/depthwise;model/conv2d_16/Conv2D;model/conv2d/Conv2D 
+Conv2D               Conv2D               NPU           295120            79.86     148480              2.03     148480      38016          0          0        5760     589824           1.51        12.41 model/re_lu_1/Relu6;model/batch_normalization_1/FusedBatchNormV3;model/batch_normalization_2/FusedBatchNormV3;model/depthwise_conv2d/depthwise;model/conv2d_16/Conv2D;model/conv2d_1/Conv2D 
+Conv2D               Relu6                NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 model/re_lu_1/Relu6;model/batch_normalization_1/FusedBatchNormV3;model/batch_normalization_2/FusedBatchNormV3;model/depthwise_conv2d/depthwise;model/conv2d_16/Conv2D;model/conv2d_1/Conv2D 
+DepthwiseConv2D      DepthwiseConv2D      NPU           295104            79.86     223200              3.05     223200      46614          0          0        6160     663552           1.69         9.29 model/re_lu_2/Relu6;model/batch_normalization_2/FusedBatchNormV3;model/depthwise_conv2d/depthwise;model/conv2d_16/Conv2D 
+DepthwiseConv2D      Relu6                NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 model/re_lu_2/Relu6;model/batch_normalization_2/FusedBatchNormV3;model/depthwise_conv2d/depthwise;model/conv2d_16/Conv2D 
+Conv2D               Conv2D               NPU           184448            49.91      74240              1.02      74240      23760          0          0        3456     294912           0.75        12.41 model/batch_normalization_3/FusedBatchNormV3;model/conv2d_4/Conv2D;model/conv2d_2/Conv2D1 
+Conv2D               Conv2D               NPU           184480            49.92     148480              2.03     148480      37584          0          0        5760     294912           0.75         6.21 model/re_lu_3/Relu6;model/batch_normalization_4/FusedBatchNormV3;model/batch_normalization_2/FusedBatchNormV3;model/depthwise_conv2d/depthwise;model/conv2d_16/Conv2D;model/conv2d_3/Conv2D 
+Conv2D               Relu6                NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 model/re_lu_3/Relu6;model/batch_normalization_4/FusedBatchNormV3;model/batch_normalization_2/FusedBatchNormV3;model/depthwise_conv2d/depthwise;model/conv2d_16/Conv2D;model/conv2d_3/Conv2D 
+DepthwiseConv2D      DepthwiseConv2D      NPU           331968            89.83     223200              3.05     223200      46614          0          0        6160     663552           1.69         9.29 model/re_lu_4/Relu6;model/batch_normalization_5/FusedBatchNormV3;model/depthwise_conv2d_1/depthwise;model/conv2d_16/Conv2D 
+DepthwiseConv2D      Relu6                NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 model/re_lu_4/Relu6;model/batch_normalization_5/FusedBatchNormV3;model/depthwise_conv2d_1/depthwise;model/conv2d_16/Conv2D 
+Conv2D               Conv2D               NPU           221312            59.89      74240              1.02      74240      23760          0          0        3456     294912           0.75        12.41 model/batch_normalization_6/FusedBatchNormV3;model/conv2d_4/Conv2D1 
+Add                  Add                  NPU            73728            19.95     221184              3.02     221184      13824          0          0           0          0           0.00         0.00 model/add/add        
+Conv2D               Conv2D               NPU           332192            89.89     443904              6.07     443904      75840          0          0       23040     884736           2.26         6.23 model/re_lu_5/Relu6;model/batch_normalization_7/FusedBatchNormV3;model/batch_normalization_8/FusedBatchNormV3;model/depthwise_conv2d_2/depthwise;model/conv2d_36/Conv2D;model/conv2d_5/Conv2D 
+Conv2D               Relu6                NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 model/re_lu_5/Relu6;model/batch_normalization_7/FusedBatchNormV3;model/batch_normalization_8/FusedBatchNormV3;model/depthwise_conv2d_2/depthwise;model/conv2d_36/Conv2D;model/conv2d_5/Conv2D 
+DepthwiseConv2D      DepthwiseConv2D      NPU           369216            99.91     167168              2.29     167168      56616          0          0       14400     497664           1.27         9.30 model/re_lu_6/Relu6;model/batch_normalization_8/FusedBatchNormV3;model/depthwise_conv2d_2/depthwise;model/conv2d_36/Conv2D 
+DepthwiseConv2D      Relu6                NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 model/re_lu_6/Relu6;model/batch_normalization_8/FusedBatchNormV3;model/depthwise_conv2d_2/depthwise;model/conv2d_36/Conv2D 
+Conv2D               Conv2D               NPU           110912            30.01      37888              0.52      37888      14364          0          0        1440     442368           1.13        36.49 model/batch_normalization_9/FusedBatchNormV3;model/conv2d_16/Conv2D;model/conv2d_6/Conv2D1 
+Conv2D               Conv2D               NPU           111296            30.12     148992              2.04     148992      16128          0          0       15360     589824           1.51        12.37 model/re_lu_7/Relu6;model/batch_normalization_10/FusedBatchNormV3;model/batch_normalization_14/FusedBatchNormV3;model/depthwise_conv2d_4/depthwise;model/depthwise_conv2d_5/depthwise;model/conv2d_7/Conv2D 
+Conv2D               Relu6                NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 model/re_lu_7/Relu6;model/batch_normalization_10/FusedBatchNormV3;model/batch_normalization_14/FusedBatchNormV3;model/depthwise_conv2d_4/depthwise;model/depthwise_conv2d_5/depthwise;model/conv2d_7/Conv2D 
+DepthwiseConv2D      DepthwiseConv2D      NPU           184992            50.06     223232              3.05     223232      25200          0          0       11520     663552           1.69         9.29 model/re_lu_8/Relu6;model/batch_normalization_11/FusedBatchNormV3;model/batch_normalization_14/FusedBatchNormV3;model/depthwise_conv2d_4/depthwise;model/depthwise_conv2d_5/depthwise;model/depthwise_conv2d_3/depthwise 
+DepthwiseConv2D      Relu6                NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 model/re_lu_8/Relu6;model/batch_normalization_11/FusedBatchNormV3;model/batch_normalization_14/FusedBatchNormV3;model/depthwise_conv2d_4/depthwise;model/depthwise_conv2d_5/depthwise;model/depthwise_conv2d_3/depthwise 
+Conv2D               Conv2D               NPU           147808            40.00      37632              0.51      37632      14640          0          0        1920     589824           1.51        48.98 model/batch_normalization_12/FusedBatchNormV3;model/conv2d_16/Conv2D;model/conv2d_8/Conv2D1 
+Add                  Add                  NPU            73728            19.95     221184              3.02     221184      13824          0          0           0          0           0.00         0.00 model/add_1/add      
+Conv2D               Conv2D               NPU           111296            30.12     148992              2.04     148992      16128          0          0       15360     589824           1.51        12.37 model/re_lu_9/Relu6;model/batch_normalization_13/FusedBatchNormV3;model/batch_normalization_14/FusedBatchNormV3;model/depthwise_conv2d_4/depthwise;model/depthwise_conv2d_5/depthwise;model/conv2d_9/Conv2D 
+Conv2D               Relu6                NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 model/re_lu_9/Relu6;model/batch_normalization_13/FusedBatchNormV3;model/batch_normalization_14/FusedBatchNormV3;model/depthwise_conv2d_4/depthwise;model/depthwise_conv2d_5/depthwise;model/conv2d_9/Conv2D 
+DepthwiseConv2D      DepthwiseConv2D      NPU           185088            50.09     223232              3.05     223232      25632          0          0       11520     663552           1.69         9.29 model/re_lu_10/Relu6;model/batch_normalization_14/FusedBatchNormV3;model/depthwise_conv2d_4/depthwise;model/depthwise_conv2d_5/depthwise 
+DepthwiseConv2D      Relu6                NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 model/re_lu_10/Relu6;model/batch_normalization_14/FusedBatchNormV3;model/depthwise_conv2d_4/depthwise;model/depthwise_conv2d_5/depthwise 
+Conv2D               Conv2D               NPU           147808            40.00      37632              0.51      37632      14640          0          0        1920     589824           1.51        48.98 model/batch_normalization_15/FusedBatchNormV3;model/conv2d_16/Conv2D;model/conv2d_10/Conv2D1 
+Add                  Add                  NPU            73728            19.95     221184              3.02     221184      13824          0          0           0          0           0.00         0.00 model/add_2/add      
+Conv2D               Conv2D               NPU           111296            30.12     148992              2.04     148992      16128          0          0       15360     589824           1.51        12.37 model/re_lu_11/Relu6;model/batch_normalization_16/FusedBatchNormV3;model/batch_normalization_14/FusedBatchNormV3;model/depthwise_conv2d_4/depthwise;model/depthwise_conv2d_5/depthwise;model/conv2d_11/Conv2D 
+Conv2D               Relu6                NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 model/re_lu_11/Relu6;model/batch_normalization_16/FusedBatchNormV3;model/batch_normalization_14/FusedBatchNormV3;model/depthwise_conv2d_4/depthwise;model/depthwise_conv2d_5/depthwise;model/conv2d_11/Conv2D 
+DepthwiseConv2D      DepthwiseConv2D      NPU            92832            25.12      56576              0.77      56576      14184          0          0        4800     165888           0.42         9.16 model/re_lu_12/Relu6;model/batch_normalization_17/FusedBatchNormV3;model/depthwise_conv2d_5/depthwise 
+DepthwiseConv2D      Relu6                NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 model/re_lu_12/Relu6;model/batch_normalization_17/FusedBatchNormV3;model/depthwise_conv2d_5/depthwise 
+Conv2D               Conv2D               NPU            28016             7.58       9984              0.14       9984       3672          0          0         480     147456           0.38        46.15 model/batch_normalization_18/FusedBatchNormV3;model/conv2d_16/Conv2D;model/conv2d_12/Conv2D1 
+Conv2D               Conv2D               NPU            37904            10.26      56832              0.78      56832       5868          0          0        8640     221184           0.56        12.16 model/re_lu_13/Relu6;model/batch_normalization_19/FusedBatchNormV3;model/batch_normalization_26/FusedBatchNormV3;model/depthwise_conv2d_8/depthwise;model/conv2d_48/Conv2D;model/conv2d_13/Conv2D 
+Conv2D               Relu6                NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 model/re_lu_13/Relu6;model/batch_normalization_19/FusedBatchNormV3;model/batch_normalization_26/FusedBatchNormV3;model/depthwise_conv2d_8/depthwise;model/conv2d_48/Conv2D;model/conv2d_13/Conv2D 
+DepthwiseConv2D      DepthwiseConv2D      NPU            65504            17.73      84992              1.16      84992       9432          0          0        4320     248832           0.64         9.15 model/re_lu_14/Relu6;model/batch_normalization_20/FusedBatchNormV3;model/batch_normalization_26/FusedBatchNormV3;model/depthwise_conv2d_8/depthwise;model/conv2d_48/Conv2D;model/depthwise_conv2d_6/depthwise 
+DepthwiseConv2D      Relu6                NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 model/re_lu_14/Relu6;model/batch_normalization_20/FusedBatchNormV3;model/batch_normalization_26/FusedBatchNormV3;model/depthwise_conv2d_8/depthwise;model/conv2d_48/Conv2D;model/depthwise_conv2d_6/depthwise 
+Conv2D               Conv2D               NPU            46608            12.61      10752              0.15      10752       4944          0          0         480     221184           0.56        64.29 model/batch_normalization_21/FusedBatchNormV3;model/conv2d_16/Conv2D;model/conv2d_14/Conv2D1 
+Add                  Add                  NPU            18432             4.99      55296              0.76      55296       3456          0          0           0          0           0.00         0.00 model/add_3/add      
+Conv2D               Conv2D               NPU            37904            10.26      56832              0.78      56832       5868          0          0        8640     221184           0.56        12.16 model/re_lu_15/Relu6;model/batch_normalization_22/FusedBatchNormV3;model/batch_normalization_26/FusedBatchNormV3;model/depthwise_conv2d_8/depthwise;model/conv2d_48/Conv2D;model/conv2d_15/Conv2D 
+Conv2D               Relu6                NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 model/re_lu_15/Relu6;model/batch_normalization_22/FusedBatchNormV3;model/batch_normalization_26/FusedBatchNormV3;model/depthwise_conv2d_8/depthwise;model/conv2d_48/Conv2D;model/conv2d_15/Conv2D 
+DepthwiseConv2D      DepthwiseConv2D      NPU            65504            17.73      84992              1.16      84992       9432          0          0        4320     248832           0.64         9.15 model/re_lu_16/Relu6;model/batch_normalization_23/FusedBatchNormV3;model/batch_normalization_26/FusedBatchNormV3;model/depthwise_conv2d_8/depthwise;model/conv2d_48/Conv2D;model/depthwise_conv2d_7/depthwise 
+DepthwiseConv2D      Relu6                NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 model/re_lu_16/Relu6;model/batch_normalization_23/FusedBatchNormV3;model/batch_normalization_26/FusedBatchNormV3;model/depthwise_conv2d_8/depthwise;model/conv2d_48/Conv2D;model/depthwise_conv2d_7/depthwise 
+Conv2D               Conv2D               NPU            46624            12.62      10752              0.15      10752       4956          0          0         480     221184           0.56        64.29 model/batch_normalization_24/FusedBatchNormV3;model/conv2d_16/Conv2D1 
+Add                  Add                  NPU            18432             4.99      55296              0.76      55296       3456          0          0           0          0           0.00         0.00 model/add_4/add      
+Conv2D               Conv2D               NPU            37904            10.26      56832              0.78      56832       5868          0          0        8640     221184           0.56        12.16 model/re_lu_17/Relu6;model/batch_normalization_25/FusedBatchNormV3;model/batch_normalization_26/FusedBatchNormV3;model/depthwise_conv2d_8/depthwise;model/conv2d_48/Conv2D;model/conv2d_17/Conv2D 
+Conv2D               Relu6                NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 model/re_lu_17/Relu6;model/batch_normalization_25/FusedBatchNormV3;model/batch_normalization_26/FusedBatchNormV3;model/depthwise_conv2d_8/depthwise;model/conv2d_48/Conv2D;model/conv2d_17/Conv2D 
+DepthwiseConv2D      DepthwiseConv2D      NPU            56368            15.25      84992              1.16      84992       9522          0          0        4320     248832           0.64         9.15 model/re_lu_18/Relu6;model/batch_normalization_26/FusedBatchNormV3;model/depthwise_conv2d_8/depthwise;model/conv2d_48/Conv2D 
+DepthwiseConv2D      Relu6                NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 model/re_lu_18/Relu6;model/batch_normalization_26/FusedBatchNormV3;model/depthwise_conv2d_8/depthwise;model/conv2d_48/Conv2D 
+Conv2D               Conv2D               NPU            37904            10.26      20480              0.28      20480       5598          0          0        1440     442368           1.13        67.50 model/batch_normalization_27/FusedBatchNormV3;model/conv2d_26/Conv2D;model/conv2d_18/Conv2D1 
+Conv2D               Conv2D               NPU            67392            18.24     112128              1.53     112128      13248          0          0       11520     884736           2.26        24.66 model/re_lu_19/Relu6;model/batch_normalization_28/FusedBatchNormV3;model/batch_normalization_76/FusedBatchNormV3;model/depthwise_conv2d_25/depthwise;model/conv2d_51/Conv2D;model/conv2d_19/Conv2D 
+Conv2D               Relu6                NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 model/re_lu_19/Relu6;model/batch_normalization_28/FusedBatchNormV3;model/batch_normalization_76/FusedBatchNormV3;model/depthwise_conv2d_25/depthwise;model/conv2d_51/Conv2D;model/conv2d_19/Conv2D 
+DepthwiseConv2D      DepthwiseConv2D      NPU           121776            32.95     167936              2.30     167936      18846          0          0        8640     497664           1.27         9.26 model/re_lu_20/Relu6;model/batch_normalization_29/FusedBatchNormV3;model/batch_normalization_76/FusedBatchNormV3;model/depthwise_conv2d_25/depthwise;model/conv2d_51/Conv2D;model/depthwise_conv2d_9/depthwise 
+DepthwiseConv2D      Relu6                NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 model/re_lu_20/Relu6;model/batch_normalization_29/FusedBatchNormV3;model/batch_normalization_76/FusedBatchNormV3;model/depthwise_conv2d_25/depthwise;model/conv2d_51/Conv2D;model/depthwise_conv2d_9/depthwise 
+Conv2D               Conv2D               NPU            75392            20.40      29696              0.41      29696       9756          0          0        1440     884736           2.26        93.10 model/batch_normalization_30/FusedBatchNormV3;model/conv2d_26/Conv2D;model/conv2d_20/Conv2D1 
+Add                  Add                  NPU            18432             4.99      55296              0.76      55296       3456          0          0           0          0           0.00         0.00 model/add_5/add      
+Conv2D               Conv2D               NPU            67392            18.24     112128              1.53     112128      13248          0          0       11520     884736           2.26        24.66 model/re_lu_21/Relu6;model/batch_normalization_31/FusedBatchNormV3;model/batch_normalization_76/FusedBatchNormV3;model/depthwise_conv2d_25/depthwise;model/conv2d_51/Conv2D;model/conv2d_21/Conv2D 
+Conv2D               Relu6                NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 model/re_lu_21/Relu6;model/batch_normalization_31/FusedBatchNormV3;model/batch_normalization_76/FusedBatchNormV3;model/depthwise_conv2d_25/depthwise;model/conv2d_51/Conv2D;model/conv2d_21/Conv2D 
+DepthwiseConv2D      DepthwiseConv2D      NPU           121776            32.95     167936              2.30     167936      18846          0          0        8640     497664           1.27         9.26 model/re_lu_22/Relu6;model/batch_normalization_32/FusedBatchNormV3;model/batch_normalization_76/FusedBatchNormV3;model/depthwise_conv2d_25/depthwise;model/conv2d_51/Conv2D;model/depthwise_conv2d_10/depthwise 
+DepthwiseConv2D      Relu6                NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 model/re_lu_22/Relu6;model/batch_normalization_32/FusedBatchNormV3;model/batch_normalization_76/FusedBatchNormV3;model/depthwise_conv2d_25/depthwise;model/conv2d_51/Conv2D;model/depthwise_conv2d_10/depthwise 
+Conv2D               Conv2D               NPU            75424            20.41      29696              0.41      29696       9792          0          0        1440     884736           2.26        93.10 model/batch_normalization_33/FusedBatchNormV3;model/conv2d_26/Conv2D;model/conv2d_22/Conv2D1 
+Add                  Add                  NPU            18432             4.99      55296              0.76      55296       3456          0          0           0          0           0.00         0.00 model/add_6/add      
+Conv2D               Conv2D               NPU            67392            18.24     112128              1.53     112128      13248          0          0       11520     884736           2.26        24.66 model/re_lu_23/Relu6;model/batch_normalization_34/FusedBatchNormV3;model/batch_normalization_76/FusedBatchNormV3;model/depthwise_conv2d_25/depthwise;model/conv2d_51/Conv2D;model/conv2d_23/Conv2D 
+Conv2D               Relu6                NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 model/re_lu_23/Relu6;model/batch_normalization_34/FusedBatchNormV3;model/batch_normalization_76/FusedBatchNormV3;model/depthwise_conv2d_25/depthwise;model/conv2d_51/Conv2D;model/conv2d_23/Conv2D 
+DepthwiseConv2D      DepthwiseConv2D      NPU           121792            32.96     167936              2.30     167936      18864          0          0        8640     497664           1.27         9.26 model/re_lu_24/Relu6;model/batch_normalization_35/FusedBatchNormV3;model/batch_normalization_76/FusedBatchNormV3;model/depthwise_conv2d_25/depthwise;model/conv2d_51/Conv2D;model/depthwise_conv2d_11/depthwise 
+DepthwiseConv2D      Relu6                NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 model/re_lu_24/Relu6;model/batch_normalization_35/FusedBatchNormV3;model/batch_normalization_76/FusedBatchNormV3;model/depthwise_conv2d_25/depthwise;model/conv2d_51/Conv2D;model/depthwise_conv2d_11/depthwise 
+Conv2D               Conv2D               NPU            75440            20.41      29696              0.41      29696       9810          0          0        1440     884736           2.26        93.10 model/batch_normalization_36/FusedBatchNormV3;model/conv2d_26/Conv2D;model/conv2d_24/Conv2D1 
+Add                  Add                  NPU            18432             4.99      55296              0.76      55296       3456          0          0           0          0           0.00         0.00 model/add_7/add      
+Conv2D               Conv2D               NPU            67392            18.24     112128              1.53     112128      13248          0          0       11520     884736           2.26        24.66 model/re_lu_25/Relu6;model/batch_normalization_37/FusedBatchNormV3;model/batch_normalization_76/FusedBatchNormV3;model/depthwise_conv2d_25/depthwise;model/conv2d_51/Conv2D;model/conv2d_25/Conv2D 
+Conv2D               Relu6                NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 model/re_lu_25/Relu6;model/batch_normalization_37/FusedBatchNormV3;model/batch_normalization_76/FusedBatchNormV3;model/depthwise_conv2d_25/depthwise;model/conv2d_51/Conv2D;model/conv2d_25/Conv2D 
+DepthwiseConv2D      DepthwiseConv2D      NPU           121776            32.95     167936              2.30     167936      18846          0          0        8640     497664           1.27         9.26 model/re_lu_26/Relu6;model/batch_normalization_38/FusedBatchNormV3;model/batch_normalization_76/FusedBatchNormV3;model/depthwise_conv2d_25/depthwise;model/conv2d_51/Conv2D;model/depthwise_conv2d_12/depthwise 
+DepthwiseConv2D      Relu6                NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 model/re_lu_26/Relu6;model/batch_normalization_38/FusedBatchNormV3;model/batch_normalization_76/FusedBatchNormV3;model/depthwise_conv2d_25/depthwise;model/conv2d_51/Conv2D;model/depthwise_conv2d_12/depthwise 
+Conv2D               Conv2D               NPU            75440            20.41      29696              0.41      29696       9810          0          0        1440     884736           2.26        93.10 model/batch_normalization_39/FusedBatchNormV3;model/conv2d_26/Conv2D1 
+Add                  Add                  NPU            18432             4.99      55296              0.76      55296       3456          0          0           0          0           0.00         0.00 model/add_8/add      
+Conv2D               Conv2D               NPU            67392            18.24     112128              1.53     112128      13248          0          0       11520     884736           2.26        24.66 model/re_lu_27/Relu6;model/batch_normalization_40/FusedBatchNormV3;model/batch_normalization_76/FusedBatchNormV3;model/depthwise_conv2d_25/depthwise;model/conv2d_51/Conv2D;model/conv2d_27/Conv2D 
+Conv2D               Relu6                NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 model/re_lu_27/Relu6;model/batch_normalization_40/FusedBatchNormV3;model/batch_normalization_76/FusedBatchNormV3;model/depthwise_conv2d_25/depthwise;model/conv2d_51/Conv2D;model/conv2d_27/Conv2D 
+DepthwiseConv2D      DepthwiseConv2D      NPU            71392            19.32      42624              0.58      42624      10496          0          0        3840     124416           0.32         9.12 model/re_lu_28/Relu6;model/batch_normalization_41/FusedBatchNormV3;model/batch_normalization_76/FusedBatchNormV3;model/depthwise_conv2d_25/depthwise;model/conv2d_51/Conv2D;model/depthwise_conv2d_13/depthwise 
+DepthwiseConv2D      Relu6                NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 model/re_lu_28/Relu6;model/batch_normalization_41/FusedBatchNormV3;model/batch_normalization_76/FusedBatchNormV3;model/depthwise_conv2d_25/depthwise;model/conv2d_51/Conv2D;model/depthwise_conv2d_13/depthwise 
+Conv2D               Conv2D               NPU            20880             5.65      11904              0.16      11904       4860          0          0         720     331776           0.85        87.10 model/batch_normalization_42/FusedBatchNormV3;model/conv2d_36/Conv2D;model/conv2d_28/Conv2D1 
+Conv2D               Conv2D               NPU            30496             8.25      40320              0.55      40320       7164          0          0        8160     470016           1.20        36.43 model/re_lu_29/Relu6;model/batch_normalization_43/FusedBatchNormV3;model/batch_normalization_56/FusedBatchNormV3;model/depthwise_conv2d_18/depthwise;model/conv2d_29/Conv2D 
+Conv2D               Relu6                NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 model/re_lu_29/Relu6;model/batch_normalization_43/FusedBatchNormV3;model/batch_normalization_56/FusedBatchNormV3;model/depthwise_conv2d_18/depthwise;model/conv2d_29/Conv2D 
+DepthwiseConv2D      DepthwiseConv2D      NPU            48880            13.23      60800              0.83      60800      10512          0          0        5440     176256           0.45         9.06 model/re_lu_30/Relu6;model/batch_normalization_44/FusedBatchNormV3;model/batch_normalization_56/FusedBatchNormV3;model/depthwise_conv2d_18/depthwise;model/depthwise_conv2d_14/depthwise 
+DepthwiseConv2D      Relu6                NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 model/re_lu_30/Relu6;model/batch_normalization_44/FusedBatchNormV3;model/batch_normalization_56/FusedBatchNormV3;model/depthwise_conv2d_18/depthwise;model/depthwise_conv2d_14/depthwise 
+Conv2D               Conv2D               NPU            33840             9.16      18816              0.26      18816       7128          0          0         720     470016           1.20        78.06 model/batch_normalization_45/FusedBatchNormV3;model/conv2d_36/Conv2D;model/conv2d_30/Conv2D1 
+Add                  Add                  NPU             9216             2.49      27648              0.38      27648       1728          0          0           0          0           0.00         0.00 model/add_9/add      
+Conv2D               Conv2D               NPU            30512             8.26      40320              0.55      40320       7176          0          0        8160     470016           1.20        36.43 model/re_lu_31/Relu6;model/batch_normalization_46/FusedBatchNormV3;model/batch_normalization_56/FusedBatchNormV3;model/depthwise_conv2d_18/depthwise;model/conv2d_31/Conv2D 
+Conv2D               Relu6                NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 model/re_lu_31/Relu6;model/batch_normalization_46/FusedBatchNormV3;model/batch_normalization_56/FusedBatchNormV3;model/depthwise_conv2d_18/depthwise;model/conv2d_31/Conv2D 
+DepthwiseConv2D      DepthwiseConv2D      NPU            48880            13.23      60800              0.83      60800      10512          0          0        5440     176256           0.45         9.06 model/re_lu_32/Relu6;model/batch_normalization_47/FusedBatchNormV3;model/batch_normalization_56/FusedBatchNormV3;model/depthwise_conv2d_18/depthwise;model/depthwise_conv2d_15/depthwise 
+DepthwiseConv2D      Relu6                NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 model/re_lu_32/Relu6;model/batch_normalization_47/FusedBatchNormV3;model/batch_normalization_56/FusedBatchNormV3;model/depthwise_conv2d_18/depthwise;model/depthwise_conv2d_15/depthwise 
+Conv2D               Conv2D               NPU            33840             9.16      18816              0.26      18816       7128          0          0         720     470016           1.20        78.06 model/batch_normalization_48/FusedBatchNormV3;model/conv2d_36/Conv2D;model/conv2d_32/Conv2D1 
+Add                  Add                  NPU             9216             2.49      27648              0.38      27648       1728          0          0           0          0           0.00         0.00 model/add_10/add     
+Conv2D               Conv2D               NPU            30496             8.25      40320              0.55      40320       7164          0          0        8160     470016           1.20        36.43 model/re_lu_33/Relu6;model/batch_normalization_49/FusedBatchNormV3;model/batch_normalization_56/FusedBatchNormV3;model/depthwise_conv2d_18/depthwise;model/conv2d_33/Conv2D 
+Conv2D               Relu6                NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 model/re_lu_33/Relu6;model/batch_normalization_49/FusedBatchNormV3;model/batch_normalization_56/FusedBatchNormV3;model/depthwise_conv2d_18/depthwise;model/conv2d_33/Conv2D 
+DepthwiseConv2D      DepthwiseConv2D      NPU            48864            13.22      60800              0.83      60800      10504          0          0        5440     176256           0.45         9.06 model/re_lu_34/Relu6;model/batch_normalization_50/FusedBatchNormV3;model/batch_normalization_56/FusedBatchNormV3;model/depthwise_conv2d_18/depthwise;model/depthwise_conv2d_16/depthwise 
+DepthwiseConv2D      Relu6                NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 model/re_lu_34/Relu6;model/batch_normalization_50/FusedBatchNormV3;model/batch_normalization_56/FusedBatchNormV3;model/depthwise_conv2d_18/depthwise;model/depthwise_conv2d_16/depthwise 
+Conv2D               Conv2D               NPU            33840             9.16      18816              0.26      18816       7128          0          0         720     470016           1.20        78.06 model/batch_normalization_51/FusedBatchNormV3;model/conv2d_36/Conv2D;model/conv2d_34/Conv2D1 
+Add                  Add                  NPU             9216             2.49      27648              0.38      27648       1728          0          0           0          0           0.00         0.00 model/add_11/add     
+Conv2D               Conv2D               NPU            30496             8.25      40320              0.55      40320       7164          0          0        8160     470016           1.20        36.43 model/re_lu_35/Relu6;model/batch_normalization_52/FusedBatchNormV3;model/batch_normalization_56/FusedBatchNormV3;model/depthwise_conv2d_18/depthwise;model/conv2d_35/Conv2D 
+Conv2D               Relu6                NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 model/re_lu_35/Relu6;model/batch_normalization_52/FusedBatchNormV3;model/batch_normalization_56/FusedBatchNormV3;model/depthwise_conv2d_18/depthwise;model/conv2d_35/Conv2D 
+DepthwiseConv2D      DepthwiseConv2D      NPU            48880            13.23      60800              0.83      60800      10512          0          0        5440     176256           0.45         9.06 model/re_lu_36/Relu6;model/batch_normalization_53/FusedBatchNormV3;model/batch_normalization_56/FusedBatchNormV3;model/depthwise_conv2d_18/depthwise;model/depthwise_conv2d_17/depthwise 
+DepthwiseConv2D      Relu6                NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 model/re_lu_36/Relu6;model/batch_normalization_53/FusedBatchNormV3;model/batch_normalization_56/FusedBatchNormV3;model/depthwise_conv2d_18/depthwise;model/depthwise_conv2d_17/depthwise 
+Conv2D               Conv2D               NPU            33808             9.15      18816              0.26      18816       7116          0          0         720     470016           1.20        78.06 model/batch_normalization_54/FusedBatchNormV3;model/conv2d_36/Conv2D1 
+Add                  Add                  NPU             9216             2.49      27648              0.38      27648       1728          0          0           0          0           0.00         0.00 model/add_12/add     
+Concat               MemoryCopy           NPU            23040             6.23       7168              0.10       7168       1152          0          0           0       3456           0.01         1.51 model/concatenate_1/concat 
+Conv2D               Conv2D               NPU            48944            13.24      40320              0.55      40320       7176          0          0        8160     470016           1.20        36.43 model/re_lu_37/Relu6;model/batch_normalization_55/FusedBatchNormV3;model/batch_normalization_56/FusedBatchNormV3;model/depthwise_conv2d_18/depthwise;model/conv2d_37/Conv2D 
+Conv2D               Relu6                NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 model/re_lu_37/Relu6;model/batch_normalization_55/FusedBatchNormV3;model/batch_normalization_56/FusedBatchNormV3;model/depthwise_conv2d_18/depthwise;model/conv2d_37/Conv2D 
+DepthwiseConv2D      DepthwiseConv2D      NPU            47504            12.86      15840              0.22      15840       3464          0          0        1360      44064           0.11         8.69 model/re_lu_38/Relu6;model/batch_normalization_56/FusedBatchNormV3;model/depthwise_conv2d_18/depthwise 
+DepthwiseConv2D      Relu6                NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 model/re_lu_38/Relu6;model/batch_normalization_56/FusedBatchNormV3;model/depthwise_conv2d_18/depthwise 
+Conv2D               Conv2D               NPU            32848             8.89      10368              0.14      10368       2620          0          0         960     235008           0.60        70.83 model/batch_normalization_57/FusedBatchNormV3;model/conv2d_48/Conv2D;model/conv2d_38/Conv2D1 
+Conv2D               Conv2D               NPU            42960            11.63      19008              0.26      19008       6489          0          0        8943     387072           0.99        63.64 model/re_lu_39/Relu6;model/batch_normalization_58/FusedBatchNormV3;model/batch_normalization_71/FusedBatchNormV3;model/depthwise_conv2d_23/depthwise;model/conv2d_39/Conv2D 
+Conv2D               Relu6                NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 model/re_lu_39/Relu6;model/batch_normalization_58/FusedBatchNormV3;model/batch_normalization_71/FusedBatchNormV3;model/depthwise_conv2d_23/depthwise;model/conv2d_39/Conv2D 
+DepthwiseConv2D      DepthwiseConv2D      NPU            40880            11.06      25344              0.35      25344       2310          0          0        2240      72576           0.19         8.95 model/re_lu_40/Relu6;model/batch_normalization_59/FusedBatchNormV3;model/batch_normalization_71/FusedBatchNormV3;model/depthwise_conv2d_23/depthwise;model/depthwise_conv2d_19/depthwise 
+DepthwiseConv2D      Relu6                NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 model/re_lu_40/Relu6;model/batch_normalization_59/FusedBatchNormV3;model/batch_normalization_71/FusedBatchNormV3;model/depthwise_conv2d_23/depthwise;model/depthwise_conv2d_19/depthwise 
+Conv2D               Conv2D               NPU            40656            11.00      14101              0.19      14101       3780          0          0         960     387072           0.99        85.78 model/batch_normalization_60/FusedBatchNormV3;model/conv2d_48/Conv2D;model/conv2d_40/Conv2D1 
+Add                  Add                  NPU            21888             5.92      10368              0.14      10368        648          0          0           0          0           0.00         0.00 model/add_13/add     
+Conv2D               Conv2D               NPU            42960            11.63      19008              0.26      19008       6489          0          0        8943     387072           0.99        63.64 model/re_lu_41/Relu6;model/batch_normalization_61/FusedBatchNormV3;model/batch_normalization_71/FusedBatchNormV3;model/depthwise_conv2d_23/depthwise;model/conv2d_41/Conv2D 
+Conv2D               Relu6                NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 model/re_lu_41/Relu6;model/batch_normalization_61/FusedBatchNormV3;model/batch_normalization_71/FusedBatchNormV3;model/depthwise_conv2d_23/depthwise;model/conv2d_41/Conv2D 
+DepthwiseConv2D      DepthwiseConv2D      NPU            40880            11.06      25344              0.35      25344       2310          0          0        2240      72576           0.19         8.95 model/re_lu_42/Relu6;model/batch_normalization_62/FusedBatchNormV3;model/batch_normalization_71/FusedBatchNormV3;model/depthwise_conv2d_23/depthwise;model/depthwise_conv2d_20/depthwise 
+DepthwiseConv2D      Relu6                NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 model/re_lu_42/Relu6;model/batch_normalization_62/FusedBatchNormV3;model/batch_normalization_71/FusedBatchNormV3;model/depthwise_conv2d_23/depthwise;model/depthwise_conv2d_20/depthwise 
+Conv2D               Conv2D               NPU            40752            11.03      14101              0.19      14101       3804          0          0         960     387072           0.99        85.78 model/batch_normalization_63/FusedBatchNormV3;model/conv2d_48/Conv2D;model/conv2d_42/Conv2D1 
+Add                  Add                  NPU            21888             5.92      10368              0.14      10368        648          0          0           0          0           0.00         0.00 model/add_14/add     
+Conv2D               Conv2D               NPU            42944            11.62      19008              0.26      19008       6485          0          0        8938     387072           0.99        63.64 model/re_lu_43/Relu6;model/batch_normalization_64/FusedBatchNormV3;model/batch_normalization_71/FusedBatchNormV3;model/depthwise_conv2d_23/depthwise;model/conv2d_43/Conv2D 
+Conv2D               Relu6                NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 model/re_lu_43/Relu6;model/batch_normalization_64/FusedBatchNormV3;model/batch_normalization_71/FusedBatchNormV3;model/depthwise_conv2d_23/depthwise;model/conv2d_43/Conv2D 
+DepthwiseConv2D      DepthwiseConv2D      NPU            41472            11.22      25344              0.35      25344       2384          0          0        2240      72576           0.19         8.95 model/re_lu_44/Relu6;model/batch_normalization_65/FusedBatchNormV3;model/batch_normalization_71/FusedBatchNormV3;model/depthwise_conv2d_23/depthwise;model/depthwise_conv2d_21/depthwise 
+DepthwiseConv2D      Relu6                NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 model/re_lu_44/Relu6;model/batch_normalization_65/FusedBatchNormV3;model/batch_normalization_71/FusedBatchNormV3;model/depthwise_conv2d_23/depthwise;model/depthwise_conv2d_21/depthwise 
+Conv2D               Conv2D               NPU            40624            10.99      14101              0.19      14101       3772          0          0         960     387072           0.99        85.78 model/batch_normalization_66/FusedBatchNormV3;model/conv2d_48/Conv2D;model/conv2d_44/Conv2D1 
+Add                  Add                  NPU            21888             5.92      10368              0.14      10368        648          0          0           0          0           0.00         0.00 model/add_15/add     
+Conv2D               Conv2D               NPU            42960            11.63      19008              0.26      19008       6489          0          0        8943     387072           0.99        63.64 model/re_lu_45/Relu6;model/batch_normalization_67/FusedBatchNormV3;model/batch_normalization_71/FusedBatchNormV3;model/depthwise_conv2d_23/depthwise;model/conv2d_45/Conv2D 
+Conv2D               Relu6                NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 model/re_lu_45/Relu6;model/batch_normalization_67/FusedBatchNormV3;model/batch_normalization_71/FusedBatchNormV3;model/depthwise_conv2d_23/depthwise;model/conv2d_45/Conv2D 
+DepthwiseConv2D      DepthwiseConv2D      NPU            41488            11.23      25344              0.35      25344       2386          0          0        2240      72576           0.19         8.95 model/re_lu_46/Relu6;model/batch_normalization_68/FusedBatchNormV3;model/batch_normalization_71/FusedBatchNormV3;model/depthwise_conv2d_23/depthwise;model/depthwise_conv2d_22/depthwise 
+DepthwiseConv2D      Relu6                NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 model/re_lu_46/Relu6;model/batch_normalization_68/FusedBatchNormV3;model/batch_normalization_71/FusedBatchNormV3;model/depthwise_conv2d_23/depthwise;model/depthwise_conv2d_22/depthwise 
+Conv2D               Conv2D               NPU            40608            10.99      14101              0.19      14101       3768          0          0         960     387072           0.99        85.78 model/batch_normalization_69/FusedBatchNormV3;model/conv2d_48/Conv2D;model/conv2d_46/Conv2D1 
+Add                  Add                  NPU            21888             5.92      10368              0.14      10368        648          0          0           0          0           0.00         0.00 model/add_16/add     
+Conv2D               Conv2D               NPU            42976            11.63      19008              0.26      19008       6494          0          0        8949     387072           0.99        63.64 model/re_lu_47/Relu6;model/batch_normalization_70/FusedBatchNormV3;model/batch_normalization_71/FusedBatchNormV3;model/depthwise_conv2d_23/depthwise;model/conv2d_47/Conv2D 
+Conv2D               Relu6                NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 model/re_lu_47/Relu6;model/batch_normalization_70/FusedBatchNormV3;model/batch_normalization_71/FusedBatchNormV3;model/depthwise_conv2d_23/depthwise;model/conv2d_47/Conv2D 
+DepthwiseConv2D      DepthwiseConv2D      NPU            40880            11.06      25344              0.35      25344       2310          0          0        2240      72576           0.19         8.95 model/re_lu_48/Relu6;model/batch_normalization_71/FusedBatchNormV3;model/depthwise_conv2d_23/depthwise 
+DepthwiseConv2D      Relu6                NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 model/re_lu_48/Relu6;model/batch_normalization_71/FusedBatchNormV3;model/depthwise_conv2d_23/depthwise 
+Conv2D               Conv2D               NPU            40448            10.95      14101              0.19      14101       3728          0          0         960     387072           0.99        85.78 model/batch_normalization_72/FusedBatchNormV3;model/conv2d_48/Conv2D1 
+Add                  Add                  NPU            21888             5.92      10368              0.14      10368        648          0          0           0          0           0.00         0.00 model/add_17/add     
+Concat               MemoryCopy           NPU            27072             7.33       4416              0.06       4416        696          0          0           0       1728           0.00         1.22 model/concatenate/concat 
+MaxPool              MaxPool              NPU            28800             7.79       4464              0.06       4464        432          0          0           0      15552           0.04        10.89 model/max_pooling2d/MaxPool 
+Concat               MemoryCopy           NPU            28800             7.79       4416              0.06       4416        696          0          0           0       1728           0.00         1.22 model/concatenate/concat 
+MaxPool              MaxPool              NPU            28800             7.79      11896              0.16      11896        432          0          0           0      43200           0.11        11.35 model/max_pooling2d_1/MaxPool 
+Concat               MemoryCopy           NPU            28800             7.79       4416              0.06       4416        696          0          0           0       1728           0.00         1.22 model/concatenate/concat 
+MaxPool              MaxPool              NPU            28800             7.79      39508              0.54      39508       1080          0          0           0     139968           0.36        11.07 model/max_pooling2d_2/MaxPool 
+Concat               MemoryCopy           NPU            27072             7.33       4416              0.06       4416        696          0          0           0       1728           0.00         1.22 model/concatenate/concat 
+Conv2D               Conv2D               NPU            43824            11.86      22525              0.31      22525       8206          0          0       16147     663552           1.69        92.06 model/re_lu_49/Relu6;model/batch_normalization_73/FusedBatchNormV3;model/batch_normalization_76/FusedBatchNormV3;model/depthwise_conv2d_25/depthwise;model/conv2d_51/Conv2D;model/conv2d_49/Conv2D 
+Conv2D               Relu6                NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 model/re_lu_49/Relu6;model/batch_normalization_73/FusedBatchNormV3;model/batch_normalization_76/FusedBatchNormV3;model/depthwise_conv2d_25/depthwise;model/conv2d_51/Conv2D;model/conv2d_49/Conv2D 
+ResizeNearestNeighbor AvgPool              NPU            35712             9.66      28944              0.40      28944       2928          0          0           0      13824           0.04         1.49 model/tf.image.resize/resize/ResizeNearestNeighbor 
+Concat               MemoryCopy           NPU            35712             9.66      28672              0.39      28672       3456          0          0           0      13824           0.04         1.51 model/concatenate_1/concat 
+DepthwiseConv2D      DepthwiseConv2D      NPU            44944            12.16     123220              1.68     123220       8772          0          0        3600     432000           1.10        10.96 model/re_lu_52/Relu6;model/batch_normalization_78/FusedBatchNormV3;model/batch_normalization_80/FusedBatchNormV3;model/depthwise_conv2d_27/depthwise;model/conv2d_54/Conv2D;model/depthwise_conv2d_26/depthwise 
+DepthwiseConv2D      Relu6                NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 model/re_lu_52/Relu6;model/batch_normalization_78/FusedBatchNormV3;model/batch_normalization_80/FusedBatchNormV3;model/depthwise_conv2d_27/depthwise;model/conv2d_54/Conv2D;model/depthwise_conv2d_26/depthwise 
+Conv2D               Conv2D               NPU            56384            15.26      72192              0.99      72192      18060          0          0        7200    2073600           5.30        89.76 model/batch_normalization_79/FusedBatchNormV3;model/conv2d_54/Conv2D;model/conv2d_53/Conv2D1 
+DepthwiseConv2D      DepthwiseConv2D      NPU            44688            12.09     123220              1.68     123220       8676          0          0        3600     432000           1.10        10.96 model/re_lu_53/Relu6;model/batch_normalization_80/FusedBatchNormV3;model/depthwise_conv2d_27/depthwise;model/conv2d_54/Conv2D 
+DepthwiseConv2D      Relu6                NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 model/re_lu_53/Relu6;model/batch_normalization_80/FusedBatchNormV3;model/depthwise_conv2d_27/depthwise;model/conv2d_54/Conv2D 
+Conv2D               Conv2D               NPU            57040            15.44      72192              0.99      72192      18552          0          0        7200    2073600           5.30        89.76 model/batch_normalization_81/FusedBatchNormV3;model/conv2d_54/Conv2D1 
+Conv2D               Conv2D               NPU            27024             7.31      12816              0.18      12816       4128          0          0         768     311040           0.79        75.84 Identity_1           
+DepthwiseConv2D      DepthwiseConv2D      NPU            13280             3.59      26434              0.36      26434       2000          0          0        1920      86400           0.22        10.21 model/re_lu_50/Relu6;model/batch_normalization_74/FusedBatchNormV3;model/batch_normalization_76/FusedBatchNormV3;model/depthwise_conv2d_25/depthwise;model/conv2d_51/Conv2D;model/depthwise_conv2d_24/depthwise 
+DepthwiseConv2D      Relu6                NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 model/re_lu_50/Relu6;model/batch_normalization_74/FusedBatchNormV3;model/batch_normalization_76/FusedBatchNormV3;model/depthwise_conv2d_25/depthwise;model/conv2d_51/Conv2D;model/depthwise_conv2d_24/depthwise 
+Conv2D               Conv2D               NPU            19104             5.17      12096              0.17      12096       3456          0          0        1920     331776           0.85        85.71 model/batch_normalization_75/FusedBatchNormV3;model/conv2d_51/Conv2D;model/conv2d_50/Conv2D1 
+DepthwiseConv2D      DepthwiseConv2D      NPU            13184             3.57      26434              0.36      26434       1976          0          0        1920      86400           0.22        10.21 model/re_lu_51/Relu6;model/batch_normalization_76/FusedBatchNormV3;model/depthwise_conv2d_25/depthwise;model/conv2d_51/Conv2D 
+DepthwiseConv2D      Relu6                NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 model/re_lu_51/Relu6;model/batch_normalization_76/FusedBatchNormV3;model/depthwise_conv2d_25/depthwise;model/conv2d_51/Conv2D 
+Conv2D               Conv2D               NPU            19696             5.33      12096              0.17      12096       3604          0          0        1920     331776           0.85        85.71 model/batch_normalization_77/FusedBatchNormV3;model/conv2d_51/Conv2D1 
+Conv2D               Conv2D               NPU             8816             2.39       3456              0.05       3456        834          0          0         192      62208           0.16        56.25 Identity             
+
+Network summary for yolo-fastest_192_face_v4
+Accelerator configuration                Ethos_U55_32
+System configuration             Ethos_U55_High_End_Embedded
+Memory mode                               Shared_Sram
+Accelerator clock                                 500 MHz
+Design peak SRAM bandwidth                       3.73 GB/s
+Design peak Off-chip Flash bandwidth             0.47 GB/s
+
+Total SRAM used                                360.88 KiB
+Total Off-chip Flash used                      347.61 KiB
+
+CPU operators = 0 (0.0%)
+NPU operators = 112 (100.0%)
+
+Average SRAM bandwidth                           0.65 GB/s
+Input   SRAM bandwidth                           4.63 MB/batch
+Weight  SRAM bandwidth                           1.50 MB/batch
+Output  SRAM bandwidth                           2.93 MB/batch
+Total   SRAM bandwidth                           9.47 MB/batch
+Total   SRAM bandwidth            per input      9.47 MB/inference (batch size 1)
+
+Average Off-chip Flash bandwidth                 0.02 GB/s
+Input   Off-chip Flash bandwidth                 0.00 MB/batch
+Weight  Off-chip Flash bandwidth                 0.34 MB/batch
+Output  Off-chip Flash bandwidth                 0.00 MB/batch
+Total   Off-chip Flash bandwidth                 0.34 MB/batch
+Total   Off-chip Flash bandwidth  per input      0.34 MB/inference (batch size 1)
+
+Original Weights Size                          261.50 KiB
+NPU Encoded Weights Size                       282.45 KiB
+
+Neural network macs                          39152736 MACs/batch
+
