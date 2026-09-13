@@ -1,0 +1,6 @@
+ta_config,used_by,word_bits,bytes_per_word,sram_maxr,sram_maxw,sram_rlatency,sram_wlatency,sram_pulse_on,sram_pulse_off,sram_bwcap,ext_maxr,ext_maxw,ext_rlatency,ext_wlatency,ext_pulse_on,ext_pulse_off,ext_bwcap,source_file
+u55_high_end,SSE-300/ethos-u55 32-256,64,8,8,8,32,32,3999,1,4000,2,0,64,0,320,80,50,scripts/cmake/timing_adapter/ta_config_u55_high_end.cmake
+u65_high_end,SSE-300/ethos-u65 256-512,128,16,16,16,32,32,3999,1,4000,24,12,500,250,4000,1000,1172,scripts/cmake/timing_adapter/ta_config_u65_high_end.cmake
+u85_sys_dram_low,SSE-320/ethos-u85 128-256,128,16,8,8,16,16,3999,1,4000,24,12,250,125,4000,1000,2344,scripts/cmake/timing_adapter/ta_config_u85_sys_dram_low.cmake
+u85_sys_dram_mid,SSE-320/ethos-u85 512-1024,128,16,8,8,32,32,3999,1,4000,64,32,500,250,4000,1000,3750,scripts/cmake/timing_adapter/ta_config_u85_sys_dram_mid.cmake
+u85_sys_dram_high,SSE-320/ethos-u85 2048,128,16,8,8,32,32,3999,1,4000,64,32,500,250,4000,1000,3750,scripts/cmake/timing_adapter/ta_config_u85_sys_dram_high.cmake
