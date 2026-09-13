@@ -1,0 +1,11 @@
+[
+ {
+  "cell_id": "rnnoise_INT8__SSE-320__ethos-u85-256",
+  "outcome": "NOT_EVALUABLE",
+  "rule": "RULE_S4_STOCK_COUNTERS_DIFFER",
+  "detail": "pass A: stock counters differ from R1: {'npu_total_cycles': True, 'npu_active_cycles': False, 'sram_rd_beats': True, 'sram_wr_beats': True, 'ext_rd_beats': True, 'ext_wr_beats': True}",
+  "output_tensor_equivalence": "NOT_TESTED",
+  "event_semantics": "SEMANTICS_UNVERIFIED",
+  "semantics": "SEMANTICS_UNVERIFIED"
+ }
+]
