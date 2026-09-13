@@ -312,6 +312,33 @@ AO_STALLED_BY_OB) / Total` (겹침 가능성 있음 → 상한으로 해석).
 않으면 모든 결과에 `SEMANTICS_UNVERIFIED`를 붙인다. 그 상태에서는 "대기"라는 단어 대신
 "헤더가 stall이라 부르는 이벤트"로 쓴다.
 
+## 12. 매니저(ChatGPT 창) 대화 규약 — 2026-09-14 유저 지정
+
+유저가 Chrome의 ChatGPT 대화("논문 요약과 개선 가이드")를 임시 매니저로 지정했다.
+GO·판정·누락 검토는 이 창에 묻고, 답변을 받은 뒤에 다음 단계로 간다.
+
+**보내고 받는 방법** — `docs/paper/raw_data_report/amendments/manager_bridge.py`
+
+```sh
+python3 docs/paper/raw_data_report/amendments/manager_bridge.py status          # 탭·생성 중 여부·메시지 수
+python3 docs/paper/raw_data_report/amendments/manager_bridge.py ask "<질문>"    # 보내고 완전히 렌더링될 때까지 대기
+python3 docs/paper/raw_data_report/amendments/manager_bridge.py last            # 마지막 답변 다시 읽기
+```
+
+- AppleScript → Chrome "execute javascript"로 **front window의 active tab**에 쓴다. 질문이
+  걸려 있는 동안 그 탭이 앞에 있어야 한다. 탭이 바뀌었으면 `status`의 url이
+  `chatgpt.com/c/6a966f7b-…`인지 먼저 확인한다.
+- **기다리는 규칙**: 보낸 뒤 2초마다 폴링. (a) assistant 메시지 수가 늘고, (b) stop 버튼이
+  없고, (c) 마지막 답변 텍스트가 3회 연속 같을 때만 완료로 본다. 답변 생성에 시간이 걸리므로
+  중간 텍스트를 답으로 쓰지 않는다. 600초 초과면 실패로 기록하고 다시 묻는다.
+- **질문 형식**: 첫 줄에 무엇을 묻는지(GO 요청 / 판정 검토 / 누락 검토), 이어서 근거
+  수치와 닫힌 결과 집합, 마지막에 "선택지 중 하나로 답해 주세요" 또는 "빠진 것을
+  지적해 주세요". 한 질문에 한 결정.
+- **기록**: 모든 교환은 `amendments/manager_log.md`에 질문·답변·소요 시간과 함께 남긴다.
+  매니저 답변은 판단 참고이고, 계약·실행·커밋의 책임은 이 세션에 있다. 답변이 동결 계약과
+  충돌하면 그대로 따르지 않고 충돌을 매니저에게 되묻는다.
+- 자격 증명·개인 정보는 보내지 않는다. 서버 경로·해시·수치는 보내도 된다.
+
 ## 부록: 2026-09-14 서버 확인 기록 (read-only)
 
 - `scripts/cmake/timing_adapter/`: `ta_config_u55_high_end`, `u65_high_end`,
