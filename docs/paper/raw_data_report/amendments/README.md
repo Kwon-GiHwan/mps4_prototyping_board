@@ -11,7 +11,7 @@ amendment이며, 논문에 반영할 때는 각 문서의 "제안 판정"과 매
 | `A6_model_structure.md` | 요인 4·5, 133셀 verbose 재컴파일(SHA 133/133 동일) | POST_HOC_DESCRIPTIVE | H4 순서 관계 없음(요인 4 판정 유지); H5 SMALL_FM_CONCENTRATED, 공간 크기(H×W)로 보면 모델 간 일관 |
 | `A7_input_tensor_seed.md` | 방법론, 입력 생성 | 확인 | 소스상 결정론(std::rand, srand 없음); 입력 동일성 실측은 NOT_TESTED |
 | `A8_x4_timing_adapter_sweep.md` | 요인 2·7, TA 변주(캠페인 A–E, 111회) | 실행 결과, 게이트 전부 통과 | 같은 절대 지연에서 512 산출물 < 256 산출물; 역전은 TA 프로파일 변경과 동반; 1024→2048은 별도; U55 cap×지연 상호 의존 |
-| `s4_stall/` | U85 stall 이벤트 원시 수집 | **NOT_EVALUABLE** (qualification 1·2 실패: ACTIVE −12) | 원시 UART·결과 보존, 값 미사용. 종결 방식은 매니저 결정 대기 |
+| `A9_s4_closure.md`, `s4_stall/` | U85 stall 이벤트 원시 수집 | **NOT_EVALUABLE, 종결** (qualification 1·2 실패: ACTIVE −12; 매니저 결정 (a)) | 첫 셀 qualification 실패로 캠페인 중단, 나머지 5셀 미실행, 원시값은 보존만 |
 | `manager_log.md` | 매니저(ChatGPT 창) 교환 전문 | 기록 | 7회 교환 |
 | `ta_parameters.csv`, `vela_verbose/`, `x4/`, `s4_stall/` | 원시 증거·하니스·분석기·게이트 검사 | | 각 분석기는 unittest + 돌연변이 검사 |
 
