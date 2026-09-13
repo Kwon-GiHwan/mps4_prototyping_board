@@ -221,6 +221,25 @@ TA는 펌웨어가 부팅 시 레지스터에 쓰므로 펌웨어 재빌드가 �
 결과 (닫힌 집합의 값):
 ```
 
+## 9. 진행 기록
+
+**2026-09-14 — 1·2·3단계 완료 (GO 불필요 단계). 4·5단계는 GO 대기.**
+
+| 단계 | 계약 커밋 | 결과 | 산출물 |
+|---|---|---|---|
+| 1 실효 대역폭 | `4631acc` | U55 RNNoise EXT 4/4 `AT_LIMIT` (전송 시간 ≈ 측정 사이클), U85 RNNoise EXT `RULED_OUT`, U65 EXT `LOWER_BOUND_ONLY` 14/14, `NOT_EVALUABLE` 0 | `amendments/A5_effective_bandwidth.md`, `.csv`, `ta_parameters.csv` |
+| 2 모델 구조 | `50c61e3` | 133/133 산출물 SHA 동일. H4 `NO_ORDER_RELATION` (rho −0.075, n=20). H5 `SMALL_FM_CONCENTRATED` (REGRESS OFM 중앙값 8,064 vs IMPROVE 18,432) | `amendments/A6_model_structure.md`, `a6_*.csv`, `vela_verbose/` |
+| 3 입력 seed | (계획서 §3) | `DETERMINISTIC_DEFAULT_SEED` — `std::rand` 경로, `srand` 없음, UART 71개에 DYNAMIC_IFM 줄 없음 | `amendments/A7_input_tensor_seed.md` |
+
+계약과 다르게 한 것: 1단계 결과 집합에 `LOWER_BOUND_ONLY`를 계산 전에 추가했다(U65 EXT).
+2단계 H4의 "효율 등급"을 "계열의 인접 전이 효율 평균"으로 계산 전에 구체화했다.
+
+4단계 GO 요청 근거: 1단계에서 U55 RNNoise가 Flash 대역폭 상한에 있었으므로 stall
+카운터는 U55에서 가장 유익하나 U55는 4슬롯이라 beat 카운터를 빼야 한다. 계약 시
+"U85만"을 "U85 8슬롯 + U55는 beat 대신 stall 슬롯으로 별도 실행"으로 넓힐지 결정 필요.
+5단계 GO 요청 근거: U55 RNNoise의 Flash 대역폭 의존은 `EXT_BWCAP`만 바꾼 1건 실험으로
+직접 검증된다 (계획 §5의 두 번째 캠페인을 첫 번째로 당길 것을 제안).
+
 ## 부록: 2026-09-14 서버 확인 기록 (read-only)
 
 - `scripts/cmake/timing_adapter/`: `ta_config_u55_high_end`, `u65_high_end`,
