@@ -240,6 +240,78 @@ TA는 펌웨어가 부팅 시 레지스터에 쓰므로 펌웨어 재빌드가 �
 5단계 GO 요청 근거: U55 RNNoise의 Flash 대역폭 의존은 `EXT_BWCAP`만 바꾼 1건 실험으로
 직접 검증된다 (계획 §5의 두 번째 캠페인을 첫 번째로 당길 것을 제안).
 
+**2026-09-14 — GO 기록.** 유저(매니저 역할)가 "현재 단계 기록해 놓고 나머지 단계 전부
+진행"으로 4·5단계 실행을 승인했다. 승인 사실만 기록한다. 실행 순서는 §9의 제안대로
+5단계(TA 변주, 패치 없음)를 먼저, 4단계(드라이버 패치 + stall 카운터)를 다음에 한다.
+두 단계 모두 실행 전에 §10·§11의 구체 계약을 커밋한다.
+
+## 10. 5단계 구체 계약 — TA 메모리 서비스 변주 (X4)
+
+**실행 전 커밋. 값 계산 전 확정.**
+
+**변주 축 하나.** Vela 산출물·MAC·SRAM TA·플랫폼·펌웨어 소스는 고정. 바꾸는 것은 MLEK
+cmake 캐시 변수 `EXT_RLATENCY`/`EXT_WLATENCY`(캠페인 A) 또는 `EXT_BWCAP`(캠페인 B)뿐이다.
+`ta_config_*.cmake`의 `set(… CACHE STRING)`은 명령행 `-D`로 미리 채워진 캐시를 덮지 않으므로
+`-DEXT_RLATENCY=<v>`가 유효하다. 각 빌드에서 생성된 `timing_adapter_settings.h`의 값을
+읽어 기록하고, 값이 요청과 다르면 그 arm은 `NOT_EVALUABLE`이다.
+
+**캠페인 A — U85 EXT 지연.** 셀 4개: RNNoise·Wav2Letter × 256·512 MAC (SSE-320,
+Dedicated_Sram, 동결 산출물). 수준: 읽기 지연 L ∈ {0, ½·base, base, 2·base, 4·base},
+쓰기 지연 = L/2 (기본값 비율 2:1 유지). base = 250 (SYS_DRAM_Low, 256 MAC) / 500 (Mid, 512 MAC).
+반복 3회. 총 60회 실행, 20 빌드.
+
+**캠페인 B — U55 EXT 대역폭 상한.** 셀 1개: RNNoise 256 MAC (SSE-300, Shared_Sram).
+`EXT_BWCAP` ∈ {50 (base), 25, 100, 200, 0 (무제한)}. 반복 3회. 15회 실행, 5 빌드.
+**사전 예측 (A5에서):** Flash 대역폭에 묶여 있다면 BWCAP 25에서 Total ≥ 1.8×base,
+BWCAP 100에서 ≤ 0.6×base. 어긋나면 A5의 해석을 철회한다.
+
+**게이트 (arm마다):**
+- G1 Vela 산출물 SHA = 동결 `formal_vela_sha256`. 생성 `.cc` body SHA = 앵커.
+- G2 base arm의 Total·Active·beat 전부가 동결값(canonical / R1)과 정확히 같다. 아니면
+  캠페인 전체 `NOT_EVALUABLE` (하니스가 캠페인을 재현하지 못한 것).
+- G3 3회 반복이 벡터 단위로 완전 동일. 아니면 그 arm `NOT_EVALUABLE`.
+- G4 UART 원문 보존 (D4 교훈). 파서 결과는 UART에서 재생성 가능해야 한다.
+
+**결과 집합 (셀 단위):**
+- 캠페인 A: `MEMORY_SERVICE_SENSITIVE` — 어느 수준에서든 Total이 base 대비 ±10% 이상
+  움직이거나, 256→512 방향(Δ 부호)이 base와 달라짐 / `ROBUST_TO_TESTED_MEMORY_SERVICE_RANGE`
+  / `NOT_EVALUABLE`.
+- 캠페인 B: `BANDWIDTH_SENSITIVE` — 어느 수준에서든 ±10% 이상 / `BANDWIDTH_INSENSITIVE` /
+  `NOT_EVALUABLE`. 사전 예측 적중 여부는 별도 열 `A5_PREDICTION`: `MET` / `NOT_MET`.
+
+**해석 경계:** 민감하다는 것은 "TA 조건이 사이클을 바꾼다"이지 원인 귀속이 아니다. 둔감하다는
+것은 "시험한 범위에서"다. 하드웨어 기하나 스케줄러 인과는 주장하지 않는다 (X4 원문).
+
+**하니스:** `docs/paper/raw_data_report/amendments/x4/x4_ta_sweep.py` (stage1의 build·run을
+재사용, cmake 명령에 -D만 추가). 산출: `/tmp/x4/results.jsonl`, `/tmp/x4/uart/*.txt` →
+리포 `amendments/x4/`.
+
+## 11. 4단계 구체 계약 — U85 stall 카운터
+
+**실행 전 커밋. 5단계 결과를 본 뒤에 커밋해도 되지만, 이 절의 임계값은 지금 고정한다.**
+
+**패치 범위.** core-driver `src/ethosu_driver.c`만, stock 파일 digest
+`56b2fecb…963f`에서 출발. `handle_command_stream()`에서 `ethosu_inference_begin()` 호출
+직후에 이벤트 카운터 4–7의 EVTYPER를 {MAC_ACTIVE, MAC_STALLED_BY_W, MAC_STALLED_BY_IB,
+AO_STALLED_BY_OB}로 설정하고 CNT5–8을 enable, `ethosu_inference_end()` 호출 직후에
+네 값을 읽어 `printf("NPU X4STALL %s: %u cycles\n", …)`로 낸다. HAL 프로파일러가 쓰는
+CCNT·CNT1–4는 건드리지 않는다. inference_runner·HAL 무변경. 패치 적용·복원은 digest로
+증명한다.
+
+**셀:** U85 RNNoise·KWS·Wav2Letter × 256·512 = 6셀 × 3회. 동결 산출물.
+
+**게이트:** G1 산출물 SHA 동일. G2 stock 카운터(Total·Active·SRAM/EXT beat)가 R1 값과 정확히
+같다 — 패치가 측정을 흔들었으면 중단. G3 3회 동일. G4 UART 보존.
+
+**지표·결과 집합 (셀 단위):** `stall_share = (MAC_STALLED_BY_W + MAC_STALLED_BY_IB +
+AO_STALLED_BY_OB) / Total` (겹침 가능성 있음 → 상한으로 해석).
+`MEMORY_WAIT_DOMINANT` ≥ 0.30 / `MEMORY_WAIT_PRESENT` 0.05–0.30 / `MEMORY_WAIT_NEGLIGIBLE`
+< 0.05 / `NOT_EVALUABLE`. 보조: `mac_active_share = MAC_ACTIVE / Total`.
+
+**의미론:** 이벤트 의미는 헤더 이름뿐이다. Arm U85 TRM에서 확인을 시도하고, 확인되지
+않으면 모든 결과에 `SEMANTICS_UNVERIFIED`를 붙인다. 그 상태에서는 "대기"라는 단어 대신
+"헤더가 stall이라 부르는 이벤트"로 쓴다.
+
 ## 부록: 2026-09-14 서버 확인 기록 (read-only)
 
 - `scripts/cmake/timing_adapter/`: `ta_config_u55_high_end`, `u65_high_end`,
