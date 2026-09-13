@@ -15,15 +15,26 @@
 - 식: `eff = Σbeat × bytes_per_word / npu_total_cycles`,
   `cap = BWCAP × bytes_per_word / (PULSE_ON + PULSE_OFF)`, `util = eff / cap`(포트 1개 기준).
 
-## 가정 (검증하지 않음)
+## 가정과 확인 상태
 
-1. TA의 word(U55 64-bit, U65/U85 128-bit) = PMU가 세는 data beat 1개.
-2. BWCAP은 PULSE_ON+PULSE_OFF 주기 전체에 대한 상한이다. Arm TA 문서는 "words per
-   pulse cycle"이라고만 적어 두었고, PULSE_ON 창에만 적용되는 상한일 가능성이 있다.
-   그 경우 U55 EXT cap은 1.0이 아니라 1.25 B/cycle이 된다 (아래 민감도).
-3. U85의 SRAM 포트 2·4개, EXT 포트 2개에 TA cap이 포트마다 적용되는지 합산에
-   적용되는지 모른다. 두 값을 모두 기록하고 어느 쪽도 채택하지 않는다.
-4. NPU 사이클 카운터와 TA가 같은 클럭이다.
+계산 당시에는 네 가지를 가정했다. 같은 날 서버의 MLEK 문서
+`docs/sections/timing_adapters.md`(read-only)로 1·2가 확인됐고 3은 부분 확인이다.
+
+1. **확인됨.** "`BWCAP`: Maximum number of bus-width words (beats) transferred per pulse
+   cycle … The bus-width word size depends on the NPU AXI bus width: U55 64-bit, U65 128-bit,
+   U85 128-bit." TA word = beat.
+2. **확인됨.** "A pulse cycle is defined by `PULSE_ON` and `PULSE_OFF`." 즉 cap =
+   BWCAP ÷ (PULSE_ON + PULSE_OFF)이 문서의 정의와 같다. 아래의 "PULSE_ON 창만" 민감도는
+   더 이상 필요 없다. 같은 문서의 주의: "The bandwidth cap operates on the transaction
+   level and, because of its simple implementation, the accuracy is limited" — 트랜잭션
+   단위로 세므로 cap을 약간 넘는 값(1.01–1.08)이 나올 수 있다. util > 1은 모델의 반올림이지
+   측정 오류가 아니다.
+3. **부분 확인.** 문서는 TA가 "two AXI buses used by Ethos-U NPU — one for SRAM, one for
+   flash/DDR"를 제어한다고 적고, 펌웨어도 TA 인스턴스 두 개(TA_SRAM, TA_EXT)만 설정한다.
+   따라서 cap은 포트가 아니라 **경로(SRAM/EXT) 단위**로 읽는 것이 문서와 맞다. 다만
+   SSE-320 FVP에서 U85의 SRAM 포트 2–4개가 실제로 그 한 TA를 지나는지는 확인하지 못했다.
+   포트 1개 기준 값이 문서와 일치하는 읽기이고, 포트 전체 기준 값은 보수적 하한으로만 남긴다.
+4. **미확인.** NPU 사이클 카운터와 TA가 같은 클럭이라는 가정.
 
 ## 결과 요약 (닫힌 집합)
 
