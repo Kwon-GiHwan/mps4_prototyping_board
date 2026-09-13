@@ -1,0 +1,656 @@
+Schedule: 'graph_MAX_BUFFERED'
+	0: Operation FullyConnected  - OFM 1, 1, 1, 72
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 0
+		Operator Config = OFM Block=[1, 1, 2, 72], IFM Block=[1, 1, 2, 24], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 1, 1, 24]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 1, 1, 72]
+		Assigned Cascade = 0
+		Encoded Weights = 2736 bytes
+		Weight buffer = 0 bytes
+		Depth slices = [0, 72]
+		sub-operations: -
+		Estimated Perf: Macs=1728 Cycles=468
+		Memory Used: 304 bytes (op=304, buf=0, ccd=0, nl=0)
+	1: Operation MemoryCopy  - OFM 1, 1, 1, 42
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 2
+		Operator Config = OFM Block=[1, 1, 2, 48], IFM Block=[1, 1, 2, 48], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 1, 1, 42]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 1, 1, 42]
+		Assigned Cascade = 0
+		sub-operations: -
+		Estimated Perf: Macs=42 Cycles=149
+		Memory Used: 352 bytes (op=48, buf=0, ccd=0, nl=304)
+	2: Operation FullyConnected  - OFM 1, 1, 1, 24
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 4
+		Operator Config = OFM Block=[1, 1, 2, 24], IFM Block=[1, 1, 2, 32], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 1, 1, 42]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 1, 1, 24]
+		Assigned Cascade = 0
+		Encoded Weights = 1456 bytes
+		Weight buffer = 0 bytes
+		Depth slices = [0, 24]
+		sub-operations: [ LUT ]
+		Estimated Perf: Macs=1008 Cycles=272
+		Memory Used: 336 bytes (op=32, buf=0, ccd=0, nl=304)
+	3: Operation FullyConnected  - OFM 1, 1, 1, 72
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 6
+		Operator Config = OFM Block=[1, 1, 2, 72], IFM Block=[1, 1, 2, 24], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 1, 1, 24]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 1, 1, 72]
+		Assigned Cascade = 0
+		Encoded Weights = 2752 bytes
+		Weight buffer = 0 bytes
+		Depth slices = [0, 72]
+		sub-operations: -
+		Estimated Perf: Macs=1728 Cycles=468
+		Memory Used: 416 bytes (op=80, buf=0, ccd=0, nl=336)
+	4: Operation Add  - OFM 1, 1, 1, 24
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 8
+		Operator Config = OFM Block=[1, 1, 2, 24], IFM Block=[1, 1, 2, 24], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 1, 1, 24]
+		IFM2 Stripe  = [1, 1, 1, 24]
+		OFM Stripe   = [1, 1, 1, 24]
+		Assigned Cascade = 0
+		sub-operations: [ LUT ]
+		Estimated Perf: Macs=0 Cycles=48
+		Memory Used: 448 bytes (op=32, buf=0, ccd=0, nl=416)
+	5: Operation Mul  - OFM 1, 1, 1, 24
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 10
+		Operator Config = OFM Block=[1, 1, 2, 24], IFM Block=[1, 1, 2, 24], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 1, 1, 24]
+		IFM2 Stripe  = [1, 1, 1, 24]
+		OFM Stripe   = [1, 1, 1, 24]
+		Assigned Cascade = 0
+		sub-operations: -
+		Estimated Perf: Macs=0 Cycles=32
+		Memory Used: 448 bytes (op=0, buf=0, ccd=0, nl=448)
+	6: Operation Add  - OFM 1, 1, 1, 24
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 12
+		Operator Config = OFM Block=[1, 1, 2, 24], IFM Block=[1, 1, 2, 24], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 1, 1, 24]
+		IFM2 Stripe  = [1, 1, 1, 24]
+		OFM Stripe   = [1, 1, 1, 24]
+		Assigned Cascade = 0
+		sub-operations: [ LUT ]
+		Estimated Perf: Macs=0 Cycles=48
+		Memory Used: 448 bytes (op=0, buf=0, ccd=0, nl=448)
+	7: Operation Add  - OFM 1, 1, 1, 24
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 14
+		Operator Config = OFM Block=[1, 1, 2, 24], IFM Block=[1, 1, 2, 24], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 1, 1, 24]
+		IFM2 Stripe  = [1, 1, 1, 24]
+		OFM Stripe   = [1, 1, 1, 24]
+		Assigned Cascade = 0
+		sub-operations: [ LUT ]
+		Estimated Perf: Macs=0 Cycles=48
+		Memory Used: 480 bytes (op=32, buf=0, ccd=0, nl=448)
+	8: Operation Sub  - OFM 1, 1, 1, 24
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 16
+		Operator Config = OFM Block=[1, 1, 2, 24], IFM Block=[1, 1, 2, 24], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 1, 1, 24]
+		IFM2 Stripe  = [1, 1, 1, 1]
+		OFM Stripe   = [1, 1, 1, 24]
+		Assigned Cascade = 0
+		sub-operations: -
+		Estimated Perf: Macs=0 Cycles=48
+		Memory Used: 352 bytes (op=32, buf=0, ccd=0, nl=320)
+	9: Operation Mul  - OFM 1, 1, 1, 24
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 18
+		Operator Config = OFM Block=[1, 1, 2, 24], IFM Block=[1, 1, 2, 24], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 1, 1, 24]
+		IFM2 Stripe  = [1, 1, 1, 24]
+		OFM Stripe   = [1, 1, 1, 24]
+		Assigned Cascade = 0
+		sub-operations: -
+		Estimated Perf: Macs=0 Cycles=32
+		Memory Used: 352 bytes (op=0, buf=0, ccd=0, nl=352)
+	10: Operation Mul  - OFM 1, 1, 1, 24
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 20
+		Operator Config = OFM Block=[1, 1, 2, 24], IFM Block=[1, 1, 2, 24], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 1, 1, 24]
+		IFM2 Stripe  = [1, 1, 1, 24]
+		OFM Stripe   = [1, 1, 1, 24]
+		Assigned Cascade = 0
+		sub-operations: -
+		Estimated Perf: Macs=0 Cycles=32
+		Memory Used: 352 bytes (op=32, buf=0, ccd=0, nl=320)
+	11: Operation Add  - OFM 1, 1, 1, 24
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 22
+		Operator Config = OFM Block=[1, 1, 2, 24], IFM Block=[1, 1, 2, 24], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 1, 1, 24]
+		IFM2 Stripe  = [1, 1, 1, 24]
+		OFM Stripe   = [1, 1, 1, 24]
+		Assigned Cascade = 0
+		sub-operations: -
+		Estimated Perf: Macs=0 Cycles=48
+		Memory Used: 288 bytes (op=0, buf=0, ccd=0, nl=288)
+	12: Operation MemoryCopy  - OFM 1, 1, 1, 24
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 24
+		Operator Config = OFM Block=[1, 1, 2, 24], IFM Block=[1, 1, 2, 24], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 1, 1, 24]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 1, 1, 24]
+		Assigned Cascade = 0
+		sub-operations: -
+		Estimated Perf: Macs=24 Cycles=84
+		Memory Used: 288 bytes (op=32, buf=0, ccd=0, nl=256)
+	13: Operation MemoryCopy  - OFM 1, 1, 1, 24
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 26
+		Operator Config = OFM Block=[1, 1, 2, 24], IFM Block=[1, 1, 2, 24], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 1, 1, 24]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 1, 1, 24]
+		Assigned Cascade = 0
+		sub-operations: -
+		Estimated Perf: Macs=24 Cycles=83
+		Memory Used: 288 bytes (op=32, buf=0, ccd=0, nl=256)
+	14: Operation FullyConnected  - OFM 1, 1, 1, 1
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 28
+		Operator Config = OFM Block=[1, 1, 2, 8], IFM Block=[1, 1, 2, 24], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 1, 1, 24]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 1, 1, 1]
+		Assigned Cascade = 0
+		Encoded Weights = 64 bytes
+		Weight buffer = 0 bytes
+		Depth slices = [0, 1]
+		sub-operations: [ LUT ]
+		Estimated Perf: Macs=24 Cycles=59
+		Memory Used: 304 bytes (op=16, buf=0, ccd=0, nl=288)
+	15: Operation FullyConnected  - OFM 1, 1, 1, 144
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 30
+		Operator Config = OFM Block=[1, 1, 2, 128], IFM Block=[1, 1, 2, 32], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 1, 1, 48]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 1, 1, 144]
+		Assigned Cascade = 0
+		Encoded Weights = 9472 bytes
+		Weight buffer = 0 bytes
+		Depth slices = [0, 144]
+		sub-operations: -
+		Estimated Perf: Macs=6912 Cycles=1513
+		Memory Used: 448 bytes (op=144, buf=0, ccd=0, nl=304)
+	16: Operation MemoryCopy  - OFM 1, 1, 1, 90
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 32
+		Operator Config = OFM Block=[1, 1, 2, 48], IFM Block=[1, 1, 2, 48], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 1, 1, 42]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 1, 1, 42]
+		Assigned Cascade = 0
+		sub-operations: -
+		Estimated Perf: Macs=42 Cycles=150
+		Memory Used: 544 bytes (op=96, buf=0, ccd=0, nl=448)
+	17: Operation Quantize  - OFM 1, 1, 1, 24
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 34
+		Operator Config = OFM Block=[1, 1, 2, 24], IFM Block=[1, 1, 2, 24], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 1, 1, 24]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 1, 1, 24]
+		Assigned Cascade = 0
+		sub-operations: -
+		Estimated Perf: Macs=24 Cycles=83
+		Memory Used: 576 bytes (op=32, buf=0, ccd=0, nl=544)
+	18: Operation MemoryCopy  - OFM 1, 1, 1, 90
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 36
+		Operator Config = OFM Block=[1, 1, 2, 24], IFM Block=[1, 1, 2, 24], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 1, 1, 24]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 1, 1, 24]
+		Assigned Cascade = 0
+		sub-operations: -
+		Estimated Perf: Macs=24 Cycles=84
+		Memory Used: 576 bytes (op=0, buf=0, ccd=0, nl=576)
+	19: Operation Quantize  - OFM 1, 1, 1, 24
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 38
+		Operator Config = OFM Block=[1, 1, 2, 24], IFM Block=[1, 1, 2, 24], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 1, 1, 24]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 1, 1, 24]
+		Assigned Cascade = 0
+		sub-operations: -
+		Estimated Perf: Macs=24 Cycles=83
+		Memory Used: 576 bytes (op=32, buf=0, ccd=0, nl=544)
+	20: Operation MemoryCopy  - OFM 1, 1, 1, 90
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 40
+		Operator Config = OFM Block=[1, 1, 2, 24], IFM Block=[1, 1, 2, 24], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 1, 1, 24]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 1, 1, 24]
+		Assigned Cascade = 0
+		sub-operations: -
+		Estimated Perf: Macs=24 Cycles=84
+		Memory Used: 544 bytes (op=0, buf=0, ccd=0, nl=544)
+	21: Operation FullyConnected  - OFM 1, 1, 1, 144
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 42
+		Operator Config = OFM Block=[1, 1, 2, 128], IFM Block=[1, 1, 2, 32], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 1, 1, 90]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 1, 1, 144]
+		Assigned Cascade = 0
+		Encoded Weights = 16016 bytes
+		Weight buffer = 0 bytes
+		Depth slices = [0, 144]
+		sub-operations: -
+		Estimated Perf: Macs=12960 Cycles=2217
+		Memory Used: 656 bytes (op=144, buf=0, ccd=0, nl=512)
+	22: Operation Add  - OFM 1, 1, 1, 48
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 44
+		Operator Config = OFM Block=[1, 1, 2, 48], IFM Block=[1, 1, 2, 48], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 1, 1, 48]
+		IFM2 Stripe  = [1, 1, 1, 48]
+		OFM Stripe   = [1, 1, 1, 48]
+		Assigned Cascade = 0
+		sub-operations: [ LUT ]
+		Estimated Perf: Macs=0 Cycles=72
+		Memory Used: 608 bytes (op=48, buf=0, ccd=0, nl=560)
+	23: Operation Mul  - OFM 1, 1, 1, 48
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 46
+		Operator Config = OFM Block=[1, 1, 2, 48], IFM Block=[1, 1, 2, 48], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 1, 1, 48]
+		IFM2 Stripe  = [1, 1, 1, 48]
+		OFM Stripe   = [1, 1, 1, 48]
+		Assigned Cascade = 0
+		sub-operations: -
+		Estimated Perf: Macs=0 Cycles=48
+		Memory Used: 608 bytes (op=0, buf=0, ccd=0, nl=608)
+	24: Operation Add  - OFM 1, 1, 1, 48
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 48
+		Operator Config = OFM Block=[1, 1, 2, 48], IFM Block=[1, 1, 2, 48], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 1, 1, 48]
+		IFM2 Stripe  = [1, 1, 1, 48]
+		OFM Stripe   = [1, 1, 1, 48]
+		Assigned Cascade = 0
+		sub-operations: [ Relu ]
+		Estimated Perf: Macs=0 Cycles=72
+		Memory Used: 608 bytes (op=0, buf=0, ccd=0, nl=608)
+	25: Operation Add  - OFM 1, 1, 1, 48
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 50
+		Operator Config = OFM Block=[1, 1, 2, 48], IFM Block=[1, 1, 2, 48], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 1, 1, 48]
+		IFM2 Stripe  = [1, 1, 1, 48]
+		OFM Stripe   = [1, 1, 1, 48]
+		Assigned Cascade = 0
+		sub-operations: [ LUT ]
+		Estimated Perf: Macs=0 Cycles=72
+		Memory Used: 656 bytes (op=48, buf=0, ccd=0, nl=608)
+	26: Operation Sub  - OFM 1, 1, 1, 48
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 52
+		Operator Config = OFM Block=[1, 1, 2, 48], IFM Block=[1, 1, 2, 48], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 1, 1, 48]
+		IFM2 Stripe  = [1, 1, 1, 1]
+		OFM Stripe   = [1, 1, 1, 48]
+		Assigned Cascade = 0
+		sub-operations: -
+		Estimated Perf: Macs=0 Cycles=72
+		Memory Used: 416 bytes (op=48, buf=0, ccd=0, nl=368)
+	27: Operation Mul  - OFM 1, 1, 1, 48
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 54
+		Operator Config = OFM Block=[1, 1, 2, 48], IFM Block=[1, 1, 2, 48], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 1, 1, 48]
+		IFM2 Stripe  = [1, 1, 1, 48]
+		OFM Stripe   = [1, 1, 1, 48]
+		Assigned Cascade = 0
+		sub-operations: -
+		Estimated Perf: Macs=0 Cycles=48
+		Memory Used: 416 bytes (op=0, buf=0, ccd=0, nl=416)
+	28: Operation Mul  - OFM 1, 1, 1, 48
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 56
+		Operator Config = OFM Block=[1, 1, 2, 48], IFM Block=[1, 1, 2, 48], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 1, 1, 48]
+		IFM2 Stripe  = [1, 1, 1, 48]
+		OFM Stripe   = [1, 1, 1, 48]
+		Assigned Cascade = 0
+		sub-operations: -
+		Estimated Perf: Macs=0 Cycles=48
+		Memory Used: 416 bytes (op=48, buf=0, ccd=0, nl=368)
+	29: Operation Add  - OFM 1, 1, 1, 48
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 58
+		Operator Config = OFM Block=[1, 1, 2, 48], IFM Block=[1, 1, 2, 48], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 1, 1, 48]
+		IFM2 Stripe  = [1, 1, 1, 48]
+		OFM Stripe   = [1, 1, 1, 48]
+		Assigned Cascade = 0
+		sub-operations: -
+		Estimated Perf: Macs=0 Cycles=72
+		Memory Used: 320 bytes (op=0, buf=0, ccd=0, nl=320)
+	30: Operation MemoryCopy  - OFM 1, 1, 1, 48
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 60
+		Operator Config = OFM Block=[1, 1, 2, 48], IFM Block=[1, 1, 2, 48], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 1, 1, 48]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 1, 1, 48]
+		Assigned Cascade = 0
+		sub-operations: -
+		Estimated Perf: Macs=48 Cycles=152
+		Memory Used: 320 bytes (op=48, buf=0, ccd=0, nl=272)
+	31: Operation FullyConnected  - OFM 1, 1, 1, 288
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 62
+		Operator Config = OFM Block=[1, 1, 2, 128], IFM Block=[1, 1, 2, 32], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 1, 1, 96]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 1, 1, 288]
+		Assigned Cascade = 0
+		Encoded Weights = 30544 bytes
+		Weight buffer = 0 bytes
+		Depth slices = [0, 288]
+		sub-operations: -
+		Estimated Perf: Macs=27648 Cycles=3945
+		Memory Used: 560 bytes (op=288, buf=0, ccd=0, nl=272)
+	32: Operation MemoryCopy  - OFM 1, 1, 1, 114
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 64
+		Operator Config = OFM Block=[1, 1, 2, 48], IFM Block=[1, 1, 2, 48], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 1, 1, 42]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 1, 1, 42]
+		Assigned Cascade = 0
+		sub-operations: -
+		Estimated Perf: Macs=42 Cycles=150
+		Memory Used: 688 bytes (op=128, buf=0, ccd=0, nl=560)
+	33: Operation Quantize  - OFM 1, 1, 1, 48
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 66
+		Operator Config = OFM Block=[1, 1, 2, 48], IFM Block=[1, 1, 2, 48], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 1, 1, 48]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 1, 1, 48]
+		Assigned Cascade = 0
+		sub-operations: -
+		Estimated Perf: Macs=48 Cycles=151
+		Memory Used: 688 bytes (op=48, buf=0, ccd=0, nl=640)
+	34: Operation MemoryCopy  - OFM 1, 1, 1, 114
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 68
+		Operator Config = OFM Block=[1, 1, 2, 48], IFM Block=[1, 1, 2, 48], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 1, 1, 48]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 1, 1, 48]
+		Assigned Cascade = 0
+		sub-operations: -
+		Estimated Perf: Macs=48 Cycles=152
+		Memory Used: 688 bytes (op=0, buf=0, ccd=0, nl=688)
+	35: Operation Quantize  - OFM 1, 1, 1, 24
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 70
+		Operator Config = OFM Block=[1, 1, 2, 24], IFM Block=[1, 1, 2, 24], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 1, 1, 24]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 1, 1, 24]
+		Assigned Cascade = 0
+		sub-operations: -
+		Estimated Perf: Macs=24 Cycles=83
+		Memory Used: 672 bytes (op=32, buf=0, ccd=0, nl=640)
+	36: Operation MemoryCopy  - OFM 1, 1, 1, 114
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 72
+		Operator Config = OFM Block=[1, 1, 2, 24], IFM Block=[1, 1, 2, 24], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 1, 1, 24]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 1, 1, 24]
+		Assigned Cascade = 0
+		sub-operations: -
+		Estimated Perf: Macs=24 Cycles=84
+		Memory Used: 640 bytes (op=0, buf=0, ccd=0, nl=640)
+	37: Operation FullyConnected  - OFM 1, 1, 1, 288
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 74
+		Operator Config = OFM Block=[1, 1, 2, 128], IFM Block=[1, 1, 2, 32], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 1, 1, 114]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 1, 1, 288]
+		Assigned Cascade = 0
+		Encoded Weights = 40048 bytes
+		Weight buffer = 0 bytes
+		Depth slices = [0, 288]
+		sub-operations: -
+		Estimated Perf: Macs=32832 Cycles=5225
+		Memory Used: 896 bytes (op=288, buf=0, ccd=0, nl=608)
+	38: Operation Add  - OFM 1, 1, 1, 96
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 76
+		Operator Config = OFM Block=[1, 1, 2, 96], IFM Block=[1, 1, 2, 96], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 1, 1, 96]
+		IFM2 Stripe  = [1, 1, 1, 96]
+		OFM Stripe   = [1, 1, 1, 96]
+		Assigned Cascade = 0
+		sub-operations: [ LUT ]
+		Estimated Perf: Macs=0 Cycles=144
+		Memory Used: 864 bytes (op=96, buf=0, ccd=0, nl=768)
+	39: Operation Mul  - OFM 1, 1, 1, 96
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 78
+		Operator Config = OFM Block=[1, 1, 2, 96], IFM Block=[1, 1, 2, 96], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 1, 1, 96]
+		IFM2 Stripe  = [1, 1, 1, 96]
+		OFM Stripe   = [1, 1, 1, 96]
+		Assigned Cascade = 0
+		sub-operations: -
+		Estimated Perf: Macs=0 Cycles=96
+		Memory Used: 864 bytes (op=0, buf=0, ccd=0, nl=864)
+	40: Operation Add  - OFM 1, 1, 1, 96
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 80
+		Operator Config = OFM Block=[1, 1, 2, 96], IFM Block=[1, 1, 2, 96], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 1, 1, 96]
+		IFM2 Stripe  = [1, 1, 1, 96]
+		OFM Stripe   = [1, 1, 1, 96]
+		Assigned Cascade = 0
+		sub-operations: [ LUT ]
+		Estimated Perf: Macs=0 Cycles=144
+		Memory Used: 864 bytes (op=0, buf=0, ccd=0, nl=864)
+	41: Operation Add  - OFM 1, 1, 1, 96
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 82
+		Operator Config = OFM Block=[1, 1, 2, 96], IFM Block=[1, 1, 2, 96], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 1, 1, 96]
+		IFM2 Stripe  = [1, 1, 1, 96]
+		OFM Stripe   = [1, 1, 1, 96]
+		Assigned Cascade = 0
+		sub-operations: [ LUT ]
+		Estimated Perf: Macs=0 Cycles=144
+		Memory Used: 960 bytes (op=96, buf=0, ccd=0, nl=864)
+	42: Operation Sub  - OFM 1, 1, 1, 96
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 84
+		Operator Config = OFM Block=[1, 1, 2, 96], IFM Block=[1, 1, 2, 96], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 1, 1, 96]
+		IFM2 Stripe  = [1, 1, 1, 1]
+		OFM Stripe   = [1, 1, 1, 96]
+		Assigned Cascade = 0
+		sub-operations: -
+		Estimated Perf: Macs=0 Cycles=144
+		Memory Used: 480 bytes (op=96, buf=0, ccd=0, nl=384)
+	43: Operation Mul  - OFM 1, 1, 1, 96
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 86
+		Operator Config = OFM Block=[1, 1, 2, 96], IFM Block=[1, 1, 2, 96], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 1, 1, 96]
+		IFM2 Stripe  = [1, 1, 1, 96]
+		OFM Stripe   = [1, 1, 1, 96]
+		Assigned Cascade = 0
+		sub-operations: -
+		Estimated Perf: Macs=0 Cycles=96
+		Memory Used: 480 bytes (op=0, buf=0, ccd=0, nl=480)
+	44: Operation Mul  - OFM 1, 1, 1, 96
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 88
+		Operator Config = OFM Block=[1, 1, 2, 96], IFM Block=[1, 1, 2, 96], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 1, 1, 96]
+		IFM2 Stripe  = [1, 1, 1, 96]
+		OFM Stripe   = [1, 1, 1, 96]
+		Assigned Cascade = 0
+		sub-operations: -
+		Estimated Perf: Macs=0 Cycles=96
+		Memory Used: 480 bytes (op=96, buf=0, ccd=0, nl=384)
+	45: Operation Add  - OFM 1, 1, 1, 96
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 90
+		Operator Config = OFM Block=[1, 1, 2, 96], IFM Block=[1, 1, 2, 96], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 1, 1, 96]
+		IFM2 Stripe  = [1, 1, 1, 96]
+		OFM Stripe   = [1, 1, 1, 96]
+		Assigned Cascade = 0
+		sub-operations: -
+		Estimated Perf: Macs=0 Cycles=144
+		Memory Used: 288 bytes (op=0, buf=0, ccd=0, nl=288)
+	46: Operation MemoryCopy  - OFM 1, 1, 1, 96
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 92
+		Operator Config = OFM Block=[1, 1, 2, 96], IFM Block=[1, 1, 2, 96], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 1, 1, 96]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 1, 1, 96]
+		Assigned Cascade = 0
+		sub-operations: -
+		Estimated Perf: Macs=96 Cycles=289
+		Memory Used: 288 bytes (op=96, buf=0, ccd=0, nl=192)
+	47: Operation FullyConnected  - OFM 1, 1, 1, 22
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 94
+		Operator Config = OFM Block=[1, 1, 2, 24], IFM Block=[1, 1, 2, 32], Traversal=DepthFirst, AccType=SHRAM_Acc32
+		IFM Stripe   = [1, 1, 1, 96]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 1, 1, 22]
+		Assigned Cascade = 0
+		Encoded Weights = 2608 bytes
+		Weight buffer = 0 bytes
+		Depth slices = [0, 22]
+		sub-operations: [ LUT ]
+		Estimated Perf: Macs=2112 Cycles=392
+		Memory Used: 224 bytes (op=32, buf=0, ccd=0, nl=192)
+	Cascades:
+
+################################################################################
+Performance for NPU Grap /tmp/vela_verbose/cells/rnnoise_INT8__SSE-300__ethos-u55-128/rnnoise_INT8
+Original Operator    NNG Operator         Target Staging Usage  Peak% (Staging)  Op Cycles Network% (cycles)        NPU    SRAM AC    DRAM AC OnFlash AC OffFlash AC  MAC Count Network% (MAC)  Util% (MAC) Name                 
+-------------------- -------------------- ------ ------------- ---------------- ---------- ----------------- ---------- ---------- ---------- ---------- ----------- ---------- -------------- ------------ -------------------- 
+FullyConnected       FullyConnected       NPU              304            31.67       2736              2.50        468         21          0          0        2736       1728           1.97         0.49 MatMul_1;model_1/vad_gru/gru_cell_3/StatefulPartitionedCall/MatMul_1;BiasAdd_1;model_1/vad_gru/gru_cell_3/StatefulPartitionedCall/BiasAdd_1 
+Reshape              MemoryCopy           NPU              352            36.67        149              0.14        149         11          0          0           0         42           0.05         0.22 main_input_int8_copy 
+FullyConnected       FullyConnected       NPU              336            35.00       1456              1.33        272         10          0          0        1456       1008           1.15         0.54 Tanh;model_1/fc1/StatefulPartitionedCall/Tanh;BiasAdd;model_1/fc1/StatefulPartitionedCall/BiasAdd;Tensordot/shape;model_1/fc1/StatefulPartitionedCall/Tensordot/shape;Tensordot;model_1/fc1/StatefulPartitionedCall/Tensordot;model_1/fc1/1869 
+Tanh                 LUT                  NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 Tanh;model_1/fc1/StatefulPartitionedCall/Tanh;BiasAdd;model_1/fc1/StatefulPartitionedCall/BiasAdd;Tensordot/shape;model_1/fc1/StatefulPartitionedCall/Tensordot/shape;Tensordot;model_1/fc1/StatefulPartitionedCall/Tensordot;model_1/fc1/1869 
+FullyConnected       FullyConnected       NPU              416            43.33       2752              2.52        468         22          0          0        2752       1728           1.97         0.49 MatMul;model_1/vad_gru/gru_cell_3/StatefulPartitionedCall/MatMul;BiasAdd;model_1/vad_gru/gru_cell_3/StatefulPartitionedCall/BiasAdd 
+Add                  Add                  NPU              448            46.67         48              0.04         48         10          0          0           0          0           0.00         0.00 Sigmoid_1;model_1/vad_gru/gru_cell_3/StatefulPartitionedCall/Sigmoid_1 
+Sigmoid              LUT                  NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 Sigmoid_1;model_1/vad_gru/gru_cell_3/StatefulPartitionedCall/Sigmoid_1 
+Mul                  Mul                  NPU              448            46.67         32              0.03         32         12          0          0           0          0           0.00         0.00 mul;model_1/vad_gru/gru_cell_3/StatefulPartitionedCall/mul 
+Add                  Add                  NPU              448            46.67         48              0.04         48         10          0          0           0          0           0.00         0.00 Tanh;model_1/vad_gru/gru_cell_3/StatefulPartitionedCall/Tanh 
+Tanh                 LUT                  NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 Tanh;model_1/vad_gru/gru_cell_3/StatefulPartitionedCall/Tanh 
+Add                  Add                  NPU              480            50.00         48              0.04         48         10          0          0           0          0           0.00         0.00 Sigmoid;model_1/vad_gru/gru_cell_3/StatefulPartitionedCall/Sigmoid 
+Sigmoid              LUT                  NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 Sigmoid;model_1/vad_gru/gru_cell_3/StatefulPartitionedCall/Sigmoid 
+Sub                  Sub                  NPU              352            36.67         48              0.04         48          7          0          0           0          0           0.00         0.00 sub;model_1/vad_gru/gru_cell_3/StatefulPartitionedCall/sub 
+Mul                  Mul                  NPU              352            36.67         32              0.03         32         12          0          0           0          0           0.00         0.00 mul_2;model_1/vad_gru/gru_cell_3/StatefulPartitionedCall/mul_2 
+Mul                  Mul                  NPU              352            36.67         32              0.03         32         12          0          0           0          0           0.00         0.00 mul_1;model_1/vad_gru/gru_cell_3/StatefulPartitionedCall/mul_1 
+Add                  Add                  NPU              288            30.00         48              0.04         48         12          0          0           0          0           0.00         0.00 add_3;model_1/vad_gru/gru_cell_3/StatefulPartitionedCall/add_3 
+Pack                 MemoryCopy           NPU              288            30.00         84              0.08         84         10          0          0           0         24           0.03         0.22 Identity_3_int8      
+Reshape              MemoryCopy           NPU              288            30.00         83              0.08         83          7          0          0           0         24           0.03         0.23 Identity_3_int8_copy 
+FullyConnected       FullyConnected       NPU              304            31.67         64              0.06         59          4          0          0          64         24           0.03         0.29 Identity_4_int8      
+Sigmoid              LUT                  NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 Identity_4_int8      
+FullyConnected       FullyConnected       NPU              448            46.67       9472              8.66       1513         48          0          0        9472       6912           7.90         0.57 model_1/noise_gru/gru_cell_4/MatMul_1;model_1/noise_gru/gru_cell_4/BiasAdd_1 
+Concat               MemoryCopy           NPU              544            56.67        150              0.14        150         16          0          0           0         42           0.05         0.22 model_1/concatenate_2/concat 
+Quantize             Quantize             NPU              576            60.00         83              0.08         83          8          0          0           0         24           0.03         0.23 Identity_3_requantized 
+Concat               MemoryCopy           NPU              576            60.00         84              0.08         84         10          0          0           0         24           0.03         0.22 model_1/concatenate_2/concat 
+Quantize             Quantize             NPU              576            60.00         83              0.08         83          8          0          0           0         24           0.03         0.23 Tanh;model_1/fc1/StatefulPartitionedCall/Tanh;BiasAdd;model_1/fc1/StatefulPartitionedCall/BiasAdd;Tensordot/shape;model_1/fc1/StatefulPartitionedCall/Tensordot/shape;Tensordot;model_1/fc1/StatefulPartitionedCall/Tensordot;model_1/fc1/18691_requantized 
+Concat               MemoryCopy           NPU              544            56.67         84              0.08         84         10          0          0           0         24           0.03         0.22 model_1/concatenate_2/concat 
+FullyConnected       FullyConnected       NPU              656            68.33      16016             14.64       2217         58          0          0       16016      12960          14.81         0.63 model_1/noise_gru/gru_cell_4/MatMul;model_1/noise_gru/gru_cell_4/BiasAdd 
+Add                  Add                  NPU              608            63.33         72              0.07         72         18          0          0           0          0           0.00         0.00 model_1/noise_gru/gru_cell_4/Sigmoid_1 
+Sigmoid              LUT                  NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 model_1/noise_gru/gru_cell_4/Sigmoid_1 
+Mul                  Mul                  NPU              608            63.33         48              0.04         48         18          0          0           0          0           0.00         0.00 model_1/noise_gru/gru_cell_4/mul 
+Add                  Add                  NPU              608            63.33         72              0.07         72         18          0          0           0          0           0.00         0.00 model_1/noise_gru/gru_cell_4/Relu;model_1/noise_gru/gru_cell_4/add_2 
+Add                  Relu                 NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 model_1/noise_gru/gru_cell_4/Relu;model_1/noise_gru/gru_cell_4/add_2 
+Add                  Add                  NPU              656            68.33         72              0.07         72         18          0          0           0          0           0.00         0.00 model_1/noise_gru/gru_cell_4/Sigmoid 
+Sigmoid              LUT                  NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 model_1/noise_gru/gru_cell_4/Sigmoid 
+Sub                  Sub                  NPU              416            43.33         72              0.07         72         12          0          0           0          0           0.00         0.00 model_1/noise_gru/gru_cell_4/sub 
+Mul                  Mul                  NPU              416            43.33         48              0.04         48         18          0          0           0          0           0.00         0.00 model_1/noise_gru/gru_cell_4/mul_2 
+Mul                  Mul                  NPU              416            43.33         48              0.04         48         18          0          0           0          0           0.00         0.00 model_1/noise_gru/gru_cell_4/mul_1 
+Add                  Add                  NPU              320            33.33         72              0.07         72         18          0          0           0          0           0.00         0.00 model_1/noise_gru/gru_cell_4/add_3 
+Pack                 MemoryCopy           NPU              320            33.33        152              0.14        152         18          0          0           0         48           0.05         0.25 Identity_2_int8      
+FullyConnected       FullyConnected       NPU              560            58.33      30544             27.92       3945        108          0          0       30544      27648          31.59         0.71 model_1/denoise_gru/gru_cell_5/MatMul_1;model_1/denoise_gru/gru_cell_5/BiasAdd_1 
+Concat               MemoryCopy           NPU              688            71.67        150              0.14        150         16          0          0           0         42           0.05         0.22 model_1/concatenate_3/concat 
+Quantize             Quantize             NPU              688            71.67        151              0.14        151         12          0          0           0         48           0.05         0.25 Identity_2_requantized 
+Concat               MemoryCopy           NPU              688            71.67        152              0.14        152         18          0          0           0         48           0.05         0.25 model_1/concatenate_3/concat 
+Quantize             Quantize             NPU              672            70.00         83              0.08         83          8          0          0           0         24           0.03         0.23 Identity_3_requantized 
+Concat               MemoryCopy           NPU              640            66.67         84              0.08         84         10          0          0           0         24           0.03         0.22 model_1/concatenate_3/concat 
+FullyConnected       FullyConnected       NPU              896            93.33      40048             36.61       5225        114          0          0       40048      32832          37.52         0.64 model_1/denoise_gru/gru_cell_5/MatMul;model_1/denoise_gru/gru_cell_5/BiasAdd 
+Add                  Add                  NPU              864            90.00        144              0.13        144         36          0          0           0          0           0.00         0.00 model_1/denoise_gru/gru_cell_5/Sigmoid_1 
+Sigmoid              LUT                  NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 model_1/denoise_gru/gru_cell_5/Sigmoid_1 
+Mul                  Mul                  NPU              864            90.00         96              0.09         96         36          0          0           0          0           0.00         0.00 model_1/denoise_gru/gru_cell_5/mul 
+Add                  Add                  NPU              864            90.00        144              0.13        144         36          0          0           0          0           0.00         0.00 model_1/denoise_gru/gru_cell_5/Tanh 
+Tanh                 LUT                  NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 model_1/denoise_gru/gru_cell_5/Tanh 
+Add                  Add                  NPU              960           100.00        144              0.13        144         36          0          0           0          0           0.00         0.00 model_1/denoise_gru/gru_cell_5/Sigmoid 
+Sigmoid              LUT                  NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 model_1/denoise_gru/gru_cell_5/Sigmoid 
+Sub                  Sub                  NPU              480            50.00        144              0.13        144         24          0          0           0          0           0.00         0.00 model_1/denoise_gru/gru_cell_5/sub 
+Mul                  Mul                  NPU              480            50.00         96              0.09         96         36          0          0           0          0           0.00         0.00 model_1/denoise_gru/gru_cell_5/mul_2 
+Mul                  Mul                  NPU              480            50.00         96              0.09         96         36          0          0           0          0           0.00         0.00 model_1/denoise_gru/gru_cell_5/mul_1 
+Add                  Add                  NPU              288            30.00        144              0.13        144         36          0          0           0          0           0.00         0.00 model_1/denoise_gru/gru_cell_5/add_3 
+Pack                 MemoryCopy           NPU              288            30.00        289              0.26        289         36          0          0           0         96           0.11         0.26 Identity_int8        
+FullyConnected       FullyConnected       NPU              224            23.33       2608              2.38        392         17          0          0        2608       2112           2.41         0.63 Identity_1_int8      
+Sigmoid              LUT                  NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 Identity_1_int8      
+
+Network summary for rnnoise_INT8
+Accelerator configuration               Ethos_U55_128
+System configuration             Ethos_U55_High_End_Embedded
+Memory mode                               Shared_Sram
+Accelerator clock                                 500 MHz
+Design peak SRAM bandwidth                       3.73 GB/s
+Design peak Off-chip Flash bandwidth             0.47 GB/s
+
+Total SRAM used                                  0.94 KiB
+Total Off-chip Flash used                      105.98 KiB
+
+CPU operators = 0 (0.0%)
+NPU operators = 48 (100.0%)
+
+Average SRAM bandwidth                           0.04 GB/s
+Input   SRAM bandwidth                           0.00 MB/batch
+Weight  SRAM bandwidth                           0.00 MB/batch
+Output  SRAM bandwidth                           0.00 MB/batch
+Total   SRAM bandwidth                           0.01 MB/batch
+Total   SRAM bandwidth            per input      0.01 MB/inference (batch size 1)
+
+Average Off-chip Flash bandwidth                 0.46 GB/s
+Input   Off-chip Flash bandwidth                 0.00 MB/batch
+Weight  Off-chip Flash bandwidth                 0.09 MB/batch
+Output  Off-chip Flash bandwidth                 0.00 MB/batch
+Total   Off-chip Flash bandwidth                 0.10 MB/batch
+Total   Off-chip Flash bandwidth  per input      0.10 MB/inference (batch size 1)
+
+Original Weights Size                           84.92 KiB
+NPU Encoded Weights Size                        92.91 KiB
+
+Neural network macs                             87510 MACs/batch
+
