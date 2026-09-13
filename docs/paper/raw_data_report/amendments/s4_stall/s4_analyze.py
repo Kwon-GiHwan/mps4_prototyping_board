@@ -7,10 +7,12 @@ Per cell:
           G2 stock counters (total, active, SRAM/EXT beats) exactly equal the R1 values, in both passes
           G3 the REPS runs of each pass are vector-identical (stock + S4 counters)
           G5 MAC_ACTIVE identical across the two passes
-  outcome RAW_PRESERVED | NOT_EVALUABLE      (manager review 2: while the event semantics are unverified the
-          stall events are NOT summed and no share-based verdict is produced; per-event raw counts and
-          per-event ratios to TOTAL are recorded as descriptive values only)
+  outcome RAW_PRESERVED | NOT_EVALUABLE      (manager reviews 2-3: while the event semantics are unverified the
+          stall events are NOT summed, NO ratio to TOTAL is produced (different window), and only the
+          per-event raw counts are preserved)
           G6 overflow status word must be 0 for the S4 counters.
+          G7 clean/A/B output identity: the UART of passes A and B, with the "NPU S4 " lines removed, must be
+             byte-identical to the UART of the unpatched clean pass (same cell, same repetition).
 Every result carries semantics = SEMANTICS_UNVERIFIED until the Arm TRM definitions are confirmed.
 The S4 window (enable before HAL begin .. disable after HAL end) is wider than the stock TOTAL window
 and is never equated with it; derived_idle (TOTAL - ACTIVE) and the NPU_IDLE event are kept apart.
@@ -25,7 +27,8 @@ RULE_G1 = "RULE_S4_ARTIFACT"
 RULE_MISSING = "RULE_S4_COUNTER_MISSING"
 RULE_G5 = "RULE_S4_PASSES_DISAGREE"
 RULE_G6 = "RULE_S4_OVERFLOW"
-RULES = (RULE_G1, RULE_G2, RULE_G3, RULE_MISSING, RULE_G5, RULE_G6)
+RULE_G7 = "RULE_S4_OUTPUT_DIFFERS_FROM_CLEAN"
+RULES = (RULE_G1, RULE_G2, RULE_G3, RULE_MISSING, RULE_G5, RULE_G6, RULE_G7)
 OUTCOMES = ("RAW_PRESERVED", "NOT_EVALUABLE")
 STALL = ("MAC_STALLED_BY_W", "MAC_STALLED_BY_IB", "AO_STALLED_BY_OB")
 
@@ -55,12 +58,38 @@ def check_pass(runs, pass_id):
     return r0
 
 
+def strip_s4(txt):
+    return "\n".join(l for l in txt.split("\n") if not l.startswith("NPU S4 "))
+
+
+def uart_of(run):
+    p = run.get("uart_file")
+    if p and Path(p).exists():
+        return Path(p).read_text()
+    local = HERE / "uart" / Path(p).name if p else None
+    return local.read_text() if local and local.exists() else run.get("uart_text")
+
+
+def check_clean_identity(runs_by_pass):
+    clean = runs_by_pass["clean"]
+    for pid in ("A", "B"):
+        for rc, rp in zip(clean, runs_by_pass[pid]):
+            uc, up = uart_of(rc), uart_of(rp)
+            if uc is None or up is None:
+                raise Refusal(RULE_G7, "pass %s: UART text unavailable" % pid)
+            if strip_s4(up) != uc:
+                raise Refusal(RULE_G7, "pass %s rep %s: UART differs from clean beyond the S4 lines" % (pid, rp.get("rep")))
+
+
 def evaluate_cell(cell_id, runs_by_pass):
-    """runs_by_pass: {"A": [runs], "B": [runs]}"""
+    """runs_by_pass: {"clean": [runs], "A": [runs], "B": [runs]}"""
     try:
-        if set(runs_by_pass) != {"A", "B"}:
+        if set(runs_by_pass) != {"clean", "A", "B"}:
             raise Refusal(RULE_MISSING, "passes present: %s" % sorted(runs_by_pass))
+        if any(r["status"] != "SUCCESS" for r in runs_by_pass["clean"]):
+            raise Refusal(RULE_G3, "clean: a run did not succeed")
         ra = check_pass(runs_by_pass["A"], "A"); rb = check_pass(runs_by_pass["B"], "B")
+        check_clean_identity(runs_by_pass)
         if ra["s4_counters"]["MAC_ACTIVE"] != rb["s4_counters"]["MAC_ACTIVE"]:
             raise Refusal(RULE_G5, "MAC_ACTIVE differs across passes: %s vs %s" % (ra["s4_counters"]["MAC_ACTIVE"], rb["s4_counters"]["MAC_ACTIVE"]))
         for r, pid in ((ra, "A"), (rb, "B")):
@@ -75,7 +104,6 @@ def evaluate_cell(cell_id, runs_by_pass):
         return {"cell_id": cell_id, "outcome": "NOT_EVALUABLE", "rule": e.rule, "detail": str(e), "semantics": "SEMANTICS_UNVERIFIED"}
     hal_idle = ra["stock_counters"].get("npu_idle_cycles")
     return {"cell_id": cell_id, "outcome": "RAW_PRESERVED", "rule": "", "total_stock_window": total,
-            "per_event_ratio_to_total_descriptive": {k: round(v / total, 4) for k, v in s4.items()},
             "npu_idle_event": s4["NPU_IDLE"], "derived_idle_stock": hal_idle, "counters": s4,
             "window": "S4: enabled before HAL begin, disabled after HAL end (wider than stock TOTAL)",
             "semantics": "SEMANTICS_UNVERIFIED"}
@@ -90,7 +118,7 @@ def main(path=HERE / "results.jsonl"):
     results = [evaluate_cell(c, runs) for c, runs in sorted(by.items())]
     json.dump(results, open(HERE / "s4_results.json", "w"), indent=1)
     for r in results:
-        print(r["cell_id"], r["outcome"], r.get("rule", ""), r.get("counters", ""), r.get("per_event_ratio_to_total_descriptive", ""))
+        print(r["cell_id"], r["outcome"], r.get("rule", ""), r.get("detail", ""), r.get("counters", ""))
 
 
 if __name__ == "__main__":

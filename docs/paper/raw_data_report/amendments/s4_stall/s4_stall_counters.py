@@ -5,6 +5,10 @@ touches the shared MLEK tree, so no other build may run concurrently). Applies t
 builds each frozen cell with the stock cmake command (no -D overrides), runs REPS times, keeps
 the raw UART, records the four extra counters, and reverts the patch in a finally block.
 
+Passes: clean (unpatched tree, stock counters only) then A then B. The clean pass is the manager-required
+output-identity reference: the analysis strips the "NPU S4 ..." lines from the A/B UART and requires the
+remainder to be byte-identical to the clean UART (gate G7).
+
 Usage:  python3 s4_stall_counters.py
 Needs:  /tmp/s4/expected.json  {cell_id: {npu_total_cycles, npu_active_cycles, sram_rd_beats, ...}}
 Output: /tmp/s4/results.jsonl, /tmp/s4/uart/<cell>__R<n>.txt
@@ -47,8 +51,14 @@ def main():
     cells = {c["cell_id"]: c for c in json.load(open(ANCHOR))["canonical_order"]}
     expected = json.load(open(OUT + "/expected.json"))
     results = OUT + "/results.jsonl"
-    for pass_id in ("A", "B"):
-      patch("apply", pass_id)
+    for pass_id in ("clean", "A", "B"):
+      if pass_id == "clean":
+          st = subprocess.run([sys.executable, OUT + "/patch_driver.py", "status"], capture_output=True, text=True).stdout
+          print("patch status", st.strip(), flush=True)
+          if not st.startswith("stock"):
+              raise SystemExit("clean pass refused: driver is not stock")
+      else:
+          patch("apply", pass_id)
       try:
           for cid in CELLS:
               cell = cells[cid]
@@ -80,7 +90,8 @@ def main():
                       break
               shutil.rmtree(b["ws"], ignore_errors=True)
       finally:
-        patch("revert")
+        if pass_id != "clean":
+            patch("revert")
     print("S4_DONE", flush=True); return 0
 
 

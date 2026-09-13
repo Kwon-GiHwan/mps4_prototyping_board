@@ -457,3 +457,15 @@ TRM 정의를 확보하지 못한 S4는 본문 근거에서 제외하고 부록�
 부록에서도 합산 stall 시간, 이용률, 원인별 기여율은 제시하지 마세요. 측정 창 자체가 아직 검증되지 않았다면 논문 부록의 정량 결과로 올리기보다 계측 개발 기록으로만 보존하는 편이 맞습니다.
 
 최종 실행 판단: C·D·E는 진행, S4는 측정 창 수정 후 qualification을 먼저 수행. 논문의 원인 설명은 검증된 X4 개입 결과를 중심으로 하고, 의미론이 미확인인 S4는 보조 원시자료로 분리합니다.
+
+## 2026-09-14 02:33:34
+
+**Q (Claude):**
+
+[GO 요청: S4 착수] 2차 회신의 수정 사항을 반영했습니다. 하나만 답해 주세요: 아래 상태로 S4를 시작해도 됩니까? (GO / 보류 + 이유)
+반영 내용: (a) 추가 카운터(슬롯 5–7)는 HAL begin 훅 전에 EVTYPER 설정+enable, HAL end 훅 후 읽기 직전에 명시적으로 CNTR_Disable. S4 창은 stock TOTAL 창보다 넓다고 기록하고 동일 창으로 취급하지 않음. (b) 초기화는 HAL init의 EVCNTR_ALL_Reset 1회(부팅당 추론 1회), PMU_Get_CNTR_OVS를 출력해 비트 5–7=0을 게이트 G6으로 요구. (c) stall 이벤트 합산 폐기: 결과 집합은 RAW_PRESERVED / NOT_EVALUABLE뿐, 이벤트별 원시값과 TOTAL 대비 비율은 서술값. (d) derived_idle(TOTAL−ACTIVE)와 NPU_IDLE 이벤트를 분리 기록. (e) 최소 qualification = 패치 빌드의 stock 카운터 6종(TOTAL, ACTIVE, SRAM/EXT R/W beat)이 R1과 정확 일치(G2), 3회 반복 동일(G3), 패스 간 MAC_ACTIVE 일치(G5, 재현성 검사로만). (f) 논문에서는 부록 원시값으로만.
+참고로 캠페인 C 결과가 나왔습니다(산출물 SHA 고정): RNNoise 256 산출물을 mid 프로파일 전체로 실행 → 62,086 (지연만 500으로 바꾼 arm과 동일값). 512 산출물을 low 프로파일 전체로 실행 → 31,086 (지연만 250으로 바꾼 arm과 동일값). 즉 이 두 셀에서는 low/mid 프로파일 차이 중 EXT 지연 외 항목(MAXR/MAXW, BWCAP, SRAM 지연)의 효과가 0이었고, 같은 프로파일에서는 512가 256보다 빠릅니다(low: 31,086 vs 36,086 / mid: 55,086 vs 62,086). 캠페인 D·E는 진행 중입니다.
+
+**A (manager, 133s):**
+
+보류 — (c)의 이벤트값/TOTAL 비율은 측정 창이 다르고 이벤트 의미도 미확인이라 제외해야 합니다. 또한 최소 qualification에 앞서 요구한 clean/A/B 출력 동일성 검사가 명시돼 있지 않습니다. 두 항목을 반영한 뒤 qualification부터 진행하세요.
