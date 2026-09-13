@@ -9,7 +9,7 @@ Passes: clean (unpatched tree, stock counters only) then A then B. The clean pas
 output-identity reference: the analysis strips the "NPU S4 ..." lines from the A/B UART and requires the
 remainder to be byte-identical to the clean UART (gate G7).
 
-Usage:  python3 s4_stall_counters.py
+Usage:  python3 s4_stall_counters.py [cell_id[,cell_id]]     (manager: qualify the first cell clean->A->B first)
 Needs:  /tmp/s4/expected.json  {cell_id: {npu_total_cycles, npu_active_cycles, sram_rd_beats, ...}}
 Output: /tmp/s4/results.jsonl, /tmp/s4/uart/<cell>__R<n>.txt
 """
@@ -47,6 +47,8 @@ def patch(cmd, pass_id=None):
 
 
 def main():
+    only = set(sys.argv[1].split(",")) if len(sys.argv) > 1 else None   # first-cell qualification before the rest
+    cells_to_run = [c for c in CELLS if only is None or c in only]
     os.makedirs(OUT + "/uart", exist_ok=True)
     cells = {c["cell_id"]: c for c in json.load(open(ANCHOR))["canonical_order"]}
     expected = json.load(open(OUT + "/expected.json"))
@@ -60,7 +62,7 @@ def main():
       else:
           patch("apply", pass_id)
       try:
-          for cid in CELLS:
+          for cid in cells_to_run:
               cell = cells[cid]
               if stage1.free_bytes() < stage1.FREE_GATE:
                   print("STOP free-space gate", flush=True); return 2
