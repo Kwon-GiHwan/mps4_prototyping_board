@@ -231,6 +231,12 @@ TA는 펌웨어가 부팅 시 레지스터에 쓰므로 펌웨어 재빌드가 �
 | 2 모델 구조 | `50c61e3` | 133/133 산출물 SHA 동일. H4 `NO_ORDER_RELATION` (rho −0.075, n=20). H5 `SMALL_FM_CONCENTRATED` (REGRESS OFM 중앙값 8,064 vs IMPROVE 18,432) | `amendments/A6_model_structure.md`, `a6_*.csv`, `vela_verbose/` |
 | 3 입력 seed | (계획서 §3) | `DETERMINISTIC_DEFAULT_SEED` — `std::rand` 경로, `srand` 없음, UART 71개에 DYNAMIC_IFM 줄 없음 | `amendments/A7_input_tensor_seed.md` |
 
+**2026-09-14 — 5단계(X4) 완료.** 캠페인 A–E 111회, 게이트 전부 통과, `amendments/A8_x4_timing_adapter_sweep.md`.
+핵심: 같은 절대 EXT 지연에서 RNNoise 512 산출물이 256 산출물보다 항상 적은 사이클(0/250/500/1000);
+동결 +19,000 역전은 low→mid TA 프로파일 변경과 함께 나타나고 512 산출물을 지연 250으로 되돌리면
+사라짐. 전체 프로파일 교차(C)는 지연만 바꾼 값과 동일. 1024→2048 역전은 지연을 바꿔도 유지(D).
+U55 RNNoise: cap 완화 −27% 후 지연이 지배(B·E), A5 사전 예측 NOT_MET → 전송-시간 모델 철회.
+
 계약과 다르게 한 것: 1단계 결과 집합에 `LOWER_BOUND_ONLY`를 계산 전에 추가했다(U65 EXT).
 2단계 H4의 "효율 등급"을 "계열의 인접 전이 효율 평균"으로 계산 전에 구체화했다.
 
@@ -358,6 +364,16 @@ TA 프로파일의 수치 변경 없이 두 구성의 외부 메모리 지연 �
 나머지가 clean UART와 바이트 동일해야 한다. stock 러너는 출력 텐서를 인쇄하지 않으므로 이 검사는
 "UART에 나타나는 모든 값(카운터·로그)"의 동일성이며, 출력 텐서 값 자체의 동일성은 아니다 — 이
 한계는 결과에 적는다. 순서: clean → A → B, 각 셀 3회.
+
+**정정 4 / GO (매니저 4차 회신):** S4의 목적은 "의미론 미확인 PMU 이벤트의 탐색적 원시값 수집"이다.
+G7의 이름은 `UART_NON_S4_EQ`(`NPU S4 ` 줄을 제외한 UART의 clean/A/B 동일성)이며 출력 텐서 동일성
+검사로 해석하지 않는다. 별도 검증 상태 `output_tensor_equivalence = NOT_TESTED`,
+`event_semantics = SEMANTICS_UNVERIFIED`를 모든 결과에 붙인다. 이전에 요구된 기능 동등성 조건은 이번
+원시값 수집의 필수 게이트에서 분리한다. 실행 순서: 첫 셀(RNNoise 256)에서 clean→A→B 게이트를 확인한
+뒤 나머지 셀. 실패 시 원시 UART를 보존하고 중단하며, 결과를 본 뒤 게이트를 완화하지 않는다. 부록
+제목은 "의미론 및 출력 동등성 미검증 이벤트의 원시 관측". MAC_ACTIVE를 MAC 이용률로, stall 카운트를
+X4 원인의 입증으로 연결하지 않는다. 출력 덤프(DYNAMIC_OFM)는 이번 착수의 필수 조건이 아니며, 하려면
+별도 qualification으로 분리한다. **이 조건으로 매니저 GO (manager_log.md 5번째 교환).**
 
 ### 11 (원안)
 

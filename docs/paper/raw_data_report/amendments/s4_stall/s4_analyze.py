@@ -11,8 +11,12 @@ Per cell:
           stall events are NOT summed, NO ratio to TOTAL is produced (different window), and only the
           per-event raw counts are preserved)
           G6 overflow status word must be 0 for the S4 counters.
-          G7 clean/A/B output identity: the UART of passes A and B, with the "NPU S4 " lines removed, must be
-             byte-identical to the UART of the unpatched clean pass (same cell, same repetition).
+          G7 UART_NON_S4_EQ: the UART of passes A and B, with the "NPU S4 " lines removed, must be byte-identical
+             to the UART of the unpatched clean pass (same cell, same repetition). This is a log-identity check;
+             it is NOT an output-tensor equivalence check (manager review 4). Every result therefore carries
+             output_tensor_equivalence = NOT_TESTED and event_semantics = SEMANTICS_UNVERIFIED.
+Purpose (manager review 4): exploratory raw-value collection of PMU events whose semantics are unverified.
+No summing, no utilisation, no bottleneck attribution.
 Every result carries semantics = SEMANTICS_UNVERIFIED until the Arm TRM definitions are confirmed.
 The S4 window (enable before HAL begin .. disable after HAL end) is wider than the stock TOTAL window
 and is never equated with it; derived_idle (TOTAL - ACTIVE) and the NPU_IDLE event are kept apart.
@@ -27,7 +31,7 @@ RULE_G1 = "RULE_S4_ARTIFACT"
 RULE_MISSING = "RULE_S4_COUNTER_MISSING"
 RULE_G5 = "RULE_S4_PASSES_DISAGREE"
 RULE_G6 = "RULE_S4_OVERFLOW"
-RULE_G7 = "RULE_S4_OUTPUT_DIFFERS_FROM_CLEAN"
+RULE_G7 = "RULE_S4_UART_NON_S4_EQ_FAILED"
 RULES = (RULE_G1, RULE_G2, RULE_G3, RULE_MISSING, RULE_G5, RULE_G6, RULE_G7)
 OUTCOMES = ("RAW_PRESERVED", "NOT_EVALUABLE")
 STALL = ("MAC_STALLED_BY_W", "MAC_STALLED_BY_IB", "AO_STALLED_BY_OB")
@@ -101,11 +105,13 @@ def evaluate_cell(cell_id, runs_by_pass):
               "MAC_STALLED_BY_IB": ra["s4_counters"]["MAC_STALLED_BY_IB"], "AO_STALLED_BY_OB": rb["s4_counters"]["AO_STALLED_BY_OB"],
               "NPU_IDLE": rb["s4_counters"]["NPU_IDLE"]}
     except Refusal as e:
-        return {"cell_id": cell_id, "outcome": "NOT_EVALUABLE", "rule": e.rule, "detail": str(e), "semantics": "SEMANTICS_UNVERIFIED"}
+        return {"cell_id": cell_id, "outcome": "NOT_EVALUABLE", "rule": e.rule, "detail": str(e),
+                "output_tensor_equivalence": "NOT_TESTED", "event_semantics": "SEMANTICS_UNVERIFIED", "semantics": "SEMANTICS_UNVERIFIED"}
     hal_idle = ra["stock_counters"].get("npu_idle_cycles")
     return {"cell_id": cell_id, "outcome": "RAW_PRESERVED", "rule": "", "total_stock_window": total,
             "npu_idle_event": s4["NPU_IDLE"], "derived_idle_stock": hal_idle, "counters": s4,
             "window": "S4: enabled before HAL begin, disabled after HAL end (wider than stock TOTAL)",
+            "G7": "UART_NON_S4_EQ", "output_tensor_equivalence": "NOT_TESTED", "event_semantics": "SEMANTICS_UNVERIFIED",
             "semantics": "SEMANTICS_UNVERIFIED"}
 
 
