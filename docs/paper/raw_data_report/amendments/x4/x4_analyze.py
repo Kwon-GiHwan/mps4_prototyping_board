@@ -47,11 +47,14 @@ def frozen_counters():
 
 
 def group(records):
+    """Campaign D is evaluated like A (has its own base arms). C and E are descriptive: their arms are
+    attached to the A/B base of the same cell for the gates, and summarised separately."""
     g = {}
     for r in records:
         if "measurement" not in r:
             continue
-        g.setdefault((r["campaign"], r["cell_id"]), {}).setdefault(r["arm"], []).append(r)
+        camp = {"C": "A", "E": "B"}.get(r["campaign"], r["campaign"])
+        g.setdefault((camp, r["cell_id"]), {}).setdefault(r["arm"], []).append(r)
     return g
 
 
@@ -86,7 +89,7 @@ def evaluate_cell(campaign, cell_id, arms, frozen):
     except Refusal as e:
         return {"campaign": campaign, "cell_id": cell_id, "outcome": "NOT_EVALUABLE", "rule": e.rule, "detail": str(e)}
     moved = any(abs(v["ratio_to_base"] - 1) >= THRESH for v in levels.values())
-    if campaign == "A":
+    if campaign in ("A", "D"):
         outcome = "MEMORY_SERVICE_SENSITIVE" if moved else "ROBUST_TO_TESTED_MEMORY_SERVICE_RANGE"
     else:
         outcome = "BANDWIDTH_SENSITIVE" if moved else "BANDWIDTH_INSENSITIVE"
@@ -100,24 +103,57 @@ def evaluate_cell(campaign, cell_id, arms, frozen):
     return res
 
 
-def direction_flip(results):
-    """Campaign A extra: does the 256->512 direction of a workload change at any latency level?"""
+BASE_LAT = {"256": 250, "512": 500, "1024": 500, "2048": 500}
+PAIRS = {"A": ("256", "512"), "D": ("1024", "2048")}
+
+
+def latency_only(levels):
+    """Only arms that vary EXT latency alone (excludes the campaign-C full-profile arms)."""
+    return {a: v for a, v in levels.items() if set(v["defines"]) <= {"EXT_RLATENCY", "EXT_WLATENCY"}}
+
+
+def direction_flip(results, campaign="A"):
+    """Does the lower->higher MAC direction of a workload change at any common latency level?"""
     out = {}
-    by = {(r["cell_id"].split("__")[0], r["cell_id"].rsplit("-", 1)[1]): r for r in results if r["campaign"] == "A" and r["outcome"] != "NOT_EVALUABLE"}
+    lo, hi = PAIRS[campaign]
+    by = {(r["cell_id"].split("__")[0], r["cell_id"].rsplit("-", 1)[1]): r for r in results if r["campaign"] == campaign and r["outcome"] != "NOT_EVALUABLE"}
     for wl in {k[0] for k in by}:
-        a, b = by.get((wl, "256")), by.get((wl, "512"))
+        a, b = by.get((wl, lo)), by.get((wl, hi))
         if not (a and b):
             continue
         base_dir = (b["base_total"] > a["base_total"]) - (b["base_total"] < a["base_total"])
         flips = []
-        for arm, la in a["levels"].items():
-            f = la["defines"]["EXT_RLATENCY"] / (250 if "256" in a["cell_id"] else 500)
-            lb = next((v for v in b["levels"].values() if v["defines"]["EXT_RLATENCY"] / 500 == f), None)
+        for arm, la in latency_only(a["levels"]).items():
+            f = la["defines"]["EXT_RLATENCY"] / BASE_LAT[lo]
+            lb = next((v for v in latency_only(b["levels"]).values() if v["defines"]["EXT_RLATENCY"] / BASE_LAT[hi] == f), None)
             if lb:
                 d = (lb["total"] > la["total"]) - (lb["total"] < la["total"])
-                flips.append({"factor": f, "total_256": la["total"], "total_512": lb["total"], "direction": d, "flipped": d != base_dir})
-        out[wl] = {"base_direction": base_dir, "levels": flips, "any_flip": any(x["flipped"] for x in flips)}
+                flips.append({"factor": f, "total_lo": la["total"], "total_hi": lb["total"], "direction": d, "flipped": d != base_dir})
+        out[wl] = {"pair": (lo, hi), "base_direction": base_dir, "levels": flips, "any_flip": any(x["flipped"] for x in flips)}
     return out
+
+
+def profile_swap_table(results):
+    """Campaign C: 2x2 of artifact x full TA profile for RNNoise 256/512 (descriptive only)."""
+    r256 = next((r for r in results if r["cell_id"].endswith("u85-256") and "rnnoise" in r["cell_id"] and r["campaign"] == "A"), None)
+    r512 = next((r for r in results if r["cell_id"].endswith("u85-512") and "rnnoise" in r["cell_id"] and r["campaign"] == "A"), None)
+    if not (r256 and r512) or "levels" not in r256 or "levels" not in r512:
+        return None
+    return {"artifact_256": {"low_profile(base)": r256["base_total"], "mid_profile_full": r256["levels"].get("ta_mid_full", {}).get("total")},
+            "artifact_512": {"mid_profile(base)": r512["base_total"], "low_profile_full": r512["levels"].get("ta_low_full", {}).get("total")}}
+
+
+def u55_2x2(results):
+    """Campaign B+E: RNNoise U55 256, bandwidth cap x EXT latency (descriptive only)."""
+    r = next((r for r in results if r["campaign"] == "B" and "levels" in r), None)
+    if not r:
+        return None
+    def tot(bw, lat):
+        for v in r["levels"].values():
+            d = v["defines"]
+            if d.get("EXT_BWCAP") == bw and d.get("EXT_RLATENCY", 64) == lat:
+                return v["total"]
+    return {"bwcap50_lat64(base)": tot(50, 64), "bwcap200_lat64": tot(200, 64), "bwcap50_lat16": tot(50, 16), "bwcap200_lat16": tot(200, 16)}
 
 
 def main(path=HERE / "results.jsonl"):
@@ -125,19 +161,22 @@ def main(path=HERE / "results.jsonl"):
     frozen = frozen_counters(); results = []
     for (camp, cid), arms in sorted(group(recs).items()):
         results.append(evaluate_cell(camp, cid, arms, frozen))
-    flips = direction_flip(results)
+    flips = {c: direction_flip(results, c) for c in ("A", "D")}
     for r in results:
-        if r["campaign"] == "A" and r["outcome"] == "ROBUST_TO_TESTED_MEMORY_SERVICE_RANGE":
+        if r["campaign"] in flips and r["outcome"] == "ROBUST_TO_TESTED_MEMORY_SERVICE_RANGE":
             wl = r["cell_id"].split("__")[0]
-            if flips.get(wl, {}).get("any_flip"):
+            if flips[r["campaign"]].get(wl, {}).get("any_flip"):
                 r["outcome"] = "MEMORY_SERVICE_SENSITIVE"; r["sensitive_by"] = "direction_flip"
-    json.dump({"cells": results, "direction_256_512": flips}, open(HERE / "x4_results.json", "w"), indent=1)
+    json.dump({"cells": results, "direction_flip": flips, "campaign_C_profile_swap": profile_swap_table(results),
+               "campaign_E_u55_2x2": u55_2x2(results)}, open(HERE / "x4_results.json", "w"), indent=1)
     for r in results:
         print(r["campaign"], r["cell_id"], r["outcome"], r.get("rule", ""), r.get("A5_PREDICTION", ""))
         for arm, v in sorted(r.get("levels", {}).items(), key=lambda kv: list(kv[1]["defines"].values())):
             print("   %-18s total=%-9d ratio=%.3f" % (arm, v["total"], v["ratio_to_base"]))
-    for wl, f in flips.items():
-        print("direction", wl, "base", f["base_direction"], "any_flip", f["any_flip"], [(x["factor"], x["direction"]) for x in f["levels"]])
+    for c, fl in flips.items():
+        for wl, f in fl.items():
+            print("direction", c, wl, f["pair"], "base", f["base_direction"], "any_flip", f["any_flip"], [(x["factor"], x["direction"]) for x in f["levels"]])
+    print("campaign C", profile_swap_table(results)); print("campaign E", u55_2x2(results))
 
 
 if __name__ == "__main__":
