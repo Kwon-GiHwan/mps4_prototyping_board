@@ -29,6 +29,19 @@ A_FACTORS = (1.0, 0.0, 0.5, 2.0, 4.0)  # base first: it is the reproduction gate
 CAMPAIGN_B = {"rnnoise_INT8__SSE-300__ethos-u55-256": 50}
 B_LEVELS = (50, 25, 100, 200, 0)
 
+# --- added 2026-09-14 after the manager review (plan section 10b) ---
+LOW = {"SRAM_RLATENCY": 16, "SRAM_WLATENCY": 16, "EXT_MAXR": 24, "EXT_MAXW": 12, "EXT_RLATENCY": 250, "EXT_WLATENCY": 125, "EXT_BWCAP": 2344}
+MID = {"SRAM_RLATENCY": 32, "SRAM_WLATENCY": 32, "EXT_MAXR": 64, "EXT_MAXW": 32, "EXT_RLATENCY": 500, "EXT_WLATENCY": 250, "EXT_BWCAP": 3750}
+# C: full TA profile swap, artifacts unchanged (256 artifact under the mid profile, 512 artifact under the low profile)
+CAMPAIGN_C = {"rnnoise_INT8__SSE-320__ethos-u85-256": ("ta_mid_full", MID),
+              "rnnoise_INT8__SSE-320__ethos-u85-512": ("ta_low_full", LOW)}
+# D: second reversal (1024 -> 2048): EXT latency levels around the common base 500
+CAMPAIGN_D = {"rnnoise_INT8__SSE-320__ethos-u85-1024": 500, "rnnoise_INT8__SSE-320__ethos-u85-2048": 500}
+D_FACTORS = (1.0, 0.0, 0.5, 2.0)
+# E: U55 RNNoise 2x2 (bandwidth cap x latency); base (50, 64) and (200, 64) already exist in campaign B
+CAMPAIGN_E = {"rnnoise_INT8__SSE-300__ethos-u55-256": [("bwcap50_rlat16", {"EXT_BWCAP": 50, "EXT_RLATENCY": 16, "EXT_WLATENCY": 0}),
+                                                       ("bwcap200_rlat16", {"EXT_BWCAP": 200, "EXT_RLATENCY": 16, "EXT_WLATENCY": 0})]}
+
 PMU_RE = {
     "npu_total_cycles": r"NPU TOTAL:\s*(\d+)", "npu_active_cycles": r"NPU ACTIVE:\s*(\d+)",
     "npu_idle_cycles": r"NPU IDLE:\s*(\d+)",
@@ -98,6 +111,15 @@ def arms():
     for cid, base in CAMPAIGN_B.items():
         for lvl in B_LEVELS:
             yield "B", cid, "bwcap%d" % lvl, {"EXT_BWCAP": lvl}, lvl == base
+    for cid, (arm, defs) in CAMPAIGN_C.items():
+        yield "C", cid, arm, dict(defs), False
+    for cid, base in CAMPAIGN_D.items():
+        for f in D_FACTORS:
+            r = int(base * f)
+            yield "D", cid, "rlat%d_wlat%d" % (r, r // 2), {"EXT_RLATENCY": r, "EXT_WLATENCY": r // 2}, f == 1.0
+    for cid, arms_ in CAMPAIGN_E.items():
+        for arm, defs in arms_:
+            yield "E", cid, arm, dict(defs), False
 
 
 def done_runs(path):

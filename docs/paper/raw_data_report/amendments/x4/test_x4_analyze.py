@@ -84,6 +84,14 @@ class DirectionFlip(unittest.TestCase):
         f = x4.direction_flip([a256, a512])
         self.assertEqual((f["w"]["base_direction"], f["w"]["any_flip"]), (1, True))
 
+    def test_full_profile_arms_are_excluded_from_flip_pairing(self):
+        a256 = {"campaign": "A", "cell_id": "w__P__ethos-u85-256", "outcome": "ROBUST_TO_TESTED_MEMORY_SERVICE_RANGE", "base_total": 100,
+                "levels": {"b": {"total": 100, "defines": {"EXT_RLATENCY": 250}}, "c": {"total": 300, "defines": {"EXT_RLATENCY": 500, "EXT_BWCAP": 3750}}}}
+        a512 = {"campaign": "A", "cell_id": "w__P__ethos-u85-512", "outcome": "ROBUST_TO_TESTED_MEMORY_SERVICE_RANGE", "base_total": 120,
+                "levels": {"b": {"total": 120, "defines": {"EXT_RLATENCY": 500}}, "z": {"total": 90, "defines": {"EXT_RLATENCY": 1000}}}}
+        f = x4.direction_flip([a256, a512])
+        self.assertEqual([x["factor"] for x in f["w"]["levels"]], [1.0])
+
 
 if __name__ == "__main__":
     unittest.main()

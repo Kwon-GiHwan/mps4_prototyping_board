@@ -9,49 +9,63 @@ s4 = importlib.util.module_from_spec(_spec); _spec.loader.exec_module(s4)
 ART = {"vela_sha256": "v", "frozen_vela_sha256": "v", "cc_body_sha256": "c", "frozen_cc_body_sha256": "c", "axf_sha256": "a", "frozen_axf_sha256": "b"}
 
 
-def run(total=1000, w=100, ib=50, ob=50, active=600, g2=True, status="SUCCESS"):
-    return {"cell_id": "cell", "status": status, "stock_counters": {"npu_total_cycles": total, "npu_active_cycles": 990},
-            "G2_stock_counters_match": {"npu_total_cycles": g2, "npu_active_cycles": True},
-            "s4_counters": {"MAC_ACTIVE": active, "MAC_STALLED_BY_W": w, "MAC_STALLED_BY_IB": ib, "AO_STALLED_BY_OB": ob},
-            "artifact": ART}
+def run(total=1000, w=100, ib=50, ob=50, active=600, g2=True, status="SUCCESS", pass_id="A", idle=10):
+    s4 = ({"MAC_ACTIVE": active, "MAC_STALLED_BY_W": w, "MAC_STALLED_BY_IB": ib} if pass_id == "A"
+          else {"MAC_ACTIVE": active, "AO_STALLED_BY_OB": ob, "NPU_IDLE": idle})
+    return {"cell_id": "cell", "pass": pass_id, "status": status,
+            "stock_counters": {"npu_total_cycles": total, "npu_active_cycles": 990, "npu_idle_cycles": 10},
+            "G2_stock_counters_match": {"npu_total_cycles": g2, "npu_active_cycles": True}, "s4_counters": s4, "artifact": ART}
+
+
+def cell(w=100, ib=50, ob=50, active=600, g2=True, active_b=None):
+    return {"A": [run(w=w, ib=ib, active=active, g2=g2)] * 3,
+            "B": [run(ob=ob, active=active if active_b is None else active_b, g2=g2, pass_id="B")] * 3}
 
 
 class Outcomes(unittest.TestCase):
     def test_dominant_present_negligible(self):
-        self.assertEqual(s4.evaluate_cell("cell", [run(w=200, ib=100, ob=50)] * 3)["outcome"], "MEMORY_WAIT_DOMINANT")   # 0.35
-        self.assertEqual(s4.evaluate_cell("cell", [run(w=50, ib=30, ob=20)] * 3)["outcome"], "MEMORY_WAIT_PRESENT")      # 0.10
-        self.assertEqual(s4.evaluate_cell("cell", [run(w=10, ib=10, ob=10)] * 3)["outcome"], "MEMORY_WAIT_NEGLIGIBLE")   # 0.03
+        self.assertEqual(s4.evaluate_cell("cell", cell(w=200, ib=100, ob=50))["outcome"], "MEMORY_WAIT_DOMINANT")   # 0.35
+        self.assertEqual(s4.evaluate_cell("cell", cell(w=50, ib=30, ob=20))["outcome"], "MEMORY_WAIT_PRESENT")      # 0.10
+        self.assertEqual(s4.evaluate_cell("cell", cell(w=10, ib=10, ob=10))["outcome"], "MEMORY_WAIT_NEGLIGIBLE")   # 0.03
 
     def test_semantics_flag_always_present(self):
-        self.assertEqual(s4.evaluate_cell("cell", [run()] * 3)["semantics"], "SEMANTICS_UNVERIFIED")
+        self.assertEqual(s4.evaluate_cell("cell", cell())["semantics"], "SEMANTICS_UNVERIFIED")
 
 
 class Refusals(unittest.TestCase):
     def test_g2(self):
-        r = s4.evaluate_cell("cell", [run(g2=False)] * 3)
+        r = s4.evaluate_cell("cell", cell(g2=False))
         self.assertEqual((r["outcome"], r["rule"]), ("NOT_EVALUABLE", s4.RULE_G2))
 
     def test_g3(self):
-        r = s4.evaluate_cell("cell", [run(), run(w=101), run()])
+        c = cell(); c["A"] = [run(), run(w=101), run()]
+        r = s4.evaluate_cell("cell", c)
         self.assertEqual((r["outcome"], r["rule"]), ("NOT_EVALUABLE", s4.RULE_G3))
 
     def test_g1(self):
-        rr = run(); rr["artifact"] = dict(ART, vela_sha256="x")
-        r = s4.evaluate_cell("cell", [rr] * 3)
+        c = cell(); rr = run(); rr["artifact"] = dict(ART, vela_sha256="x"); c["A"] = [rr] * 3
+        r = s4.evaluate_cell("cell", c)
         self.assertEqual((r["outcome"], r["rule"]), ("NOT_EVALUABLE", s4.RULE_G1))
 
-    def test_missing_counter(self):
-        rr = run(); rr["s4_counters"]["MAC_STALLED_BY_W"] = None
-        r = s4.evaluate_cell("cell", [rr] * 3)
+    def test_missing_counter_and_missing_pass(self):
+        c = cell(); rr = run(); rr["s4_counters"]["MAC_STALLED_BY_W"] = None; c["A"] = [rr] * 3
+        r = s4.evaluate_cell("cell", c)
+        self.assertEqual((r["outcome"], r["rule"]), ("NOT_EVALUABLE", s4.RULE_MISSING))
+        r = s4.evaluate_cell("cell", {"A": cell()["A"]})
         self.assertEqual((r["outcome"], r["rule"]), ("NOT_EVALUABLE", s4.RULE_MISSING))
 
+    def test_g5_passes_disagree(self):
+        r = s4.evaluate_cell("cell", cell(active=600, active_b=601))
+        self.assertEqual((r["outcome"], r["rule"]), ("NOT_EVALUABLE", s4.RULE_G5))
+
     def test_every_rule_and_outcome_reachable(self):
-        rules = {s4.evaluate_cell("c", [run(g2=False)] * 3)["rule"], s4.evaluate_cell("c", [run(), run(w=1), run()])["rule"]}
-        rr = run(); rr["artifact"] = dict(ART, cc_body_sha256="x"); rules.add(s4.evaluate_cell("c", [rr] * 3)["rule"])
-        rr = run(); rr["s4_counters"]["AO_STALLED_BY_OB"] = None; rules.add(s4.evaluate_cell("c", [rr] * 3)["rule"])
+        c = cell(); c["A"] = [run(), run(w=1), run()]
+        rules = {s4.evaluate_cell("c", cell(g2=False))["rule"], s4.evaluate_cell("c", c)["rule"], s4.evaluate_cell("c", cell(active_b=1))["rule"]}
+        c = cell(); rr = run(); rr["artifact"] = dict(ART, cc_body_sha256="x"); c["A"] = [rr] * 3; rules.add(s4.evaluate_cell("c", c)["rule"])
+        c = cell(); rr = run(pass_id="B"); rr["s4_counters"]["AO_STALLED_BY_OB"] = None; c["B"] = [rr] * 3; rules.add(s4.evaluate_cell("c", c)["rule"])
         self.assertEqual(rules, set(s4.RULES))
-        outs = {s4.evaluate_cell("c", [run(w=200, ib=100, ob=50)] * 3)["outcome"], s4.evaluate_cell("c", [run(w=50, ib=30, ob=20)] * 3)["outcome"],
-                s4.evaluate_cell("c", [run(w=10, ib=10, ob=10)] * 3)["outcome"], s4.evaluate_cell("c", [run(g2=False)] * 3)["outcome"]}
+        outs = {s4.evaluate_cell("c", cell(w=200, ib=100, ob=50))["outcome"], s4.evaluate_cell("c", cell(w=50, ib=30, ob=20))["outcome"],
+                s4.evaluate_cell("c", cell(w=10, ib=10, ob=10))["outcome"], s4.evaluate_cell("c", cell(g2=False))["outcome"]}
         self.assertEqual(outs, set(s4.OUTCOMES))
 
 
