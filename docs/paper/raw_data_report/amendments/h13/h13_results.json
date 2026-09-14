@@ -6,10 +6,12 @@
     "maxr0_r250_w125",
     "maxr16_r1000_w125",
     "maxr16_r250_w125",
+    "maxr1_r0_w0",
     "maxr1_r1000_w125",
     "maxr1_r250_w125",
     "maxr4_r1000_w125",
     "maxr4_r250_w125",
+    "maxr63_r0_w0",
     "maxr63_r1000_w125",
     "maxr63_r250_w125",
     "maxr64_r1000_w125",
@@ -35,10 +37,12 @@
     "maxr0_r250_w250",
     "maxr16_r1000_w250",
     "maxr16_r250_w250",
+    "maxr1_r0_w0",
     "maxr1_r1000_w250",
     "maxr1_r250_w250",
     "maxr4_r1000_w250",
     "maxr4_r250_w250",
+    "maxr63_r0_w0",
     "maxr63_r1000_w250",
     "maxr63_r250_w250",
     "maxr64_r1000_w250",
@@ -126,6 +130,78 @@
     "r500_w250"
    ],
    "notes": []
+  },
+  "wav2letter_pruned_int8__SSE-320__ethos-u85-512": {
+   "passed": [
+    "bw0_r0_w0",
+    "bw0_r500_w250",
+    "bw1875_r0_w0",
+    "bw1875_r500_w250",
+    "bw3750_r0_w0",
+    "bw3750_r500_w250",
+    "bw7500_r0_w0",
+    "bw7500_r500_w250"
+   ],
+   "notes": []
+  },
+  "wav2letter_pruned_int8__SSE-320__ethos-u85-256": {
+   "passed": [
+    "bw0_r0_w0",
+    "bw0_r250_w125",
+    "bw1172_r0_w0",
+    "bw1172_r250_w125",
+    "bw2344_r0_w0",
+    "bw2344_r250_w125",
+    "bw4688_r0_w0",
+    "bw4688_r250_w125"
+   ],
+   "notes": []
+  },
+  "kws_micronet_m__SSE-300__ethos-u55-256": {
+   "passed": [
+    "sbw0",
+    "sbw2000",
+    "sbw4000",
+    "sbw8000"
+   ],
+   "notes": []
+  },
+  "ad_medium_int8__SSE-300__ethos-u55-256": {
+   "passed": [
+    "sbw0",
+    "sbw2000",
+    "sbw4000",
+    "sbw8000"
+   ],
+   "notes": []
+  },
+  "kws_micronet_m__SSE-300__ethos-u65-512": {
+   "passed": [
+    "sbw0",
+    "sbw2000",
+    "sbw4000",
+    "sbw8000"
+   ],
+   "notes": []
+  },
+  "ad_medium_int8__SSE-300__ethos-u65-512": {
+   "passed": [
+    "sbw0",
+    "sbw2000",
+    "sbw4000",
+    "sbw8000"
+   ],
+   "notes": []
+  },
+  "h3_conv1x1_1x36_c128__SSE-320__ethos-u85-256": {
+   "passed": [],
+   "notes": [
+    {
+     "arm": "base",
+     "rule": "RULE_H13_RUN",
+     "msg": "h3_conv1x1_1x36_c128__SSE-320__ethos-u85-256/base: 2 runs, statuses ['SUCCESS', 'SUCCESS']"
+    }
+   ]
   }
  },
  "H1A": {
@@ -228,7 +304,10 @@
    "outcome": "CONCURRENCY_REDUCES_SENSITIVITY",
    "maxr64": "MAXR64_IS_UNLIMITED",
    "note": null,
-   "C00_by_maxr": {},
+   "C00_by_maxr": {
+    "1": 21086,
+    "63": 21086
+   },
    "cycles": {
     "maxr1_r250_w125": 243086,
     "maxr1_r1000_w125": 951086,
@@ -241,7 +320,9 @@
     "maxr64_r250_w125": 36086,
     "maxr64_r1000_w125": 113086,
     "maxr0_r250_w125": 36086,
-    "maxr0_r1000_w125": 113086
+    "maxr0_r1000_w125": 113086,
+    "maxr1_r0_w0": 21086,
+    "maxr63_r0_w0": 21086
    }
   },
   "512": {
@@ -256,7 +337,10 @@
    "outcome": "CONCURRENCY_REDUCES_SENSITIVITY",
    "maxr64": "MAXR64_IS_UNLIMITED",
    "note": null,
-   "C00_by_maxr": {},
+   "C00_by_maxr": {
+    "1": 19086,
+    "63": 16086
+   },
    "cycles": {
     "maxr1_r250_w250": 247086,
     "maxr1_r1000_w250": 969086,
@@ -269,7 +353,9 @@
     "maxr64_r250_w250": 32086,
     "maxr64_r1000_w250": 99086,
     "maxr0_r250_w250": 32086,
-    "maxr0_r1000_w250": 99086
+    "maxr0_r1000_w250": 99086,
+    "maxr1_r0_w0": 19086,
+    "maxr63_r0_w0": 16086
    }
   }
  },
@@ -390,8 +476,202 @@
   },
   "generalisation": "GENERALISES_TO_KWS_AD"
  },
- "H2A": {},
- "SRAMCAP": {},
+ "H2A": {
+  "512": {
+   "rows": {
+    "bw1875_r500_w250": {
+     "cycles": 7654068,
+     "ext_beats": 1856958,
+     "achieved_B_per_cyc": 3.8818,
+     "nominal_cap_B_per_cyc": 6.0
+    },
+    "bw3750_r500_w250": {
+     "cycles": 7654068,
+     "ext_beats": 1856958,
+     "achieved_B_per_cyc": 3.8818,
+     "nominal_cap_B_per_cyc": 12.0
+    },
+    "bw7500_r500_w250": {
+     "cycles": 7654068,
+     "ext_beats": 1856958,
+     "achieved_B_per_cyc": 3.8818,
+     "nominal_cap_B_per_cyc": 24.0
+    },
+    "bw0_r500_w250": {
+     "cycles": 7654068,
+     "ext_beats": 1856958,
+     "achieved_B_per_cyc": 3.8818,
+     "nominal_cap_B_per_cyc": null
+    },
+    "bw1875_r0_w0": {
+     "cycles": 7092068,
+     "ext_beats": 1856958,
+     "achieved_B_per_cyc": 4.1894,
+     "nominal_cap_B_per_cyc": 6.0
+    },
+    "bw3750_r0_w0": {
+     "cycles": 7059068,
+     "ext_beats": 1856958,
+     "achieved_B_per_cyc": 4.209,
+     "nominal_cap_B_per_cyc": 12.0
+    },
+    "bw7500_r0_w0": {
+     "cycles": 7057068,
+     "ext_beats": 1856958,
+     "achieved_B_per_cyc": 4.2102,
+     "nominal_cap_B_per_cyc": 24.0
+    },
+    "bw0_r0_w0": {
+     "cycles": 7057068,
+     "ext_beats": 1856958,
+     "achieved_B_per_cyc": 4.2102,
+     "nominal_cap_B_per_cyc": null
+    }
+   },
+   "outcome": "EXT_CAP_NOT_BINDING_IN_RANGE",
+   "interaction": "NO_INTERACTION_DETECTED"
+  },
+  "256": {
+   "rows": {
+    "bw1172_r250_w125": {
+     "cycles": 16564068,
+     "ext_beats": 1732081,
+     "achieved_B_per_cyc": 1.6731,
+     "nominal_cap_B_per_cyc": 3.7504
+    },
+    "bw2344_r250_w125": {
+     "cycles": 15147068,
+     "ext_beats": 1732081,
+     "achieved_B_per_cyc": 1.8296,
+     "nominal_cap_B_per_cyc": 7.5008
+    },
+    "bw4688_r250_w125": {
+     "cycles": 15060068,
+     "ext_beats": 1732081,
+     "achieved_B_per_cyc": 1.8402,
+     "nominal_cap_B_per_cyc": 15.0016
+    },
+    "bw0_r250_w125": {
+     "cycles": 15060068,
+     "ext_beats": 1732081,
+     "achieved_B_per_cyc": 1.8402,
+     "nominal_cap_B_per_cyc": null
+    },
+    "bw1172_r0_w0": {
+     "cycles": 16526068,
+     "ext_beats": 1732081,
+     "achieved_B_per_cyc": 1.6769,
+     "nominal_cap_B_per_cyc": 3.7504
+    },
+    "bw2344_r0_w0": {
+     "cycles": 14952068,
+     "ext_beats": 1732081,
+     "achieved_B_per_cyc": 1.8535,
+     "nominal_cap_B_per_cyc": 7.5008
+    },
+    "bw4688_r0_w0": {
+     "cycles": 14706068,
+     "ext_beats": 1732081,
+     "achieved_B_per_cyc": 1.8845,
+     "nominal_cap_B_per_cyc": 15.0016
+    },
+    "bw0_r0_w0": {
+     "cycles": 14706068,
+     "ext_beats": 1732081,
+     "achieved_B_per_cyc": 1.8845,
+     "nominal_cap_B_per_cyc": null
+    }
+   },
+   "outcome": "MIXED_BELOW_THRESHOLDS",
+   "interaction": "NO_INTERACTION_DETECTED"
+  }
+ },
+ "SRAMCAP": {
+  "kws_micronet_m__SSE-300__ethos-u55-256": {
+   "rows": {
+    "sbw4000": {
+     "cycles": 244050,
+     "sram_B_per_cyc": 4.6225
+    },
+    "sbw2000": {
+     "cycles": 343050,
+     "sram_B_per_cyc": 3.2885
+    },
+    "sbw8000": {
+     "cycles": 241050,
+     "sram_B_per_cyc": 4.6801
+    },
+    "sbw0": {
+     "cycles": 241050,
+     "sram_B_per_cyc": 4.6801
+    }
+   },
+   "outcome": "SRAM_CAP_LOWERING_SLOWS"
+  },
+  "ad_medium_int8__SSE-300__ethos-u55-256": {
+   "rows": {
+    "sbw4000": {
+     "cycles": 674050,
+     "sram_B_per_cyc": 6.0292
+    },
+    "sbw2000": {
+     "cycles": 1108050,
+     "sram_B_per_cyc": 3.6677
+    },
+    "sbw8000": {
+     "cycles": 638050,
+     "sram_B_per_cyc": 6.3694
+    },
+    "sbw0": {
+     "cycles": 638050,
+     "sram_B_per_cyc": 6.3694
+    }
+   },
+   "outcome": "SRAM_CAP_LOWERING_SLOWS"
+  },
+  "kws_micronet_m__SSE-300__ethos-u65-512": {
+   "rows": {
+    "sbw4000": {
+     "cycles": 130068,
+     "sram_B_per_cyc": 8.6125
+    },
+    "sbw2000": {
+     "cycles": 176068,
+     "sram_B_per_cyc": 6.3624
+    },
+    "sbw8000": {
+     "cycles": 129068,
+     "sram_B_per_cyc": 8.6792
+    },
+    "sbw0": {
+     "cycles": 129068,
+     "sram_B_per_cyc": 8.6792
+    }
+   },
+   "outcome": "SRAM_CAP_LOWERING_SLOWS"
+  },
+  "ad_medium_int8__SSE-300__ethos-u65-512": {
+   "rows": {
+    "sbw4000": {
+     "cycles": 301068,
+     "sram_B_per_cyc": 11.5826
+    },
+    "sbw2000": {
+     "cycles": 479068,
+     "sram_B_per_cyc": 7.279
+    },
+    "sbw8000": {
+     "cycles": 291068,
+     "sram_B_per_cyc": 11.9805
+    },
+    "sbw0": {
+     "cycles": 291068,
+     "sram_B_per_cyc": 11.9805
+    }
+   },
+   "outcome": "SRAM_CAP_LOWERING_SLOWS"
+  }
+ },
  "H3": {
   "ratios": {},
   "cycles": {},

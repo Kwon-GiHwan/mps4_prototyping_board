@@ -1,0 +1,13 @@
+H1B rnnoise_INT8__SSE-320__ethos-u85-256           maxr1_r0_w0            R1 SUCCESS total=21086 hdr=True vfy=ff32f393
+H1B rnnoise_INT8__SSE-320__ethos-u85-256           maxr1_r0_w0            R2 SUCCESS total=21086 hdr=True vfy=ff32f393
+H1B rnnoise_INT8__SSE-320__ethos-u85-256           maxr1_r0_w0            R3 SUCCESS total=21086 hdr=True vfy=ff32f393
+H1B rnnoise_INT8__SSE-320__ethos-u85-256           maxr63_r0_w0           R1 SUCCESS total=21086 hdr=True vfy=ff32f393
+H1B rnnoise_INT8__SSE-320__ethos-u85-256           maxr63_r0_w0           R2 SUCCESS total=21086 hdr=True vfy=ff32f393
+H1B rnnoise_INT8__SSE-320__ethos-u85-256           maxr63_r0_w0           R3 SUCCESS total=21086 hdr=True vfy=ff32f393
+H1B rnnoise_INT8__SSE-320__ethos-u85-512           maxr1_r0_w0            R1 SUCCESS total=19086 hdr=True vfy=ff32f393
+H1B rnnoise_INT8__SSE-320__ethos-u85-512           maxr1_r0_w0            R2 SUCCESS total=19086 hdr=True vfy=ff32f393
+H1B rnnoise_INT8__SSE-320__ethos-u85-512           maxr1_r0_w0            R3 SUCCESS total=19086 hdr=True vfy=ff32f393
+H1B rnnoise_INT8__SSE-320__ethos-u85-512           maxr63_r0_w0           R1 SUCCESS total=16086 hdr=True vfy=ff32f393
+H1B rnnoise_INT8__SSE-320__ethos-u85-512           maxr63_r0_w0           R2 SUCCESS total=16086 hdr=True vfy=ff32f393
+H1B rnnoise_INT8__SSE-320__ethos-u85-512           maxr63_r0_w0           R3 SUCCESS total=16086 hdr=True vfy=ff32f393
+H13_DONE S1
