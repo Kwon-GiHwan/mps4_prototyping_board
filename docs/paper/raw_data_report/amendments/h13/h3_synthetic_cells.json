@@ -2980,5 +2980,93 @@
     {}
    ]
   ]
+ },
+ {
+  "cell_id": "h2b_w2l_conv7_250__SSE-320__ethos-u85-512__Dedicated",
+  "model": "h2b_w2l_conv7_250",
+  "model_path": "/tmp/h13/models/h2b_w2l_conv7_250.tflite",
+  "platform": "SSE-320",
+  "npu": "ethos-u85",
+  "mac_config": 512,
+  "accelerator_config": "ethos-u85-512",
+  "system_config": "Ethos_U85_SYS_DRAM_Mid_512",
+  "memory_mode": "Dedicated_Sram",
+  "target_platform": "mps4",
+  "target_subsystem": "sse-320",
+  "fvp": "/opt/arm/fvp_installed_320/models/Linux64_GCC-9.3/FVP_Corstone_SSE-320",
+  "verbose": true,
+  "experiment": "H2B",
+  "arms": [
+   [
+    "base",
+    {}
+   ]
+  ]
+ },
+ {
+  "cell_id": "h2b_w2l_conv7_250__SSE-320__ethos-u85-512__SramOnly",
+  "model": "h2b_w2l_conv7_250",
+  "model_path": "/tmp/h13/models/h2b_w2l_conv7_250.tflite",
+  "platform": "SSE-320",
+  "npu": "ethos-u85",
+  "mac_config": 512,
+  "accelerator_config": "ethos-u85-512",
+  "system_config": "Ethos_U85_SYS_DRAM_Mid_512",
+  "memory_mode": "Sram_Only",
+  "target_platform": "mps4",
+  "target_subsystem": "sse-320",
+  "fvp": "/opt/arm/fvp_installed_320/models/Linux64_GCC-9.3/FVP_Corstone_SSE-320",
+  "verbose": true,
+  "experiment": "H2B",
+  "arms": [
+   [
+    "base",
+    {}
+   ]
+  ]
+ },
+ {
+  "cell_id": "h2b_w2l_conv7_250__SSE-320__ethos-u85-256__Dedicated",
+  "model": "h2b_w2l_conv7_250",
+  "model_path": "/tmp/h13/models/h2b_w2l_conv7_250.tflite",
+  "platform": "SSE-320",
+  "npu": "ethos-u85",
+  "mac_config": 256,
+  "accelerator_config": "ethos-u85-256",
+  "system_config": "Ethos_U85_SYS_DRAM_Low",
+  "memory_mode": "Dedicated_Sram",
+  "target_platform": "mps4",
+  "target_subsystem": "sse-320",
+  "fvp": "/opt/arm/fvp_installed_320/models/Linux64_GCC-9.3/FVP_Corstone_SSE-320",
+  "verbose": true,
+  "experiment": "H2B",
+  "arms": [
+   [
+    "base",
+    {}
+   ]
+  ]
+ },
+ {
+  "cell_id": "h2b_w2l_conv7_250__SSE-320__ethos-u85-256__SramOnly",
+  "model": "h2b_w2l_conv7_250",
+  "model_path": "/tmp/h13/models/h2b_w2l_conv7_250.tflite",
+  "platform": "SSE-320",
+  "npu": "ethos-u85",
+  "mac_config": 256,
+  "accelerator_config": "ethos-u85-256",
+  "system_config": "Ethos_U85_SYS_DRAM_Low",
+  "memory_mode": "Sram_Only",
+  "target_platform": "mps4",
+  "target_subsystem": "sse-320",
+  "fvp": "/opt/arm/fvp_installed_320/models/Linux64_GCC-9.3/FVP_Corstone_SSE-320",
+  "verbose": true,
+  "experiment": "H2B",
+  "arms": [
+   [
+    "base",
+    {}
+   ]
+  ]
  }
 ]

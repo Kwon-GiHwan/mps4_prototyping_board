@@ -180,6 +180,8 @@ def arms_S3():
     if not os.path.exists(SYNTH):
         return
     for c in json.load(open(SYNTH)):
+        if c.get("experiment") == "H2B":
+            continue
         for arm, defs in c["arms"]:
             yield c.get("experiment", "H3"), c["cell_id"], (arm, defs)
 
