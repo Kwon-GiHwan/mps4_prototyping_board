@@ -1,0 +1,4 @@
+H1A rnnoise_INT8__SSE-320__ethos-u85-256           r250_w125              R1 SUCCESS total=36086 hdr=True vfy=ff32f393
+H1A rnnoise_INT8__SSE-320__ethos-u85-256           r250_w125              R2 SUCCESS total=36086 hdr=True vfy=ff32f393
+H1A rnnoise_INT8__SSE-320__ethos-u85-256           r250_w125              R3 SUCCESS total=36086 hdr=True vfy=ff32f393
+H13_SMOKE_DONE

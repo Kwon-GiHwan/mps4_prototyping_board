@@ -1,0 +1,14 @@
+H2BX h2b_w2l_conv7_250__SSE-320__ethos-u85-512__Sha base                   R1 SUCCESS total=149068 hdr=True vfy=76599a9d
+H2BX h2b_w2l_conv7_250__SSE-320__ethos-u85-512__Sha base                   R2 SUCCESS total=149068 hdr=True vfy=76599a9d
+H2BX h2b_w2l_conv7_250__SSE-320__ethos-u85-512__Sha base                   R3 SUCCESS total=149068 hdr=True vfy=76599a9d
+H2BX h2b_w2l_conv7_250__SSE-320__ethos-u85-512__Sra base                   R1 SUCCESS total=134068 hdr=True vfy=76599a9d
+H2BX h2b_w2l_conv7_250__SSE-320__ethos-u85-512__Sra base                   R2 SUCCESS total=134068 hdr=True vfy=76599a9d
+H2BX h2b_w2l_conv7_250__SSE-320__ethos-u85-512__Sra base                   R3 SUCCESS total=134068 hdr=True vfy=76599a9d
+H2BX h2b_w2l_conv7_250__SSE-320__ethos-u85-512__Ded base                   R1 SUCCESS total=167068 hdr=True vfy=76599a9d
+H2BX h2b_w2l_conv7_250__SSE-320__ethos-u85-512__Ded base                   R2 SUCCESS total=167068 hdr=True vfy=76599a9d
+H2BX h2b_w2l_conv7_250__SSE-320__ethos-u85-512__Ded base                   R3 SUCCESS total=167068 hdr=True vfy=76599a9d
+BUILD_FAILED h2b_w2l_conv7_250__SSE-320__ethos-u85-256__Shared base configure
+BUILD_FAILED h2b_w2l_conv7_250__SSE-320__ethos-u85-256__SramOnly base configure
+BUILD_FAILED h2b_w2l_conv7_250__SSE-320__ethos-u85-256__Dedicated base configure
+H13_DONE S4
+S4_CHAIN_DONE
