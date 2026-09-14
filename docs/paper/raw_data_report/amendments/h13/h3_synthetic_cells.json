@@ -2995,13 +2995,14 @@
   "target_subsystem": "sse-320",
   "fvp": "/opt/arm/fvp_installed_320/models/Linux64_GCC-9.3/FVP_Corstone_SSE-320",
   "verbose": true,
-  "experiment": "H2B",
+  "experiment": "H2BX",
   "arms": [
    [
     "base",
     {}
    ]
-  ]
+  ],
+  "vela_extra": "--verbose-allocation --verbose-tensor-purpose"
  },
  {
   "cell_id": "h2b_w2l_conv7_250__SSE-320__ethos-u85-512__SramOnly",
@@ -3017,13 +3018,14 @@
   "target_subsystem": "sse-320",
   "fvp": "/opt/arm/fvp_installed_320/models/Linux64_GCC-9.3/FVP_Corstone_SSE-320",
   "verbose": true,
-  "experiment": "H2B",
+  "experiment": "H2BX",
   "arms": [
    [
     "base",
     {}
    ]
-  ]
+  ],
+  "vela_extra": "--verbose-allocation --verbose-tensor-purpose"
  },
  {
   "cell_id": "h2b_w2l_conv7_250__SSE-320__ethos-u85-512__Dedicated",
@@ -3039,13 +3041,14 @@
   "target_subsystem": "sse-320",
   "fvp": "/opt/arm/fvp_installed_320/models/Linux64_GCC-9.3/FVP_Corstone_SSE-320",
   "verbose": true,
-  "experiment": "H2B",
+  "experiment": "H2BX",
   "arms": [
    [
     "base",
     {}
    ]
-  ]
+  ],
+  "vela_extra": "--verbose-allocation --verbose-tensor-purpose"
  },
  {
   "cell_id": "h2b_w2l_conv7_250__SSE-320__ethos-u85-256__Shared",
@@ -3061,13 +3064,14 @@
   "target_subsystem": "sse-320",
   "fvp": "/opt/arm/fvp_installed_320/models/Linux64_GCC-9.3/FVP_Corstone_SSE-320",
   "verbose": true,
-  "experiment": "H2B",
+  "experiment": "H2BX",
   "arms": [
    [
     "base",
     {}
    ]
-  ]
+  ],
+  "vela_extra": "--verbose-allocation --verbose-tensor-purpose"
  },
  {
   "cell_id": "h2b_w2l_conv7_250__SSE-320__ethos-u85-256__SramOnly",
@@ -3083,13 +3087,14 @@
   "target_subsystem": "sse-320",
   "fvp": "/opt/arm/fvp_installed_320/models/Linux64_GCC-9.3/FVP_Corstone_SSE-320",
   "verbose": true,
-  "experiment": "H2B",
+  "experiment": "H2BX",
   "arms": [
    [
     "base",
     {}
    ]
-  ]
+  ],
+  "vela_extra": "--verbose-allocation --verbose-tensor-purpose"
  },
  {
   "cell_id": "h2b_w2l_conv7_250__SSE-320__ethos-u85-256__Dedicated",
@@ -3105,12 +3110,13 @@
   "target_subsystem": "sse-320",
   "fvp": "/opt/arm/fvp_installed_320/models/Linux64_GCC-9.3/FVP_Corstone_SSE-320",
   "verbose": true,
-  "experiment": "H2B",
+  "experiment": "H2BX",
   "arms": [
    [
     "base",
     {}
    ]
-  ]
+  ],
+  "vela_extra": "--verbose-allocation --verbose-tensor-purpose"
  }
 ]

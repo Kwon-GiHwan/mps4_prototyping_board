@@ -124,6 +124,8 @@ def vela(cell, ws):
            % (cell["accelerator_config"], KIT, cell["system_config"], cell["memory_mode"], vdir, src))
     if cell.get("verbose"):
         cmd += " --verbose-schedule --verbose-performance"
+    if cell.get("vela_extra"):
+        cmd += " " + cell["vela_extra"]
     r = stage1.sh(cmd)
     art = os.path.join(vdir, "%s_vela.tflite" % cell["model"])
     if cell.get("verbose"):
@@ -181,7 +183,7 @@ def arms_S3():
     if not os.path.exists(SYNTH):
         return
     for c in json.load(open(SYNTH)):
-        if c.get("experiment") == "H2B":
+        if c.get("experiment") == "H2BX":
             continue
         for arm, defs in c["arms"]:
             yield c.get("experiment", "H3"), c["cell_id"], (arm, defs)
@@ -191,9 +193,9 @@ def arms_S4():
     if not os.path.exists(SYNTH):
         return
     for c in json.load(open(SYNTH)):
-        if c.get("experiment") == "H2B":
+        if c.get("experiment") == "H2BX":
             for arm, defs in c["arms"]:
-                yield "H2B", c["cell_id"], (arm, defs)
+                yield "H2BX", c["cell_id"], (arm, defs)
 
 
 STAGES = {"S1": arms_S1, "S2": arms_S2, "S3": arms_S3, "S4": arms_S4}
