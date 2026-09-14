@@ -216,7 +216,8 @@ def h1b(cells_ok):
             same = all(tot(c, "maxr64_r%d_w%d" % (r, wb)) == tot(c, "maxr0_r%d_w%d" % (r, wb)) for r in (250, 1000))
             m64 = "MAXR64_IS_UNLIMITED" if same else "MAXR64_DISTINCT"
         note = "NPU_OUTSTANDING_LIMIT_LE_4_SUSPECTED" if (4 in s and 16 in s and s[4] == s[16] and s[1] != s[4]) else None
-        out[mac] = {"s": {m: round(v, 3) for m, v in s.items()}, "outcome": o, "maxr64": m64, "note": note,
+        c00 = {m: c["maxr%d_r0_w0" % m]["npu_total_cycles"] for m in (1, 63) if "maxr%d_r0_w0" % m in c}   # plan A3, descriptive
+        out[mac] = {"s": {m: round(v, 3) for m, v in s.items()}, "outcome": o, "maxr64": m64, "note": note, "C00_by_maxr": c00,
                     "cycles": {arm: c[arm]["npu_total_cycles"] for arm in c if arm.startswith("maxr")}}
     return out
 

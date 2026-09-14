@@ -153,6 +153,8 @@ def arms_S1():
         for m in (1, 4, 16, 63, 64, 0):
             for r in (250, 1000):
                 yield "H1B", RN % mac, ("maxr%d_r%d_w%d" % (m, r, wbase), {"EXT_MAXR": m, "EXT_RLATENCY": r, "EXT_WLATENCY": wbase})
+        for m in (1, 63):                                           # plan A3: does C(0,0) respond to MAXR? (factor 6)
+            yield "H1B", RN % mac, ("maxr%d_r0_w0" % m, {"EXT_MAXR": m, "EXT_RLATENCY": 0, "EXT_WLATENCY": 0})
     for mac in (256, 512, 1024, 2048):                              # H1-C(a)
         for r in (375, 750):
             yield "H1Ca", RN % mac, lat(r, r // 2)

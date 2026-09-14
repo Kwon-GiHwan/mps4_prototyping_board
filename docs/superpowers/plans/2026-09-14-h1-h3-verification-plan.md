@@ -222,3 +222,10 @@ stock AXF = 동결 AXF(True), 검증 빌드 SUCCESS, 출력 덤프 sha `305bc17f
   효과의 보조 대조군. (iii) SRAM 적재 가능성은 Vela 요약의 SRAM 사용량(가중치+IFM/OFM+scratch)으로 확인해 기록한다.
   (iv) 모드별 스케줄·tiling 차이는 `--verbose-schedule` 덤프로 기록한다. (v) 결과는 이 레이어에 한정하며 16 MB·4 MB
   레이어로 일반화하지 않는다. §5의 판정 문구는 유지하되 "Dedicated 대비 Sram_Only"를 "Shared_Sram 대비 Sram_Only"로 읽는다.
+
+### A3 (2026-09-14, S1 실행 중 추가 — 결과를 보고 고친 것이 아니라 arm을 더한 것)
+
+요인 6("지연 0의 잔여 비용")이 동시 요청 수에 반응하는지 보기 위해 H1-B에 arm 4개를 더한다: RNNoise U85 256·512 ×
+EXT_MAXR {1, 63} × 지연 (0, 0). 판정값은 두지 않고 서술 지표 `C00_by_maxr`로 기록한다(C(0,0)이 MAXR에 따라 5% 이상
+움직이면 "지연 0 잔여 비용의 일부가 요청 직렬화에 반응"으로만 적는다). GO §3 H1-B 범위 안이다.
+
