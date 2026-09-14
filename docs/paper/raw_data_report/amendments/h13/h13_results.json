@@ -2,20 +2,394 @@
  "gates": {
   "rnnoise_INT8__SSE-320__ethos-u85-256": {
    "passed": [
+    "maxr0_r1000_w125",
+    "maxr0_r250_w125",
+    "maxr16_r1000_w125",
+    "maxr16_r250_w125",
+    "maxr1_r1000_w125",
+    "maxr1_r250_w125",
+    "maxr4_r1000_w125",
+    "maxr4_r250_w125",
+    "maxr63_r1000_w125",
+    "maxr63_r250_w125",
+    "maxr64_r1000_w125",
+    "maxr64_r250_w125",
+    "r0_w0",
     "r0_w250",
     "r1000_w250",
     "r125_w250",
     "r250_w125",
+    "r250_w250",
+    "r375_w187",
+    "r500_w0",
+    "r500_w125",
+    "r500_w250",
+    "r500_w500",
+    "r750_w375"
+   ],
+   "notes": []
+  },
+  "rnnoise_INT8__SSE-320__ethos-u85-512": {
+   "passed": [
+    "maxr0_r1000_w250",
+    "maxr0_r250_w250",
+    "maxr16_r1000_w250",
+    "maxr16_r250_w250",
+    "maxr1_r1000_w250",
+    "maxr1_r250_w250",
+    "maxr4_r1000_w250",
+    "maxr4_r250_w250",
+    "maxr63_r1000_w250",
+    "maxr63_r250_w250",
+    "maxr64_r1000_w250",
+    "maxr64_r250_w250",
+    "r0_w0",
+    "r0_w250",
+    "r1000_w250",
+    "r125_w250",
+    "r250_w250",
+    "r375_w187",
+    "r500_w0",
+    "r500_w125",
+    "r500_w250",
+    "r500_w500",
+    "r750_w375"
+   ],
+   "notes": []
+  },
+  "rnnoise_INT8__SSE-320__ethos-u85-1024": {
+   "passed": [
+    "r0_w0",
+    "r0_w250",
+    "r1000_w250",
+    "r125_w250",
+    "r250_w250",
+    "r375_w187",
+    "r500_w0",
+    "r500_w125",
+    "r500_w250",
+    "r500_w500",
+    "r750_w375"
+   ],
+   "notes": []
+  },
+  "rnnoise_INT8__SSE-320__ethos-u85-2048": {
+   "passed": [
+    "r0_w0",
+    "r0_w250",
+    "r1000_w250",
+    "r125_w250",
+    "r250_w250",
+    "r375_w187",
+    "r500_w0",
+    "r500_w125",
+    "r500_w250",
+    "r500_w500",
+    "r750_w375"
+   ],
+   "notes": []
+  },
+  "kws_micronet_m__SSE-320__ethos-u85-256": {
+   "passed": [
+    "r0_w250",
+    "r1000_w250",
+    "r250_w125",
+    "r250_w250",
+    "r500_w250"
+   ],
+   "notes": []
+  },
+  "kws_micronet_m__SSE-320__ethos-u85-512": {
+   "passed": [
+    "r0_w250",
+    "r1000_w250",
+    "r250_w250",
+    "r500_w250"
+   ],
+   "notes": []
+  },
+  "ad_medium_int8__SSE-320__ethos-u85-256": {
+   "passed": [
+    "r0_w250",
+    "r1000_w250",
+    "r250_w125",
+    "r250_w250",
+    "r500_w250"
+   ],
+   "notes": []
+  },
+  "ad_medium_int8__SSE-320__ethos-u85-512": {
+   "passed": [
+    "r0_w250",
+    "r1000_w250",
     "r250_w250",
     "r500_w250"
    ],
    "notes": []
   }
  },
- "H1A": {},
- "H1B": {},
- "H1Ca": {},
- "H1Cb": {},
+ "H1A": {
+  "256": {
+   "k_r": 92.0,
+   "k_w": 10.0,
+   "outcome": "READ_DOMINANT",
+   "additivity": "NON_ADDITIVE",
+   "C00_pred": 19086,
+   "C00_obs": 21086,
+   "read_sweep": {
+    "0": 22086,
+    "125": 27086,
+    "250": 36086,
+    "500": 62086,
+    "1000": 114086
+   },
+   "write_sweep": {
+    "0": 59086,
+    "125": 60086,
+    "250": 62086,
+    "500": 64086
+   }
+  },
+  "512": {
+   "k_r": 80.0,
+   "k_w": 6.0,
+   "outcome": "READ_DOMINANT",
+   "additivity": "NON_ADDITIVE",
+   "C00_pred": 17086,
+   "C00_obs": 16086,
+   "read_sweep": {
+    "0": 19086,
+    "125": 24086,
+    "250": 32086,
+    "500": 55086,
+    "1000": 99086
+   },
+   "write_sweep": {
+    "0": 53086,
+    "125": 53086,
+    "250": 55086,
+    "500": 56086
+   }
+  },
+  "1024": {
+   "k_r": 77.0,
+   "k_w": 12.0,
+   "outcome": "READ_DOMINANT",
+   "additivity": "ADDITIVE",
+   "C00_pred": 11086,
+   "C00_obs": 11086,
+   "read_sweep": {
+    "0": 14086,
+    "125": 20086,
+    "250": 30086,
+    "500": 49086,
+    "1000": 91086
+   },
+   "write_sweep": {
+    "0": 46086,
+    "125": 49086,
+    "250": 49086,
+    "500": 52086
+   }
+  },
+  "2048": {
+   "k_r": 86.0,
+   "k_w": 8.0,
+   "outcome": "READ_DOMINANT",
+   "additivity": "ADDITIVE",
+   "C00_pred": 11086,
+   "C00_obs": 11086,
+   "read_sweep": {
+    "0": 14086,
+    "125": 21086,
+    "250": 31086,
+    "500": 54086,
+    "1000": 100086
+   },
+   "write_sweep": {
+    "0": 51086,
+    "125": 52086,
+    "250": 54086,
+    "500": 55086
+   }
+  },
+  "cross_mac": "SENSITIVITY_DIFFERS_ACROSS_MAC"
+ },
+ "H1B": {
+  "256": {
+   "s": {
+    "1": 944.0,
+    "4": 242.667,
+    "16": 102.667,
+    "63": 102.667,
+    "64": 102.667,
+    "0": 102.667
+   },
+   "outcome": "CONCURRENCY_REDUCES_SENSITIVITY",
+   "maxr64": "MAXR64_IS_UNLIMITED",
+   "note": null,
+   "C00_by_maxr": {},
+   "cycles": {
+    "maxr1_r250_w125": 243086,
+    "maxr1_r1000_w125": 951086,
+    "maxr4_r250_w125": 68086,
+    "maxr4_r1000_w125": 250086,
+    "maxr16_r250_w125": 36086,
+    "maxr16_r1000_w125": 113086,
+    "maxr63_r250_w125": 36086,
+    "maxr63_r1000_w125": 113086,
+    "maxr64_r250_w125": 36086,
+    "maxr64_r1000_w125": 113086,
+    "maxr0_r250_w125": 36086,
+    "maxr0_r1000_w125": 113086
+   }
+  },
+  "512": {
+   "s": {
+    "1": 962.667,
+    "4": 245.333,
+    "16": 96.0,
+    "63": 89.333,
+    "64": 89.333,
+    "0": 89.333
+   },
+   "outcome": "CONCURRENCY_REDUCES_SENSITIVITY",
+   "maxr64": "MAXR64_IS_UNLIMITED",
+   "note": null,
+   "C00_by_maxr": {},
+   "cycles": {
+    "maxr1_r250_w250": 247086,
+    "maxr1_r1000_w250": 969086,
+    "maxr4_r250_w250": 70086,
+    "maxr4_r1000_w250": 254086,
+    "maxr16_r250_w250": 34086,
+    "maxr16_r1000_w250": 106086,
+    "maxr63_r250_w250": 32086,
+    "maxr63_r1000_w250": 99086,
+    "maxr64_r250_w250": 32086,
+    "maxr64_r1000_w250": 99086,
+    "maxr0_r250_w250": 32086,
+    "maxr0_r1000_w250": 99086
+   }
+  }
+ },
+ "H1Ca": {
+  "256": {
+   "observed": [
+    49086,
+    87086
+   ],
+   "M1_pred": [
+    52757,
+    89229
+   ],
+   "M2_pred": [
+    49086,
+    89086
+   ],
+   "M1_pass": false,
+   "M2_pass": false,
+   "outcome": "NEITHER_MODEL_PREDICTS"
+  },
+  "512": {
+   "observed": [
+    42086,
+    75086
+   ],
+   "M1_pred": [
+    45415,
+    77943
+   ],
+   "M2_pred": [
+    43086,
+    78086
+   ],
+   "M1_pass": false,
+   "M2_pass": false,
+   "outcome": "NEITHER_MODEL_PREDICTS"
+  },
+  "1024": {
+   "observed": [
+    39086,
+    69086
+   ],
+   "M1_pred": [
+    40529,
+    72372
+   ],
+   "M2_pred": [
+    38586,
+    72086
+   ],
+   "M1_pass": true,
+   "M2_pass": false,
+   "outcome": "LINEAR_ADEQUATE"
+  },
+  "2048": {
+   "observed": [
+    42086,
+    72086
+   ],
+   "M1_pred": [
+    43586,
+    78086
+   ],
+   "M2_pred": [
+    42086,
+    78086
+   ],
+   "M1_pass": false,
+   "M2_pass": false,
+   "outcome": "NEITHER_MODEL_PREDICTS"
+  }
+ },
+ "H1Cb": {
+  "kws_micronet_m__SSE-320__ethos-u85-256": {
+   "rho": 1.3213,
+   "k_r": 63.0,
+   "outcome": "LATENCY_SENSITIVE",
+   "read_sweep": {
+    "0": 196068,
+    "250": 199068,
+    "500": 214068,
+    "1000": 259068
+   }
+  },
+  "kws_micronet_m__SSE-320__ethos-u85-512": {
+   "rho": 1.5669,
+   "k_r": 59.0,
+   "outcome": "LATENCY_SENSITIVE",
+   "read_sweep": {
+    "0": 104068,
+    "250": 109068,
+    "500": 114068,
+    "1000": 163068
+   }
+  },
+  "ad_medium_int8__SSE-320__ethos-u85-256": {
+   "rho": 1.5147,
+   "k_r": 191.0,
+   "outcome": "LATENCY_SENSITIVE",
+   "read_sweep": {
+    "0": 371068,
+    "250": 377068,
+    "500": 421068,
+    "1000": 562068
+   }
+  },
+  "ad_medium_int8__SSE-320__ethos-u85-512": {
+   "rho": 1.5795,
+   "k_r": 120.0,
+   "outcome": "LATENCY_SENSITIVE",
+   "read_sweep": {
+    "0": 207068,
+    "250": 214068,
+    "500": 235068,
+    "1000": 327068
+   }
+  },
+  "generalisation": "GENERALISES_TO_KWS_AD"
+ },
  "H2A": {},
  "SRAMCAP": {},
  "H3": {
