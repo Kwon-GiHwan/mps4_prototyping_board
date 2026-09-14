@@ -12,8 +12,9 @@ amendment이며, 논문에 반영할 때는 각 문서의 "제안 판정"과 매
 | `A7_input_tensor_seed.md` | 방법론, 입력 생성 | 확인 | 소스상 결정론(std::rand, srand 없음); 입력 동일성 실측은 NOT_TESTED |
 | `A8_x4_timing_adapter_sweep.md` | 요인 2·7, TA 변주(캠페인 A–E, 111회) | 실행 결과, 게이트 전부 통과 | 같은 절대 지연에서 512 산출물 < 256 산출물; 역전은 TA 프로파일 변경과 동반; 1024→2048은 별도; U55 cap×지연 상호 의존 |
 | `A9_s4_closure.md`, `s4_stall/` | U85 stall 이벤트 원시 수집 | **NOT_EVALUABLE, 종결** (qualification 1·2 실패: ACTIVE −12; 매니저 결정 (a)) | 첫 셀 qualification 실패로 캠페인 중단, 나머지 5셀 미실행, 원시값은 보존만 |
-| `A10_revised_hypotheses.md` | 기각된 가설 1·4를 대체하는 새 가설 H1'–H3' | 가설 (다음 계약 후보) | 직렬 외부 접근 × 지연(k≈90, MAC 무관) · 외부 전송량이 하한 · 공간 크기 < MAC 배열 공간 폭 |
-| `manager_log.md` | 매니저(ChatGPT 창) 교환 전문 | 기록 | 7회 교환 |
+| `A10_revised_hypotheses.md` | 기각된 가설 1·4를 대체하는 후속 가설 H1′–H3′ (매니저 검토 반영 정정본) | 미검증 가설 (다음 계약 후보) | H1′ RNNoise 지연 민감도(실측 C(0)·ΔC, k = 실효 지연 민감도) · H2′-a 외부 대역폭 제약 / H2′-b 가중치 귀속 분리 · H3′ 블록 매핑 특성(ublock 면적 4→4) |
+| `manager_log.md` | 매니저(ChatGPT 창) 교환 전문 | 기록 | 8회 교환 |
+| `manager_review_20260914_v7_directive.md` | A10 초판·발표 v7 구성에 대한 매니저 지시 전문 + 대조 체크리스트 C1–C15 | 기록 (발표·A10 작성 시 대조 기준) | H1′ 회귀계수, H2′ 귀속, H3′ ublock 면적 정정 지시; 20장 판정 문구; 21·22·후속가설 장 구성 |
 | `ta_parameters.csv`, `vela_verbose/`, `x4/`, `s4_stall/` | 원시 증거·하니스·분석기·게이트 검사 | | 각 분석기는 unittest + 돌연변이 검사 |
 
 재현: 각 문서 끝의 "재현" 절. 서버 증거 회수는 `x4/collect.sh`, `s4_stall/collect.sh`.
