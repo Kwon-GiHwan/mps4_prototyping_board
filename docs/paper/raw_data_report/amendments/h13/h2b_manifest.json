@@ -1,0 +1,35 @@
+{
+ "model": "h2b_w2l_conv7_250",
+ "source_op_index": 15,
+ "in_shape": [
+  1,
+  1,
+  148,
+  250
+ ],
+ "out_shape": [
+  1,
+  1,
+  148,
+  250
+ ],
+ "kernel": [
+  1,
+  7,
+  250,
+  250
+ ],
+ "orig_w_int8_sha256": "3922fe1cd55ce05240ddf1ad32a1e13d9c1a9aeb784abd63c737be1b07d2a42f",
+ "orig_in_q": [
+  0.16219349205493927,
+  -57
+ ],
+ "orig_out_q": [
+  0.15914422273635864,
+  -12
+ ],
+ "bytes": 445744,
+ "sha256": "21dd1392a3ebafeed6e01d0530e277307f597abddd6930d63b09674cfffc2ba3",
+ "requant_w_int8_sha256": "3922fe1cd55ce05240ddf1ad32a1e13d9c1a9aeb784abd63c737be1b07d2a42f",
+ "requant_w_max_abs_diff": 0
+}
