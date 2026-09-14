@@ -198,7 +198,19 @@ def arms_S4():
                 yield "H2BX", c["cell_id"], (arm, defs)
 
 
-STAGES = {"S1": arms_S1, "S2": arms_S2, "S3": arms_S3, "S4": arms_S4}
+def arms_S5():
+    """Plan A5 diagnostic: what produces the 1,000-cycle grid of the totals? (no judgement values)"""
+    c = RN % 256
+    yield "DIAG", c, ("r137_w125", {"EXT_RLATENCY": 137, "EXT_WLATENCY": 125})
+    yield "DIAG", c, ("r250_w125_eoff0", {"EXT_PULSE_OFF": 0})
+    yield "DIAG", c, ("r250_w125_eon2000_eoff500", {"EXT_PULSE_ON": 2000, "EXT_PULSE_OFF": 500})
+    yield "DIAG", c, ("r250_w125_soff0", {"SRAM_PULSE_OFF": 0})
+    yield "DIAG", c, ("r250_w125_eoff0_soff0", {"EXT_PULSE_OFF": 0, "SRAM_PULSE_OFF": 0})
+    yield "DIAG", c, ("r0_w0_eoff0_soff0", {"EXT_RLATENCY": 0, "EXT_WLATENCY": 0, "EXT_PULSE_OFF": 0, "SRAM_PULSE_OFF": 0})
+    yield "DIAG", KWS % 256, ("r250_w125_eoff0", {"EXT_PULSE_OFF": 0})
+
+
+STAGES = {"S1": arms_S1, "S2": arms_S2, "S3": arms_S3, "S4": arms_S4, "S5": arms_S5}
 
 
 def done_runs(path):
