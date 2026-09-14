@@ -1,35 +1,53 @@
 {
  "model": "h2b_w2l_conv7_250",
  "source_op_index": 15,
- "in_shape": [
+ "source_tensors": [
+  38,
+  9,
+  20,
+  39
+ ],
+ "opcode": 3,
+ "options": {
+  "padding": 0,
+  "strideH": 1,
+  "strideW": 1,
+  "dilationHFactor": 1,
+  "dilationWFactor": 1,
+  "fusedActivationFunction": 0
+ },
+ "ifm_shape": [
   1,
   1,
   148,
   250
  ],
- "out_shape": [
+ "ofm_shape": [
   1,
   1,
   148,
   250
  ],
- "kernel": [
+ "weight_shape": [
+  250,
   1,
   7,
-  250,
   250
  ],
- "orig_w_int8_sha256": "3922fe1cd55ce05240ddf1ad32a1e13d9c1a9aeb784abd63c737be1b07d2a42f",
- "orig_in_q": [
+ "weight_bytes": 437500,
+ "weight_sha256": "3922fe1cd55ce05240ddf1ad32a1e13d9c1a9aeb784abd63c737be1b07d2a42f",
+ "bias_sha256": "93aa068d2a2d1d1306cb47e5e3847eebea8e4245c0d4126087b4178319cc1abf",
+ "ifm_q": [
   0.16219349205493927,
   -57
  ],
- "orig_out_q": [
+ "ofm_q": [
   0.15914422273635864,
   -12
  ],
- "bytes": 445744,
- "sha256": "21dd1392a3ebafeed6e01d0530e277307f597abddd6930d63b09674cfffc2ba3",
- "requant_w_int8_sha256": "3922fe1cd55ce05240ddf1ad32a1e13d9c1a9aeb784abd63c737be1b07d2a42f",
- "requant_w_max_abs_diff": 0
+ "weight_q_channels": 250,
+ "bytes": 447584,
+ "sha256": "881a4300b01b768bd2de06b7e7bdf5a8f2c358c2145d42122dc3afb6552696b7",
+ "ofm_identical_to_original": true,
+ "ofm_max_abs_diff": 0
 }

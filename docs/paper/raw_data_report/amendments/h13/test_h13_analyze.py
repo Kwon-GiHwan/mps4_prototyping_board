@@ -91,6 +91,26 @@ class Gates(unittest.TestCase):
         notes = A.analyze(rs, [], FROZEN)["gates"][RN % 256]["notes"]
         self.assertEqual(notes[0]["note"], "INSTRUMENTATION_DEVIATION")
 
+    def test_output_bytes_compared_from_uart(self):
+        import tempfile
+        old = A.HERE; tmp = Path(tempfile.mkdtemp()); (tmp / "verify").mkdir(); A.HERE = tmp
+        try:
+            head = "INFO - Model OUTPUT tensors: \nINFO - \ttensor occupies 4 bytes with dimensions\nINFO - Activation buffer\n"
+            def uart(name, hexes, complete=True):
+                body = "INFO - output tensors post inference\n\t" + ", ".join(hexes) + ", \nINFO - Profile for Inference:\n"
+                (tmp / "verify" / name).write_text(head + (body if complete else body.replace(", 0x04", "")))
+            uart("a.txt", ["0x01", "0x02", "0x03", "0x04"]); uart("b.txt", ["0x01", "0x02", "0x03", "0x04"])
+            uart("c.txt", ["0x01", "0x02", "0x03", "0x05"]); uart("d.txt", ["0x01", "0x02", "0x03", "0x04"], complete=False)
+            def rs(arm2, f2, total2=22086):
+                r = recs(RN % 256, "r250_w125", 36086, is_base=True) + recs(RN % 256, arm2, total2)
+                r[0]["verify"]["uart_file"] = "/x/a.txt"; r[3]["verify"]["uart_file"] = "/x/" + f2; return r
+            self.assertIsNone(A.analyze(rs("r0_w250", "b.txt"), [], FROZEN)["gates"][RN % 256].get("refused"))
+            self.assertEqual(A.analyze(rs("r0_w250", "c.txt"), [], FROZEN)["gates"][RN % 256]["refused"], A.RULE_OUTPUT_MISMATCH)
+            g = A.analyze(rs("r0_w250", "d.txt"), [], FROZEN)["gates"][RN % 256]
+            self.assertEqual(g["refused"], A.RULE_OUTPUT_MISMATCH); self.assertIn("incomplete", g["msg"])
+        finally:
+            A.HERE = old
+
     def test_rules_tuple_complete(self):
         tripped = set()
         for rs in (recs(RN % 256, "r250_w125", 36087, is_base=True),
