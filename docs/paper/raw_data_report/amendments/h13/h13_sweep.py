@@ -76,9 +76,8 @@ def dump_sha(txt):
     i = txt.find("output tensors post inference")
     if i < 0:
         return None
-    j = txt.find("Profile for Inference", i)
-    sec = txt[i:j if j > 0 else None]
-    return hashlib.sha256(sec.encode()).hexdigest()
+    data = re.findall(r"0x[0-9a-f]{2}", txt[i:])      # bytes only: the UART tail after the dump may be cut off
+    return hashlib.sha256(",".join(data).encode()).hexdigest() if data else None
 
 
 def build(cell, defines, verify, ws, art):
