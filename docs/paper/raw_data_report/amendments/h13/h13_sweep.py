@@ -86,6 +86,9 @@ def build(cell, defines, verify, ws, art):
     extra = " ".join("-D%s=%s" % kv for kv in sorted(defines.items()))
     if verify:
         extra += " -DVERIFY_TEST_OUTPUT=1"
+    # plan A6: third-party sources (flatbuffers, ruy, ...) come from a shared local FetchContent cache once populated,
+    # instead of a fresh GitHub archive download per configure (intermittent HTTP 504 killed 33 arms). Same versions.
+    extra += " -DFETCHCONTENT_BASE_DIR=%s/fc_cache -DFETCHCONTENT_UPDATES_DISCONNECTED=ON" % OUT
     cfg = ("cmake -B %s -S %s -DCMAKE_TOOLCHAIN_FILE=%s/scripts/cmake/toolchains/bare-metal-gcc.cmake "
            "-DTARGET_PLATFORM=%s -DTARGET_SUBSYSTEM=%s -DETHOS_U_NPU_ID=%s -DETHOS_U_NPU_CONFIG_ID=%s "
            "-DETHOS_U_NPU_MEMORY_MODE=%s -DETHOS_U_NPU_ENABLED=ON -DUSE_CASE_BUILD=inference_runner "
@@ -295,7 +298,7 @@ def main():
     for d in ("uart", "verify", "vela"):
         os.makedirs(os.path.join(OUT, d), exist_ok=True)
     cells = load_cells()
-    path = OUT + "/results.jsonl"; have = done_runs(path)
+    path = os.environ.get("H13_RESULTS", OUT + "/results.jsonl"); have = done_runs(path)
     limit = 1 if which == "smoke" else None
     stages = list(STAGES) if which == "all" else (["S1"] if which == "smoke" else [which])
     seen = set(); started = 0
