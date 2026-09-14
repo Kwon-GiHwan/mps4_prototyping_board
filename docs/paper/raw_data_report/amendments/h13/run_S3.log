@@ -1,0 +1,2 @@
+H3 h3_conv1x1_1x36_c128__SSE-320__ethos-u85-256   base                   R1 SUCCESS total=6068 hdr=True vfy=e722e186
+H3 h3_conv1x1_1x36_c128__SSE-320__ethos-u85-256   base                   R2 SUCCESS total=6068 hdr=True vfy=e722e186
