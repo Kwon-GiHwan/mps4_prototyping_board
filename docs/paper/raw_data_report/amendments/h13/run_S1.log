@@ -1,0 +1,15 @@
+H1A rnnoise_INT8__SSE-320__ethos-u85-256           r0_w250                R1 SUCCESS total=22086 hdr=True vfy=305bc17f
+H1A rnnoise_INT8__SSE-320__ethos-u85-256           r0_w250                R2 SUCCESS total=22086 hdr=True vfy=305bc17f
+H1A rnnoise_INT8__SSE-320__ethos-u85-256           r0_w250                R3 SUCCESS total=22086 hdr=True vfy=305bc17f
+H1A rnnoise_INT8__SSE-320__ethos-u85-256           r125_w250              R1 SUCCESS total=27086 hdr=True vfy=305bc17f
+H1A rnnoise_INT8__SSE-320__ethos-u85-256           r125_w250              R2 SUCCESS total=27086 hdr=True vfy=305bc17f
+H1A rnnoise_INT8__SSE-320__ethos-u85-256           r125_w250              R3 SUCCESS total=27086 hdr=True vfy=305bc17f
+H1A rnnoise_INT8__SSE-320__ethos-u85-256           r250_w250              R1 SUCCESS total=36086 hdr=True vfy=305bc17f
+H1A rnnoise_INT8__SSE-320__ethos-u85-256           r250_w250              R2 SUCCESS total=36086 hdr=True vfy=305bc17f
+H1A rnnoise_INT8__SSE-320__ethos-u85-256           r250_w250              R3 SUCCESS total=36086 hdr=True vfy=305bc17f
+H1A rnnoise_INT8__SSE-320__ethos-u85-256           r500_w250              R1 SUCCESS total=62086 hdr=True vfy=305bc17f
+H1A rnnoise_INT8__SSE-320__ethos-u85-256           r500_w250              R2 SUCCESS total=62086 hdr=True vfy=305bc17f
+H1A rnnoise_INT8__SSE-320__ethos-u85-256           r500_w250              R3 SUCCESS total=62086 hdr=True vfy=305bc17f
+H1A rnnoise_INT8__SSE-320__ethos-u85-256           r1000_w250             R1 SUCCESS total=114086 hdr=True vfy=305bc17f
+H1A rnnoise_INT8__SSE-320__ethos-u85-256           r1000_w250             R2 SUCCESS total=114086 hdr=True vfy=305bc17f
+H1A rnnoise_INT8__SSE-320__ethos-u85-256           r1000_w250             R3 SUCCESS total=114086 hdr=True vfy=305bc17f

@@ -1,0 +1,27 @@
+{
+ "gates": {
+  "rnnoise_INT8__SSE-320__ethos-u85-256": {
+   "passed": [
+    "r0_w250",
+    "r1000_w250",
+    "r125_w250",
+    "r250_w125",
+    "r250_w250",
+    "r500_w250"
+   ],
+   "notes": []
+  }
+ },
+ "H1A": {},
+ "H1B": {},
+ "H1Ca": {},
+ "H1Cb": {},
+ "H2A": {},
+ "SRAMCAP": {},
+ "H3": {
+  "ratios": {},
+  "cycles": {},
+  "spread": {},
+  "outcomes": []
+ }
+}

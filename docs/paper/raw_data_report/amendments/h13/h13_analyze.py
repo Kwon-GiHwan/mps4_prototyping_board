@@ -4,7 +4,7 @@ outcome sets and the H1-C predictions are copied from there verbatim and must no
 Reads h13/results.jsonl (copied from the server). Gates G1-G6 per arm/cell; every refusal carries a rule id.
 Outputs h13_results.json (per experiment) and prints a summary. No prose is generated here.
 """
-import csv, json, sys
+import csv, json, re, sys
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -101,14 +101,44 @@ def gate_cell(cell, arms, frozen):
     for (cid, arm), a in arms.items():
         v = a.get("verify") or {}
         if arm in ok and v.get("status") == "SUCCESS" and v.get("dump_sha256"):
-            dumps[arm] = v["dump_sha256"]
+            dumps[arm] = output_bytes(v)          # exact byte list when the verify UART is available, else its digest
             if v.get("measurement") != a["runs"][0]["measurement"]:
                 notes.append({"arm": arm, "note": "INSTRUMENTATION_DEVIATION", "verify_pmu": v.get("measurement")})
         elif arm in ok:
             notes.append({"arm": arm, "note": "OUTPUT_NOT_VERIFIED", "verify": {k: v.get(k) for k in ("build_ok", "status", "stage")}})
-    if len(set(dumps.values())) > 1:
-        raise Refusal(RULE_OUTPUT_MISMATCH, "%s: output dumps differ across arms %s" % (cell, dumps))
-    return ok, notes, dumps
+    if any(d == "INCOMPLETE_DUMP" for d in dumps.values()):
+        raise Refusal(RULE_OUTPUT_MISMATCH, "%s: incomplete output dump in %s" % (cell, [a for a, d in dumps.items() if d == "INCOMPLETE_DUMP"]))
+    if len({str(d) for d in dumps.values()}) > 1:
+        raise Refusal(RULE_OUTPUT_MISMATCH, "%s: output dumps differ across arms %s" % (cell, sorted(dumps)))
+    return ok, notes, {a: (d if isinstance(d, str) else "bytes:%d" % len(d)) for a, d in dumps.items()}
+
+
+def parse_output_dump(txt):
+    """Byte list of the post-inference output dump and the byte count the runner declared for the OUTPUT tensors.
+    Returns (bytes, expected) -- bytes is None when the section is absent."""
+    i = txt.find("output tensors post inference")
+    if i < 0:
+        return None, None
+    j = txt.find("Profile for Inference", i)
+    sec = txt[i:j if j > 0 else None]
+    data = [int(x, 16) for x in re.findall(r"0x([0-9a-f]{2})", sec)]
+    k = txt.find("Model OUTPUT tensors:")
+    expected = None
+    if k >= 0:
+        end = txt.find("Activation buffer", k)
+        expected = sum(int(x) for x in re.findall(r"tensor occupies (\d+) bytes", txt[k:end if end > 0 else None]))
+    return data, expected
+
+
+def output_bytes(v):
+    p = v.get("uart_file")
+    local = HERE / "verify" / Path(p).name if p else None
+    if local is None or not local.exists():
+        return v["dump_sha256"]
+    data, expected = parse_output_dump(open(local, errors="replace").read())
+    if data is None or not data or (expected is not None and len(data) != expected):
+        return "INCOMPLETE_DUMP"
+    return data
 
 
 def by_cell(g):

@@ -207,3 +207,18 @@ H×W ÷ MAC 같은 비율을 이용률로 쓰지 않는다. 1024→2048 확장�
 바이트는 동일해야 하며, 이를 매 arm의 G1(stock AXF SHA = 동결 AXF SHA)로 검사한다. 스모크 4 결과:
 stock AXF = 동결 AXF(True), 검증 빌드 SUCCESS, 출력 덤프 sha `305bc17f…`, 검증 빌드 PMU 6종 = stock(동일).
 캠페인 종료 시 세 파일을 `orig/`의 다이제스트로 복원한다. 측정값은 항상 stock 빌드에서만 취한다.
+
+### A2 (2026-09-14, 매니저 답변 반영 — `manager_log.md` 9번째 교환)
+
+- **G1 정정.** 동결 AXF와의 일치는 기본 arm에만 요구한다(TA가 다른 arm은 AXF가 달라지는 것이 정상). 그 외 arm은
+  Vela 산출물·cc body SHA 동일성(G1)과 arm 내 3회 반복 동일성(G3)으로 검사한다. 이미 분석기가 그렇게 구현돼 있다.
+- **G6 강화.** `VERIFY_TEST_OUTPUT`는 덤프 경로이지 정답 검사가 아니다. 분석기는 검증 UART에서 출력 바이트 목록을
+  추출해 같은 셀의 기준 arm과 **바이트 단위로** 비교하고, 덤프 길이가 러너가 선언한 OUTPUT 텐서 바이트 합과 같지
+  않으면 `INCOMPLETE_DUMP`로 `RULE_H13_OUTPUT_MISMATCH`를 낸다. PMU 일치는 출력 동일성의 근거로 쓰지 않는다.
+- **H2-B 설계 정정.** (i) 대표 레이어(op 15, 7-tap 250→250)는 원본 flatbuffer에서 연산·텐서·양자화 레코드·가중치/bias
+  버퍼를 그대로 복사해 잘라낸다(재양자화 없음). 원본 전체 모델을 실행해 얻은 텐서 38(IFM)을 추출 모델에 넣었을 때
+  텐서 39(OFM)와 바이트 동일해야 한다(`gen_h2b_model.py`가 검사, `h2b_manifest.json`의 `ofm_identical_to_original`).
+  (ii) 주 비교는 **Shared_Sram ↔ Sram_Only**(arena는 둘 다 SRAM, 가중치만 EXT ↔ SRAM). Dedicated_Sram은 전체 배치
+  효과의 보조 대조군. (iii) SRAM 적재 가능성은 Vela 요약의 SRAM 사용량(가중치+IFM/OFM+scratch)으로 확인해 기록한다.
+  (iv) 모드별 스케줄·tiling 차이는 `--verbose-schedule` 덤프로 기록한다. (v) 결과는 이 레이어에 한정하며 16 MB·4 MB
+  레이어로 일반화하지 않는다. §5의 판정 문구는 유지하되 "Dedicated 대비 Sram_Only"를 "Shared_Sram 대비 Sram_Only"로 읽는다.
