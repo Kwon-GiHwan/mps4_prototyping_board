@@ -229,3 +229,21 @@ stock AXF = 동결 AXF(True), 검증 빌드 SUCCESS, 출력 덤프 sha `305bc17f
 EXT_MAXR {1, 63} × 지연 (0, 0). 판정값은 두지 않고 서술 지표 `C00_by_maxr`로 기록한다(C(0,0)이 MAXR에 따라 5% 이상
 움직이면 "지연 0 잔여 비용의 일부가 요청 직렬화에 반응"으로만 적는다). GO §3 H1-B 범위 안이다.
 
+### A4 (2026-09-14, S2 판정 뒤 — 매니저 답변 10번째 교환) — H2-B는 NOT_TRIGGERED, 별도 탐색 실험 H2-B-X
+
+- 원계획 §5의 H2-B는 진행 조건(`EXT_CAP_CONSTRAINED`)이 512·256 모두 미충족이므로 `NOT_TRIGGERED`로 기록한다.
+- 대신 **H2-B-X**(탐색 확장)를 실행한다. 목적: BWCAP 완화 효과가 작다는 결과가 "가중치 배치 효과 없음"을 뜻하지 않으므로,
+  대표 레이어(op 15, 원본 flatbuffer에서 그대로 잘라낸 7-tap 250→250)의 가중치 배치가 실행 비용과 EXT/SRAM 전송량을
+  바꾸는지 서술적으로 대조한다. 결과를 H2′의 검증 성공/실패로 합치지 않는다.
+- arm 6개: memory mode {Shared_Sram, Sram_Only, Dedicated_Sram} × MAC {512, 256}, TA 16값은 MAC 프로파일 기본, 산출물은
+  모드별로 Vela 재컴파일(모드가 다르면 산출물이 다른 것이 정상 — G1은 같은 셀 안 arm 동일성만 본다).
+- 비교 기준(사전): 주 대조 Shared_Sram(가중치 EXT, arena SRAM) ↔ Sram_Only(모두 SRAM). Dedicated_Sram은 보조.
+  기록값: TOTAL, EXT_RD/WR beat, SRAM_RD/WR beat, 출력 바이트 동일성(G6), Vela `--verbose-allocation`·`--verbose-tensor-purpose`로
+  실제 텐서 배치(가중치·IFM/OFM·scratch가 어느 메모리에 놓였는지), `--verbose-schedule`로 스케줄·block·tiling 차이.
+  스케줄이 다르면 "가중치 배치와 컴파일러 변경의 결합 효과"로 해석한다. 판정값은 두지 않는다.
+- 문구 정정(매니저): §6 SRAM 결과는 "평가한 4개 구성에서 SRAM BWCAP을 절반으로 낮추면 사이클이 35–64% 증가했다. 기본 cap을
+  완화하면 0.8–5.3% 감소했으나 사전 임계값 10%에는 미달했다. 기본 TA cap 완화의 효과는 평가 범위에서 작았으며, 이 결과로
+  물리 SRAM 대역폭의 제약까지 배제하지 않는다"로 쓴다('순간 접촉'·'인터페이스 실효 상한' 표현 금지). H2-A는 "cap 완화·지연
+  제거에 따른 개선이 사전 임계값 미만"으로 쓴다. A3에서 지연 0에서도 MAXR 효과가 관측됐으므로 지연 0의 잔여 비용을
+  메모리와 무관한 비용으로 분류하지 않는다.
+
