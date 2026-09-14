@@ -269,3 +269,13 @@ GO §2 "TA 설정 변경(…등의 독립 조작)" 범위 안에서 arm 7개를 
 불변 → "지연 기원"; 어느 것에도 불변 → "CPU/드라이버 측 정지 시점 기원(미확인)". 이 진단은 요인 6의 해석에만 쓰고
 가설 판정값을 만들지 않는다.
 
+### A6 (2026-09-14, S3 후반·S4·S5 실행 중) — 빌드 실패 33건의 원인과 조치
+
+원인: MLEK configure는 매번 GitHub archive(flatbuffers v25.9.23, ruy, gemmlowp)를 새로 내려받는데 GitHub가 간헐적으로
+HTTP 504를 반환해 S3의 dw3x3 셀 23 arm, S4의 256 MAC 3 arm, S5 진단 7 arm이 configure에서 실패했다(`results.jsonl`의
+`BUILD_FAILED:configure` 레코드에 오류 로그 보존). 실험 조건과 무관한 외부 요인이다.
+조치: 하니스가 `-DFETCHCONTENT_BASE_DIR=/tmp/h13/fc_cache -DFETCHCONTENT_UPDATES_DISCONNECTED=ON`을 넘겨 한 번 받은
+같은 버전의 소스를 재사용한다. 캐시를 채운 뒤 RNNoise 256 기본 arm을 다시 빌드해 stock AXF SHA = 동결 AXF SHA,
+TOTAL 36,086, 검증 빌드 SUCCESS를 확인했다(`results_cachecheck.jsonl`). 실패한 arm은 같은 정의로 재실행한다
+(하니스는 measurement가 있는 arm만 완료로 세므로 실패 레코드는 자동 재시도 대상).
+
