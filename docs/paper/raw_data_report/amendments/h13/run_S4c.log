@@ -1,0 +1,7 @@
+H2BX h2b_w2l_conv7_250__SSE-320__ethos-u85-256__Sra base                   R1 SUCCESS total=271068 hdr=True vfy=76599a9d
+H2BX h2b_w2l_conv7_250__SSE-320__ethos-u85-256__Sra base                   R2 SUCCESS total=271068 hdr=True vfy=76599a9d
+H2BX h2b_w2l_conv7_250__SSE-320__ethos-u85-256__Sra base                   R3 SUCCESS total=271068 hdr=True vfy=76599a9d
+H2BX h2b_w2l_conv7_250__SSE-320__ethos-u85-256__Ded base                   R1 SUCCESS total=507068 hdr=True vfy=76599a9d
+H2BX h2b_w2l_conv7_250__SSE-320__ethos-u85-256__Ded base                   R2 SUCCESS total=507068 hdr=True vfy=76599a9d
+H2BX h2b_w2l_conv7_250__SSE-320__ethos-u85-256__Ded base                   R3 SUCCESS total=507068 hdr=True vfy=76599a9d
+H13_DONE S4

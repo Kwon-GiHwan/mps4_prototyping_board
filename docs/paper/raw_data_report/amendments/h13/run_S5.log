@@ -1,0 +1,9 @@
+BUILD_FAILED rnnoise_INT8__SSE-320__ethos-u85-256 r137_w125 configure
+BUILD_FAILED rnnoise_INT8__SSE-320__ethos-u85-256 r250_w125_eoff0 configure
+BUILD_FAILED rnnoise_INT8__SSE-320__ethos-u85-256 r250_w125_eon2000_eoff500 configure
+BUILD_FAILED rnnoise_INT8__SSE-320__ethos-u85-256 r250_w125_soff0 configure
+BUILD_FAILED rnnoise_INT8__SSE-320__ethos-u85-256 r250_w125_eoff0_soff0 configure
+BUILD_FAILED rnnoise_INT8__SSE-320__ethos-u85-256 r0_w0_eoff0_soff0 configure
+BUILD_FAILED kws_micronet_m__SSE-320__ethos-u85-256 r250_w125_eoff0 configure
+H13_DONE S5
+S5_DONE

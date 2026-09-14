@@ -1,0 +1,53 @@
+Schedule: 'graph_MIN_BUFFERED'
+	0: Operation Conv2D  - OFM 1, 36, 1, 128
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 0
+		Operator Config = OFM Block=[1, 20, 2, 48], IFM Block=[1, 20, 2, 64], OFM UBlock=[2, 2, 8] Traversal=DepthFirst, AccType=Acc32
+		IFM Stripe   = [1, 36, 1, 128]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 36, 1, 128]
+		Assigned Cascade = 0
+		Encoded Weights = 17728 bytes
+		Weight buffer = 13280 bytes
+		Depth slices = [0, 16, 64, 112, 128]
+		sub-operations: -
+		Estimated Perf: Macs=589824 Cycles=5818
+		Memory Used: 13280 bytes (op=0, buf=13280, ccd=0, nl=0)
+	Cascades:
+
+################################################################################
+Performance for NPU Grap /tmp/xq/h13_h3_conv1x1_36x1_c128__SSE-320__ethos-u85-256/vela/h3_conv1x1_36x1_c128
+Original Operator    NNG Operator         Target Staging Usage  Peak% (Staging)  Op Cycles Network% (cycles)        NPU    SRAM AC    DRAM AC OnFlash AC OffFlash AC  MAC Count Network% (MAC)  Util% (MAC) Name                 
+-------------------- -------------------- ------ ------------- ---------------- ---------- ----------------- ---------- ---------- ---------- ---------- ----------- ---------- -------------- ------------ -------------------- 
+Conv2D               Conv2D               NPU            13280           100.00      11545            100.00       8585       1542      11545          0           0     589824         100.00        19.96 StatefulPartitionedCall_1:0 
+
+Network summary for h3_conv1x1_36x1_c128
+Accelerator configuration               Ethos_U85_256
+System configuration             Ethos_U85_SYS_DRAM_Low
+Memory mode                            Dedicated_Sram
+Accelerator clock                                 500 MHz
+Design peak SRAM bandwidth                      14.90 GB/s
+Design peak DRAM bandwidth                       3.49 GB/s
+
+Total SRAM used                                 12.97 KiB
+Total DRAM used                                 26.31 KiB
+
+CPU operators = 0 (0.0%)
+NPU operators = 1 (100.0%)
+
+Average SRAM bandwidth                           2.20 GB/s
+Input   SRAM bandwidth                           0.00 MB/batch
+Weight  SRAM bandwidth                           0.05 MB/batch
+Output  SRAM bandwidth                           0.00 MB/batch
+Total   SRAM bandwidth                           0.05 MB/batch
+Total   SRAM bandwidth            per input      0.05 MB/inference (batch size 1)
+
+Average DRAM bandwidth                           3.52 GB/s
+Input   DRAM bandwidth                           0.03 MB/batch
+Weight  DRAM bandwidth                           0.02 MB/batch
+Output  DRAM bandwidth                           0.04 MB/batch
+Total   DRAM bandwidth                           0.08 MB/batch
+Total   DRAM bandwidth            per input      0.08 MB/inference (batch size 1)
+
+Neural network macs                            589824 MACs/batch
+
