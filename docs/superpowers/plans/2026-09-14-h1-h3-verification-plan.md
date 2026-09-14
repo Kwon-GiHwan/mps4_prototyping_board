@@ -198,4 +198,12 @@ H×W ÷ MAC 같은 비율을 이용률로 쓰지 않는다. 1024→2048 확장�
 
 ## 9. Amendments
 
-(없음 — 실행 중 추가되는 정정은 여기에 날짜와 함께 적고 원문은 남긴다.)
+### A1 (2026-09-14, S1 실행 전) — 출력 검증 빌드는 MLEK stock 옵션만으로는 컴파일되지 않는다
+
+§0의 "`-DVERIFY_TEST_OUTPUT=1`(코드 패치 없음)"은 성립하지 않았다. MLEK 26.03의 `VERIFY_TEST_OUTPUT` 경로는
+구 API(`TfLiteTensor*`, `const Model&`)를 참조해 컴파일 오류 3종이 난다(스모크 1–3, `h13/smoke/`).
+대응: `#if VERIFY_TEST_OUTPUT` 가드 **안쪽만** 고친 3-파일 패치(`h13/verify_build/verify_patch.diff`,
+`verify_patch.py`, 원본과 다이제스트는 `verify_build/orig/`). 가드 밖 코드는 바뀌지 않으므로 stock 빌드의
+바이트는 동일해야 하며, 이를 매 arm의 G1(stock AXF SHA = 동결 AXF SHA)로 검사한다. 스모크 4 결과:
+stock AXF = 동결 AXF(True), 검증 빌드 SUCCESS, 출력 덤프 sha `305bc17f…`, 검증 빌드 PMU 6종 = stock(동일).
+캠페인 종료 시 세 파일을 `orig/`의 다이제스트로 복원한다. 측정값은 항상 stock 빌드에서만 취한다.
