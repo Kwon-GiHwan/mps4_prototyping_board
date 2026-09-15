@@ -15,7 +15,7 @@ H13 = HERE.parent / "h13"
 
 RULE_RUN = "RULE_H3R_RUN"                          # 3 SUCCESS runs, required counters present (None is not a value)
 RULE_REPS_DIFFER = "RULE_H3R_REPS_DIFFER"          # counter vectors identical across the 3 reps
-RULE_TA_CONFIG = "RULE_H3R_TA_CONFIG"              # header == request (16), cache == request, equalized applied == across MACs
+RULE_TA_CONFIG = "RULE_H3R_TA_CONFIG"              # header == request (16), CMakeCache read-back present and == request, equalized applied == across MACs
 RULE_ARTIFACT = "RULE_H3R_ARTIFACT"                # G1: same model x MAC -> identical Vela artifact / cc body across TA arms
 RULE_G1PRIME = "RULE_H3R_G1PRIME"                  # G1': derived model non-shape fields == base model (from check_g1prime)
 RULE_OUTPUT_MISMATCH = "RULE_H3R_OUTPUT_MISMATCH"  # same model: output bytes identical across MAC and TA arms
@@ -93,8 +93,8 @@ def gate_arm(key, a):
     req = a["defines"]
     if not a["header_ok"] or any(a["header"].get(k) != req.get(k) for k in TA_KEYS):
         raise Refusal(RULE_TA_CONFIG, "%s/%s: generated header != request" % key)
-    if a["cache"] is not None and any(a["cache"].get(k) != req.get(k) for k in TA_KEYS):
-        raise Refusal(RULE_TA_CONFIG, "%s/%s: CMakeCache != request" % key)
+    if not a["cache"] or any(a["cache"].get(k) != req.get(k) for k in TA_KEYS):
+        raise Refusal(RULE_TA_CONFIG, "%s/%s: CMakeCache read-back absent or != request" % key)
     return a["runs"][0]["measurement"]
 
 

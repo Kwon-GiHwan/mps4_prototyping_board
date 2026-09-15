@@ -33,6 +33,7 @@ def recs(op, h, w, mac, arm, total, active=None, defines=None, header=None, cach
     cell = CELL % (op, h, w, mac)
     defines = defines if defines is not None else (dict(PROFILE[mac]) if arm == "base" else dict(EQ))
     header = header if header is not None else dict(defines)
+    cache = cache if cache is not None else dict(defines)
     art = {"vela_sha256": vela, "cc_body_sha256": "c-" + vela, "axf_sha256": "a"}
     out = []
     for rep in range(1, reps + 1):
@@ -101,6 +102,14 @@ class Gates(unittest.TestCase):
         self.assertEqual(self.arm_rule(run(rs), "conv1x1", 1, 36, 256, "base"), A.RULE_TA_CONFIG)
         rs = one_model() + recs("conv1x1", 1, 36, 256, "base", 6068, cache=dict(LOW), vela="v256")
         self.assertEqual(self.arm_rule(run(rs), "conv1x1", 1, 36, 256, "base"), None)
+
+    def test_ta_cache_absent_is_refused(self):
+        """A harness that stops recording the CMakeCache read-back must not silently disable the gate."""
+        for absent in ({}, None):
+            rs = one_model()
+            for r in rs[:3]:
+                r["ta_cache"] = absent
+            self.assertEqual(self.arm_rule(run(rs), "conv1x1", 6, 6, 256, "base"), A.RULE_TA_CONFIG)
 
     def test_equalized_applied_must_match_across_macs(self):
         rs = pair("conv1x1", 6, 6, "base", 6068, 7068) + recs("conv1x1", 6, 6, 256, "equalized", 4068, vela="v256") \

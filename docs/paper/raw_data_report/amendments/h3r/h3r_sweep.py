@@ -230,7 +230,7 @@ def run_arm(exp, cell, arm, overrides, results, dumps):
                    artifact={"vela_sha256": vsha, "frozen_vela_sha256": cell.get("formal_vela_sha256"),
                              "cc_body_sha256": b["cc_body_sha256"], "frozen_cc_body_sha256": cell.get("FORMAL_GENERATED_CC_BODY_SHA256"),
                              "axf_sha256": b["axf_sha256"], "frozen_axf_sha256": cell.get("FORMAL_REFERENCE_AXF_SHA256")},
-                   ta_header=b["ta_header"], header_matches_request=b["header_matches_request"],
+                   ta_header=b["ta_header"], ta_cache=b["ta_cache"], header_matches_request=b["header_matches_request"],
                    timing_adapter_cache=b["timing_adapter_cache"], embedded_build_stamp=b["embedded_build_stamp"],
                    cmake_cmd=b["cmd"], elapsed_s=round(time.monotonic() - t0, 1))
         if rep == 1:
