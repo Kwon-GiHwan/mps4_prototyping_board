@@ -8,6 +8,7 @@ the read-only H13 evidence. No judgement is made here (judgements: h3r_analyze.p
   base_vs_equalized.csv                Q2: H3-R base vs equalized per model and MAC
   dw_bridge_vs_equalized.csv           Q3: DW H3 relaxed (legacy) vs H3-R bridge_legacy_relaxed vs equalized
   h3r_blocks.csv                       Q5: Vela OFM/IFM block, ublock, traversal, kernel padding, encoded weights, counters per model x MAC x arm
+  legacy_judgements_area36.csv         the same preregistered rules applied to the H3 area-36 data (base/relaxed), for Q4
   gate_summary.csv                     gate counts
 """
 import csv, json, re, sys
@@ -16,7 +17,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 H13 = HERE.parent / "h13"
 sys.path.insert(0, str(HERE))
-from h3r_analyze import TA_KEYS, REQUIRED, applied, load, model_of, mac_of  # noqa: E402
+from h3r_analyze import TA_KEYS, REQUIRED, applied, load, model_of, mac_of, judge, compare_metrics, METRICS  # noqa: E402
 
 OP_RE = re.compile(r"^\s*(\d+): Operation (\S+)\s+- OFM ([\d, ]+)$")
 CFG_RE = re.compile(r"OFM Block=\[([\d, ]+)\], IFM Block=\[([\d, ]+)\](?:, OFM UBlock=\[([\d, ]+)\])?(?: Traversal=(\w+))?")
@@ -157,6 +158,26 @@ def main():
 
     # ---- Q1: H3 base vs H3-R base
     legacy, lblocks, lquant = h13_records()
+
+    # ---- the same rules applied to the H3 area-36 data (Q4: did the metric dependence of H3 reproduce?)
+    lcyc, lmeta = {}, {}
+    for (model, arm, mac), r in legacy.items():
+        op = model.split("_")[1]
+        hw = model.split("_")[2].split("x")
+        h, w = int(hw[0]), int(hw[1])
+        if h * w != 36:
+            continue
+        # H3's 'relaxed' arm is the same TA definition H3-R calls bridge_legacy_relaxed, so it is read into that
+        # slot; the judgement code itself (the preregistered contract) is not touched.
+        slot = "bridge_legacy_relaxed" if arm == "relaxed" else arm
+        lcyc[(model, slot, mac)] = r["measurement"]
+        lmeta[model] = {"model": model, "op": op, "H": h, "W": w}
+    ljudged = {name: judge(lcyc, lmeta, key) for name, key in METRICS.items()}
+    write_csv("legacy_judgements_area36.csv", [dict(r, TOTAL_value=json.dumps(r["TOTAL_value"]), ACTIVE_value=json.dumps(r["ACTIVE_value"]))
+                                               for r in compare_metrics(ljudged)],
+              note="Q4 reference: the preregistered H3-R rules (plan A8) applied unchanged to the H3 area-36 measurements from h13/results.jsonl (arms base and relaxed); H3 'relaxed' occupies the slot H3-R calls bridge_legacy_relaxed")
+    json.dump({k: {"ratios": v["ratios"], "spread": v["spread"], "values": v["values"], "outcomes": v["outcomes"]} for k, v in ljudged.items()},
+              open(HERE / "legacy_judgements_area36.json", "w"), indent=1)
     q1 = []
     for model, mm in sorted(man.items(), key=lambda kv: (kv[1]["op"], kv[1]["H"])):
         lm = "h3_%s_%dx%d_c128" % (mm["op"], mm["H"], mm["W"])
