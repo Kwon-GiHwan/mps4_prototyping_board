@@ -14,6 +14,7 @@ amendment이며, 논문에 반영할 때는 각 문서의 "제안 판정"과 매
 | `A9_s4_closure.md`, `s4_stall/` | U85 stall 이벤트 원시 수집 | **NOT_EVALUABLE, 종결** (qualification 1·2 실패: ACTIVE −12; 매니저 결정 (a)) | 첫 셀 qualification 실패로 캠페인 중단, 나머지 5셀 미실행, 원시값은 보존만 |
 | `A10_revised_hypotheses.md` | 기각된 가설 1·4를 대체하는 후속 가설 H1′–H3′ (매니저 검토 반영 정정본) | 미검증 가설 (다음 계약 후보) | H1′ RNNoise 지연 민감도(실측 C(0)·ΔC, k = 실효 지연 민감도) · H2′-a 외부 대역폭 제약 / H2′-b 가중치 귀속 분리 · H3′ 블록 매핑 특성(ublock 면적 4→4) |
 | `manager_log.md` | 매니저(ChatGPT 창) 교환 전문 | 기록 | 8회 교환 |
+| `h13/` | **H13 검증 캠페인** (GO `docs/superpowers/plans/2026-09-14-h1-h3-verification-GO.md`, 계획서 `...-plan.md` A1–A7) — H1-A/B/C, H2-A, SRAM cap, H3 합성 51모델, H2-B-X, 진단 | S1–S5 완료, 131셀 게이트 전부 통과 | 결과 `h13/H13_RESULTS.md` §8 요인표. 분석기 `h13_analyze.py`(+unittest·mutation), 하니스 `h13_sweep.py`, 원시 `results.jsonl`·`uart/`·`verify/`·`vela/` |
 | `manager_review_20260914_v7_directive.md` | A10 초판·발표 v7 구성에 대한 매니저 지시 전문 + 대조 체크리스트 C1–C15 | 기록 (발표·A10 작성 시 대조 기준) | H1′ 회귀계수, H2′ 귀속, H3′ ublock 면적 정정 지시; 20장 판정 문구; 21·22·후속가설 장 구성 |
 | `ta_parameters.csv`, `vela_verbose/`, `x4/`, `s4_stall/` | 원시 증거·하니스·분석기·게이트 검사 | | 각 분석기는 unittest + 돌연변이 검사 |
 
