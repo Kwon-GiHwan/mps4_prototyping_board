@@ -116,6 +116,25 @@ class Gates(unittest.TestCase):
             + recs("conv1x1", 6, 6, 512, "equalized", 3068, defines=dict(EQ, EXT_MAXW=32), vela="v512")
         self.assertEqual(self.model_rule(run(rs), "h3r_conv1x1_6x6_c128"), A.RULE_TA_CONFIG)
 
+    def test_equalized_compares_every_header_field_not_just_the_16(self):
+        """An unmanaged header field (MODE, PERFCTRL, ...) that differs per MAC must refuse, not hide."""
+        rs = pair("conv1x1", 6, 6, "base", 6068, 7068) \
+            + recs("conv1x1", 6, 6, 256, "equalized", 4068, header=dict(EQ, EXT_MODE=1), vela="v256") \
+            + recs("conv1x1", 6, 6, 512, "equalized", 3068, header=dict(EQ, EXT_MODE=2), vela="v512")
+        res = run(rs)
+        self.assertEqual(self.model_rule(res, "h3r_conv1x1_6x6_c128"), A.RULE_TA_CONFIG)
+        self.assertIn("EXT_MODE", res["gates"]["models"]["h3r_conv1x1_6x6_c128"]["msg"])
+        rs = pair("conv1x1", 6, 6, "base", 6068, 7068) \
+            + recs("conv1x1", 6, 6, 256, "equalized", 4068, header=dict(EQ, EXT_MODE=1), vela="v256") \
+            + recs("conv1x1", 6, 6, 512, "equalized", 3068, header=dict(EQ, EXT_MODE=1), vela="v512")
+        res = run(rs)
+        self.assertEqual(self.model_rule(res, "h3r_conv1x1_6x6_c128"), None)
+        self.assertEqual(res["gates"]["equalized_applied"]["h3r_conv1x1_6x6_c128"]["fields_compared"], 17)
+
+    def test_applied_all_masks_known_fields_only(self):
+        a = A.applied_all({"EXT_MAXR": 64, "EXT_MODE": 1, "EXT_PERFCNT": 999999})
+        self.assertEqual(a, {"EXT_MAXR": 0, "EXT_MODE": 1, "EXT_PERFCNT": 999999})
+
     def test_applied_mask_64_is_0(self):
         self.assertEqual(A.applied({"EXT_MAXR": 64, "EXT_MAXW": 32, "EXT_RLATENCY": 500})["EXT_MAXR"], 0)
         self.assertEqual(A.applied({"EXT_MAXR": 63})["EXT_MAXR"], 63)
