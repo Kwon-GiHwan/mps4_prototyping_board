@@ -299,3 +299,98 @@ UART는 "NPU memory mode likely to be" 직후에서 멈춤). 이 FVP·TA에서 P
   유저가 탭을 열면 재전송한다. 발표 v9는 GO §7 산출물("검증 결과를 반영한 v7")에 따라 진행하되 취약 판정은 TOTAL 기준 성립·ACTIVE
   기준 불성립으로 병기한다.
 
+
+### A8 (2026-09-15, 측정 전 고정) — H3-R 보강 실험: 양자화 고정 · 실효 TA 동일화 (매니저 GO `2026-09-15-h3r-verification-GO.md`)
+
+**목적.** §6b′의 두 통제 문제를 제거한 뒤 H3의 형상 결과가 남는지 본다: (1) 형상마다 따로 calibration된 INT8 양자화, (2) relaxed 조건에서도
+MAC 간 달랐던 EXT_MAXR/EXT_MAXW 적용값. 기존 H3·H13·X4·frozen evidence는 수정하지 않고 H3-R을 `amendments/h3r/`에 별도 캠페인으로 저장한다.
+실행 에이전트 지시서: `2026-09-15-h3r-agent-brief.md`. 판정 코드: `h3r/h3r_analyze.py`(+`test_h3r_analyze.py`, `mutation_check.py` → `mutation_log.md`, 20 돌연변이 전부 RED).
+
+**기준 자료 (이 커밋에서 고정).**
+
+| 항목 | 값 |
+|---|---|
+| 기준 커밋 | `bbb1e71` (브랜치 `refactor/unified-mlek-campaigns`) |
+| 기준 모델 | H13 S3의 6×6 INT8 모델 3개, 서버 `/tmp/h13/models/`: `h3_conv1x1_6x6_c128` sha256 `e0a1edbf…da71b` · `h3_conv3x3_6x6_c128` `d9fb69c8…a4345` · `h3_dw3x3_6x6_c128` `c906b2de…bef7a` (`h13/h3_manifest.json`과 일치, 사본 `h3r/base_models/`) |
+| 기존 evidence 다이제스트 (보존 게이트) | `h13/results.jsonl` `d880c79e…3480` · `h13/h13_results.json` `ec4319a7…eed1` · `h13/h3_manifest.json` `80ece833…4c05` · `h13/h3_blocks.csv` `910d47b4…92e2e` (`h3r_analyze.PRESERVED`) |
+| 도구 | 컨테이너 `benchmark-runner`: MLEK `26.03-8-gb2c0bb2` (`b2c0bb28…`), Vela 5.0.0, GCC 15.2.1 (Arm GNU 15.2.Rel1), FVP `FVP_Corstone_SSE-320` Fast Models 11.27.25 sha256 `9cf4a25f…ee3e`, `SOURCE_DATE_EPOCH=1776763519`, 하니스 `/tmp/xqbin/stage1.py`(X4·H13과 동일). 로컬 TF 2.21.0 / numpy 2.5.3 (venv `~/.venvs/h3r-tf`, flatbuffer 편집·인터프리터 확인만) |
+| TA 드라이버 | `dependencies/core-platform/drivers/timing_adapter/src/timing_adapter.c` sha256 `ce8711b7…4788`: `MAXR/MAXW/MAXRW & 0x3F`, `RLATENCY/WLATENCY & 0xFFF`, `PULSE_ON/OFF/BWCAP & 0xFFFF` (`h3r_analyze.TA_MASK`) |
+| 메모리 모드·Vela | `Dedicated_Sram`, `--optimise Performance`, system_config 256 = `Ethos_U85_SYS_DRAM_Low`, 512 = `Ethos_U85_SYS_DRAM_Mid_512` (H3와 동일, MAC별로 다르므로 "물리 MAC 배열 크기만 다른 실험"이라 부르지 않는다), `--verbose-schedule --verbose-performance` |
+| 입력 | stock `inference_runner` `std::rand() & 0xFF`(A7). 검증 빌드가 입력·출력을 UART에 덤프 |
+
+**모델 (GO §2).** 연산 종류별 기준 6×6 모델의 flatbuffer에서 IFM(텐서 0)·OFM(텐서 3)의 `shape`만 `[1,H,W,128]`로 바꿔 재직렬화한다
+(`h3r/gen_h3r_models.py`, `gen_h2b_model.py`의 절단 방식). 가중치·bias 버퍼, 양자화 레코드, 연산자 코드·버전·옵션, 채널 수, 메타데이터 버퍼는
+손대지 않는다. 재calibration·재양자화·가중치 재생성 없음. 9형상: 1×36, 2×18, 3×12, 4×9, 6×6, 9×4, 12×3, 18×2, 36×1 → 27모델 `h3r_<op>_<H>x<W>_c128`.
+6×6 파생본은 기준과 바이트 동일해야 한다(자기 검사). 3×3 SAME-padding은 형상에 따라 경계·패딩 비중이 다르다는 사실을 model manifest와
+결과 해석에 명시한다(예: 1×36은 위·아래 행 전체가 패딩, 36×1은 좌·우 열 전체가 패딩).
+
+**G1′ (`h3r/check_g1prime.py` → `h3r_manifest.json`·`model_manifest.csv`).** 기준 vs 파생 27모델을 필드 단위로 비교. 반드시 동일: 최종 INT8 가중치
+버퍼 sha256, bias 버퍼 sha256, 입력/출력/가중치/bias 양자화(scale 전부·zero-point 전부·quantized_dimension), opcode·버전, builtin options
+(padding/stride/dilation/activation/depth_multiplier), 텐서 수·dtype·이름·연결(inputs/outputs), 채널 수, 가중치·bias shape, 메타데이터 버퍼.
+허용 차이: IFM/OFM shape(및 shape_signature — 기준 모델에는 없음)와 재직렬화 오프셋(파일 전체 sha). 규칙 id `RULE_G1P_WEIGHTS/BIAS/QUANT/OPERATOR/STRUCTURE/SHAPE`.
+G1′ 실패 모델은 분석기가 `RULE_H3R_G1PRIME`으로 거부한다. float 가중치 해시는 이 검사의 대용으로 쓰지 않는다.
+
+**기능 확인 (`h3r/func_check.py` → `func_check.json`).** TF 인터프리터로 27모델 로드·실행·출력 크기 확인. 연산 종류별 공통 입력 벡터
+= `numpy.random.default_rng(20260915)`의 int8 4,608바이트를 각 H×W로 reshape, 입력 바이트 sha256 기록. 동일 형상의 MAC·TA 변경 전후 NPU 출력
+동일성은 서버 검증 빌드로 따로 검사한다(출력 게이트). 서로 다른 형상의 출력이 같아야 한다는 조건은 없다. 인터프리터 성공은 NPU 출력 검증을 대신하지 않는다.
+
+**조건 (16값 전부 `-D`로 명시, 자동 기본값 의존 없음). 요청값 → 적용값(드라이버 마스크).**
+
+| 값 | base 256 (low) | base 512 (mid) | equalized 256·512 | bridge_legacy_relaxed 256 (DW) | bridge_legacy_relaxed 512 (DW) |
+|---|---|---|---|---|---|
+| SRAM_MAXR / MAXW / MAXRW | 8 / 8 / 0 | 8 / 8 / 0 | 8 / 8 / 0 | 8 / 8 / 0 | 8 / 8 / 0 |
+| SRAM_RLATENCY / WLATENCY | 16 / 16 | 32 / 32 | 0 / 0 | 0 / 0 | 0 / 0 |
+| SRAM_PULSE_ON / OFF / BWCAP | 3999 / 1 / 4000 | 3999 / 1 / 4000 | 3999 / 1 / 4000 | 3999 / 1 / 4000 | 3999 / 1 / 4000 |
+| EXT_MAXR / MAXW / MAXRW (요청 → 적용) | 24 / 12 / 0 | 64 / 32 / 0 → **0** / 32 / 0 | 0 / 0 / 0 | 24 / 12 / 0 | 64 / 32 / 0 → **0** / 32 / 0 |
+| EXT_RLATENCY / WLATENCY | 250 / 125 | 500 / 250 | 0 / 0 | 0 / 0 | 0 / 0 |
+| EXT_PULSE_ON / OFF | 4000 / 1000 | 4000 / 1000 | 4000 / 1000 | 4000 / 1000 | 4000 / 1000 |
+| EXT_BWCAP | 2344 | 3750 | 0 | 0 | 0 |
+
+- base = H3와 같은 MAC별 MLEK 프로파일(`ta_parameters.csv` low/mid). equalized = GO §3.1의 7개 0 + 나머지 9값을 두 MAC에 같은 값으로 명시
+  (SRAM 요청 제한·pulse·BWCAP은 두 프로파일이 이미 같은 값이므로 그 값을 쓴다; EXT_PULSE_OFF는 완주가 확인된 1000, 0은 쓰지 않는다).
+  bridge_legacy_relaxed = H3 relaxed 정의 그대로(프로파일 위에 `EXT_RLATENCY/EXT_WLATENCY/EXT_BWCAP/SRAM_RLATENCY/SRAM_WLATENCY = 0`);
+  `make_cells.py`가 `h13/results.jsonl`의 DW relaxed arm `defines`와 바이트 동일함을 검사한다. "무제한"은 해당 TA 요청 제한 또는 bandwidth quota가 해제됐다는 뜻으로만 쓴다.
+- 실효 적용값 검증: `-D` 값 → `CMakeCache.txt`(하니스가 16값을 읽어 `ta_cache`) → generated `timing_adapter_settings.h`(`ta_header`) → 드라이버 마스크(`applied()`).
+  세 열(요청·헤더·적용)을 `ta_matrix.csv`에 기록한다. equalized는 두 MAC의 적용값 16개가 전부 같아야 통과.
+
+**실행 규모.** 27모델 × {256, 512} × {base, equalized} = 108 arm + DW 9모델 × {256, 512} × bridge_legacy_relaxed = 18 arm → **126 arm**, arm당 stock FVP 3회(378회)
++ 검증 빌드 1회(126회). 면적 64·256, MAC 1024·2048, S4 stall, `EXT_PULSE_OFF=0`, "1×1 Conv equalized-24/12"는 실행하지 않는다. 첫 qualification 셀:
+`h3r_conv1x1_6x6_c128` 256 base(3회 + 검증 빌드) — 게이트 통과 후 나머지. anchor 비교: H3 `h3_conv1x1_6x6_c128` 256 base TOTAL 6,068 / ACTIVE 5,909과 같은지 **관측으로 기록**(게이트 아님 — 모델 바이트가 재직렬화로 다를 수 있음).
+
+**게이트 (`h3r_analyze.py`, 모두 규칙 id).**
+
+| 게이트 | 검사 | 실패 시 |
+|---|---|---|
+| 실행 | 3회 SUCCESS, TOTAL/ACTIVE/IDLE/SRAM_RD/WR/EXT_RD/WR 전부 존재(None은 값이 아니다, 0으로 대체하지 않는다) | `RULE_H3R_RUN` → arm 제외 |
+| 반복 | 3회의 7개 카운터 벡터 동일 (None==None 불허) | `RULE_H3R_REPS_DIFFER` → arm 제외 |
+| 설정 | 헤더 16값 = 요청, CMakeCache 16값 = 요청; equalized의 두 MAC 적용값 16개 동일 | `RULE_H3R_TA_CONFIG` → arm(또는 모델) 제외 |
+| G1 | 같은 모델·MAC의 모든 TA arm에서 Vela 산출물 sha·cc body sha 동일 | `RULE_H3R_ARTIFACT` → 셀 제외 |
+| G1′ | manifest의 `g1prime_pass == True` | `RULE_H3R_G1PRIME` → 모델 제외 |
+| 출력 | 같은 모델의 모든 arm(두 MAC × TA)에서 검증 빌드 출력 바이트 동일, 덤프 길이 = 러너 선언 OUTPUT 바이트 합, 검증 빌드 없는 arm 불허 | `RULE_H3R_OUTPUT_MISMATCH` → 모델 제외 |
+| 보존 | 위 h13 4개 파일 sha256 불변 | `RULE_H3R_PRESERVATION` → 분석 중단 |
+
+TA 변경으로 AXF가 달라지는 것은 정상이고 과거 동결 AXF와의 일치는 요구하지 않는다. 검증 빌드 PMU ≠ stock PMU이면 `INSTRUMENTATION_DEVIATION`으로 기록하고 stock만 쓴다.
+게이트 실패(모델 유효성·출력·설정)가 나오면 증거를 보존하고 영향받는 후속 실행을 중단한다. 하니스는 같은 모델의 출력 덤프 sha가 앞선 arm과 다르면 즉시 멈춘다.
+
+**판정 (§7 식 그대로, 측정 전 고정; TOTAL과 ACTIVE에 각각 적용).** r = C512 / C256, scaling_efficiency = 1/(2r), spread = max r − min r (연산 종류·조건별 9형상).
+
+| 판정 | 조건 | 적용 범위 |
+|---|---|---|
+| `SHAPE_EFFECT:<op>:<cond>` | spread ≥ 0.10 | op ∈ {conv1x1, conv3x3, dw3x3} × cond ∈ {base, equalized, (dw3x3만) bridge_legacy_relaxed} |
+| `MEMORY_SHAPE_INTERACTION:<op>` | spread_equalized < 0.5 × spread_base | op 3종 |
+| `TYPE_DEPENDENT:<cond>` | 연산 종류별 중앙값 r의 최대−최소 ≥ 0.10 | cond ∈ {base, equalized} |
+
+- 판정은 보고되는 소수 4자리 값으로 한다. TOTAL = 기존 연구와 연결하는 주 분석, ACTIVE = 사전 지정 병렬 분석. 두 판정이 같으면 `HOLDS_BOTH`/`FAILS_BOTH`,
+  다르면 `METRIC_DEPENDENT`로 표시(`h3r_judgements_total_vs_active.csv`). ACTIVE는 TOTAL의 대체물이 아니고, TOTAL 격자 1,000은 검증된 ±1,000 오차가 아니다.
+- `AREA_EFFECT`는 면적 36만 측정하므로 새로 판정하지 않는다. DW 연결 대조군(bridge ↔ equalized)은 r·spread·사이클·traffic의 변화를 **서술**로 보고하고 임계값을 두지 않는다.
+- 결과를 보고 임계값을 바꾸지 않는다. 가설과 반대되는 결과는 실패가 아니다.
+
+**Q1–Q5 비교 계획 (`h3r_tables.py`).** Q1 `h3_vs_h3r_base.csv`: 같은 형상의 H3 base(`h13/results.jsonl`, 읽기만) ↔ H3-R base — TOTAL·ACTIVE·r·역전 여부·
+encoded weight·block·traffic; "기존 6개 역전 재현"은 게이트가 아니다. Q2 `base_vs_equalized.csv`: 모델별 MAC별 사이클 변화, r, spread, traffic — TA 설정 묶음의 개입 효과로만
+서술(지연·대역폭·동시성 중 하나의 효과라고 쓰지 않는다). Q3 `dw_bridge_vs_equalized.csv`(+ H3 relaxed 열): DW 9형상 × 2 MAC, bridge ↔ equalized ↔ 기존 relaxed의 r·spread·사이클·traffic.
+Q4 `h3r_judgements_total_vs_active.csv` + 작은 사이클 차이 대표 사례 원시값 + H3의 4건 불일치가 재현되는지. Q5 `h3r_blocks.csv`(`h3_blocks.py` 방식): 형상·MAC·조건별 OFM/IFM block·ublock·traversal·
+encoded weight·traffic — H×W/MAC 비율을 이용률로 부르지 않고, 3×3 경계·패딩 효과를 특정 ublock 비효율로 자동 귀속하지 않는다.
+
+**산출물 (`amendments/h3r/`).** `h3r_manifest.json`·`model_manifest.csv`(G1′), `func_check.json`, `h3r_cells.json`·`ta_matrix.csv`, `h3r_sweep.py`(서버 하니스 사본, `/tmp/h3r/`),
+`results.jsonl`·`uart/`·`verify/`·`vela/`·`run_*.log`, `h3r_results.json`, `runs_all.csv`, `h3r_models_conditions_metrics.csv`, 위 Q1–Q5 표, `h3r_plots.py`, `H3R_RESULTS.md`(GO §10 순서),
+발표 v10(`docs/presentation/build/make_cf_v10.py`). 계획 커밋(이 A8 + 판정 코드)과 결과 커밋을 분리한다.
