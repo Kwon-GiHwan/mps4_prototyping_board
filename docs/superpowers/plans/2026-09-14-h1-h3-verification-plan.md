@@ -290,3 +290,12 @@ UART는 "NPU memory mode likely to be" 직후에서 멈춤). 이 FVP·TA에서 P
 그렇지 않다. 사전 판정은 계약대로 TOTAL로 유지하되, 소형 모델(수천 사이클) 결과에는 ACTIVE 기반 민감도 검사를 POST_HOC으로
 덧붙인다(H13_RESULTS §6c). 이 검사는 판정을 바꾸지 않고 "TOTAL 양자화에 취약한 판정"을 표시하는 용도다.
 
+### 종료 기록 (2026-09-15)
+
+- 검증 빌드용 3파일을 `h13/verify_build/orig/`의 원본으로 복원, 다이제스트 일치 확인(UseCaseHandler.cc 5fb1a446…, UseCaseCommonUtils.hpp
+  721d283f…, UseCaseCommonUtils.cc 61bebbb5…). 서버에는 `/tmp/h13/`(원시 증거·캐시)와 S4 캠페인의 `ethosu_profiler.c.bak.stall`
+  백업 파일(빌드에 포함되지 않음)이 남아 있다.
+- 매니저 최종 검토 요청(§8 요인표·취약 판정 병기·v9 진행)은 ChatGPT 탭이 닫혀 있어 전달되지 않았다(`manager_bridge` 오류 기록).
+  유저가 탭을 열면 재전송한다. 발표 v9는 GO §7 산출물("검증 결과를 반영한 v7")에 따라 진행하되 취약 판정은 TOTAL 기준 성립·ACTIVE
+  기준 불성립으로 병기한다.
+
