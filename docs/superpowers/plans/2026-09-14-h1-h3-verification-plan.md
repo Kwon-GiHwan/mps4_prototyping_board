@@ -279,3 +279,14 @@ HTTP 504를 반환해 S3의 dw3x3 셀 23 arm, S4의 256 MAC 3 arm, S5 진단 7 a
 TOTAL 36,086, 검증 빌드 SUCCESS를 확인했다(`results_cachecheck.jsonl`). 실패한 arm은 같은 정의로 재실행한다
 (하니스는 measurement가 있는 arm만 완료로 세므로 실패 레코드는 자동 재시도 대상).
 
+### A7 (2026-09-15) — A5 결과와 quantum 진단
+
+A5 결과: 읽기 지연 137 → 27,086(125와 동일, 잔여 불변) · EXT pulse 2000/500 → 34,086(−2,000, 잔여 불변) · SRAM_PULSE_OFF 0 →
+36,086(불변) · **EXT_PULSE_OFF 0은 네 arm 모두 FVP가 완주하지 못해 3,600 s 타임아웃**(`FAILURE_TIMEOUT`, NOT_EVALUABLE;
+UART는 "NPU memory mode likely to be" 직후에서 멈춤). 이 FVP·TA에서 PULSE_OFF=0은 "차단 없음"이 아니라 정지다.
+추가 진단(A7, `h13_quantum.py`, `quantum.jsonl`): 같은 stock AXF(동결과 동일)를 Fast Models 스케줄링 quantum 기본(10,000)·
+1,000·100·10으로 실행 → TOTAL은 네 경우 모두 36,086, ACTIVE만 35,206/35,200/35,212/35,216. 사전 해석 규칙에 따라 격자는
+"CPU/드라이버/모델 측 정지 시점 기원(미확인)"으로 기록한다. 결론: PMU TOTAL은 1,000 사이클 단위로 양자화돼 있고 ACTIVE는
+그렇지 않다. 사전 판정은 계약대로 TOTAL로 유지하되, 소형 모델(수천 사이클) 결과에는 ACTIVE 기반 민감도 검사를 POST_HOC으로
+덧붙인다(H13_RESULTS §6c). 이 검사는 판정을 바꾸지 않고 "TOTAL 양자화에 취약한 판정"을 표시하는 용도다.
+
