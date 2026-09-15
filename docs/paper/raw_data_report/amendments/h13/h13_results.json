@@ -20,7 +20,10 @@
     "r0_w250",
     "r1000_w250",
     "r125_w250",
+    "r137_w125",
     "r250_w125",
+    "r250_w125_eon2000_eoff500",
+    "r250_w125_soff0",
     "r250_w250",
     "r375_w187",
     "r500_w0",
@@ -29,7 +32,23 @@
     "r500_w500",
     "r750_w375"
    ],
-   "notes": []
+   "notes": [
+    {
+     "arm": "r250_w125_eoff0",
+     "rule": "RULE_H13_RUN",
+     "msg": "rnnoise_INT8__SSE-320__ethos-u85-256/r250_w125_eoff0: 1 runs, statuses ['FAILURE_TIMEOUT']"
+    },
+    {
+     "arm": "r250_w125_eoff0_soff0",
+     "rule": "RULE_H13_RUN",
+     "msg": "rnnoise_INT8__SSE-320__ethos-u85-256/r250_w125_eoff0_soff0: 1 runs, statuses ['FAILURE_TIMEOUT']"
+    },
+    {
+     "arm": "r0_w0_eoff0_soff0",
+     "rule": "RULE_H13_RUN",
+     "msg": "rnnoise_INT8__SSE-320__ethos-u85-256/r0_w0_eoff0_soff0: 1 runs, statuses ['FAILURE_TIMEOUT']"
+    }
+   ]
   },
   "rnnoise_INT8__SSE-320__ethos-u85-512": {
    "passed": [
@@ -101,7 +120,13 @@
     "r250_w250",
     "r500_w250"
    ],
-   "notes": []
+   "notes": [
+    {
+     "arm": "r250_w125_eoff0",
+     "rule": "RULE_H13_RUN",
+     "msg": "kws_micronet_m__SSE-320__ethos-u85-256/r250_w125_eoff0: 1 runs, statuses ['FAILURE_TIMEOUT']"
+    }
+   ]
   },
   "kws_micronet_m__SSE-320__ethos-u85-512": {
    "passed": [

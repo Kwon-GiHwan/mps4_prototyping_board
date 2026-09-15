@@ -1,0 +1,15 @@
+DIAG rnnoise_INT8__SSE-320__ethos-u85-256           r137_w125              R1 SUCCESS total=27086 hdr=True vfy=ff32f393
+DIAG rnnoise_INT8__SSE-320__ethos-u85-256           r137_w125              R2 SUCCESS total=27086 hdr=True vfy=ff32f393
+DIAG rnnoise_INT8__SSE-320__ethos-u85-256           r137_w125              R3 SUCCESS total=27086 hdr=True vfy=ff32f393
+DIAG rnnoise_INT8__SSE-320__ethos-u85-256           r250_w125_eoff0        R1 FAILURE_TIMEOUT total=None hdr=True vfy=FAILURE_TIMEOUT
+DIAG rnnoise_INT8__SSE-320__ethos-u85-256           r250_w125_eon2000_eoff500 R1 SUCCESS total=34086 hdr=True vfy=ff32f393
+DIAG rnnoise_INT8__SSE-320__ethos-u85-256           r250_w125_eon2000_eoff500 R2 SUCCESS total=34086 hdr=True vfy=ff32f393
+DIAG rnnoise_INT8__SSE-320__ethos-u85-256           r250_w125_eon2000_eoff500 R3 SUCCESS total=34086 hdr=True vfy=ff32f393
+DIAG rnnoise_INT8__SSE-320__ethos-u85-256           r250_w125_soff0        R1 SUCCESS total=36086 hdr=True vfy=ff32f393
+DIAG rnnoise_INT8__SSE-320__ethos-u85-256           r250_w125_soff0        R2 SUCCESS total=36086 hdr=True vfy=ff32f393
+DIAG rnnoise_INT8__SSE-320__ethos-u85-256           r250_w125_soff0        R3 SUCCESS total=36086 hdr=True vfy=ff32f393
+DIAG rnnoise_INT8__SSE-320__ethos-u85-256           r250_w125_eoff0_soff0  R1 FAILURE_TIMEOUT total=None hdr=True vfy=FAILURE_TIMEOUT
+DIAG rnnoise_INT8__SSE-320__ethos-u85-256           r0_w0_eoff0_soff0      R1 FAILURE_TIMEOUT total=None hdr=True vfy=FAILURE_TIMEOUT
+DIAG kws_micronet_m__SSE-320__ethos-u85-256         r250_w125_eoff0        R1 FAILURE_TIMEOUT total=None hdr=True vfy=FAILURE_TIMEOUT
+H13_DONE S5
+CHAIN4_DONE
