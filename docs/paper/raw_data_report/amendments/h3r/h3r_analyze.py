@@ -58,8 +58,21 @@ def load(path):
 
 
 def applied(values):
-    """Register values after the driver masks (requested/header value -> applied value)."""
+    """The 16 managed register values after the driver masks (requested/header value -> applied value)."""
     return {k: (v & TA_MASK[k.split("_", 1)[1]]) for k, v in values.items() if k in TA_KEYS}
+
+
+def applied_all(header):
+    """Every field the generated header carries, masked where the driver masks it.
+
+    The generated timing_adapter_settings.h holds more than the 16 values the campaign sets (PERFCTRL, PERFCNT,
+    MODE, HISTBIN, HISTCNT per side). equalized requires the two MACs to agree on ALL of them, not only on the 16,
+    so an unmanaged field that happens to differ per MAC cannot hide inside a passing gate."""
+    out = {}
+    for k, v in header.items():
+        suffix = k.split("_", 1)[1] if "_" in k else k
+        out[k] = (v & TA_MASK[suffix]) if suffix in TA_MASK else v
+    return out
 
 
 def group(records):
@@ -179,10 +192,12 @@ def analyze(records, manifest, verify_dir=None, preserved=None):
                 raise Refusal(RULE_OUTPUT_MISMATCH, "%s: incomplete output dump in %s" % (model, ["%s|%s" % k for k in bad]))
             if len({str(d) for d in dumps.values()}) > 1:
                 raise Refusal(RULE_OUTPUT_MISMATCH, "%s: output dumps differ across %s" % (model, sorted("%s|%s" % k for k in dumps)))
-            eq = {mac_of(c): applied(g[(c, a)]["header"]) for (c, a) in keys if a == "equalized"}
+            eq = {mac_of(c): applied_all(g[(c, a)]["header"]) for (c, a) in keys if a == "equalized"}
             if len(eq) == 2 and eq[256] != eq[512]:
-                diff = sorted(k for k in TA_KEYS if eq[256].get(k) != eq[512].get(k))
+                diff = sorted(k for k in set(eq[256]) | set(eq[512]) if eq[256].get(k) != eq[512].get(k))
                 raise Refusal(RULE_TA_CONFIG, "%s: equalized applied values differ across MACs: %s" % (model, diff))
+            if len(eq) == 2:
+                gates.setdefault("equalized_applied", {})[model] = {"fields_compared": len(eq[256]), "identical": True}
             gates["models"][model] = {"status": "PASS", "arms": sorted("%s|%s" % k for k in keys), "notes": notes}
         except Refusal as e:
             gates["models"][model] = {"refused": e.rule, "msg": str(e), "notes": notes}

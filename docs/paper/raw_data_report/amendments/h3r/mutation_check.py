@@ -20,6 +20,8 @@ MUTATIONS = [
     ("OUTPUT differ", 'if len({str(d) for d in dumps.values()}) > 1:', 'if False:'),
     ("OUTPUT bytes vs digest", 'return data\n', 'return v["dump_sha256"]\n'),
     ("EQUALIZED applied across MACs", 'if len(eq) == 2 and eq[256] != eq[512]:', 'if False:'),
+    ("EQUALIZED compares all header fields", 'applied_all(g[(c, a)]["header"])', 'applied(g[(c, a)]["header"])'),
+    ("applied_all mask", '(v & TA_MASK[suffix]) if suffix in TA_MASK else v', 'v'),
     ("applied mask", '(v & TA_MASK[k.split("_", 1)[1]])', 'v'),
     ("PRESERVATION", 'if changed:', 'if False:'),
     ("ratio direction", 'r[(model, cond)] = cyc[(model, cond, 512)][key] / float(m[key])', 'r[(model, cond)] = float(m[key]) / cyc[(model, cond, 512)][key]'),
