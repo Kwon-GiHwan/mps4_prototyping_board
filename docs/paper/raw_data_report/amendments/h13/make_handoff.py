@@ -391,6 +391,7 @@ index = f"""# H13_HANDOFF — H13 검증 캠페인 전달 자료 (생성 기준 
 - `cond=relaxed`: EXT 지연 0/0, EXT_BWCAP 0, SRAM 지연 0/0. 지연·BWCAP은 MAC 간 동일하지만 **EXT_MAXR 적용값은 256=24, 512=무제한으로 여전히 다르다**(`ta_maxr_same_across_mac=False`); pulse는 동일(4000/1000). H1-B에서 RNNoise 256은 MAXR ≥16에서 포화했지만 합성 모델에 대해서는 확인하지 않았다.
 - `cond=syscfgMid`: 256 MAC을 Vela `Ethos_U85_SYS_DRAM_Mid_512` 가정으로 컴파일한 대조군(TA는 base와 동일). 512 쪽은 base와 같은 산출물.
 - block·ublock·traversal은 Vela `--verbose-schedule`에서, MAC 수·추정 사이클은 per-layer CSV에서 가져왔다(`evidence/vela/<cell>__<arm>/`). "block이 형상에 맞지 않는다"는 해석은 `ofm_block_HWC` 열(예: 36×1의 256 block 20x2x48)에 근거한 **서술**이며 매핑 메커니즘 자체는 가설이다.
+- **통제 한계**: 형상마다 양자화 calibration이 따로 됐다(`gen_h3_models.py` seed = 1000+H·1000+W; `weights_sha256`는 float 가중치 해시) → 입력 zp·출력 scale이 형상마다 다르다. relaxed에서도 EXT_MAXR 적용값(24 vs 무제한)과 EXT_MAXW(12 vs 32)가 MAC 간 다르다. "순수 형상 효과"로 확정하지 않는다(H13_RESULTS §6b′).
 - 쟁점 사례 바로 찾기: `results/h3_flagged_cases.csv` (A 역전 / A′ 비역전 / B 완화 후 소멸 / C 3×3 형상 차이 감소 / D DW 형상 차이 증가 / E TOTAL·ACTIVE 불일치).
 
 ## H2-B-X 읽는 법 (`results/h2bx_placement_schedule_measurements.csv`)
@@ -398,17 +399,19 @@ index = f"""# H13_HANDOFF — H13 검증 캠페인 전달 자료 (생성 기준 
 - 배치는 Vela 요약의 `weights_storage_area`/`feature_map_storage_area`와 `--verbose-allocation` 결과(`vela_allocations`)로 확인한다. Sram_Only에서 Vela는 const 영역을 'On-chip Flash'로 표기하지만(로그: "Changing const_mem_area from Sram to OnChipFlash. This will use the same characteristics as Sram") 측정에서 EXT beat는 0이고 가중치 읽기가 SRAM beat로 잡힌다. **Shared_Sram ↔ Sram_Only는 가중치(read-only) 배치만 다르고 feature map은 둘 다 SRAM**; Dedicated_Sram은 가중치와 feature map이 모두 DRAM(512는 SRAM staging 0 B, 256은 SRAM staging 137.5 KiB 사용)이므로 여러 텐서의 배치가 함께 다른 비교다.
 - 스케줄 동일의 근거: 세 모드의 `ofm_block/ifm_block/ublock/traversal`이 같음(표의 열, 원본은 `evidence/vela/h2b_*`). 집계 beat 동일의 근거: 표의 beat 열(Dedicated 512 EXT 56,343/4,377 = Sram_Only 512 SRAM 56,343/4,377). Shared_Sram의 SRAM 쓰기 21,586은 Sram_Only의 4,377과 비교한 값이며 차이 ≈17,200 beat는 EXT 읽기 17,260 beat(가중치 276 KB / 16 B)와 대응한다.
 - `pct_vs_Shared_same_mac` = (TOTAL / TOTAL_Shared − 1) × 100, 같은 MAC 안에서.
+- 256 MAC의 Sram_Only는 encoded weight 657,952 B(다른 두 모드 276,080 B)로 컴파일된 가중치 표현이 다르다. 512는 275,344 / 276,240 B로 거의 같다. Shared↔Sram_Only는 "배치 + 동반된 컴파일 결과"의 효과이고, Dedicated↔Sram_Only(512)는 가중치와 feature map이 함께 옮겨진 비교다.
 
 ## H1·H2-A·SRAM 읽는 법
 - arm 표: `results/h1_arms_rnnoise.csv`, `h1cb_arms_kws_ad.csv`, `h2a_arms_wav2letter.csv`, `sramcap_arms.csv` — 각 arm의 16개 TA 적용값, `EXT_MAXR_applied`(요청값 & 0x3F; 소스 근거 `evidence/timing_adapter_driver_excerpt.txt`), Vela 산출물 SHA(동결과 동일 여부), 반복 동일 여부, TOTAL/ACTIVE/IDLE/beat.
 - 식·검사 지점·허용오차·결과값: `results/judgement_formulas_and_values.csv`. 고정 MAC에서의 민감도(k_r, k_w, s, ρ)와 MAC 간 비교(cross-MAC 1.15, r)는 열로 구분된다.
+- H1-A 가산성의 지표 의존(POST_HOC): ACTIVE로 같은 식을 쓰면 256은 −4.5%(통과), 512는 +8.9%(실패). 256 `NON_ADDITIVE`는 지표 의존, 512는 두 지표 모두 비가산.
 - "MAXR 16 이상 변화 없음"의 실제 표: 256은 16/63/64/0 모두 동일, 512는 16(34,086/106,086)과 63·64·0(32,086/99,086)이 다르다 — 512는 63 이상에서 동일.
 
 ## TOTAL 격자 진단 (`results/diag_arms.csv`, `diag_quantum.csv`, `diag_total_mod1000_by_model.csv`)
 - 관측 범위: 모든 stock 실행의 TOTAL % 1000이 모델군별 단일 값(RNNoise 86, KWS/AD/Wav2Letter/합성 68, U55 RNNoise 59, U55 KWS/AD 50). ACTIVE는 그렇지 않다.
 - 진단 결과: 읽기 지연 137, EXT pulse 2000/500, SRAM_PULSE_OFF 0, FVP `-Q` 1000/100/10 어디에서도 잔여 불변. 확인된 사실 = "TOTAL이 1,000 단위로 양자화되고 ACTIVE는 아님". 추정(미확인) = 기원이 CPU/드라이버/모델 측 정지 시점. 하드웨어 PMU 해상도와는 다른 문제.
 - EXT_PULSE_OFF=0 네 arm: `FAILURE_TIMEOUT`(3,600 s), UART는 `evidence/uart_representative/*eoff0*`.
-- "±15–30%"의 근거: 격자 1,000 ÷ 소형 모델 TOTAL(6,068 → 16.5%, 3,068 → 32.6%). 큰 모델(≥10^5)에서는 ≤1%.
+- "16–33%"는 격자 간격 1,000 ÷ 소형 모델 TOTAL(6,068 → 16.5%, 3,068 → 32.6%)로, 격자 간격의 상대 크기이지 검증된 오차 범위가 아니다. 큰 모델(≥10^5)에서는 ≤1%.
 - 진단으로 낮춘 항목: RNNoise C(0,0)의 "정확한 5,000 간격"(ACTIVE로는 20,172/15,087/10,521/10,839로 등간격 아님), 위 TOTAL·ACTIVE 불일치 네 판정.
 
 ## Vela–FVP 비교 (기존 자료만, `results/vela_fvp_existing/`)
