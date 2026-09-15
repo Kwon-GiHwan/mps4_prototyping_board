@@ -1,0 +1,69 @@
+ce8711b764bcd3c117535aea89bf983948bbf2fca96d4c9e59559d4741ed4788  /opt/arm/ml-embedded-evaluation-kit/dependencies/core-platform/drivers/timing_adapter/src/timing_adapter.c
+40:#define TA_MAXR_MASK       0x0000003F
+41:#define TA_MAXW_MASK       0x0000003F
+42:#define TA_MAXRW_MASK      0x0000003F
+43:#define TA_RLATENCY_MASK   0x00000FFF
+44:#define TA_WLATENCY_MASK   0x00000FFF
+45:#define TA_PULSE_ON_MASK   0x0000FFFF
+46:#define TA_PULSE_OFF_MASK  0x0000FFFF
+47:#define TA_BWCAP_MASK      0x0000FFFF
+48:#define TA_PERFCTRL_MASK   0x0000003F
+49:#define TA_PERFCNT_MASK    0xFFFFFFFF
+50:#define TA_MODE_MASK       0x00000FFF
+51:#define TA_MAXPENDING_MASK 0xFFFFFFFF
+52:#define TA_HISTBIN_MASK    0x0000000F
+53:#define TA_HISTCNT_MASK    0xFFFFFFFF
+71:void ta_set_all(struct timing_adapter *ta, struct timing_adapter_settings *in) {
+72:    ta_set_maxr(ta, in->maxr);
+73:    ta_set_maxw(ta, in->maxw);
+74:    ta_set_maxrw(ta, in->maxrw);
+75:    ta_set_rlatency(ta, in->rlatency);
+76:    ta_set_wlatency(ta, in->wlatency);
+77:    ta_set_pulse_on(ta, in->pulse_on);
+78:    ta_set_pulse_off(ta, in->pulse_off);
+79:    ta_set_bwcap(ta, in->bwcap);
+80:    ta_set_perfctrl(ta, in->perfctrl);
+81:    ta_set_perfcnt(ta, in->perfcnt);
+82:    ta_set_mode(ta, in->mode);
+83:    ta_set_histbin(ta, in->histbin);
+84:    ta_set_histcnt(ta, in->histcnt);
+87:void ta_set_maxr(struct timing_adapter *ta, uint32_t val) {
+88:    *(volatile uint32_t *)(ta->base_addr + TA_MAXR) = val & TA_MAXR_MASK;
+91:void ta_set_maxw(struct timing_adapter *ta, uint32_t val) {
+92:    *(volatile uint32_t *)(ta->base_addr + TA_MAXW) = val & TA_MAXW_MASK;
+95:void ta_set_maxrw(struct timing_adapter *ta, uint32_t val) {
+96:    *(volatile uint32_t *)(ta->base_addr + TA_MAXRW) = val & TA_MAXRW_MASK;
+99:void ta_set_rlatency(struct timing_adapter *ta, uint32_t val) {
+100:    *(volatile uint32_t *)(ta->base_addr + TA_RLATENCY) = val & TA_RLATENCY_MASK;
+103:void ta_set_wlatency(struct timing_adapter *ta, uint32_t val) {
+104:    *(volatile uint32_t *)(ta->base_addr + TA_WLATENCY) = val & TA_WLATENCY_MASK;
+107:void ta_set_pulse_on(struct timing_adapter *ta, uint32_t val) {
+108:    *(volatile uint32_t *)(ta->base_addr + TA_PULSE_ON) = val & TA_PULSE_ON_MASK;
+111:void ta_set_pulse_off(struct timing_adapter *ta, uint32_t val) {
+112:    *(volatile uint32_t *)(ta->base_addr + TA_PULSE_OFF) = val & TA_PULSE_OFF_MASK;
+115:void ta_set_bwcap(struct timing_adapter *ta, uint32_t val) {
+116:    *(volatile uint32_t *)(ta->base_addr + TA_BWCAP) = val & TA_BWCAP_MASK;
+119:void ta_set_perfctrl(struct timing_adapter *ta, uint32_t val) {
+120:    *(volatile uint32_t *)(ta->base_addr + TA_PERFCTRL) = val & TA_PERFCTRL_MASK;
+123:void ta_set_perfcnt(struct timing_adapter *ta, uint32_t val) {
+124:    *(volatile uint32_t *)(ta->base_addr + TA_PERFCNT) = val & TA_PERFCNT_MASK;
+127:void ta_set_mode(struct timing_adapter *ta, uint32_t val) {
+128:    *(volatile uint32_t *)(ta->base_addr + TA_MODE) = val & TA_MODE_MASK;
+131:void ta_set_histbin(struct timing_adapter *ta, uint32_t val) {
+132:    *(volatile uint32_t *)(ta->base_addr + TA_HISTBIN) = val & TA_HISTBIN_MASK;
+135:void ta_set_histcnt(struct timing_adapter *ta, uint32_t val) {
+136:    *(volatile uint32_t *)(ta->base_addr + TA_HISTCNT) = val & TA_HISTCNT_MASK;
+158:    return *(volatile uint32_t *)(ta->base_addr + TA_MAXR) & TA_MAXR_MASK;
+162:    return *(volatile uint32_t *)(ta->base_addr + TA_MAXW) & TA_MAXW_MASK;
+166:    return *(volatile uint32_t *)(ta->base_addr + TA_MAXRW) & TA_MAXRW_MASK;
+170:    return *(volatile uint32_t *)(ta->base_addr + TA_RLATENCY) & TA_RLATENCY_MASK;
+174:    return *(volatile uint32_t *)(ta->base_addr + TA_WLATENCY) & TA_WLATENCY_MASK;
+178:    return *(volatile uint32_t *)(ta->base_addr + TA_PULSE_ON) & TA_PULSE_ON_MASK;
+182:    return *(volatile uint32_t *)(ta->base_addr + TA_PULSE_OFF) & TA_PULSE_OFF_MASK;
+186:    return *(volatile uint32_t *)(ta->base_addr + TA_BWCAP) & TA_BWCAP_MASK;
+190:    return *(volatile uint32_t *)(ta->base_addr + TA_PERFCTRL) & TA_PERFCTRL_MASK;
+194:    return *(volatile uint32_t *)(ta->base_addr + TA_PERFCNT) & TA_PERFCNT_MASK;
+198:    return *(volatile uint32_t *)(ta->base_addr + TA_MODE) & TA_MODE_MASK;
+202:    return *(volatile uint32_t *)(ta->base_addr + TA_MAXPENDING) & TA_MAXPENDING_MASK;
+206:    return *(volatile uint32_t *)(ta->base_addr + TA_HISTBIN) & TA_HISTBIN_MASK;
+210:    return *(volatile uint32_t *)(ta->base_addr + TA_HISTCNT) & TA_HISTCNT_MASK;
