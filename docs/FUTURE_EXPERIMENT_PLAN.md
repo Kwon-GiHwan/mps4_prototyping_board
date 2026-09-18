@@ -493,6 +493,83 @@ Do not reinstall/rebuild the FVP stack merely for aesthetic uniformity.
 
 ---
 
+## Stage X6 — Memory-service envelope identification on physical hardware
+
+### Status
+
+PLANNING / HOLD. No manager GO. No board authorization.
+
+Full plan: `docs/superpowers/plans/2026-09-18-memory-service-envelope-program.md`.
+Read that document before proposing anything in this stage.
+
+### Goal
+
+Successor to X4. X4 varied simulated memory service on the FVP with the artifact
+fixed; X6 moves that axis onto the MPS4 board and widens it from one knob to a
+full envelope, in order to derive **machine characters** rather than workload
+observations.
+
+Per path `p ∈ {SRAM, EXT}` and direction `d ∈ {R, W}`:
+
+```text
+X_{p,d}  ≲  min( J_{p,d} ,  min(m, Q_{p,d}) / L_{p,d} ,  B_{p,d} / g_{p,d} )
+
+Q  effective latency-hiding concurrency      machine
+B  sustainable beat throughput               machine
+J  request-issue ceiling (front end)         machine
+g  beats per transaction                     workload
+L  memory-service latency                    environment
+m  externally imposed outstanding limit      environment
+```
+
+### Why the board and not the FVP
+
+Whether the measured latency-hiding concurrency belongs to the RTL or to the
+FVP's timing model is not answerable by the FVP. Arm disclaims FVP accuracy for
+cycle counts and low-level component interactions, and this is exactly such an
+interaction. The board runs Corstone-320 synthesised into an FPGA, so its
+timing adapter and PMU are real RTL.
+
+### Entry evidence (all POST_HOC_DESCRIPTIVE)
+
+```text
+k(m) ≈ R_p / min(m, Q_N)  is visible in the frozen H1B data
+R    ≈ 944 / 963 across two MAC configurations   (2 % spread)
+Q_eff saturates at 9.19 (256) and 10.78 (512)
+shipped EXT_MAXR (24, unlimited) both sit above Q_eff
+   -> explains the X4 campaign-C null result, previously NOT_SEPARATED
+FVP and board agree exactly on all four beat counters at U85-1024
+   84/84 counter observations, 7/7 workloads, 3 board boots
+```
+
+An earlier additive form `C = C₀ + k·L` is **retracted**; see §1.1 of the plan.
+
+### Hard scope limits
+
+```text
+MAC scaling      impossible  — board FPGA image is Z1024 only
+energy           excluded    — FPGA power is not Ethos-U85 power
+FVP-vs-board absolute cycles  refused by the frozen measurement contract
+```
+
+Permitted claim shape: *effective latency-hiding capacity of the Corstone-320 /
+Ethos-U85 1024-MAC configuration under the tested memory configuration.*
+Not permitted: "Ethos-U85's Q is X", or any statement about Q as a function of
+MAC count.
+
+### Named steps
+
+```text
+STEP-X6-0   read the U85 TRM; establish the architectural outstanding table   (no board)
+STEP-X6-1   freeze the P1 contract                                            (no board)
+STEP-X6-2   build the synthetic saturator family, pass the SRAM-fit gate      (no board)
+STEP-X6-3   P1 instrumentation-neutrality runs                                (board)
+STEP-X6-4   P1 L × MAXR × BWCAP acquisition                                   (board)
+STEP-X6-5   P1 hold-out prediction runs                                       (board)
+```
+
+---
+
 # 4. Relationship to existing P0/P1/U65-bridge evidence
 
 Do not confuse the new X-series with the completed U85 mechanism campaign.
@@ -643,7 +720,10 @@ remaining high-value robustness question:
   same-NPU / different-Corstone platform sensitivity
 
 recommended next experiment:
-  X0 -> X1
+  X6  (operator direction, 2026-09-18: the existing manuscript is judged too
+       shallow in verification level and characterization to carry forward;
+       the new target is deriving machine characters on physical hardware)
+  X0 -> X1  remains valid but is no longer the priority
 
 not currently recommended:
   full 19 × 3-memory-mode × workload Cartesian sweep
