@@ -345,6 +345,74 @@ TRM `PMCLUT` 원문: 카운터 0이 복합 이벤트를 셀 수 있다.
 `102685`는 공개 버전이 `r0p0` / revision `0000-05` 하나뿐이며 (`/versions`, `/revisions` 모두 단일 항목),
 따라서 "더 최신 공개 개정판에 있을 것"이라는 기대는 성립하지 않는다.
 
+### `Reserved` 는 "안 쓰는 항목"이라는 뜻이 아니다
+
+자주 오해되는 지점이라 근거를 적어 둔다.
+
+**TRM은 `Reserved` 를 자체적으로 정의하지 않는다.** `Product-and-document-information/Conventions` 절은
+SMALL CAPITALS 용어(`IMPLEMENTATION DEFINED`, `UNKNOWN`, `UNPREDICTABLE` 등)를 **Arm Glossary** 로 넘길 뿐이다.
+
+**Arm Glossary (문서 `aeg0014`, ARM AEG 0014G) → `Glossary` → `Reserved` 원문:**
+
+> Unless otherwise stated in the architecture or product documentation:
+> - Reserved instruction and 32-bit system control register encodings are unpredictable.
+> - Reserved 64-bit system control register encodings are undefined.
+> - Reserved register bit fields are UNK/SBZP.
+
+같은 글로서리의 관련 정의:
+
+> **UNK** — software must treat a field as containing an unknown value.
+> In any implementation, the bit must read as 0, or all 0s for a bit field.
+> Software must not rely on the field reading as zero.
+>
+> **UNPREDICTABLE** — the behavior cannot be relied upon. …
+> unpredictable behavior must not be documented or promoted as having a defined effect.
+
+어느 쪽이든 **"그 기능이 없다" 또는 "쓰지 않는다" 는 뜻이 아니다.** 규격이 정의를 하지 않겠다는 선언이다.
+
+**주의 — 이 문서 안에 성격이 다른 `Reserved` 가 두 가지 있다.**
+
+| 종류 | 예 | Glossary 조항 | 실질 |
+| ---- | -- | ------------- | ---- |
+| Reserved **비트 필드** | `PMEVTYPER<n>` 의 `[11:10]`, `[31:16]` | *Reserved register bit fields are UNK/SBZP* | 정말로 건드리지 않는 자리. 0으로 쓰고 읽은 값에 의존하지 않는다 |
+| Reserved **열거값** | `EV_TYPE` 표의 id 33, 52–55, 83 … (4절 61개) | **정확히 맞는 조항이 없다** | 아래 |
+
+글로서리의 두 조항은 각각 *명령어/시스템 제어 레지스터 인코딩* 과 *레지스터 비트 필드* 를 다룬다.
+`EV_TYPE` 의 Reserved 항목은 **메모리 맵 주변장치 레지스터 필드 안의 열거값**이라 어느 쪽에도 정확히 해당하지 않는다.
+`EV_TYPE` 필드 자체는 Reserved 가 아니고, 그 안의 특정 *값* 이 Reserved 다.
+**Arm 문서에서 이 경우를 규정하는 문장을 찾지 못했다.**
+
+**대신 확실한 사실이 하나 있다 — Arm 자신의 드라이버가 그 값들을 레지스터에 쓴다.**
+
+`ethosu_pmu_u85.c` 의 쓰기 경로에는 TRM 의 110개와 대조하는 검사가 **없다**:
+
+```c
+static uint32_t pmu_event_value(enum ethosu_pmu_event_type event) {
+    switch (event) { EXPAND_PMU_EVENT(EVID, SEMICOLON); /* 171개 전부 */
+    default: LOG_ERR(...); }
+    return UINT32_MAX;
+}
+
+void U85_PMU_Set_EVTYPER(struct ethosu_driver *drv, uint32_t num, enum ethosu_pmu_event_type type) {
+    uint32_t val = pmu_event_value(type);
+    if (val == UINT32_MAX) { LOG_ERR(...); return; }   // 열거형 밖일 때만 거절
+    drv->dev.reg->PMEVTYPER[num].word = val;           // 53 이든 130 이든 그대로 씀
+}
+```
+
+거절되는 것은 `enum ethosu_pmu_event_type` 에 없는 값뿐이고, `MAC_STALLED_BY_W = 53` 은 그대로 기록된다.
+
+**그래서 결론은 이렇게 갈린다.**
+
+- ❌ "Reserved = 쓰지 않는 항목" — 근거 없음
+- ❌ "Reserved = 하드웨어에 없는 기능" — 근거 없음. Arm 드라이버가 이름을 붙이고 프로그래밍한다
+- ✅ "Reserved = **이 문서가 정의하지 않은 값**" — 이것이 확인되는 전부다
+- ⚠️ 그 61개가 FI101 에서 실제로 동작하는지는 **UNPROVEN**. 동작한다는 근거도, 동작하지 않는다는 근거도 없다.
+  값을 써 보고 세어 보는 것 외에 결정할 방법이 없으며, **이 문서는 그것을 하지 않았다** (6절).
+
+논문·보고서에 쓸 때의 정확한 표현은 여전히 **"Arm 드라이버 헤더에 정의되어 있으나 공개 TRM r0p0 에서는 `Reserved`"** 다.
+"미사용" 이나 "미지원" 으로 바꿔 쓰면 근거보다 강한 주장이 된다.
+
 | id | 드라이버 이름 | 출처 |
 | -: | ------------- | ---- |
 | 33 | `cc_stalled_on_blockdep` | `S1`§`33`=Reserved · `S8e`:L1430 · `S8x`:L24380 |
@@ -554,6 +622,7 @@ https://documentation-service.arm.com/documentation/<doc>/<version>[/<topic-slug
 | S5 | 〃 | 〃 | `Programmers-model/Register-sets-for-NPU-control/BASE-register-summary/CONFIG-register` |
 | S6 | 〃 | 〃 | `Programmers-model/Instruction-index-for-cmd0-stream/NPU-OP-PMU-MASK-instruction` |
 | S7 | Arm Corstone SSE-320 FPGA Image for MPS4 Application Note (109762) | `0100` = *FI101-r1p0 with Cortex-M85 and Ethos-U85* | `FPGA/Neural-Processing-Unit`, `Programmer-s-model/Timing-Adapter`, `SSE-320-functional-description/SSE-320-parameter-values` |
+| S9 | Arm Glossary (`aeg0014`, ARM AEG 0014G) | `g` | `Glossary` → 항목 `Reserved`, `UNK`, `UNPREDICTABLE` |
 | S8 | ethos-u-core-driver, `gitlab.arm.com/artificial-intelligence/ethos-u/ethos-u-core-driver` | commit `5f0b9d1e17b245aefc308ee0d5a4543833b96b11` (*Bump version to 2.0.0*, 2026-08-26) | `src/ethosu_interface_u85.h`, `src/ethosu_pmu_u85.c`, `include/ethosu_pmu_types.h` |
 
 ### 드라이버 측 교차 확인 (S8)
