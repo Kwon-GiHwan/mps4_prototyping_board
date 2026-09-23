@@ -31,6 +31,9 @@ def main():
         c = link.ping()
         raw.append({"ping": c.__dict__})
         if c.state != 1: raise E.fail_rule("RULE_PING", f"state={c.state}")
+        counters = {k: v for k, v in c.__dict__.items() if k not in ("state", "version")}
+        if any(counters.values()):   # contract: all error/traffic counters zero before the first set
+            raise E.fail_rule("RULE_PING", f"counters not zero on fresh boot: {counters}")
         for set_id, codes in E.event_sets():
             for rep in range(1, E.REPEATS + 1):
                 try:
