@@ -5,7 +5,7 @@ import pmu_events_parse as E
 
 def rec(codes, values=None, **over):
     n = len(codes); values = values or [1] * n
-    pmu = dict(npu_pmu_cycle_valid=1, instrumentation_mode_applied=2, applied_event_count=n,
+    pmu = dict(npu_pmu_cycle_valid=1, cycle_progress_observed=1, instrumentation_mode_applied=2, applied_event_count=n,
                event_valid_mask=(1 << n) - 1, event_codes=list(codes) + [None] * (8 - n),
                event_values=list(values) + [None] * (8 - n), npu_pmu_window_cycles=1000)
     pmu.update({k: v for k, v in over.items() if k in pmu})
@@ -28,7 +28,7 @@ class Validity(unittest.TestCase):
         c = [17, 35]; tripped = set()
         for term, r in {
             "rc_zero": rec(c, run_rc=3), "required_flags_ok": rec(c, required_flags_ok=False),
-            "cycle_valid": rec(c, npu_pmu_cycle_valid=0), "mode_applied_2": rec(c, instrumentation_mode_applied=1),
+            "cycle_valid": rec(c, npu_pmu_cycle_valid=0), "cycle_progress": rec(c, cycle_progress_observed=0), "mode_applied_2": rec(c, instrumentation_mode_applied=1),
             "applied_count": rec(c, applied_event_count=1), "valid_mask_full": rec(c, event_valid_mask=1),
             "codes_echo": rec([17, 36]),
         }.items():
