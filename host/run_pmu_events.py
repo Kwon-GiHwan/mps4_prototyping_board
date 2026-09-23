@@ -6,8 +6,19 @@
 """
 import argparse, csv, datetime, json, pathlib, sys
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
+import zlib
 import pmu_events_parse as E
 from runner_proto import RunnerLink, PROTO_MEASURE_V2, Nack, ProtocolError
+
+
+def prime(link):
+    """Walk the state machine to INPUT_READY exactly as run_pmu_diag.py / run_pmu_qual.py
+    do: a dummy blob and an empty input. The fixed compiled-in inference runs regardless."""
+    blob = b"\x00" * 64
+    link.load_model_begin(len(blob), zlib.crc32(blob) & 0xFFFFFFFF)
+    link.load_model_chunk(0, blob)
+    link.load_model_end()
+    link.load_input(b"")
 
 PORT = "/dev/serial/by-id/usb-FTDI_USB__-__Serial_Converter_00FT46259002B-if01-port0"
 ERR_UNSUPPORTED_NAMES = ("ERR_UNSUPPORTED",)
@@ -31,18 +42,28 @@ def main():
         c = link.ping()
         raw.append({"ping": c.__dict__})
         if c.state != 1: raise E.fail_rule("RULE_PING", f"state={c.state}")
-        counters = {k: v for k, v in c.__dict__.items() if k not in ("state", "version")}
-        if any(counters.values()):   # contract: all error/traffic counters zero before the first set
-            raise E.fail_rule("RULE_PING", f"counters not zero on fresh boot: {counters}")
+        # Contract (amendment 2): the SEVEN error counters must be zero. rx_bytes/tx_bytes
+        # are traffic counters and include this PING's own 20-byte frame, so they are not judged.
+        errors = {k: getattr(c, k) for k in ("rx_overrun", "bad_magic", "bad_version", "bad_crc",
+                                              "length_error", "sequence_error", "parser_resync")}
+        if any(errors.values()):
+            raise E.fail_rule("RULE_PING", f"error counters not zero on fresh boot: {errors}")
         for set_id, codes in E.event_sets():
+            # State machine (amendment 3): SET_INSTRUMENTATION_MODE is accepted only in IDLE,
+            # RUN only in INPUT_READY/RESULT_READY. Per set: RESET -> SET_MODE -> prime -> RUN x3.
+            try:
+                link.reset_runner()
+                req, applied, cnt, cseq = link.set_instrumentation_mode(E.INSTRUMENTATION_EVENTS, codes, set_id)
+            except Nack as n:
+                rule = "RULE_CAPABILITY" if (set_id == 1 and "UNSUPPORTED" in repr(n)) else "RULE_MODE_NACK"
+                raise E.fail_rule(rule, repr(n))
+            if applied != E.INSTRUMENTATION_EVENTS or cnt != len(codes):
+                raise E.fail_rule("RULE_MODE_NACK", f"applied={applied} count={cnt}")
+            try:
+                prime(link)
+            except (Nack, ProtocolError) as e:
+                raise E.fail_rule("RULE_RUN_TRANSPORT", f"set {set_id} prime: {e!r}")
             for rep in range(1, E.REPEATS + 1):
-                try:
-                    req, applied, cnt, cseq = link.set_instrumentation_mode(E.INSTRUMENTATION_EVENTS, codes, set_id)
-                except Nack as n:
-                    rule = "RULE_CAPABILITY" if (set_id == 1 and rep == 1 and "UNSUPPORTED" in repr(n)) else "RULE_MODE_NACK"
-                    raise E.fail_rule(rule, repr(n))
-                if applied != E.INSTRUMENTATION_EVENTS or cnt != len(codes):
-                    raise E.fail_rule("RULE_MODE_NACK", f"applied={applied} count={cnt}")
                 try:
                     rc = link.run(timeout=60.0)
                 except (Nack, ProtocolError) as e:

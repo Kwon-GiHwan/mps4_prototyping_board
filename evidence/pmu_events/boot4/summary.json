@@ -1,0 +1,30 @@
+{
+  "provenance": {
+    "board_serial": "FTDI-00FT46259002B",
+    "fpga_image": "FI101-r1p0 (109762 v0100)",
+    "build_id": "0x504d4556",
+    "authorization": "owner-verbal-2026-09-23",
+    "app_sha256": "86a10317adccef02e90c447f1650b27944ce37ef8d13ef841dede8fecead7084",
+    "vectors_sha256": "1878eb84b83b57c8936fd99b7e56d0b0cd3bdef61d8de89c0d36b94f4f02544c",
+    "ddr_sha256": "81d37a219a6b4141d0b433796711ab8af2ee2c3c668a28143a3ffe6a574ade98",
+    "host_boot_index": 4,
+    "captured_at_utc": "2026-09-23T06:42:48.466429+00:00"
+  },
+  "runs": 0,
+  "rows": 0,
+  "refusal": {
+    "rule": "RULE_RUN_TRANSPORT",
+    "msg": "RULE_RUN_TRANSPORT: set 1 rep 1: Nack('NACK STATE (cmd 0x30, state IDLE)')"
+  },
+  "consistency": {
+    "CYCLE_EVENT_VS_PMCCNTR": "UNPROVEN",
+    "NPU_ACTIVE_LE_CYCLE": "UNPROVEN"
+  },
+  "verdict_counts": {
+    "COUNTED_NONZERO": 0,
+    "COUNTED_ZERO": 0,
+    "INCONSISTENT": 0,
+    "NOT_OBSERVED": 0
+  },
+  "coverage": "RULE_SET_COVERAGE: covered 0/171"
+}
