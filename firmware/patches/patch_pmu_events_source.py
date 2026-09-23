@@ -27,26 +27,50 @@ EDITS = [
  # 5. programming block: widen the header only
  ("        if (cfg.mode == INSTRUMENTATION_END_ONLY) {\n            uint32_t cnten;\n",
   "        if (cfg.mode == INSTRUMENTATION_END_ONLY || cfg.mode == INSTRUMENTATION_EVENTS) {\n            uint32_t cnten;\n"),
+ # 5b. EVENTS programming = the diag lineage's proven power-lifecycle sequence (amendment 8):
+ #     hold NPU clock/power (CMD=0) and wait, disable+clear, PMCR=EN|RST in one write and wait,
+ #     then arm cycle+events in one PMCNTENSET write and select the events under cnt_en=1.
+ ("            npu_pmu_disable();\n            npu_pmu_reset_counters();\n            pmu_reg_write(NPU_REG_PMCNTENSET, NPU_PMU_PMCNTEN_CYCLE_MASK);\n",
+  "            if (cfg.mode == INSTRUMENTATION_EVENTS) {\n"
+  "                /* Tier B (amendment 8). The previous test released clock/power with\n"
+  "                 * CMD=0xC; PMU writes made in that state land in the register file\n"
+  "                 * and never engage the counters (boots 5-8). Hold both Q interfaces\n"
+  "                 * first, let it settle, then reset+enable under held power, wait,\n"
+  "                 * then do the final programming -- the sequence PMU_DIAG/QUAL proved. */\n"
+  "                npu_write(NPU_OFF_CMD, 0U);\n"
+  "                __DSB(); __ISB();\n"
+  "                pmu_events_wait_cycles(PMU_EVENTS_POWER_GUARD_CYCLES);\n"
+  "                npu_pmu_disable();\n"
+  "                pmu_reg_write(NPU_REG_PMOVSCLR, 0xFFFFFFFFU);\n"
+  "                pmu_reg_write(NPU_REG_PMCNTENCLR, 0xFFFFFFFFU);\n"
+  "                pmu_reg_write(NPU_REG_PMINTCLR, 0xFFFFFFFFU);\n"
+  "                pmu_reg_write(NPU_REG_PMCR, NPU_PMCR_CNT_EN_MSK | NPU_PMCR_EVENT_CNT_RST_MSK\n"
+  "                                            | NPU_PMCR_CYCLE_CNT_RST_MSK);\n"
+  "                __DSB(); __ISB();\n"
+  "                pmu_events_wait_cycles(PMU_EVENTS_RESET_GUARD_CYCLES);\n"
+  "                pmu_reg_write(NPU_REG_PMCNTENSET,\n"
+  "                              NPU_PMU_PMCNTEN_CYCLE_MASK | ((1U << cfg.event_count) - 1U));\n"
+  "                for (i = 0; i < cfg.event_count; i++) {\n"
+  "                    pmu_reg_write(NPU_REG_PMEVTYPER_BASE + 4U * i, cfg.event_codes[i] & 0x3FFU);\n"
+  "                }\n"
+  "                __DSB();\n"
+  "            } else {\n"
+  "                npu_pmu_disable();\n"
+  "                npu_pmu_reset_counters();\n"
+  "                pmu_reg_write(NPU_REG_PMCNTENSET, NPU_PMU_PMCNTEN_CYCLE_MASK);\n"
+  "            }\n"),
+ # 5c. helpers: NPU CMD offset (BASE.CMD, 0x08 -- as Selftest_pmu_diag defines it), a write
+ #     accessor beside the base's npu_read, and the guard wait copied from pmu_diag_wait_cycles.
+ ("static uint32_t npu_read(uint32_t offset)\n{\n    return REG32(U85_BASE_ADDRESS + offset);\n}\n",
+  "static uint32_t npu_read(uint32_t offset)\n{\n    return REG32(U85_BASE_ADDRESS + offset);\n}\n"
+  "#define NPU_OFF_CMD 0x08U /* BASE.CMD; bits [3:2] = clock-Q / power-Q enables, 0 = hold */\n"
+  "static void npu_write(uint32_t offset, uint32_t value)\n{\n    REG32(U85_BASE_ADDRESS + offset) = value;\n}\n"
+  "#define PMU_EVENTS_POWER_GUARD_CYCLES 65536U /* = PMU_DIAG_POWER_GUARD_CYCLES */\n"
+  "#define PMU_EVENTS_RESET_GUARD_CYCLES 65536U /* = PMU_DIAG_RESET_GUARD_CYCLES */\n"),
  # 6. enable block: widen, and select the events AFTER cnt_en=1 is verified (TRM: PMU writes
  #    other than PMCR.cnt_en are not guaranteed to take effect unless cnt_en=1).
  ("        if (cfg.mode == INSTRUMENTATION_END_ONLY) {\n            uint32_t pmcr;\n",
   "        if (cfg.mode == INSTRUMENTATION_END_ONLY || cfg.mode == INSTRUMENTATION_EVENTS) {\n            uint32_t pmcr;\n"),
- ("                (pmcr & NPU_PMCR_CNT_EN_MSK) ? 1U : 0U;\n",
-  "                (pmcr & NPU_PMCR_CNT_EN_MSK) ? 1U : 0U;\n"
-  "            if (cfg.mode == INSTRUMENTATION_EVENTS) {\n"
-  "                /* Tier B: event selects under cnt_en=1. Slots are already armed;\n"
-  "                 * until each select lands the slot counts no_event, i.e. nothing. */\n"
-  "                for (i = 0; i < cfg.event_count; i++) {\n"
-  "                    pmu_reg_write(NPU_REG_PMEVTYPER_BASE + 4U * i, cfg.event_codes[i] & 0x3FFU);\n"
-  "                }\n"
-  "                /* Arm the event slots under cnt_en=1 too (boot 7: armed under cnt_en=0\n"
-  "                 * alongside the cycle bit, the cycle counted and the slots did not).\n"
-  "                 * The cycle bit rides in the same write, so a replace-style PMCNTENSET\n"
-  "                 * cannot disarm it. */\n"
-  "                pmu_reg_write(NPU_REG_PMCNTENSET,\n"
-  "                              NPU_PMU_PMCNTEN_CYCLE_MASK | ((1U << cfg.event_count) - 1U));\n"
-  "                __DSB();\n"
-  "            }\n"),
  # 7. readout block: widen
  ("        if (cfg.mode == INSTRUMENTATION_END_ONLY) {\n            /* Order matters and is not negotiable:",
   "        if (cfg.mode == INSTRUMENTATION_END_ONLY || cfg.mode == INSTRUMENTATION_EVENTS) {\n            /* Order matters and is not negotiable:"),
@@ -85,6 +109,19 @@ EDITS = [
   "                r.applied_event_count = 0U;\n"
   "                r.read_seam_fired     = 0U;\n"
   "            }\n"),
+ # 8b. guard wait, after read_timestamp() so both timestamp helpers are visible
+ ("static uint32_t read_timestamp(void)\n",
+  "static uint32_t timestamp_source_ready(void);\n"
+  "static uint32_t read_timestamp(void);\n"
+  "/* Tier B: bounded busy-wait, copied from pmu_diag_wait_cycles(). */\n"
+  "static void pmu_events_wait_cycles(uint32_t cycles)\n{\n"
+  "    if (timestamp_source_ready()) {\n"
+  "        const uint32_t start = read_timestamp();\n"
+  "        while ((read_timestamp() - start) < cycles) {\n        }\n"
+  "    } else {\n"
+  "        for (volatile uint32_t n = 0U; n < cycles; n++) {\n        }\n"
+  "    }\n}\n"
+  "static uint32_t read_timestamp(void)\n"),
  # 9. seam storage, next to the window flag
  ("volatile uint32_t measurement_active;\n",
   "volatile uint32_t measurement_active;\n"
