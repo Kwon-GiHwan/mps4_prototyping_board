@@ -24,33 +24,37 @@ EDITS = [
  # 4. advertise the mode
  ("(1U << INSTRUMENTATION_OFF) | (1U << INSTRUMENTATION_END_ONLY)",
   "(1U << INSTRUMENTATION_OFF) | (1U << INSTRUMENTATION_END_ONLY) | (1U << INSTRUMENTATION_EVENTS)"),
- # 5. programming block: widen + program event slots after the cycle counter is armed
+ # 5. programming block: widen the header only
  ("        if (cfg.mode == INSTRUMENTATION_END_ONLY) {\n            uint32_t cnten;\n",
   "        if (cfg.mode == INSTRUMENTATION_END_ONLY || cfg.mode == INSTRUMENTATION_EVENTS) {\n            uint32_t cnten;\n"),
- ("            cnten = pmu_reg_read(NPU_REG_PMCNTENSET);\n",
+ # 5b. arming: the base's ONE PMCNTENSET write, with the event bits carried in the same
+ #     write for EVENTS. Reset pulse stays the base's (under cnt_en=0). No PMCR write of ours:
+ #     boot 6 showed a PMCR write of the reset bits under cnt_en=1 leaves cnt_en=0 and the
+ #     base's RMW enable cannot re-set it within the run.
+ ("            pmu_reg_write(NPU_REG_PMCNTENSET, NPU_PMU_PMCNTEN_CYCLE_MASK);\n",
   "            if (cfg.mode == INSTRUMENTATION_EVENTS) {\n"
-  "                /* Tier B. TRM: PMU writes other than PMCR.cnt_en are not\n"
-  "                 * guaranteed to take effect unless cnt_en=1. Boot 5 showed exactly\n"
-  "                 * that: slots and enables written under cnt_en=0 counted nothing\n"
-  "                 * (66/66 runs, 0 cycles, 0 events). So: enable FIRST, then select\n"
-  "                 * and arm in ONE PMCNTENSET write that carries the cycle bit, then\n"
-  "                 * pulse both reset bits so every counter starts from 0 together.\n"
-  "                 * The window therefore includes this programming; the cycle event\n"
-  "                 * and PMCCNTR share the reset, which is what the +/-1 % check needs. */\n"
-  "                npu_pmu_enable();\n"
+  "                /* Tier B: arm cycle + event slots in the SAME single write the base\n"
+  "                 * makes (boot 5: a second write of the event bits alone read back\n"
+  "                 * without the cycle bit). Selects are written after enable, below. */\n"
+  "                pmu_reg_write(NPU_REG_PMCNTENSET,\n"
+  "                              NPU_PMU_PMCNTEN_CYCLE_MASK | ((1U << cfg.event_count) - 1U));\n"
+  "            } else {\n"
+  "                pmu_reg_write(NPU_REG_PMCNTENSET, NPU_PMU_PMCNTEN_CYCLE_MASK);\n"
+  "            }\n"),
+ # 6. enable block: widen, and select the events AFTER cnt_en=1 is verified (TRM: PMU writes
+ #    other than PMCR.cnt_en are not guaranteed to take effect unless cnt_en=1).
+ ("        if (cfg.mode == INSTRUMENTATION_END_ONLY) {\n            uint32_t pmcr;\n",
+  "        if (cfg.mode == INSTRUMENTATION_END_ONLY || cfg.mode == INSTRUMENTATION_EVENTS) {\n            uint32_t pmcr;\n"),
+ ("                (pmcr & NPU_PMCR_CNT_EN_MSK) ? 1U : 0U;\n",
+  "                (pmcr & NPU_PMCR_CNT_EN_MSK) ? 1U : 0U;\n"
+  "            if (cfg.mode == INSTRUMENTATION_EVENTS) {\n"
+  "                /* Tier B: event selects under cnt_en=1. Slots are already armed;\n"
+  "                 * until each select lands the slot counts no_event, i.e. nothing. */\n"
   "                for (i = 0; i < cfg.event_count; i++) {\n"
   "                    pmu_reg_write(NPU_REG_PMEVTYPER_BASE + 4U * i, cfg.event_codes[i] & 0x3FFU);\n"
   "                }\n"
-  "                pmu_reg_write(NPU_REG_PMCNTENSET,\n"
-  "                              NPU_PMU_PMCNTEN_CYCLE_MASK | ((1U << cfg.event_count) - 1U));\n"
-  "                pmu_reg_write(NPU_REG_PMCR, pmu_reg_read(NPU_REG_PMCR)\n"
-  "                              | NPU_PMCR_CYCLE_CNT_RST_MSK | NPU_PMCR_EVENT_CNT_RST_MSK);\n"
   "                __DSB();\n"
-  "            }\n"
-  "            cnten = pmu_reg_read(NPU_REG_PMCNTENSET);\n"),
- # 6. enable block: widen
- ("        if (cfg.mode == INSTRUMENTATION_END_ONLY) {\n            uint32_t pmcr;\n",
-  "        if (cfg.mode == INSTRUMENTATION_END_ONLY || cfg.mode == INSTRUMENTATION_EVENTS) {\n            uint32_t pmcr;\n"),
+  "            }\n"),
  # 7. readout block: widen
  ("        if (cfg.mode == INSTRUMENTATION_END_ONLY) {\n            /* Order matters and is not negotiable:",
   "        if (cfg.mode == INSTRUMENTATION_END_ONLY || cfg.mode == INSTRUMENTATION_EVENTS) {\n            /* Order matters and is not negotiable:"),
