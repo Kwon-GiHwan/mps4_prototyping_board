@@ -176,6 +176,7 @@ class Measurement:
     fields: tuple
     trailing_words: int  # present but not understood by this host version
     pmu: dict | None = None
+    trailing: tuple = ()  # trailing record words themselves, for images that append fields
 
     def required_flags_ok(self) -> bool:
         return (self.valid_flags & RUN_VALID_REQUIRED_MASK) == RUN_VALID_REQUIRED_MASK
