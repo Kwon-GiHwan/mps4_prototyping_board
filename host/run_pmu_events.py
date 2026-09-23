@@ -71,11 +71,13 @@ def main():
                 m = link.last_measurement
                 if m is None or m.pmu is None: raise E.fail_rule("RULE_RECORD_SCHEMA", "no PMU block in record")
                 if m.pmu["record_schema_version"] != 1: raise E.fail_rule("RULE_RECORD_SCHEMA", str(m.pmu["record_schema_version"]))
-                r = dict(run_rc=rc, required_flags_ok=m.required_flags_ok(), pmu=m.pmu)
+                seam = m.trailing[0] if len(m.trailing) >= 1 else None   # amendment 7: field 103
+                r = dict(run_rc=rc, required_flags_ok=m.required_flags_ok(), pmu=m.pmu, seam_fired=seam)
                 ok, failed = E.run_validity(r, codes)
                 if "codes_echo" in failed and ok is False and m.pmu["event_valid_mask"] == (1 << len(codes)) - 1:
                     raise E.fail_rule("RULE_CODES_ECHO", f"set {set_id}: {m.pmu['event_codes'][:len(codes)]} != {codes}")
-                raw.append({"set_id": set_id, "rep": rep, "rc": rc, "valid_flags": m.valid_flags, "pmu": m.pmu})
+                raw.append({"set_id": set_id, "rep": rep, "rc": rc, "valid_flags": m.valid_flags, "pmu": m.pmu,
+                            "seam_fired": seam, "trailing": list(m.trailing)})
                 for slot, ev in enumerate(codes):
                     rows.append(dict(set_id=set_id, rep=rep, slot=slot, ev_type=ev, name=names[ev], in_trm110=ev in trm,
                                      event_value=m.pmu["event_values"][slot] if ok else None,

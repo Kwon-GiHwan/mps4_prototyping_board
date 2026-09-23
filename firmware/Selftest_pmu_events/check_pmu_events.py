@@ -17,8 +17,10 @@ address literal (which the accessor design never emits), is the observable.
 import argparse, re, sys
 
 RULES = ("RULE_INFERENCE_LINKED", "RULE_PMEVTYPER_LOOP_STORE", "RULE_PMEVCNTR_LOOP_LOAD",
-         "RULE_BUILD_ID", "RULE_MAIN_PRESENT", "RULE_GEN_MODE2")
-_REG_ADD = re.compile(r"\badds?(?:\.w)?\s+r0,\s*r\d+,\s*r\d+")
+         "RULE_BUILD_ID", "RULE_MAIN_PRESENT", "RULE_GEN_MODE2", "RULE_SEAM_HOOK")
+SEAM_FMT = '"Testing CPM signals\\n"'   # as it appears in C source
+_R0_IMM = re.compile(r"\b(?:movs?|movw|mov\.w)\s+r0,\s*#|\bldr\s+r0,\s*\[pc")   # constant offset
+_R0_WRITE = re.compile(r"\b(?:movs?|movw|mov\.w|adds?|add\.w|subs?|sub\.w|ldr(?:\.w)?|orr|and|lsl)s?\s+r0,")
 
 
 class GateFail(Exception):
@@ -29,16 +31,20 @@ def _lits(t): return {int(m.group(1), 16) for m in re.finditer(r"\b(?:0x)?([0-9a
 
 
 def _register_offset_call(objdump_text, callee):
-    """True if some `bl <callee>` has an `r0 = rN + rM` add between it and the
-    previous bl -- i.e. the offset operand of THIS call is register-computed."""
+    """True if some `bl <callee>` takes an offset that is NOT a constant: the last
+    instruction writing r0 between the previous bl and this bl is a register move /
+    add (loop-carried), not an immediate or a pc-relative literal load. Every
+    base-runner call site passes an immediate (movw r0, #0x1184 ...)."""
     lines = objdump_text.split("\n")
     for i, l in enumerate(lines):
         if not re.search(r"\bbl\s+[0-9a-f]+\s+<" + callee + r">", l):
             continue
         j = i - 1
         while j >= 0 and not re.search(r"\bbl\s", lines[j]):
-            if _REG_ADD.search(lines[j]):
-                return True
+            if _R0_WRITE.search(lines[j]):
+                if not _R0_IMM.search(lines[j]):
+                    return True
+                break
             j -= 1
     return False
 
@@ -57,6 +63,9 @@ def check(objdump_text, nm_text, gen_text, build_id):
     if "#define INSTRUMENTATION_EVENTS    2U" not in gen_text or \
        "count != 0U && mode != INSTRUMENTATION_EVENTS" not in gen_text:
         raise GateFail(RULES[5], "generated source lacks mode 2 or dropped END_ONLY's count refusal")
+    wrap = gen_text[gen_text.find("int __wrap_printf(const char *fmt, ...)"):]
+    if SEAM_FMT not in wrap or not re.search(r"\b[Tt] __wrap_printf\b", nm_text):
+        raise GateFail(RULES[6], "read seam absent: __wrap_printf lacks the CPM format or is not linked")
     return True
 
 
@@ -69,7 +78,7 @@ def main(argv=None):
         check(open(a.objdump).read(), open(a.nm).read(), open(a.gen).read(), a.build_id)
     except GateFail as e:
         print(f"GATE FAIL {e}"); return 1
-    print("GATE OK: inference linked, slot program+read loops present, mode 2 present, END_ONLY refusal kept"); return 0
+    print("GATE OK: inference linked, slot program+read loops present, mode 2 present, END_ONLY refusal kept, CPM read seam present"); return 0
 
 
 if __name__ == "__main__":
