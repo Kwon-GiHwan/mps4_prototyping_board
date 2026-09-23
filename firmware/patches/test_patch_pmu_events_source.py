@@ -16,7 +16,7 @@ class T(unittest.TestCase):
     def test_generated_carries_mode_2(self):
         g = P.generate(BASE)
         self.assertIn("#define INSTRUMENTATION_EVENTS    2U", g)
-        self.assertEqual(g.count("cfg.mode == INSTRUMENTATION_EVENTS"), 6)   # widen x3 (5,6,7) + inner if x2 (6b,8) + seam (11)
+        self.assertEqual(g.count("cfg.mode == INSTRUMENTATION_EVENTS"), 6)   # widen x3 (5,6,7) + inner if x2 (5b,8) + seam (11)
         self.assertIn("NPU_REG_PMEVTYPER_BASE + 4U * i", g)
         self.assertIn("NPU_REG_PMEVCNTR_BASE + 4U * k", g)   # read in the seam (amendment 7)
         self.assertIn("(1U << INSTRUMENTATION_EVENTS)", g)
@@ -25,15 +25,22 @@ class T(unittest.TestCase):
         # arming is ONE write carrying the cycle bit; no bare event-bits write; no PMCR write of ours
         self.assertIn("NPU_PMU_PMCNTEN_CYCLE_MASK | ((1U << cfg.event_count) - 1U)", g)
         self.assertNotIn("pmu_reg_write(NPU_REG_PMCNTENSET, (1U << cfg.event_count) - 1U)", g)
-        self.assertEqual(g.count("NPU_PMCR_CYCLE_CNT_RST_MSK"), BASE.count("NPU_PMCR_CYCLE_CNT_RST_MSK"))
+        # amendment 8: exactly one extra reset-bit write, the held-power PMCR = EN|RST of the diag sequence
+        self.assertEqual(g.count("NPU_PMCR_CYCLE_CNT_RST_MSK"), BASE.count("NPU_PMCR_CYCLE_CNT_RST_MSK") + 1)
         # ordering: arming (programming block) < cnt_en verified < event selects < run_fixed_inference
-        # base arming line untouched; event arming happens after cnt_en verified and after the selects
+        # amendment 8: EVENTS programming = hold(CMD=0) < guard < PMCR EN|RST < guard < arm < selects
+        #               < base enable/verify < run; END_ONLY's own three lines survive in the else branch
+        blk = g[g.index("/* Tier B (amendment 8)."):g.index("run_rc = run_fixed_inference();")]
+        order = ["npu_write(NPU_OFF_CMD, 0U);", "pmu_events_wait_cycles(PMU_EVENTS_POWER_GUARD_CYCLES);",
+                 "NPU_PMCR_CNT_EN_MSK | NPU_PMCR_EVENT_CNT_RST_MSK", "pmu_events_wait_cycles(PMU_EVENTS_RESET_GUARD_CYCLES);",
+                 "NPU_PMU_PMCNTEN_CYCLE_MASK | ((1U << cfg.event_count) - 1U)", "NPU_REG_PMEVTYPER_BASE + 4U * i",
+                 "r.cycle_global_enable_verified ="]
+        idx = [blk.index(x) for x in order]
+        self.assertEqual(idx, sorted(idx))
         self.assertEqual(g.count("pmu_reg_write(NPU_REG_PMCNTENSET, NPU_PMU_PMCNTEN_CYCLE_MASK);"), 1)
-        i_ver = g.index("r.cycle_global_enable_verified =")
-        i_sel = g.index("NPU_REG_PMEVTYPER_BASE + 4U * i")
-        i_arm = g.index("NPU_PMU_PMCNTEN_CYCLE_MASK | ((1U << cfg.event_count) - 1U)")
-        i_run = g.index("run_rc = run_fixed_inference();")
-        self.assertTrue(i_ver < i_sel < i_arm < i_run)
+        self.assertEqual(g.count("NPU_PMU_PMCNTEN_CYCLE_MASK | ((1U << cfg.event_count) - 1U)"), 1)  # armed once
+        self.assertIn("#define NPU_OFF_CMD 0x08U", g)
+        self.assertEqual(g.count("#define PMU_EVENTS_POWER_GUARD_CYCLES 65536U"), 1)
         # amendment 7: seam storage, seam hook in __wrap_printf, snapshot copied into the record,
         # one appended record word and the field count bumped exactly once
         self.assertIn('strcmp(fmt, "Testing CPM signals\\n") == 0', g)
