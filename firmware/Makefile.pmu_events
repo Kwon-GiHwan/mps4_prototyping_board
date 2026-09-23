@@ -1,0 +1,101 @@
+# Tier B: EVENTS-mode runner, generated from the frozen base by
+# patches/patch_pmu_events_source.py. Contract:
+#   docs/superpowers/specs/2026-09-23-pmu-events-tier-b-contract.md
+# Build shape is Makefile.pmu PROFILE=clean; the base main is filtered out and
+# the generated main compiled in its place. The base file is never edited.
+
+TOOLCHAIN := /opt/arm/gcc-arm-none-eabi/bin/arm-none-eabi-
+CC        := $(TOOLCHAIN)gcc
+OBJCOPY   := $(TOOLCHAIN)objcopy
+OBJDUMP   := $(TOOLCHAIN)objdump
+SIZE      := $(TOOLCHAIN)size
+NM        := $(TOOLCHAIN)nm
+CMSIS_INC := /opt/arm/ml-embedded-evaluation-kit/dependencies/cmsis-6/CMSIS/Core/Include
+
+BUILD    := build_pmu_events
+GEN      := $(BUILD)/generated
+TARGET   := $(BUILD)/runner_pmu_events
+BUILD_ID := 0x504D4556
+PROFILE  := clean
+PROFILE_CFLAGS := -DMEASUREMENT_BUILD
+
+BASE_MAIN := Selftest_pmu/runner_pmu_main.c
+PATCHER   := patches/patch_pmu_events_source.py
+GEN_MAIN  := $(GEN)/Selftest_pmu/runner_pmu_main.c
+GATE      := Selftest_pmu_events/check_pmu_events.py
+DENYLIST_CHECK := Selftest_measure/check_measure_symbols.py
+
+SRCDIRS := Device_SSE-320 Drivers Selftest Selftest_cli Selftest_pmu Serial Sleep Tests
+SRCS    := $(shell find $(SRCDIRS) -name '*.c' -not -name '._*')
+SRCS    := $(filter-out Selftest/retarget.c Selftest/main.c Selftest/raw_rx_main.c \
+                        Selftest/runner_v1_main.c $(BASE_MAIN),$(SRCS))
+SRCS    := $(sort $(SRCS))
+OBJS    := $(patsubst %.c,$(BUILD)/%.o,$(SRCS)) $(GEN_MAIN:.c=.o)
+DEPS    := $(OBJS:.o=.d)
+
+INCDIRS := $(sort $(dir $(shell find $(SRCDIRS) LinkScripts -name '*.h' -not -name '._*')))
+INCS    := $(addprefix -I,$(INCDIRS)) -I$(CMSIS_INC)
+
+ARCHFLAGS := -mcpu=cortex-m85+nomve+nofp -mthumb -mfloat-abi=soft
+LEGACY_C  := -Wno-error=int-conversion -Wno-error=incompatible-pointer-types \
+             -Wno-error=implicit-function-declaration -Wno-error=implicit-int \
+             -Wno-error=return-mismatch -Wno-error=discarded-qualifiers
+CFLAGS := $(ARCHFLAGS) -std=gnu11 -O1 -g3 -ffunction-sections -fdata-sections \
+          -fno-builtin-printf -Wno-unused-variable -Wno-unused-function \
+          -Wno-missing-braces $(LEGACY_C) $(PROFILE_CFLAGS) \
+          -DRUNNER_FIRMWARE_BUILD_ID=$(BUILD_ID) $(INCS) -MMD -MP
+
+WRAP_SYMS := printf vprintf fprintf vfprintf puts putchar fwrite _write _write_r fputc serial_print
+WRAPFLAGS := $(foreach s,$(WRAP_SYMS),-Wl,--wrap=$(s))
+LDSCRIPT  := $(BUILD)/lnk.ld
+LDOVERLAY := LinkScripts/lnk.measure.overlay.ld
+LDFLAGS   := $(ARCHFLAGS) --specs=nano.specs --specs=nosys.specs -T $(LDSCRIPT) -T $(LDOVERLAY) \
+             -Wl,-Map=$(TARGET).map,--cref -Wl,--gc-sections -Wl,--print-memory-usage $(WRAPFLAGS)
+LDLIBS    := -lm
+
+VECTOR_SECTIONS := --only-section=.vectors_rom
+APP_SECTIONS    := --only-section=.text --only-section=.ARM.extab --only-section=.ARM.exidx \
+                   --only-section=.preinit_array --only-section=.init_array --only-section=.fini_array \
+                   --only-section=.copy.table --only-section=.zero.table --only-section=.vectors_ram --only-section=.data
+DDR_SECTIONS    := --only-section=.ddr
+
+.PHONY: all clean bins check hashes gen
+all: bins check
+
+gen $(GEN_MAIN): $(BASE_MAIN) $(PATCHER)
+	python3 $(PATCHER) --base $(BASE_MAIN) --out $(GEN_MAIN)
+
+$(LDSCRIPT): LinkScripts/lnk.ld.S LinkScripts/region_defs.h LinkScripts/region_limits.h
+	@mkdir -p $(dir $@)
+	$(CC) -E -P -x c -ILinkScripts $< -o $@
+
+$(BUILD)/%.o: %.c
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(GEN_MAIN:.c=.o): $(GEN_MAIN)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(TARGET).elf: $(OBJS) $(LDSCRIPT) $(LDOVERLAY)
+	$(CC) $(OBJS) $(LDFLAGS) -o $@ $(LDLIBS)
+	$(SIZE) $@
+
+bins: $(TARGET).elf
+	$(OBJCOPY) -O binary $(VECTOR_SECTIONS) $(TARGET).elf $(BUILD)/VECTORS.BIN
+	$(OBJCOPY) -O binary $(APP_SECTIONS)    $(TARGET).elf $(BUILD)/APP.BIN
+	$(OBJCOPY) -O binary $(DDR_SECTIONS)    $(TARGET).elf $(BUILD)/DDR.BIN
+	@ls -l $(BUILD)/VECTORS.BIN $(BUILD)/APP.BIN $(BUILD)/DDR.BIN
+
+check: $(TARGET).elf
+	python3 $(DENYLIST_CHECK) --elf $(TARGET).elf --map $(TARGET).map --objdump $(OBJDUMP) --nm $(NM) --profile $(PROFILE)
+	$(OBJDUMP) -d $(TARGET).elf > $(TARGET).objdump
+	$(NM) $(TARGET).elf > $(TARGET).nm
+	python3 $(GATE) --objdump $(TARGET).objdump --nm $(TARGET).nm --gen $(GEN_MAIN) --build-id $(BUILD_ID)
+
+hashes: bins
+	@sha256sum $(BUILD)/APP.BIN $(BUILD)/DDR.BIN $(BUILD)/VECTORS.BIN
+
+clean:
+	rm -rf $(BUILD)
+
+-include $(DEPS)
