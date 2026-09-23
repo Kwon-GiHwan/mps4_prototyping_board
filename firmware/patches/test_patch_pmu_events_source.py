@@ -18,6 +18,15 @@ class T(unittest.TestCase):
         self.assertIn("#define INSTRUMENTATION_EVENTS    2U", g)
         self.assertEqual(g.count("cfg.mode == INSTRUMENTATION_EVENTS"), 5)   # widen x3 (edits 5,6,7) + inner if x2 (5b, 8)
         self.assertIn("NPU_REG_PMEVTYPER_BASE + 4U * i", g)
+        # the event-slot arming must never be a bare write that can drop the cycle bit
+        self.assertIn("NPU_PMU_PMCNTEN_CYCLE_MASK | ((1U << cfg.event_count) - 1U)", g)
+        self.assertNotIn("pmu_reg_write(NPU_REG_PMCNTENSET, (1U << cfg.event_count) - 1U)", g)
+        # TRM guarantee clause: programming happens under cnt_en=1, i.e. enable precedes
+        # the PMEVTYPER writes inside the EVENTS block, and a reset pulse follows arming.
+        blk = g[g.index("/* Tier B. TRM:"):g.index("cnten = pmu_reg_read(NPU_REG_PMCNTENSET);")]
+        self.assertLess(blk.index("npu_pmu_enable();"), blk.index("NPU_REG_PMEVTYPER_BASE + 4U * i"))
+        self.assertLess(blk.index("NPU_PMU_PMCNTEN_CYCLE_MASK | ((1U << cfg.event_count) - 1U)"),
+                        blk.index("NPU_PMCR_CYCLE_CNT_RST_MSK | NPU_PMCR_EVENT_CNT_RST_MSK"))
         self.assertIn("NPU_REG_PMEVCNTR_BASE + 4U * i", g)
         self.assertIn("(1U << INSTRUMENTATION_EVENTS)", g)
         # END_ONLY still refuses count != 0 and still arms no slots
