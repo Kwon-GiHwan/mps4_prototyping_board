@@ -29,11 +29,23 @@ EDITS = [
   "        if (cfg.mode == INSTRUMENTATION_END_ONLY || cfg.mode == INSTRUMENTATION_EVENTS) {\n            uint32_t cnten;\n"),
  ("            cnten = pmu_reg_read(NPU_REG_PMCNTENSET);\n",
   "            if (cfg.mode == INSTRUMENTATION_EVENTS) {\n"
-  "                /* Tier B: select and arm cfg.event_count slots. */\n"
+  "                /* Tier B. TRM: PMU writes other than PMCR.cnt_en are not\n"
+  "                 * guaranteed to take effect unless cnt_en=1. Boot 5 showed exactly\n"
+  "                 * that: slots and enables written under cnt_en=0 counted nothing\n"
+  "                 * (66/66 runs, 0 cycles, 0 events). So: enable FIRST, then select\n"
+  "                 * and arm in ONE PMCNTENSET write that carries the cycle bit, then\n"
+  "                 * pulse both reset bits so every counter starts from 0 together.\n"
+  "                 * The window therefore includes this programming; the cycle event\n"
+  "                 * and PMCCNTR share the reset, which is what the +/-1 % check needs. */\n"
+  "                npu_pmu_enable();\n"
   "                for (i = 0; i < cfg.event_count; i++) {\n"
   "                    pmu_reg_write(NPU_REG_PMEVTYPER_BASE + 4U * i, cfg.event_codes[i] & 0x3FFU);\n"
   "                }\n"
-  "                pmu_reg_write(NPU_REG_PMCNTENSET, (1U << cfg.event_count) - 1U);\n"
+  "                pmu_reg_write(NPU_REG_PMCNTENSET,\n"
+  "                              NPU_PMU_PMCNTEN_CYCLE_MASK | ((1U << cfg.event_count) - 1U));\n"
+  "                pmu_reg_write(NPU_REG_PMCR, pmu_reg_read(NPU_REG_PMCR)\n"
+  "                              | NPU_PMCR_CYCLE_CNT_RST_MSK | NPU_PMCR_EVENT_CNT_RST_MSK);\n"
+  "                __DSB();\n"
   "            }\n"
   "            cnten = pmu_reg_read(NPU_REG_PMCNTENSET);\n"),
  # 6. enable block: widen
