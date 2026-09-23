@@ -737,6 +737,45 @@ sha256 `79aa695a7a35cabfdda83856661ceabb1169d2ece1e08b86c48d2fadd0f09ece` 로 �
 
 ---
 
+## 8. 보드 실측 (2026-09-23, FI101 / Ethos-U85 1024)
+
+승인: 프로젝트 소유자 구두(2026-09-23). 자격증명 미취급. 증거: `evidence/pmu_evsweep/boot1/`, `evidence/pmu_events/boot9/`
+(항목별 표 `PER_EVENT.md`, 조인 `tiers_joined.csv`, 원시 `raw_runs.json`, `POST_HOC.md`). 계약: `docs/superpowers/specs/2026-09-23-pmu-*`.
+
+### Tier A — 수용 (readback), 부팅 1
+
+`EV_TYPE` 0..1023 전수, 슬롯 8개, `cnt_en` 0/1 두 패스: **1024/1024 `ACCEPTED`**, 8슬롯 동일, P0==P1.
+`PMEVTYPER.EV_TYPE`은 이 실리콘에서 평범한 10비트 RW 필드다. Reserved 61개도, 어느 소스에도 없는 853개도 거부되지 않는다.
+따라서 **수용은 카운팅의 증거가 아니다.** 헤더 `CONFIG=0x2000251a` → 1024 MAC, SRAM 포트 2, EXT 포트 2, WD 4 (6절 전제 (a)(b)를 레지스터로 확인).
+
+### Tier B — 카운트, 부팅 9 (부팅 3~8은 자기 거부/INVALID로 아카이브)
+
+22세트 × 3회 = 66 RUN, 전부 9개 유효성 항 통과. 판정(닫힌 집합):
+
+| | `COUNTED_NONZERO` | `COUNTED_ZERO` | `INCONSISTENT` |
+| --- | ---: | ---: | ---: |
+| TRM-110 | 34 | 73 | 3 (`axi_latency_64/512/1024`, 0/1 경계) |
+| 드라이버 전용 Reserved-61 | **42** | 19 | 0 |
+
+- **Reserved 61개 중 42개가 실제로 센다** (`mac_stalled_by_w/_ib/_w_or_acc`, `ao_stalled_by_*`, `wd_stalled_by_wd_buf`,
+  `wd_parse_*_sc0..3`, `wd_trans_ws_sc*`, `wd_trans_wb0..3`, `*_wr_trans_completed_m/s`). "TRM Reserved = 미사용"이 이 보드에서 반증됐다.
+- `COUNTED_ZERO`는 귀속이 없다: `ext_*` 데이터 비트 0(고정 테스트가 SRAM 영역 사용, `ext_enabled_cycles`는 >0), `ecc_*` 0, `sram2/3_*` 0 — 어느 것도 "없음/미지원"으로 격상하지 않는다.
+- 사전 등록 검사: `NPU_ACTIVE_LE_CYCLE` **PASS**, `CYCLE_EVENT_VS_PMCCNTR` **FAIL** (±1 % 비율). 서술적으로는 3회 모두 차이가 정확히 249 사이클(seam 판독 순서 지연); 판정은 바꾸지 않는다.
+
+### 측정이 성립하기까지 배제된 것 (부팅 5~8, 각각 아카이브)
+
+1. `cnt_en=0`에서 PMEVTYPER/PMCNTENSET 쓰기 → 반영 안 됨 (TRM 보장 조항 실측)
+2. `cnt_en=1`에서 `PMCR |= 리셋비트` 쓰기(전원 hold 없이) → `cnt_en`이 0으로 떨어짐
+3. 호출 후 판독 → 벤더 테스트의 `CMD=0xC`(clock/power 해제) 뒤라 항상 0 (END_ONLY도 동일 — 배포 없는 대조군으로 확인)
+4. seam 판독으로 옮겨도 0 → 프로그래밍이 NPU clock/power request 밖에서 이뤄졌기 때문
+5. **해결**: `CMD=0`(hold) → guard → `PMCR=EN|RST` → guard → arming+선택 → 호출 → CPM seam 판독. 2026-08-08/09 진단 캠페인이 이미 명명한 원인.
+
+### 이 절이 말하지 않는 것
+
+값의 크기·비율·성능 해석 일절 없음. 한 워크로드(고정 U85 Convolution), 한 부팅, 3회 반복. `INCONSISTENT` 3개와 249 오프셋은 후속 계약의 주제이지 이 기록의 결론이 아니다.
+
+---
+
 ## 검증 수준
 
 ```
@@ -751,8 +790,8 @@ sha256 `79aa695a7a35cabfdda83856661ceabb1169d2ece1e08b86c48d2fadd0f09ece` 로 �
   - 102685 /versions, /revisions 조회 → 공개 버전 단일(r0p0, 0000-05) 확인
   - S7 FI101 토픽 본문 추출, S8 드라이버 3개 파일 다운로드 및 grep
 
-실행하지 않은 것:
-  - MPS4 보드 실행, PMU 카운터 실측, 빌드, 펌웨어 수정 — 일절 없음
+실행하지 않은 것 (1~7절 기준; 8절은 별도 검증 수준을 가진다):
+  - 1~7절 작성 시점에는 보드 실행·PMU 실측·빌드·펌웨어 수정 없음 (8절이 그 뒤의 실측 기록)
   - 110개 중 어느 이벤트가 FI101 실물에서 유효한 값을 내는지 — 미검증
   - sram2_*/sram3_* 의 실제 거동 — 파생 추론일 뿐
   - [RSV] 5개 이벤트를 하드웨어에 써 넣었을 때의 거동 — 미검증
