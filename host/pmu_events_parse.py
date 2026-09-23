@@ -11,7 +11,7 @@ REPEATS = 3
 VERDICTS = ("COUNTED_NONZERO", "COUNTED_ZERO", "INCONSISTENT", "NOT_OBSERVED")
 RULES = ("RULE_PING", "RULE_CAPABILITY", "RULE_MODE_NACK", "RULE_RUN_TRANSPORT",
          "RULE_RECORD_SCHEMA", "RULE_CODES_ECHO", "RULE_SET_COVERAGE")
-VALIDITY_TERMS = ("rc_zero", "required_flags_ok", "cycle_valid", "mode_applied_2",
+VALIDITY_TERMS = ("rc_zero", "required_flags_ok", "cycle_valid", "cycle_progress", "mode_applied_2",
                   "applied_count", "valid_mask_full", "codes_echo")
 
 
@@ -46,6 +46,7 @@ def run_validity(rec, codes):
         "rc_zero": rec["run_rc"] == 0,
         "required_flags_ok": bool(rec["required_flags_ok"]),
         "cycle_valid": p["npu_pmu_cycle_valid"] == 1,
+        "cycle_progress": p.get("cycle_progress_observed", 0) == 1,   # amendment 6: a 0 window carries no count
         "mode_applied_2": p["instrumentation_mode_applied"] == INSTRUMENTATION_EVENTS,
         "applied_count": p["applied_event_count"] == n,
         "valid_mask_full": p["event_valid_mask"] == (1 << n) - 1,
