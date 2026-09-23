@@ -1,0 +1,19 @@
+REFUSED RULE_PING: counters not zero on fresh boot: {'rx_bytes': 20, 'tx_bytes': 0, 'rx_overrun': 0, 'bad_magic': 0, 'bad_version': 0, 'bad_crc': 0, 'length_error': 0, 'sequence_error': 0, 'parser_resync': 0}
+{
+ "runs": 0,
+ "coverage": "RULE_SET_COVERAGE: covered 0/171",
+ "consistency": {
+  "CYCLE_EVENT_VS_PMCCNTR": "UNPROVEN",
+  "NPU_ACTIVE_LE_CYCLE": "UNPROVEN"
+ },
+ "verdict_counts": {
+  "COUNTED_NONZERO": 0,
+  "COUNTED_ZERO": 0,
+  "INCONSISTENT": 0,
+  "NOT_OBSERVED": 0
+ },
+ "refusal": {
+  "rule": "RULE_PING",
+  "msg": "RULE_PING: counters not zero on fresh boot: {'rx_bytes': 20, 'tx_bytes': 0, 'rx_overrun': 0, 'bad_magic': 0, 'bad_version': 0, 'bad_crc': 0, 'length_error': 0, 'sequence_error': 0, 'parser_resync': 0}"
+ }
+}
