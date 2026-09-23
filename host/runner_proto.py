@@ -223,6 +223,7 @@ def parse_measurement_payload(payload: bytes) -> Measurement:
         # distinguishable from one that measured zeros.
         pmu=(decode_pmu_block(body[RME_KNOWN_FIELDS_V1:])
              if total_words >= RME_PMU_TOTAL_WORDS else None),
+        trailing=tuple(body[RME_KNOWN_FIELDS_V1 + RME_PMU_FIELDS_V1:]),
     )
     return m
 
