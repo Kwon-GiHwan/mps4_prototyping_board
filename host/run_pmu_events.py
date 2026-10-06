@@ -110,7 +110,8 @@ def main():
                             "vendor_rc": (m.trailing[1] if len(m.trailing) >= 2 else None),
                             "base_fields": list(m.fields),
                             "seam_npu_status": (m.trailing[2] if len(m.trailing) >= 3 else None),
-                            "seam_npu_qread": (m.trailing[3] if len(m.trailing) >= 4 else None)})
+                            "seam_npu_qread": (m.trailing[3] if len(m.trailing) >= 4 else None),
+                            "ofm_mismatch": (list(m.trailing[4:7]) if len(m.trailing) >= 7 else None)})
                 for slot, ev in enumerate(codes):
                     rows.append(dict(set_id=set_id, rep=rep, slot=slot, ev_type=ev, name=names[ev], in_trm110=ev in trm,
                                      event_value=m.pmu["event_values"][slot] if ok else None,
@@ -121,7 +122,8 @@ def main():
                                      golden_crc=(f"0x{golden_crc:08x}" if isinstance(golden_crc, int) else golden_crc), **prov))
                 vrc = m.trailing[1] if len(m.trailing) >= 2 else None
                 st = (hex(m.trailing[2]), m.trailing[3]) if len(m.trailing) >= 4 else None
-                print(f"set {set_id:2d} rep {rep} rc={rc} vendor_rc={vrc} seam_status/qread={st} valid={ok} {failed or ''}", flush=True)
+                mm = tuple(m.trailing[4:7]) if len(m.trailing) >= 7 else None
+                print(f"set {set_id:2d} rep {rep} rc={rc} vendor_rc={vrc} seam_status/qread={st} ofm_mismatch(count,maxdiff,first)={mm} valid={ok} {failed or ''}", flush=True)
     except E.Refusal as e:
         refusal = {"rule": E.refusal_rule(e), "msg": str(e)}; print(f"REFUSED {e}")
     finally:
