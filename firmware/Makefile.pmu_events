@@ -12,10 +12,19 @@ SIZE      := $(TOOLCHAIN)size
 NM        := $(TOOLCHAIN)nm
 CMSIS_INC := /opt/arm/ml-embedded-evaluation-kit/dependencies/cmsis-6/CMSIS/Core/Include
 
-BUILD    := build_pmu_events
+EXT ?= 0
+ifeq ($(EXT),1)
+  # Tier C step 0: vendor's own USE_AXI_EXT switch, on u85.o only (source unedited).
+  BUILD    := build_pmu_events_ext
+  BUILD_ID := 0x504D4558
+  GATE_EXT := --expect-ext
+else
+  BUILD    := build_pmu_events
+  BUILD_ID := 0x504D4556
+  GATE_EXT :=
+endif
 GEN      := $(BUILD)/generated
 TARGET   := $(BUILD)/runner_pmu_events
-BUILD_ID := 0x504D4556
 PROFILE  := clean
 PROFILE_CFLAGS := -DMEASUREMENT_BUILD
 
@@ -73,6 +82,10 @@ $(BUILD)/%.o: %.c
 	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -c $< -o $@
 
+ifeq ($(EXT),1)
+$(BUILD)/Drivers/u85_driver/u85.o: CFLAGS += -DUSE_AXI_EXT=1
+endif
+
 $(GEN_MAIN:.c=.o): $(GEN_MAIN)
 	$(CC) $(CFLAGS) -c $< -o $@
 
@@ -90,7 +103,7 @@ check: $(TARGET).elf
 	python3 $(DENYLIST_CHECK) --elf $(TARGET).elf --map $(TARGET).map --objdump $(OBJDUMP) --nm $(NM) --profile $(PROFILE)
 	$(OBJDUMP) -d $(TARGET).elf > $(TARGET).objdump
 	$(NM) $(TARGET).elf > $(TARGET).nm
-	python3 $(GATE) --objdump $(TARGET).objdump --nm $(TARGET).nm --gen $(GEN_MAIN) --build-id $(BUILD_ID)
+	python3 $(GATE) --objdump $(TARGET).objdump --nm $(TARGET).nm --gen $(GEN_MAIN) --build-id $(BUILD_ID) --elf $(TARGET).elf $(GATE_EXT)
 
 hashes: bins
 	@sha256sum $(BUILD)/APP.BIN $(BUILD)/DDR.BIN $(BUILD)/VECTORS.BIN

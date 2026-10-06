@@ -39,7 +39,18 @@ CASES = {
 }
 
 
+ELF_EXT = b"\x7fELF....Enabling AXI EXT port testing\n...."
+ELF_NOEXT = b"\x7fELF....Testing CPM signals\n...."
+
+
 class T(unittest.TestCase):
+    def test_ext_attr_both_directions(self):
+        self.assertTrue(g.check(OBJ, NM, GEN, BID, ELF_EXT, True))
+        self.assertTrue(g.check(OBJ, NM, GEN, BID, ELF_NOEXT, False))
+        for elf, exp in ((ELF_NOEXT, True), (ELF_EXT, False)):
+            with self.assertRaises(g.GateFail) as cm: g.check(OBJ, NM, GEN, BID, elf, exp)
+            self.assertEqual(cm.exception.rule, "RULE_EXT_ATTR")
+
     def test_green(self): self.assertTrue(g.check(OBJ, NM, GEN, BID))
 
     def test_immediate_offset_alone_is_not_programming(self):
@@ -54,6 +65,8 @@ class T(unittest.TestCase):
             with self.subTest(rule=rule):
                 with self.assertRaises(g.GateFail) as cm: g.check(*args)
                 self.assertEqual(cm.exception.rule, rule); tripped.add(cm.exception.rule)
+        try: g.check(OBJ, NM, GEN, BID, ELF_NOEXT, True)
+        except g.GateFail as e: tripped.add(e.rule)
         self.assertEqual(tripped, set(g.RULES))
 
 
