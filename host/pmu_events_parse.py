@@ -12,7 +12,7 @@ VERDICTS = ("COUNTED_NONZERO", "COUNTED_ZERO", "INCONSISTENT", "NOT_OBSERVED")
 RULES = ("RULE_PING", "RULE_CAPABILITY", "RULE_MODE_NACK", "RULE_RUN_TRANSPORT",
          "RULE_RECORD_SCHEMA", "RULE_CODES_ECHO", "RULE_SET_COVERAGE")
 VALIDITY_TERMS = ("rc_zero", "required_flags_ok", "cycle_valid", "cycle_progress", "seam_fired",
-                  "mode_applied_2", "applied_count", "valid_mask_full", "codes_echo")
+                  "mode_applied_2", "applied_count", "valid_mask_full", "codes_echo", "golden_ok")
 
 
 class Refusal(Exception):
@@ -48,6 +48,7 @@ def run_validity(rec, codes):
         "cycle_valid": p["npu_pmu_cycle_valid"] == 1,
         "cycle_progress": p.get("cycle_progress_observed", 0) == 1,   # amendment 6: a 0 window carries no count
         "seam_fired": rec.get("seam_fired") == 1,                       # amendment 7: read at the CPM seam, exactly once
+        "golden_ok": rec.get("golden_ok", True) is True,                # Tier C step 0: 256B golden window CRC (absent = not checked)
         "mode_applied_2": p["instrumentation_mode_applied"] == INSTRUMENTATION_EVENTS,
         "applied_count": p["applied_event_count"] == n,
         "valid_mask_full": p["event_valid_mask"] == (1 << n) - 1,

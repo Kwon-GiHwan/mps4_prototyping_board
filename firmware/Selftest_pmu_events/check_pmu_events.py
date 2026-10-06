@@ -17,7 +17,8 @@ address literal (which the accessor design never emits), is the observable.
 import argparse, re, sys
 
 RULES = ("RULE_INFERENCE_LINKED", "RULE_PMEVTYPER_LOOP_STORE", "RULE_PMEVCNTR_LOOP_LOAD",
-         "RULE_BUILD_ID", "RULE_MAIN_PRESENT", "RULE_GEN_MODE2", "RULE_SEAM_HOOK")
+         "RULE_BUILD_ID", "RULE_MAIN_PRESENT", "RULE_GEN_MODE2", "RULE_SEAM_HOOK", "RULE_EXT_ATTR")
+EXT_LITERAL = b"Enabling AXI EXT port testing"
 SEAM_FMT = '"Testing CPM signals\\n"'   # as it appears in C source
 _R0_IMM = re.compile(r"\b(?:movs?|movw|mov\.w)\s+r0,\s*#|\bldr\s+r0,\s*\[pc")   # constant offset
 _R0_WRITE = re.compile(r"\b(?:movs?|movw|mov\.w|adds?|add\.w|subs?|sub\.w|ldr(?:\.w)?|orr|and|lsl)s?\s+r0,")
@@ -49,7 +50,7 @@ def _register_offset_call(objdump_text, callee):
     return False
 
 
-def check(objdump_text, nm_text, gen_text, build_id):
+def check(objdump_text, nm_text, gen_text, build_id, elf_bytes=None, expect_ext=False):
     if not re.search(r"\b[Tt] apU85Conv_TEST\b", nm_text):
         raise GateFail(RULES[0], "apU85Conv_TEST not linked: this image cannot run the workload")
     if not _register_offset_call(objdump_text, "pmu_reg_write"):
@@ -66,6 +67,8 @@ def check(objdump_text, nm_text, gen_text, build_id):
     wrap = gen_text[gen_text.find("int __wrap_printf(const char *fmt, ...)"):]
     if SEAM_FMT not in wrap or not re.search(r"\b[Tt] __wrap_printf\b", nm_text):
         raise GateFail(RULES[6], "read seam absent: __wrap_printf lacks the CPM format or is not linked")
+    if elf_bytes is not None and (EXT_LITERAL in elf_bytes) != expect_ext:
+        raise GateFail(RULES[7], f"USE_AXI_EXT path {'absent' if expect_ext else 'present'} in ELF, expected the opposite")
     return True
 
 
@@ -73,12 +76,14 @@ def main(argv=None):
     ap = argparse.ArgumentParser()
     for k in ("objdump", "nm", "gen"): ap.add_argument(f"--{k}", required=True)
     ap.add_argument("--build-id", required=True, type=lambda s: int(s, 0))
+    ap.add_argument("--elf"); ap.add_argument("--expect-ext", action="store_true")
     a = ap.parse_args(argv)
     try:
-        check(open(a.objdump).read(), open(a.nm).read(), open(a.gen).read(), a.build_id)
+        check(open(a.objdump).read(), open(a.nm).read(), open(a.gen).read(), a.build_id,
+              open(a.elf, "rb").read() if a.elf else None, a.expect_ext)
     except GateFail as e:
         print(f"GATE FAIL {e}"); return 1
-    print("GATE OK: inference linked, slot program+read loops present, mode 2 present, END_ONLY refusal kept, CPM read seam present"); return 0
+    print("GATE OK: inference linked, slot program+read loops present, mode 2 present, END_ONLY refusal kept, CPM read seam present, EXT attr " + ("ON" if a.expect_ext else "OFF") + " as expected"); return 0
 
 
 if __name__ == "__main__":

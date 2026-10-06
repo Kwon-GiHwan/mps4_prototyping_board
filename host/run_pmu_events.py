@@ -8,7 +8,8 @@ import argparse, csv, datetime, json, pathlib, sys
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
 import zlib
 import pmu_events_parse as E
-from runner_proto import RunnerLink, PROTO_MEASURE_V2, Nack, ProtocolError
+from runner_proto import (RunnerLink, PROTO_MEASURE_V2, Nack, ProtocolError,
+                          GOLDEN_WINDOW_CRC, PMU_DIAG_GOLDEN_WINDOW_BASE, PMU_DIAG_GOLDEN_WINDOW_LEN)
 
 
 def prime(link):
@@ -30,10 +31,12 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", required=True); ap.add_argument("--port", default=PORT)
     ap.add_argument("--host-boot-index", type=int, required=True)
+    ap.add_argument("--build-id", default=f"0x{E.BUILD_ID_PMEV:08x}")
+    ap.add_argument("--check-golden", action="store_true", help="Tier C: GET_RESULT golden window after every RUN")
     for k in ("app", "vectors", "ddr"): ap.add_argument(f"--{k}-sha256", required=True)
     a = ap.parse_args()
     out = pathlib.Path(a.out); out.mkdir(parents=True, exist_ok=True)
-    prov = dict(PROV, app_sha256=a.app_sha256, vectors_sha256=a.vectors_sha256, ddr_sha256=a.ddr_sha256,
+    prov = dict(PROV, build_id=a.build_id, app_sha256=a.app_sha256, vectors_sha256=a.vectors_sha256, ddr_sha256=a.ddr_sha256,
                 host_boot_index=a.host_boot_index, captured_at_utc=datetime.datetime.now(datetime.timezone.utc).isoformat())
     names = E.driver_ids(); trm = E.trm_ids()
     rows, raw, refusal = [], [], None
@@ -72,19 +75,28 @@ def main():
                 if m is None or m.pmu is None: raise E.fail_rule("RULE_RECORD_SCHEMA", "no PMU block in record")
                 if m.pmu["record_schema_version"] != 1: raise E.fail_rule("RULE_RECORD_SCHEMA", str(m.pmu["record_schema_version"]))
                 seam = m.trailing[0] if len(m.trailing) >= 1 else None   # amendment 7: field 103
+                golden_crc = None
+                if a.check_golden:
+                    try:
+                        _, _, _, golden_crc = link.get_result(PMU_DIAG_GOLDEN_WINDOW_BASE, PMU_DIAG_GOLDEN_WINDOW_LEN, m.run_sequence)
+                    except (Nack, ProtocolError) as e:
+                        golden_crc = f"error: {e!r}"
                 r = dict(run_rc=rc, required_flags_ok=m.required_flags_ok(), pmu=m.pmu, seam_fired=seam)
+                if a.check_golden:
+                    r["golden_ok"] = (golden_crc == GOLDEN_WINDOW_CRC)
                 ok, failed = E.run_validity(r, codes)
                 if "codes_echo" in failed and ok is False and m.pmu["event_valid_mask"] == (1 << len(codes)) - 1:
                     raise E.fail_rule("RULE_CODES_ECHO", f"set {set_id}: {m.pmu['event_codes'][:len(codes)]} != {codes}")
                 raw.append({"set_id": set_id, "rep": rep, "rc": rc, "valid_flags": m.valid_flags, "pmu": m.pmu,
-                            "seam_fired": seam, "trailing": list(m.trailing)})
+                            "seam_fired": seam, "trailing": list(m.trailing), "golden_crc": golden_crc})
                 for slot, ev in enumerate(codes):
                     rows.append(dict(set_id=set_id, rep=rep, slot=slot, ev_type=ev, name=names[ev], in_trm110=ev in trm,
                                      event_value=m.pmu["event_values"][slot] if ok else None,
                                      event_valid=bool((m.pmu["event_valid_mask"] >> slot) & 1),
                                      event_overflow=m.pmu["event_overflow"][slot], run_rc=rc, run_valid=ok,
                                      invalid_reasons=";".join(failed), window_cycles=m.pmu["npu_pmu_window_cycles"],
-                                     cycle_valid=m.pmu["npu_pmu_cycle_valid"], valid_flags=m.valid_flags, **prov))
+                                     cycle_valid=m.pmu["npu_pmu_cycle_valid"], valid_flags=m.valid_flags,
+                                     golden_crc=(f"0x{golden_crc:08x}" if isinstance(golden_crc, int) else golden_crc), **prov))
                 print(f"set {set_id:2d} rep {rep} rc={rc} valid={ok} {failed or ''}", flush=True)
     except E.Refusal as e:
         refusal = {"rule": E.refusal_rule(e), "msg": str(e)}; print(f"REFUSED {e}")
