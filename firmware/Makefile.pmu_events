@@ -13,7 +13,14 @@ NM        := $(TOOLCHAIN)nm
 CMSIS_INC := /opt/arm/ml-embedded-evaluation-kit/dependencies/cmsis-6/CMSIS/Core/Include
 
 EXT ?= 0
-ifeq ($(EXT),1)
+DRAM ?= 0
+ifeq ($(DRAM),1)
+  # Tier C step 0b: EXT port + tensors copied to S DRAM via --wrap=test_u85.
+  EXT      := 1
+  BUILD    := build_pmu_events_extdram
+  BUILD_ID := 0x504D5844
+  GATE_EXT := --expect-ext --expect-dram
+else ifeq ($(EXT),1)
   # Tier C step 0: vendor's own USE_AXI_EXT switch, on u85.o only (source unedited).
   BUILD    := build_pmu_events_ext
   BUILD_ID := 0x504D4558
@@ -85,6 +92,10 @@ $(BUILD)/%.o: %.c
 ifeq ($(EXT),1)
 $(BUILD)/Drivers/u85_driver/u85.o: CFLAGS += -DUSE_AXI_EXT=1
 endif
+ifeq ($(DRAM),1)
+$(GEN_MAIN:.c=.o): CFLAGS += -DPMU_EVENTS_EXT_DRAM
+LDFLAGS += -Wl,--wrap=test_u85
+endif
 
 $(GEN_MAIN:.c=.o): $(GEN_MAIN)
 	$(CC) $(CFLAGS) -c $< -o $@
@@ -102,7 +113,7 @@ bins: $(TARGET).elf
 check: $(TARGET).elf
 	python3 $(DENYLIST_CHECK) --elf $(TARGET).elf --map $(TARGET).map --objdump $(OBJDUMP) --nm $(NM) --profile $(PROFILE)
 	$(OBJDUMP) -d $(TARGET).elf > $(TARGET).objdump
-	$(NM) $(TARGET).elf > $(TARGET).nm
+	$(NM) -S $(TARGET).elf > $(TARGET).nm
 	python3 $(GATE) --objdump $(TARGET).objdump --nm $(TARGET).nm --gen $(GEN_MAIN) --build-id $(BUILD_ID) --elf $(TARGET).elf $(GATE_EXT)
 
 hashes: bins
