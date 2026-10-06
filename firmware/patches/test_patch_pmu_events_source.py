@@ -51,6 +51,17 @@ class T(unittest.TestCase):
         wrap = g[g.index("int __wrap_printf(const char *fmt, ...)\n{\n    /* Tier B read seam"):]
         self.assertLess(wrap.index("npu_pmu_read_cycles"), wrap.index("seam_fired++"))
 
+    def test_step0b_wrap_is_guarded(self):
+        g = P.generate(BASE)
+        blk = g[g.index("#if defined(PMU_EVENTS_EXT_DRAM)"):g.index("static int32_t run_fixed_inference(void)")]
+        self.assertIn("int __wrap_test_u85(", blk)
+        self.assertIn("rc = __real_test_u85(", blk)
+        # poison precedes the call; copy-back follows it
+        self.assertLess(blk.index("memset(d + EXT_DRAM_OUT_OFF, 0xA5"), blk.index("rc = __real_test_u85("))
+        self.assertLess(blk.index("rc = __real_test_u85("), blk.index("memcpy(w->out_data_0"))
+        self.assertIn("__attribute__((noinline))", blk)   # measured-path root stays locatable
+        self.assertEqual(g.count("rc = (int32_t)apU85Conv_TEST(&m);"), 1)   # runner entry unchanged
+
     def test_refuses_mutated_base(self):
         with self.assertRaises(SystemExit):
             P.generate(BASE.replace("uint32_t cnten;", "uint32_t cnten2;"))

@@ -43,7 +43,20 @@ ELF_EXT = b"\x7fELF....Enabling AXI EXT port testing\n...."
 ELF_NOEXT = b"\x7fELF....Testing CPM signals\n...."
 
 
+NM_DRAM = (NM + "31000a00 00000080 T __wrap_test_u85\n90004fa0 00000600 d test3_weights\n"
+           "900006b0 00000400 d test3_in_data_0\n90020000 00000300 b test3_scratch_buffer\n")
+GEN_DRAM = GEN + "#define TEST3_WEIGHTS_SIZE 0x600U\n#define TEST3_IN_SIZE      0x400U\n#define TEST3_SCRATCH_SIZE 0x300U\n"
+
+
 class T(unittest.TestCase):
+    def test_ext_dram_rule(self):
+        self.assertTrue(g.check(OBJ, NM_DRAM, GEN_DRAM, BID, ELF_EXT, True, True))
+        for nm, gen, exp in ((NM, GEN_DRAM, True),                                    # wrap missing
+                             (NM_DRAM, GEN_DRAM, False),                              # wrap present unexpectedly
+                             (NM_DRAM, GEN_DRAM.replace("0x400U", "0x401U"), True)):  # size disagrees with nm -S
+            with self.assertRaises(g.GateFail) as cm: g.check(OBJ, nm, gen, BID, ELF_EXT, True, exp)
+            self.assertEqual(cm.exception.rule, "RULE_EXT_DRAM")
+
     def test_ext_attr_both_directions(self):
         self.assertTrue(g.check(OBJ, NM, GEN, BID, ELF_EXT, True))
         self.assertTrue(g.check(OBJ, NM, GEN, BID, ELF_NOEXT, False))
@@ -66,6 +79,8 @@ class T(unittest.TestCase):
                 with self.assertRaises(g.GateFail) as cm: g.check(*args)
                 self.assertEqual(cm.exception.rule, rule); tripped.add(cm.exception.rule)
         try: g.check(OBJ, NM, GEN, BID, ELF_NOEXT, True)
+        except g.GateFail as e: tripped.add(e.rule)
+        try: g.check(OBJ, NM, GEN, BID, ELF_EXT, True, True)
         except g.GateFail as e: tripped.add(e.rule)
         self.assertEqual(tripped, set(g.RULES))
 

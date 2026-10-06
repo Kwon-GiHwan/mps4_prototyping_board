@@ -162,6 +162,50 @@ EDITS = [
  ("    put32(&c, r->cycle_progress_observed);\n",
   "    put32(&c, r->cycle_progress_observed);\n    put32(&c, r->read_seam_fired);\n"),
  ("#define MEASUREMENT_FIELD_COUNT 102U\n", "#define MEASUREMENT_FIELD_COUNT 103U\n"),
+ # 13. Tier C step 0b: __wrap_test_u85 (only under PMU_EVENTS_EXT_DRAM; --wrap=test_u85 in that build)
+ ("static int32_t run_fixed_inference(void)\n",
+  "#if defined(PMU_EVENTS_EXT_DRAM)\n"
+  "/* Tier C step 0b. Step 0 showed the EXT AXI port cannot serve the 0x9000_0000\n"
+  " * 'Dev Access' alias. Copy the vendor's own tensors to S DRAM (IDAU 7), let the\n"
+  " * vendor run and judge them there, copy the output back to its own buffer.\n"
+  " * Sizes are the linked symbol sizes; the gate checks them against nm -S. */\n"
+  "#define EXT_DRAM_BASE      0x70100000U\n"
+  "#define EXT_DRAM_CMD_OFF   0x0000U\n"
+  "#define EXT_DRAM_W_OFF     0x1000U\n"
+  "#define EXT_DRAM_IN_OFF    0x2000U\n"
+  "#define EXT_DRAM_SCR_OFF   0x3000U\n"
+  "#define EXT_DRAM_OUT_OFF   0x4000U\n"
+  "#define TEST3_WEIGHTS_SIZE 0x600U\n"
+  "#define TEST3_IN_SIZE      0x400U\n"
+  "#define TEST3_SCRATCH_SIZE 0x300U\n"
+  "int __real_test_u85(const u85_eTest eTest, const uint32_t irq_mask, const uint32_t out_size,\n"
+  "                    const uint32_t qsize, struct u85_warp_data_t *w);\n"
+  "int __wrap_test_u85(const u85_eTest eTest, const uint32_t irq_mask, const uint32_t out_size,\n"
+  "                    const uint32_t qsize, struct u85_warp_data_t *w)\n{\n"
+  "    uint8_t *d = (uint8_t *)(uintptr_t)EXT_DRAM_BASE;\n"
+  "    struct u85_warp_data_t x = *w;\n"
+  "    int rc;\n"
+  "    memcpy(d + EXT_DRAM_CMD_OFF, w->cmd_st, qsize);\n"
+  "    memcpy(d + EXT_DRAM_W_OFF, w->weights, TEST3_WEIGHTS_SIZE);\n"
+  "    memcpy(d + EXT_DRAM_IN_OFF, w->in_data_0, TEST3_IN_SIZE);\n"
+  "    memcpy(d + EXT_DRAM_SCR_OFF, w->scratch_buffer, TEST3_SCRATCH_SIZE);\n"
+  "    memset(d + EXT_DRAM_OUT_OFF, 0xA5, out_size); /* stale DRAM must never pass as output */\n"
+  "    __DSB();\n"
+  "    x.cmd_st         = d + EXT_DRAM_CMD_OFF;\n"
+  "    x.weights        = d + EXT_DRAM_W_OFF;\n"
+  "    x.in_data_0      = d + EXT_DRAM_IN_OFF;\n"
+  "    x.scratch_buffer = d + EXT_DRAM_SCR_OFF;\n"
+  "    x.out_data_0     = d + EXT_DRAM_OUT_OFF;\n"
+  "    rc = __real_test_u85(eTest, irq_mask, out_size, qsize, &x);\n"
+  "    memcpy(w->out_data_0, d + EXT_DRAM_OUT_OFF, out_size);\n"
+  "    return rc;\n}\n"
+  "#endif\n"
+  "#if defined(PMU_EVENTS_EXT_DRAM)\n"
+  "/* Keep the measured-path root out of line in this build: with __wrap_test_u85 above it\n"
+  " * GCC inlines it, and check_measure_symbols.py then cannot locate the root. */\n"
+  "__attribute__((noinline))\n"
+  "#endif\n"
+  "static int32_t run_fixed_inference(void)\n"),
 ]
 
 
