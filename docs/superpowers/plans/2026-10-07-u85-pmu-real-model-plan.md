@@ -10,8 +10,8 @@
 | --- | --- | --- |
 | 0 | `USE_AXI_EXT` 1×1 실험 — EXT 포트 도달성 + `ext_*` 30개 | **완료: EXT_UNREACHABLE** (부팅 11, `evidence/pmu_events_c/VERDICT.md`). 0x9000_0000(IDAU 9, Dev Access)은 EXT 포트로 못 감 — EXT 요청 4건 후 stall |
 | 0b | 텐서를 DRAM 별칭(0x7010_0000, IDAU 7 S)에 두고 EXT 재시험 | **완료: EXT_DRAM_REACHABLE** (부팅 12, 66/66 VALID, golden 일치, ±1 % 검사 PASS). `ext_*` 16개 NONZERO — `evidence/pmu_events_c/VERDICT_0b.md` |
-| 1 | 작은 Vela 모델(kws/h3r급) Tier C — 실모델 경로 검증 | 다음 — `--wrap=test_u85` 기법이 그대로 SET_WORKLOAD의 토대 |
-| 2 | mobilenet급 — stall/limit·`axi_latency_128+` | 대기 |
+| 1 | 작은 Vela 모델(kws_micronet_m) — 실모델 경로 | **완료: MODEL_RUNS_CORRECT** (부팅 13, 66/66, 보드 OFM = tflite_runtime 레퍼런스 바이트 일치). TRM 38 / Reserved 46 NONZERO — `evidence/pmu_events_c/VERDICT_1.md` |
+| 2 | mobilenet급 — stall/limit·`axi_latency_128+` | 결정 대기 — 블롭 3.7 MB, 세트마다 재업로드 시 ~2 h |
 
 ## 재검토에서 확립된 사실
 
