@@ -8,12 +8,15 @@ import argparse, csv, datetime, json, pathlib, sys
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
 import zlib
 import pmu_events_parse as E
-from runner_proto import (RunnerLink, PROTO_MEASURE_V2, Nack, ProtocolError,
+from runner_proto import (MAX_PAYLOAD, RunnerLink, PROTO_MEASURE_V2, Nack, ProtocolError,
                           GOLDEN_WINDOW_CRC, PMU_DIAG_GOLDEN_WINDOW_BASE, PMU_DIAG_GOLDEN_WINDOW_LEN)
 
 
 BLOB = None   # Tier C step 1: a PMWL workload blob replaces the 64-byte dummy when --blob is given
-CHUNK = 2048
+CHUNK = 4092   # MAX_PAYLOAD 4096 minus the 4-byte offset; halves the per-chunk ACK round trips vs 2048
+
+
+assert CHUNK + 4 <= MAX_PAYLOAD
 
 
 def prime(link):
@@ -103,7 +106,11 @@ def main():
                 if "codes_echo" in failed and ok is False and m.pmu["event_valid_mask"] == (1 << len(codes)) - 1:
                     raise E.fail_rule("RULE_CODES_ECHO", f"set {set_id}: {m.pmu['event_codes'][:len(codes)]} != {codes}")
                 raw.append({"set_id": set_id, "rep": rep, "rc": rc, "valid_flags": m.valid_flags, "pmu": m.pmu,
-                            "seam_fired": seam, "trailing": list(m.trailing), "golden_crc": golden_crc})
+                            "seam_fired": seam, "trailing": list(m.trailing), "golden_crc": golden_crc,
+                            "vendor_rc": (m.trailing[1] if len(m.trailing) >= 2 else None),
+                            "base_fields": list(m.fields),
+                            "seam_npu_status": (m.trailing[2] if len(m.trailing) >= 3 else None),
+                            "seam_npu_qread": (m.trailing[3] if len(m.trailing) >= 4 else None)})
                 for slot, ev in enumerate(codes):
                     rows.append(dict(set_id=set_id, rep=rep, slot=slot, ev_type=ev, name=names[ev], in_trm110=ev in trm,
                                      event_value=m.pmu["event_values"][slot] if ok else None,
@@ -112,7 +119,9 @@ def main():
                                      invalid_reasons=";".join(failed), window_cycles=m.pmu["npu_pmu_window_cycles"],
                                      cycle_valid=m.pmu["npu_pmu_cycle_valid"], valid_flags=m.valid_flags,
                                      golden_crc=(f"0x{golden_crc:08x}" if isinstance(golden_crc, int) else golden_crc), **prov))
-                print(f"set {set_id:2d} rep {rep} rc={rc} valid={ok} {failed or ''}", flush=True)
+                vrc = m.trailing[1] if len(m.trailing) >= 2 else None
+                st = (hex(m.trailing[2]), m.trailing[3]) if len(m.trailing) >= 4 else None
+                print(f"set {set_id:2d} rep {rep} rc={rc} vendor_rc={vrc} seam_status/qread={st} valid={ok} {failed or ''}", flush=True)
     except E.Refusal as e:
         refusal = {"rule": E.refusal_rule(e), "msg": str(e)}; print(f"REFUSED {e}")
     finally:

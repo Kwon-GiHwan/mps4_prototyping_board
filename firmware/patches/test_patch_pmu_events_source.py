@@ -46,7 +46,12 @@ class T(unittest.TestCase):
         self.assertIn('strcmp(fmt, "Testing CPM signals\\n") == 0', g)
         self.assertIn("r.npu_pmu_window_cycles_lo = seam_cycle_lo;", g)
         self.assertIn("put32(&c, r->read_seam_fired);", g)
-        self.assertEqual(g.count("#define MEASUREMENT_FIELD_COUNT 103U"), 1)
+        self.assertIn("#if defined(PMU_EVENTS_EXT_DRAM)\n#define MEASUREMENT_FIELD_COUNT 106U\n#else\n#define MEASUREMENT_FIELD_COUNT 103U\n#endif", g)
+        self.assertIn("put32(&c, r->read_seam_fired);\n#if defined(PMU_EVENTS_EXT_DRAM)\n    put32(&c, r->vendor_rc);\n"
+                      "    put32(&c, r->seam_npu_status);\n    put32(&c, r->seam_npu_qread);\n#endif", g)
+        self.assertEqual(g.count("last_vendor_rc = rc;"), 2)
+        cpm = g[g.index("Tier B read seam (amendment 7)"):g.index("seam_fired++;")]
+        self.assertIn("seam_status = npu_read(NPU_OFF_STATUS);", cpm)   # before the vendor's CMD=0xC   # both wraps (model, test3) record it
         self.assertNotIn("#define MEASUREMENT_FIELD_COUNT 102U", g)
         wrap = g[g.index("int __wrap_printf(const char *fmt, ...)\n{\n    /* Tier B read seam"):]
         self.assertLess(wrap.index("npu_pmu_read_cycles"), wrap.index("seam_fired++"))
