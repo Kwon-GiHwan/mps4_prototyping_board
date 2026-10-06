@@ -102,12 +102,14 @@ EDITS = [
   "                r.applied_event_count = cfg.event_count;\n"
   "                r.event_valid_mask    = armed & ~r.event_overflow_mask;\n"
   "                r.read_seam_fired     = seam_fired;\n"
+  "#if defined(PMU_EVENTS_EXT_DRAM)\n                r.vendor_rc           = (uint32_t)last_vendor_rc;\n                r.seam_npu_status     = seam_status;\n                r.seam_npu_qread      = seam_qread;\n#endif\n"
   "            } else {\n"
   "                /* END_ONLY, unchanged: no event slot is ever armed. */\n"
   "                r.event_valid_mask    = 0U;\n"
   "                r.event_overflow_mask = 0U;\n"
   "                r.applied_event_count = 0U;\n"
   "                r.read_seam_fired     = 0U;\n"
+  "#if defined(PMU_EVENTS_EXT_DRAM)\n                r.vendor_rc           = 0U;\n                r.seam_npu_status     = 0U;\n                r.seam_npu_qread      = 0U;\n#endif\n"
   "            }\n"),
  # 8b. guard wait, after read_timestamp() so both timestamp helpers are visible
  ("static uint32_t read_timestamp(void)\n",
@@ -127,12 +129,13 @@ EDITS = [
   "volatile uint32_t measurement_active;\n"
   "/* Tier B read seam (amendment 7): filled inside __wrap_printf at the vendor's\n"
   " * \"Testing CPM signals\" printf, i.e. after CMD=0 and before CMD=0xC. */\n"
+  "#if defined(PMU_EVENTS_EXT_DRAM)\nstatic volatile int32_t last_vendor_rc; /* Tier C: test_u85's own rc, set by __wrap_test_u85 */\nstatic volatile uint32_t seam_status, seam_qread; /* NPU STATUS / QREAD at the CPM seam */\n#endif\n"
   "static volatile uint32_t seam_fired, seam_cycle_lo, seam_cycle_hi, seam_cycle_stable,\n"
   "                         seam_cycle_retries, seam_ovf, seam_ev[RUNNER_MAX_NPU_EVENT_COUNTERS];\n"),
  # 10. clear the seam storage when the window opens
  ("    measurement_active = 1U;\n",
   "    seam_fired = 0U; seam_cycle_lo = 0U; seam_cycle_hi = 0U; seam_cycle_stable = 0U;\n"
-  "    seam_cycle_retries = 0U; seam_ovf = 0U;\n"
+  "    seam_cycle_retries = 0U; seam_ovf = 0U;\n#if defined(PMU_EVENTS_EXT_DRAM)\n    last_vendor_rc = -1; seam_status = 0U; seam_qread = 0U;\n#endif\n"
   "    for (unsigned k = 0; k < RUNNER_MAX_NPU_EVENT_COUNTERS; k++) { seam_ev[k] = 0U; }\n"
   "    measurement_active = 1U;\n"),
  # 11. the read seam itself, in the clean-profile printf wrapper
@@ -152,7 +155,7 @@ EDITS = [
   "        for (unsigned k = 0; k < instr_cfg.event_count; k++) {\n"
   "            seam_ev[k] = pmu_reg_read(NPU_REG_PMEVCNTR_BASE + 4U * k);\n"
   "        }\n"
-  "        seam_fired++;\n"
+  "#if defined(PMU_EVENTS_EXT_DRAM)\n        seam_status = npu_read(NPU_OFF_STATUS);\n        seam_qread  = npu_read(NPU_OFF_QREAD);\n#endif\n        seam_fired++;\n"
   "    }\n"
   "#if defined(PMU_EVENTS_MODEL)\n"
   "    /* Tier C step 2 apply seam: right after the vendor wrote REGIONCFG/QCONFIG/MEM_ATTR,\n"
@@ -174,10 +177,11 @@ EDITS = [
  # 12. one appended record word: read_seam_fired (field 103)
  ("    uint32_t cycle_progress_observed;      /* the counter actually moved*/\n} measurement_record_t;\n",
   "    uint32_t cycle_progress_observed;      /* the counter actually moved*/\n"
-  "    uint32_t read_seam_fired;              /* Tier B: CPM seam arrivals  */\n} measurement_record_t;\n"),
+  "    uint32_t read_seam_fired;              /* Tier B: CPM seam arrivals  */\n"
+  "#if defined(PMU_EVENTS_EXT_DRAM)\n    uint32_t vendor_rc;                    /* Tier C: test_u85's own rc  */\n    uint32_t seam_npu_status;              /* STATUS at the CPM seam     */\n    uint32_t seam_npu_qread;               /* QREAD at the CPM seam      */\n#endif\n} measurement_record_t;\n"),
  ("    put32(&c, r->cycle_progress_observed);\n",
-  "    put32(&c, r->cycle_progress_observed);\n    put32(&c, r->read_seam_fired);\n"),
- ("#define MEASUREMENT_FIELD_COUNT 102U\n", "#define MEASUREMENT_FIELD_COUNT 103U\n"),
+  "    put32(&c, r->cycle_progress_observed);\n    put32(&c, r->read_seam_fired);\n#if defined(PMU_EVENTS_EXT_DRAM)\n    put32(&c, r->vendor_rc);\n    put32(&c, r->seam_npu_status);\n    put32(&c, r->seam_npu_qread);\n#endif\n"),
+ ("#define MEASUREMENT_FIELD_COUNT 102U\n", "#if defined(PMU_EVENTS_EXT_DRAM)\n#define MEASUREMENT_FIELD_COUNT 106U\n#else\n#define MEASUREMENT_FIELD_COUNT 103U\n#endif\n"),
  # 13. Tier C step 0b: __wrap_test_u85 (only under PMU_EVENTS_EXT_DRAM; --wrap=test_u85 in that build)
  ("static int32_t run_fixed_inference(void)\n",
   "#if defined(PMU_EVENTS_EXT_DRAM)\n"
@@ -264,6 +268,7 @@ EDITS = [
   "    rc = __real_test_u85(eTest, h[14], h[12], h[3], &x);\n"
   "    if (pmwl_knob_pending) { pmwl_knob_bad = 1U; }  /* the apply seam never fired */\n"
   "    pmwl_knob_pending = 0U;\n"
+  "    last_vendor_rc = rc;\n"
   "    memcpy(w->out_data_0, arena + h[11], (h[12] < out_size) ? h[12] : out_size);\n"
   "    return pmwl_knob_bad ? PMWL_KNOB_NOT_HONOURED : rc;\n}\n"
   "#else\n"
@@ -284,6 +289,7 @@ EDITS = [
   "    x.scratch_buffer = d + EXT_DRAM_SCR_OFF;\n"
   "    x.out_data_0     = d + EXT_DRAM_OUT_OFF;\n"
   "    rc = __real_test_u85(eTest, irq_mask, out_size, qsize, &x);\n"
+  "    last_vendor_rc = rc;\n"
   "    memcpy(w->out_data_0, d + EXT_DRAM_OUT_OFF, out_size);\n"
   "    return rc;\n}\n"
   "#endif /* PMU_EVENTS_MODEL */\n"

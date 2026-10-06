@@ -14,10 +14,20 @@ OLD = re.compile(r"#define BUSY_SLEEP_TIMEOUT 10000(?=\r?\n)")
 NEW = "#define BUSY_SLEEP_TIMEOUT 200000000 /* Tier C step 1: was 10000 */"
 
 
+# Change 2 (step 2): irq_never_triggered is set on a timeout and never cleared, so one timeout
+# fails every later run on the same boot. The vendor test assumes one run per boot; this harness
+# runs many. Clear it at test_u85 entry, next to the vendor's own `ret_code = 0`.
+OLD2 = re.compile(r"(\{\r?\n    int ret_code = 0;)(\r?\n)")
+NEW2 = r"\1 irq_never_triggered = false; /* Tier C step 2: per-run, not per-boot */\2"
+
+
 def generate(text):
     out, n = OLD.subn(NEW, text)
     if n != 1:
         raise SystemExit(f"anchor matched {n} times, need 1")
+    out, n = OLD2.subn(NEW2, out)
+    if n != 1:
+        raise SystemExit(f"test_u85 entry anchor matched {n} times, need 1")
     return out
 
 
