@@ -39,6 +39,7 @@ def main():
     ap.add_argument("--build-id", default=f"0x{E.BUILD_ID_PMEV:08x}")
     ap.add_argument("--check-golden", action="store_true", help="Tier C: GET_RESULT golden window after every RUN")
     ap.add_argument("--blob", help="Tier C step 1: PMWL workload blob to stage with LOAD_MODEL")
+    ap.add_argument("--ids", help="Tier C step 2: comma-separated event ids or @file (default: all 171)")
     for k in ("app", "vectors", "ddr"): ap.add_argument(f"--{k}-sha256", required=True)
     a = ap.parse_args()
     out = pathlib.Path(a.out); out.mkdir(parents=True, exist_ok=True)
@@ -48,6 +49,11 @@ def main():
     prov = dict(PROV, build_id=a.build_id, app_sha256=a.app_sha256, vectors_sha256=a.vectors_sha256, ddr_sha256=a.ddr_sha256,
                 host_boot_index=a.host_boot_index, captured_at_utc=datetime.datetime.now(datetime.timezone.utc).isoformat())
     names = E.driver_ids(); trm = E.trm_ids()
+    ids = None
+    if a.ids:
+        txt = pathlib.Path(a.ids[1:]).read_text() if a.ids.startswith("@") else a.ids
+        ids = [int(x) for x in txt.replace("\n", ",").split(",") if x.strip()]
+    sets = E.event_sets(ids)
     rows, raw, refusal = [], [], None
     link = RunnerLink(a.port, protocol=PROTO_MEASURE_V2)
     try:
@@ -60,7 +66,7 @@ def main():
                                               "length_error", "sequence_error", "parser_resync")}
         if any(errors.values()):
             raise E.fail_rule("RULE_PING", f"error counters not zero on fresh boot: {errors}")
-        for set_id, codes in E.event_sets():
+        for set_id, codes in sets:
             # State machine (amendment 3): SET_INSTRUMENTATION_MODE is accepted only in IDLE,
             # RUN only in INPUT_READY/RESULT_READY. Per set: RESET -> SET_MODE -> prime -> RUN x3.
             try:
@@ -125,10 +131,10 @@ def main():
     if per:
         with (out / "per_event.csv").open("w", newline="") as f:
             w = csv.DictWriter(f, fieldnames=list(per[0].keys())); w.writeheader(); w.writerows(per)
-    summ = dict(provenance=prov, runs=len(raw) - 1, rows=len(rows), refusal=refusal,
+    summ = dict(requested_ids=(sorted(set(ids)) if ids else "all"), provenance=prov, runs=len(raw) - 1, rows=len(rows), refusal=refusal,
                 consistency=E.consistency(rows), verdict_counts={v: sum(1 for p in per if p["verdict"] == v) for v in E.VERDICTS})
     try:
-        E.check_coverage(by); summ["coverage"] = "COMPLETE"
+        E.check_coverage(by, ids); summ["coverage"] = "COMPLETE" if ids is None else f"COMPLETE_SUBSET({len(set(ids))})"
     except E.Refusal as e:
         summ["coverage"] = str(e)
     (out / "summary.json").write_text(json.dumps(summ, indent=2, default=str))

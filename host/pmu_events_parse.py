@@ -33,9 +33,15 @@ def trm_ids():
     return {int(v) for v, _, _ in json.loads((REPO / "docs/ethos_u85_pmu_sources/trm_events_110.json").read_text())}
 
 
-def event_sets():
-    """22 sets: (set_id, [codes]) over the 171 driver ids ascending; last set has 3."""
-    ids = sorted(driver_ids())
+def event_sets(ids=None):
+    """Sets of 8 over the requested driver ids ascending (default: all 171 -> 22 sets, last has 3)."""
+    known = driver_ids()
+    if ids is None:
+        ids = known
+    unknown = sorted(set(ids) - set(known))
+    if unknown:
+        raise ValueError(f"not driver event ids: {unknown}")
+    ids = sorted(set(ids))
     return [(i + 1, ids[i * SLOTS:(i + 1) * SLOTS]) for i in range((len(ids) + SLOTS - 1) // SLOTS)]
 
 
@@ -80,7 +86,7 @@ def consistency(rows):
     return {k: ("UNPROVEN" if not v else ("PASS" if all(x == "PASS" for x in v) else "FAIL")) for k, v in out.items()}
 
 
-def check_coverage(rows_by_ev):
-    got = set(rows_by_ev); want = set(driver_ids())
+def check_coverage(rows_by_ev, expected=None):
+    got = set(rows_by_ev); want = set(driver_ids() if expected is None else expected)
     if got != want:
         raise fail_rule("RULE_SET_COVERAGE", f"covered {len(got)}/{len(want)}")
