@@ -46,9 +46,10 @@ class T(unittest.TestCase):
         self.assertIn('strcmp(fmt, "Testing CPM signals\\n") == 0', g)
         self.assertIn("r.npu_pmu_window_cycles_lo = seam_cycle_lo;", g)
         self.assertIn("put32(&c, r->read_seam_fired);", g)
-        self.assertIn("#if defined(PMU_EVENTS_EXT_DRAM)\n#define MEASUREMENT_FIELD_COUNT 106U\n#else\n#define MEASUREMENT_FIELD_COUNT 103U\n#endif", g)
+        self.assertIn("#if defined(PMU_EVENTS_EXT_DRAM)\n#define MEASUREMENT_FIELD_COUNT 109U\n#else\n#define MEASUREMENT_FIELD_COUNT 103U\n#endif", g)
         self.assertIn("put32(&c, r->read_seam_fired);\n#if defined(PMU_EVENTS_EXT_DRAM)\n    put32(&c, r->vendor_rc);\n"
-                      "    put32(&c, r->seam_npu_status);\n    put32(&c, r->seam_npu_qread);\n#endif", g)
+                      "    put32(&c, r->seam_npu_status);\n    put32(&c, r->seam_npu_qread);\n"
+                      "    put32(&c, r->ofm_mismatch_count);\n    put32(&c, r->ofm_max_abs_diff);\n    put32(&c, r->ofm_first_mismatch);\n#endif", g)
         self.assertEqual(g.count("last_vendor_rc = rc;"), 2)
         cpm = g[g.index("Tier B read seam (amendment 7)"):g.index("seam_fired++;")]
         self.assertIn("seam_status = npu_read(NPU_OFF_STATUS);", cpm)   # before the vendor's CMD=0xC   # both wraps (model, test3) record it
@@ -85,6 +86,7 @@ class T(unittest.TestCase):
         self.assertIn('"Updating POWER_CTRL register with MAC_RAMP_VAR=%d \\n"', ap)
         self.assertLess(ap.index("npu_write(off[k], pmwl_knob[k]);"), ap.index("npu_read(off[k]) != pmwl_knob[k]"))
         self.assertIn("x.out_ver_data_0 = s + h[13];", blk)
+        self.assertLess(blk.index("rc = __real_test_u85(eTest, h[14], h[12], h[3], &x);"), blk.index("ofm_mm_count++;"))
         # the step-0b test3 wrap still exists in the #else branch
         self.assertIn("#else\nint __wrap_test_u85(", g)
 
