@@ -12,12 +12,17 @@ from runner_proto import (RunnerLink, PROTO_MEASURE_V2, Nack, ProtocolError,
                           GOLDEN_WINDOW_CRC, PMU_DIAG_GOLDEN_WINDOW_BASE, PMU_DIAG_GOLDEN_WINDOW_LEN)
 
 
+BLOB = None   # Tier C step 1: a PMWL workload blob replaces the 64-byte dummy when --blob is given
+CHUNK = 2048
+
+
 def prime(link):
     """Walk the state machine to INPUT_READY exactly as run_pmu_diag.py / run_pmu_qual.py
-    do: a dummy blob and an empty input. The fixed compiled-in inference runs regardless."""
-    blob = b"\x00" * 64
+    do: a dummy blob (or the PMWL workload blob) and an empty input."""
+    blob = BLOB if BLOB is not None else b"\x00" * 64
     link.load_model_begin(len(blob), zlib.crc32(blob) & 0xFFFFFFFF)
-    link.load_model_chunk(0, blob)
+    for off in range(0, len(blob), CHUNK):
+        link.load_model_chunk(off, blob[off:off + CHUNK])
     link.load_model_end()
     link.load_input(b"")
 
@@ -33,9 +38,13 @@ def main():
     ap.add_argument("--host-boot-index", type=int, required=True)
     ap.add_argument("--build-id", default=f"0x{E.BUILD_ID_PMEV:08x}")
     ap.add_argument("--check-golden", action="store_true", help="Tier C: GET_RESULT golden window after every RUN")
+    ap.add_argument("--blob", help="Tier C step 1: PMWL workload blob to stage with LOAD_MODEL")
     for k in ("app", "vectors", "ddr"): ap.add_argument(f"--{k}-sha256", required=True)
     a = ap.parse_args()
     out = pathlib.Path(a.out); out.mkdir(parents=True, exist_ok=True)
+    global BLOB
+    if a.blob:
+        BLOB = pathlib.Path(a.blob).read_bytes()
     prov = dict(PROV, build_id=a.build_id, app_sha256=a.app_sha256, vectors_sha256=a.vectors_sha256, ddr_sha256=a.ddr_sha256,
                 host_boot_index=a.host_boot_index, captured_at_utc=datetime.datetime.now(datetime.timezone.utc).isoformat())
     names = E.driver_ids(); trm = E.trm_ids()
@@ -68,7 +77,7 @@ def main():
                 raise E.fail_rule("RULE_RUN_TRANSPORT", f"set {set_id} prime: {e!r}")
             for rep in range(1, E.REPEATS + 1):
                 try:
-                    rc = link.run(timeout=60.0)
+                    rc = link.run(timeout=120.0)
                 except (Nack, ProtocolError) as e:
                     raise E.fail_rule("RULE_RUN_TRANSPORT", f"set {set_id} rep {rep}: {e!r}")
                 m = link.last_measurement

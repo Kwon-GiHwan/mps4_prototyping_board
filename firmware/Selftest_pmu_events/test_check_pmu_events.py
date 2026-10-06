@@ -48,7 +48,18 @@ NM_DRAM = (NM + "31000a00 00000080 T __wrap_test_u85\n90004fa0 00000600 d test3_
 GEN_DRAM = GEN + "#define TEST3_WEIGHTS_SIZE 0x600U\n#define TEST3_IN_SIZE      0x400U\n#define TEST3_SCRATCH_SIZE 0x300U\n"
 
 
+OBJ_MODEL = OBJ + " 8000208: .word 0x4c574d50\n"
+VEND = "#define BUSY_SLEEP_TIMEOUT 200000000 /* Tier C step 1: was 10000 */\n"
+
+
 class T(unittest.TestCase):
+    def test_model_rule(self):
+        self.assertTrue(g.check(OBJ_MODEL, NM_DRAM, GEN_DRAM, BID, ELF_EXT, True, True, True, VEND))
+        for obj, exp, vend in ((OBJ, True, VEND), (OBJ_MODEL, False, None),
+                               (OBJ_MODEL, True, VEND.replace("200000000", "10000"))):
+            with self.assertRaises(g.GateFail) as cm: g.check(obj, NM_DRAM, GEN_DRAM, BID, ELF_EXT, True, True, exp, vend)
+            self.assertEqual(cm.exception.rule, "RULE_MODEL")
+
     def test_ext_dram_rule(self):
         self.assertTrue(g.check(OBJ, NM_DRAM, GEN_DRAM, BID, ELF_EXT, True, True))
         for nm, gen, exp in ((NM, GEN_DRAM, True),                                    # wrap missing
@@ -81,6 +92,8 @@ class T(unittest.TestCase):
         try: g.check(OBJ, NM, GEN, BID, ELF_NOEXT, True)
         except g.GateFail as e: tripped.add(e.rule)
         try: g.check(OBJ, NM, GEN, BID, ELF_EXT, True, True)
+        except g.GateFail as e: tripped.add(e.rule)
+        try: g.check(OBJ, NM_DRAM, GEN_DRAM, BID, ELF_EXT, True, True, True, VEND)
         except g.GateFail as e: tripped.add(e.rule)
         self.assertEqual(tripped, set(g.RULES))
 

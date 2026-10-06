@@ -53,14 +53,25 @@ class T(unittest.TestCase):
 
     def test_step0b_wrap_is_guarded(self):
         g = P.generate(BASE)
-        blk = g[g.index("#if defined(PMU_EVENTS_EXT_DRAM)"):g.index("static int32_t run_fixed_inference(void)")]
+        blk = g[g.index("#else\nint __wrap_test_u85("):g.index("#endif /* PMU_EVENTS_MODEL */")]   # the test3 (step 0b) body
         self.assertIn("int __wrap_test_u85(", blk)
         self.assertIn("rc = __real_test_u85(", blk)
         # poison precedes the call; copy-back follows it
         self.assertLess(blk.index("memset(d + EXT_DRAM_OUT_OFF, 0xA5"), blk.index("rc = __real_test_u85("))
         self.assertLess(blk.index("rc = __real_test_u85("), blk.index("memcpy(w->out_data_0"))
-        self.assertIn("__attribute__((noinline))", blk)   # measured-path root stays locatable
+        self.assertIn("__attribute__((noinline))", g[g.index("#endif /* PMU_EVENTS_MODEL */"):g.index("static int32_t run_fixed_inference(void)")])
         self.assertEqual(g.count("rc = (int32_t)apU85Conv_TEST(&m);"), 1)   # runner entry unchanged
+
+    def test_step1_model_branch(self):
+        g = P.generate(BASE)
+        blk = g[g.index("#if defined(PMU_EVENTS_MODEL)"):g.index("#endif /* PMU_EVENTS_MODEL */")]
+        self.assertIn("h[15] != model_total_length", blk)
+        self.assertIn("return PMWL_REFUSED;", blk)
+        self.assertLess(blk.index("memset(d + a_off + h[11], 0xA5"), blk.index("memcpy(d + a_off + h[8]"))
+        self.assertLess(blk.index("memcpy(d + a_off + h[8]"), blk.index("rc = __real_test_u85(eTest, h[14], h[12], h[3], &x);"))
+        self.assertIn("x.out_ver_data_0 = s + h[13];", blk)
+        # the step-0b test3 wrap still exists in the #else branch
+        self.assertIn("#else\nint __wrap_test_u85(", g)
 
     def test_refuses_mutated_base(self):
         with self.assertRaises(SystemExit):
