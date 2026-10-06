@@ -17,7 +17,9 @@ address literal (which the accessor design never emits), is the observable.
 import argparse, re, sys
 
 RULES = ("RULE_INFERENCE_LINKED", "RULE_PMEVTYPER_LOOP_STORE", "RULE_PMEVCNTR_LOOP_LOAD",
-         "RULE_BUILD_ID", "RULE_MAIN_PRESENT", "RULE_GEN_MODE2", "RULE_SEAM_HOOK", "RULE_EXT_ATTR", "RULE_EXT_DRAM")
+         "RULE_BUILD_ID", "RULE_MAIN_PRESENT", "RULE_GEN_MODE2", "RULE_SEAM_HOOK", "RULE_EXT_ATTR", "RULE_EXT_DRAM", "RULE_MODEL")
+PMWL_MAGIC = 0x4C574D50
+RAISED_TIMEOUT = "#define BUSY_SLEEP_TIMEOUT 200000000"
 DRAM_SIZES = {"test3_weights": "TEST3_WEIGHTS_SIZE", "test3_in_data_0": "TEST3_IN_SIZE",
               "test3_scratch_buffer": "TEST3_SCRATCH_SIZE"}
 EXT_LITERAL = b"Enabling AXI EXT port testing"
@@ -57,7 +59,8 @@ def _nm_size(nm_text, sym):
     return int(m.group(1), 16) if m else None
 
 
-def check(objdump_text, nm_text, gen_text, build_id, elf_bytes=None, expect_ext=False, expect_dram=False):
+def check(objdump_text, nm_text, gen_text, build_id, elf_bytes=None, expect_ext=False, expect_dram=False,
+          expect_model=False, gen_vendor_text=None):
     if not re.search(r"\b[Tt] apU85Conv_TEST\b", nm_text):
         raise GateFail(RULES[0], "apU85Conv_TEST not linked: this image cannot run the workload")
     if not _register_offset_call(objdump_text, "pmu_reg_write"):
@@ -84,6 +87,11 @@ def check(objdump_text, nm_text, gen_text, build_id, elf_bytes=None, expect_ext=
             m = re.search(r"#define " + macro + r" +(0x[0-9A-Fa-f]+)U", gen_text)
             if not m or _nm_size(nm_text, sym) != int(m.group(1), 16):
                 raise GateFail(RULES[8], f"{macro} != linked size of {sym} ({_nm_size(nm_text, sym)})")
+    has_magic = PMWL_MAGIC in _lits(objdump_text)
+    if has_magic != expect_model:
+        raise GateFail(RULES[9], f"PMWL blob path {'linked' if has_magic else 'absent'}, expected the opposite")
+    if expect_model and (gen_vendor_text is None or RAISED_TIMEOUT not in gen_vendor_text):
+        raise GateFail(RULES[9], "generated vendor u85.c lacks the raised BUSY_SLEEP_TIMEOUT")
     return True
 
 
@@ -93,13 +101,15 @@ def main(argv=None):
     ap.add_argument("--build-id", required=True, type=lambda s: int(s, 0))
     ap.add_argument("--elf"); ap.add_argument("--expect-ext", action="store_true")
     ap.add_argument("--expect-dram", action="store_true")
+    ap.add_argument("--expect-model", action="store_true"); ap.add_argument("--gen-vendor")
     a = ap.parse_args(argv)
     try:
         check(open(a.objdump).read(), open(a.nm).read(), open(a.gen).read(), a.build_id,
-              open(a.elf, "rb").read() if a.elf else None, a.expect_ext, a.expect_dram)
+              open(a.elf, "rb").read() if a.elf else None, a.expect_ext, a.expect_dram,
+              a.expect_model, open(a.gen_vendor).read() if a.gen_vendor else None)
     except GateFail as e:
         print(f"GATE FAIL {e}"); return 1
-    print("GATE OK: inference linked, slot program+read loops present, mode 2 present, END_ONLY refusal kept, CPM read seam present, EXT attr " + ("ON" if a.expect_ext else "OFF") + " as expected, DRAM wrap " + ("ON" if a.expect_dram else "OFF")); return 0
+    print("GATE OK: inference linked, slot program+read loops present, mode 2 present, END_ONLY refusal kept, CPM read seam present, EXT attr " + ("ON" if a.expect_ext else "OFF") + " as expected, DRAM wrap " + ("ON" if a.expect_dram else "OFF") + ", model " + ("ON" if a.expect_model else "OFF")); return 0
 
 
 if __name__ == "__main__":

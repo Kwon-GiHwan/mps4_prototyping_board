@@ -1,0 +1,19 @@
+{
+  "model": "/opt/arm/ml-embedded-evaluation-kit/resources_downloaded/kws/kws_micronet_m.tflite",
+  "model_sha256": "c1feed3af5dac44de7477fb4161670ba18a3fc06039e4a14da41b1c4dd454cb4",
+  "vela_sha256": "459c1d1a106d18df06a225e1e3adea3762d166d0c7e45e766e264cecf882d448",
+  "accelerator": "ethos-u85-1024",
+  "system_config": "Ethos_U85_SYS_DRAM_Low",
+  "memory_mode": "Dedicated_Sram",
+  "seed": 1,
+  "blob_sha256": "662fa0b2949d1d3837d82f7662426ac3a42c4904a835cf10629ac83a1b7d1561",
+  "cms_len": 3300,
+  "const_len": 145952,
+  "arena_size": 496,
+  "fast_size": 114736,
+  "ifm_off": 0,
+  "ifm_len": 490,
+  "ofm_off": 0,
+  "ofm_len": 12,
+  "total": 149840
+}

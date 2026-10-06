@@ -14,7 +14,15 @@ CMSIS_INC := /opt/arm/ml-embedded-evaluation-kit/dependencies/cmsis-6/CMSIS/Core
 
 EXT ?= 0
 DRAM ?= 0
-ifeq ($(DRAM),1)
+MODEL ?= 0
+ifeq ($(MODEL),1)
+  # Tier C step 1: Vela workload blob via the step-0b wrap; generated vendor copy (timeout).
+  DRAM     := 1
+  EXT      := 1
+  BUILD    := build_pmu_events_model
+  BUILD_ID := 0x504D574C
+  GATE_EXT := --expect-ext --expect-dram --expect-model
+else ifeq ($(DRAM),1)
   # Tier C step 0b: EXT port + tensors copied to S DRAM via --wrap=test_u85.
   EXT      := 1
   BUILD    := build_pmu_events_extdram
@@ -45,8 +53,14 @@ SRCDIRS := Device_SSE-320 Drivers Selftest Selftest_cli Selftest_pmu Serial Slee
 SRCS    := $(shell find $(SRCDIRS) -name '*.c' -not -name '._*')
 SRCS    := $(filter-out Selftest/retarget.c Selftest/main.c Selftest/raw_rx_main.c \
                         Selftest/runner_v1_main.c $(BASE_MAIN),$(SRCS))
+VENDOR_C   := Drivers/u85_driver/u85.c
+GEN_VENDOR := $(GEN)/Drivers/u85_driver/u85.c
+ifeq ($(MODEL),1)
+  SRCS := $(filter-out $(VENDOR_C),$(SRCS))
+  EXTRA_OBJS := $(GEN_VENDOR:.c=.o)
+endif
 SRCS    := $(sort $(SRCS))
-OBJS    := $(patsubst %.c,$(BUILD)/%.o,$(SRCS)) $(GEN_MAIN:.c=.o)
+OBJS    := $(patsubst %.c,$(BUILD)/%.o,$(SRCS)) $(GEN_MAIN:.c=.o) $(EXTRA_OBJS)
 DEPS    := $(OBJS:.o=.d)
 
 INCDIRS := $(sort $(dir $(shell find $(SRCDIRS) LinkScripts -name '*.h' -not -name '._*')))
@@ -92,6 +106,13 @@ $(BUILD)/%.o: %.c
 ifeq ($(EXT),1)
 $(BUILD)/Drivers/u85_driver/u85.o: CFLAGS += -DUSE_AXI_EXT=1
 endif
+ifeq ($(MODEL),1)
+$(GEN_VENDOR): $(VENDOR_C) patches/patch_u85_vendor_timeout.py
+	python3 patches/patch_u85_vendor_timeout.py --base $(VENDOR_C) --out $(GEN_VENDOR)
+$(GEN_VENDOR:.c=.o): $(GEN_VENDOR)
+	$(CC) $(CFLAGS) -DUSE_AXI_EXT=1 -c $< -o $@
+$(GEN_MAIN:.c=.o): CFLAGS += -DPMU_EVENTS_MODEL
+endif
 ifeq ($(DRAM),1)
 $(GEN_MAIN:.c=.o): CFLAGS += -DPMU_EVENTS_EXT_DRAM
 LDFLAGS += -Wl,--wrap=test_u85
@@ -114,7 +135,7 @@ check: $(TARGET).elf
 	python3 $(DENYLIST_CHECK) --elf $(TARGET).elf --map $(TARGET).map --objdump $(OBJDUMP) --nm $(NM) --profile $(PROFILE)
 	$(OBJDUMP) -d $(TARGET).elf > $(TARGET).objdump
 	$(NM) -S $(TARGET).elf > $(TARGET).nm
-	python3 $(GATE) --objdump $(TARGET).objdump --nm $(TARGET).nm --gen $(GEN_MAIN) --build-id $(BUILD_ID) --elf $(TARGET).elf $(GATE_EXT)
+	python3 $(GATE) --objdump $(TARGET).objdump --nm $(TARGET).nm --gen $(GEN_MAIN) --build-id $(BUILD_ID) --elf $(TARGET).elf $(GATE_EXT) $(if $(filter 1,$(MODEL)),--gen-vendor $(GEN_VENDOR),)
 
 hashes: bins
 	@sha256sum $(BUILD)/APP.BIN $(BUILD)/DDR.BIN $(BUILD)/VECTORS.BIN

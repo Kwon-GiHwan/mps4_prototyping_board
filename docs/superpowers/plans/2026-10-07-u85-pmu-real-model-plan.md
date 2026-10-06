@@ -61,3 +61,20 @@ UART 115200 ≈ 11 KB/s: kws 140 KB ≈ 13 s, mobilenet 4 MB ≈ 6 min, wav2lett
 ## 열린 질문 (UNPROVEN)
 
 EXT 포트 DDR 도달성 / Vela 출력의 `tflite_runtime` 비트 일치 / `SYS_DRAM_Low` 설정과 FPGA 실제의 차이(정확성 무관).
+
+## 단계 1 축소안 (2026-10-07, 0b 결과 반영)
+
+계획서 "변경 지점과 규모"의 큰 항목 대부분이 불필요해졌다:
+
+| 원래 계획 | 실제 |
+| --- | --- |
+| 러너 새 명령 `SET_WORKLOAD` + 호스트 프로토콜 확장 | **불필요.** 기존 `LOAD_MODEL`로 워크로드 블롭(헤더 `PMWL` + cms + 상수 + IFM + 레퍼런스 OFM)을 스테이징(0x9012_0000)에 올림 |
+| 스테이징 포인터로 `test_u85` 호출하는 러너 경로 | 0b의 `__wrap_test_u85`에 블롭 분기 추가 — 진입점·seam·EVENTS 그대로 |
+| OFM 기준 poison/CRC 재설계 | 벤더 `VERIFY_OUTPUT` memcmp에 `out_ver`=레퍼런스 OFM을 넘김 → rc가 정답 판정 |
+| 영역별 REGIONCFG/MEM_ATTR | 단계 1은 전 영역 EXT(`USE_AXI_EXT`) — 0b에서 검증된 경로 |
+| 벤더 타임아웃 | 유일한 벤더 변경: 생성 사본에서 `BUSY_SLEEP_TIMEOUT` 상향 (`#define`이 무조건이라 `-D`로 불가) |
+
+추가로 확인한 사실: Vela cms 앞에는 `COP1` 드라이버 페이로드가 붙는다(core-driver `ethosu_driver.c`:
+`COMMAND_STREAM`=2 액션의 `(reserved<<16)|length` 워드 뒤가 순수 스트림). 끝 워드 `0xffff0000` = `NPU_OP_STOP`
+mask 0xFFFF. 논문 모델 중 dnn_s 외 전부 `ethos-u` op 하나로 컴파일됨. 원본:
+`/opt/arm/ml-embedded-evaluation-kit/resources_downloaded/*/`. 단계 1 모델: `kws_micronet_m`.
