@@ -45,7 +45,7 @@ ELF_NOEXT = b"\x7fELF....Testing CPM signals\n...."
 
 NM_DRAM = (NM + "31000a00 00000080 T __wrap_test_u85\n90004fa0 00000600 d test3_weights\n"
            "900006b0 00000400 d test3_in_data_0\n90020000 00000300 b test3_scratch_buffer\n")
-GEN_DRAM = GEN + "#define TEST3_WEIGHTS_SIZE 0x600U\n#define TEST3_IN_SIZE      0x400U\n#define TEST3_SCRATCH_SIZE 0x300U\n"
+GEN_DRAM = GEN + 'strcmp(fmt, "Updating POWER_CTRL register with MAC_RAMP_VAR=%d \\n")\n' + "#define TEST3_WEIGHTS_SIZE 0x600U\n#define TEST3_IN_SIZE      0x400U\n#define TEST3_SCRATCH_SIZE 0x300U\n"
 
 
 OBJ_MODEL = OBJ + " 8000208: .word 0x4c574d50\n"
@@ -55,6 +55,9 @@ VEND = "#define BUSY_SLEEP_TIMEOUT 200000000 /* Tier C step 1: was 10000 */\n"
 class T(unittest.TestCase):
     def test_model_rule(self):
         self.assertTrue(g.check(OBJ_MODEL, NM_DRAM, GEN_DRAM, BID, ELF_EXT, True, True, True, VEND))
+        with self.assertRaises(g.GateFail) as cm:
+            g.check(OBJ_MODEL, NM_DRAM, GEN_DRAM.replace("Updating POWER_CTRL", "Updating XOWER_CTRL"), BID, ELF_EXT, True, True, True, VEND)
+        self.assertEqual(cm.exception.rule, "RULE_MODEL")
         for obj, exp, vend in ((OBJ, True, VEND), (OBJ_MODEL, False, None),
                                (OBJ_MODEL, True, VEND.replace("200000000", "10000"))):
             with self.assertRaises(g.GateFail) as cm: g.check(obj, NM_DRAM, GEN_DRAM, BID, ELF_EXT, True, True, exp, vend)

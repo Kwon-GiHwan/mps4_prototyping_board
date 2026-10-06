@@ -22,6 +22,16 @@ class Sets(unittest.TestCase):
         self.assertEqual(len(s[-1][1]), 3); self.assertEqual(s[0][0], 1)
 
 
+class Subset(unittest.TestCase):
+    def test_subset_sets_and_coverage(self):
+        s = E.event_sets([35, 17, 140, 17])
+        self.assertEqual(s, [(1, [17, 35, 140])])
+        E.check_coverage({17: 1, 35: 1, 140: 1}, [17, 35, 140])
+        with self.assertRaises(E.Refusal): E.check_coverage({17: 1}, [17, 35])
+        with self.assertRaises(ValueError): E.event_sets([9999])
+        self.assertEqual(len(E.event_sets()), 22)   # default stays the full sweep
+
+
 class Validity(unittest.TestCase):
     def test_green(self): self.assertEqual(E.run_validity(rec([17, 35]), [17, 35]), (True, []))
     def test_each_term_reachable(self):

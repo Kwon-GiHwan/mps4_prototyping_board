@@ -66,9 +66,19 @@ class T(unittest.TestCase):
         g = P.generate(BASE)
         blk = g[g.index("#if defined(PMU_EVENTS_MODEL)"):g.index("#endif /* PMU_EVENTS_MODEL */")]
         self.assertIn("h[15] != model_total_length", blk)
+        self.assertIn("(h[1] != 1U && h[1] != 2U)", blk)
+        self.assertIn("return pmwl_knob_bad ? PMWL_KNOB_NOT_HONOURED : rc;", blk)
+        self.assertIn("if (pmu_reg_read(NPU_REG_PMCAXI_CHAN_ABS) != h[16])", blk)
+        self.assertIn("#define NPU_OFF_QCONFIG   0x1CU", blk)          # interface.h value, not a guess
+        self.assertIn("if (pmwl_knob[i] != PMWL_OFF) { pmwl_knob_pending = 1U; }", blk)  # any knob arms the seam
         self.assertIn("return PMWL_REFUSED;", blk)
-        self.assertLess(blk.index("memset(d + a_off + h[11], 0xA5"), blk.index("memcpy(d + a_off + h[8]"))
-        self.assertLess(blk.index("memcpy(d + a_off + h[8]"), blk.index("rc = __real_test_u85(eTest, h[14], h[12], h[3], &x);"))
+        self.assertLess(blk.index("memset(arena + h[11], 0xA5"), blk.index("memcpy(arena + h[8]"))
+        self.assertLess(blk.index("memcpy(arena + h[8]"), blk.index("rc = __real_test_u85(eTest, h[14], h[12], h[3], &x);"))
+        # apply seam: lives in __wrap_printf, guarded, reads every override back
+        wp = g[g.index("int __wrap_printf(const char *fmt, ...)\n{\n    /* Tier B read seam"):]
+        ap = wp[wp.index("Tier C step 2 apply seam"):wp.index("#endif", wp.index("Tier C step 2 apply seam"))]
+        self.assertIn('"Updating POWER_CTRL register with MAC_RAMP_VAR=%d \\n"', ap)
+        self.assertLess(ap.index("npu_write(off[k], pmwl_knob[k]);"), ap.index("npu_read(off[k]) != pmwl_knob[k]"))
         self.assertIn("x.out_ver_data_0 = s + h[13];", blk)
         # the step-0b test3 wrap still exists in the #else branch
         self.assertIn("#else\nint __wrap_test_u85(", g)

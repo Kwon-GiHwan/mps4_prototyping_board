@@ -90,6 +90,8 @@ def check(objdump_text, nm_text, gen_text, build_id, elf_bytes=None, expect_ext=
     has_magic = PMWL_MAGIC in _lits(objdump_text)
     if has_magic != expect_model:
         raise GateFail(RULES[9], f"PMWL blob path {'linked' if has_magic else 'absent'}, expected the opposite")
+    if expect_model and "Updating POWER_CTRL register with MAC_RAMP_VAR=%d" not in gen_text:
+        raise GateFail(RULES[9], "model build lacks the step-2 apply seam")
     if expect_model and (gen_vendor_text is None or RAISED_TIMEOUT not in gen_vendor_text):
         raise GateFail(RULES[9], "generated vendor u85.c lacks the raised BUSY_SLEEP_TIMEOUT")
     return True
