@@ -8,7 +8,8 @@
 
 | 단계 | 내용 | 상태 |
 | --- | --- | --- |
-| 0 | `USE_AXI_EXT` 1×1 실험 — EXT 포트 도달성 + `ext_*` 30개 | 진행 중 (2026-10-07, 소유자 "진행" 지시) |
+| 0 | `USE_AXI_EXT` 1×1 실험 — EXT 포트 도달성 + `ext_*` 30개 | **완료: EXT_UNREACHABLE** (부팅 11, `evidence/pmu_events_c/VERDICT.md`). 0x9000_0000(IDAU 9, Dev Access)은 EXT 포트로 못 감 — EXT 요청 4건 후 stall |
+| 0b | 텐서를 DRAM 별칭(0x7000_0000, IDAU 7 S)에 두고 EXT 재시험 | 다음 |
 | 1 | 작은 Vela 모델(kws/h3r급) Tier C — 실모델 경로 검증 | 대기 (0 결과에 의존) |
 | 2 | mobilenet급 — stall/limit·`axi_latency_128+` | 대기 |
 
