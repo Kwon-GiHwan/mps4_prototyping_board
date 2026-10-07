@@ -91,3 +91,20 @@ mask 0xFFFF. 논문 모델 중 dnn_s 외 전부 `ethos-u` op 하나로 컴파일
 2. **AXI 한도 노브.** 헤더 v3(32워드): [23] AXI_SRAM, [24] AXI_EXT. 적용은 POWER_CTRL seam(벤더가
    0x00021F3F를 쓴 뒤), 되읽기 검증. TRM: max_outstanding_read_m1[5:0], write_m1[12:8], max_beats[17:16].
    기본 OFF — 3a 전수형은 OFF, 3b만 ON.
+
+## 단계 4 조사 — 남은 0 해소 방법 (2026-10-07, 보드 미실행)
+
+**wd_*_ws_fc / wd_*_ws_tc (4개).** 가설: fc = FWD(Fast Weight Decoder), tc = 텐서 코어(MATMUL 두 IFM).
+이름 매핑은 어느 문서에도 명시돼 있지 않다 → 측정 결과도 매핑 가설과 함께만 보고한다.
+
+- 원인 확인(정적, 컨테이너): 지금까지 측정한 kws·mobilenet cms에는 FWD(`NPU_SET_WEIGHT_FORMAT`=302, bit16)도
+  IFM2-가중치 conv(`NPU_OP_CONV` bit16 `weights_ifm2`)도 **0개**. 따라서 0은 "해당 경로를 안 탔다"로 설명된다.
+- FWD 후보: `ad_medium_int8`. 패커 설정(`Ethos_U85_SYS_DRAM_Low`, `Dedicated_Sram`)에서 FWD 1·SWD 3·conv 10.
+  **설정 의존**: 시스템 설정 없이 컴파일하면 FWD 0. Regor에는 FWD 강제 옵션이 없다(disable만 있음).
+  블롭 `ad_medium.pmwl` sha256 `a710c63f…` (cms 2924, const 459696, fast 308064, IFM 1024, OFM 8).
+- 텐서 코어 후보: 직접 만든 int8 `BATCH_MATMUL` 모델 (x[1,64,256] · xᵀ). 컨테이너의 `/opt/conf-env` TF 2.17
+  변환기로 생성 → Vela가 ethos-u op 1개로 매핑, `NPU_OP_CONV weights_ifm2=1` 1개(Regor: MatMul→VectorProduct,
+  "dynamic weights"). 블롭 `matmul_xxT.pmwl` sha256 `70ce560b…` (const 0, IFM 16384, OFM 4096).
+- 측정: 두 블롭 각각 wd_* 전 이벤트(sc0..3, fc, tc) + 대조. 판정 사전등록 필요.
+
+**EXT 쓰기 한도 3개.** 펌웨어 변경 없음. 포트 분리 끔(전 영역 EXT) + `--axi-limit sram=0x20000,ext=0x20000` 블롭.
