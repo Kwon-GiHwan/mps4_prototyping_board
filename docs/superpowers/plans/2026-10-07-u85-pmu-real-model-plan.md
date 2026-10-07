@@ -12,7 +12,8 @@
 | 0b | 텐서를 DRAM 별칭(0x7010_0000, IDAU 7 S)에 두고 EXT 재시험 | **완료: EXT_DRAM_REACHABLE** (부팅 12, 66/66 VALID, golden 일치, ±1 % 검사 PASS). `ext_*` 16개 NONZERO — `evidence/pmu_events_c/VERDICT_0b.md` |
 | 1 | 작은 Vela 모델(kws_micronet_m) — 실모델 경로 | **완료: MODEL_RUNS_CORRECT** (부팅 13, 66/66, 보드 OFM = tflite_runtime 레퍼런스 바이트 일치). TRM 38 / Reserved 46 NONZERO — `evidence/pmu_events_c/VERDICT_1.md` |
 | 2 | mobilenet, 표적 48개(포트 분리·PMCAXI_CHAN=EXT) | **완료** (부팅 18, 18/18 VALID under amendment 2). 36 NONZERO — `sram*` 24·`axi_latency` 7 전부 셈; `*_stall_limit` 12만 0. 부팅 14 실패→진단 15–17: 원인은 모델의 미세 수치 차이(5/1001 B, ≤4), 포트 분리 아님 — `evidence/pmu_events_c/VERDICT_2*.md` |
-| 3 | 전수형 (171개, 같은 도구에서 `--ids` 생략) + `*_stall_limit`용 AXI 한도 노브 | 다음 |
+| 3a | 전수형 171개 — mobilenet, 단계 2와 같은 포트 분리·PMCAXI_CHAN, `--validity model`, AXI 한도 노브 OFF | 진행 (2026-10-07 소유자 GO) |
+| 3b | `*_stall_limit` 12개 + 대조군 — AXI 한도 노브 ON (`AXI_SRAM=AXI_EXT=0x00020000`, 미결 1건) | 3a 다음 |
 
 ## 재검토에서 확립된 사실
 
@@ -79,3 +80,13 @@ EXT 포트 DDR 도달성 / Vela 출력의 `tflite_runtime` 비트 일치 / `SYS_
 `COMMAND_STREAM`=2 액션의 `(reserved<<16)|length` 워드 뒤가 순수 스트림). 끝 워드 `0xffff0000` = `NPU_OP_STOP`
 mask 0xFFFF. 논문 모델 중 dnn_s 외 전부 `ethos-u` op 하나로 컴파일됨. 원본:
 `/opt/arm/ml-embedded-evaluation-kit/resources_downloaded/*/`. 단계 1 모델: `kws_micronet_m`.
+
+## 단계 3 결정 (2026-10-07, 소유자: "둘 다 진행하자")
+
+1. **업로드 부팅당 1회.** 구현은 "RESET 후 스테이징 블롭 재사용"이 아니라, MODEL 빌드에서만 상태표가
+   `INPUT_READY`/`RESULT_READY`에서도 `SET_INSTRUMENTATION_MODE`를 받게 하는 것. RESET 의미는 그대로이고
+   모델은 CRC 검증된 LOAD_MODEL 1회로 유지된다. 이전 세트의 PMU 상태는 매 RUN의 power-hold 시퀀스가
+   지우고 리셋한다(OVS/CNTEN/INT clear, PMCR 리셋). 호스트 `--keep-model`.
+2. **AXI 한도 노브.** 헤더 v3(32워드): [23] AXI_SRAM, [24] AXI_EXT. 적용은 POWER_CTRL seam(벤더가
+   0x00021F3F를 쓴 뒤), 되읽기 검증. TRM: max_outstanding_read_m1[5:0], write_m1[12:8], max_beats[17:16].
+   기본 OFF — 3a 전수형은 OFF, 3b만 ON.

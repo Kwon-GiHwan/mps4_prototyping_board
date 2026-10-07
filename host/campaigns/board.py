@@ -137,11 +137,30 @@ class _BoardIO:
     def present(self):
         return Path(self.settings['block_device']).exists()
 
+    def _helper(self):
+        """'sudo' (default, unchanged) or 'udisks' for a root-free mount path.
+
+        The udisks path exists because this host grants the operator serial and
+        USB access but no passwordless sudo; udisks2 performs the mount under a
+        polkit rule instead. Existing configs keep the sudo path byte for byte.
+        """
+        helper = self.settings.get('mount_helper', 'sudo')
+        if helper not in ('sudo', 'udisks'):
+            raise CellFailure('ENVIRONMENT_UNAVAILABLE', 'board_identity',
+                              'mount_helper must be sudo or udisks')
+        return helper
+
     def _holders(self):
         paths = [self.settings[key] for key in ('mcc_port', 'uart_port')]
         paths += [self.settings[key] for key in ('block_device', 'partition')
                   if Path(self.settings[key]).exists()]
-        result = _command('sudo', '-n', 'lsof', '-t', '--', *paths, allowed=(0, 1))
+        if self._helper() == 'udisks':
+            # Without root, lsof cannot see holders owned by other users. The
+            # check is therefore weaker here and is recorded as such: it proves
+            # this operator holds nothing, not that nobody does.
+            result = _command('lsof', '-t', '--', *paths, allowed=(0, 1))
+        else:
+            result = _command('sudo', '-n', 'lsof', '-t', '--', *paths, allowed=(0, 1))
         # sudo/lsof operational errors can also exit 1, so stderr is not ignored.
         if result.stderr.strip() or result.stdout.strip():
             raise CellFailure('ENVIRONMENT_UNAVAILABLE', 'board_preflight',
@@ -194,6 +213,10 @@ class _BoardIO:
         mounted = _command('findmnt', '-rn', '-S', settings['partition'], allowed=(0, 1))
         if mounted.stdout.strip():
             raise CellFailure('ENVIRONMENT_UNAVAILABLE', 'board_mount', 'partition already mounted')
+        if self._helper() == 'udisks':
+            with self._mount_udisks(readonly) as root:
+                yield root
+            return
         root = Path(tempfile.mkdtemp(prefix='mlek-card-'))
         try:
             options = f'uid={os.getuid()},gid={os.getgid()},umask=022'
@@ -217,6 +240,36 @@ class _BoardIO:
             # preserve both the card and its mount for operator recovery.
             if not self.mounted:
                 root.rmdir()
+
+    @contextmanager
+    def _mount_udisks(self, readonly: bool):
+        """udisks2 chooses the mount point, so it is read back rather than set.
+
+        The identity gates in mount() have already run; this only performs the
+        privileged step. Unmount failure leaves the card mounted on purpose, so
+        that usb() refuses USB_OFF and the operator can recover.
+        """
+        partition = self.settings['partition']
+        argv = ['udisksctl', 'mount', '-b', partition, '--no-user-interaction']
+        if readonly:
+            argv += ['--options', 'ro']
+        _command(*argv)
+        located = _command('findmnt', '-rn', '-o', 'TARGET', '-S', partition)
+        root = Path(located.stdout.strip().splitlines()[0]) if located.stdout.strip() else None
+        if root is None or not root.is_dir():
+            raise CellFailure('ENVIRONMENT_UNAVAILABLE', 'board_mount',
+                              'udisks reported no mount point')
+        self.mounted = True
+        try:
+            yield root
+        finally:
+            _command('sync')
+            _command('udisksctl', 'unmount', '-b', partition, '--no-user-interaction')
+            state = _command('findmnt', '-rn', '-S', partition, allowed=(0, 1))
+            if state.stdout.strip():
+                raise CellFailure('BOARD_RECOVERY_ERROR', 'board_unmount',
+                                  'card remains mounted', target_unusable=True)
+            self.mounted = False
 
     def capture(self):
         return _Capture(self.settings['uart_port'])
