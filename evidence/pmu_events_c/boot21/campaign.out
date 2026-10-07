@@ -1,0 +1,30 @@
+set  1 rep 1 rc=0 vendor_rc=0 seam_status/qread=('0xffff0020', 2924) ofm_mismatch(count,maxdiff,first)=(0, 0, 4294967295) valid=True 
+set  1 rep 2 rc=0 vendor_rc=0 seam_status/qread=('0xffff0020', 2924) ofm_mismatch(count,maxdiff,first)=(0, 0, 4294967295) valid=True 
+set  1 rep 3 rc=0 vendor_rc=0 seam_status/qread=('0xffff0020', 2924) ofm_mismatch(count,maxdiff,first)=(0, 0, 4294967295) valid=True 
+set  2 rep 1 rc=0 vendor_rc=0 seam_status/qread=('0xffff0020', 2924) ofm_mismatch(count,maxdiff,first)=(0, 0, 4294967295) valid=True 
+set  2 rep 2 rc=0 vendor_rc=0 seam_status/qread=('0xffff0020', 2924) ofm_mismatch(count,maxdiff,first)=(0, 0, 4294967295) valid=True 
+set  2 rep 3 rc=0 vendor_rc=0 seam_status/qread=('0xffff0020', 2924) ofm_mismatch(count,maxdiff,first)=(0, 0, 4294967295) valid=True 
+set  3 rep 1 rc=0 vendor_rc=0 seam_status/qread=('0xffff0020', 2924) ofm_mismatch(count,maxdiff,first)=(0, 0, 4294967295) valid=True 
+set  3 rep 2 rc=0 vendor_rc=0 seam_status/qread=('0xffff0020', 2924) ofm_mismatch(count,maxdiff,first)=(0, 0, 4294967295) valid=True 
+set  3 rep 3 rc=0 vendor_rc=0 seam_status/qread=('0xffff0020', 2924) ofm_mismatch(count,maxdiff,first)=(0, 0, 4294967295) valid=True 
+set  4 rep 1 rc=0 vendor_rc=0 seam_status/qread=('0xffff0020', 2924) ofm_mismatch(count,maxdiff,first)=(0, 0, 4294967295) valid=True 
+set  4 rep 2 rc=0 vendor_rc=0 seam_status/qread=('0xffff0020', 2924) ofm_mismatch(count,maxdiff,first)=(0, 0, 4294967295) valid=True 
+set  4 rep 3 rc=0 vendor_rc=0 seam_status/qread=('0xffff0020', 2924) ofm_mismatch(count,maxdiff,first)=(0, 0, 4294967295) valid=True 
+set  5 rep 1 rc=0 vendor_rc=0 seam_status/qread=('0xffff0020', 2924) ofm_mismatch(count,maxdiff,first)=(0, 0, 4294967295) valid=True 
+set  5 rep 2 rc=0 vendor_rc=0 seam_status/qread=('0xffff0020', 2924) ofm_mismatch(count,maxdiff,first)=(0, 0, 4294967295) valid=True 
+set  5 rep 3 rc=0 vendor_rc=0 seam_status/qread=('0xffff0020', 2924) ofm_mismatch(count,maxdiff,first)=(0, 0, 4294967295) valid=True 
+{
+ "runs": 15,
+ "coverage": "COMPLETE_SUBSET(39)",
+ "consistency": {
+  "CYCLE_EVENT_VS_PMCCNTR": "PASS",
+  "NPU_ACTIVE_LE_CYCLE": "PASS"
+ },
+ "verdict_counts": {
+  "COUNTED_NONZERO": 37,
+  "COUNTED_ZERO": 2,
+  "INCONSISTENT": 0,
+  "NOT_OBSERVED": 0
+ },
+ "refusal": null
+}

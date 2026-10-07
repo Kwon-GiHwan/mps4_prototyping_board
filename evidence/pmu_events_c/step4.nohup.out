@@ -1,0 +1,31 @@
+mcc boot log: 10366 bytes -> /home/gihwan/evsweep/evidence_c_runs/boot21/mcc_boot.log
+Image loaded from \SOFTWARE\VECTORS.BIN
+Image loaded from \SOFTWARE\APP.BIN
+Image loaded from \SOFTWARE\DDR.BIN
+DDR memory test at 0x70000000: PASSED
+Clearing SCC CPUWAIT (0xFFFFFFFF80000000:0x00000000)
+--- boot21 campaign exit=0
+ },
+ "refusal": null
+}
+mcc boot log: 10366 bytes -> /home/gihwan/evsweep/evidence_c_runs/boot22/mcc_boot.log
+Image loaded from \SOFTWARE\VECTORS.BIN
+Image loaded from \SOFTWARE\APP.BIN
+Image loaded from \SOFTWARE\DDR.BIN
+DDR memory test at 0x70000000: PASSED
+Clearing SCC CPUWAIT (0xFFFFFFFF80000000:0x00000000)
+--- boot22 campaign exit=0
+ },
+ "refusal": null
+}
+mcc boot log: 10366 bytes -> /home/gihwan/evsweep/evidence_c_runs/boot23/mcc_boot.log
+Image loaded from \SOFTWARE\VECTORS.BIN
+Image loaded from \SOFTWARE\APP.BIN
+Image loaded from \SOFTWARE\DDR.BIN
+DDR memory test at 0x70000000: PASSED
+Clearing SCC CPUWAIT (0xFFFFFFFF80000000:0x00000000)
+--- boot23 campaign exit=0
+ },
+ "refusal": null
+}
+STEP4 DONE
