@@ -44,6 +44,8 @@ def main():
     ap.add_argument("--blob", help="Tier C step 1: PMWL workload blob to stage with LOAD_MODEL")
     ap.add_argument("--validity", choices=("exact", "model"), default="exact",
                     help="model: completion replaces exact OFM match (step-2 amendment 2)")
+    ap.add_argument("--keep-model", action="store_true",
+                    help="step 3: upload the blob once per boot; later sets only SET_MODE (MODEL builds)")
     ap.add_argument("--ids", help="Tier C step 2: comma-separated event ids or @file (default: all 171)")
     for k in ("app", "vectors", "ddr"): ap.add_argument(f"--{k}-sha256", required=True)
     a = ap.parse_args()
@@ -74,8 +76,10 @@ def main():
         for set_id, codes in sets:
             # State machine (amendment 3): SET_INSTRUMENTATION_MODE is accepted only in IDLE,
             # RUN only in INPUT_READY/RESULT_READY. Per set: RESET -> SET_MODE -> prime -> RUN x3.
+            first = set_id == sets[0][0]
             try:
-                link.reset_runner()
+                if first or not a.keep_model:
+                    link.reset_runner()
                 req, applied, cnt, cseq = link.set_instrumentation_mode(E.INSTRUMENTATION_EVENTS, codes, set_id)
             except Nack as n:
                 rule = "RULE_CAPABILITY" if (set_id == 1 and "UNSUPPORTED" in repr(n)) else "RULE_MODE_NACK"
@@ -83,7 +87,8 @@ def main():
             if applied != E.INSTRUMENTATION_EVENTS or cnt != len(codes):
                 raise E.fail_rule("RULE_MODE_NACK", f"applied={applied} count={cnt}")
             try:
-                prime(link)
+                if first or not a.keep_model:
+                    prime(link)
             except (Nack, ProtocolError) as e:
                 raise E.fail_rule("RULE_RUN_TRANSPORT", f"set {set_id} prime: {e!r}")
             for rep in range(1, E.REPEATS + 1):
@@ -149,7 +154,7 @@ def main():
         with (out / "per_event.csv").open("w", newline="") as f:
             w = csv.DictWriter(f, fieldnames=list(per[0].keys())); w.writeheader(); w.writerows(per)
     mm = sorted({tuple(x["ofm_mismatch"][:2]) for x in raw if x.get("ofm_mismatch")})
-    summ = dict(validity=a.validity, ofm_mismatch_observed=[list(t) for t in mm], requested_ids=(sorted(set(ids)) if ids else "all"), provenance=prov, runs=len(raw) - 1, rows=len(rows), refusal=refusal,
+    summ = dict(keep_model=a.keep_model, validity=a.validity, ofm_mismatch_observed=[list(t) for t in mm], requested_ids=(sorted(set(ids)) if ids else "all"), provenance=prov, runs=len(raw) - 1, rows=len(rows), refusal=refusal,
                 consistency=E.consistency(rows), verdict_counts={v: sum(1 for p in per if p["verdict"] == v) for v in E.VERDICTS})
     try:
         E.check_coverage(by, ids); summ["coverage"] = "COMPLETE" if ids is None else f"COMPLETE_SUBSET({len(set(ids))})"

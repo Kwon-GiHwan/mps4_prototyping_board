@@ -326,6 +326,131 @@ class BoardTests(unittest.TestCase):
         with self.assertRaises(CellFailure):
             io.usb(False)
 
+    def _udisks_command(self, mountpoint, fail_unmount=False):
+        """Stub for the udisks path: udisksctl mounts, findmnt reports where."""
+        seen = []
+
+        def command(*argv, **kwargs):
+            seen.append(argv)
+            if argv[0] == 'lsblk':
+                output = ('{"blockdevices":[{"fstype":"vfat","label":"M1SDP",'
+                          '"pkname":"sdb"}]}') if '-J' in argv else 'usb\n'
+            elif argv[0] == 'udisksctl' and argv[1] == 'unmount':
+                if fail_unmount:
+                    raise CellFailure('ENVIRONMENT_UNAVAILABLE', 'board_environment',
+                                      'udisks unmount failed')
+                output = ''
+            elif argv[0] == 'findmnt':
+                # Before the mount the partition is free; afterwards it is not.
+                mounted = any(a[:2] == ('udisksctl', 'mount') for a in seen[:-1])
+                output = str(mountpoint) + '\n' if mounted and '-o' in argv else ''
+            else:
+                output = ''
+            return subprocess.CompletedProcess(argv, 0, output, '')
+
+        return command, seen
+
+    def test_udisks_helper_mounts_without_sudo(self):
+        io = board._BoardIO({**self.settings, 'mount_helper': 'udisks'})
+        mountpoint = self.root / 'udisks-media'
+        mountpoint.mkdir()
+        command, seen = self._udisks_command(mountpoint)
+        with patch.object(board, '_command', side_effect=command):
+            with io.mount(False) as mounted:
+                self.assertEqual(mounted, mountpoint)
+                (mounted / 'written.bin').write_bytes(b'payload')
+        self.assertFalse(io.mounted)
+        self.assertEqual((mountpoint / 'written.bin').read_bytes(), b'payload')
+        self.assertNotIn('sudo', [argv[0] for argv in seen])
+        self.assertIn(('udisksctl', 'mount', '-b', '/dev/sdb1', '--no-user-interaction'), seen)
+
+    def test_udisks_unmount_failure_never_deletes_card_contents(self):
+        io = board._BoardIO({**self.settings, 'mount_helper': 'udisks'})
+        mountpoint = self.root / 'udisks-media'
+        mountpoint.mkdir()
+        command, _ = self._udisks_command(mountpoint, fail_unmount=True)
+        with patch.object(board, '_command', side_effect=command):
+            with self.assertRaises(CellFailure):
+                with io.mount(False) as mounted:
+                    (mounted / 'precious.bin').write_bytes(b'preserve')
+        self.assertEqual((mountpoint / 'precious.bin').read_bytes(), b'preserve')
+        self.assertTrue(io.mounted)
+        with self.assertRaises(CellFailure):
+            io.usb(False)
+
+    def test_udisks_missing_mount_point_is_environment_unavailable(self):
+        io = board._BoardIO({**self.settings, 'mount_helper': 'udisks'})
+
+        def command(*argv, **kwargs):
+            if argv[0] == 'lsblk':
+                output = ('{"blockdevices":[{"fstype":"vfat","label":"M1SDP",'
+                          '"pkname":"sdb"}]}') if '-J' in argv else 'usb\n'
+            else:
+                output = ''      # findmnt never reports a target
+            return subprocess.CompletedProcess(argv, 0, output, '')
+
+        with patch.object(board, '_command', side_effect=command):
+            with self.assertRaises(CellFailure) as caught:
+                with io.mount(False):
+                    pass
+        self.assertEqual(caught.exception.status, 'ENVIRONMENT_UNAVAILABLE')
+        self.assertFalse(io.mounted)
+
+    def test_udisks_silent_unmount_failure_is_quarantined(self):
+        """udisksctl exits 0 but the card stays mounted: the check must fire."""
+        io = board._BoardIO({**self.settings, 'mount_helper': 'udisks'})
+        mountpoint = self.root / 'udisks-media'
+        mountpoint.mkdir()
+
+        state = {'mounted': False}
+
+        def command(*argv, **kwargs):
+            if argv[0] == 'lsblk':
+                output = ('{"blockdevices":[{"fstype":"vfat","label":"M1SDP",'
+                          '"pkname":"sdb"}]}') if '-J' in argv else 'usb\n'
+            elif argv[:2] == ('udisksctl', 'mount'):
+                state['mounted'] = True
+                output = ''
+            elif argv[0] == 'findmnt':
+                # Free before the mount; still mounted after the unmount claims
+                # success, which is the silent failure being modelled.
+                output = str(mountpoint) + '\n' if state['mounted'] else ''
+            else:
+                output = ''          # udisksctl unmount "succeeds"
+            return subprocess.CompletedProcess(argv, 0, output, '')
+
+        with patch.object(board, '_command', side_effect=command):
+            with self.assertRaises(CellFailure) as caught:
+                with io.mount(False):
+                    pass
+        self.assertEqual(caught.exception.status, 'BOARD_RECOVERY_ERROR')
+        self.assertTrue(io.mounted)
+        with self.assertRaises(CellFailure):
+            io.usb(False)
+
+    def test_udisks_holders_check_does_not_use_sudo(self):
+        io = board._BoardIO({**self.settings, 'mount_helper': 'udisks'})
+        seen = []
+
+        def command(*argv, **kwargs):
+            seen.append(argv)
+            return subprocess.CompletedProcess(argv, 0, '', '')
+
+        with patch.object(board, '_command', side_effect=command):
+            io._holders()
+        self.assertTrue(seen, 'holders check ran no command')
+        self.assertEqual(seen[0][0], 'lsof')
+        self.assertNotIn('sudo', [argv[0] for argv in seen])
+
+    def test_unknown_mount_helper_is_refused(self):
+        io = board._BoardIO({**self.settings, 'mount_helper': 'doas'})
+        with self.assertRaises(CellFailure) as caught:
+            io._helper()
+        self.assertEqual(caught.exception.status, 'ENVIRONMENT_UNAVAILABLE')
+
+    def test_default_mount_helper_is_sudo(self):
+        self.assertEqual(board._BoardIO(self.settings)._helper(), 'sudo')
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -72,7 +72,8 @@ class T(unittest.TestCase):
         g = P.generate(BASE)
         blk = g[g.index("#if defined(PMU_EVENTS_MODEL)"):g.index("#endif /* PMU_EVENTS_MODEL */")]
         self.assertIn("h[15] != model_total_length", blk)
-        self.assertIn("(h[1] != 1U && h[1] != 2U)", blk)
+        self.assertIn("h[1] < 1U || h[1] > 3U", blk)
+        self.assertIn("NPU_OFF_AXI_SRAM, NPU_OFF_AXI_EXT};", g)
         self.assertIn("return pmwl_knob_bad ? PMWL_KNOB_NOT_HONOURED : rc;", blk)
         self.assertIn("if (pmu_reg_read(NPU_REG_PMCAXI_CHAN_ABS) != h[16])", blk)
         self.assertIn("#define NPU_OFF_QCONFIG   0x1CU", blk)          # interface.h value, not a guess
@@ -89,6 +90,14 @@ class T(unittest.TestCase):
         self.assertLess(blk.index("rc = __real_test_u85(eTest, h[14], h[12], h[3], &x);"), blk.index("ofm_mm_count++;"))
         # the step-0b test3 wrap still exists in the #else branch
         self.assertIn("#else\nint __wrap_test_u85(", g)
+
+    def test_step3_state_table(self):
+        g = P.generate(BASE)
+        self.assertIn("#if defined(PMU_EVENTS_MODEL)\n#define M_EVENTS_MODEL M(CB_SET_INSTRUMENTATION_MODE)\n#else\n#define M_EVENTS_MODEL 0U\n#endif", g)
+        tbl = g[g.index("static const uint32_t state_accepts[ST_COUNT]"):]
+        tbl = tbl[:tbl.index("};") + 2]
+        self.assertEqual(tbl.count("M_EVENTS_MODEL"), 2)
+        self.assertLess(tbl.index("ST_INPUT_READY"), tbl.index("M_EVENTS_MODEL"))   # not in IDLE/BOOT rows
 
     def test_refuses_mutated_base(self):
         with self.assertRaises(SystemExit):

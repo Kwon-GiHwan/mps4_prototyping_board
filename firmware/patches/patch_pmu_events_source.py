@@ -162,9 +162,10 @@ EDITS = [
   "     * right before it starts the NPU. Every override is read back. */\n"
   "    if (measurement_active && pmwl_knob_pending\n"
   "        && strcmp(fmt, \"Updating POWER_CTRL register with MAC_RAMP_VAR=%d \\n\") == 0) {\n"
-  "        static const uint32_t off[6] = {NPU_OFF_REGIONCFG, NPU_OFF_QCONFIG, NPU_OFF_MEM_ATTR0,\n"
-  "                                        NPU_OFF_MEM_ATTR0 + 4U, NPU_OFF_MEM_ATTR0 + 8U, NPU_OFF_MEM_ATTR0 + 12U};\n"
-  "        for (unsigned k = 0; k < 6U; k++) {\n"
+  "        static const uint32_t off[8] = {NPU_OFF_REGIONCFG, NPU_OFF_QCONFIG, NPU_OFF_MEM_ATTR0,\n"
+  "                                        NPU_OFF_MEM_ATTR0 + 4U, NPU_OFF_MEM_ATTR0 + 8U, NPU_OFF_MEM_ATTR0 + 12U,\n"
+  "                                        NPU_OFF_AXI_SRAM, NPU_OFF_AXI_EXT};\n"
+  "        for (unsigned k = 0; k < 8U; k++) {\n"
   "            if (pmwl_knob[k] != PMWL_OFF) {\n"
   "                npu_write(off[k], pmwl_knob[k]);\n"
   "                if (npu_read(off[k]) != pmwl_knob[k]) { pmwl_knob_bad = 1U; }\n"
@@ -213,9 +214,11 @@ EDITS = [
   "#define NPU_OFF_REGIONCFG 0x3CU\n"
   "#define NPU_OFF_QCONFIG   0x1CU /* interface.h NPU_REG_QCONFIG */\n"
   "#define NPU_OFF_MEM_ATTR0 0x40U\n"
+  "#define NPU_OFF_AXI_SRAM  0x50U /* interface.h NPU_REG_AXI_SRAM */\n"
+  "#define NPU_OFF_AXI_EXT   0x54U /* interface.h NPU_REG_AXI_EXT  */\n"
   "/* v2 knobs, applied at the vendor's POWER_CTRL printf (see __wrap_printf). */\n"
   "static volatile uint32_t pmwl_knob_pending, pmwl_knob_bad;\n"
-  "static uint32_t pmwl_knob[7]; /* regioncfg qconfig mem_attr0..3 (+pad) */\n"
+  "static uint32_t pmwl_knob[8]; /* regioncfg qconfig mem_attr0..3 axi_sram axi_ext */\n"
   "static uint32_t pmwl_al256(uint32_t n) { return (n + 255U) & ~255U; }\n"
   "/* 1 = the region's traffic goes to the EXT port (default: USE_AXI_EXT makes every MEM_ATTR EXT). */\n"
   "static uint32_t pmwl_is_ext(uint32_t attr_index)\n{\n"
@@ -229,17 +232,18 @@ EDITS = [
   "    uint8_t *dram = (uint8_t *)(uintptr_t)EXT_DRAM_BASE;\n"
   "    uint8_t *near; /* SRAM-port side: staging window after the blob */\n"
   "    struct u85_warp_data_t x = *w;\n"
-  "    uint32_t h[24], i, cmd_ext;\n"
+  "    uint32_t h[32], i, cmd_ext;\n"
   "    uint8_t *cmd, *cst, *arena, *fast;\n"
   "    int rc;\n"
   "    (void)irq_mask; (void)qsize;\n"
   "    memcpy(h, s, 16U * 4U);\n"
-  "    if (h[0] != PMWL_MAGIC || (h[1] != 1U && h[1] != 2U) || h[15] != model_total_length) {\n"
+  "    if (h[0] != PMWL_MAGIC || h[1] < 1U || h[1] > 3U || h[15] != model_total_length) {\n"
   "        return PMWL_REFUSED;  /* no blob: never fall back to test3 silently */\n"
   "    }\n"
-  "    for (i = 16U; i < 24U; i++) { h[i] = PMWL_OFF; }\n"
-  "    if (h[1] == 2U) { memcpy(&h[16], s + 64U, 8U * 4U); }\n"
-  "    for (i = 0U; i < 6U; i++) { pmwl_knob[i] = h[17U + i]; }\n"
+  "    for (i = 16U; i < 32U; i++) { h[i] = PMWL_OFF; }\n"
+  "    if (h[1] >= 2U) { memcpy(&h[16], s + 64U, ((h[1] == 3U) ? 16U : 8U) * 4U); }\n"
+  "    if (h[1] == 2U) { h[23] = PMWL_OFF; }   /* v2 word 23 was reserved */\n"
+  "    for (i = 0U; i < 8U; i++) { pmwl_knob[i] = h[17U + i]; }\n"
   "    near = (uint8_t *)s + pmwl_al256(h[15]);\n"
   "    cmd_ext = (pmwl_knob[1] == PMWL_OFF) ? 1U : pmwl_is_ext(pmwl_knob[1] & 3U);\n"
   "    /* placement follows the port: EXT regions in S DRAM, SRAM-port regions in staging */\n"
@@ -258,7 +262,7 @@ EDITS = [
   "        if (pmu_reg_read(NPU_REG_PMCAXI_CHAN_ABS) != h[16]) { pmwl_knob_bad = 1U; }\n"
   "    }\n"
   "    pmwl_knob_pending = 0U;\n"
-  "    for (i = 0U; i < 6U; i++) { if (pmwl_knob[i] != PMWL_OFF) { pmwl_knob_pending = 1U; } }\n"
+  "    for (i = 0U; i < 8U; i++) { if (pmwl_knob[i] != PMWL_OFF) { pmwl_knob_pending = 1U; } }\n"
   "    x.cmd_st         = cmd;\n"
   "    x.weights        = cst;\n"
   "    x.scratch_buffer = arena;\n"
@@ -313,6 +317,14 @@ EDITS = [
   "__attribute__((noinline))\n"
   "#endif\n"
   "static int32_t run_fixed_inference(void)\n"),
+
+ # 15. Tier C step 3: upload once per boot -- in MODEL builds the state table also accepts
+ #     SET_INSTRUMENTATION_MODE in INPUT_READY / RESULT_READY, so sets change without RESET.
+ ("#define M_TEST_HOOKS 0U\n#endif\n",
+  "#define M_TEST_HOOKS 0U\n#endif\n"
+  "#if defined(PMU_EVENTS_MODEL)\n#define M_EVENTS_MODEL M(CB_SET_INSTRUMENTATION_MODE)\n#else\n#define M_EVENTS_MODEL 0U\n#endif\n"),
+ ("                           M_TEST_HOOKS,\n", "                           M_TEST_HOOKS | M_EVENTS_MODEL,\n"),
+ ("                           M_TEST_HOOKS};\n", "                           M_TEST_HOOKS | M_EVENTS_MODEL};\n"),
 ]
 
 
