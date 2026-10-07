@@ -1,0 +1,46 @@
+{
+ "model": "matmul_xxT.tflite",
+ "model_sha256": "ebfde77be33445b846bca0b38fd248057bf42fba18d7f891c0c6296f47daea93",
+ "vela_sha256": "5e28187ea1c0bb3d4f275751a44abe8003493e9bcd387faf4367f60f4d57b646",
+ "accelerator": "ethos-u85-1024",
+ "system_config": "Ethos_U85_SYS_DRAM_Low",
+ "memory_mode": "Dedicated_Sram",
+ "seed": 1,
+ "blob_sha256": "70ce560be8a3ec566b060ea81d38ea61e75b72513e1cd3235801ffbf5a0f7c0d",
+ "cms_len": 340,
+ "const_len": 0,
+ "arena_size": 20480,
+ "fast_size": 0,
+ "ifm_off": 4096,
+ "ifm_len": 16384,
+ "ofm_off": 0,
+ "ofm_len": 4096,
+ "total": 20896,
+ "header_version": 1,
+ "knobs": [
+  "0xffffffff",
+  "0xffffffff",
+  "0xffffffff",
+  "0xffffffff",
+  "0xffffffff",
+  "0xffffffff",
+  "0xffffffff",
+  "0xffffffff",
+  "0xffffffff",
+  "0xffffffff",
+  "0xffffffff",
+  "0xffffffff",
+  "0xffffffff",
+  "0xffffffff",
+  "0xffffffff",
+  "0xffffffff"
+ ],
+ "axi": null,
+ "ports": null,
+ "axi_limit": null
+}
+
+  "axi": null,
+  "ports": null,
+  "axi_limit": null
+}

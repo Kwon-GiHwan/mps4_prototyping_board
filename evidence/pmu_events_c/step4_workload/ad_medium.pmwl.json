@@ -1,0 +1,46 @@
+{
+ "model": "/opt/arm/ml-embedded-evaluation-kit/resources_downloaded/ad/ad_medium_int8.tflite",
+ "model_sha256": "a8b1c9037c2a80e6ff770f0a550777cf744a52850bed6545b2bfc9bacf604c98",
+ "vela_sha256": "3c0359c04ed255082c05190837b4fc1176febaf091ceeaf5b9b4904cb72d34e9",
+ "accelerator": "ethos-u85-1024",
+ "system_config": "Ethos_U85_SYS_DRAM_Low",
+ "memory_mode": "Dedicated_Sram",
+ "seed": 1,
+ "blob_sha256": "a710c63fe06f72c1317c47983b2369a394904aa988b28d0be743bda293126112",
+ "cms_len": 2924,
+ "const_len": 459696,
+ "arena_size": 1024,
+ "fast_size": 308064,
+ "ifm_off": 0,
+ "ifm_len": 1024,
+ "ofm_off": 0,
+ "ofm_len": 8,
+ "total": 463728,
+ "header_version": 1,
+ "knobs": [
+  "0xffffffff",
+  "0xffffffff",
+  "0xffffffff",
+  "0xffffffff",
+  "0xffffffff",
+  "0xffffffff",
+  "0xffffffff",
+  "0xffffffff",
+  "0xffffffff",
+  "0xffffffff",
+  "0xffffffff",
+  "0xffffffff",
+  "0xffffffff",
+  "0xffffffff",
+  "0xffffffff",
+  "0xffffffff"
+ ],
+ "axi": null,
+ "ports": null,
+ "axi_limit": null
+}
+
+  "axi": null,
+  "ports": null,
+  "axi_limit": null
+}
