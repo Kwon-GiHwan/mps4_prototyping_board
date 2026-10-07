@@ -1,0 +1,75 @@
+{
+ "anchor": "paper-board-formal-precampaign-anchor",
+ "created": "2026-08-25",
+ "BOARD_EXECUTABILITY_QUALIFICATION": "7/7 QUALIFIED",
+ "FORMAL_BOARD_SAMPLES": 0,
+ "stage_B1": "HOLD",
+ "rq3_seven_workload_universe": "ESTABLISHED",
+ "protocol": {
+  "superseded": "7 x 3 boots x 10 runs = 210 (NOT EXECUTABLE WITH STOCK RUNNER)",
+  "current": "7 workloads x 3 independent fresh boots x 1 stock inference = 21 samples",
+  "canonical_board_cost": "median(B1,B2,B3)",
+  "reason": "stock MLEK runner performs exactly one inference per boot",
+  "superseded_before_formal_board_data": true
+ },
+ "board_cost_metric": "NPU TOTAL",
+ "normalization": "total_i / geomean(total_1..total_7), within each domain",
+ "permitted": [
+  "Spearman ranking",
+  "rank inversions",
+  "relative-cost-shape deviation"
+ ],
+ "prohibited": [
+  "board TOTAL - FVP TOTAL",
+  "board/FVP absolute ratio",
+  "hardware is X% slower",
+  "board MAC-scaling",
+  "same binary phrasing"
+ ],
+ "pmu_scope": {
+  "comparable": [
+   "TOTAL",
+   "ACTIVE",
+   "IDLE"
+  ],
+  "board_only_NOT_EVALUABLE": [
+   "SRAM_RD",
+   "SRAM_WR",
+   "EXT_RD",
+   "EXT_WR"
+  ],
+  "reason": "frozen FVP formal records did not preserve SRAM/EXT; stages not re-run",
+  "never_configured": [
+   "CC_STALLED_ON_BLOCKDEP"
+  ]
+ },
+ "harness": {
+  "sha256": "ce5051ebb238688a37de5c0e0bf1faa23e60266f83cbd9dacca2de86b7518128",
+  "ordering_test_sha256": "53d4a064a25fec1c66f6ce2c91e26909f5d36cbdf1cb0b8856e81dfa3d811c67",
+  "mutation_tests": 13,
+  "contracts": [
+   "capture listener alive before REBOOT",
+   "postflight REBOOT then USB_OFF then assert absent"
+  ]
+ },
+ "qualification_records": {
+  "tar_sha256": "a02c7ece03122c85ada478a8954ade8fa2147a69912fdce30e35a010764b8207",
+  "console_sha256": "528c88123c7f2b758a33906f570fbafd93605f1308fe4a138c51b576fee9b841",
+  "rnnoise_evidence_sha256": "5857a9b245c546f131d5765449a6c4cd0243e61300ca57bdd0445be8aa7399e5"
+ },
+ "board_totals": {
+  "rnnoise_INT8": 56460,
+  "kws_micronet_m": 97273,
+  "ad_medium_int8": 152528,
+  "vww4_128_128_INT8": 242265,
+  "yolo-fastest_192_face_v4": 454619,
+  "mobilenet_v2_1.0_224_INT8": 1456543,
+  "wav2letter_pruned_int8": 4141085
+ },
+ "staged_rollout": [
+  "Stage B1: 7 x Boot#1 = 7 -> STOP",
+  "Stage B2: 7 x Boot#2",
+  "Stage B3: 7 x Boot#3 -> 21"
+ ],
+ "runner_patch": "NOT AUTHORIZED"
+}

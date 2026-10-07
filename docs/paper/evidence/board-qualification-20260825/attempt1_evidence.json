@@ -1,0 +1,229 @@
+{
+ "probe": "rnnoise_INT8_board_integration_qualification",
+ "BOARD_QUALIFICATION_RUNS": 1,
+ "FORMAL_BOARD_SAMPLES": 0,
+ "steps": [
+  {
+   "step": "device absent before USB_ON",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "step": "mounts referencing card",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "step": "root-inclusive UART/block holders",
+   "status": "PASS",
+   "detail": 0
+  },
+  {
+   "step": "runner protocol PING / counters",
+   "status": "NOT_APPLICABLE",
+   "detail": "MLEK stock runner implements no such protocol; board-level gates used instead"
+  },
+  {
+   "step": "source boot.bin",
+   "status": "OK",
+   "detail": "9dc61053ad9f4dd7"
+  },
+  {
+   "step": "source bram.bin",
+   "status": "OK",
+   "detail": "eb851d082bdb2628"
+  },
+  {
+   "step": "source ddr.bin",
+   "status": "OK",
+   "detail": "b8a49739dadbb686"
+  },
+  {
+   "step": "source images.txt",
+   "status": "OK",
+   "detail": "af688281435a73dd"
+  },
+  {
+   "step": "destination set discovered",
+   "status": "OK",
+   "detail": {
+    "boot.bin": "/SOFTWARE/boot.bin",
+    "bram.bin": "/SOFTWARE/bram.bin",
+    "ddr.bin": "/SOFTWARE/ddr.bin",
+    "images.txt": "/MB/HBI0376B/FI101/images.txt"
+   }
+  },
+  {
+   "step": "backup boot.bin",
+   "status": "OK",
+   "detail": "DID_NOT_EXIST"
+  },
+  {
+   "step": "backup bram.bin",
+   "status": "OK",
+   "detail": "DID_NOT_EXIST"
+  },
+  {
+   "step": "backup ddr.bin",
+   "status": "OK",
+   "detail": "81d37a219a6b4141"
+  },
+  {
+   "step": "backup images.txt",
+   "status": "OK",
+   "detail": "cb78a12efd33fa72"
+  },
+  {
+   "step": "device absent after USB_OFF",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "step": "source==declared==destination boot.bin",
+   "status": "MATCH",
+   "detail": "9dc61053ad9f4dd7"
+  },
+  {
+   "step": "source==declared==destination bram.bin",
+   "status": "MATCH",
+   "detail": "eb851d082bdb2628"
+  },
+  {
+   "step": "source==declared==destination ddr.bin",
+   "status": "MATCH",
+   "detail": "b8a49739dadbb686"
+  },
+  {
+   "step": "source==declared==destination images.txt",
+   "status": "MATCH",
+   "detail": "af688281435a73dd"
+  },
+  {
+   "step": "DDR self-test",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "step": "CPUWAIT cleared",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "step": "completion marker",
+   "status": "FAIL",
+   "detail": null
+  },
+  {
+   "step": "no fatal/NPU error",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "step": "restored boot.bin",
+   "status": "MATCH",
+   "detail": null
+  },
+  {
+   "step": "restored bram.bin",
+   "status": "MATCH",
+   "detail": null
+  },
+  {
+   "step": "restored ddr.bin",
+   "status": "MATCH",
+   "detail": null
+  },
+  {
+   "step": "restored images.txt",
+   "status": "MATCH",
+   "detail": null
+  },
+  {
+   "step": "postflight DDR",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "step": "postflight CPUWAIT",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "step": "postflight /dev/sdb absent",
+   "status": "FAIL",
+   "detail": null
+  },
+  {
+   "step": "postflight mounts",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "step": "postflight UART holders",
+   "status": "PASS",
+   "detail": 0
+  }
+ ],
+ "backup": {
+  "boot.bin": {
+   "existed": false,
+   "card_path": "/SOFTWARE/boot.bin"
+  },
+  "bram.bin": {
+   "existed": false,
+   "card_path": "/SOFTWARE/bram.bin"
+  },
+  "ddr.bin": {
+   "existed": true,
+   "sha256": "81d37a219a6b4141d0b433796711ab8af2ee2c3c668a28143a3ffe6a574ade98",
+   "card_path": "/SOFTWARE/ddr.bin"
+  },
+  "images.txt": {
+   "existed": true,
+   "sha256": "cb78a12efd33fa72555b94ee4b8ca6faef4d9504c971c52c6cb47c75096673de",
+   "card_path": "/MB/HBI0376B/FI101/images.txt"
+  }
+ },
+ "deploy": {
+  "source": {
+   "boot.bin": "9dc61053ad9f4dd799c0bb4c5031caaa5224b97d074398927ff2ab83b925837f",
+   "bram.bin": "eb851d082bdb2628bd9e0b01fd42f056e48e28fdfc5e0f6b5d1057298d5421c4",
+   "ddr.bin": "b8a49739dadbb68679b8197e5e266579a9af05808970bf0fec9464f95e9d5521",
+   "images.txt": "af688281435a73dda3b2247845149817ecc7a9bbdff5a3ccd2e4dfa52875423f"
+  },
+  "written": {
+   "boot.bin": "9dc61053ad9f4dd799c0bb4c5031caaa5224b97d074398927ff2ab83b925837f",
+   "bram.bin": "eb851d082bdb2628bd9e0b01fd42f056e48e28fdfc5e0f6b5d1057298d5421c4",
+   "ddr.bin": "b8a49739dadbb68679b8197e5e266579a9af05808970bf0fec9464f95e9d5521",
+   "images.txt": "af688281435a73dda3b2247845149817ecc7a9bbdff5a3ccd2e4dfa52875423f"
+  },
+  "readback": {
+   "boot.bin": "9dc61053ad9f4dd799c0bb4c5031caaa5224b97d074398927ff2ab83b925837f",
+   "bram.bin": "eb851d082bdb2628bd9e0b01fd42f056e48e28fdfc5e0f6b5d1057298d5421c4",
+   "ddr.bin": "b8a49739dadbb68679b8197e5e266579a9af05808970bf0fec9464f95e9d5521",
+   "images.txt": "af688281435a73dda3b2247845149817ecc7a9bbdff5a3ccd2e4dfa52875423f"
+  },
+  "all_match": true
+ },
+ "boot": {
+  "ddr_passed": true,
+  "cpuwait_cleared": true,
+  "log_tail": "4096000KB\r\n\r\nQSPI Init: PASSED\r\nReading images file \\MB\\HBI0376B\\FI101\\images.txt\r\n\r\nImage 0 LAR address 0x0200_11000000 offset of 0x0000_00000000 added\r\nWriting SRAM BIN file \\SOFTWARE\\boot.bin to Address 0x0200_11000000\r\nWriting segment 0 to LAR address 0x0200_11000000\r\nFile \\SOFTWARE\\boot.bin written to memory address 0x0200_11000000\r\nImage loaded from \\SOFTWARE\\boot.bin\r\n\r\nImage 1 LAR address 0x0100_12000000 offset of 0x0000_00000000 added\r\nWriting SRAM BIN file \\SOFTWARE\\bram.bin to Address 0x0100_12000000\r\nWriting segment 0 to LAR address 0x0100_12000000\r\n.........................\r\nFile \\SOFTWARE\\bram.bin written to memory address 0x0100_12000000\r\nImage loaded from \\SOFTWARE\\bram.bin\r\n\r\nImage 2 LAR address 0x0100_70000000 offset of 0x0000_00000000 added\r\nWriting SRAM BIN file \\SOFTWARE\\ddr.bin to Address 0x0100_70000000\r\nWriting segment 0 to LAR address 0x0100_70000000\r\n.....................................................................................\r\nFile \\SOFTWARE\\ddr.bin written to memory address 0x0100_70000000\r\nImage loaded from \\SOFTWARE\\ddr.bin\r\n\r\nSetting QSPI to XIP (QSPI) mode...\r\nBoard REV B or later - init ADV7513\r\nDDR (8GB-SR or 16GB-DR) SPD EEPROM detected...\r\nDDR memory test at 0x70000000: PASSED\r\n\r\nUART0: MCC, UART1: FPGA0\r\nReleasing CB_nRST\r\nClearing SCC CPUWAIT (0xFFFFFFFF80000000:0x00000000)\r\nUSB Serial Number = 500546259002\r\n\r\nCmd> \r\n\r\nCmd> \r\n\r\nCmd> \r\n\r\nCmd> \r\n\r\nCmd> \r\n\r\nCmd> \r\n\r\nCmd> \r\n\r\nCmd> \r\n\r\nCmd> \r\n\r\nCmd> \r\n\r\nCmd> \r\n\r\nCmd> \r\n\r\nCmd> \r\n\r\nCmd> "
+ },
+ "app_uart": "\u0000\u0000",
+ "restore": {
+  "readback": {
+   "boot.bin": null,
+   "bram.bin": null,
+   "ddr.bin": "81d37a219a6b4141d0b433796711ab8af2ee2c3c668a28143a3ffe6a574ade98",
+   "images.txt": "cb78a12efd33fa72555b94ee4b8ca6faef4d9504c971c52c6cb47c75096673de"
+  },
+  "all_match": true
+ },
+ "postflight": {
+  "ddr": true,
+  "cpuwait": true,
+  "sdb_absent": false,
+  "holders": 0
+ }
+}

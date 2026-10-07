@@ -465,7 +465,8 @@ PRE_OFFS = (0x1180, 0x1184, 0x1188, 0x118C)
 
 def run(mode="Q1", dis=None, nm=None, strings=None, reloc=RELOC_OK,
         src=VENDOR_SRC, hdr=IFACE_HDR, flags=FLAGS_OK,
-        preproc=PREPROC_NO_CFG, obj_dis=None, obj_sections=None):
+        preproc=PREPROC_NO_CFG, obj_dis=None, obj_sections=None,
+        callsite_contract=gate.DEFAULT_CALLSITE_CONTRACT):
     """One full gate evaluation over synthetic inputs."""
     return gate.evaluate(
         mode=mode,
@@ -482,6 +483,7 @@ def run(mode="Q1", dis=None, nm=None, strings=None, reloc=RELOC_OK,
         compiler_flags=flags,
         preprocessed_text=preproc,
         cfg_header_text=CFG_HDR,
+        callsite_contract=callsite_contract,
     )
 
 
@@ -504,6 +506,47 @@ check("TEST_CPM is proven, not assumed", res["test_cpm"] == 1)
 check("total printf relocations stay informational, not a pinned count",
       res["printf_relocations"] == 2 and res["puts_relocations"] == 0,
       "%d/%d" % (res["printf_relocations"], res["puts_relocations"]))
+
+print("=== positive: an explicit diagnostic caller contract reuses the gate ===")
+diagnostic_contract = gate.CallsiteContract(
+    caller_symbol="test_commands",
+    object_text_section=".text.test_commands",
+)
+diagnostic_dis = disassembly(mode="Q1").replace("<test_u85>", "<test_commands>")
+diagnostic_nm = NM_Q1.replace(" test_u85", " test_commands")
+diagnostic_obj = (
+    object_disassembly()
+    .replace(".text.test_u85", ".text.test_commands")
+    .replace("<test_u85>", "<test_commands>")
+)
+diagnostic_res = run(
+    "Q1",
+    dis=diagnostic_dis,
+    nm=diagnostic_nm,
+    obj_dis=diagnostic_obj,
+    callsite_contract=diagnostic_contract,
+)
+check(
+    "explicit caller contract binds both linked and relocatable evidence",
+    diagnostic_res["caller_symbol"] == "test_commands"
+    and diagnostic_res["object_caller_symbol"] == "test_commands"
+    and diagnostic_res["object_section"] == ".text.test_commands",
+    str(diagnostic_res),
+)
+expect_fail(
+    "explicit caller contract rejects the wrong object section",
+    lambda: run(
+        "Q1",
+        dis=diagnostic_dis,
+        nm=diagnostic_nm,
+        obj_dis=diagnostic_obj,
+        callsite_contract=gate.CallsiteContract(
+            caller_symbol="test_commands",
+            object_text_section=".text.not_test_commands",
+        ),
+    ),
+    "object disassembly covers section",
+)
 
 print("=== positive: the TARGET call's own object relocation ===")
 check("object target call is bound to an R_ARM_*_CALL relocation",

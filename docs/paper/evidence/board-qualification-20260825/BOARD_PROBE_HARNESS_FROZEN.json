@@ -1,0 +1,65 @@
+{
+ "freeze": "paper-board-probe-harness-frozen",
+ "created": "2026-08-25",
+ "harness_sha256": "8dd517f97bc61020d4eee2d4c0d4991ef01213b5be2138b69c6c0af489525240",
+ "ordering_test_sha256": "2bdf0c4cd570050c2e2e419c0e9915db9a38b6692b2ec11e2700f13365a7f5f0",
+ "parser_sha256": "5c837e17bfb8ba893f021f3233ed1e1908276e6c0e9a217fc7b6a3e98e8f9945",
+ "artifact_anchor": {
+  "name": "paper-board-rnnoise-preprobe-anchor",
+  "digest": "d0d385758cd7f0f5b93965d62b878754d920b29d4248b64c2b33eec07218918a"
+ },
+ "attempt_1": {
+  "deployment_boot_restore": "PASS",
+  "measurement_observation": "NOT_OBSERVED",
+  "reason": "CAPTURE_STARTED_AFTER_APPLICATION_COMPLETION",
+  "status": "PRESERVED - not FAILED, not NOT_QUALIFIED, not deleted",
+  "evidence_sha256": "04f2297d1dc5939e761412d649cb1f2af7895756a70ab661e027cdec2b653868",
+  "console_sha256": "1649f621dc7f77de5d81fae0e9bc25a2b9b8f213de9420eef021a2b08271f0be"
+ },
+ "attempt_2": {
+  "status": "AUTHORIZED",
+  "purpose": "MEASUREMENT_PATH_QUALIFICATION"
+ },
+ "capture_ordering_contract": [
+  "open ttyUSB1",
+  "reader thread confirmed running (threading.Event, 5s deadline)",
+  "only then issue REBOOT",
+  "continuously capture from before reset",
+  "wait for inference completion or fatal condition"
+ ],
+ "ordering_enforced_in_code": {
+  "guard": "assert_capture_before_reset() raises CaptureOrderViolation",
+  "runs_before_serial_io": true,
+  "boot_and_gate_requires_capture": true,
+  "postflight_exempt": "require_capture=False, explicit"
+ },
+ "mutation_tests": {
+  "count": 8,
+  "result": "ALL_PASS",
+  "offline": true,
+  "cases": [
+   "reboot with no capture rejected",
+   "reboot with dead capture rejected",
+   "unrecorded capture start rejected",
+   "boot_and_gate rejects bad order",
+   "no serial I/O before the guard",
+   "running capture accepted",
+   "reboot time recorded after capture",
+   "postflight reboot allowed without capture"
+  ]
+ },
+ "qualification_criteria": [
+  "completion marker present",
+  "no fatal/NPU error",
+  "profile block parsed completely",
+  "event family U85_SRAM_EXT_FAMILY",
+  "NPU TOTAL present and > 0",
+  "ACTIVE present",
+  "IDLE present",
+  "TOTAL == ACTIVE + IDLE"
+ ],
+ "zero_auxiliary_counters": "INFO only, never a failure",
+ "FORMAL_BOARD_SAMPLES": 0,
+ "runner_patch": "NOT AUTHORIZED",
+ "campaign_210": "HOLD"
+}

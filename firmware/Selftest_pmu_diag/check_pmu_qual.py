@@ -43,6 +43,7 @@ firmware never imports them.
 """
 
 import argparse
+from dataclasses import dataclass
 import hashlib
 import json
 import re
@@ -96,6 +97,24 @@ MODES = ("Q0", "Q1")
 # only section the object gate will read, so a relocation from anywhere else
 # cannot be mistaken for the target's.
 OBJECT_TEXT_SECTION = ".text." + CALLER_SYMBOL
+
+
+@dataclass(frozen=True)
+class CallsiteContract:
+    """Caller identity for the vendor H-PRINTF release seam.
+
+    The original qualification images place the target call in ``test_u85``.
+    Later diagnostic-only generated drivers preserve the same call and release
+    semantics inside ``test_commands``.  Keeping this identity explicit lets
+    those images reuse the complete gate without mutating module globals or
+    weakening the frozen default.
+    """
+
+    caller_symbol: str = CALLER_SYMBOL
+    object_text_section: str = OBJECT_TEXT_SECTION
+
+
+DEFAULT_CALLSITE_CONTRACT = CallsiteContract()
 # Debug/comment sections are not addressable code or data. In a linked ELF they
 # all sit at address 0, so flattening them into the VMA map could collide with
 # real low addresses; they are skipped rather than trusted not to.
@@ -380,7 +399,8 @@ def resolve_r0_literal(fn, index):
     return ins.literal_addr if ins.kind == "ldr_lit" else None
 
 
-def check_object_target_relocation(dis, section_dumps):
+def check_object_target_relocation(
+        dis, section_dumps, contract=DEFAULT_CALLSITE_CONTRACT):
     """Prove the TARGET vendor call relocates against printf, in the object.
 
     This is the term that cannot be recovered after the link. Once ld has run,
@@ -393,17 +413,19 @@ def check_object_target_relocation(dis, section_dumps):
 
     Unrelated printf calls in the same object are untouched by any of this.
     """
-    fn = dis.functions.get(CALLER_SYMBOL)
+    caller_symbol = contract.caller_symbol
+    object_text_section = contract.object_text_section
+    fn = dis.functions.get(caller_symbol)
     if fn is None:
         raise GateError(
             "object caller <%s> is absent from the disassembled section "
             "(found %s)"
-            % (CALLER_SYMBOL,
+            % (caller_symbol,
                ", ".join("<%s>" % n for n in sorted(dis.functions)) or "none"))
-    if OBJECT_TEXT_SECTION not in dis.sections:
+    if object_text_section not in dis.sections:
         raise GateError(
             "object disassembly covers section %s, expected %s"
-            % (", ".join(dis.sections) or "none", OBJECT_TEXT_SECTION))
+            % (", ".join(dis.sections) or "none", object_text_section))
 
     pool = {ins.addr: ins.value for ins in fn.insns if ins.kind == "word"}
     hits = []
@@ -442,23 +464,23 @@ def check_object_target_relocation(dis, section_dumps):
         raise GateError(
             "the object target call at <%s>+0x%x carries NO relocation; the "
             "vendor call must relocate against %r"
-            % (CALLER_SYMBOL, call.addr, TARGET_RELOC_SYMBOL))
+            % (caller_symbol, call.addr, TARGET_RELOC_SYMBOL))
     rtype, symbol, _ = reloc
     if not _CALL_RELOC.match(rtype):
         raise GateError(
             "the object target call at <%s>+0x%x has relocation type %s, "
             "expected an R_ARM_*_CALL"
-            % (CALLER_SYMBOL, call.addr, rtype))
+            % (caller_symbol, call.addr, rtype))
     if symbol != TARGET_RELOC_SYMBOL:
         raise GateError(
             "the object target call at <%s>+0x%x relocates against %r, "
             "expected exactly %r -- a puts/iprintf/builtin lowering erases the "
             "callsite the hook depends on"
-            % (CALLER_SYMBOL, call.addr, symbol, TARGET_RELOC_SYMBOL))
+            % (caller_symbol, call.addr, symbol, TARGET_RELOC_SYMBOL))
 
     return {
-        "object_caller_symbol": CALLER_SYMBOL,
-        "object_section": OBJECT_TEXT_SECTION,
+        "object_caller_symbol": caller_symbol,
+        "object_section": object_text_section,
         "object_target_call_offset": call.addr,
         "object_target_relocation_type": rtype,
         "object_target_relocation_symbol": symbol,
@@ -699,16 +721,16 @@ def parse_nm(nm_text):
     return symbols
 
 
-def check_symbols(nm_text, mode):
+def check_symbols(nm_text, mode, contract=DEFAULT_CALLSITE_CONTRACT):
     names = set(parse_nm(nm_text))
     if WRAP_PRINTF_SYMBOL not in names:
         raise GateError(
             "%s is absent from the final ELF: the wrapper was inlined or "
             "garbage-collected, so no call/symbol boundary can be proven"
             % WRAP_PRINTF_SYMBOL)
-    if CALLER_SYMBOL not in names:
+    if contract.caller_symbol not in names:
         raise GateError("caller symbol %s is absent from the final ELF"
-                        % CALLER_SYMBOL)
+                        % contract.caller_symbol)
     if mode == "Q1" and HOOK_SYMBOL not in names:
         raise GateError("%s is absent from the Q1 ELF: the noinline hook must "
                         "survive as its own symbol" % HOOK_SYMBOL)
@@ -1107,7 +1129,8 @@ def check_compiler_flags(flags):
 def evaluate(mode, disassembly_text, nm_text, strings_text, relocation_text,
              object_disassembly_text, object_sections_text,
              vendor_source_text, interface_header_text, compiler_flags,
-             preprocessed_text, cfg_header_text):
+             preprocessed_text, cfg_header_text,
+             callsite_contract=DEFAULT_CALLSITE_CONTRACT):
     """Prove every design term or raise. Returns the extracted callsite facts."""
     if mode not in MODES:
         raise GateError("unknown qualification mode %r, expected one of %s"
@@ -1117,7 +1140,7 @@ def evaluate(mode, disassembly_text, nm_text, strings_text, relocation_text,
     check_single_terminal_release(vendor_source_text)
     check_compiler_flags(compiler_flags)
     check_no_cfg_write(preprocessed_text, cfg_header_text)
-    check_symbols(nm_text, mode)
+    check_symbols(nm_text, mode, callsite_contract)
     reg_offsets = {name: _regs_header_offset(cfg_header_text, name)
                    for name in REGS_HEADER_OFFSETS}
 
@@ -1132,7 +1155,8 @@ def evaluate(mode, disassembly_text, nm_text, strings_text, relocation_text,
     # The load-bearing object term: the TARGET call's own relocation.
     object_evidence = check_object_target_relocation(
         parse_disassembly(object_disassembly_text),
-        parse_section_dumps(object_sections_text))
+        parse_section_dumps(object_sections_text),
+        callsite_contract)
 
     cmd_addr = npu_cmd_address(vendor_source_text, interface_header_text)
     funcs = parse_disassembly(disassembly_text).functions
@@ -1148,9 +1172,9 @@ def evaluate(mode, disassembly_text, nm_text, strings_text, relocation_text,
                " (in %s)" % ", ".join("<%s>" % f.name for f, _ in hits)
                if hits else ""))
     fn, index = hits[0]
-    if fn.name != CALLER_SYMBOL:
+    if fn.name != callsite_contract.caller_symbol:
         raise GateError("the target callsite is in caller <%s>, expected <%s>"
-                        % (fn.name, CALLER_SYMBOL))
+                        % (fn.name, callsite_contract.caller_symbol))
 
     callee = fn.insns[index].callee
     if callee != WRAP_PRINTF_SYMBOL:

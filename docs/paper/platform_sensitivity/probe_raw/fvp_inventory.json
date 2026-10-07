@@ -1,0 +1,169 @@
+{
+ "FVP_Corstone_SSE-300": {
+  "path": "/opt/arm/fvp_avh/bin/FVP_Corstone_SSE-300",
+  "fm_version": "11.31.28",
+  "version_banner": [
+   "Fast Models [11.31.28 (Mar  1 2026)]",
+   "Copyright 2000-2026 ARM Limited.",
+   "All Rights Reserved."
+  ],
+  "board_ns": "mps3_board",
+  "num_macs_params": [],
+  "ta_params": [],
+  "param_count": 1751
+ },
+ "FVP_Corstone_SSE-300_Ethos-U55": {
+  "path": "/opt/arm/fvp_installed/models/Linux64_GCC-9.3/FVP_Corstone_SSE-300_Ethos-U55",
+  "fm_version": "11.22.35",
+  "version_banner": [
+   "Fast Models [11.22.35 (Aug 18 2023)]",
+   "Copyright 2000-2023 ARM Limited.",
+   "All Rights Reserved."
+  ],
+  "board_ns": "mps3_board",
+  "num_macs_params": [
+   "ethosu.num_macs=128                                   # (int   , init-time) default = '0x80'   : Number of 8x8 MACs performed per cycle"
+  ],
+  "ta_params": [],
+  "param_count": 1730
+ },
+ "FVP_Corstone_SSE-300_Ethos-U65": {
+  "path": "/opt/arm/fvp_installed/models/Linux64_GCC-9.3/FVP_Corstone_SSE-300_Ethos-U65",
+  "fm_version": "11.22.35",
+  "version_banner": [
+   "Fast Models [11.22.35 (Aug 18 2023)]",
+   "Copyright 2000-2023 ARM Limited.",
+   "All Rights Reserved."
+  ],
+  "board_ns": "mps3_board",
+  "num_macs_params": [
+   "ethosu.num_macs=256                                   # (int   , init-time) default = '0x100'  : Number of 8x8 MACs performed per cycle"
+  ],
+  "ta_params": [],
+  "param_count": 1730
+ },
+ "FVP_Corstone_SSE-310": {
+  "path": "/opt/arm/fvp_installed_310/models/Linux64_GCC-9.3/FVP_Corstone_SSE-310",
+  "fm_version": "11.24.13",
+  "version_banner": [
+   "Fast Models [11.24.13 (Jan  4 2024)]",
+   "Copyright 2000-2024 ARM Limited.",
+   "All Rights Reserved."
+  ],
+  "board_ns": "mps3_board",
+  "num_macs_params": [
+   "ethosu.num_macs=256                                   # (int   , init-time) default = '0x100'  : Number of 8x8 MACs performed per cycle (32, 64, 128, or 256)"
+  ],
+  "ta_params": [
+   "mps3_board.stub_timing_adapter.fail=0                 # (bool  , init-time) default = '0'      : Abort all accesses",
+   "mps3_board.stub_timing_adapter.failmsg=               # (string, init-time) default = ''       : String to print when 'fail'=true and access occurred",
+   "mps3_board.stub_timing_adapter.periph_framesize=-1    # (int   , init-time) default = '0xffffffffffffffff' : Size of frame (4/64, indicating if ID is at xFD0 or xFFD0)",
+   "mps3_board.stub_timing_adapter.periphid_24=           # (string, init-time) default = ''       : 24 hex digits for the 12 bytes of peripheral ID",
+   "mps3_board.stub_timing_adapter.periphid_generic=      # (string, init-time) default = ''       : Set of space-separated offset:value pairs for dwords of ID",
+   "mps3_board.stub_timing_adapter.ram_generic=           # (string, init-time) default = ''       : Set of space-seperated offset:default pairs for writable dwords",
+   "mps3_board.stub_timing_adapter.warn_once=1            # (bool  , init-time) default = '1'      : Warn once for the invalid read and write access.",
+   "mps3_board.uart0_adapter_rx.ENABLE=0                  # (bool  , init-time) default = '0'      : Enables the adapter glue logic.",
+   "mps3_board.uart0_adapter_rx.diagnostics=0             # (int   , run-time ) default = '0x0'    : Diagnostics",
+   "mps3_board.uart0_adapter_tx.ENABLE=0                  # (bool  , init-time) default = '0'      : Enables the adapter glue logic.",
+   "mps3_board.uart0_adapter_tx.diagnostics=0             # (int   , run-time ) default = '0x0'    : Diagnostics",
+   "mps3_board.uart1_adapter_rx.ENABLE=0                  # (bool  , init-time) default = '0'      : Enables the adapter glue logic.",
+   "mps3_board.uart1_adapter_rx.diagnostics=0             # (int   , run-time ) default = '0x0'    : Diagnostics",
+   "mps3_board.uart1_adapter_tx.ENABLE=0                  # (bool  , init-time) default = '0'      : Enables the adapter glue logic.",
+   "mps3_board.uart1_adapter_tx.diagnostics=0             # (int   , run-time ) default = '0x0'    : Diagnostics",
+   "mps3_board.uart2_adapter_rx.ENABLE=0                  # (bool  , init-time) default = '0'      : Enables the adapter glue logic.",
+   "mps3_board.uart2_adapter_rx.diagnostics=0             # (int   , run-time ) default = '0x0'    : Diagnostics",
+   "mps3_board.uart2_adapter_tx.ENABLE=0                  # (bool  , init-time) default = '0'      : Enables the adapter glue logic.",
+   "mps3_board.uart2_adapter_tx.diagnostics=0             # (int   , run-time ) default = '0x0'    : Diagnostics",
+   "mps3_board.uart5_adapter_rx.ENABLE=0                  # (bool  , init-time) default = '0'      : Enables the adapter glue logic.",
+   "mps3_board.uart5_adapter_rx.diagnostics=0             # (int   , run-time ) default = '0x0'    : Diagnostics",
+   "mps3_board.uart5_adapter_tx.ENABLE=0                  # (bool  , init-time) default = '0'      : Enables the adapter glue logic.",
+   "mps3_board.uart5_adapter_tx.diagnostics=0             # (int   , run-time ) default = '0x0'    : Diagnostics"
+  ],
+  "param_count": 1848
+ },
+ "FVP_Corstone_SSE-310_Ethos-U65": {
+  "path": "/opt/arm/fvp_installed_310/models/Linux64_GCC-9.3/FVP_Corstone_SSE-310_Ethos-U65",
+  "fm_version": "11.24.13",
+  "version_banner": [
+   "Fast Models [11.24.13 (Jan  4 2024)]",
+   "Copyright 2000-2024 ARM Limited.",
+   "All Rights Reserved."
+  ],
+  "board_ns": "mps3_board",
+  "num_macs_params": [
+   "ethosu.num_macs=256                                   # (int   , init-time) default = '0x100'  : Number of 8x8 MACs performed per cycle (256 or 512)"
+  ],
+  "ta_params": [
+   "mps3_board.stub_timing_adapter.fail=0                 # (bool  , init-time) default = '0'      : Abort all accesses",
+   "mps3_board.stub_timing_adapter.failmsg=               # (string, init-time) default = ''       : String to print when 'fail'=true and access occurred",
+   "mps3_board.stub_timing_adapter.periph_framesize=-1    # (int   , init-time) default = '0xffffffffffffffff' : Size of frame (4/64, indicating if ID is at xFD0 or xFFD0)",
+   "mps3_board.stub_timing_adapter.periphid_24=           # (string, init-time) default = ''       : 24 hex digits for the 12 bytes of peripheral ID",
+   "mps3_board.stub_timing_adapter.periphid_generic=      # (string, init-time) default = ''       : Set of space-separated offset:value pairs for dwords of ID",
+   "mps3_board.stub_timing_adapter.ram_generic=           # (string, init-time) default = ''       : Set of space-seperated offset:default pairs for writable dwords",
+   "mps3_board.stub_timing_adapter.warn_once=1            # (bool  , init-time) default = '1'      : Warn once for the invalid read and write access.",
+   "mps3_board.uart0_adapter_rx.ENABLE=0                  # (bool  , init-time) default = '0'      : Enables the adapter glue logic.",
+   "mps3_board.uart0_adapter_rx.diagnostics=0             # (int   , run-time ) default = '0x0'    : Diagnostics",
+   "mps3_board.uart0_adapter_tx.ENABLE=0                  # (bool  , init-time) default = '0'      : Enables the adapter glue logic.",
+   "mps3_board.uart0_adapter_tx.diagnostics=0             # (int   , run-time ) default = '0x0'    : Diagnostics",
+   "mps3_board.uart1_adapter_rx.ENABLE=0                  # (bool  , init-time) default = '0'      : Enables the adapter glue logic.",
+   "mps3_board.uart1_adapter_rx.diagnostics=0             # (int   , run-time ) default = '0x0'    : Diagnostics",
+   "mps3_board.uart1_adapter_tx.ENABLE=0                  # (bool  , init-time) default = '0'      : Enables the adapter glue logic.",
+   "mps3_board.uart1_adapter_tx.diagnostics=0             # (int   , run-time ) default = '0x0'    : Diagnostics",
+   "mps3_board.uart2_adapter_rx.ENABLE=0                  # (bool  , init-time) default = '0'      : Enables the adapter glue logic.",
+   "mps3_board.uart2_adapter_rx.diagnostics=0             # (int   , run-time ) default = '0x0'    : Diagnostics",
+   "mps3_board.uart2_adapter_tx.ENABLE=0                  # (bool  , init-time) default = '0'      : Enables the adapter glue logic.",
+   "mps3_board.uart2_adapter_tx.diagnostics=0             # (int   , run-time ) default = '0x0'    : Diagnostics",
+   "mps3_board.uart5_adapter_rx.ENABLE=0                  # (bool  , init-time) default = '0'      : Enables the adapter glue logic.",
+   "mps3_board.uart5_adapter_rx.diagnostics=0             # (int   , run-time ) default = '0x0'    : Diagnostics",
+   "mps3_board.uart5_adapter_tx.ENABLE=0                  # (bool  , init-time) default = '0'      : Enables the adapter glue logic.",
+   "mps3_board.uart5_adapter_tx.diagnostics=0             # (int   , run-time ) default = '0x0'    : Diagnostics"
+  ],
+  "param_count": 1848
+ },
+ "FVP_Corstone_SSE-315": {
+  "path": "/opt/arm/fvp_avh/bin/FVP_Corstone_SSE-315",
+  "fm_version": "11.31.28",
+  "version_banner": [
+   "Fast Models [11.31.28 (Mar  1 2026)]",
+   "Copyright 2000-2026 ARM Limited.",
+   "All Rights Reserved."
+  ],
+  "board_ns": "mps4_board",
+  "num_macs_params": [
+   "mps4_board.subsystem.ethosu.num_macs=256              # (int   , init-time) default = '0x100'  : Number of 8x8 MACs performed per cycle (256 or 512). : [0x100:0x200]"
+  ],
+  "ta_params": [
+   "mps4_board.stub_timing_adapter.fail=0                 # (bool  , init-time) default = '0'      : Abort all accesses",
+   "mps4_board.stub_timing_adapter.failmsg=               # (string, init-time) default = ''       : String to print when 'fail'=true and access occurred",
+   "mps4_board.stub_timing_adapter.periph_framesize=-1    # (int   , init-time) default = '0xffffffffffffffff' : Size of frame (4/64, indicating if ID is at xFD0 or xFFD0) : [0xffffffffffffffff:0xffffffff]",
+   "mps4_board.stub_timing_adapter.periphid_24=           # (string, init-time) default = ''       : 24 std::hex digits for the 12 bytes of peripheral ID",
+   "mps4_board.stub_timing_adapter.periphid_generic=      # (string, init-time) default = ''       : Set of space-separated offset:value pairs for dwords of ID",
+   "mps4_board.stub_timing_adapter.ram_generic=           # (string, init-time) default = ''       : Set of space-seperated offset:default pairs for writable dwords",
+   "mps4_board.stub_timing_adapter.warn_once=1            # (bool  , init-time) default = '1'      : Warn once for the invalid read and write access."
+  ],
+  "param_count": 1877
+ },
+ "FVP_Corstone_SSE-320": {
+  "path": "/opt/arm/fvp_installed_320/models/Linux64_GCC-9.3/FVP_Corstone_SSE-320",
+  "fm_version": "11.27.25",
+  "version_banner": [
+   "Fast Models [11.27.25 (Sep 24 2024)]",
+   "Copyright 2000-2024 ARM Limited.",
+   "All Rights Reserved."
+  ],
+  "board_ns": "mps4_board",
+  "num_macs_params": [
+   "mps4_board.subsystem.ethosu.num_macs=256              # (int   , init-time) default = '0x100'  : Number of 8x8 MACs performed per cycle  : [0x80:0x800]"
+  ],
+  "ta_params": [
+   "mps4_board.stub_timing_adapter.fail=0                 # (bool  , init-time) default = '0'      : Abort all accesses",
+   "mps4_board.stub_timing_adapter.failmsg=               # (string, init-time) default = ''       : String to print when 'fail'=true and access occurred",
+   "mps4_board.stub_timing_adapter.periph_framesize=-1    # (int   , init-time) default = '0xffffffffffffffff' : Size of frame (4/64, indicating if ID is at xFD0 or xFFD0) : [0x8000000000000000:0x7fffffffffffffff]",
+   "mps4_board.stub_timing_adapter.periphid_24=           # (string, init-time) default = ''       : 24 hex digits for the 12 bytes of peripheral ID",
+   "mps4_board.stub_timing_adapter.periphid_generic=      # (string, init-time) default = ''       : Set of space-separated offset:value pairs for dwords of ID",
+   "mps4_board.stub_timing_adapter.ram_generic=           # (string, init-time) default = ''       : Set of space-seperated offset:default pairs for writable dwords",
+   "mps4_board.stub_timing_adapter.warn_once=1            # (bool  , init-time) default = '1'      : Warn once for the invalid read and write access."
+  ],
+  "param_count": 1870
+ }
+}

@@ -1,0 +1,17 @@
+# host/probe_endonly_seq.py on the boot-7 image (APP 95ee2502...), same boot, after the 66-run campaign
+ping: Counters(state=6, version=1, rx_bytes=6640, tx_bytes=35876, rx_overrun=0, bad_magic=0, bad_version=0, bad_crc=0, length_error=0, sequence_error=0, parser_resync=0)
+--- A: RESET -> END_ONLY -> prime -> run x3   (the Tier B per-set shape, mode 1)
+set_mode: (1, 1, 0, 23)
+A run1: rc=0 armed=1 en=1 progress=0 window_raw=0 mode_applied=1 mmio_w=8
+A run2: rc=0 armed=1 en=1 progress=0 window_raw=0 mode_applied=1 mmio_w=8
+A run3: rc=0 armed=1 en=1 progress=0 window_raw=0 mode_applied=1 mmio_w=8
+--- B: second RESET cycle, same shape
+B run1: rc=0 armed=1 en=1 progress=0 window_raw=0 mode_applied=1 mmio_w=8
+B run2: rc=0 armed=1 en=1 progress=0 window_raw=0 mode_applied=1 mmio_w=8
+B run3: rc=0 armed=1 en=1 progress=0 window_raw=0 mode_applied=1 mmio_w=8
+--- C: EVENTS mode, count=1 (cycle id 17) through the same shape, for contrast
+set_mode: (2, 2, 1, 25)
+C run1: rc=0 armed=1 en=1 progress=0 window_raw=0 mode_applied=2 mmio_w=9
+   ev codes/values: [17] [0]
+C run2: rc=0 armed=1 en=1 progress=0 window_raw=0 mode_applied=2 mmio_w=9
+   ev codes/values: [17] [0]

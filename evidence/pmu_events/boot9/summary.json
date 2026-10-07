@@ -1,0 +1,27 @@
+{
+  "provenance": {
+    "board_serial": "FTDI-00FT46259002B",
+    "fpga_image": "FI101-r1p0 (109762 v0100)",
+    "build_id": "0x504d4556",
+    "authorization": "owner-verbal-2026-09-23",
+    "app_sha256": "8472eb5a3e3afe8ec610a905dafaa4a8c7cc6ac125fa0a3b3893acd22f467e3f",
+    "vectors_sha256": "b15357e0eacce796e01dabc51f09c46d55cd41461f5803ec56ff14ac44acd048",
+    "ddr_sha256": "81d37a219a6b4141d0b433796711ab8af2ee2c3c668a28143a3ffe6a574ade98",
+    "host_boot_index": 9,
+    "captured_at_utc": "2026-09-23T08:16:37.070604+00:00"
+  },
+  "runs": 66,
+  "rows": 513,
+  "refusal": null,
+  "consistency": {
+    "CYCLE_EVENT_VS_PMCCNTR": "FAIL",
+    "NPU_ACTIVE_LE_CYCLE": "PASS"
+  },
+  "verdict_counts": {
+    "COUNTED_NONZERO": 76,
+    "COUNTED_ZERO": 92,
+    "INCONSISTENT": 3,
+    "NOT_OBSERVED": 0
+  },
+  "coverage": "COMPLETE"
+}

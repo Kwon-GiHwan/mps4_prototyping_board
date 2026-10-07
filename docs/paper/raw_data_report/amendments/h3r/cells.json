@@ -1,0 +1,2504 @@
+[
+ {
+  "cell_id": "h3r_conv1x1_6x6_c128__SSE-320__ethos-u85-256",
+  "model": "h3r_conv1x1_6x6_c128",
+  "model_path": "/tmp/h3r/models/h3r_conv1x1_6x6_c128.tflite",
+  "platform": "SSE-320",
+  "npu": "ethos-u85",
+  "mac_config": 256,
+  "accelerator_config": "ethos-u85-256",
+  "system_config": "Ethos_U85_SYS_DRAM_Low",
+  "memory_mode": "Dedicated_Sram",
+  "target_platform": "mps4",
+  "target_subsystem": "sse-320",
+  "fvp": "/opt/arm/fvp_installed_320/models/Linux64_GCC-9.3/FVP_Corstone_SSE-320",
+  "verbose": true,
+  "experiment": "H3R",
+  "arms": [
+   [
+    "base",
+    {}
+   ],
+   [
+    "equalized",
+    {
+     "SRAM_MAXR": 8,
+     "SRAM_MAXW": 8,
+     "SRAM_MAXRW": 0,
+     "SRAM_RLATENCY": 0,
+     "SRAM_WLATENCY": 0,
+     "SRAM_PULSE_ON": 3999,
+     "SRAM_PULSE_OFF": 1,
+     "SRAM_BWCAP": 4000,
+     "EXT_MAXR": 0,
+     "EXT_MAXW": 0,
+     "EXT_MAXRW": 0,
+     "EXT_RLATENCY": 0,
+     "EXT_WLATENCY": 0,
+     "EXT_PULSE_ON": 4000,
+     "EXT_PULSE_OFF": 1000,
+     "EXT_BWCAP": 0
+    }
+   ]
+  ]
+ },
+ {
+  "cell_id": "h3r_conv1x1_6x6_c128__SSE-320__ethos-u85-512",
+  "model": "h3r_conv1x1_6x6_c128",
+  "model_path": "/tmp/h3r/models/h3r_conv1x1_6x6_c128.tflite",
+  "platform": "SSE-320",
+  "npu": "ethos-u85",
+  "mac_config": 512,
+  "accelerator_config": "ethos-u85-512",
+  "system_config": "Ethos_U85_SYS_DRAM_Mid_512",
+  "memory_mode": "Dedicated_Sram",
+  "target_platform": "mps4",
+  "target_subsystem": "sse-320",
+  "fvp": "/opt/arm/fvp_installed_320/models/Linux64_GCC-9.3/FVP_Corstone_SSE-320",
+  "verbose": true,
+  "experiment": "H3R",
+  "arms": [
+   [
+    "base",
+    {}
+   ],
+   [
+    "equalized",
+    {
+     "SRAM_MAXR": 8,
+     "SRAM_MAXW": 8,
+     "SRAM_MAXRW": 0,
+     "SRAM_RLATENCY": 0,
+     "SRAM_WLATENCY": 0,
+     "SRAM_PULSE_ON": 3999,
+     "SRAM_PULSE_OFF": 1,
+     "SRAM_BWCAP": 4000,
+     "EXT_MAXR": 0,
+     "EXT_MAXW": 0,
+     "EXT_MAXRW": 0,
+     "EXT_RLATENCY": 0,
+     "EXT_WLATENCY": 0,
+     "EXT_PULSE_ON": 4000,
+     "EXT_PULSE_OFF": 1000,
+     "EXT_BWCAP": 0
+    }
+   ]
+  ]
+ },
+ {
+  "cell_id": "h3r_conv1x1_1x36_c128__SSE-320__ethos-u85-256",
+  "model": "h3r_conv1x1_1x36_c128",
+  "model_path": "/tmp/h3r/models/h3r_conv1x1_1x36_c128.tflite",
+  "platform": "SSE-320",
+  "npu": "ethos-u85",
+  "mac_config": 256,
+  "accelerator_config": "ethos-u85-256",
+  "system_config": "Ethos_U85_SYS_DRAM_Low",
+  "memory_mode": "Dedicated_Sram",
+  "target_platform": "mps4",
+  "target_subsystem": "sse-320",
+  "fvp": "/opt/arm/fvp_installed_320/models/Linux64_GCC-9.3/FVP_Corstone_SSE-320",
+  "verbose": true,
+  "experiment": "H3R",
+  "arms": [
+   [
+    "base",
+    {}
+   ],
+   [
+    "equalized",
+    {
+     "SRAM_MAXR": 8,
+     "SRAM_MAXW": 8,
+     "SRAM_MAXRW": 0,
+     "SRAM_RLATENCY": 0,
+     "SRAM_WLATENCY": 0,
+     "SRAM_PULSE_ON": 3999,
+     "SRAM_PULSE_OFF": 1,
+     "SRAM_BWCAP": 4000,
+     "EXT_MAXR": 0,
+     "EXT_MAXW": 0,
+     "EXT_MAXRW": 0,
+     "EXT_RLATENCY": 0,
+     "EXT_WLATENCY": 0,
+     "EXT_PULSE_ON": 4000,
+     "EXT_PULSE_OFF": 1000,
+     "EXT_BWCAP": 0
+    }
+   ]
+  ]
+ },
+ {
+  "cell_id": "h3r_conv1x1_1x36_c128__SSE-320__ethos-u85-512",
+  "model": "h3r_conv1x1_1x36_c128",
+  "model_path": "/tmp/h3r/models/h3r_conv1x1_1x36_c128.tflite",
+  "platform": "SSE-320",
+  "npu": "ethos-u85",
+  "mac_config": 512,
+  "accelerator_config": "ethos-u85-512",
+  "system_config": "Ethos_U85_SYS_DRAM_Mid_512",
+  "memory_mode": "Dedicated_Sram",
+  "target_platform": "mps4",
+  "target_subsystem": "sse-320",
+  "fvp": "/opt/arm/fvp_installed_320/models/Linux64_GCC-9.3/FVP_Corstone_SSE-320",
+  "verbose": true,
+  "experiment": "H3R",
+  "arms": [
+   [
+    "base",
+    {}
+   ],
+   [
+    "equalized",
+    {
+     "SRAM_MAXR": 8,
+     "SRAM_MAXW": 8,
+     "SRAM_MAXRW": 0,
+     "SRAM_RLATENCY": 0,
+     "SRAM_WLATENCY": 0,
+     "SRAM_PULSE_ON": 3999,
+     "SRAM_PULSE_OFF": 1,
+     "SRAM_BWCAP": 4000,
+     "EXT_MAXR": 0,
+     "EXT_MAXW": 0,
+     "EXT_MAXRW": 0,
+     "EXT_RLATENCY": 0,
+     "EXT_WLATENCY": 0,
+     "EXT_PULSE_ON": 4000,
+     "EXT_PULSE_OFF": 1000,
+     "EXT_BWCAP": 0
+    }
+   ]
+  ]
+ },
+ {
+  "cell_id": "h3r_conv1x1_2x18_c128__SSE-320__ethos-u85-256",
+  "model": "h3r_conv1x1_2x18_c128",
+  "model_path": "/tmp/h3r/models/h3r_conv1x1_2x18_c128.tflite",
+  "platform": "SSE-320",
+  "npu": "ethos-u85",
+  "mac_config": 256,
+  "accelerator_config": "ethos-u85-256",
+  "system_config": "Ethos_U85_SYS_DRAM_Low",
+  "memory_mode": "Dedicated_Sram",
+  "target_platform": "mps4",
+  "target_subsystem": "sse-320",
+  "fvp": "/opt/arm/fvp_installed_320/models/Linux64_GCC-9.3/FVP_Corstone_SSE-320",
+  "verbose": true,
+  "experiment": "H3R",
+  "arms": [
+   [
+    "base",
+    {}
+   ],
+   [
+    "equalized",
+    {
+     "SRAM_MAXR": 8,
+     "SRAM_MAXW": 8,
+     "SRAM_MAXRW": 0,
+     "SRAM_RLATENCY": 0,
+     "SRAM_WLATENCY": 0,
+     "SRAM_PULSE_ON": 3999,
+     "SRAM_PULSE_OFF": 1,
+     "SRAM_BWCAP": 4000,
+     "EXT_MAXR": 0,
+     "EXT_MAXW": 0,
+     "EXT_MAXRW": 0,
+     "EXT_RLATENCY": 0,
+     "EXT_WLATENCY": 0,
+     "EXT_PULSE_ON": 4000,
+     "EXT_PULSE_OFF": 1000,
+     "EXT_BWCAP": 0
+    }
+   ]
+  ]
+ },
+ {
+  "cell_id": "h3r_conv1x1_2x18_c128__SSE-320__ethos-u85-512",
+  "model": "h3r_conv1x1_2x18_c128",
+  "model_path": "/tmp/h3r/models/h3r_conv1x1_2x18_c128.tflite",
+  "platform": "SSE-320",
+  "npu": "ethos-u85",
+  "mac_config": 512,
+  "accelerator_config": "ethos-u85-512",
+  "system_config": "Ethos_U85_SYS_DRAM_Mid_512",
+  "memory_mode": "Dedicated_Sram",
+  "target_platform": "mps4",
+  "target_subsystem": "sse-320",
+  "fvp": "/opt/arm/fvp_installed_320/models/Linux64_GCC-9.3/FVP_Corstone_SSE-320",
+  "verbose": true,
+  "experiment": "H3R",
+  "arms": [
+   [
+    "base",
+    {}
+   ],
+   [
+    "equalized",
+    {
+     "SRAM_MAXR": 8,
+     "SRAM_MAXW": 8,
+     "SRAM_MAXRW": 0,
+     "SRAM_RLATENCY": 0,
+     "SRAM_WLATENCY": 0,
+     "SRAM_PULSE_ON": 3999,
+     "SRAM_PULSE_OFF": 1,
+     "SRAM_BWCAP": 4000,
+     "EXT_MAXR": 0,
+     "EXT_MAXW": 0,
+     "EXT_MAXRW": 0,
+     "EXT_RLATENCY": 0,
+     "EXT_WLATENCY": 0,
+     "EXT_PULSE_ON": 4000,
+     "EXT_PULSE_OFF": 1000,
+     "EXT_BWCAP": 0
+    }
+   ]
+  ]
+ },
+ {
+  "cell_id": "h3r_conv1x1_3x12_c128__SSE-320__ethos-u85-256",
+  "model": "h3r_conv1x1_3x12_c128",
+  "model_path": "/tmp/h3r/models/h3r_conv1x1_3x12_c128.tflite",
+  "platform": "SSE-320",
+  "npu": "ethos-u85",
+  "mac_config": 256,
+  "accelerator_config": "ethos-u85-256",
+  "system_config": "Ethos_U85_SYS_DRAM_Low",
+  "memory_mode": "Dedicated_Sram",
+  "target_platform": "mps4",
+  "target_subsystem": "sse-320",
+  "fvp": "/opt/arm/fvp_installed_320/models/Linux64_GCC-9.3/FVP_Corstone_SSE-320",
+  "verbose": true,
+  "experiment": "H3R",
+  "arms": [
+   [
+    "base",
+    {}
+   ],
+   [
+    "equalized",
+    {
+     "SRAM_MAXR": 8,
+     "SRAM_MAXW": 8,
+     "SRAM_MAXRW": 0,
+     "SRAM_RLATENCY": 0,
+     "SRAM_WLATENCY": 0,
+     "SRAM_PULSE_ON": 3999,
+     "SRAM_PULSE_OFF": 1,
+     "SRAM_BWCAP": 4000,
+     "EXT_MAXR": 0,
+     "EXT_MAXW": 0,
+     "EXT_MAXRW": 0,
+     "EXT_RLATENCY": 0,
+     "EXT_WLATENCY": 0,
+     "EXT_PULSE_ON": 4000,
+     "EXT_PULSE_OFF": 1000,
+     "EXT_BWCAP": 0
+    }
+   ]
+  ]
+ },
+ {
+  "cell_id": "h3r_conv1x1_3x12_c128__SSE-320__ethos-u85-512",
+  "model": "h3r_conv1x1_3x12_c128",
+  "model_path": "/tmp/h3r/models/h3r_conv1x1_3x12_c128.tflite",
+  "platform": "SSE-320",
+  "npu": "ethos-u85",
+  "mac_config": 512,
+  "accelerator_config": "ethos-u85-512",
+  "system_config": "Ethos_U85_SYS_DRAM_Mid_512",
+  "memory_mode": "Dedicated_Sram",
+  "target_platform": "mps4",
+  "target_subsystem": "sse-320",
+  "fvp": "/opt/arm/fvp_installed_320/models/Linux64_GCC-9.3/FVP_Corstone_SSE-320",
+  "verbose": true,
+  "experiment": "H3R",
+  "arms": [
+   [
+    "base",
+    {}
+   ],
+   [
+    "equalized",
+    {
+     "SRAM_MAXR": 8,
+     "SRAM_MAXW": 8,
+     "SRAM_MAXRW": 0,
+     "SRAM_RLATENCY": 0,
+     "SRAM_WLATENCY": 0,
+     "SRAM_PULSE_ON": 3999,
+     "SRAM_PULSE_OFF": 1,
+     "SRAM_BWCAP": 4000,
+     "EXT_MAXR": 0,
+     "EXT_MAXW": 0,
+     "EXT_MAXRW": 0,
+     "EXT_RLATENCY": 0,
+     "EXT_WLATENCY": 0,
+     "EXT_PULSE_ON": 4000,
+     "EXT_PULSE_OFF": 1000,
+     "EXT_BWCAP": 0
+    }
+   ]
+  ]
+ },
+ {
+  "cell_id": "h3r_conv1x1_4x9_c128__SSE-320__ethos-u85-256",
+  "model": "h3r_conv1x1_4x9_c128",
+  "model_path": "/tmp/h3r/models/h3r_conv1x1_4x9_c128.tflite",
+  "platform": "SSE-320",
+  "npu": "ethos-u85",
+  "mac_config": 256,
+  "accelerator_config": "ethos-u85-256",
+  "system_config": "Ethos_U85_SYS_DRAM_Low",
+  "memory_mode": "Dedicated_Sram",
+  "target_platform": "mps4",
+  "target_subsystem": "sse-320",
+  "fvp": "/opt/arm/fvp_installed_320/models/Linux64_GCC-9.3/FVP_Corstone_SSE-320",
+  "verbose": true,
+  "experiment": "H3R",
+  "arms": [
+   [
+    "base",
+    {}
+   ],
+   [
+    "equalized",
+    {
+     "SRAM_MAXR": 8,
+     "SRAM_MAXW": 8,
+     "SRAM_MAXRW": 0,
+     "SRAM_RLATENCY": 0,
+     "SRAM_WLATENCY": 0,
+     "SRAM_PULSE_ON": 3999,
+     "SRAM_PULSE_OFF": 1,
+     "SRAM_BWCAP": 4000,
+     "EXT_MAXR": 0,
+     "EXT_MAXW": 0,
+     "EXT_MAXRW": 0,
+     "EXT_RLATENCY": 0,
+     "EXT_WLATENCY": 0,
+     "EXT_PULSE_ON": 4000,
+     "EXT_PULSE_OFF": 1000,
+     "EXT_BWCAP": 0
+    }
+   ]
+  ]
+ },
+ {
+  "cell_id": "h3r_conv1x1_4x9_c128__SSE-320__ethos-u85-512",
+  "model": "h3r_conv1x1_4x9_c128",
+  "model_path": "/tmp/h3r/models/h3r_conv1x1_4x9_c128.tflite",
+  "platform": "SSE-320",
+  "npu": "ethos-u85",
+  "mac_config": 512,
+  "accelerator_config": "ethos-u85-512",
+  "system_config": "Ethos_U85_SYS_DRAM_Mid_512",
+  "memory_mode": "Dedicated_Sram",
+  "target_platform": "mps4",
+  "target_subsystem": "sse-320",
+  "fvp": "/opt/arm/fvp_installed_320/models/Linux64_GCC-9.3/FVP_Corstone_SSE-320",
+  "verbose": true,
+  "experiment": "H3R",
+  "arms": [
+   [
+    "base",
+    {}
+   ],
+   [
+    "equalized",
+    {
+     "SRAM_MAXR": 8,
+     "SRAM_MAXW": 8,
+     "SRAM_MAXRW": 0,
+     "SRAM_RLATENCY": 0,
+     "SRAM_WLATENCY": 0,
+     "SRAM_PULSE_ON": 3999,
+     "SRAM_PULSE_OFF": 1,
+     "SRAM_BWCAP": 4000,
+     "EXT_MAXR": 0,
+     "EXT_MAXW": 0,
+     "EXT_MAXRW": 0,
+     "EXT_RLATENCY": 0,
+     "EXT_WLATENCY": 0,
+     "EXT_PULSE_ON": 4000,
+     "EXT_PULSE_OFF": 1000,
+     "EXT_BWCAP": 0
+    }
+   ]
+  ]
+ },
+ {
+  "cell_id": "h3r_conv1x1_9x4_c128__SSE-320__ethos-u85-256",
+  "model": "h3r_conv1x1_9x4_c128",
+  "model_path": "/tmp/h3r/models/h3r_conv1x1_9x4_c128.tflite",
+  "platform": "SSE-320",
+  "npu": "ethos-u85",
+  "mac_config": 256,
+  "accelerator_config": "ethos-u85-256",
+  "system_config": "Ethos_U85_SYS_DRAM_Low",
+  "memory_mode": "Dedicated_Sram",
+  "target_platform": "mps4",
+  "target_subsystem": "sse-320",
+  "fvp": "/opt/arm/fvp_installed_320/models/Linux64_GCC-9.3/FVP_Corstone_SSE-320",
+  "verbose": true,
+  "experiment": "H3R",
+  "arms": [
+   [
+    "base",
+    {}
+   ],
+   [
+    "equalized",
+    {
+     "SRAM_MAXR": 8,
+     "SRAM_MAXW": 8,
+     "SRAM_MAXRW": 0,
+     "SRAM_RLATENCY": 0,
+     "SRAM_WLATENCY": 0,
+     "SRAM_PULSE_ON": 3999,
+     "SRAM_PULSE_OFF": 1,
+     "SRAM_BWCAP": 4000,
+     "EXT_MAXR": 0,
+     "EXT_MAXW": 0,
+     "EXT_MAXRW": 0,
+     "EXT_RLATENCY": 0,
+     "EXT_WLATENCY": 0,
+     "EXT_PULSE_ON": 4000,
+     "EXT_PULSE_OFF": 1000,
+     "EXT_BWCAP": 0
+    }
+   ]
+  ]
+ },
+ {
+  "cell_id": "h3r_conv1x1_9x4_c128__SSE-320__ethos-u85-512",
+  "model": "h3r_conv1x1_9x4_c128",
+  "model_path": "/tmp/h3r/models/h3r_conv1x1_9x4_c128.tflite",
+  "platform": "SSE-320",
+  "npu": "ethos-u85",
+  "mac_config": 512,
+  "accelerator_config": "ethos-u85-512",
+  "system_config": "Ethos_U85_SYS_DRAM_Mid_512",
+  "memory_mode": "Dedicated_Sram",
+  "target_platform": "mps4",
+  "target_subsystem": "sse-320",
+  "fvp": "/opt/arm/fvp_installed_320/models/Linux64_GCC-9.3/FVP_Corstone_SSE-320",
+  "verbose": true,
+  "experiment": "H3R",
+  "arms": [
+   [
+    "base",
+    {}
+   ],
+   [
+    "equalized",
+    {
+     "SRAM_MAXR": 8,
+     "SRAM_MAXW": 8,
+     "SRAM_MAXRW": 0,
+     "SRAM_RLATENCY": 0,
+     "SRAM_WLATENCY": 0,
+     "SRAM_PULSE_ON": 3999,
+     "SRAM_PULSE_OFF": 1,
+     "SRAM_BWCAP": 4000,
+     "EXT_MAXR": 0,
+     "EXT_MAXW": 0,
+     "EXT_MAXRW": 0,
+     "EXT_RLATENCY": 0,
+     "EXT_WLATENCY": 0,
+     "EXT_PULSE_ON": 4000,
+     "EXT_PULSE_OFF": 1000,
+     "EXT_BWCAP": 0
+    }
+   ]
+  ]
+ },
+ {
+  "cell_id": "h3r_conv1x1_12x3_c128__SSE-320__ethos-u85-256",
+  "model": "h3r_conv1x1_12x3_c128",
+  "model_path": "/tmp/h3r/models/h3r_conv1x1_12x3_c128.tflite",
+  "platform": "SSE-320",
+  "npu": "ethos-u85",
+  "mac_config": 256,
+  "accelerator_config": "ethos-u85-256",
+  "system_config": "Ethos_U85_SYS_DRAM_Low",
+  "memory_mode": "Dedicated_Sram",
+  "target_platform": "mps4",
+  "target_subsystem": "sse-320",
+  "fvp": "/opt/arm/fvp_installed_320/models/Linux64_GCC-9.3/FVP_Corstone_SSE-320",
+  "verbose": true,
+  "experiment": "H3R",
+  "arms": [
+   [
+    "base",
+    {}
+   ],
+   [
+    "equalized",
+    {
+     "SRAM_MAXR": 8,
+     "SRAM_MAXW": 8,
+     "SRAM_MAXRW": 0,
+     "SRAM_RLATENCY": 0,
+     "SRAM_WLATENCY": 0,
+     "SRAM_PULSE_ON": 3999,
+     "SRAM_PULSE_OFF": 1,
+     "SRAM_BWCAP": 4000,
+     "EXT_MAXR": 0,
+     "EXT_MAXW": 0,
+     "EXT_MAXRW": 0,
+     "EXT_RLATENCY": 0,
+     "EXT_WLATENCY": 0,
+     "EXT_PULSE_ON": 4000,
+     "EXT_PULSE_OFF": 1000,
+     "EXT_BWCAP": 0
+    }
+   ]
+  ]
+ },
+ {
+  "cell_id": "h3r_conv1x1_12x3_c128__SSE-320__ethos-u85-512",
+  "model": "h3r_conv1x1_12x3_c128",
+  "model_path": "/tmp/h3r/models/h3r_conv1x1_12x3_c128.tflite",
+  "platform": "SSE-320",
+  "npu": "ethos-u85",
+  "mac_config": 512,
+  "accelerator_config": "ethos-u85-512",
+  "system_config": "Ethos_U85_SYS_DRAM_Mid_512",
+  "memory_mode": "Dedicated_Sram",
+  "target_platform": "mps4",
+  "target_subsystem": "sse-320",
+  "fvp": "/opt/arm/fvp_installed_320/models/Linux64_GCC-9.3/FVP_Corstone_SSE-320",
+  "verbose": true,
+  "experiment": "H3R",
+  "arms": [
+   [
+    "base",
+    {}
+   ],
+   [
+    "equalized",
+    {
+     "SRAM_MAXR": 8,
+     "SRAM_MAXW": 8,
+     "SRAM_MAXRW": 0,
+     "SRAM_RLATENCY": 0,
+     "SRAM_WLATENCY": 0,
+     "SRAM_PULSE_ON": 3999,
+     "SRAM_PULSE_OFF": 1,
+     "SRAM_BWCAP": 4000,
+     "EXT_MAXR": 0,
+     "EXT_MAXW": 0,
+     "EXT_MAXRW": 0,
+     "EXT_RLATENCY": 0,
+     "EXT_WLATENCY": 0,
+     "EXT_PULSE_ON": 4000,
+     "EXT_PULSE_OFF": 1000,
+     "EXT_BWCAP": 0
+    }
+   ]
+  ]
+ },
+ {
+  "cell_id": "h3r_conv1x1_18x2_c128__SSE-320__ethos-u85-256",
+  "model": "h3r_conv1x1_18x2_c128",
+  "model_path": "/tmp/h3r/models/h3r_conv1x1_18x2_c128.tflite",
+  "platform": "SSE-320",
+  "npu": "ethos-u85",
+  "mac_config": 256,
+  "accelerator_config": "ethos-u85-256",
+  "system_config": "Ethos_U85_SYS_DRAM_Low",
+  "memory_mode": "Dedicated_Sram",
+  "target_platform": "mps4",
+  "target_subsystem": "sse-320",
+  "fvp": "/opt/arm/fvp_installed_320/models/Linux64_GCC-9.3/FVP_Corstone_SSE-320",
+  "verbose": true,
+  "experiment": "H3R",
+  "arms": [
+   [
+    "base",
+    {}
+   ],
+   [
+    "equalized",
+    {
+     "SRAM_MAXR": 8,
+     "SRAM_MAXW": 8,
+     "SRAM_MAXRW": 0,
+     "SRAM_RLATENCY": 0,
+     "SRAM_WLATENCY": 0,
+     "SRAM_PULSE_ON": 3999,
+     "SRAM_PULSE_OFF": 1,
+     "SRAM_BWCAP": 4000,
+     "EXT_MAXR": 0,
+     "EXT_MAXW": 0,
+     "EXT_MAXRW": 0,
+     "EXT_RLATENCY": 0,
+     "EXT_WLATENCY": 0,
+     "EXT_PULSE_ON": 4000,
+     "EXT_PULSE_OFF": 1000,
+     "EXT_BWCAP": 0
+    }
+   ]
+  ]
+ },
+ {
+  "cell_id": "h3r_conv1x1_18x2_c128__SSE-320__ethos-u85-512",
+  "model": "h3r_conv1x1_18x2_c128",
+  "model_path": "/tmp/h3r/models/h3r_conv1x1_18x2_c128.tflite",
+  "platform": "SSE-320",
+  "npu": "ethos-u85",
+  "mac_config": 512,
+  "accelerator_config": "ethos-u85-512",
+  "system_config": "Ethos_U85_SYS_DRAM_Mid_512",
+  "memory_mode": "Dedicated_Sram",
+  "target_platform": "mps4",
+  "target_subsystem": "sse-320",
+  "fvp": "/opt/arm/fvp_installed_320/models/Linux64_GCC-9.3/FVP_Corstone_SSE-320",
+  "verbose": true,
+  "experiment": "H3R",
+  "arms": [
+   [
+    "base",
+    {}
+   ],
+   [
+    "equalized",
+    {
+     "SRAM_MAXR": 8,
+     "SRAM_MAXW": 8,
+     "SRAM_MAXRW": 0,
+     "SRAM_RLATENCY": 0,
+     "SRAM_WLATENCY": 0,
+     "SRAM_PULSE_ON": 3999,
+     "SRAM_PULSE_OFF": 1,
+     "SRAM_BWCAP": 4000,
+     "EXT_MAXR": 0,
+     "EXT_MAXW": 0,
+     "EXT_MAXRW": 0,
+     "EXT_RLATENCY": 0,
+     "EXT_WLATENCY": 0,
+     "EXT_PULSE_ON": 4000,
+     "EXT_PULSE_OFF": 1000,
+     "EXT_BWCAP": 0
+    }
+   ]
+  ]
+ },
+ {
+  "cell_id": "h3r_conv1x1_36x1_c128__SSE-320__ethos-u85-256",
+  "model": "h3r_conv1x1_36x1_c128",
+  "model_path": "/tmp/h3r/models/h3r_conv1x1_36x1_c128.tflite",
+  "platform": "SSE-320",
+  "npu": "ethos-u85",
+  "mac_config": 256,
+  "accelerator_config": "ethos-u85-256",
+  "system_config": "Ethos_U85_SYS_DRAM_Low",
+  "memory_mode": "Dedicated_Sram",
+  "target_platform": "mps4",
+  "target_subsystem": "sse-320",
+  "fvp": "/opt/arm/fvp_installed_320/models/Linux64_GCC-9.3/FVP_Corstone_SSE-320",
+  "verbose": true,
+  "experiment": "H3R",
+  "arms": [
+   [
+    "base",
+    {}
+   ],
+   [
+    "equalized",
+    {
+     "SRAM_MAXR": 8,
+     "SRAM_MAXW": 8,
+     "SRAM_MAXRW": 0,
+     "SRAM_RLATENCY": 0,
+     "SRAM_WLATENCY": 0,
+     "SRAM_PULSE_ON": 3999,
+     "SRAM_PULSE_OFF": 1,
+     "SRAM_BWCAP": 4000,
+     "EXT_MAXR": 0,
+     "EXT_MAXW": 0,
+     "EXT_MAXRW": 0,
+     "EXT_RLATENCY": 0,
+     "EXT_WLATENCY": 0,
+     "EXT_PULSE_ON": 4000,
+     "EXT_PULSE_OFF": 1000,
+     "EXT_BWCAP": 0
+    }
+   ]
+  ]
+ },
+ {
+  "cell_id": "h3r_conv1x1_36x1_c128__SSE-320__ethos-u85-512",
+  "model": "h3r_conv1x1_36x1_c128",
+  "model_path": "/tmp/h3r/models/h3r_conv1x1_36x1_c128.tflite",
+  "platform": "SSE-320",
+  "npu": "ethos-u85",
+  "mac_config": 512,
+  "accelerator_config": "ethos-u85-512",
+  "system_config": "Ethos_U85_SYS_DRAM_Mid_512",
+  "memory_mode": "Dedicated_Sram",
+  "target_platform": "mps4",
+  "target_subsystem": "sse-320",
+  "fvp": "/opt/arm/fvp_installed_320/models/Linux64_GCC-9.3/FVP_Corstone_SSE-320",
+  "verbose": true,
+  "experiment": "H3R",
+  "arms": [
+   [
+    "base",
+    {}
+   ],
+   [
+    "equalized",
+    {
+     "SRAM_MAXR": 8,
+     "SRAM_MAXW": 8,
+     "SRAM_MAXRW": 0,
+     "SRAM_RLATENCY": 0,
+     "SRAM_WLATENCY": 0,
+     "SRAM_PULSE_ON": 3999,
+     "SRAM_PULSE_OFF": 1,
+     "SRAM_BWCAP": 4000,
+     "EXT_MAXR": 0,
+     "EXT_MAXW": 0,
+     "EXT_MAXRW": 0,
+     "EXT_RLATENCY": 0,
+     "EXT_WLATENCY": 0,
+     "EXT_PULSE_ON": 4000,
+     "EXT_PULSE_OFF": 1000,
+     "EXT_BWCAP": 0
+    }
+   ]
+  ]
+ },
+ {
+  "cell_id": "h3r_conv3x3_1x36_c128__SSE-320__ethos-u85-256",
+  "model": "h3r_conv3x3_1x36_c128",
+  "model_path": "/tmp/h3r/models/h3r_conv3x3_1x36_c128.tflite",
+  "platform": "SSE-320",
+  "npu": "ethos-u85",
+  "mac_config": 256,
+  "accelerator_config": "ethos-u85-256",
+  "system_config": "Ethos_U85_SYS_DRAM_Low",
+  "memory_mode": "Dedicated_Sram",
+  "target_platform": "mps4",
+  "target_subsystem": "sse-320",
+  "fvp": "/opt/arm/fvp_installed_320/models/Linux64_GCC-9.3/FVP_Corstone_SSE-320",
+  "verbose": true,
+  "experiment": "H3R",
+  "arms": [
+   [
+    "base",
+    {}
+   ],
+   [
+    "equalized",
+    {
+     "SRAM_MAXR": 8,
+     "SRAM_MAXW": 8,
+     "SRAM_MAXRW": 0,
+     "SRAM_RLATENCY": 0,
+     "SRAM_WLATENCY": 0,
+     "SRAM_PULSE_ON": 3999,
+     "SRAM_PULSE_OFF": 1,
+     "SRAM_BWCAP": 4000,
+     "EXT_MAXR": 0,
+     "EXT_MAXW": 0,
+     "EXT_MAXRW": 0,
+     "EXT_RLATENCY": 0,
+     "EXT_WLATENCY": 0,
+     "EXT_PULSE_ON": 4000,
+     "EXT_PULSE_OFF": 1000,
+     "EXT_BWCAP": 0
+    }
+   ]
+  ]
+ },
+ {
+  "cell_id": "h3r_conv3x3_1x36_c128__SSE-320__ethos-u85-512",
+  "model": "h3r_conv3x3_1x36_c128",
+  "model_path": "/tmp/h3r/models/h3r_conv3x3_1x36_c128.tflite",
+  "platform": "SSE-320",
+  "npu": "ethos-u85",
+  "mac_config": 512,
+  "accelerator_config": "ethos-u85-512",
+  "system_config": "Ethos_U85_SYS_DRAM_Mid_512",
+  "memory_mode": "Dedicated_Sram",
+  "target_platform": "mps4",
+  "target_subsystem": "sse-320",
+  "fvp": "/opt/arm/fvp_installed_320/models/Linux64_GCC-9.3/FVP_Corstone_SSE-320",
+  "verbose": true,
+  "experiment": "H3R",
+  "arms": [
+   [
+    "base",
+    {}
+   ],
+   [
+    "equalized",
+    {
+     "SRAM_MAXR": 8,
+     "SRAM_MAXW": 8,
+     "SRAM_MAXRW": 0,
+     "SRAM_RLATENCY": 0,
+     "SRAM_WLATENCY": 0,
+     "SRAM_PULSE_ON": 3999,
+     "SRAM_PULSE_OFF": 1,
+     "SRAM_BWCAP": 4000,
+     "EXT_MAXR": 0,
+     "EXT_MAXW": 0,
+     "EXT_MAXRW": 0,
+     "EXT_RLATENCY": 0,
+     "EXT_WLATENCY": 0,
+     "EXT_PULSE_ON": 4000,
+     "EXT_PULSE_OFF": 1000,
+     "EXT_BWCAP": 0
+    }
+   ]
+  ]
+ },
+ {
+  "cell_id": "h3r_conv3x3_2x18_c128__SSE-320__ethos-u85-256",
+  "model": "h3r_conv3x3_2x18_c128",
+  "model_path": "/tmp/h3r/models/h3r_conv3x3_2x18_c128.tflite",
+  "platform": "SSE-320",
+  "npu": "ethos-u85",
+  "mac_config": 256,
+  "accelerator_config": "ethos-u85-256",
+  "system_config": "Ethos_U85_SYS_DRAM_Low",
+  "memory_mode": "Dedicated_Sram",
+  "target_platform": "mps4",
+  "target_subsystem": "sse-320",
+  "fvp": "/opt/arm/fvp_installed_320/models/Linux64_GCC-9.3/FVP_Corstone_SSE-320",
+  "verbose": true,
+  "experiment": "H3R",
+  "arms": [
+   [
+    "base",
+    {}
+   ],
+   [
+    "equalized",
+    {
+     "SRAM_MAXR": 8,
+     "SRAM_MAXW": 8,
+     "SRAM_MAXRW": 0,
+     "SRAM_RLATENCY": 0,
+     "SRAM_WLATENCY": 0,
+     "SRAM_PULSE_ON": 3999,
+     "SRAM_PULSE_OFF": 1,
+     "SRAM_BWCAP": 4000,
+     "EXT_MAXR": 0,
+     "EXT_MAXW": 0,
+     "EXT_MAXRW": 0,
+     "EXT_RLATENCY": 0,
+     "EXT_WLATENCY": 0,
+     "EXT_PULSE_ON": 4000,
+     "EXT_PULSE_OFF": 1000,
+     "EXT_BWCAP": 0
+    }
+   ]
+  ]
+ },
+ {
+  "cell_id": "h3r_conv3x3_2x18_c128__SSE-320__ethos-u85-512",
+  "model": "h3r_conv3x3_2x18_c128",
+  "model_path": "/tmp/h3r/models/h3r_conv3x3_2x18_c128.tflite",
+  "platform": "SSE-320",
+  "npu": "ethos-u85",
+  "mac_config": 512,
+  "accelerator_config": "ethos-u85-512",
+  "system_config": "Ethos_U85_SYS_DRAM_Mid_512",
+  "memory_mode": "Dedicated_Sram",
+  "target_platform": "mps4",
+  "target_subsystem": "sse-320",
+  "fvp": "/opt/arm/fvp_installed_320/models/Linux64_GCC-9.3/FVP_Corstone_SSE-320",
+  "verbose": true,
+  "experiment": "H3R",
+  "arms": [
+   [
+    "base",
+    {}
+   ],
+   [
+    "equalized",
+    {
+     "SRAM_MAXR": 8,
+     "SRAM_MAXW": 8,
+     "SRAM_MAXRW": 0,
+     "SRAM_RLATENCY": 0,
+     "SRAM_WLATENCY": 0,
+     "SRAM_PULSE_ON": 3999,
+     "SRAM_PULSE_OFF": 1,
+     "SRAM_BWCAP": 4000,
+     "EXT_MAXR": 0,
+     "EXT_MAXW": 0,
+     "EXT_MAXRW": 0,
+     "EXT_RLATENCY": 0,
+     "EXT_WLATENCY": 0,
+     "EXT_PULSE_ON": 4000,
+     "EXT_PULSE_OFF": 1000,
+     "EXT_BWCAP": 0
+    }
+   ]
+  ]
+ },
+ {
+  "cell_id": "h3r_conv3x3_3x12_c128__SSE-320__ethos-u85-256",
+  "model": "h3r_conv3x3_3x12_c128",
+  "model_path": "/tmp/h3r/models/h3r_conv3x3_3x12_c128.tflite",
+  "platform": "SSE-320",
+  "npu": "ethos-u85",
+  "mac_config": 256,
+  "accelerator_config": "ethos-u85-256",
+  "system_config": "Ethos_U85_SYS_DRAM_Low",
+  "memory_mode": "Dedicated_Sram",
+  "target_platform": "mps4",
+  "target_subsystem": "sse-320",
+  "fvp": "/opt/arm/fvp_installed_320/models/Linux64_GCC-9.3/FVP_Corstone_SSE-320",
+  "verbose": true,
+  "experiment": "H3R",
+  "arms": [
+   [
+    "base",
+    {}
+   ],
+   [
+    "equalized",
+    {
+     "SRAM_MAXR": 8,
+     "SRAM_MAXW": 8,
+     "SRAM_MAXRW": 0,
+     "SRAM_RLATENCY": 0,
+     "SRAM_WLATENCY": 0,
+     "SRAM_PULSE_ON": 3999,
+     "SRAM_PULSE_OFF": 1,
+     "SRAM_BWCAP": 4000,
+     "EXT_MAXR": 0,
+     "EXT_MAXW": 0,
+     "EXT_MAXRW": 0,
+     "EXT_RLATENCY": 0,
+     "EXT_WLATENCY": 0,
+     "EXT_PULSE_ON": 4000,
+     "EXT_PULSE_OFF": 1000,
+     "EXT_BWCAP": 0
+    }
+   ]
+  ]
+ },
+ {
+  "cell_id": "h3r_conv3x3_3x12_c128__SSE-320__ethos-u85-512",
+  "model": "h3r_conv3x3_3x12_c128",
+  "model_path": "/tmp/h3r/models/h3r_conv3x3_3x12_c128.tflite",
+  "platform": "SSE-320",
+  "npu": "ethos-u85",
+  "mac_config": 512,
+  "accelerator_config": "ethos-u85-512",
+  "system_config": "Ethos_U85_SYS_DRAM_Mid_512",
+  "memory_mode": "Dedicated_Sram",
+  "target_platform": "mps4",
+  "target_subsystem": "sse-320",
+  "fvp": "/opt/arm/fvp_installed_320/models/Linux64_GCC-9.3/FVP_Corstone_SSE-320",
+  "verbose": true,
+  "experiment": "H3R",
+  "arms": [
+   [
+    "base",
+    {}
+   ],
+   [
+    "equalized",
+    {
+     "SRAM_MAXR": 8,
+     "SRAM_MAXW": 8,
+     "SRAM_MAXRW": 0,
+     "SRAM_RLATENCY": 0,
+     "SRAM_WLATENCY": 0,
+     "SRAM_PULSE_ON": 3999,
+     "SRAM_PULSE_OFF": 1,
+     "SRAM_BWCAP": 4000,
+     "EXT_MAXR": 0,
+     "EXT_MAXW": 0,
+     "EXT_MAXRW": 0,
+     "EXT_RLATENCY": 0,
+     "EXT_WLATENCY": 0,
+     "EXT_PULSE_ON": 4000,
+     "EXT_PULSE_OFF": 1000,
+     "EXT_BWCAP": 0
+    }
+   ]
+  ]
+ },
+ {
+  "cell_id": "h3r_conv3x3_4x9_c128__SSE-320__ethos-u85-256",
+  "model": "h3r_conv3x3_4x9_c128",
+  "model_path": "/tmp/h3r/models/h3r_conv3x3_4x9_c128.tflite",
+  "platform": "SSE-320",
+  "npu": "ethos-u85",
+  "mac_config": 256,
+  "accelerator_config": "ethos-u85-256",
+  "system_config": "Ethos_U85_SYS_DRAM_Low",
+  "memory_mode": "Dedicated_Sram",
+  "target_platform": "mps4",
+  "target_subsystem": "sse-320",
+  "fvp": "/opt/arm/fvp_installed_320/models/Linux64_GCC-9.3/FVP_Corstone_SSE-320",
+  "verbose": true,
+  "experiment": "H3R",
+  "arms": [
+   [
+    "base",
+    {}
+   ],
+   [
+    "equalized",
+    {
+     "SRAM_MAXR": 8,
+     "SRAM_MAXW": 8,
+     "SRAM_MAXRW": 0,
+     "SRAM_RLATENCY": 0,
+     "SRAM_WLATENCY": 0,
+     "SRAM_PULSE_ON": 3999,
+     "SRAM_PULSE_OFF": 1,
+     "SRAM_BWCAP": 4000,
+     "EXT_MAXR": 0,
+     "EXT_MAXW": 0,
+     "EXT_MAXRW": 0,
+     "EXT_RLATENCY": 0,
+     "EXT_WLATENCY": 0,
+     "EXT_PULSE_ON": 4000,
+     "EXT_PULSE_OFF": 1000,
+     "EXT_BWCAP": 0
+    }
+   ]
+  ]
+ },
+ {
+  "cell_id": "h3r_conv3x3_4x9_c128__SSE-320__ethos-u85-512",
+  "model": "h3r_conv3x3_4x9_c128",
+  "model_path": "/tmp/h3r/models/h3r_conv3x3_4x9_c128.tflite",
+  "platform": "SSE-320",
+  "npu": "ethos-u85",
+  "mac_config": 512,
+  "accelerator_config": "ethos-u85-512",
+  "system_config": "Ethos_U85_SYS_DRAM_Mid_512",
+  "memory_mode": "Dedicated_Sram",
+  "target_platform": "mps4",
+  "target_subsystem": "sse-320",
+  "fvp": "/opt/arm/fvp_installed_320/models/Linux64_GCC-9.3/FVP_Corstone_SSE-320",
+  "verbose": true,
+  "experiment": "H3R",
+  "arms": [
+   [
+    "base",
+    {}
+   ],
+   [
+    "equalized",
+    {
+     "SRAM_MAXR": 8,
+     "SRAM_MAXW": 8,
+     "SRAM_MAXRW": 0,
+     "SRAM_RLATENCY": 0,
+     "SRAM_WLATENCY": 0,
+     "SRAM_PULSE_ON": 3999,
+     "SRAM_PULSE_OFF": 1,
+     "SRAM_BWCAP": 4000,
+     "EXT_MAXR": 0,
+     "EXT_MAXW": 0,
+     "EXT_MAXRW": 0,
+     "EXT_RLATENCY": 0,
+     "EXT_WLATENCY": 0,
+     "EXT_PULSE_ON": 4000,
+     "EXT_PULSE_OFF": 1000,
+     "EXT_BWCAP": 0
+    }
+   ]
+  ]
+ },
+ {
+  "cell_id": "h3r_conv3x3_6x6_c128__SSE-320__ethos-u85-256",
+  "model": "h3r_conv3x3_6x6_c128",
+  "model_path": "/tmp/h3r/models/h3r_conv3x3_6x6_c128.tflite",
+  "platform": "SSE-320",
+  "npu": "ethos-u85",
+  "mac_config": 256,
+  "accelerator_config": "ethos-u85-256",
+  "system_config": "Ethos_U85_SYS_DRAM_Low",
+  "memory_mode": "Dedicated_Sram",
+  "target_platform": "mps4",
+  "target_subsystem": "sse-320",
+  "fvp": "/opt/arm/fvp_installed_320/models/Linux64_GCC-9.3/FVP_Corstone_SSE-320",
+  "verbose": true,
+  "experiment": "H3R",
+  "arms": [
+   [
+    "base",
+    {}
+   ],
+   [
+    "equalized",
+    {
+     "SRAM_MAXR": 8,
+     "SRAM_MAXW": 8,
+     "SRAM_MAXRW": 0,
+     "SRAM_RLATENCY": 0,
+     "SRAM_WLATENCY": 0,
+     "SRAM_PULSE_ON": 3999,
+     "SRAM_PULSE_OFF": 1,
+     "SRAM_BWCAP": 4000,
+     "EXT_MAXR": 0,
+     "EXT_MAXW": 0,
+     "EXT_MAXRW": 0,
+     "EXT_RLATENCY": 0,
+     "EXT_WLATENCY": 0,
+     "EXT_PULSE_ON": 4000,
+     "EXT_PULSE_OFF": 1000,
+     "EXT_BWCAP": 0
+    }
+   ]
+  ]
+ },
+ {
+  "cell_id": "h3r_conv3x3_6x6_c128__SSE-320__ethos-u85-512",
+  "model": "h3r_conv3x3_6x6_c128",
+  "model_path": "/tmp/h3r/models/h3r_conv3x3_6x6_c128.tflite",
+  "platform": "SSE-320",
+  "npu": "ethos-u85",
+  "mac_config": 512,
+  "accelerator_config": "ethos-u85-512",
+  "system_config": "Ethos_U85_SYS_DRAM_Mid_512",
+  "memory_mode": "Dedicated_Sram",
+  "target_platform": "mps4",
+  "target_subsystem": "sse-320",
+  "fvp": "/opt/arm/fvp_installed_320/models/Linux64_GCC-9.3/FVP_Corstone_SSE-320",
+  "verbose": true,
+  "experiment": "H3R",
+  "arms": [
+   [
+    "base",
+    {}
+   ],
+   [
+    "equalized",
+    {
+     "SRAM_MAXR": 8,
+     "SRAM_MAXW": 8,
+     "SRAM_MAXRW": 0,
+     "SRAM_RLATENCY": 0,
+     "SRAM_WLATENCY": 0,
+     "SRAM_PULSE_ON": 3999,
+     "SRAM_PULSE_OFF": 1,
+     "SRAM_BWCAP": 4000,
+     "EXT_MAXR": 0,
+     "EXT_MAXW": 0,
+     "EXT_MAXRW": 0,
+     "EXT_RLATENCY": 0,
+     "EXT_WLATENCY": 0,
+     "EXT_PULSE_ON": 4000,
+     "EXT_PULSE_OFF": 1000,
+     "EXT_BWCAP": 0
+    }
+   ]
+  ]
+ },
+ {
+  "cell_id": "h3r_conv3x3_9x4_c128__SSE-320__ethos-u85-256",
+  "model": "h3r_conv3x3_9x4_c128",
+  "model_path": "/tmp/h3r/models/h3r_conv3x3_9x4_c128.tflite",
+  "platform": "SSE-320",
+  "npu": "ethos-u85",
+  "mac_config": 256,
+  "accelerator_config": "ethos-u85-256",
+  "system_config": "Ethos_U85_SYS_DRAM_Low",
+  "memory_mode": "Dedicated_Sram",
+  "target_platform": "mps4",
+  "target_subsystem": "sse-320",
+  "fvp": "/opt/arm/fvp_installed_320/models/Linux64_GCC-9.3/FVP_Corstone_SSE-320",
+  "verbose": true,
+  "experiment": "H3R",
+  "arms": [
+   [
+    "base",
+    {}
+   ],
+   [
+    "equalized",
+    {
+     "SRAM_MAXR": 8,
+     "SRAM_MAXW": 8,
+     "SRAM_MAXRW": 0,
+     "SRAM_RLATENCY": 0,
+     "SRAM_WLATENCY": 0,
+     "SRAM_PULSE_ON": 3999,
+     "SRAM_PULSE_OFF": 1,
+     "SRAM_BWCAP": 4000,
+     "EXT_MAXR": 0,
+     "EXT_MAXW": 0,
+     "EXT_MAXRW": 0,
+     "EXT_RLATENCY": 0,
+     "EXT_WLATENCY": 0,
+     "EXT_PULSE_ON": 4000,
+     "EXT_PULSE_OFF": 1000,
+     "EXT_BWCAP": 0
+    }
+   ]
+  ]
+ },
+ {
+  "cell_id": "h3r_conv3x3_9x4_c128__SSE-320__ethos-u85-512",
+  "model": "h3r_conv3x3_9x4_c128",
+  "model_path": "/tmp/h3r/models/h3r_conv3x3_9x4_c128.tflite",
+  "platform": "SSE-320",
+  "npu": "ethos-u85",
+  "mac_config": 512,
+  "accelerator_config": "ethos-u85-512",
+  "system_config": "Ethos_U85_SYS_DRAM_Mid_512",
+  "memory_mode": "Dedicated_Sram",
+  "target_platform": "mps4",
+  "target_subsystem": "sse-320",
+  "fvp": "/opt/arm/fvp_installed_320/models/Linux64_GCC-9.3/FVP_Corstone_SSE-320",
+  "verbose": true,
+  "experiment": "H3R",
+  "arms": [
+   [
+    "base",
+    {}
+   ],
+   [
+    "equalized",
+    {
+     "SRAM_MAXR": 8,
+     "SRAM_MAXW": 8,
+     "SRAM_MAXRW": 0,
+     "SRAM_RLATENCY": 0,
+     "SRAM_WLATENCY": 0,
+     "SRAM_PULSE_ON": 3999,
+     "SRAM_PULSE_OFF": 1,
+     "SRAM_BWCAP": 4000,
+     "EXT_MAXR": 0,
+     "EXT_MAXW": 0,
+     "EXT_MAXRW": 0,
+     "EXT_RLATENCY": 0,
+     "EXT_WLATENCY": 0,
+     "EXT_PULSE_ON": 4000,
+     "EXT_PULSE_OFF": 1000,
+     "EXT_BWCAP": 0
+    }
+   ]
+  ]
+ },
+ {
+  "cell_id": "h3r_conv3x3_12x3_c128__SSE-320__ethos-u85-256",
+  "model": "h3r_conv3x3_12x3_c128",
+  "model_path": "/tmp/h3r/models/h3r_conv3x3_12x3_c128.tflite",
+  "platform": "SSE-320",
+  "npu": "ethos-u85",
+  "mac_config": 256,
+  "accelerator_config": "ethos-u85-256",
+  "system_config": "Ethos_U85_SYS_DRAM_Low",
+  "memory_mode": "Dedicated_Sram",
+  "target_platform": "mps4",
+  "target_subsystem": "sse-320",
+  "fvp": "/opt/arm/fvp_installed_320/models/Linux64_GCC-9.3/FVP_Corstone_SSE-320",
+  "verbose": true,
+  "experiment": "H3R",
+  "arms": [
+   [
+    "base",
+    {}
+   ],
+   [
+    "equalized",
+    {
+     "SRAM_MAXR": 8,
+     "SRAM_MAXW": 8,
+     "SRAM_MAXRW": 0,
+     "SRAM_RLATENCY": 0,
+     "SRAM_WLATENCY": 0,
+     "SRAM_PULSE_ON": 3999,
+     "SRAM_PULSE_OFF": 1,
+     "SRAM_BWCAP": 4000,
+     "EXT_MAXR": 0,
+     "EXT_MAXW": 0,
+     "EXT_MAXRW": 0,
+     "EXT_RLATENCY": 0,
+     "EXT_WLATENCY": 0,
+     "EXT_PULSE_ON": 4000,
+     "EXT_PULSE_OFF": 1000,
+     "EXT_BWCAP": 0
+    }
+   ]
+  ]
+ },
+ {
+  "cell_id": "h3r_conv3x3_12x3_c128__SSE-320__ethos-u85-512",
+  "model": "h3r_conv3x3_12x3_c128",
+  "model_path": "/tmp/h3r/models/h3r_conv3x3_12x3_c128.tflite",
+  "platform": "SSE-320",
+  "npu": "ethos-u85",
+  "mac_config": 512,
+  "accelerator_config": "ethos-u85-512",
+  "system_config": "Ethos_U85_SYS_DRAM_Mid_512",
+  "memory_mode": "Dedicated_Sram",
+  "target_platform": "mps4",
+  "target_subsystem": "sse-320",
+  "fvp": "/opt/arm/fvp_installed_320/models/Linux64_GCC-9.3/FVP_Corstone_SSE-320",
+  "verbose": true,
+  "experiment": "H3R",
+  "arms": [
+   [
+    "base",
+    {}
+   ],
+   [
+    "equalized",
+    {
+     "SRAM_MAXR": 8,
+     "SRAM_MAXW": 8,
+     "SRAM_MAXRW": 0,
+     "SRAM_RLATENCY": 0,
+     "SRAM_WLATENCY": 0,
+     "SRAM_PULSE_ON": 3999,
+     "SRAM_PULSE_OFF": 1,
+     "SRAM_BWCAP": 4000,
+     "EXT_MAXR": 0,
+     "EXT_MAXW": 0,
+     "EXT_MAXRW": 0,
+     "EXT_RLATENCY": 0,
+     "EXT_WLATENCY": 0,
+     "EXT_PULSE_ON": 4000,
+     "EXT_PULSE_OFF": 1000,
+     "EXT_BWCAP": 0
+    }
+   ]
+  ]
+ },
+ {
+  "cell_id": "h3r_conv3x3_18x2_c128__SSE-320__ethos-u85-256",
+  "model": "h3r_conv3x3_18x2_c128",
+  "model_path": "/tmp/h3r/models/h3r_conv3x3_18x2_c128.tflite",
+  "platform": "SSE-320",
+  "npu": "ethos-u85",
+  "mac_config": 256,
+  "accelerator_config": "ethos-u85-256",
+  "system_config": "Ethos_U85_SYS_DRAM_Low",
+  "memory_mode": "Dedicated_Sram",
+  "target_platform": "mps4",
+  "target_subsystem": "sse-320",
+  "fvp": "/opt/arm/fvp_installed_320/models/Linux64_GCC-9.3/FVP_Corstone_SSE-320",
+  "verbose": true,
+  "experiment": "H3R",
+  "arms": [
+   [
+    "base",
+    {}
+   ],
+   [
+    "equalized",
+    {
+     "SRAM_MAXR": 8,
+     "SRAM_MAXW": 8,
+     "SRAM_MAXRW": 0,
+     "SRAM_RLATENCY": 0,
+     "SRAM_WLATENCY": 0,
+     "SRAM_PULSE_ON": 3999,
+     "SRAM_PULSE_OFF": 1,
+     "SRAM_BWCAP": 4000,
+     "EXT_MAXR": 0,
+     "EXT_MAXW": 0,
+     "EXT_MAXRW": 0,
+     "EXT_RLATENCY": 0,
+     "EXT_WLATENCY": 0,
+     "EXT_PULSE_ON": 4000,
+     "EXT_PULSE_OFF": 1000,
+     "EXT_BWCAP": 0
+    }
+   ]
+  ]
+ },
+ {
+  "cell_id": "h3r_conv3x3_18x2_c128__SSE-320__ethos-u85-512",
+  "model": "h3r_conv3x3_18x2_c128",
+  "model_path": "/tmp/h3r/models/h3r_conv3x3_18x2_c128.tflite",
+  "platform": "SSE-320",
+  "npu": "ethos-u85",
+  "mac_config": 512,
+  "accelerator_config": "ethos-u85-512",
+  "system_config": "Ethos_U85_SYS_DRAM_Mid_512",
+  "memory_mode": "Dedicated_Sram",
+  "target_platform": "mps4",
+  "target_subsystem": "sse-320",
+  "fvp": "/opt/arm/fvp_installed_320/models/Linux64_GCC-9.3/FVP_Corstone_SSE-320",
+  "verbose": true,
+  "experiment": "H3R",
+  "arms": [
+   [
+    "base",
+    {}
+   ],
+   [
+    "equalized",
+    {
+     "SRAM_MAXR": 8,
+     "SRAM_MAXW": 8,
+     "SRAM_MAXRW": 0,
+     "SRAM_RLATENCY": 0,
+     "SRAM_WLATENCY": 0,
+     "SRAM_PULSE_ON": 3999,
+     "SRAM_PULSE_OFF": 1,
+     "SRAM_BWCAP": 4000,
+     "EXT_MAXR": 0,
+     "EXT_MAXW": 0,
+     "EXT_MAXRW": 0,
+     "EXT_RLATENCY": 0,
+     "EXT_WLATENCY": 0,
+     "EXT_PULSE_ON": 4000,
+     "EXT_PULSE_OFF": 1000,
+     "EXT_BWCAP": 0
+    }
+   ]
+  ]
+ },
+ {
+  "cell_id": "h3r_conv3x3_36x1_c128__SSE-320__ethos-u85-256",
+  "model": "h3r_conv3x3_36x1_c128",
+  "model_path": "/tmp/h3r/models/h3r_conv3x3_36x1_c128.tflite",
+  "platform": "SSE-320",
+  "npu": "ethos-u85",
+  "mac_config": 256,
+  "accelerator_config": "ethos-u85-256",
+  "system_config": "Ethos_U85_SYS_DRAM_Low",
+  "memory_mode": "Dedicated_Sram",
+  "target_platform": "mps4",
+  "target_subsystem": "sse-320",
+  "fvp": "/opt/arm/fvp_installed_320/models/Linux64_GCC-9.3/FVP_Corstone_SSE-320",
+  "verbose": true,
+  "experiment": "H3R",
+  "arms": [
+   [
+    "base",
+    {}
+   ],
+   [
+    "equalized",
+    {
+     "SRAM_MAXR": 8,
+     "SRAM_MAXW": 8,
+     "SRAM_MAXRW": 0,
+     "SRAM_RLATENCY": 0,
+     "SRAM_WLATENCY": 0,
+     "SRAM_PULSE_ON": 3999,
+     "SRAM_PULSE_OFF": 1,
+     "SRAM_BWCAP": 4000,
+     "EXT_MAXR": 0,
+     "EXT_MAXW": 0,
+     "EXT_MAXRW": 0,
+     "EXT_RLATENCY": 0,
+     "EXT_WLATENCY": 0,
+     "EXT_PULSE_ON": 4000,
+     "EXT_PULSE_OFF": 1000,
+     "EXT_BWCAP": 0
+    }
+   ]
+  ]
+ },
+ {
+  "cell_id": "h3r_conv3x3_36x1_c128__SSE-320__ethos-u85-512",
+  "model": "h3r_conv3x3_36x1_c128",
+  "model_path": "/tmp/h3r/models/h3r_conv3x3_36x1_c128.tflite",
+  "platform": "SSE-320",
+  "npu": "ethos-u85",
+  "mac_config": 512,
+  "accelerator_config": "ethos-u85-512",
+  "system_config": "Ethos_U85_SYS_DRAM_Mid_512",
+  "memory_mode": "Dedicated_Sram",
+  "target_platform": "mps4",
+  "target_subsystem": "sse-320",
+  "fvp": "/opt/arm/fvp_installed_320/models/Linux64_GCC-9.3/FVP_Corstone_SSE-320",
+  "verbose": true,
+  "experiment": "H3R",
+  "arms": [
+   [
+    "base",
+    {}
+   ],
+   [
+    "equalized",
+    {
+     "SRAM_MAXR": 8,
+     "SRAM_MAXW": 8,
+     "SRAM_MAXRW": 0,
+     "SRAM_RLATENCY": 0,
+     "SRAM_WLATENCY": 0,
+     "SRAM_PULSE_ON": 3999,
+     "SRAM_PULSE_OFF": 1,
+     "SRAM_BWCAP": 4000,
+     "EXT_MAXR": 0,
+     "EXT_MAXW": 0,
+     "EXT_MAXRW": 0,
+     "EXT_RLATENCY": 0,
+     "EXT_WLATENCY": 0,
+     "EXT_PULSE_ON": 4000,
+     "EXT_PULSE_OFF": 1000,
+     "EXT_BWCAP": 0
+    }
+   ]
+  ]
+ },
+ {
+  "cell_id": "h3r_dw3x3_1x36_c128__SSE-320__ethos-u85-256",
+  "model": "h3r_dw3x3_1x36_c128",
+  "model_path": "/tmp/h3r/models/h3r_dw3x3_1x36_c128.tflite",
+  "platform": "SSE-320",
+  "npu": "ethos-u85",
+  "mac_config": 256,
+  "accelerator_config": "ethos-u85-256",
+  "system_config": "Ethos_U85_SYS_DRAM_Low",
+  "memory_mode": "Dedicated_Sram",
+  "target_platform": "mps4",
+  "target_subsystem": "sse-320",
+  "fvp": "/opt/arm/fvp_installed_320/models/Linux64_GCC-9.3/FVP_Corstone_SSE-320",
+  "verbose": true,
+  "experiment": "H3R",
+  "arms": [
+   [
+    "base",
+    {}
+   ],
+   [
+    "equalized",
+    {
+     "SRAM_MAXR": 8,
+     "SRAM_MAXW": 8,
+     "SRAM_MAXRW": 0,
+     "SRAM_RLATENCY": 0,
+     "SRAM_WLATENCY": 0,
+     "SRAM_PULSE_ON": 3999,
+     "SRAM_PULSE_OFF": 1,
+     "SRAM_BWCAP": 4000,
+     "EXT_MAXR": 0,
+     "EXT_MAXW": 0,
+     "EXT_MAXRW": 0,
+     "EXT_RLATENCY": 0,
+     "EXT_WLATENCY": 0,
+     "EXT_PULSE_ON": 4000,
+     "EXT_PULSE_OFF": 1000,
+     "EXT_BWCAP": 0
+    }
+   ],
+   [
+    "bridge_legacy_relaxed",
+    {
+     "EXT_RLATENCY": 0,
+     "EXT_WLATENCY": 0,
+     "EXT_BWCAP": 0,
+     "SRAM_RLATENCY": 0,
+     "SRAM_WLATENCY": 0
+    }
+   ]
+  ]
+ },
+ {
+  "cell_id": "h3r_dw3x3_1x36_c128__SSE-320__ethos-u85-512",
+  "model": "h3r_dw3x3_1x36_c128",
+  "model_path": "/tmp/h3r/models/h3r_dw3x3_1x36_c128.tflite",
+  "platform": "SSE-320",
+  "npu": "ethos-u85",
+  "mac_config": 512,
+  "accelerator_config": "ethos-u85-512",
+  "system_config": "Ethos_U85_SYS_DRAM_Mid_512",
+  "memory_mode": "Dedicated_Sram",
+  "target_platform": "mps4",
+  "target_subsystem": "sse-320",
+  "fvp": "/opt/arm/fvp_installed_320/models/Linux64_GCC-9.3/FVP_Corstone_SSE-320",
+  "verbose": true,
+  "experiment": "H3R",
+  "arms": [
+   [
+    "base",
+    {}
+   ],
+   [
+    "equalized",
+    {
+     "SRAM_MAXR": 8,
+     "SRAM_MAXW": 8,
+     "SRAM_MAXRW": 0,
+     "SRAM_RLATENCY": 0,
+     "SRAM_WLATENCY": 0,
+     "SRAM_PULSE_ON": 3999,
+     "SRAM_PULSE_OFF": 1,
+     "SRAM_BWCAP": 4000,
+     "EXT_MAXR": 0,
+     "EXT_MAXW": 0,
+     "EXT_MAXRW": 0,
+     "EXT_RLATENCY": 0,
+     "EXT_WLATENCY": 0,
+     "EXT_PULSE_ON": 4000,
+     "EXT_PULSE_OFF": 1000,
+     "EXT_BWCAP": 0
+    }
+   ],
+   [
+    "bridge_legacy_relaxed",
+    {
+     "EXT_RLATENCY": 0,
+     "EXT_WLATENCY": 0,
+     "EXT_BWCAP": 0,
+     "SRAM_RLATENCY": 0,
+     "SRAM_WLATENCY": 0
+    }
+   ]
+  ]
+ },
+ {
+  "cell_id": "h3r_dw3x3_2x18_c128__SSE-320__ethos-u85-256",
+  "model": "h3r_dw3x3_2x18_c128",
+  "model_path": "/tmp/h3r/models/h3r_dw3x3_2x18_c128.tflite",
+  "platform": "SSE-320",
+  "npu": "ethos-u85",
+  "mac_config": 256,
+  "accelerator_config": "ethos-u85-256",
+  "system_config": "Ethos_U85_SYS_DRAM_Low",
+  "memory_mode": "Dedicated_Sram",
+  "target_platform": "mps4",
+  "target_subsystem": "sse-320",
+  "fvp": "/opt/arm/fvp_installed_320/models/Linux64_GCC-9.3/FVP_Corstone_SSE-320",
+  "verbose": true,
+  "experiment": "H3R",
+  "arms": [
+   [
+    "base",
+    {}
+   ],
+   [
+    "equalized",
+    {
+     "SRAM_MAXR": 8,
+     "SRAM_MAXW": 8,
+     "SRAM_MAXRW": 0,
+     "SRAM_RLATENCY": 0,
+     "SRAM_WLATENCY": 0,
+     "SRAM_PULSE_ON": 3999,
+     "SRAM_PULSE_OFF": 1,
+     "SRAM_BWCAP": 4000,
+     "EXT_MAXR": 0,
+     "EXT_MAXW": 0,
+     "EXT_MAXRW": 0,
+     "EXT_RLATENCY": 0,
+     "EXT_WLATENCY": 0,
+     "EXT_PULSE_ON": 4000,
+     "EXT_PULSE_OFF": 1000,
+     "EXT_BWCAP": 0
+    }
+   ],
+   [
+    "bridge_legacy_relaxed",
+    {
+     "EXT_RLATENCY": 0,
+     "EXT_WLATENCY": 0,
+     "EXT_BWCAP": 0,
+     "SRAM_RLATENCY": 0,
+     "SRAM_WLATENCY": 0
+    }
+   ]
+  ]
+ },
+ {
+  "cell_id": "h3r_dw3x3_2x18_c128__SSE-320__ethos-u85-512",
+  "model": "h3r_dw3x3_2x18_c128",
+  "model_path": "/tmp/h3r/models/h3r_dw3x3_2x18_c128.tflite",
+  "platform": "SSE-320",
+  "npu": "ethos-u85",
+  "mac_config": 512,
+  "accelerator_config": "ethos-u85-512",
+  "system_config": "Ethos_U85_SYS_DRAM_Mid_512",
+  "memory_mode": "Dedicated_Sram",
+  "target_platform": "mps4",
+  "target_subsystem": "sse-320",
+  "fvp": "/opt/arm/fvp_installed_320/models/Linux64_GCC-9.3/FVP_Corstone_SSE-320",
+  "verbose": true,
+  "experiment": "H3R",
+  "arms": [
+   [
+    "base",
+    {}
+   ],
+   [
+    "equalized",
+    {
+     "SRAM_MAXR": 8,
+     "SRAM_MAXW": 8,
+     "SRAM_MAXRW": 0,
+     "SRAM_RLATENCY": 0,
+     "SRAM_WLATENCY": 0,
+     "SRAM_PULSE_ON": 3999,
+     "SRAM_PULSE_OFF": 1,
+     "SRAM_BWCAP": 4000,
+     "EXT_MAXR": 0,
+     "EXT_MAXW": 0,
+     "EXT_MAXRW": 0,
+     "EXT_RLATENCY": 0,
+     "EXT_WLATENCY": 0,
+     "EXT_PULSE_ON": 4000,
+     "EXT_PULSE_OFF": 1000,
+     "EXT_BWCAP": 0
+    }
+   ],
+   [
+    "bridge_legacy_relaxed",
+    {
+     "EXT_RLATENCY": 0,
+     "EXT_WLATENCY": 0,
+     "EXT_BWCAP": 0,
+     "SRAM_RLATENCY": 0,
+     "SRAM_WLATENCY": 0
+    }
+   ]
+  ]
+ },
+ {
+  "cell_id": "h3r_dw3x3_3x12_c128__SSE-320__ethos-u85-256",
+  "model": "h3r_dw3x3_3x12_c128",
+  "model_path": "/tmp/h3r/models/h3r_dw3x3_3x12_c128.tflite",
+  "platform": "SSE-320",
+  "npu": "ethos-u85",
+  "mac_config": 256,
+  "accelerator_config": "ethos-u85-256",
+  "system_config": "Ethos_U85_SYS_DRAM_Low",
+  "memory_mode": "Dedicated_Sram",
+  "target_platform": "mps4",
+  "target_subsystem": "sse-320",
+  "fvp": "/opt/arm/fvp_installed_320/models/Linux64_GCC-9.3/FVP_Corstone_SSE-320",
+  "verbose": true,
+  "experiment": "H3R",
+  "arms": [
+   [
+    "base",
+    {}
+   ],
+   [
+    "equalized",
+    {
+     "SRAM_MAXR": 8,
+     "SRAM_MAXW": 8,
+     "SRAM_MAXRW": 0,
+     "SRAM_RLATENCY": 0,
+     "SRAM_WLATENCY": 0,
+     "SRAM_PULSE_ON": 3999,
+     "SRAM_PULSE_OFF": 1,
+     "SRAM_BWCAP": 4000,
+     "EXT_MAXR": 0,
+     "EXT_MAXW": 0,
+     "EXT_MAXRW": 0,
+     "EXT_RLATENCY": 0,
+     "EXT_WLATENCY": 0,
+     "EXT_PULSE_ON": 4000,
+     "EXT_PULSE_OFF": 1000,
+     "EXT_BWCAP": 0
+    }
+   ],
+   [
+    "bridge_legacy_relaxed",
+    {
+     "EXT_RLATENCY": 0,
+     "EXT_WLATENCY": 0,
+     "EXT_BWCAP": 0,
+     "SRAM_RLATENCY": 0,
+     "SRAM_WLATENCY": 0
+    }
+   ]
+  ]
+ },
+ {
+  "cell_id": "h3r_dw3x3_3x12_c128__SSE-320__ethos-u85-512",
+  "model": "h3r_dw3x3_3x12_c128",
+  "model_path": "/tmp/h3r/models/h3r_dw3x3_3x12_c128.tflite",
+  "platform": "SSE-320",
+  "npu": "ethos-u85",
+  "mac_config": 512,
+  "accelerator_config": "ethos-u85-512",
+  "system_config": "Ethos_U85_SYS_DRAM_Mid_512",
+  "memory_mode": "Dedicated_Sram",
+  "target_platform": "mps4",
+  "target_subsystem": "sse-320",
+  "fvp": "/opt/arm/fvp_installed_320/models/Linux64_GCC-9.3/FVP_Corstone_SSE-320",
+  "verbose": true,
+  "experiment": "H3R",
+  "arms": [
+   [
+    "base",
+    {}
+   ],
+   [
+    "equalized",
+    {
+     "SRAM_MAXR": 8,
+     "SRAM_MAXW": 8,
+     "SRAM_MAXRW": 0,
+     "SRAM_RLATENCY": 0,
+     "SRAM_WLATENCY": 0,
+     "SRAM_PULSE_ON": 3999,
+     "SRAM_PULSE_OFF": 1,
+     "SRAM_BWCAP": 4000,
+     "EXT_MAXR": 0,
+     "EXT_MAXW": 0,
+     "EXT_MAXRW": 0,
+     "EXT_RLATENCY": 0,
+     "EXT_WLATENCY": 0,
+     "EXT_PULSE_ON": 4000,
+     "EXT_PULSE_OFF": 1000,
+     "EXT_BWCAP": 0
+    }
+   ],
+   [
+    "bridge_legacy_relaxed",
+    {
+     "EXT_RLATENCY": 0,
+     "EXT_WLATENCY": 0,
+     "EXT_BWCAP": 0,
+     "SRAM_RLATENCY": 0,
+     "SRAM_WLATENCY": 0
+    }
+   ]
+  ]
+ },
+ {
+  "cell_id": "h3r_dw3x3_4x9_c128__SSE-320__ethos-u85-256",
+  "model": "h3r_dw3x3_4x9_c128",
+  "model_path": "/tmp/h3r/models/h3r_dw3x3_4x9_c128.tflite",
+  "platform": "SSE-320",
+  "npu": "ethos-u85",
+  "mac_config": 256,
+  "accelerator_config": "ethos-u85-256",
+  "system_config": "Ethos_U85_SYS_DRAM_Low",
+  "memory_mode": "Dedicated_Sram",
+  "target_platform": "mps4",
+  "target_subsystem": "sse-320",
+  "fvp": "/opt/arm/fvp_installed_320/models/Linux64_GCC-9.3/FVP_Corstone_SSE-320",
+  "verbose": true,
+  "experiment": "H3R",
+  "arms": [
+   [
+    "base",
+    {}
+   ],
+   [
+    "equalized",
+    {
+     "SRAM_MAXR": 8,
+     "SRAM_MAXW": 8,
+     "SRAM_MAXRW": 0,
+     "SRAM_RLATENCY": 0,
+     "SRAM_WLATENCY": 0,
+     "SRAM_PULSE_ON": 3999,
+     "SRAM_PULSE_OFF": 1,
+     "SRAM_BWCAP": 4000,
+     "EXT_MAXR": 0,
+     "EXT_MAXW": 0,
+     "EXT_MAXRW": 0,
+     "EXT_RLATENCY": 0,
+     "EXT_WLATENCY": 0,
+     "EXT_PULSE_ON": 4000,
+     "EXT_PULSE_OFF": 1000,
+     "EXT_BWCAP": 0
+    }
+   ],
+   [
+    "bridge_legacy_relaxed",
+    {
+     "EXT_RLATENCY": 0,
+     "EXT_WLATENCY": 0,
+     "EXT_BWCAP": 0,
+     "SRAM_RLATENCY": 0,
+     "SRAM_WLATENCY": 0
+    }
+   ]
+  ]
+ },
+ {
+  "cell_id": "h3r_dw3x3_4x9_c128__SSE-320__ethos-u85-512",
+  "model": "h3r_dw3x3_4x9_c128",
+  "model_path": "/tmp/h3r/models/h3r_dw3x3_4x9_c128.tflite",
+  "platform": "SSE-320",
+  "npu": "ethos-u85",
+  "mac_config": 512,
+  "accelerator_config": "ethos-u85-512",
+  "system_config": "Ethos_U85_SYS_DRAM_Mid_512",
+  "memory_mode": "Dedicated_Sram",
+  "target_platform": "mps4",
+  "target_subsystem": "sse-320",
+  "fvp": "/opt/arm/fvp_installed_320/models/Linux64_GCC-9.3/FVP_Corstone_SSE-320",
+  "verbose": true,
+  "experiment": "H3R",
+  "arms": [
+   [
+    "base",
+    {}
+   ],
+   [
+    "equalized",
+    {
+     "SRAM_MAXR": 8,
+     "SRAM_MAXW": 8,
+     "SRAM_MAXRW": 0,
+     "SRAM_RLATENCY": 0,
+     "SRAM_WLATENCY": 0,
+     "SRAM_PULSE_ON": 3999,
+     "SRAM_PULSE_OFF": 1,
+     "SRAM_BWCAP": 4000,
+     "EXT_MAXR": 0,
+     "EXT_MAXW": 0,
+     "EXT_MAXRW": 0,
+     "EXT_RLATENCY": 0,
+     "EXT_WLATENCY": 0,
+     "EXT_PULSE_ON": 4000,
+     "EXT_PULSE_OFF": 1000,
+     "EXT_BWCAP": 0
+    }
+   ],
+   [
+    "bridge_legacy_relaxed",
+    {
+     "EXT_RLATENCY": 0,
+     "EXT_WLATENCY": 0,
+     "EXT_BWCAP": 0,
+     "SRAM_RLATENCY": 0,
+     "SRAM_WLATENCY": 0
+    }
+   ]
+  ]
+ },
+ {
+  "cell_id": "h3r_dw3x3_6x6_c128__SSE-320__ethos-u85-256",
+  "model": "h3r_dw3x3_6x6_c128",
+  "model_path": "/tmp/h3r/models/h3r_dw3x3_6x6_c128.tflite",
+  "platform": "SSE-320",
+  "npu": "ethos-u85",
+  "mac_config": 256,
+  "accelerator_config": "ethos-u85-256",
+  "system_config": "Ethos_U85_SYS_DRAM_Low",
+  "memory_mode": "Dedicated_Sram",
+  "target_platform": "mps4",
+  "target_subsystem": "sse-320",
+  "fvp": "/opt/arm/fvp_installed_320/models/Linux64_GCC-9.3/FVP_Corstone_SSE-320",
+  "verbose": true,
+  "experiment": "H3R",
+  "arms": [
+   [
+    "base",
+    {}
+   ],
+   [
+    "equalized",
+    {
+     "SRAM_MAXR": 8,
+     "SRAM_MAXW": 8,
+     "SRAM_MAXRW": 0,
+     "SRAM_RLATENCY": 0,
+     "SRAM_WLATENCY": 0,
+     "SRAM_PULSE_ON": 3999,
+     "SRAM_PULSE_OFF": 1,
+     "SRAM_BWCAP": 4000,
+     "EXT_MAXR": 0,
+     "EXT_MAXW": 0,
+     "EXT_MAXRW": 0,
+     "EXT_RLATENCY": 0,
+     "EXT_WLATENCY": 0,
+     "EXT_PULSE_ON": 4000,
+     "EXT_PULSE_OFF": 1000,
+     "EXT_BWCAP": 0
+    }
+   ],
+   [
+    "bridge_legacy_relaxed",
+    {
+     "EXT_RLATENCY": 0,
+     "EXT_WLATENCY": 0,
+     "EXT_BWCAP": 0,
+     "SRAM_RLATENCY": 0,
+     "SRAM_WLATENCY": 0
+    }
+   ]
+  ]
+ },
+ {
+  "cell_id": "h3r_dw3x3_6x6_c128__SSE-320__ethos-u85-512",
+  "model": "h3r_dw3x3_6x6_c128",
+  "model_path": "/tmp/h3r/models/h3r_dw3x3_6x6_c128.tflite",
+  "platform": "SSE-320",
+  "npu": "ethos-u85",
+  "mac_config": 512,
+  "accelerator_config": "ethos-u85-512",
+  "system_config": "Ethos_U85_SYS_DRAM_Mid_512",
+  "memory_mode": "Dedicated_Sram",
+  "target_platform": "mps4",
+  "target_subsystem": "sse-320",
+  "fvp": "/opt/arm/fvp_installed_320/models/Linux64_GCC-9.3/FVP_Corstone_SSE-320",
+  "verbose": true,
+  "experiment": "H3R",
+  "arms": [
+   [
+    "base",
+    {}
+   ],
+   [
+    "equalized",
+    {
+     "SRAM_MAXR": 8,
+     "SRAM_MAXW": 8,
+     "SRAM_MAXRW": 0,
+     "SRAM_RLATENCY": 0,
+     "SRAM_WLATENCY": 0,
+     "SRAM_PULSE_ON": 3999,
+     "SRAM_PULSE_OFF": 1,
+     "SRAM_BWCAP": 4000,
+     "EXT_MAXR": 0,
+     "EXT_MAXW": 0,
+     "EXT_MAXRW": 0,
+     "EXT_RLATENCY": 0,
+     "EXT_WLATENCY": 0,
+     "EXT_PULSE_ON": 4000,
+     "EXT_PULSE_OFF": 1000,
+     "EXT_BWCAP": 0
+    }
+   ],
+   [
+    "bridge_legacy_relaxed",
+    {
+     "EXT_RLATENCY": 0,
+     "EXT_WLATENCY": 0,
+     "EXT_BWCAP": 0,
+     "SRAM_RLATENCY": 0,
+     "SRAM_WLATENCY": 0
+    }
+   ]
+  ]
+ },
+ {
+  "cell_id": "h3r_dw3x3_9x4_c128__SSE-320__ethos-u85-256",
+  "model": "h3r_dw3x3_9x4_c128",
+  "model_path": "/tmp/h3r/models/h3r_dw3x3_9x4_c128.tflite",
+  "platform": "SSE-320",
+  "npu": "ethos-u85",
+  "mac_config": 256,
+  "accelerator_config": "ethos-u85-256",
+  "system_config": "Ethos_U85_SYS_DRAM_Low",
+  "memory_mode": "Dedicated_Sram",
+  "target_platform": "mps4",
+  "target_subsystem": "sse-320",
+  "fvp": "/opt/arm/fvp_installed_320/models/Linux64_GCC-9.3/FVP_Corstone_SSE-320",
+  "verbose": true,
+  "experiment": "H3R",
+  "arms": [
+   [
+    "base",
+    {}
+   ],
+   [
+    "equalized",
+    {
+     "SRAM_MAXR": 8,
+     "SRAM_MAXW": 8,
+     "SRAM_MAXRW": 0,
+     "SRAM_RLATENCY": 0,
+     "SRAM_WLATENCY": 0,
+     "SRAM_PULSE_ON": 3999,
+     "SRAM_PULSE_OFF": 1,
+     "SRAM_BWCAP": 4000,
+     "EXT_MAXR": 0,
+     "EXT_MAXW": 0,
+     "EXT_MAXRW": 0,
+     "EXT_RLATENCY": 0,
+     "EXT_WLATENCY": 0,
+     "EXT_PULSE_ON": 4000,
+     "EXT_PULSE_OFF": 1000,
+     "EXT_BWCAP": 0
+    }
+   ],
+   [
+    "bridge_legacy_relaxed",
+    {
+     "EXT_RLATENCY": 0,
+     "EXT_WLATENCY": 0,
+     "EXT_BWCAP": 0,
+     "SRAM_RLATENCY": 0,
+     "SRAM_WLATENCY": 0
+    }
+   ]
+  ]
+ },
+ {
+  "cell_id": "h3r_dw3x3_9x4_c128__SSE-320__ethos-u85-512",
+  "model": "h3r_dw3x3_9x4_c128",
+  "model_path": "/tmp/h3r/models/h3r_dw3x3_9x4_c128.tflite",
+  "platform": "SSE-320",
+  "npu": "ethos-u85",
+  "mac_config": 512,
+  "accelerator_config": "ethos-u85-512",
+  "system_config": "Ethos_U85_SYS_DRAM_Mid_512",
+  "memory_mode": "Dedicated_Sram",
+  "target_platform": "mps4",
+  "target_subsystem": "sse-320",
+  "fvp": "/opt/arm/fvp_installed_320/models/Linux64_GCC-9.3/FVP_Corstone_SSE-320",
+  "verbose": true,
+  "experiment": "H3R",
+  "arms": [
+   [
+    "base",
+    {}
+   ],
+   [
+    "equalized",
+    {
+     "SRAM_MAXR": 8,
+     "SRAM_MAXW": 8,
+     "SRAM_MAXRW": 0,
+     "SRAM_RLATENCY": 0,
+     "SRAM_WLATENCY": 0,
+     "SRAM_PULSE_ON": 3999,
+     "SRAM_PULSE_OFF": 1,
+     "SRAM_BWCAP": 4000,
+     "EXT_MAXR": 0,
+     "EXT_MAXW": 0,
+     "EXT_MAXRW": 0,
+     "EXT_RLATENCY": 0,
+     "EXT_WLATENCY": 0,
+     "EXT_PULSE_ON": 4000,
+     "EXT_PULSE_OFF": 1000,
+     "EXT_BWCAP": 0
+    }
+   ],
+   [
+    "bridge_legacy_relaxed",
+    {
+     "EXT_RLATENCY": 0,
+     "EXT_WLATENCY": 0,
+     "EXT_BWCAP": 0,
+     "SRAM_RLATENCY": 0,
+     "SRAM_WLATENCY": 0
+    }
+   ]
+  ]
+ },
+ {
+  "cell_id": "h3r_dw3x3_12x3_c128__SSE-320__ethos-u85-256",
+  "model": "h3r_dw3x3_12x3_c128",
+  "model_path": "/tmp/h3r/models/h3r_dw3x3_12x3_c128.tflite",
+  "platform": "SSE-320",
+  "npu": "ethos-u85",
+  "mac_config": 256,
+  "accelerator_config": "ethos-u85-256",
+  "system_config": "Ethos_U85_SYS_DRAM_Low",
+  "memory_mode": "Dedicated_Sram",
+  "target_platform": "mps4",
+  "target_subsystem": "sse-320",
+  "fvp": "/opt/arm/fvp_installed_320/models/Linux64_GCC-9.3/FVP_Corstone_SSE-320",
+  "verbose": true,
+  "experiment": "H3R",
+  "arms": [
+   [
+    "base",
+    {}
+   ],
+   [
+    "equalized",
+    {
+     "SRAM_MAXR": 8,
+     "SRAM_MAXW": 8,
+     "SRAM_MAXRW": 0,
+     "SRAM_RLATENCY": 0,
+     "SRAM_WLATENCY": 0,
+     "SRAM_PULSE_ON": 3999,
+     "SRAM_PULSE_OFF": 1,
+     "SRAM_BWCAP": 4000,
+     "EXT_MAXR": 0,
+     "EXT_MAXW": 0,
+     "EXT_MAXRW": 0,
+     "EXT_RLATENCY": 0,
+     "EXT_WLATENCY": 0,
+     "EXT_PULSE_ON": 4000,
+     "EXT_PULSE_OFF": 1000,
+     "EXT_BWCAP": 0
+    }
+   ],
+   [
+    "bridge_legacy_relaxed",
+    {
+     "EXT_RLATENCY": 0,
+     "EXT_WLATENCY": 0,
+     "EXT_BWCAP": 0,
+     "SRAM_RLATENCY": 0,
+     "SRAM_WLATENCY": 0
+    }
+   ]
+  ]
+ },
+ {
+  "cell_id": "h3r_dw3x3_12x3_c128__SSE-320__ethos-u85-512",
+  "model": "h3r_dw3x3_12x3_c128",
+  "model_path": "/tmp/h3r/models/h3r_dw3x3_12x3_c128.tflite",
+  "platform": "SSE-320",
+  "npu": "ethos-u85",
+  "mac_config": 512,
+  "accelerator_config": "ethos-u85-512",
+  "system_config": "Ethos_U85_SYS_DRAM_Mid_512",
+  "memory_mode": "Dedicated_Sram",
+  "target_platform": "mps4",
+  "target_subsystem": "sse-320",
+  "fvp": "/opt/arm/fvp_installed_320/models/Linux64_GCC-9.3/FVP_Corstone_SSE-320",
+  "verbose": true,
+  "experiment": "H3R",
+  "arms": [
+   [
+    "base",
+    {}
+   ],
+   [
+    "equalized",
+    {
+     "SRAM_MAXR": 8,
+     "SRAM_MAXW": 8,
+     "SRAM_MAXRW": 0,
+     "SRAM_RLATENCY": 0,
+     "SRAM_WLATENCY": 0,
+     "SRAM_PULSE_ON": 3999,
+     "SRAM_PULSE_OFF": 1,
+     "SRAM_BWCAP": 4000,
+     "EXT_MAXR": 0,
+     "EXT_MAXW": 0,
+     "EXT_MAXRW": 0,
+     "EXT_RLATENCY": 0,
+     "EXT_WLATENCY": 0,
+     "EXT_PULSE_ON": 4000,
+     "EXT_PULSE_OFF": 1000,
+     "EXT_BWCAP": 0
+    }
+   ],
+   [
+    "bridge_legacy_relaxed",
+    {
+     "EXT_RLATENCY": 0,
+     "EXT_WLATENCY": 0,
+     "EXT_BWCAP": 0,
+     "SRAM_RLATENCY": 0,
+     "SRAM_WLATENCY": 0
+    }
+   ]
+  ]
+ },
+ {
+  "cell_id": "h3r_dw3x3_18x2_c128__SSE-320__ethos-u85-256",
+  "model": "h3r_dw3x3_18x2_c128",
+  "model_path": "/tmp/h3r/models/h3r_dw3x3_18x2_c128.tflite",
+  "platform": "SSE-320",
+  "npu": "ethos-u85",
+  "mac_config": 256,
+  "accelerator_config": "ethos-u85-256",
+  "system_config": "Ethos_U85_SYS_DRAM_Low",
+  "memory_mode": "Dedicated_Sram",
+  "target_platform": "mps4",
+  "target_subsystem": "sse-320",
+  "fvp": "/opt/arm/fvp_installed_320/models/Linux64_GCC-9.3/FVP_Corstone_SSE-320",
+  "verbose": true,
+  "experiment": "H3R",
+  "arms": [
+   [
+    "base",
+    {}
+   ],
+   [
+    "equalized",
+    {
+     "SRAM_MAXR": 8,
+     "SRAM_MAXW": 8,
+     "SRAM_MAXRW": 0,
+     "SRAM_RLATENCY": 0,
+     "SRAM_WLATENCY": 0,
+     "SRAM_PULSE_ON": 3999,
+     "SRAM_PULSE_OFF": 1,
+     "SRAM_BWCAP": 4000,
+     "EXT_MAXR": 0,
+     "EXT_MAXW": 0,
+     "EXT_MAXRW": 0,
+     "EXT_RLATENCY": 0,
+     "EXT_WLATENCY": 0,
+     "EXT_PULSE_ON": 4000,
+     "EXT_PULSE_OFF": 1000,
+     "EXT_BWCAP": 0
+    }
+   ],
+   [
+    "bridge_legacy_relaxed",
+    {
+     "EXT_RLATENCY": 0,
+     "EXT_WLATENCY": 0,
+     "EXT_BWCAP": 0,
+     "SRAM_RLATENCY": 0,
+     "SRAM_WLATENCY": 0
+    }
+   ]
+  ]
+ },
+ {
+  "cell_id": "h3r_dw3x3_18x2_c128__SSE-320__ethos-u85-512",
+  "model": "h3r_dw3x3_18x2_c128",
+  "model_path": "/tmp/h3r/models/h3r_dw3x3_18x2_c128.tflite",
+  "platform": "SSE-320",
+  "npu": "ethos-u85",
+  "mac_config": 512,
+  "accelerator_config": "ethos-u85-512",
+  "system_config": "Ethos_U85_SYS_DRAM_Mid_512",
+  "memory_mode": "Dedicated_Sram",
+  "target_platform": "mps4",
+  "target_subsystem": "sse-320",
+  "fvp": "/opt/arm/fvp_installed_320/models/Linux64_GCC-9.3/FVP_Corstone_SSE-320",
+  "verbose": true,
+  "experiment": "H3R",
+  "arms": [
+   [
+    "base",
+    {}
+   ],
+   [
+    "equalized",
+    {
+     "SRAM_MAXR": 8,
+     "SRAM_MAXW": 8,
+     "SRAM_MAXRW": 0,
+     "SRAM_RLATENCY": 0,
+     "SRAM_WLATENCY": 0,
+     "SRAM_PULSE_ON": 3999,
+     "SRAM_PULSE_OFF": 1,
+     "SRAM_BWCAP": 4000,
+     "EXT_MAXR": 0,
+     "EXT_MAXW": 0,
+     "EXT_MAXRW": 0,
+     "EXT_RLATENCY": 0,
+     "EXT_WLATENCY": 0,
+     "EXT_PULSE_ON": 4000,
+     "EXT_PULSE_OFF": 1000,
+     "EXT_BWCAP": 0
+    }
+   ],
+   [
+    "bridge_legacy_relaxed",
+    {
+     "EXT_RLATENCY": 0,
+     "EXT_WLATENCY": 0,
+     "EXT_BWCAP": 0,
+     "SRAM_RLATENCY": 0,
+     "SRAM_WLATENCY": 0
+    }
+   ]
+  ]
+ },
+ {
+  "cell_id": "h3r_dw3x3_36x1_c128__SSE-320__ethos-u85-256",
+  "model": "h3r_dw3x3_36x1_c128",
+  "model_path": "/tmp/h3r/models/h3r_dw3x3_36x1_c128.tflite",
+  "platform": "SSE-320",
+  "npu": "ethos-u85",
+  "mac_config": 256,
+  "accelerator_config": "ethos-u85-256",
+  "system_config": "Ethos_U85_SYS_DRAM_Low",
+  "memory_mode": "Dedicated_Sram",
+  "target_platform": "mps4",
+  "target_subsystem": "sse-320",
+  "fvp": "/opt/arm/fvp_installed_320/models/Linux64_GCC-9.3/FVP_Corstone_SSE-320",
+  "verbose": true,
+  "experiment": "H3R",
+  "arms": [
+   [
+    "base",
+    {}
+   ],
+   [
+    "equalized",
+    {
+     "SRAM_MAXR": 8,
+     "SRAM_MAXW": 8,
+     "SRAM_MAXRW": 0,
+     "SRAM_RLATENCY": 0,
+     "SRAM_WLATENCY": 0,
+     "SRAM_PULSE_ON": 3999,
+     "SRAM_PULSE_OFF": 1,
+     "SRAM_BWCAP": 4000,
+     "EXT_MAXR": 0,
+     "EXT_MAXW": 0,
+     "EXT_MAXRW": 0,
+     "EXT_RLATENCY": 0,
+     "EXT_WLATENCY": 0,
+     "EXT_PULSE_ON": 4000,
+     "EXT_PULSE_OFF": 1000,
+     "EXT_BWCAP": 0
+    }
+   ],
+   [
+    "bridge_legacy_relaxed",
+    {
+     "EXT_RLATENCY": 0,
+     "EXT_WLATENCY": 0,
+     "EXT_BWCAP": 0,
+     "SRAM_RLATENCY": 0,
+     "SRAM_WLATENCY": 0
+    }
+   ]
+  ]
+ },
+ {
+  "cell_id": "h3r_dw3x3_36x1_c128__SSE-320__ethos-u85-512",
+  "model": "h3r_dw3x3_36x1_c128",
+  "model_path": "/tmp/h3r/models/h3r_dw3x3_36x1_c128.tflite",
+  "platform": "SSE-320",
+  "npu": "ethos-u85",
+  "mac_config": 512,
+  "accelerator_config": "ethos-u85-512",
+  "system_config": "Ethos_U85_SYS_DRAM_Mid_512",
+  "memory_mode": "Dedicated_Sram",
+  "target_platform": "mps4",
+  "target_subsystem": "sse-320",
+  "fvp": "/opt/arm/fvp_installed_320/models/Linux64_GCC-9.3/FVP_Corstone_SSE-320",
+  "verbose": true,
+  "experiment": "H3R",
+  "arms": [
+   [
+    "base",
+    {}
+   ],
+   [
+    "equalized",
+    {
+     "SRAM_MAXR": 8,
+     "SRAM_MAXW": 8,
+     "SRAM_MAXRW": 0,
+     "SRAM_RLATENCY": 0,
+     "SRAM_WLATENCY": 0,
+     "SRAM_PULSE_ON": 3999,
+     "SRAM_PULSE_OFF": 1,
+     "SRAM_BWCAP": 4000,
+     "EXT_MAXR": 0,
+     "EXT_MAXW": 0,
+     "EXT_MAXRW": 0,
+     "EXT_RLATENCY": 0,
+     "EXT_WLATENCY": 0,
+     "EXT_PULSE_ON": 4000,
+     "EXT_PULSE_OFF": 1000,
+     "EXT_BWCAP": 0
+    }
+   ],
+   [
+    "bridge_legacy_relaxed",
+    {
+     "EXT_RLATENCY": 0,
+     "EXT_WLATENCY": 0,
+     "EXT_BWCAP": 0,
+     "SRAM_RLATENCY": 0,
+     "SRAM_WLATENCY": 0
+    }
+   ]
+  ]
+ }
+]

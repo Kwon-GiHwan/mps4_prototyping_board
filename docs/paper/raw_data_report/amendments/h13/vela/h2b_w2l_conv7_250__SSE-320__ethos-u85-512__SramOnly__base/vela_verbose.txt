@@ -1,0 +1,58 @@
+Schedule: 'graph_MAX_BUFFERED'
+	0: Operation Conv2D  - OFM 1, 1, 148, 250
+		Kernel: size=7,1 stride=1,1, dilation=1,1 padding=[t:0,l:3,b:0,r:3,n:0,f:0]
+		Time index = 0
+		Operator Config = OFM Block=[1, 1, 84, 48], IFM Block=[1, 1, 92, 16], OFM UBlock=[1, 4, 16] Traversal=PartKernel, AccType=Acc32
+		IFM Stripe   = [1, 1, 148, 250]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 1, 148, 250]
+		Assigned Cascade = 0
+		Encoded Weights = 276240 bytes
+		Weight buffer = 0 bytes
+		Depth slices = [0, 250]
+		sub-operations: -
+		Estimated Perf: Macs=64750000 Cycles=155835
+		Memory Used: 74016 bytes (op=74016, buf=0, ccd=0, nl=0)
+	Cascades:
+################################################################################
+Allocation, memory Sram, usage mask: FeatureMap|Staging
+Start Time - End Time  : Start Addr -   End Addr: Tensor Size: Memory Usage: Format         : Name
+         0 -          1:     0x9090 -    0x12120:       37008:        74016: NHWC           : model_3/leaky_re_lu_6/LeakyRelu
+         0 -          3:        0x0 -     0x9090:       37008:        74016: NHWC           : model_3/conv2d_7/BiasAdd;model_3/conv2d_7/Conv2D;model_3/conv2d_7/BiasAdd/ReadVariableOp/resource1
+Allocation Peak Tensor Size: 74016 bytes == 72.28125 KiB
+################################################################################
+Tensor Allocation for read-only NPU tensors:
+Start Time - End Time  : Start Addr -   End Addr: Tensor Size: Memory Usage: Format         : Name
+         0 -          1:        0x0 -    0x43710:      276240:       276240: Unknown        : model_3/conv2d_7/Conv2D
+Allocation Peak Tensor Size: 276240 bytes == 269.765625 KiB
+Warning: Option --verbose-tensor-purpose is deprecated and will be removed in a future release.
+Info: Changing const_mem_area from Sram to OnChipFlash. This will use the same characteristics as Sram.
+
+################################################################################
+Performance for NPU Grap /tmp/xq/h13_h2b_w2l_conv7_250__SSE-320__ethos-u85-512__SramOnly/vela/h2b_w2l_conv7_250
+Original Operator    NNG Operator         Target Staging Usage  Peak% (Staging)  Op Cycles Network% (cycles)        NPU    SRAM AC    DRAM AC OnFlash AC OffFlash AC  MAC Count Network% (MAC)  Util% (MAC) Name                 
+-------------------- -------------------- ------ ------------- ---------------- ---------- ----------------- ---------- ---------- ---------- ---------- ----------- ---------- -------------- ------------ -------------------- 
+Conv2D               Conv2D               NPU            74016            21.13     155835            100.00     155835      54077          0          0           0   64750000         100.00        81.15 model_3/conv2d_7/BiasAdd;model_3/conv2d_7/Conv2D;model_3/conv2d_7/BiasAdd/ReadVariableOp/resource1 
+
+Network summary for h2b_w2l_conv7_250
+Accelerator configuration               Ethos_U85_512
+System configuration             Ethos_U85_SYS_DRAM_Mid_512
+Memory mode                                 Sram_Only
+Accelerator clock                                1000 MHz
+Design peak SRAM bandwidth                      29.80 GB/s
+
+Total SRAM used                                 72.28 KiB
+Total On-chip Flash used                       269.77 KiB
+
+CPU operators = 0 (0.0%)
+NPU operators = 1 (100.0%)
+
+Average SRAM bandwidth                          10.59 GB/s
+Input   SRAM bandwidth                           1.05 MB/batch
+Weight  SRAM bandwidth                           0.52 MB/batch
+Output  SRAM bandwidth                           0.07 MB/batch
+Total   SRAM bandwidth                           1.65 MB/batch
+Total   SRAM bandwidth            per input      1.65 MB/inference (batch size 1)
+
+Neural network macs                          64750000 MACs/batch
+

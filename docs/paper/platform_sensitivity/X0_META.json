@@ -1,0 +1,74 @@
+{
+ "stage": "X0",
+ "status": "COMPLETE",
+ "date": "2026-09-03",
+ "authorization": "X0 only; X1 and later stages HOLD",
+ "stack_identity": {
+  "vela": "5.0.0",
+  "mlek": "26.03-8-gb2c0bb2",
+  "core_driver": "25.11",
+  "container": "benchmark-runner (fpga-simulator:latest)",
+  "fvp_fast_models": {
+   "FVP_Corstone_SSE-300": "11.31.28",
+   "FVP_Corstone_SSE-300_Ethos-U55": "11.22.35",
+   "FVP_Corstone_SSE-300_Ethos-U65": "11.22.35",
+   "FVP_Corstone_SSE-310": "11.24.13",
+   "FVP_Corstone_SSE-310_Ethos-U65": "11.24.13",
+   "FVP_Corstone_SSE-315": "11.31.28",
+   "FVP_Corstone_SSE-320": "11.27.25"
+  }
+ },
+ "inputs_consulted": [
+  "docs/FUTURE_EXPERIMENT_PLAN.md",
+  "docs/paper/MEASUREMENT_SEMANTICS.md",
+  "docs/paper/MAIN_EXPERIMENT_MATRIX.md",
+  "docs/paper/PMU_EVENT_COMPATIBILITY.md",
+  "docs/paper/MANUSCRIPT.md",
+  "frozen P0/P1-A/P1-B verdicts",
+  "frozen U65 bridge verdict"
+ ],
+ "counts": {
+  "capability_probe_rows": 48,
+  "supported_platform_npu_mac_cells": 19,
+  "accepted_but_not_authorized": 0,
+  "not_supported": 29,
+  "unresolved": 0,
+  "artifact_pairs": 70,
+  "artifact_pairs_identical": 70,
+  "portability_established": 67,
+  "portability_not_yet_qualified": 3,
+  "common_workload_rows": 42,
+  "common_executable": 39,
+  "memory_limit": 3,
+  "proposed_x1_cells": {
+   "u55": 50,
+   "u65": 42,
+   "total": 92
+  }
+ },
+ "timing_adapter": {
+  "SSE-300": "TA_ON",
+  "SSE-310": "TA_OFF",
+  "SSE-315": "TA_OFF",
+  "SSE-320": "TA_ON"
+ },
+ "verdicts": {
+  "num_macs_100": "HISTORICAL_AUXILIARY_RECORD_DISCREPANCY / NO_LOAD_BEARING_IMPACT",
+  "stack_drift": "EXCLUDED (SSE-300 binary FM 11.22.35 identical to frozen record)",
+  "frozen_artifact_reproduction": "PASS (U65 kws 8b7930df\u2026, U85 kws 7d1431a8\u2026 reproduced exactly)",
+  "repository_state": "PREEXISTING_UNRELATED_UNTRACKED: docs/presentation/ethos_u_measurement_deck.md",
+  "manuscript_correction_required": "MANUSCRIPT.md 3.1 num_macs=100 sentence \u2014 flagged, NOT applied"
+ },
+ "no_measurement_performed": true,
+ "file_sha256": {
+  "ARTIFACT_REUSE_MATRIX.csv": "2f7f91c65040a3d7d1d8ba76939f6b4d139b502d1fd99a6bbe41f3e3cedeaebe",
+  "COMMON_WORKLOAD_MATRIX.csv": "64882f94da0eaa7e1cb837899e45ea13b0074da9b2a7b198cb5380f7c0411296",
+  "FVP_CAPABILITY_MATRIX.csv": "2d7a6039a2aa3ed3f5f89d9c61d37d92a6753aeb5bf929f2d95ef705b6184b3b",
+  "FVP_COMPARABILITY_MATRIX.md": "e5302f6b2f9699ce7fdf2bd21400c15b3657b51a7dec07fc316ac695b9897022",
+  "FVP_PARAMETER_AUTHORITY.md": "06e97a63066e665cdf1cd16bbe4b6e793f7ffddc421dcdca06b98fbb773d99d2",
+  "TIMING_ADAPTER_AUDIT.md": "540c422180110f28bc70a25f3b8e2105b6f623d7cd3e82fa57a7cd3626ea6caa",
+  "VELA_MEMORY_OPTION_MATRIX.csv": "555992e90c8f5e5323766a73e5057ac1cbfff6f0255e52a302ab4c000424b950",
+  "X0_LIMITATIONS.md": "fa9c6ac1004a2fa55309045d095f2793b78a4910b243f02f03a68ffccc6a17ba",
+  "X1_PROPOSED_MATRIX.md": "e083fc4d072ce67803ba80bb6e5f7ca8a2e29845ff950182cde5b2f62ee5d7e7"
+ }
+}

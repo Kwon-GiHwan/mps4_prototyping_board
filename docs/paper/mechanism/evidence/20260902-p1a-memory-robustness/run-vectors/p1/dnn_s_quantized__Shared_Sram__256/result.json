@@ -1,0 +1,1 @@
+{"cell": "dnn_s_quantized__Shared_Sram__256", "model": "dnn_s_quantized", "mode": "Shared_Sram", "macs": 256, "system_config": "Ethos_U85_SYS_DRAM_Low", "status": "OK", "vela_sha256": "c0ef5e3e4d2dad58b714fca5be0b4e60b5591974f91364022654867da60d8914", "axf_sha256": "c0769e0efd92a63d24a63b05c5c69ff52a37dc0cb75ff75d8fd4a200fd85bb31", "total": 22068, "crc": "0:48:0x5974B086"}

@@ -1,0 +1,1089 @@
+Schedule: 'graph_MIN_BUFFERED'
+	0: Operation Conv2D  - OFM 1, 112, 112, 32
+		Kernel: size=3,3 stride=2,2, dilation=1,1 padding=[t:0,l:0,b:1,r:1,n:0,f:0]
+		Time index = 0
+		Operator Config = OFM Block=[1, 6, 16, 32], IFM Block=[1, 14, 34, 16], OFM UBlock=[2, 2, 16] Traversal=PartKernel, AccType=Acc32
+		IFM Stripe   = [1, 13, 224, 3]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 6, 112, 32]
+		Assigned Cascade = 5
+		Encoded Weights = 1424 bytes
+		Weight buffer = 1424 bytes
+		Depth slices = [0, 32]
+		sub-operations: [ Relu6 ]
+		Estimated Perf: Macs=10838016 Cycles=103983
+		Memory Used: 315824 bytes (op=0, buf=11184, ccd=304640, nl=0)
+	1: Operation DepthwiseConv2D  - OFM 1, 112, 112, 32
+		Kernel: size=3,3 stride=1,1, dilation=1,1 padding=[t:1,l:1,b:1,r:1,n:0,f:0]
+		Time index = 0
+		Operator Config = OFM Block=[6, 56, 16], IFM Block=[1, 8, 58, 16], OFM UBlock=[2, 2, 16] Traversal=Depthwise, AccType=Acc32
+		IFM Stripe   = [1, 8, 112, 32]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 6, 112, 32]
+		Assigned Cascade = 5
+		Encoded Weights = 752 bytes
+		Weight buffer = 752 bytes
+		Depth slices = [0, 32]
+		sub-operations: [ Relu6 ]
+		Estimated Perf: Macs=3612672 Cycles=76138
+		Memory Used: 315824 bytes (op=0, buf=11184, ccd=304640, nl=0)
+	2: Operation Conv2D  - OFM 1, 112, 112, 16
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 0
+		Operator Config = OFM Block=[1, 2, 112, 16], IFM Block=[1, 2, 112, 16], OFM UBlock=[2, 2, 16] Traversal=PartKernel, AccType=Acc32
+		IFM Stripe   = [1, 6, 112, 32]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 6, 112, 16]
+		Assigned Cascade = 5
+		Encoded Weights = 784 bytes
+		Weight buffer = 784 bytes
+		Depth slices = [0, 16]
+		sub-operations: -
+		Estimated Perf: Macs=6422528 Cycles=50848
+		Memory Used: 315824 bytes (op=0, buf=11184, ccd=304640, nl=0)
+	3: Operation Conv2D  - OFM 1, 112, 112, 96
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 0
+		Operator Config = OFM Block=[1, 6, 14, 48], IFM Block=[1, 6, 14, 16], OFM UBlock=[2, 2, 16] Traversal=PartKernel, AccType=Acc32
+		IFM Stripe   = [1, 6, 112, 16]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 6, 112, 96]
+		Assigned Cascade = 5
+		Encoded Weights = 3264 bytes
+		Weight buffer = 3264 bytes
+		Depth slices = [0, 96]
+		sub-operations: [ Relu6 ]
+		Estimated Perf: Macs=19267584 Cycles=280659
+		Memory Used: 315824 bytes (op=0, buf=11184, ccd=304640, nl=0)
+	4: Operation DepthwiseConv2D  - OFM 1, 56, 56, 96
+		Kernel: size=3,3 stride=2,2, dilation=1,1 padding=[t:0,l:0,b:1,r:1,n:0,f:0]
+		Time index = 0
+		Operator Config = OFM Block=[2, 56, 16], IFM Block=[1, 5, 116, 16], OFM UBlock=[1, 4, 16] Traversal=Depthwise, AccType=Acc32
+		IFM Stripe   = [1, 7, 112, 96]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 3, 56, 96]
+		Assigned Cascade = 5
+		Encoded Weights = 1984 bytes
+		Weight buffer = 1984 bytes
+		Depth slices = [0, 96]
+		sub-operations: [ Relu6 ]
+		Estimated Perf: Macs=2709504 Cycles=96900
+		Memory Used: 315824 bytes (op=0, buf=11184, ccd=304640, nl=0)
+	5: Operation Conv2D  - OFM 1, 56, 56, 24
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 0
+		Operator Config = OFM Block=[1, 2, 56, 32], IFM Block=[1, 2, 56, 64], OFM UBlock=[1, 4, 16] Traversal=DepthFirst, AccType=Acc32
+		IFM Stripe   = [1, 3, 56, 96]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 3, 56, 24]
+		Assigned Cascade = 5
+		Encoded Weights = 2976 bytes
+		Weight buffer = 2976 bytes
+		Depth slices = [0, 24]
+		sub-operations: -
+		Estimated Perf: Macs=7225344 Cycles=25821
+		Memory Used: 315824 bytes (op=0, buf=11184, ccd=304640, nl=0)
+	6: Operation Conv2D  - OFM 1, 56, 56, 144
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 2
+		Operator Config = OFM Block=[1, 3, 28, 48], IFM Block=[1, 3, 28, 16], OFM UBlock=[1, 4, 16] Traversal=PartKernel, AccType=Acc32
+		IFM Stripe   = [1, 21, 56, 24]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 21, 56, 144]
+		Assigned Cascade = 7
+		Encoded Weights = 6688 bytes
+		Weight buffer = 6688 bytes
+		Depth slices = [0, 144]
+		sub-operations: [ Relu6 ]
+		Estimated Perf: Macs=10838016 Cycles=113833
+		Memory Used: 380608 bytes (op=0, buf=9664, ccd=370944, nl=0)
+	7: Operation DepthwiseConv2D  - OFM 1, 56, 56, 144
+		Kernel: size=3,3 stride=1,1, dilation=1,1 padding=[t:1,l:1,b:1,r:1,n:0,f:0]
+		Time index = 2
+		Operator Config = OFM Block=[16, 28, 16], IFM Block=[1, 18, 32, 16], OFM UBlock=[1, 4, 16] Traversal=Depthwise, AccType=Acc32
+		IFM Stripe   = [1, 23, 56, 144]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 21, 56, 144]
+		Assigned Cascade = 7
+		Encoded Weights = 2976 bytes
+		Weight buffer = 2976 bytes
+		Depth slices = [0, 144]
+		sub-operations: [ Relu6 ]
+		Estimated Perf: Macs=4064256 Cycles=85760
+		Memory Used: 380608 bytes (op=0, buf=9664, ccd=370944, nl=0)
+	8: Operation Conv2D  - OFM 1, 56, 56, 24
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 4
+		Operator Config = OFM Block=[1, 2, 56, 32], IFM Block=[1, 2, 56, 64], OFM UBlock=[2, 2, 16] Traversal=DepthFirst, AccType=Acc32
+		IFM Stripe   = [1, 56, 56, 144]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 56, 56, 24]
+		Assigned Cascade = 0
+		Encoded Weights = 4112 bytes
+		Weight buffer = 4112 bytes
+		Depth slices = [0, 24]
+		sub-operations: [ Add ]
+		Estimated Perf: Macs=10838016 Cycles=38528
+		Memory Used: 4112 bytes (op=0, buf=4112, ccd=0, nl=0)
+	9: Operation Conv2D  - OFM 1, 56, 56, 144
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 6
+		Operator Config = OFM Block=[1, 6, 14, 48], IFM Block=[1, 6, 14, 16], OFM UBlock=[2, 2, 16] Traversal=PartKernel, AccType=Acc32
+		IFM Stripe   = [1, 22, 56, 24]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 22, 56, 144]
+		Assigned Cascade = 10
+		Encoded Weights = 6624 bytes
+		Weight buffer = 6624 bytes
+		Depth slices = [0, 144]
+		sub-operations: [ Relu6 ]
+		Estimated Perf: Macs=10838016 Cycles=113833
+		Memory Used: 380544 bytes (op=0, buf=9600, ccd=370944, nl=0)
+	10: Operation DepthwiseConv2D  - OFM 1, 28, 28, 144
+		Kernel: size=3,3 stride=2,2, dilation=1,1 padding=[t:0,l:0,b:1,r:1,n:0,f:0]
+		Time index = 6
+		Operator Config = OFM Block=[12, 16, 16], IFM Block=[1, 25, 36, 16], OFM UBlock=[1, 4, 16] Traversal=Depthwise, AccType=Acc32
+		IFM Stripe   = [1, 23, 56, 144]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 11, 28, 144]
+		Assigned Cascade = 10
+		Encoded Weights = 2976 bytes
+		Weight buffer = 2976 bytes
+		Depth slices = [0, 144]
+		sub-operations: [ Relu6 ]
+		Estimated Perf: Macs=1016064 Cycles=29879
+		Memory Used: 380544 bytes (op=0, buf=9600, ccd=370944, nl=0)
+	11: Operation Conv2D  - OFM 1, 28, 28, 32
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 8
+		Operator Config = OFM Block=[1, 4, 28, 32], IFM Block=[1, 4, 28, 64], OFM UBlock=[2, 2, 16] Traversal=DepthFirst, AccType=Acc32
+		IFM Stripe   = [1, 28, 28, 144]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 28, 28, 32]
+		Assigned Cascade = 0
+		Encoded Weights = 5312 bytes
+		Weight buffer = 5312 bytes
+		Depth slices = [0, 32]
+		sub-operations: -
+		Estimated Perf: Macs=3612672 Cycles=10311
+		Memory Used: 30400 bytes (op=25088, buf=5312, ccd=0, nl=0)
+	12: Operation Conv2D  - OFM 1, 28, 28, 192
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 10
+		Operator Config = OFM Block=[1, 2, 28, 64], IFM Block=[1, 2, 28, 16], OFM UBlock=[2, 2, 16] Traversal=PartKernel, AccType=Acc32
+		IFM Stripe   = [1, 28, 28, 32]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 28, 28, 192]
+		Assigned Cascade = 0
+		Encoded Weights = 10960 bytes
+		Weight buffer = 10960 bytes
+		Depth slices = [0, 192]
+		sub-operations: [ Relu6 ]
+		Estimated Perf: Macs=4816896 Cycles=53524
+		Memory Used: 186576 bytes (op=150528, buf=10960, ccd=0, nl=25088)
+	13: Operation DepthwiseConv2D  - OFM 1, 28, 28, 192
+		Kernel: size=3,3 stride=1,1, dilation=1,1 padding=[t:1,l:1,b:1,r:1,n:0,f:0]
+		Time index = 12
+		Operator Config = OFM Block=[34, 14, 16], IFM Block=[1, 36, 16, 16], OFM UBlock=[2, 2, 16] Traversal=Depthwise, AccType=Acc32
+		IFM Stripe   = [1, 28, 28, 192]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 28, 28, 192]
+		Assigned Cascade = 0
+		Encoded Weights = 4128 bytes
+		Weight buffer = 0 bytes
+		Depth slices = [0, 192]
+		sub-operations: [ Relu6 ]
+		Estimated Perf: Macs=1354752 Cycles=29181
+		Memory Used: 326144 bytes (op=150528, buf=0, ccd=0, nl=175616)
+	14: Operation Conv2D  - OFM 1, 28, 28, 32
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 14
+		Operator Config = OFM Block=[1, 4, 28, 32], IFM Block=[1, 4, 28, 64], OFM UBlock=[2, 2, 16] Traversal=DepthFirst, AccType=Acc32
+		IFM Stripe   = [1, 28, 28, 192]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 28, 28, 32]
+		Assigned Cascade = 0
+		Encoded Weights = 5936 bytes
+		Weight buffer = 5936 bytes
+		Depth slices = [0, 32]
+		sub-operations: [ Add ]
+		Estimated Perf: Macs=4816896 Cycles=10379
+		Memory Used: 206640 bytes (op=25088, buf=5936, ccd=0, nl=175616)
+	15: Operation Conv2D  - OFM 1, 28, 28, 192
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 16
+		Operator Config = OFM Block=[1, 2, 28, 64], IFM Block=[1, 2, 28, 16], OFM UBlock=[2, 2, 16] Traversal=PartKernel, AccType=Acc32
+		IFM Stripe   = [1, 28, 28, 32]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 28, 28, 192]
+		Assigned Cascade = 0
+		Encoded Weights = 10928 bytes
+		Weight buffer = 10928 bytes
+		Depth slices = [0, 192]
+		sub-operations: [ Relu6 ]
+		Estimated Perf: Macs=4816896 Cycles=53524
+		Memory Used: 186544 bytes (op=150528, buf=10928, ccd=0, nl=25088)
+	16: Operation DepthwiseConv2D  - OFM 1, 28, 28, 192
+		Kernel: size=3,3 stride=1,1, dilation=1,1 padding=[t:1,l:1,b:1,r:1,n:0,f:0]
+		Time index = 18
+		Operator Config = OFM Block=[34, 14, 16], IFM Block=[1, 36, 16, 16], OFM UBlock=[2, 2, 16] Traversal=Depthwise, AccType=Acc32
+		IFM Stripe   = [1, 28, 28, 192]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 28, 28, 192]
+		Assigned Cascade = 0
+		Encoded Weights = 4064 bytes
+		Weight buffer = 0 bytes
+		Depth slices = [0, 192]
+		sub-operations: [ Relu6 ]
+		Estimated Perf: Macs=1354752 Cycles=29181
+		Memory Used: 326144 bytes (op=150528, buf=0, ccd=0, nl=175616)
+	17: Operation Conv2D  - OFM 1, 28, 28, 32
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 20
+		Operator Config = OFM Block=[1, 4, 28, 32], IFM Block=[1, 4, 28, 64], OFM UBlock=[2, 2, 16] Traversal=DepthFirst, AccType=Acc32
+		IFM Stripe   = [1, 28, 28, 192]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 28, 28, 32]
+		Assigned Cascade = 0
+		Encoded Weights = 5968 bytes
+		Weight buffer = 5968 bytes
+		Depth slices = [0, 32]
+		sub-operations: [ Add ]
+		Estimated Perf: Macs=4816896 Cycles=10379
+		Memory Used: 206672 bytes (op=25088, buf=5968, ccd=0, nl=175616)
+	18: Operation Conv2D  - OFM 1, 28, 28, 192
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 22
+		Operator Config = OFM Block=[1, 2, 28, 64], IFM Block=[1, 2, 28, 16], OFM UBlock=[2, 2, 16] Traversal=PartKernel, AccType=Acc32
+		IFM Stripe   = [1, 28, 28, 32]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 28, 28, 192]
+		Assigned Cascade = 0
+		Encoded Weights = 10976 bytes
+		Weight buffer = 10976 bytes
+		Depth slices = [0, 192]
+		sub-operations: [ Relu6 ]
+		Estimated Perf: Macs=4816896 Cycles=53524
+		Memory Used: 186592 bytes (op=150528, buf=10976, ccd=0, nl=25088)
+	19: Operation DepthwiseConv2D  - OFM 1, 14, 14, 192
+		Kernel: size=3,3 stride=2,2, dilation=1,1 padding=[t:0,l:0,b:1,r:1,n:0,f:0]
+		Time index = 24
+		Operator Config = OFM Block=[12, 14, 16], IFM Block=[1, 26, 30, 16], OFM UBlock=[2, 2, 16] Traversal=Depthwise, AccType=Acc32
+		IFM Stripe   = [1, 28, 28, 192]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 14, 14, 192]
+		Assigned Cascade = 0
+		Encoded Weights = 3968 bytes
+		Weight buffer = 0 bytes
+		Depth slices = [0, 192]
+		sub-operations: [ Relu6 ]
+		Estimated Perf: Macs=338688 Cycles=10440
+		Memory Used: 188160 bytes (op=37632, buf=0, ccd=0, nl=150528)
+	20: Operation Conv2D  - OFM 1, 14, 14, 64
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 26
+		Operator Config = OFM Block=[1, 4, 14, 64], IFM Block=[1, 4, 14, 64], OFM UBlock=[2, 2, 16] Traversal=DepthFirst, AccType=Acc32
+		IFM Stripe   = [1, 14, 14, 192]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 14, 14, 64]
+		Assigned Cascade = 0
+		Encoded Weights = 11792 bytes
+		Weight buffer = 11792 bytes
+		Depth slices = [0, 64]
+		sub-operations: -
+		Estimated Perf: Macs=2408448 Cycles=5954
+		Memory Used: 61968 bytes (op=12544, buf=11792, ccd=0, nl=37632)
+	21: Operation Conv2D  - OFM 1, 14, 14, 384
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 28
+		Operator Config = OFM Block=[1, 8, 14, 32], IFM Block=[1, 8, 14, 64], OFM UBlock=[2, 2, 16] Traversal=DepthFirst, AccType=Acc32
+		IFM Stripe   = [1, 14, 14, 64]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 14, 14, 384]
+		Assigned Cascade = 0
+		Encoded Weights = 27472 bytes
+		Weight buffer = 0 bytes
+		Depth slices = [0, 384]
+		sub-operations: [ Relu6 ]
+		Estimated Perf: Macs=4816896 Cycles=14949
+		Memory Used: 87808 bytes (op=75264, buf=0, ccd=0, nl=12544)
+	22: Operation DepthwiseConv2D  - OFM 1, 14, 14, 384
+		Kernel: size=3,3 stride=1,1, dilation=1,1 padding=[t:1,l:1,b:1,r:1,n:0,f:0]
+		Time index = 30
+		Operator Config = OFM Block=[14, 14, 32], IFM Block=[1, 16, 16, 32], OFM UBlock=[2, 2, 16] Traversal=Depthwise, AccType=Acc32
+		IFM Stripe   = [1, 14, 14, 384]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 14, 14, 384]
+		Assigned Cascade = 0
+		Encoded Weights = 8112 bytes
+		Weight buffer = 0 bytes
+		Depth slices = [0, 384]
+		sub-operations: [ Relu6 ]
+		Estimated Perf: Macs=677376 Cycles=15050
+		Memory Used: 163072 bytes (op=75264, buf=0, ccd=0, nl=87808)
+	23: Operation Conv2D  - OFM 1, 14, 14, 64
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 32
+		Operator Config = OFM Block=[1, 4, 14, 64], IFM Block=[1, 4, 14, 64], OFM UBlock=[2, 2, 16] Traversal=DepthFirst, AccType=Acc32
+		IFM Stripe   = [1, 14, 14, 384]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 14, 14, 64]
+		Assigned Cascade = 0
+		Encoded Weights = 22560 bytes
+		Weight buffer = 22560 bytes
+		Depth slices = [0, 64]
+		sub-operations: [ Add ]
+		Estimated Perf: Macs=4816896 Cycles=10729
+		Memory Used: 122912 bytes (op=12544, buf=22560, ccd=0, nl=87808)
+	24: Operation Conv2D  - OFM 1, 14, 14, 384
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 34
+		Operator Config = OFM Block=[1, 8, 14, 32], IFM Block=[1, 8, 14, 64], OFM UBlock=[2, 2, 16] Traversal=DepthFirst, AccType=Acc32
+		IFM Stripe   = [1, 14, 14, 64]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 14, 14, 384]
+		Assigned Cascade = 0
+		Encoded Weights = 27152 bytes
+		Weight buffer = 0 bytes
+		Depth slices = [0, 384]
+		sub-operations: [ Relu6 ]
+		Estimated Perf: Macs=4816896 Cycles=14949
+		Memory Used: 87808 bytes (op=75264, buf=0, ccd=0, nl=12544)
+	25: Operation DepthwiseConv2D  - OFM 1, 14, 14, 384
+		Kernel: size=3,3 stride=1,1, dilation=1,1 padding=[t:1,l:1,b:1,r:1,n:0,f:0]
+		Time index = 36
+		Operator Config = OFM Block=[14, 14, 32], IFM Block=[1, 16, 16, 32], OFM UBlock=[2, 2, 16] Traversal=Depthwise, AccType=Acc32
+		IFM Stripe   = [1, 14, 14, 384]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 14, 14, 384]
+		Assigned Cascade = 0
+		Encoded Weights = 8480 bytes
+		Weight buffer = 0 bytes
+		Depth slices = [0, 384]
+		sub-operations: [ Relu6 ]
+		Estimated Perf: Macs=677376 Cycles=15050
+		Memory Used: 163072 bytes (op=75264, buf=0, ccd=0, nl=87808)
+	26: Operation Conv2D  - OFM 1, 14, 14, 64
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 38
+		Operator Config = OFM Block=[1, 4, 14, 64], IFM Block=[1, 4, 14, 64], OFM UBlock=[2, 2, 16] Traversal=DepthFirst, AccType=Acc32
+		IFM Stripe   = [1, 14, 14, 384]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 14, 14, 64]
+		Assigned Cascade = 0
+		Encoded Weights = 22544 bytes
+		Weight buffer = 22544 bytes
+		Depth slices = [0, 64]
+		sub-operations: [ Add ]
+		Estimated Perf: Macs=4816896 Cycles=10729
+		Memory Used: 122896 bytes (op=12544, buf=22544, ccd=0, nl=87808)
+	27: Operation Conv2D  - OFM 1, 14, 14, 384
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 40
+		Operator Config = OFM Block=[1, 8, 14, 32], IFM Block=[1, 8, 14, 64], OFM UBlock=[2, 2, 16] Traversal=DepthFirst, AccType=Acc32
+		IFM Stripe   = [1, 14, 14, 64]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 14, 14, 384]
+		Assigned Cascade = 0
+		Encoded Weights = 27424 bytes
+		Weight buffer = 0 bytes
+		Depth slices = [0, 384]
+		sub-operations: [ Relu6 ]
+		Estimated Perf: Macs=4816896 Cycles=14949
+		Memory Used: 87808 bytes (op=75264, buf=0, ccd=0, nl=12544)
+	28: Operation DepthwiseConv2D  - OFM 1, 14, 14, 384
+		Kernel: size=3,3 stride=1,1, dilation=1,1 padding=[t:1,l:1,b:1,r:1,n:0,f:0]
+		Time index = 42
+		Operator Config = OFM Block=[14, 14, 32], IFM Block=[1, 16, 16, 32], OFM UBlock=[2, 2, 16] Traversal=Depthwise, AccType=Acc32
+		IFM Stripe   = [1, 14, 14, 384]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 14, 14, 384]
+		Assigned Cascade = 0
+		Encoded Weights = 8080 bytes
+		Weight buffer = 0 bytes
+		Depth slices = [0, 384]
+		sub-operations: [ Relu6 ]
+		Estimated Perf: Macs=677376 Cycles=15050
+		Memory Used: 163072 bytes (op=75264, buf=0, ccd=0, nl=87808)
+	29: Operation Conv2D  - OFM 1, 14, 14, 64
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 44
+		Operator Config = OFM Block=[1, 4, 14, 64], IFM Block=[1, 4, 14, 64], OFM UBlock=[2, 2, 16] Traversal=DepthFirst, AccType=Acc32
+		IFM Stripe   = [1, 14, 14, 384]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 14, 14, 64]
+		Assigned Cascade = 0
+		Encoded Weights = 22368 bytes
+		Weight buffer = 22368 bytes
+		Depth slices = [0, 64]
+		sub-operations: [ Add ]
+		Estimated Perf: Macs=4816896 Cycles=10729
+		Memory Used: 122720 bytes (op=12544, buf=22368, ccd=0, nl=87808)
+	30: Operation Conv2D  - OFM 1, 14, 14, 384
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 46
+		Operator Config = OFM Block=[1, 8, 14, 32], IFM Block=[1, 8, 14, 64], OFM UBlock=[2, 2, 16] Traversal=DepthFirst, AccType=Acc32
+		IFM Stripe   = [1, 14, 14, 64]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 14, 14, 384]
+		Assigned Cascade = 0
+		Encoded Weights = 26816 bytes
+		Weight buffer = 0 bytes
+		Depth slices = [0, 384]
+		sub-operations: [ Relu6 ]
+		Estimated Perf: Macs=4816896 Cycles=14949
+		Memory Used: 87808 bytes (op=75264, buf=0, ccd=0, nl=12544)
+	31: Operation DepthwiseConv2D  - OFM 1, 14, 14, 384
+		Kernel: size=3,3 stride=1,1, dilation=1,1 padding=[t:1,l:1,b:1,r:1,n:0,f:0]
+		Time index = 48
+		Operator Config = OFM Block=[14, 14, 32], IFM Block=[1, 16, 16, 32], OFM UBlock=[2, 2, 16] Traversal=Depthwise, AccType=Acc32
+		IFM Stripe   = [1, 14, 14, 384]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 14, 14, 384]
+		Assigned Cascade = 0
+		Encoded Weights = 7968 bytes
+		Weight buffer = 0 bytes
+		Depth slices = [0, 384]
+		sub-operations: [ Relu6 ]
+		Estimated Perf: Macs=677376 Cycles=15050
+		Memory Used: 150528 bytes (op=75264, buf=0, ccd=0, nl=75264)
+	32: Operation Conv2D  - OFM 1, 14, 14, 96
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 50
+		Operator Config = OFM Block=[1, 6, 14, 48], IFM Block=[1, 6, 14, 64], OFM UBlock=[2, 2, 16] Traversal=DepthFirst, AccType=Acc32
+		IFM Stripe   = [1, 14, 14, 384]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 14, 14, 96]
+		Assigned Cascade = 0
+		Encoded Weights = 34304 bytes
+		Weight buffer = 34304 bytes
+		Depth slices = [0, 96]
+		sub-operations: -
+		Estimated Perf: Macs=7225344 Cycles=15485
+		Memory Used: 128384 bytes (op=18816, buf=34304, ccd=0, nl=75264)
+	33: Operation Conv2D  - OFM 1, 14, 14, 576
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 52
+		Operator Config = OFM Block=[1, 4, 14, 64], IFM Block=[1, 4, 14, 64], OFM UBlock=[2, 2, 16] Traversal=DepthFirst, AccType=Acc32
+		IFM Stripe   = [1, 14, 14, 96]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 14, 14, 576]
+		Assigned Cascade = 0
+		Encoded Weights = 67888 bytes
+		Weight buffer = 67888 bytes
+		Depth slices = [0, 416, 576]
+		sub-operations: [ Relu6 ]
+		Estimated Perf: Macs=10838016 Cycles=40271
+		Memory Used: 199600 bytes (op=112896, buf=67888, ccd=0, nl=18816)
+	34: Operation DepthwiseConv2D  - OFM 1, 14, 14, 576
+		Kernel: size=3,3 stride=1,1, dilation=1,1 padding=[t:1,l:1,b:1,r:1,n:0,f:0]
+		Time index = 54
+		Operator Config = OFM Block=[14, 14, 32], IFM Block=[1, 16, 16, 32], OFM UBlock=[2, 2, 16] Traversal=Depthwise, AccType=Acc32
+		IFM Stripe   = [1, 14, 14, 576]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 14, 14, 576]
+		Assigned Cascade = 0
+		Encoded Weights = 12704 bytes
+		Weight buffer = 0 bytes
+		Depth slices = [0, 576]
+		sub-operations: [ Relu6 ]
+		Estimated Perf: Macs=1016064 Cycles=22106
+		Memory Used: 244608 bytes (op=112896, buf=0, ccd=0, nl=131712)
+	35: Operation Conv2D  - OFM 1, 14, 14, 96
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 56
+		Operator Config = OFM Block=[1, 6, 14, 48], IFM Block=[1, 6, 14, 64], OFM UBlock=[2, 2, 16] Traversal=DepthFirst, AccType=Acc32
+		IFM Stripe   = [1, 14, 14, 576]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 14, 14, 96]
+		Assigned Cascade = 0
+		Encoded Weights = 51232 bytes
+		Weight buffer = 51232 bytes
+		Depth slices = [0, 96]
+		sub-operations: [ Add ]
+		Estimated Perf: Macs=10838016 Cycles=22937
+		Memory Used: 201760 bytes (op=18816, buf=51232, ccd=0, nl=131712)
+	36: Operation Conv2D  - OFM 1, 14, 14, 576
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 58
+		Operator Config = OFM Block=[1, 4, 14, 64], IFM Block=[1, 4, 14, 64], OFM UBlock=[2, 2, 16] Traversal=DepthFirst, AccType=Acc32
+		IFM Stripe   = [1, 14, 14, 96]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 14, 14, 576]
+		Assigned Cascade = 0
+		Encoded Weights = 67904 bytes
+		Weight buffer = 67904 bytes
+		Depth slices = [0, 576]
+		sub-operations: [ Relu6 ]
+		Estimated Perf: Macs=10838016 Cycles=40271
+		Memory Used: 199616 bytes (op=112896, buf=67904, ccd=0, nl=18816)
+	37: Operation DepthwiseConv2D  - OFM 1, 14, 14, 576
+		Kernel: size=3,3 stride=1,1, dilation=1,1 padding=[t:1,l:1,b:1,r:1,n:0,f:0]
+		Time index = 60
+		Operator Config = OFM Block=[14, 14, 32], IFM Block=[1, 16, 16, 32], OFM UBlock=[2, 2, 16] Traversal=Depthwise, AccType=Acc32
+		IFM Stripe   = [1, 14, 14, 576]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 14, 14, 576]
+		Assigned Cascade = 0
+		Encoded Weights = 12608 bytes
+		Weight buffer = 0 bytes
+		Depth slices = [0, 576]
+		sub-operations: [ Relu6 ]
+		Estimated Perf: Macs=1016064 Cycles=22106
+		Memory Used: 244608 bytes (op=112896, buf=0, ccd=0, nl=131712)
+	38: Operation Conv2D  - OFM 1, 14, 14, 96
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 62
+		Operator Config = OFM Block=[1, 6, 14, 48], IFM Block=[1, 6, 14, 64], OFM UBlock=[2, 2, 16] Traversal=DepthFirst, AccType=Acc32
+		IFM Stripe   = [1, 14, 14, 576]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 14, 14, 96]
+		Assigned Cascade = 0
+		Encoded Weights = 50560 bytes
+		Weight buffer = 50560 bytes
+		Depth slices = [0, 96]
+		sub-operations: [ Add ]
+		Estimated Perf: Macs=10838016 Cycles=22937
+		Memory Used: 201088 bytes (op=18816, buf=50560, ccd=0, nl=131712)
+	39: Operation Conv2D  - OFM 1, 14, 14, 576
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 64
+		Operator Config = OFM Block=[1, 4, 14, 64], IFM Block=[1, 4, 14, 64], OFM UBlock=[2, 2, 16] Traversal=DepthFirst, AccType=Acc32
+		IFM Stripe   = [1, 14, 14, 96]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 14, 14, 576]
+		Assigned Cascade = 0
+		Encoded Weights = 66304 bytes
+		Weight buffer = 66304 bytes
+		Depth slices = [0, 576]
+		sub-operations: [ Relu6 ]
+		Estimated Perf: Macs=10838016 Cycles=40271
+		Memory Used: 198016 bytes (op=112896, buf=66304, ccd=0, nl=18816)
+	40: Operation DepthwiseConv2D  - OFM 1, 7, 7, 576
+		Kernel: size=3,3 stride=2,2, dilation=1,1 padding=[t:0,l:0,b:1,r:1,n:0,f:0]
+		Time index = 66
+		Operator Config = OFM Block=[5, 8, 64], IFM Block=[1, 11, 17, 64], OFM UBlock=[1, 4, 16] Traversal=Depthwise, AccType=Acc32
+		IFM Stripe   = [1, 14, 14, 576]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 7, 7, 576]
+		Assigned Cascade = 0
+		Encoded Weights = 12512 bytes
+		Weight buffer = 0 bytes
+		Depth slices = [0, 576]
+		sub-operations: [ Relu6 ]
+		Estimated Perf: Macs=254016 Cycles=16693
+		Memory Used: 141120 bytes (op=28224, buf=0, ccd=0, nl=112896)
+	41: Operation Conv2D  - OFM 1, 7, 7, 160
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 68
+		Operator Config = OFM Block=[1, 7, 8, 64], IFM Block=[1, 7, 8, 64], OFM UBlock=[1, 4, 16] Traversal=DepthFirst, AccType=Acc32
+		IFM Stripe   = [1, 7, 7, 576]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 7, 7, 160]
+		Assigned Cascade = 0
+		Encoded Weights = 86448 bytes
+		Weight buffer = 0 bytes
+		Depth slices = [0, 160]
+		sub-operations: -
+		Estimated Perf: Macs=4515840 Cycles=11718
+		Memory Used: 36064 bytes (op=7840, buf=0, ccd=0, nl=28224)
+	42: Operation Conv2D  - OFM 1, 7, 7, 960
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 70
+		Operator Config = OFM Block=[1, 7, 8, 64], IFM Block=[1, 7, 8, 64], OFM UBlock=[1, 4, 16] Traversal=DepthFirst, AccType=Acc32
+		IFM Stripe   = [1, 7, 7, 160]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 7, 7, 960]
+		Assigned Cascade = 0
+		Encoded Weights = 176976 bytes
+		Weight buffer = 0 bytes
+		Depth slices = [0, 960]
+		sub-operations: [ Relu6 ]
+		Estimated Perf: Macs=7526400 Cycles=21410
+		Memory Used: 54880 bytes (op=47040, buf=0, ccd=0, nl=7840)
+	43: Operation DepthwiseConv2D  - OFM 1, 7, 7, 960
+		Kernel: size=3,3 stride=1,1, dilation=1,1 padding=[t:1,l:1,b:1,r:1,n:0,f:0]
+		Time index = 72
+		Operator Config = OFM Block=[7, 8, 128], IFM Block=[1, 9, 10, 128], OFM UBlock=[1, 4, 16] Traversal=Depthwise, AccType=Acc32
+		IFM Stripe   = [1, 7, 7, 960]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 7, 7, 960]
+		Assigned Cascade = 0
+		Encoded Weights = 19680 bytes
+		Weight buffer = 0 bytes
+		Depth slices = [0, 960]
+		sub-operations: [ Relu6 ]
+		Estimated Perf: Macs=423360 Cycles=20286
+		Memory Used: 101920 bytes (op=47040, buf=0, ccd=0, nl=54880)
+	44: Operation Conv2D  - OFM 1, 7, 7, 160
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 74
+		Operator Config = OFM Block=[1, 7, 8, 64], IFM Block=[1, 7, 8, 64], OFM UBlock=[1, 4, 16] Traversal=DepthFirst, AccType=Acc32
+		IFM Stripe   = [1, 7, 7, 960]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 7, 7, 160]
+		Assigned Cascade = 0
+		Encoded Weights = 139136 bytes
+		Weight buffer = 0 bytes
+		Depth slices = [0, 160]
+		sub-operations: [ Add ]
+		Estimated Perf: Macs=7526400 Cycles=19110
+		Memory Used: 62720 bytes (op=7840, buf=0, ccd=0, nl=54880)
+	45: Operation Conv2D  - OFM 1, 7, 7, 960
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 76
+		Operator Config = OFM Block=[1, 7, 8, 64], IFM Block=[1, 7, 8, 64], OFM UBlock=[1, 4, 16] Traversal=DepthFirst, AccType=Acc32
+		IFM Stripe   = [1, 7, 7, 160]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 7, 7, 960]
+		Assigned Cascade = 0
+		Encoded Weights = 177888 bytes
+		Weight buffer = 0 bytes
+		Depth slices = [0, 960]
+		sub-operations: [ Relu6 ]
+		Estimated Perf: Macs=7526400 Cycles=21410
+		Memory Used: 54880 bytes (op=47040, buf=0, ccd=0, nl=7840)
+	46: Operation DepthwiseConv2D  - OFM 1, 7, 7, 960
+		Kernel: size=3,3 stride=1,1, dilation=1,1 padding=[t:1,l:1,b:1,r:1,n:0,f:0]
+		Time index = 78
+		Operator Config = OFM Block=[7, 8, 128], IFM Block=[1, 9, 10, 128], OFM UBlock=[1, 4, 16] Traversal=Depthwise, AccType=Acc32
+		IFM Stripe   = [1, 7, 7, 960]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 7, 7, 960]
+		Assigned Cascade = 0
+		Encoded Weights = 20944 bytes
+		Weight buffer = 0 bytes
+		Depth slices = [0, 960]
+		sub-operations: [ Relu6 ]
+		Estimated Perf: Macs=423360 Cycles=20286
+		Memory Used: 101920 bytes (op=47040, buf=0, ccd=0, nl=54880)
+	47: Operation Conv2D  - OFM 1, 7, 7, 160
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 80
+		Operator Config = OFM Block=[1, 7, 8, 64], IFM Block=[1, 7, 8, 64], OFM UBlock=[1, 4, 16] Traversal=DepthFirst, AccType=Acc32
+		IFM Stripe   = [1, 7, 7, 960]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 7, 7, 160]
+		Assigned Cascade = 0
+		Encoded Weights = 137072 bytes
+		Weight buffer = 0 bytes
+		Depth slices = [0, 160]
+		sub-operations: [ Add ]
+		Estimated Perf: Macs=7526400 Cycles=19110
+		Memory Used: 62720 bytes (op=7840, buf=0, ccd=0, nl=54880)
+	48: Operation Conv2D  - OFM 1, 7, 7, 960
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 82
+		Operator Config = OFM Block=[1, 7, 8, 64], IFM Block=[1, 7, 8, 64], OFM UBlock=[1, 4, 16] Traversal=DepthFirst, AccType=Acc32
+		IFM Stripe   = [1, 7, 7, 160]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 7, 7, 960]
+		Assigned Cascade = 0
+		Encoded Weights = 175152 bytes
+		Weight buffer = 0 bytes
+		Depth slices = [0, 960]
+		sub-operations: [ Relu6 ]
+		Estimated Perf: Macs=7526400 Cycles=21410
+		Memory Used: 54880 bytes (op=47040, buf=0, ccd=0, nl=7840)
+	49: Operation DepthwiseConv2D  - OFM 1, 7, 7, 960
+		Kernel: size=3,3 stride=1,1, dilation=1,1 padding=[t:1,l:1,b:1,r:1,n:0,f:0]
+		Time index = 84
+		Operator Config = OFM Block=[7, 8, 128], IFM Block=[1, 9, 10, 128], OFM UBlock=[1, 4, 16] Traversal=Depthwise, AccType=Acc32
+		IFM Stripe   = [1, 7, 7, 960]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 7, 7, 960]
+		Assigned Cascade = 0
+		Encoded Weights = 21408 bytes
+		Weight buffer = 0 bytes
+		Depth slices = [0, 960]
+		sub-operations: [ Relu6 ]
+		Estimated Perf: Macs=423360 Cycles=20286
+		Memory Used: 94080 bytes (op=47040, buf=0, ccd=0, nl=47040)
+	50: Operation Conv2D  - OFM 1, 7, 7, 320
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 86
+		Operator Config = OFM Block=[1, 7, 8, 64], IFM Block=[1, 7, 8, 64], OFM UBlock=[1, 4, 16] Traversal=DepthFirst, AccType=Acc32
+		IFM Stripe   = [1, 7, 7, 960]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 7, 7, 320]
+		Assigned Cascade = 0
+		Encoded Weights = 283280 bytes
+		Weight buffer = 0 bytes
+		Depth slices = [0, 320]
+		sub-operations: -
+		Estimated Perf: Macs=15052800 Cycles=35910
+		Memory Used: 62720 bytes (op=15680, buf=0, ccd=0, nl=47040)
+	51: Operation Conv2D  - OFM 1, 7, 7, 1280
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 88
+		Operator Config = OFM Block=[1, 7, 8, 64], IFM Block=[1, 7, 8, 64], OFM UBlock=[1, 4, 16] Traversal=DepthFirst, AccType=Acc32
+		IFM Stripe   = [1, 7, 7, 320]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 7, 7, 1280]
+		Assigned Cascade = 0
+		Encoded Weights = 398480 bytes
+		Weight buffer = 0 bytes
+		Depth slices = [0, 1280]
+		sub-operations: [ Relu6 ]
+		Estimated Perf: Macs=20070400 Cycles=46050
+		Memory Used: 78400 bytes (op=62720, buf=0, ccd=0, nl=15680)
+	52: Operation AvgPool  - OFM 1, 1, 1, 1280
+		Kernel: size=7,7 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 90
+		Operator Config = OFM Block=[2, 2, 128], IFM Block=[1, 8, 8, 128], OFM UBlock=[2, 2, 16] Traversal=DepthFirst, AccType=Acc32
+		IFM Stripe   = [1, 7, 7, 1280]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 1, 1, 1280]
+		Assigned Cascade = 0
+		sub-operations: -
+		Estimated Perf: Macs=62720 Cycles=16399
+		Memory Used: 64000 bytes (op=1280, buf=0, ccd=0, nl=62720)
+	53: Operation Conv2D  - OFM 1, 1, 1, 1001
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 92
+		Operator Config = OFM Block=[1, 2, 2, 1008], IFM Block=[1, 2, 2, 64], OFM UBlock=[2, 2, 16] Traversal=DepthFirst, AccType=Acc32
+		IFM Stripe   = [1, 1, 1, 1280]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 1, 1, 1001]
+		Assigned Cascade = 0
+		Encoded Weights = 1213776 bytes
+		Weight buffer = 0 bytes
+		Depth slices = [0, 1001]
+		sub-operations: -
+		Estimated Perf: Macs=1281280 Cycles=105963
+		Memory Used: 2288 bytes (op=1008, buf=0, ccd=0, nl=1280)
+	54: Operation MaxPool  - OFM 1, 1, 1, 1
+		Kernel: size=1001,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 94
+		Operator Config = OFM Block=[2, 2, 16], IFM Block=[1, 2, 10, 16], OFM UBlock=[2, 2, 16] Traversal=DepthFirst, AccType=Acc32
+		IFM Stripe   = [1, 1, 1001, 1]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 1, 1, 1]
+		Assigned Cascade = 0
+		sub-operations: -
+		Estimated Perf: Macs=1001 Cycles=5524
+		Memory Used: 1024 bytes (op=16, buf=0, ccd=0, nl=1008)
+	55: Operation Sub  - OFM 1, 1, 1, 1001
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 96
+		Operator Config = OFM Block=[2, 4, 1008], IFM Block=[2, 4, 1008], OFM UBlock=[2, 2, 16] Traversal=DepthFirst, AccType=Acc32
+		IFM Stripe   = [1, 1, 1, 1001]
+		IFM2 Stripe  = [1, 1, 1, 1]
+		OFM Stripe   = [1, 1, 1, 1001]
+		Assigned Cascade = 0
+		sub-operations: [ LUT ]
+		Estimated Perf: Macs=0 Cycles=126
+		Memory Used: 5056 bytes (op=4032, buf=0, ccd=0, nl=1024)
+	56: Operation Asr  - OFM 1, 1, 1, 1001
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 98
+		Operator Config = OFM Block=[2, 2, 512], IFM Block=[2, 2, 512], OFM UBlock=[2, 2, 16] Traversal=DepthFirst, AccType=Acc32
+		IFM Stripe   = [1, 1, 1, 1001]
+		IFM2 Stripe  = [1, 1, 1, 1]
+		OFM Stripe   = [1, 1, 1, 1001]
+		Assigned Cascade = 0
+		sub-operations: -
+		Estimated Perf: Macs=0 Cycles=251
+		Memory Used: 8048 bytes (op=4016, buf=0, ccd=0, nl=4032)
+	57: Operation ReduceSum  - OFM 1, 1, 1, 1
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 100
+		Operator Config = OFM Block=[2, 2, 16], IFM Block=[1, 2, 2, 32], OFM UBlock=[2, 2, 16] Traversal=DepthFirst, AccType=Acc32
+		IFM Stripe   = [1, 1, 1, 1001]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 1, 1, 1]
+		Assigned Cascade = 0
+		sub-operations: -
+		Estimated Perf: Macs=1001 Cycles=10510
+		Memory Used: 8112 bytes (op=64, buf=0, ccd=0, nl=8048)
+	58: Operation CLZ  - OFM 1, 1, 1, 1
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 102
+		Operator Config = OFM Block=[2, 64, 16], IFM Block=[2, 64, 16], OFM UBlock=[2, 2, 16] Traversal=DepthFirst, AccType=Acc32
+		IFM Stripe   = [1, 1, 1, 1]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 1, 1, 1]
+		Assigned Cascade = 0
+		sub-operations: -
+		Estimated Perf: Macs=0 Cycles=4
+		Memory Used: 4160 bytes (op=64, buf=0, ccd=0, nl=4096)
+	59: Operation Sub  - OFM 1, 1, 1, 1
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 104
+		Operator Config = OFM Block=[2, 64, 16], IFM Block=[2, 64, 16], OFM UBlock=[2, 2, 16] Traversal=DepthFirst, AccType=Acc32
+		IFM Stripe   = [1, 1, 1, 1]
+		IFM2 Stripe  = [1, 1, 1, 1]
+		OFM Stripe   = [1, 1, 1, 1]
+		Assigned Cascade = 0
+		sub-operations: -
+		Estimated Perf: Macs=0 Cycles=4
+		Memory Used: 4224 bytes (op=64, buf=0, ccd=0, nl=4160)
+	60: Operation Sub  - OFM 1, 1, 1, 1
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 106
+		Operator Config = OFM Block=[2, 64, 16], IFM Block=[2, 64, 16], OFM UBlock=[2, 2, 16] Traversal=DepthFirst, AccType=Acc32
+		IFM Stripe   = [1, 1, 1, 1]
+		IFM2 Stripe  = [1, 1, 1, 1]
+		OFM Stripe   = [1, 1, 1, 1]
+		Assigned Cascade = 0
+		sub-operations: [ SHL ]
+		Estimated Perf: Macs=0 Cycles=8
+		Memory Used: 4288 bytes (op=64, buf=0, ccd=0, nl=4224)
+	61: Operation Mul  - OFM 1, 1, 1, 1
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 108
+		Operator Config = OFM Block=[2, 64, 16], IFM Block=[2, 64, 16], OFM UBlock=[2, 2, 16] Traversal=DepthFirst, AccType=Acc32
+		IFM Stripe   = [1, 1, 1, 1]
+		IFM2 Stripe  = [1, 1, 1, 1]
+		OFM Stripe   = [1, 1, 1, 1]
+		Assigned Cascade = 0
+		sub-operations: [ Add ]
+		Estimated Perf: Macs=0 Cycles=8
+		Memory Used: 4224 bytes (op=64, buf=0, ccd=0, nl=4160)
+	62: Operation Mul  - OFM 1, 1, 1, 1
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 110
+		Operator Config = OFM Block=[2, 64, 16], IFM Block=[2, 64, 16], OFM UBlock=[2, 2, 16] Traversal=DepthFirst, AccType=Acc32
+		IFM Stripe   = [1, 1, 1, 1]
+		IFM2 Stripe  = [1, 1, 1, 1]
+		OFM Stripe   = [1, 1, 1, 1]
+		Assigned Cascade = 0
+		sub-operations: [ Sub Mul Mul ]
+		Estimated Perf: Macs=0 Cycles=16
+		Memory Used: 4288 bytes (op=64, buf=0, ccd=0, nl=4224)
+	63: Operation Add  - OFM 1, 1, 1, 1
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 112
+		Operator Config = OFM Block=[2, 64, 16], IFM Block=[2, 64, 16], OFM UBlock=[2, 2, 16] Traversal=DepthFirst, AccType=Acc32
+		IFM Stripe   = [1, 1, 1, 1]
+		IFM2 Stripe  = [1, 1, 1, 1]
+		OFM Stripe   = [1, 1, 1, 1]
+		Assigned Cascade = 0
+		sub-operations: -
+		Estimated Perf: Macs=0 Cycles=4
+		Memory Used: 4288 bytes (op=0, buf=0, ccd=0, nl=4288)
+	64: Operation Mul  - OFM 1, 1, 1, 1
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 114
+		Operator Config = OFM Block=[2, 64, 16], IFM Block=[2, 64, 16], OFM UBlock=[2, 2, 16] Traversal=DepthFirst, AccType=Acc32
+		IFM Stripe   = [1, 1, 1, 1]
+		IFM2 Stripe  = [1, 1, 1, 1]
+		OFM Stripe   = [1, 1, 1, 1]
+		Assigned Cascade = 0
+		sub-operations: [ Sub Mul Mul ]
+		Estimated Perf: Macs=0 Cycles=16
+		Memory Used: 4288 bytes (op=64, buf=0, ccd=0, nl=4224)
+	65: Operation Add  - OFM 1, 1, 1, 1
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 116
+		Operator Config = OFM Block=[2, 64, 16], IFM Block=[2, 64, 16], OFM UBlock=[2, 2, 16] Traversal=DepthFirst, AccType=Acc32
+		IFM Stripe   = [1, 1, 1, 1]
+		IFM2 Stripe  = [1, 1, 1, 1]
+		OFM Stripe   = [1, 1, 1, 1]
+		Assigned Cascade = 0
+		sub-operations: -
+		Estimated Perf: Macs=0 Cycles=4
+		Memory Used: 4288 bytes (op=0, buf=0, ccd=0, nl=4288)
+	66: Operation Mul  - OFM 1, 1, 1, 1
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 118
+		Operator Config = OFM Block=[2, 64, 16], IFM Block=[2, 64, 16], OFM UBlock=[2, 2, 16] Traversal=DepthFirst, AccType=Acc32
+		IFM Stripe   = [1, 1, 1, 1]
+		IFM2 Stripe  = [1, 1, 1, 1]
+		OFM Stripe   = [1, 1, 1, 1]
+		Assigned Cascade = 0
+		sub-operations: [ Sub Mul Mul ]
+		Estimated Perf: Macs=0 Cycles=16
+		Memory Used: 4288 bytes (op=64, buf=0, ccd=0, nl=4224)
+	67: Operation Add  - OFM 1, 1, 1, 1
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 120
+		Operator Config = OFM Block=[2, 64, 16], IFM Block=[2, 64, 16], OFM UBlock=[2, 2, 16] Traversal=DepthFirst, AccType=Acc32
+		IFM Stripe   = [1, 1, 1, 1]
+		IFM2 Stripe  = [1, 1, 1, 1]
+		OFM Stripe   = [1, 1, 1, 1]
+		Assigned Cascade = 0
+		sub-operations: -
+		Estimated Perf: Macs=0 Cycles=4
+		Memory Used: 4224 bytes (op=0, buf=0, ccd=0, nl=4224)
+	68: Operation Mul  - OFM 1, 1, 1, 1001
+		Kernel: size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0]
+		Time index = 122
+		Operator Config = OFM Block=[2, 2, 512], IFM Block=[2, 2, 512], OFM UBlock=[2, 2, 16] Traversal=DepthFirst, AccType=Acc32
+		IFM Stripe   = [1, 1, 1, 1001]
+		IFM2 Stripe  = [1, 1, 1, 1]
+		OFM Stripe   = [1, 1, 1, 1001]
+		Assigned Cascade = 0
+		sub-operations: [ Asr ]
+		Estimated Perf: Macs=0 Cycles=504
+		Memory Used: 4160 bytes (op=0, buf=0, ccd=0, nl=4160)
+	Cascades:
+		5: 0 -> 5, size: 315824
+		7: 6 -> 7, size: 380608
+		10: 9 -> 10, size: 380544
+
+################################################################################
+Performance for NPU Grap /tmp/vela_verbose/cells/mobilenet_v2_1.0_224_INT8__SSE-320__ethos-u85-512/mobilenet_v2_1.0_224_INT8
+Original Operator    NNG Operator         Target Staging Usage  Peak% (Staging)  Op Cycles Network% (cycles)        NPU    SRAM AC    DRAM AC OnFlash AC OffFlash AC  MAC Count Network% (MAC)  Util% (MAC) Name                 
+-------------------- -------------------- ------ ------------- ---------------- ---------- ----------------- ---------- ---------- ---------- ---------- ----------- ---------- -------------- ------------ -------------------- 
+Conv2D               Conv2D               NPU           315824            81.85     463681             16.00     103983      19653     463681          0           0   10838016           3.60         4.57 MobilenetV2/Conv/Relu6;MobilenetV2/Conv/BatchNorm/FusedBatchNorm;MobilenetV2/Conv/Conv2D;MobilenetV2/Conv/Conv2D_bn_offset 
+Conv2D               Relu6                NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 MobilenetV2/Conv/Relu6;MobilenetV2/Conv/BatchNorm/FusedBatchNorm;MobilenetV2/Conv/Conv2D;MobilenetV2/Conv/Conv2D_bn_offset 
+DepthwiseConv2D      DepthwiseConv2D      NPU           315824            81.85      75936              2.62      75936      30702      29687          0           0    3612672           1.20         9.29 MobilenetV2/expanded_conv/depthwise/Relu6;MobilenetV2/expanded_conv/depthwise/BatchNorm/FusedBatchNorm;MobilenetV2/expanded_conv/depthwise/depthwise;MobilenetV2/Conv/Conv2D 
+DepthwiseConv2D      Relu6                NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 MobilenetV2/expanded_conv/depthwise/Relu6;MobilenetV2/expanded_conv/depthwise/BatchNorm/FusedBatchNorm;MobilenetV2/expanded_conv/depthwise/depthwise;MobilenetV2/Conv/Conv2D 
+Conv2D               Conv2D               NPU           315824            81.85      50624              1.75      50624      19927      21874          0           0    6422528           2.13        24.78 MobilenetV2/expanded_conv/project/BatchNorm/FusedBatchNorm;MobilenetV2/expanded_conv/project/Conv2D;MobilenetV2/expanded_conv/project/Conv2D_bn_offset1 
+Conv2D               Conv2D               NPU           315824            81.85     356249             12.29     280504      61416     356249          0           0   19267584           6.40        10.56 MobilenetV2/expanded_conv_1/expand/Relu6;MobilenetV2/expanded_conv_1/expand/BatchNorm/FusedBatchNorm;MobilenetV2/expanded_conv_1/expand/Conv2D;MobilenetV2/expanded_conv_1/expand/Conv2D_bn_offset 
+Conv2D               Relu6                NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 MobilenetV2/expanded_conv_1/expand/Relu6;MobilenetV2/expanded_conv_1/expand/BatchNorm/FusedBatchNorm;MobilenetV2/expanded_conv_1/expand/Conv2D;MobilenetV2/expanded_conv_1/expand/Conv2D_bn_offset 
+DepthwiseConv2D      DepthwiseConv2D      NPU           315824            81.85      73500              2.54      56760      73500      65625          0           0    2709504           0.90         7.20 MobilenetV2/expanded_conv_1/depthwise/Relu6;MobilenetV2/expanded_conv_1/depthwise/BatchNorm/FusedBatchNorm;MobilenetV2/expanded_conv_1/expand/Conv2D;MobilenetV2/expanded_conv_1/depthwise/depthwise 
+DepthwiseConv2D      Relu6                NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 MobilenetV2/expanded_conv_1/depthwise/Relu6;MobilenetV2/expanded_conv_1/depthwise/BatchNorm/FusedBatchNorm;MobilenetV2/expanded_conv_1/expand/Conv2D;MobilenetV2/expanded_conv_1/depthwise/depthwise 
+Conv2D               Conv2D               NPU           315824            81.85      25611              0.88      25611      14700      21874          0           0    7225344           2.40        55.10 MobilenetV2/expanded_conv_1/project/BatchNorm/FusedBatchNorm;MobilenetV2/expanded_conv_1/project/Conv2D;MobilenetV2/expanded_conv_1/project/Conv2D_bn_offset1 
+Conv2D               Conv2D               NPU           380608            98.64     133593              4.61     113833      22306     133593          0           0   10838016           3.60        15.85 MobilenetV2/expanded_conv_2/expand/Relu6;MobilenetV2/expanded_conv_2/expand/BatchNorm/FusedBatchNorm;MobilenetV2/expanded_conv_2/expand/Conv2D;MobilenetV2/expanded_conv_2/expand/Conv2D_bn_offset 
+Conv2D               Relu6                NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 MobilenetV2/expanded_conv_2/expand/Relu6;MobilenetV2/expanded_conv_2/expand/BatchNorm/FusedBatchNorm;MobilenetV2/expanded_conv_2/expand/Conv2D;MobilenetV2/expanded_conv_2/expand/Conv2D_bn_offset 
+DepthwiseConv2D      DepthwiseConv2D      NPU           380608            98.64      85568              2.95      85568      32400      43066          0           0    4064256           1.35         9.28 MobilenetV2/expanded_conv_2/depthwise/Relu6;MobilenetV2/expanded_conv_2/depthwise/BatchNorm/FusedBatchNorm;MobilenetV2/expanded_conv_2/expand/Conv2D;MobilenetV2/expanded_conv_2/depthwise/depthwise 
+DepthwiseConv2D      Relu6                NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 MobilenetV2/expanded_conv_2/depthwise/Relu6;MobilenetV2/expanded_conv_2/depthwise/BatchNorm/FusedBatchNorm;MobilenetV2/expanded_conv_2/expand/Conv2D;MobilenetV2/expanded_conv_2/depthwise/depthwise 
+Conv2D               Conv2D               NPU             4112             1.07     137812              4.75      38528       5184     137812          0           0   10838016           3.60        15.36 MobilenetV2/expanded_conv_2/project/BatchNorm/FusedBatchNorm;MobilenetV2/expanded_conv_1/project/Conv2D;MobilenetV2/expanded_conv_2/project/Conv2D;MobilenetV2/expanded_conv_2/project/Conv2D_bn_offset1 
+Add                  Add                  NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 MobilenetV2/expanded_conv_2/add 
+Conv2D               Conv2D               NPU           380544            98.62     140625              4.85     113833      22303     140625          0           0   10838016           3.60        15.05 MobilenetV2/expanded_conv_3/expand/Relu6;MobilenetV2/expanded_conv_3/expand/BatchNorm/FusedBatchNorm;MobilenetV2/expanded_conv_2/expand/Conv2D;MobilenetV2/expanded_conv_3/expand/Conv2D;MobilenetV2/expanded_conv_3/expand/Conv2D_bn_offset 
+Conv2D               Relu6                NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 MobilenetV2/expanded_conv_3/expand/Relu6;MobilenetV2/expanded_conv_3/expand/BatchNorm/FusedBatchNorm;MobilenetV2/expanded_conv_2/expand/Conv2D;MobilenetV2/expanded_conv_3/expand/Conv2D;MobilenetV2/expanded_conv_3/expand/Conv2D_bn_offset 
+DepthwiseConv2D      DepthwiseConv2D      NPU           380544            98.62      37968              1.31      21655      37968      21093          0           0    1016064           0.34         5.23 MobilenetV2/expanded_conv_3/depthwise/Relu6;MobilenetV2/expanded_conv_3/depthwise/BatchNorm/FusedBatchNorm;MobilenetV2/expanded_conv_3/depthwise/depthwise;MobilenetV2/expanded_conv_2/expand/Conv2D 
+DepthwiseConv2D      Relu6                NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 MobilenetV2/expanded_conv_3/depthwise/Relu6;MobilenetV2/expanded_conv_3/depthwise/BatchNorm/FusedBatchNorm;MobilenetV2/expanded_conv_3/depthwise/depthwise;MobilenetV2/expanded_conv_2/expand/Conv2D 
+Conv2D               Conv2D               NPU            30400             7.88      34453              1.19      10210       1876      34453          0           0    3612672           1.20        20.48 MobilenetV2/expanded_conv_3/project/BatchNorm/FusedBatchNorm;MobilenetV2/Conv/Conv2D;MobilenetV2/expanded_conv_3/project/Conv2D;MobilenetV2/expanded_conv_3/project/Conv2D_bn_offset1 
+Conv2D               Conv2D               NPU           186576            48.35      65625              2.26      53524      11011      65625          0           0    4816896           1.60        14.34 MobilenetV2/expanded_conv_4/expand/Relu6;MobilenetV2/expanded_conv_4/expand/BatchNorm/FusedBatchNorm;MobilenetV2/expanded_conv_4/expand/Conv2D;MobilenetV2/expanded_conv_4/expand/Conv2D_bn_offset 
+Conv2D               Relu6                NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 MobilenetV2/expanded_conv_4/expand/Relu6;MobilenetV2/expanded_conv_4/expand/BatchNorm/FusedBatchNorm;MobilenetV2/expanded_conv_4/expand/Conv2D;MobilenetV2/expanded_conv_4/expand/Conv2D_bn_offset 
+DepthwiseConv2D      DepthwiseConv2D      NPU           326144            84.52      29008              1.00      29008      10080       9375          0           0    1354752           0.45         9.12 MobilenetV2/expanded_conv_4/depthwise/Relu6;MobilenetV2/expanded_conv_4/depthwise/BatchNorm/FusedBatchNorm;MobilenetV2/expanded_conv_4/expand/Conv2D;MobilenetV2/expanded_conv_4/depthwise/depthwise 
+DepthwiseConv2D      Relu6                NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 MobilenetV2/expanded_conv_4/depthwise/Relu6;MobilenetV2/expanded_conv_4/depthwise/BatchNorm/FusedBatchNorm;MobilenetV2/expanded_conv_4/expand/Conv2D;MobilenetV2/expanded_conv_4/depthwise/depthwise 
+Conv2D               Conv2D               NPU           206640            53.55      10304              0.36      10304       7350       5468          0           0    4816896           1.60        91.30 MobilenetV2/expanded_conv_4/project/BatchNorm/FusedBatchNorm;MobilenetV2/Conv/Conv2D;MobilenetV2/expanded_conv_4/project/Conv2D;MobilenetV2/expanded_conv_4/project/Conv2D_bn_offset1 
+Add                  Add                  NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 MobilenetV2/expanded_conv_4/add 
+Conv2D               Conv2D               NPU           186544            48.35      65625              2.26      53524      10997      65625          0           0    4816896           1.60        14.34 MobilenetV2/expanded_conv_5/expand/Relu6;MobilenetV2/expanded_conv_5/expand/BatchNorm/FusedBatchNorm;MobilenetV2/expanded_conv_4/expand/Conv2D;MobilenetV2/expanded_conv_5/expand/Conv2D;MobilenetV2/expanded_conv_5/expand/Conv2D_bn_offset 
+Conv2D               Relu6                NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 MobilenetV2/expanded_conv_5/expand/Relu6;MobilenetV2/expanded_conv_5/expand/BatchNorm/FusedBatchNorm;MobilenetV2/expanded_conv_4/expand/Conv2D;MobilenetV2/expanded_conv_5/expand/Conv2D;MobilenetV2/expanded_conv_5/expand/Conv2D_bn_offset 
+DepthwiseConv2D      DepthwiseConv2D      NPU           326144            84.52      29008              1.00      29008      10080       9375          0           0    1354752           0.45         9.12 MobilenetV2/expanded_conv_5/depthwise/Relu6;MobilenetV2/expanded_conv_5/depthwise/BatchNorm/FusedBatchNorm;MobilenetV2/expanded_conv_4/expand/Conv2D;MobilenetV2/expanded_conv_5/depthwise/depthwise 
+DepthwiseConv2D      Relu6                NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 MobilenetV2/expanded_conv_5/depthwise/Relu6;MobilenetV2/expanded_conv_5/depthwise/BatchNorm/FusedBatchNorm;MobilenetV2/expanded_conv_4/expand/Conv2D;MobilenetV2/expanded_conv_5/depthwise/depthwise 
+Conv2D               Conv2D               NPU           206672            53.56      10304              0.36      10304       7350       5468          0           0    4816896           1.60        91.30 MobilenetV2/expanded_conv_5/project/BatchNorm/FusedBatchNorm;MobilenetV2/Conv/Conv2D;MobilenetV2/expanded_conv_5/project/Conv2D;MobilenetV2/expanded_conv_5/project/Conv2D_bn_offset1 
+Add                  Add                  NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 MobilenetV2/expanded_conv_5/add 
+Conv2D               Conv2D               NPU           186592            48.36      65625              2.26      53524      11018      65625          0           0    4816896           1.60        14.34 MobilenetV2/expanded_conv_6/expand/Relu6;MobilenetV2/expanded_conv_6/expand/BatchNorm/FusedBatchNorm;MobilenetV2/expanded_conv_4/expand/Conv2D;MobilenetV2/expanded_conv_6/expand/Conv2D;MobilenetV2/expanded_conv_6/expand/Conv2D_bn_offset 
+Conv2D               Relu6                NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 MobilenetV2/expanded_conv_6/expand/Relu6;MobilenetV2/expanded_conv_6/expand/BatchNorm/FusedBatchNorm;MobilenetV2/expanded_conv_4/expand/Conv2D;MobilenetV2/expanded_conv_6/expand/Conv2D;MobilenetV2/expanded_conv_6/expand/Conv2D_bn_offset 
+DepthwiseConv2D      DepthwiseConv2D      NPU           188160            48.76      13650              0.47       7394      13650       9375          0           0     338688           0.11         4.85 MobilenetV2/expanded_conv_6/depthwise/Relu6;MobilenetV2/expanded_conv_6/depthwise/BatchNorm/FusedBatchNorm;MobilenetV2/expanded_conv_6/depthwise/depthwise;MobilenetV2/expanded_conv_4/expand/Conv2D 
+DepthwiseConv2D      Relu6                NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 MobilenetV2/expanded_conv_6/depthwise/Relu6;MobilenetV2/expanded_conv_6/depthwise/BatchNorm/FusedBatchNorm;MobilenetV2/expanded_conv_6/depthwise/depthwise;MobilenetV2/expanded_conv_4/expand/Conv2D 
+Conv2D               Conv2D               NPU            61968            16.06       6249              0.22       5954       3130       6249          0           0    2408448           0.80        75.28 MobilenetV2/expanded_conv_6/project/BatchNorm/FusedBatchNorm;MobilenetV2/expanded_conv_6/project/Conv2D;MobilenetV2/expanded_conv_6/project/Conv2D_bn_offset1 
+Conv2D               Conv2D               NPU            87808            22.76      18750              0.65      13573       8400      18750          0           0    4816896           1.60        50.18 MobilenetV2/expanded_conv_7/expand/Relu6;MobilenetV2/expanded_conv_7/expand/BatchNorm/FusedBatchNorm;MobilenetV2/expanded_conv_7/expand/Conv2D;MobilenetV2/expanded_conv_7/expand/Conv2D_bn_offset 
+Conv2D               Relu6                NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 MobilenetV2/expanded_conv_7/expand/Relu6;MobilenetV2/expanded_conv_7/expand/BatchNorm/FusedBatchNorm;MobilenetV2/expanded_conv_7/expand/Conv2D;MobilenetV2/expanded_conv_7/expand/Conv2D_bn_offset 
+DepthwiseConv2D      DepthwiseConv2D      NPU           163072            42.26      14896              0.51      14896       4704       9375          0           0     677376           0.23         8.88 MobilenetV2/expanded_conv_7/depthwise/Relu6;MobilenetV2/expanded_conv_7/depthwise/BatchNorm/FusedBatchNorm;MobilenetV2/expanded_conv_7/expand/Conv2D;MobilenetV2/expanded_conv_7/depthwise/depthwise 
+DepthwiseConv2D      Relu6                NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 MobilenetV2/expanded_conv_7/depthwise/Relu6;MobilenetV2/expanded_conv_7/depthwise/BatchNorm/FusedBatchNorm;MobilenetV2/expanded_conv_7/expand/Conv2D;MobilenetV2/expanded_conv_7/depthwise/depthwise 
+Conv2D               Conv2D               NPU           122912            31.85      10658              0.37      10658       5820       6249          0           0    4816896           1.60        88.27 MobilenetV2/expanded_conv_7/project/BatchNorm/FusedBatchNorm;MobilenetV2/expanded_conv_6/project/Conv2D;MobilenetV2/expanded_conv_7/project/Conv2D;MobilenetV2/expanded_conv_7/project/Conv2D_bn_offset1 
+Add                  Add                  NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 MobilenetV2/expanded_conv_7/add 
+Conv2D               Conv2D               NPU            87808            22.76      18750              0.65      13573       8400      18750          0           0    4816896           1.60        50.18 MobilenetV2/expanded_conv_8/expand/Relu6;MobilenetV2/expanded_conv_8/expand/BatchNorm/FusedBatchNorm;MobilenetV2/expanded_conv_7/expand/Conv2D;MobilenetV2/expanded_conv_8/expand/Conv2D;MobilenetV2/expanded_conv_8/expand/Conv2D_bn_offset 
+Conv2D               Relu6                NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 MobilenetV2/expanded_conv_8/expand/Relu6;MobilenetV2/expanded_conv_8/expand/BatchNorm/FusedBatchNorm;MobilenetV2/expanded_conv_7/expand/Conv2D;MobilenetV2/expanded_conv_8/expand/Conv2D;MobilenetV2/expanded_conv_8/expand/Conv2D_bn_offset 
+DepthwiseConv2D      DepthwiseConv2D      NPU           163072            42.26      14896              0.51      14896       4704       9375          0           0     677376           0.23         8.88 MobilenetV2/expanded_conv_8/depthwise/Relu6;MobilenetV2/expanded_conv_8/depthwise/BatchNorm/FusedBatchNorm;MobilenetV2/expanded_conv_7/expand/Conv2D;MobilenetV2/expanded_conv_8/depthwise/depthwise 
+DepthwiseConv2D      Relu6                NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 MobilenetV2/expanded_conv_8/depthwise/Relu6;MobilenetV2/expanded_conv_8/depthwise/BatchNorm/FusedBatchNorm;MobilenetV2/expanded_conv_7/expand/Conv2D;MobilenetV2/expanded_conv_8/depthwise/depthwise 
+Conv2D               Conv2D               NPU           122896            31.85      10658              0.37      10658       5818       6249          0           0    4816896           1.60        88.27 MobilenetV2/expanded_conv_8/project/BatchNorm/FusedBatchNorm;MobilenetV2/expanded_conv_6/project/Conv2D;MobilenetV2/expanded_conv_8/project/Conv2D;MobilenetV2/expanded_conv_8/project/Conv2D_bn_offset1 
+Add                  Add                  NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 MobilenetV2/expanded_conv_8/add 
+Conv2D               Conv2D               NPU            87808            22.76      18750              0.65      13573       8400      18750          0           0    4816896           1.60        50.18 MobilenetV2/expanded_conv_9/expand/Relu6;MobilenetV2/expanded_conv_9/expand/BatchNorm/FusedBatchNorm;MobilenetV2/expanded_conv_7/expand/Conv2D;MobilenetV2/expanded_conv_9/expand/Conv2D;MobilenetV2/expanded_conv_9/expand/Conv2D_bn_offset 
+Conv2D               Relu6                NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 MobilenetV2/expanded_conv_9/expand/Relu6;MobilenetV2/expanded_conv_9/expand/BatchNorm/FusedBatchNorm;MobilenetV2/expanded_conv_7/expand/Conv2D;MobilenetV2/expanded_conv_9/expand/Conv2D;MobilenetV2/expanded_conv_9/expand/Conv2D_bn_offset 
+DepthwiseConv2D      DepthwiseConv2D      NPU           163072            42.26      14896              0.51      14896       4704       9375          0           0     677376           0.23         8.88 MobilenetV2/expanded_conv_9/depthwise/Relu6;MobilenetV2/expanded_conv_9/depthwise/BatchNorm/FusedBatchNorm;MobilenetV2/expanded_conv_7/expand/Conv2D;MobilenetV2/expanded_conv_9/depthwise/depthwise 
+DepthwiseConv2D      Relu6                NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 MobilenetV2/expanded_conv_9/depthwise/Relu6;MobilenetV2/expanded_conv_9/depthwise/BatchNorm/FusedBatchNorm;MobilenetV2/expanded_conv_7/expand/Conv2D;MobilenetV2/expanded_conv_9/depthwise/depthwise 
+Conv2D               Conv2D               NPU           122720            31.80      10658              0.37      10658       5796       6249          0           0    4816896           1.60        88.27 MobilenetV2/expanded_conv_9/project/BatchNorm/FusedBatchNorm;MobilenetV2/expanded_conv_6/project/Conv2D;MobilenetV2/expanded_conv_9/project/Conv2D;MobilenetV2/expanded_conv_9/project/Conv2D_bn_offset1 
+Add                  Add                  NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 MobilenetV2/expanded_conv_9/add 
+Conv2D               Conv2D               NPU            87808            22.76      18750              0.65      13573       8400      18750          0           0    4816896           1.60        50.18 MobilenetV2/expanded_conv_10/expand/Relu6;MobilenetV2/expanded_conv_10/expand/BatchNorm/FusedBatchNorm;MobilenetV2/expanded_conv_7/expand/Conv2D;MobilenetV2/expanded_conv_10/expand/Conv2D;MobilenetV2/expanded_conv_10/expand/Conv2D_bn_offset 
+Conv2D               Relu6                NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 MobilenetV2/expanded_conv_10/expand/Relu6;MobilenetV2/expanded_conv_10/expand/BatchNorm/FusedBatchNorm;MobilenetV2/expanded_conv_7/expand/Conv2D;MobilenetV2/expanded_conv_10/expand/Conv2D;MobilenetV2/expanded_conv_10/expand/Conv2D_bn_offset 
+DepthwiseConv2D      DepthwiseConv2D      NPU           150528            39.01      14896              0.51      14896       4704       9375          0           0     677376           0.23         8.88 MobilenetV2/expanded_conv_10/depthwise/Relu6;MobilenetV2/expanded_conv_10/depthwise/BatchNorm/FusedBatchNorm;MobilenetV2/expanded_conv_10/depthwise/depthwise;MobilenetV2/expanded_conv_7/expand/Conv2D 
+DepthwiseConv2D      Relu6                NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 MobilenetV2/expanded_conv_10/depthwise/Relu6;MobilenetV2/expanded_conv_10/depthwise/BatchNorm/FusedBatchNorm;MobilenetV2/expanded_conv_10/depthwise/depthwise;MobilenetV2/expanded_conv_7/expand/Conv2D 
+Conv2D               Conv2D               NPU           128384            33.27      15191              0.52      15191       9762       7031          0           0    7225344           2.40        92.90 MobilenetV2/expanded_conv_10/project/BatchNorm/FusedBatchNorm;MobilenetV2/expanded_conv_1/expand/Conv2D;MobilenetV2/expanded_conv_10/project/Conv2D;MobilenetV2/expanded_conv_10/project/Conv2D_bn_offset1 
+Conv2D               Conv2D               NPU           199600            51.73      56249              1.94      40271      17881      56249          0           0   10838016           3.60        37.63 MobilenetV2/expanded_conv_11/expand/Relu6;MobilenetV2/expanded_conv_11/expand/BatchNorm/FusedBatchNorm;MobilenetV2/expanded_conv_11/expand/Conv2D;MobilenetV2/expanded_conv_11/expand/Conv2D_bn_offset 
+Conv2D               Relu6                NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 MobilenetV2/expanded_conv_11/expand/Relu6;MobilenetV2/expanded_conv_11/expand/BatchNorm/FusedBatchNorm;MobilenetV2/expanded_conv_11/expand/Conv2D;MobilenetV2/expanded_conv_11/expand/Conv2D_bn_offset 
+DepthwiseConv2D      DepthwiseConv2D      NPU           244608            63.39      21952              0.76      21952       7056      14062          0           0    1016064           0.34         9.04 MobilenetV2/expanded_conv_11/depthwise/Relu6;MobilenetV2/expanded_conv_11/depthwise/BatchNorm/FusedBatchNorm;MobilenetV2/expanded_conv_11/expand/Conv2D;MobilenetV2/expanded_conv_11/depthwise/depthwise 
+DepthwiseConv2D      Relu6                NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 MobilenetV2/expanded_conv_11/depthwise/Relu6;MobilenetV2/expanded_conv_11/depthwise/BatchNorm/FusedBatchNorm;MobilenetV2/expanded_conv_11/expand/Conv2D;MobilenetV2/expanded_conv_11/depthwise/depthwise 
+Conv2D               Conv2D               NPU           201760            52.29      22750              0.78      22750      14373       7031          0           0   10838016           3.60        93.05 MobilenetV2/expanded_conv_11/project/BatchNorm/FusedBatchNorm;MobilenetV2/expanded_conv_1/expand/Conv2D;MobilenetV2/expanded_conv_11/project/Conv2D;MobilenetV2/expanded_conv_11/project/Conv2D_bn_offset1 
+Add                  Add                  NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 MobilenetV2/expanded_conv_11/add 
+Conv2D               Conv2D               NPU           199616            51.73      56249              1.94      40271      17344      56249          0           0   10838016           3.60        37.63 MobilenetV2/expanded_conv_12/expand/Relu6;MobilenetV2/expanded_conv_12/expand/BatchNorm/FusedBatchNorm;MobilenetV2/expanded_conv_11/expand/Conv2D;MobilenetV2/expanded_conv_12/expand/Conv2D;MobilenetV2/expanded_conv_12/expand/Conv2D_bn_offset 
+Conv2D               Relu6                NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 MobilenetV2/expanded_conv_12/expand/Relu6;MobilenetV2/expanded_conv_12/expand/BatchNorm/FusedBatchNorm;MobilenetV2/expanded_conv_11/expand/Conv2D;MobilenetV2/expanded_conv_12/expand/Conv2D;MobilenetV2/expanded_conv_12/expand/Conv2D_bn_offset 
+DepthwiseConv2D      DepthwiseConv2D      NPU           244608            63.39      21952              0.76      21952       7056      14062          0           0    1016064           0.34         9.04 MobilenetV2/expanded_conv_12/depthwise/Relu6;MobilenetV2/expanded_conv_12/depthwise/BatchNorm/FusedBatchNorm;MobilenetV2/expanded_conv_11/expand/Conv2D;MobilenetV2/expanded_conv_12/depthwise/depthwise 
+DepthwiseConv2D      Relu6                NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 MobilenetV2/expanded_conv_12/depthwise/Relu6;MobilenetV2/expanded_conv_12/depthwise/BatchNorm/FusedBatchNorm;MobilenetV2/expanded_conv_11/expand/Conv2D;MobilenetV2/expanded_conv_12/depthwise/depthwise 
+Conv2D               Conv2D               NPU           201088            52.11      22750              0.78      22750      14310       7031          0           0   10838016           3.60        93.05 MobilenetV2/expanded_conv_12/project/BatchNorm/FusedBatchNorm;MobilenetV2/expanded_conv_1/expand/Conv2D;MobilenetV2/expanded_conv_12/project/Conv2D;MobilenetV2/expanded_conv_12/project/Conv2D_bn_offset1 
+Add                  Add                  NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 MobilenetV2/expanded_conv_12/add 
+Conv2D               Conv2D               NPU           198016            51.32      56249              1.94      40271      17144      56249          0           0   10838016           3.60        37.63 MobilenetV2/expanded_conv_13/expand/Relu6;MobilenetV2/expanded_conv_13/expand/BatchNorm/FusedBatchNorm;MobilenetV2/expanded_conv_11/expand/Conv2D;MobilenetV2/expanded_conv_13/expand/Conv2D;MobilenetV2/expanded_conv_13/expand/Conv2D_bn_offset 
+Conv2D               Relu6                NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 MobilenetV2/expanded_conv_13/expand/Relu6;MobilenetV2/expanded_conv_13/expand/BatchNorm/FusedBatchNorm;MobilenetV2/expanded_conv_11/expand/Conv2D;MobilenetV2/expanded_conv_13/expand/Conv2D;MobilenetV2/expanded_conv_13/expand/Conv2D_bn_offset 
+DepthwiseConv2D      DepthwiseConv2D      NPU           141120            36.57      28124              0.97      16518       8662      28124          0           0     254016           0.08         1.76 MobilenetV2/expanded_conv_13/depthwise/Relu6;MobilenetV2/expanded_conv_13/depthwise/BatchNorm/FusedBatchNorm;MobilenetV2/expanded_conv_13/depthwise/depthwise;MobilenetV2/expanded_conv_11/expand/Conv2D 
+DepthwiseConv2D      Relu6                NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 MobilenetV2/expanded_conv_13/depthwise/Relu6;MobilenetV2/expanded_conv_13/depthwise/BatchNorm/FusedBatchNorm;MobilenetV2/expanded_conv_13/depthwise/depthwise;MobilenetV2/expanded_conv_11/expand/Conv2D 
+Conv2D               Conv2D               NPU            36064             9.35      12946              0.45      11465       4134      12946          0           0    4515840           1.50        68.13 MobilenetV2/expanded_conv_13/project/BatchNorm/FusedBatchNorm;MobilenetV2/expanded_conv_13/project/Conv2D;MobilenetV2/expanded_conv_13/project/Conv2D_bn_offset1 
+Conv2D               Conv2D               NPU            54880            14.22      25539              0.88      21410       5742      25539          0           0    7526400           2.50        57.56 MobilenetV2/expanded_conv_14/expand/Relu6;MobilenetV2/expanded_conv_14/expand/BatchNorm/FusedBatchNorm;MobilenetV2/expanded_conv_14/expand/Conv2D;MobilenetV2/expanded_conv_14/expand/Conv2D_bn_offset 
+Conv2D               Relu6                NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 MobilenetV2/expanded_conv_14/expand/Relu6;MobilenetV2/expanded_conv_14/expand/BatchNorm/FusedBatchNorm;MobilenetV2/expanded_conv_14/expand/Conv2D;MobilenetV2/expanded_conv_14/expand/Conv2D_bn_offset 
+DepthwiseConv2D      DepthwiseConv2D      NPU           101920            26.41      23437              0.81      20286       2940      23437          0           0     423360           0.14         3.53 MobilenetV2/expanded_conv_14/depthwise/Relu6;MobilenetV2/expanded_conv_14/depthwise/BatchNorm/FusedBatchNorm;MobilenetV2/expanded_conv_14/expand/Conv2D;MobilenetV2/expanded_conv_14/depthwise/depthwise 
+DepthwiseConv2D      Relu6                NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 MobilenetV2/expanded_conv_14/depthwise/Relu6;MobilenetV2/expanded_conv_14/depthwise/BatchNorm/FusedBatchNorm;MobilenetV2/expanded_conv_14/expand/Conv2D;MobilenetV2/expanded_conv_14/depthwise/depthwise 
+Conv2D               Conv2D               NPU            62720            16.25      20986              0.72      18952       6890      20986          0           0    7526400           2.50        70.05 MobilenetV2/expanded_conv_14/project/BatchNorm/FusedBatchNorm;MobilenetV2/expanded_conv_13/project/Conv2D;MobilenetV2/expanded_conv_14/project/Conv2D;MobilenetV2/expanded_conv_14/project/Conv2D_bn_offset1 
+Add                  Add                  NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 MobilenetV2/expanded_conv_14/add 
+Conv2D               Conv2D               NPU            54880            14.22      25678              0.89      21410       5742      25678          0           0    7526400           2.50        57.25 MobilenetV2/expanded_conv_15/expand/Relu6;MobilenetV2/expanded_conv_15/expand/BatchNorm/FusedBatchNorm;MobilenetV2/expanded_conv_14/expand/Conv2D;MobilenetV2/expanded_conv_15/expand/Conv2D;MobilenetV2/expanded_conv_15/expand/Conv2D_bn_offset 
+Conv2D               Relu6                NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 MobilenetV2/expanded_conv_15/expand/Relu6;MobilenetV2/expanded_conv_15/expand/BatchNorm/FusedBatchNorm;MobilenetV2/expanded_conv_14/expand/Conv2D;MobilenetV2/expanded_conv_15/expand/Conv2D;MobilenetV2/expanded_conv_15/expand/Conv2D_bn_offset 
+DepthwiseConv2D      DepthwiseConv2D      NPU           101920            26.41      23437              0.81      20286       2940      23437          0           0     423360           0.14         3.53 MobilenetV2/expanded_conv_15/depthwise/Relu6;MobilenetV2/expanded_conv_15/depthwise/BatchNorm/FusedBatchNorm;MobilenetV2/expanded_conv_14/expand/Conv2D;MobilenetV2/expanded_conv_15/depthwise/depthwise 
+DepthwiseConv2D      Relu6                NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 MobilenetV2/expanded_conv_15/depthwise/Relu6;MobilenetV2/expanded_conv_15/depthwise/BatchNorm/FusedBatchNorm;MobilenetV2/expanded_conv_14/expand/Conv2D;MobilenetV2/expanded_conv_15/depthwise/depthwise 
+Conv2D               Conv2D               NPU            62720            16.25      20671              0.71      18952       6890      20671          0           0    7526400           2.50        71.11 MobilenetV2/expanded_conv_15/project/BatchNorm/FusedBatchNorm;MobilenetV2/expanded_conv_13/project/Conv2D;MobilenetV2/expanded_conv_15/project/Conv2D;MobilenetV2/expanded_conv_15/project/Conv2D_bn_offset1 
+Add                  Add                  NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 MobilenetV2/expanded_conv_15/add 
+Conv2D               Conv2D               NPU            54880            14.22      25261              0.87      21410       5742      25261          0           0    7526400           2.50        58.19 MobilenetV2/expanded_conv_16/expand/Relu6;MobilenetV2/expanded_conv_16/expand/BatchNorm/FusedBatchNorm;MobilenetV2/expanded_conv_14/expand/Conv2D;MobilenetV2/expanded_conv_16/expand/Conv2D;MobilenetV2/expanded_conv_16/expand/Conv2D_bn_offset 
+Conv2D               Relu6                NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 MobilenetV2/expanded_conv_16/expand/Relu6;MobilenetV2/expanded_conv_16/expand/BatchNorm/FusedBatchNorm;MobilenetV2/expanded_conv_14/expand/Conv2D;MobilenetV2/expanded_conv_16/expand/Conv2D;MobilenetV2/expanded_conv_16/expand/Conv2D_bn_offset 
+DepthwiseConv2D      DepthwiseConv2D      NPU            94080            24.38      23437              0.81      20286       2940      23437          0           0     423360           0.14         3.53 MobilenetV2/expanded_conv_16/depthwise/Relu6;MobilenetV2/expanded_conv_16/depthwise/BatchNorm/FusedBatchNorm;MobilenetV2/expanded_conv_16/depthwise/depthwise;MobilenetV2/expanded_conv_14/expand/Conv2D 
+DepthwiseConv2D      Relu6                NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 MobilenetV2/expanded_conv_16/depthwise/Relu6;MobilenetV2/expanded_conv_16/depthwise/BatchNorm/FusedBatchNorm;MobilenetV2/expanded_conv_16/depthwise/depthwise;MobilenetV2/expanded_conv_14/expand/Conv2D 
+Conv2D               Conv2D               NPU            62720            16.25      42736              1.47      35657      11484      42736          0           0   15052800           5.00        68.79 MobilenetV2/expanded_conv_16/project/BatchNorm/FusedBatchNorm;MobilenetV2/expanded_conv_16/project/Conv2D;MobilenetV2/expanded_conv_16/project/Conv2D_bn_offset1 
+Conv2D               Conv2D               NPU            78400            20.32      58850              2.03      46050      15312      58850          0           0   20070400           6.67        66.61 MobilenetV2/Conv_1/Relu6;MobilenetV2/Conv_1/BatchNorm/FusedBatchNorm;MobilenetV2/Conv_1/Conv2D;MobilenetV2/Conv_1/Conv2D_bn_offset 
+Conv2D               Relu6                NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 MobilenetV2/Conv_1/Relu6;MobilenetV2/Conv_1/BatchNorm/FusedBatchNorm;MobilenetV2/Conv_1/Conv2D;MobilenetV2/Conv_1/Conv2D_bn_offset 
+AvgPool              AvgPool              NPU            64000            16.59      16142              0.56      16142       3062          0          0           0      62720           0.02         0.76 MobilenetV2/Logits/AvgPool 
+Conv2D               Conv2D               NPU             2288             0.59     183669              6.34     105720        142     183669          0           0    1281280           0.43         1.36 MobilenetV2/Logits/Conv2d_1c_1x1/BiasAdd;MobilenetV2/Logits/Conv2d_1c_1x1/Conv2D;Const_691 
+Softmax              MaxPool              NPU             1024             0.27       5351              0.18       5351        246          0          0           0       1001           0.00         0.04 MaxPool#MobilenetV2/Logits/Squeeze1 
+Softmax              Sub                  NPU             5056             1.31        196              0.01        126        196          0          0           0          0           0.00         0.00 LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut 
+Softmax              LUT                  NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut 
+Softmax              Asr                  NPU             8048             2.09        251              0.01        251        251          0          0           0          0           0.00         0.00 Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12 
+Softmax              ReduceSum            NPU             8112             2.10      10337              0.36      10337        195          0          0           0       1001           0.00         0.02 ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12 
+Softmax              CLZ                  NPU             4160             1.08          4              0.00          4          3          0          0           0          0           0.00         0.00 CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12 
+Softmax              Sub                  NPU             4224             1.09          4              0.00          4          3          0          0           0          0           0.00         0.00 Sub#headroom_offset/CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12 
+Softmax              Sub                  NPU             4288             1.11         39              0.00          8          0         39          0           0          0           0.00         0.00 Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const 
+Softmax              SHL                  NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const 
+Softmax              Mul                  NPU             4224             1.09         39              0.00          8          0         39          0           0          0           0.00         0.00 Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17 
+Softmax              Add                  NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17 
+Softmax              Mul                  NPU             4288             1.11         16              0.00         16          3          0          0           0          0           0.00         0.00 Mul#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const 
+Softmax              Sub                  NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 Sub#F2_one/Mul#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const 
+Softmax              Mul                  NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 Mul#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/Sub#F2_one/Mul#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const 
+Softmax              Mul                  NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 Mul#Mul#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/Sub#F2_one/Mul#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/four 
+Softmax              Add                  NPU             4288             1.11          4              0.00          4          4          0          0           0          0           0.00         0.00 Add#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/Mul#Mul#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/Sub#F2_one/Mul#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/four 
+Softmax              Mul                  NPU             4288             1.11         16              0.00         16          3          0          0           0          0           0.00         0.00 Mul#Add#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/Mul#Mul#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/Sub#F2_one/Mul#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/four/SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const 
+Softmax              Sub                  NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 Sub#F2_one/Mul#Add#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/Mul#Mul#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/Sub#F2_one/Mul#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/four/SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const 
+Softmax              Mul                  NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 Mul#Add#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/Mul#Mul#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/Sub#F2_one/Mul#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/four/Sub#F2_one/Mul#Add#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/Mul#Mul#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/Sub#F2_one/Mul#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/four/SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const 
+Softmax              Mul                  NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 Mul#Mul#Add#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/Mul#Mul#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/Sub#F2_one/Mul#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/four/Sub#F2_one/Mul#Add#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/Mul#Mul#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/Sub#F2_one/Mul#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/four/SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/four 
+Softmax              Add                  NPU             4288             1.11          4              0.00          4          4          0          0           0          0           0.00         0.00 Add#Add#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/Mul#Mul#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/Sub#F2_one/Mul#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/four/Mul#Mul#Add#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/Mul#Mul#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/Sub#F2_one/Mul#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/four/Sub#F2_one/Mul#Add#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/Mul#Mul#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/Sub#F2_one/Mul#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/four/SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/four 
+Softmax              Mul                  NPU             4288             1.11         16              0.00         16          3          0          0           0          0           0.00         0.00 Mul#Add#Add#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/Mul#Mul#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/Sub#F2_one/Mul#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/four/Mul#Mul#Add#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/Mul#Mul#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/Sub#F2_one/Mul#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/four/Sub#F2_one/Mul#Add#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/Mul#Mul#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/Sub#F2_one/Mul#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/four/SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/four/SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const 
+Softmax              Sub                  NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 Sub#F2_one/Mul#Add#Add#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/Mul#Mul#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/Sub#F2_one/Mul#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/four/Mul#Mul#Add#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/Mul#Mul#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/Sub#F2_one/Mul#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/four/Sub#F2_one/Mul#Add#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/Mul#Mul#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/Sub#F2_one/Mul#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/four/SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/four/SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const 
+Softmax              Mul                  NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 Mul#Add#Add#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/Mul#Mul#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/Sub#F2_one/Mul#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/four/Mul#Mul#Add#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/Mul#Mul#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/Sub#F2_one/Mul#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/four/Sub#F2_one/Mul#Add#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/Mul#Mul#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/Sub#F2_one/Mul#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/four/SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/four/Sub#F2_one/Mul#Add#Add#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/Mul#Mul#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/Sub#F2_one/Mul#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/four/Mul#Mul#Add#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/Mul#Mul#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/Sub#F2_one/Mul#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/four/Sub#F2_one/Mul#Add#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/Mul#Mul#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/Sub#F2_one/Mul#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/four/SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/four/SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const 
+Softmax              Mul                  NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 Mul#Mul#Add#Add#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/Mul#Mul#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/Sub#F2_one/Mul#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/four/Mul#Mul#Add#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/Mul#Mul#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/Sub#F2_one/Mul#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/four/Sub#F2_one/Mul#Add#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/Mul#Mul#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/Sub#F2_one/Mul#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/four/SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/four/Sub#F2_one/Mul#Add#Add#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/Mul#Mul#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/Sub#F2_one/Mul#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/four/Mul#Mul#Add#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/Mul#Mul#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/Sub#F2_one/Mul#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/four/Sub#F2_one/Mul#Add#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/Mul#Mul#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/Sub#F2_one/Mul#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/four/SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/four/SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/four 
+Softmax              Add                  NPU             4224             1.09          4              0.00          4          4          0          0           0          0           0.00         0.00 Add#Add#Add#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/Mul#Mul#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/Sub#F2_one/Mul#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/four/Mul#Mul#Add#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/Mul#Mul#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/Sub#F2_one/Mul#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/four/Sub#F2_one/Mul#Add#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/Mul#Mul#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/Sub#F2_one/Mul#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/four/SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/four/Mul#Mul#Add#Add#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/Mul#Mul#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/Sub#F2_one/Mul#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/four/Mul#Mul#Add#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/Mul#Mul#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/Sub#F2_one/Mul#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/four/Sub#F2_one/Mul#Add#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/Mul#Mul#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/Sub#F2_one/Mul#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/four/SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/four/Sub#F2_one/Mul#Add#Add#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/Mul#Mul#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/Sub#F2_one/Mul#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/four/Mul#Mul#Add#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/Mul#Mul#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/Sub#F2_one/Mul#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/four/Sub#F2_one/Mul#Add#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/Mul#Mul#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/Sub#F2_one/Mul#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/four/SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/four/SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/four 
+Softmax              Mul                  NPU             4160             1.08        504              0.02        504        196          0          0           0          0           0.00         0.00 Mul#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/Add#Add#Add#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/Mul#Mul#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/Sub#F2_one/Mul#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/four/Mul#Mul#Add#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/Mul#Mul#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/Sub#F2_one/Mul#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/four/Sub#F2_one/Mul#Add#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/Mul#Mul#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/Sub#F2_one/Mul#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/four/SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/four/Mul#Mul#Add#Add#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/Mul#Mul#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/Sub#F2_one/Mul#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/four/Mul#Mul#Add#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/Mul#Mul#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/Sub#F2_one/Mul#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/four/Sub#F2_one/Mul#Add#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/Mul#Mul#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/Sub#F2_one/Mul#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/four/SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/four/Sub#F2_one/Mul#Add#Add#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/Mul#Mul#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/Sub#F2_one/Mul#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/four/Mul#Mul#Add#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/Mul#Mul#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/Sub#F2_one/Mul#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/four/Sub#F2_one/Mul#Add#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/Mul#Mul#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/Sub#F2_one/Mul#Add#Mul#SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/neg_32_over_17/const_48_over_17/SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/four/SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/four/SHL#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/Sub#CLZ#ReduceSum#Asr#LUT#Sub#MobilenetV2/Logits/Squeeze1/MaxPool#MobilenetV2/Logits/Squeeze1/exp_lut/right_shift12/one_const/four 
+Softmax              Asr                  NPU                0             0.00          0              0.00          0          0          0          0           0          0           0.00       100.00 MobilenetV2/Predictions/Reshape_11 
+
+Network summary for mobilenet_v2_1.0_224_INT8
+Accelerator configuration               Ethos_U85_512
+System configuration             Ethos_U85_SYS_DRAM_Mid_512
+Memory mode                            Dedicated_Sram
+Accelerator clock                                1000 MHz
+Design peak SRAM bandwidth                      29.80 GB/s
+Design peak DRAM bandwidth                      11.18 GB/s
+
+Total SRAM used                                376.81 KiB
+Total DRAM used                               4098.88 KiB
+
+CPU operators = 0 (0.0%)
+NPU operators = 69 (100.0%)
+
+Average SRAM bandwidth                           6.74 GB/s
+Input   SRAM bandwidth                           9.97 MB/batch
+Weight  SRAM bandwidth                           3.46 MB/batch
+Output  SRAM bandwidth                           5.56 MB/batch
+Total   SRAM bandwidth                          19.53 MB/batch
+Total   SRAM bandwidth            per input     19.53 MB/inference (batch size 1)
+
+Average DRAM bandwidth                           2.35 GB/s
+Input   DRAM bandwidth                           2.68 MB/batch
+Weight  DRAM bandwidth                           3.35 MB/batch
+Output  DRAM bandwidth                           0.63 MB/batch
+Total   DRAM bandwidth                           6.82 MB/batch
+Total   DRAM bandwidth            per input      6.82 MB/inference (batch size 1)
+
+Original Weights Size                         3389.69 KiB
+NPU Encoded Weights Size                      3284.20 KiB
+
+Neural network macs                         300840274 MACs/batch
+

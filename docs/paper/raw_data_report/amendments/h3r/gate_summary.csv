@@ -1,0 +1,5 @@
+gate,pass,refused,total
+arms (RUN/REPS/TA header+cache),126,0,126
+cells G1 (artifact identity across arms),54,0,54
+"models (G1', output identity, equalized applied)",27,0,27
+preservation,1,0,1

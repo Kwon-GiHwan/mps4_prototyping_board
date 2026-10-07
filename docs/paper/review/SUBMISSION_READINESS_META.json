@@ -1,0 +1,80 @@
+{
+ "task": "FINAL POLISHING PASS + submission-readiness gate",
+ "mode": "REVIEW_ONLY",
+ "date": "2026-09-04",
+ "inputs": {
+  "manuscript_tag": "paper-manuscript-submission-candidate",
+  "manuscript_commit": "a990e03",
+  "prior_manuscript_tag": "paper-manuscript-phase2-frozen",
+  "prior_manuscript_commit": "8754295",
+  "finding_source_tag": "paper-final-review-frozen",
+  "finding_source_commit": "31f2bd4"
+ },
+ "authorized_issues": {
+  "MOD-1": {"status": "CLOSED", "class": "PRESENTATION_ONLY", "issue": "figures appeared 1,5,4,2,3"},
+  "MOD-2": {"status": "CLOSED", "class": "TEXT_ONLY + figure regeneration", "issue": "profiled-group sum labelled as the whole-model change"},
+  "MIN-1": {"status": "CLOSED", "class": "TEXT_ONLY", "issue": "methodology the largest section"},
+  "MIN-2": {"status": "CLOSED", "class": "TEXT_ONLY", "issue": "appendix title narrower than its content"}
+ },
+ "figure_renumbering": [
+  {"appearance": 1, "section": "4.1", "old": 1, "new": 1, "file": "fig1_mac_scaling.svg"},
+  {"appearance": 2, "section": "5",   "old": 5, "new": 2, "file": "fig2_platform_sensitivity.svg"},
+  {"appearance": 3, "section": "6",   "old": 4, "new": 3, "file": "fig3_board_relative_cost.svg"},
+  {"appearance": 4, "section": "7.3", "old": 2, "new": 4, "file": "fig4_u85_group_delta.svg"},
+  {"appearance": 5, "section": "7.4", "old": 3, "new": 5, "file": "fig5_u85_memory_robustness.svg"}
+ ],
+ "figure_order": "1,2,3,4,5 by first appearance",
+ "deltas": {
+  "whole_model_delta": 19000,
+  "profiled_group_delta": 19060,
+  "residual": 60,
+  "residual_wording": "deterministic profiling-boundary (interrupt-service) residual, Section 9.5",
+  "stronger_causal_model_asserted": false
+ },
+ "counts": {"words": 9171, "sections": 10, "appendices": 2, "figures": 5, "tables": 9, "references": 17},
+ "workload_span": {"value": "468x", "basis": "SSE-320 / ethos-u85-256 / Dedicated_Sram", "467x_present_in_manuscript": false},
+ "readiness_review": {"BLOCKER": 0, "MAJOR": 0, "MODERATE": 0, "MINOR": 1},
+ "minor_findings": [
+  {"id": "NEW-1", "severity": "MINOR", "class": "PRESENTATION_ONLY",
+   "issue": "figures 2, 4 and 5 have no in-prose reference; only figures 1 and 3 are named in a sentence",
+   "found_during": "polishing", "applied": false,
+   "reason_not_applied": "outside the authorized fix set; reported per the instruction to classify new issues before broadening scope",
+   "affects_scientific_meaning": false}
+ ],
+ "final_verdict": "SUBMISSION_READY_WITH_COPYEDIT",
+ "rule_failures": 0,
+ "scientific_contradictions": 0,
+ "numerical_discrepancies": 0,
+ "new_experiment_required": false,
+ "x2": "NOT_NEEDED",
+ "holds_unchanged": ["X2", "X4", "X5"],
+ "suites": {
+  "phase1_consistency_check.py": "16/16",
+  "phase1_5_validation.py": "25/25",
+  "phase2_validation.py": "98/98",
+  "polish_validation.py": "42/42",
+  "manuscript_text_fixtures.py": "14/14",
+  "phase1_5_checker_fixtures.py": "14/14",
+  "total": "209/209"
+ },
+ "defects_disclosed_this_pass": [
+  {"what": "the first draft of the polishing record stated the post-move methodology size as 1,391 words / 16.2%",
+   "why_wrong": "neither number was produced by a check; polish_validation prints that detail only on failure and the check passed, so the value was written without being observed",
+   "measured": "1,580 words / 18.0%, down from 1,685 / 19.5%",
+   "manuscript_affected": false,
+   "remediation": "both documents corrected before the gate; check F tightened from an open '< 19%' bound to an assertion on the measured word count and a narrow share band"},
+  {"what": "polish_validation caption-to-filename matcher used [a-z_]+ for the filename stem",
+   "why_wrong": "excludes digits, so the two u85 filenames could not match",
+   "manuscript_affected": false,
+   "remediation": "widened to [a-z0-9_]+"}
+ ],
+ "frozen_review_artifacts_modified": false,
+ "manuscript_modified_during_gate": false,
+ "verification_level": "static analysis and automated checking of the frozen tag",
+ "not_executed": [
+  "no build, simulation, FVP run, board run, or measurement",
+  "no frozen analyzer re-run",
+  "no external peer review",
+  "figures visually inspected for 2 of 5; geometry-audited for all 5"
+ ]
+}

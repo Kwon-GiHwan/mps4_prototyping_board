@@ -1,0 +1,9 @@
+# Q4 reference: the preregistered H3-R rules (plan A8) applied unchanged to the H3 area-36 measurements from h13/results.jsonl (arms base and relaxed); H3 'relaxed' occupies the slot H3-R calls bridge_legacy_relaxed
+judgement,TOTAL_value,TOTAL_holds,ACTIVE_value,ACTIVE_holds,label
+SHAPE_EFFECT:conv1x1:base,0.4628,True,0.4016,True,HOLDS_BOTH
+SHAPE_EFFECT:conv1x1:bridge_legacy_relaxed,0.1323,True,0.226,True,HOLDS_BOTH
+SHAPE_EFFECT:conv3x3:base,0.3551,True,0.3288,True,HOLDS_BOTH
+SHAPE_EFFECT:conv3x3:bridge_legacy_relaxed,0.0493,False,0.033,False,FAILS_BOTH
+SHAPE_EFFECT:dw3x3:base,0.0,False,0.0737,False,FAILS_BOTH
+SHAPE_EFFECT:dw3x3:bridge_legacy_relaxed,0.4916,True,0.2517,True,HOLDS_BOTH
+TYPE_DEPENDENT:base,"[1.1648, 0.9356, 1.0]",True,"[1.0201, 0.9133, 1.053]",True,HOLDS_BOTH

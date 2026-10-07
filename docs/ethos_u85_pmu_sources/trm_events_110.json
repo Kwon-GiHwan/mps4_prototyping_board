@@ -1,0 +1,552 @@
+[
+[
+0,
+"no_event",
+"No event. Event never occurs. No event counted"
+],
+[
+17,
+"cycle",
+"Elapsed cycle. Event occurs every cycle. Used for counter debug"
+],
+[
+32,
+"npu_idle",
+"NPU in stopped state"
+],
+[
+35,
+"npu_active",
+"NPU in running state"
+],
+[
+48,
+"mac_active",
+"MAC is doing block traversal. Valid blk_cmd and not stalled"
+],
+[
+51,
+"mac_dpu_active",
+"At least one dot product unit is active, meaning the unit has at least one valid weight and activation pair"
+],
+[
+64,
+"ao_active",
+"AO is doing block traversal of accumulation or chaining buffer. Valid blk_cmd and not stalled"
+],
+[
+80,
+"wd_active",
+"WD is decoding weight stream. Valid blk_cmd and not stalled"
+],
+[
+81,
+"wd_stalled",
+"WD stalled on lack of weight stream data or lack of free WD buffer space"
+],
+[
+128,
+"sram_rd_trans_accepted",
+"Read transfer (arready & arvalid) sum over SRAM AXI ports"
+],
+[
+129,
+"sram_rd_trans_completed",
+"Read complete (rready & rvalid & rlast) sum over SRAM AXI ports"
+],
+[
+130,
+"sram_rd_data_beat_received",
+"Read bandwidth (rready & rvalid) sum over SRAM AXI ports"
+],
+[
+131,
+"sram_rd_tran_req_stalled",
+"Read stalls (arvalid & ~arready) sum over SRAM AXI ports"
+],
+[
+132,
+"sram_wr_trans_accepted",
+"Write transfers (awready & awvalid) sum over SRAM AXI ports"
+],
+[
+135,
+"sram_wr_data_beat_written",
+"Write bandwidth (wvalid & wready) sum over SRAM AXI ports"
+],
+[
+136,
+"sram_wr_tran_req_stalled",
+"write transfer stalled by memory (awvalid & ~awready) sum over SRAM AXI ports"
+],
+[
+137,
+"sram_wr_data_beat_stalled",
+"Write beat stalled by memory (wvalid & ~wready) sum over SRAM AXI ports"
+],
+[
+140,
+"sram_enabled_cycles",
+"Memory clock cycle (aclken_input), sum over SRAM AXI ports"
+],
+[
+142,
+"sram_rd_stall_limit",
+"Read stalls due to max outstanding transactions limit, sum over SRAM AXI ports"
+],
+[
+143,
+"sram_wr_stall_limit",
+"Write stalls due to max outstanding transactions limit, sum over SRAM AXI ports"
+],
+[
+160,
+"axi_latency_any",
+"Any latency - measures the total number of transactions for the specified channel"
+],
+[
+161,
+"axi_latency_32",
+"Latency was >= 32 cycles"
+],
+[
+162,
+"axi_latency_64",
+"Latency was >= 64 cycles"
+],
+[
+163,
+"axi_latency_128",
+"Latency was >= 128 cycles"
+],
+[
+164,
+"axi_latency_256",
+"Latency was >= 256 cycles"
+],
+[
+165,
+"axi_latency_512",
+"Latency was >= 512 cycles"
+],
+[
+166,
+"axi_latency_1024",
+"Latency was >= 1024 cycles"
+],
+[
+176,
+"ecc_dma",
+"ECC event in DMA controller RAM. This event is either corrected or uncorrected"
+],
+[
+177,
+"ecc_mac_ib",
+"ECC event in MAC input buffer RAM. This event is either corrected or uncorrected"
+],
+[
+178,
+"ecc_mac_ab",
+"ECC event in MAC AB RAM. This event is either corrected or uncorrected"
+],
+[
+179,
+"ecc_ao_cb",
+"ECC event in AO CB RAM. This event is either corrected or uncorrected"
+],
+[
+180,
+"ecc_ao_ob",
+"ECC event in AO Output Buffer (OB) RAM. This event is either corrected or uncorrected"
+],
+[
+181,
+"ecc_ao_lut",
+"ECC event in AO lookup table RAM. This event is either corrected or uncorrected"
+],
+[
+384,
+"ext_rd_trans_accepted",
+"Read transfer (arready & arvalid) sum over EXT AXI ports"
+],
+[
+385,
+"ext_rd_trans_completed",
+"Read complete (rready & rvalid & rlast) sum over EXT AXI ports"
+],
+[
+386,
+"ext_rd_data_beat_received",
+"Read bandwidth (rready & rvalid) sum over EXT AXI ports"
+],
+[
+387,
+"ext_rd_tran_req_stalled",
+"Read stalls (arvalid & ~arready) sum over EXT AXI ports"
+],
+[
+388,
+"ext_wr_trans_accepted",
+"Write transfers (awready & awvalid) sum over EXT AXI ports"
+],
+[
+391,
+"ext_wr_data_beat_written",
+"Write bandwidth (wvalid & wready) sum over EXT AXI ports"
+],
+[
+392,
+"ext_wr_tran_req_stalled",
+"write transfer stalled by memory (awvalid & ~awready) sum over EXT AXI ports"
+],
+[
+393,
+"ext_wr_data_beat_stalled",
+"Write beat stalled by memory (wvalid & ~wready) sum over EXT AXI ports"
+],
+[
+396,
+"ext_enabled_cycles",
+"Memory clock cycle (aclken_input), sum over EXT AXI ports"
+],
+[
+398,
+"ext_rd_stall_limit",
+"Read stalls due to max outstanding transactions limit, sum over EXT AXI ports"
+],
+[
+399,
+"ext_wr_stall_limit",
+"Write stalls due to max outstanding transactions limit, sum over EXT AXI ports"
+],
+[
+512,
+"sram0_rd_trans_accepted",
+"Read transfer (arready & arvalid) for SRAM AXI port 0"
+],
+[
+513,
+"sram0_rd_trans_completed",
+"Read complete (rready & rvalid & rlast) for SRAM AXI port 0"
+],
+[
+514,
+"sram0_rd_data_beat_received",
+"Read bandwidth (rready & rvalid) for SRAM AXI port 0"
+],
+[
+515,
+"sram0_rd_tran_req_stalled",
+"Read stalls (arvalid & ~arready) for SRAM AXI port 0"
+],
+[
+516,
+"sram0_wr_trans_accepted",
+"Write transfers (awready & awvalid) for SRAM AXI port 0"
+],
+[
+519,
+"sram0_wr_data_beat_written",
+"Write bandwidth (wvalid & wready) for SRAM AXI port 0"
+],
+[
+520,
+"sram0_wr_tran_req_stalled",
+"write transfer stalled by memory (awvalid & ~awready) for SRAM AXI port 0"
+],
+[
+521,
+"sram0_wr_data_beat_stalled",
+"Write beat stalled by memory (wvalid & ~wready) for SRAM AXI port 0"
+],
+[
+524,
+"sram0_enabled_cycles",
+"Memory clock cycle (aclken_input), for SRAM AXI port 0"
+],
+[
+526,
+"sram0_rd_stall_limit",
+"Read stalls due to max outstanding transactions limit, for SRAM AXI port 0"
+],
+[
+527,
+"sram0_wr_stall_limit",
+"Write stalls due to max outstanding transactions limit, for SRAM AXI port 0"
+],
+[
+528,
+"sram1_rd_trans_accepted",
+"Read transfer (arready & arvalid) for SRAM AXI port 1"
+],
+[
+529,
+"sram1_rd_trans_completed",
+"Read complete (rready & rvalid & rlast) for SRAM AXI port 1"
+],
+[
+530,
+"sram1_rd_data_beat_received",
+"Read bandwidth (rready & rvalid) for SRAM AXI port 1"
+],
+[
+531,
+"sram1_rd_tran_req_stalled",
+"Read stalls (arvalid & ~arready) for SRAM AXI port 1"
+],
+[
+532,
+"sram1_wr_trans_accepted",
+"Write transfers (awready & awvalid) for SRAM AXI port 1"
+],
+[
+535,
+"sram1_wr_data_beat_written",
+"Write bandwidth (wvalid & wready) for SRAM AXI port 1"
+],
+[
+536,
+"sram1_wr_tran_req_stalled",
+"write transfer stalled by memory (awvalid & ~awready) for SRAM AXI port 1"
+],
+[
+537,
+"sram1_wr_data_beat_stalled",
+"Write beat stalled by memory (wvalid & ~wready) for SRAM AXI port 1"
+],
+[
+540,
+"sram1_enabled_cycles",
+"Memory clock cycle (aclken_input), for SRAM AXI port 1"
+],
+[
+542,
+"sram1_rd_stall_limit",
+"Read stalls due to max outstanding transactions limit, for SRAM AXI port 1"
+],
+[
+543,
+"sram1_wr_stall_limit",
+"Write stalls due to max outstanding transactions limit, for SRAM AXI port 1"
+],
+[
+544,
+"sram2_rd_trans_accepted",
+"Read transfer (arready & arvalid) for SRAM AXI port 2"
+],
+[
+545,
+"sram2_rd_trans_completed",
+"Read complete (rready & rvalid & rlast) for SRAM AXI port 2"
+],
+[
+546,
+"sram2_rd_data_beat_received",
+"Read bandwidth (rready & rvalid) for SRAM AXI port 2"
+],
+[
+547,
+"sram2_rd_tran_req_stalled",
+"Read stalls (arvalid & ~arready) for SRAM AXI port 2"
+],
+[
+548,
+"sram2_wr_trans_accepted",
+"Write transfers (awready & awvalid) for SRAM AXI port 2"
+],
+[
+551,
+"sram2_wr_data_beat_written",
+"Write bandwidth (wvalid & wready) for SRAM AXI port 2"
+],
+[
+552,
+"sram2_wr_tran_req_stalled",
+"write transfer stalled by memory (awvalid & ~awready) for SRAM AXI port 2"
+],
+[
+553,
+"sram2_wr_data_beat_stalled",
+"Write beat stalled by memory (wvalid & ~wready) for SRAM AXI port 2"
+],
+[
+556,
+"sram2_enabled_cycles",
+"Memory clock cycle (aclken_input), for SRAM AXI port 2"
+],
+[
+558,
+"sram2_rd_stall_limit",
+"Read stalls due to max outstanding transactions limit, for SRAM AXI port 2"
+],
+[
+559,
+"sram2_wr_stall_limit",
+"Write stalls due to max outstanding transactions limit, for SRAM AXI port 2"
+],
+[
+560,
+"sram3_rd_trans_accepted",
+"Read transfer (arready & arvalid) for SRAM AXI port 3"
+],
+[
+561,
+"sram3_rd_trans_completed",
+"Read complete (rready & rvalid & rlast) for SRAM AXI port 3"
+],
+[
+562,
+"sram3_rd_data_beat_received",
+"Read bandwidth (rready & rvalid) for SRAM AXI port 3"
+],
+[
+563,
+"sram3_rd_tran_req_stalled",
+"Read stalls (arvalid & ~arready) for SRAM AXI port 3"
+],
+[
+564,
+"sram3_wr_trans_accepted",
+"Write transfers (awready & awvalid) for SRAM AXI port 3"
+],
+[
+567,
+"sram3_wr_data_beat_written",
+"Write bandwidth (wvalid & wready) for SRAM AXI port 3"
+],
+[
+568,
+"sram3_wr_tran_req_stalled",
+"write transfer stalled by memory (awvalid & ~awready) for SRAM AXI port 3"
+],
+[
+569,
+"sram3_wr_data_beat_stalled",
+"Write beat stalled by memory (wvalid & ~wready) for SRAM AXI port 3"
+],
+[
+572,
+"sram3_enabled_cycles",
+"Memory clock cycle (aclken_input), for SRAM AXI port 3"
+],
+[
+574,
+"sram3_rd_stall_limit",
+"Read stalls due to max outstanding transactions limit, for SRAM AXI port 3"
+],
+[
+575,
+"sram3_wr_stall_limit",
+"Write stalls due to max outstanding transactions limit, for SRAM AXI port 3"
+],
+[
+640,
+"ext0_rd_trans_accepted",
+"Read transfer (arready & arvalid) for EXT AXI port 0"
+],
+[
+641,
+"ext0_rd_trans_completed",
+"Read complete (rready & rvalid & rlast) for EXT AXI port 0"
+],
+[
+642,
+"ext0_rd_data_beat_received",
+"Read bandwidth (rready & rvalid) for EXT AXI port 0"
+],
+[
+643,
+"ext0_rd_tran_req_stalled",
+"Read stalls (arvalid & ~arready) for EXT AXI port 0"
+],
+[
+644,
+"ext0_wr_trans_accepted",
+"Write transfers (awready & awvalid) for EXT AXI port 0"
+],
+[
+647,
+"ext0_wr_data_beat_written",
+"Write bandwidth (wvalid & wready) for EXT AXI port 0"
+],
+[
+648,
+"ext0_wr_tran_req_stalled",
+"write transfer stalled by memory (awvalid & ~awready) for EXT AXI port 0"
+],
+[
+649,
+"ext0_wr_data_beat_stalled",
+"Write beat stalled by memory (wvalid & ~wready) for EXT AXI port 0"
+],
+[
+652,
+"ext0_enabled_cycles",
+"Memory clock cycle (aclken_input), for EXT AXI port 0"
+],
+[
+654,
+"ext0_rd_stall_limit",
+"Read stalls due to max outstanding transactions limit, for EXT AXI port 0"
+],
+[
+655,
+"ext0_wr_stall_limit",
+"Write stalls due to max outstanding transactions limit, for EXT AXI port 0"
+],
+[
+656,
+"ext1_rd_trans_accepted",
+"Read transfer (arready & arvalid) for EXT AXI port 1"
+],
+[
+657,
+"ext1_rd_trans_completed",
+"Read complete (rready & rvalid & rlast) for EXT AXI port 1"
+],
+[
+658,
+"ext1_rd_data_beat_received",
+"Read bandwidth (rready & rvalid) for EXT AXI port 1"
+],
+[
+659,
+"ext1_rd_tran_req_stalled",
+"Read stalls (arvalid & ~arready) for EXT AXI port 1"
+],
+[
+660,
+"ext1_wr_trans_accepted",
+"Write transfers (awready & awvalid) for EXT AXI port 1"
+],
+[
+663,
+"ext1_wr_data_beat_written",
+"Write bandwidth (wvalid & wready) for EXT AXI port 1"
+],
+[
+664,
+"ext1_wr_tran_req_stalled",
+"write transfer stalled by memory (awvalid & ~awready) for EXT AXI port 1"
+],
+[
+665,
+"ext1_wr_data_beat_stalled",
+"Write beat stalled by memory (wvalid & ~wready) for EXT AXI port 1"
+],
+[
+668,
+"ext1_enabled_cycles",
+"Memory clock cycle (aclken_input), for EXT AXI port 1"
+],
+[
+670,
+"ext1_rd_stall_limit",
+"Read stalls due to max outstanding transactions limit, for EXT AXI port 1"
+],
+[
+671,
+"ext1_wr_stall_limit",
+"Write stalls due to max outstanding transactions limit, for EXT AXI port 1"
+]
+]

@@ -1,0 +1,460 @@
+ready
+
+############################################################
+### kws_micronet_m
+############################################################
+=== workload: kws_micronet_m ===
+
+== PREFLIGHT ==
+  device absent before USB_ON                    PASS
+  mounts referencing card                        PASS
+  root-inclusive UART/block holders              PASS  0
+  app UART (ttyUSB1) holders before capture      PASS  0
+  runner protocol PING / counters                NOT_APPLICABLE  MLEK stock runner implements no such protocol; board-level gates used instead
+
+== SOURCE ARTIFACT (anchored) ==
+  source boot.bin                                OK  9dc61053ad9f4dd7
+  source bram.bin                                OK  6cd617ca77639a57
+  source ddr.bin                                 OK  7c71b5517e2fdfa7
+  source images.txt                              OK  af688281435a73dd
+
+== READ-ONLY BACKUP ==
+  destination set discovered                     OK  {'boot.bin': '/SOFTWARE/boot.bin', 'bram.bin': '/SOFTWARE/bram.bin', 'ddr.bin': '/SOFTWARE
+  backup boot.bin                                OK  DID_NOT_EXIST
+  backup bram.bin                                OK  DID_NOT_EXIST
+  backup ddr.bin                                 OK  81d37a219a6b4141
+  backup images.txt                              OK  cb78a12efd33fa72
+
+== DEPLOY (anchored rnnoise artifact only) ==
+
+== READ-BACK VERIFY ==
+  device absent after USB_OFF                    PASS
+  source==declared==destination boot.bin         MATCH  9dc61053ad9f4dd7
+  source==declared==destination bram.bin         MATCH  6cd617ca77639a57
+  source==declared==destination ddr.bin          MATCH  7c71b5517e2fdfa7
+  source==declared==destination images.txt       MATCH  af688281435a73dd
+
+== FRESH BOOT (listener opened first) ==
+  app UART listener open before reset            OK  ttyUSB1
+  capture owns expected tty                      PASS  pid 1864235 in ['1864235']
+  no unexpected UART holder                      PASS  ['1864235']
+  capture-before-reset guard                     ENFORCED  capture_started_at < reboot_issued_at
+  DDR self-test                                  PASS
+  CPUWAIT cleared                                PASS
+
+== ONE INFERENCE ==
+  marker observed within window                  PASS  2351 bytes captured
+  completion marker                              PASS
+  no fatal/NPU error                             PASS
+
+== PMU MEASUREMENT-PATH QUALIFICATION ==
+  PMU profile block parsed                       PASS
+  board-emitted event set                        OK  ACTIVE,EXT_RD_DATA_BEAT_RECEIVED,EXT_WR_DATA_BEAT_WRITTEN,IDLE,SRAM_RD_DATA_BEAT_RECEIVED,
+  event family                                   OK  U85_SRAM_EXT_FAMILY
+  NPU TOTAL present and nonzero                  PASS  97273
+  TOTAL == ACTIVE + IDLE                         PASS  97273 == 91336 + 5937
+  auxiliary zero counters (not an error)         INFO  none
+  STATIC evidence                                PASS
+  LIVE evidence                                  PASS
+  event family is U85_SRAM_EXT_FAMILY            PASS  U85_SRAM_EXT_FAMILY
+  BOARD_MEASUREMENT_PATH                         QUALIFIED
+
+== RESTORE ==
+  restored boot.bin                              MATCH
+  restored bram.bin                              MATCH
+  restored ddr.bin                               MATCH
+  restored images.txt                            MATCH
+
+== POSTFLIGHT ==
+  postflight DDR                                 PASS
+  postflight CPUWAIT                             PASS
+  postflight USB_OFF after reboot                ENFORCED
+  postflight /dev/sdb absent                     PASS
+  postflight mounts                              PASS
+  postflight UART holders                        PASS  0
+
+evidence -> /tmp/probe_out/kws_micronet_m/evidence.json
+### kws_micronet_m done (exit 0)
+
+############################################################
+### ad_medium_int8
+############################################################
+=== workload: ad_medium_int8 ===
+
+== PREFLIGHT ==
+  device absent before USB_ON                    PASS
+  mounts referencing card                        PASS
+  root-inclusive UART/block holders              PASS  0
+  app UART (ttyUSB1) holders before capture      PASS  0
+  runner protocol PING / counters                NOT_APPLICABLE  MLEK stock runner implements no such protocol; board-level gates used instead
+
+== SOURCE ARTIFACT (anchored) ==
+  source boot.bin                                OK  9dc61053ad9f4dd7
+  source bram.bin                                OK  4195d90c5fdc220f
+  source ddr.bin                                 OK  cce505414191a997
+  source images.txt                              OK  af688281435a73dd
+
+== READ-ONLY BACKUP ==
+  destination set discovered                     OK  {'boot.bin': '/SOFTWARE/boot.bin', 'bram.bin': '/SOFTWARE/bram.bin', 'ddr.bin': '/SOFTWARE
+  backup boot.bin                                OK  DID_NOT_EXIST
+  backup bram.bin                                OK  DID_NOT_EXIST
+  backup ddr.bin                                 OK  81d37a219a6b4141
+  backup images.txt                              OK  cb78a12efd33fa72
+
+== DEPLOY (anchored rnnoise artifact only) ==
+
+== READ-BACK VERIFY ==
+  device absent after USB_OFF                    PASS
+  source==declared==destination boot.bin         MATCH  9dc61053ad9f4dd7
+  source==declared==destination bram.bin         MATCH  4195d90c5fdc220f
+  source==declared==destination ddr.bin          MATCH  cce505414191a997
+  source==declared==destination images.txt       MATCH  af688281435a73dd
+
+== FRESH BOOT (listener opened first) ==
+  app UART listener open before reset            OK  ttyUSB1
+  capture owns expected tty                      PASS  pid 1864406 in ['1864406']
+  no unexpected UART holder                      PASS  ['1864406']
+  capture-before-reset guard                     ENFORCED  capture_started_at < reboot_issued_at
+  DDR self-test                                  PASS
+  CPUWAIT cleared                                PASS
+
+== ONE INFERENCE ==
+  marker observed within window                  PASS  2354 bytes captured
+  completion marker                              PASS
+  no fatal/NPU error                             PASS
+
+== PMU MEASUREMENT-PATH QUALIFICATION ==
+  PMU profile block parsed                       PASS
+  board-emitted event set                        OK  ACTIVE,EXT_RD_DATA_BEAT_RECEIVED,EXT_WR_DATA_BEAT_WRITTEN,IDLE,SRAM_RD_DATA_BEAT_RECEIVED,
+  event family                                   OK  U85_SRAM_EXT_FAMILY
+  NPU TOTAL present and nonzero                  PASS  152528
+  TOTAL == ACTIVE + IDLE                         PASS  152528 == 146587 + 5941
+  auxiliary zero counters (not an error)         INFO  none
+  STATIC evidence                                PASS
+  LIVE evidence                                  PASS
+  event family is U85_SRAM_EXT_FAMILY            PASS  U85_SRAM_EXT_FAMILY
+  BOARD_MEASUREMENT_PATH                         QUALIFIED
+
+== RESTORE ==
+  restored boot.bin                              MATCH
+  restored bram.bin                              MATCH
+  restored ddr.bin                               MATCH
+  restored images.txt                            MATCH
+
+== POSTFLIGHT ==
+  postflight DDR                                 PASS
+  postflight CPUWAIT                             PASS
+  postflight USB_OFF after reboot                ENFORCED
+  postflight /dev/sdb absent                     PASS
+  postflight mounts                              PASS
+  postflight UART holders                        PASS  0
+
+evidence -> /tmp/probe_out/ad_medium_int8/evidence.json
+### ad_medium_int8 done (exit 0)
+
+############################################################
+### vww4_128_128_INT8
+############################################################
+=== workload: vww4_128_128_INT8 ===
+
+== PREFLIGHT ==
+  device absent before USB_ON                    PASS
+  mounts referencing card                        PASS
+  root-inclusive UART/block holders              PASS  0
+  app UART (ttyUSB1) holders before capture      PASS  0
+  runner protocol PING / counters                NOT_APPLICABLE  MLEK stock runner implements no such protocol; board-level gates used instead
+
+== SOURCE ARTIFACT (anchored) ==
+  source boot.bin                                OK  9dc61053ad9f4dd7
+  source bram.bin                                OK  5cf53eafde53bdf3
+  source ddr.bin                                 OK  6f0e7e1dff211f7f
+  source images.txt                              OK  af688281435a73dd
+
+== READ-ONLY BACKUP ==
+  destination set discovered                     OK  {'boot.bin': '/SOFTWARE/boot.bin', 'bram.bin': '/SOFTWARE/bram.bin', 'ddr.bin': '/SOFTWARE
+  backup boot.bin                                OK  DID_NOT_EXIST
+  backup bram.bin                                OK  DID_NOT_EXIST
+  backup ddr.bin                                 OK  81d37a219a6b4141
+  backup images.txt                              OK  cb78a12efd33fa72
+
+== DEPLOY (anchored rnnoise artifact only) ==
+
+== READ-BACK VERIFY ==
+  device absent after USB_OFF                    PASS
+  source==declared==destination boot.bin         MATCH  9dc61053ad9f4dd7
+  source==declared==destination bram.bin         MATCH  5cf53eafde53bdf3
+  source==declared==destination ddr.bin          MATCH  6f0e7e1dff211f7f
+  source==declared==destination images.txt       MATCH  af688281435a73dd
+
+== FRESH BOOT (listener opened first) ==
+  app UART listener open before reset            OK  ttyUSB1
+  capture owns expected tty                      PASS  pid 1864575 in ['1864575']
+  no unexpected UART holder                      PASS  ['1864575']
+  capture-before-reset guard                     ENFORCED  capture_started_at < reboot_issued_at
+  DDR self-test                                  PASS
+  CPUWAIT cleared                                PASS
+
+== ONE INFERENCE ==
+  marker observed within window                  PASS  2356 bytes captured
+  completion marker                              PASS
+  no fatal/NPU error                             PASS
+
+== PMU MEASUREMENT-PATH QUALIFICATION ==
+  PMU profile block parsed                       PASS
+  board-emitted event set                        OK  ACTIVE,EXT_RD_DATA_BEAT_RECEIVED,EXT_WR_DATA_BEAT_WRITTEN,IDLE,SRAM_RD_DATA_BEAT_RECEIVED,
+  event family                                   OK  U85_SRAM_EXT_FAMILY
+  NPU TOTAL present and nonzero                  PASS  242265
+  TOTAL == ACTIVE + IDLE                         PASS  242265 == 236320 + 5945
+  auxiliary zero counters (not an error)         INFO  none
+  STATIC evidence                                PASS
+  LIVE evidence                                  PASS
+  event family is U85_SRAM_EXT_FAMILY            PASS  U85_SRAM_EXT_FAMILY
+  BOARD_MEASUREMENT_PATH                         QUALIFIED
+
+== RESTORE ==
+  restored boot.bin                              MATCH
+  restored bram.bin                              MATCH
+  restored ddr.bin                               MATCH
+  restored images.txt                            MATCH
+
+== POSTFLIGHT ==
+  postflight DDR                                 PASS
+  postflight CPUWAIT                             PASS
+  postflight USB_OFF after reboot                ENFORCED
+  postflight /dev/sdb absent                     PASS
+  postflight mounts                              PASS
+  postflight UART holders                        PASS  0
+
+evidence -> /tmp/probe_out/vww4_128_128_INT8/evidence.json
+### vww4_128_128_INT8 done (exit 0)
+
+############################################################
+### yolo-fastest_192_face_v4
+############################################################
+=== workload: yolo-fastest_192_face_v4 ===
+
+== PREFLIGHT ==
+  device absent before USB_ON                    PASS
+  mounts referencing card                        PASS
+  root-inclusive UART/block holders              PASS  0
+  app UART (ttyUSB1) holders before capture      PASS  0
+  runner protocol PING / counters                NOT_APPLICABLE  MLEK stock runner implements no such protocol; board-level gates used instead
+
+== SOURCE ARTIFACT (anchored) ==
+  source boot.bin                                OK  9dc61053ad9f4dd7
+  source bram.bin                                OK  b3c5854a513f6cbf
+  source ddr.bin                                 OK  a50ad9d2178091c1
+  source images.txt                              OK  af688281435a73dd
+
+== READ-ONLY BACKUP ==
+  destination set discovered                     OK  {'boot.bin': '/SOFTWARE/boot.bin', 'bram.bin': '/SOFTWARE/bram.bin', 'ddr.bin': '/SOFTWARE
+  backup boot.bin                                OK  DID_NOT_EXIST
+  backup bram.bin                                OK  DID_NOT_EXIST
+  backup ddr.bin                                 OK  81d37a219a6b4141
+  backup images.txt                              OK  cb78a12efd33fa72
+
+== DEPLOY (anchored rnnoise artifact only) ==
+
+== READ-BACK VERIFY ==
+  device absent after USB_OFF                    PASS
+  source==declared==destination boot.bin         MATCH  9dc61053ad9f4dd7
+  source==declared==destination bram.bin         MATCH  b3c5854a513f6cbf
+  source==declared==destination ddr.bin          MATCH  a50ad9d2178091c1
+  source==declared==destination images.txt       MATCH  af688281435a73dd
+
+== FRESH BOOT (listener opened first) ==
+  app UART listener open before reset            OK  ttyUSB1
+  capture owns expected tty                      PASS  pid 1864739 in ['1864739']
+  no unexpected UART holder                      PASS  ['1864739']
+  capture-before-reset guard                     ENFORCED  capture_started_at < reboot_issued_at
+  DDR self-test                                  PASS
+  CPUWAIT cleared                                PASS
+
+== ONE INFERENCE ==
+  marker observed within window                  PASS  2593 bytes captured
+  completion marker                              PASS
+  no fatal/NPU error                             PASS
+
+== PMU MEASUREMENT-PATH QUALIFICATION ==
+  PMU profile block parsed                       PASS
+  board-emitted event set                        OK  ACTIVE,EXT_RD_DATA_BEAT_RECEIVED,EXT_WR_DATA_BEAT_WRITTEN,IDLE,SRAM_RD_DATA_BEAT_RECEIVED,
+  event family                                   OK  U85_SRAM_EXT_FAMILY
+  NPU TOTAL present and nonzero                  PASS  454619
+  TOTAL == ACTIVE + IDLE                         PASS  454619 == 448625 + 5994
+  auxiliary zero counters (not an error)         INFO  none
+  STATIC evidence                                PASS
+  LIVE evidence                                  PASS
+  event family is U85_SRAM_EXT_FAMILY            PASS  U85_SRAM_EXT_FAMILY
+  BOARD_MEASUREMENT_PATH                         QUALIFIED
+
+== RESTORE ==
+  restored boot.bin                              MATCH
+  restored bram.bin                              MATCH
+  restored ddr.bin                               MATCH
+  restored images.txt                            MATCH
+
+== POSTFLIGHT ==
+  postflight DDR                                 PASS
+  postflight CPUWAIT                             PASS
+  postflight USB_OFF after reboot                ENFORCED
+  postflight /dev/sdb absent                     PASS
+  postflight mounts                              PASS
+  postflight UART holders                        PASS  0
+
+evidence -> /tmp/probe_out/yolo-fastest_192_face_v4/evidence.json
+### yolo-fastest_192_face_v4 done (exit 0)
+
+############################################################
+### mobilenet_v2_1.0_224_INT8
+############################################################
+=== workload: mobilenet_v2_1.0_224_INT8 ===
+
+== PREFLIGHT ==
+  device absent before USB_ON                    PASS
+  mounts referencing card                        PASS
+  root-inclusive UART/block holders              PASS  0
+  app UART (ttyUSB1) holders before capture      PASS  0
+  runner protocol PING / counters                NOT_APPLICABLE  MLEK stock runner implements no such protocol; board-level gates used instead
+
+== SOURCE ARTIFACT (anchored) ==
+  source boot.bin                                OK  9dc61053ad9f4dd7
+  source bram.bin                                OK  b914e8c0bc5c6b16
+  source ddr.bin                                 OK  a2b4f397443c86d6
+  source images.txt                              OK  af688281435a73dd
+
+== READ-ONLY BACKUP ==
+  destination set discovered                     OK  {'boot.bin': '/SOFTWARE/boot.bin', 'bram.bin': '/SOFTWARE/bram.bin', 'ddr.bin': '/SOFTWARE
+  backup boot.bin                                OK  DID_NOT_EXIST
+  backup bram.bin                                OK  DID_NOT_EXIST
+  backup ddr.bin                                 OK  81d37a219a6b4141
+  backup images.txt                              OK  cb78a12efd33fa72
+
+== DEPLOY (anchored rnnoise artifact only) ==
+
+== READ-BACK VERIFY ==
+  device absent after USB_OFF                    PASS
+  source==declared==destination boot.bin         MATCH  9dc61053ad9f4dd7
+  source==declared==destination bram.bin         MATCH  b914e8c0bc5c6b16
+  source==declared==destination ddr.bin          MATCH  a2b4f397443c86d6
+  source==declared==destination images.txt       MATCH  af688281435a73dd
+
+== FRESH BOOT (listener opened first) ==
+  app UART listener open before reset            OK  ttyUSB1
+  capture owns expected tty                      PASS  pid 1864907 in ['1864907']
+  no unexpected UART holder                      PASS  ['1864907']
+  capture-before-reset guard                     ENFORCED  capture_started_at < reboot_issued_at
+  DDR self-test                                  PASS
+  CPUWAIT cleared                                PASS
+
+== ONE INFERENCE ==
+  marker observed within window                  PASS  2370 bytes captured
+  completion marker                              PASS
+  no fatal/NPU error                             PASS
+
+== PMU MEASUREMENT-PATH QUALIFICATION ==
+  PMU profile block parsed                       PASS
+  board-emitted event set                        OK  ACTIVE,EXT_RD_DATA_BEAT_RECEIVED,EXT_WR_DATA_BEAT_WRITTEN,IDLE,SRAM_RD_DATA_BEAT_RECEIVED,
+  event family                                   OK  U85_SRAM_EXT_FAMILY
+  NPU TOTAL present and nonzero                  PASS  1456543
+  TOTAL == ACTIVE + IDLE                         PASS  1456543 == 1450608 + 5935
+  auxiliary zero counters (not an error)         INFO  none
+  STATIC evidence                                PASS
+  LIVE evidence                                  PASS
+  event family is U85_SRAM_EXT_FAMILY            PASS  U85_SRAM_EXT_FAMILY
+  BOARD_MEASUREMENT_PATH                         QUALIFIED
+
+== RESTORE ==
+  restored boot.bin                              MATCH
+  restored bram.bin                              MATCH
+  restored ddr.bin                               MATCH
+  restored images.txt                            MATCH
+
+== POSTFLIGHT ==
+  postflight DDR                                 PASS
+  postflight CPUWAIT                             PASS
+  postflight USB_OFF after reboot                ENFORCED
+  postflight /dev/sdb absent                     PASS
+  postflight mounts                              PASS
+  postflight UART holders                        PASS  0
+
+evidence -> /tmp/probe_out/mobilenet_v2_1.0_224_INT8/evidence.json
+### mobilenet_v2_1.0_224_INT8 done (exit 0)
+
+############################################################
+### wav2letter_pruned_int8
+############################################################
+=== workload: wav2letter_pruned_int8 ===
+
+== PREFLIGHT ==
+  device absent before USB_ON                    PASS
+  mounts referencing card                        PASS
+  root-inclusive UART/block holders              PASS  0
+  app UART (ttyUSB1) holders before capture      PASS  0
+  runner protocol PING / counters                NOT_APPLICABLE  MLEK stock runner implements no such protocol; board-level gates used instead
+
+== SOURCE ARTIFACT (anchored) ==
+  source boot.bin                                OK  9dc61053ad9f4dd7
+  source bram.bin                                OK  4e112520087434dd
+  source ddr.bin                                 OK  e57a6546fbb30c67
+  source images.txt                              OK  af688281435a73dd
+
+== READ-ONLY BACKUP ==
+  destination set discovered                     OK  {'boot.bin': '/SOFTWARE/boot.bin', 'bram.bin': '/SOFTWARE/bram.bin', 'ddr.bin': '/SOFTWARE
+  backup boot.bin                                OK  DID_NOT_EXIST
+  backup bram.bin                                OK  DID_NOT_EXIST
+  backup ddr.bin                                 OK  81d37a219a6b4141
+  backup images.txt                              OK  cb78a12efd33fa72
+
+== DEPLOY (anchored rnnoise artifact only) ==
+
+== READ-BACK VERIFY ==
+  device absent after USB_OFF                    PASS
+  source==declared==destination boot.bin         MATCH  9dc61053ad9f4dd7
+  source==declared==destination bram.bin         MATCH  4e112520087434dd
+  source==declared==destination ddr.bin          MATCH  e57a6546fbb30c67
+  source==declared==destination images.txt       MATCH  af688281435a73dd
+
+== FRESH BOOT (listener opened first) ==
+  app UART listener open before reset            OK  ttyUSB1
+  capture owns expected tty                      PASS  pid 1865069 in ['1865069']
+  no unexpected UART holder                      PASS  ['1865069']
+  capture-before-reset guard                     ENFORCED  capture_started_at < reboot_issued_at
+  DDR self-test                                  PASS
+  CPUWAIT cleared                                PASS
+
+== ONE INFERENCE ==
+  marker observed within window                  PASS  2385 bytes captured
+  completion marker                              PASS
+  no fatal/NPU error                             PASS
+
+== PMU MEASUREMENT-PATH QUALIFICATION ==
+  PMU profile block parsed                       PASS
+  board-emitted event set                        OK  ACTIVE,EXT_RD_DATA_BEAT_RECEIVED,EXT_WR_DATA_BEAT_WRITTEN,IDLE,SRAM_RD_DATA_BEAT_RECEIVED,
+  event family                                   OK  U85_SRAM_EXT_FAMILY
+  NPU TOTAL present and nonzero                  PASS  4141085
+  TOTAL == ACTIVE + IDLE                         PASS  4141085 == 4135110 + 5975
+  auxiliary zero counters (not an error)         INFO  none
+  STATIC evidence                                PASS
+  LIVE evidence                                  PASS
+  event family is U85_SRAM_EXT_FAMILY            PASS  U85_SRAM_EXT_FAMILY
+  BOARD_MEASUREMENT_PATH                         QUALIFIED
+
+== RESTORE ==
+  restored boot.bin                              MATCH
+  restored bram.bin                              MATCH
+  restored ddr.bin                               MATCH
+  restored images.txt                            MATCH
+
+== POSTFLIGHT ==
+  postflight DDR                                 PASS
+  postflight CPUWAIT                             PASS
+  postflight USB_OFF after reboot                ENFORCED
+  postflight /dev/sdb absent                     PASS
+  postflight mounts                              PASS
+  postflight UART holders                        PASS  0
+
+evidence -> /tmp/probe_out/wav2letter_pruned_int8/evidence.json
+### wav2letter_pruned_int8 done (exit 0)
+SIX_WORKLOAD_QUALIFICATION_COMPLETE
+
+[exited with code 0]

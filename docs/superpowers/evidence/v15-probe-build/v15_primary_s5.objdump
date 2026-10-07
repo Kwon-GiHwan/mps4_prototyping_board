@@ -1,0 +1,41 @@
+310024c0 <v15_primary_s5>:
+310024c0:	468c      	mov	ip, r1
+310024c2:	2001      	movs	r0, #1
+310024c4:	4919      	ldr	r1, [pc, #100]	@ (3100252c <v15_primary_s5+0x6c>)
+310024c6:	f242 7310 	movw	r3, #10000	@ 0x2710
+310024ca:	684a      	ldr	r2, [r1, #4]
+310024cc:	f012 0f20 	tst.w	r2, #32
+310024d0:	d118      	bne.n	31002504 <v15_primary_s5+0x44>
+310024d2:	3001      	adds	r0, #1
+310024d4:	3b01      	subs	r3, #1
+310024d6:	d1f8      	bne.n	310024ca <v15_primary_s5+0xa>
+310024d8:	f04f 33ff 	mov.w	r3, #4294967295	@ 0xffffffff
+310024dc:	f8cc 3010 	str.w	r3, [ip, #16]
+310024e0:	2100      	movs	r1, #0
+310024e2:	f8cc 1004 	str.w	r1, [ip, #4]
+310024e6:	f8cc 3008 	str.w	r3, [ip, #8]
+310024ea:	f8cc 200c 	str.w	r2, [ip, #12]
+310024ee:	f012 0f08 	tst.w	r2, #8
+310024f2:	d117      	bne.n	31002524 <v15_primary_s5+0x64>
+310024f4:	f412 7f45 	tst.w	r2, #788	@ 0x314
+310024f8:	bf14      	ite	ne
+310024fa:	2304      	movne	r3, #4
+310024fc:	2302      	moveq	r3, #2
+310024fe:	f8cc 3000 	str.w	r3, [ip]
+31002502:	4770      	bx	lr
+31002504:	4b0a      	ldr	r3, [pc, #40]	@ (31002530 <v15_primary_s5+0x70>)
+31002506:	685b      	ldr	r3, [r3, #4]
+31002508:	f8cc 3010 	str.w	r3, [ip, #16]
+3100250c:	2301      	movs	r3, #1
+3100250e:	f8cc 3000 	str.w	r3, [ip]
+31002512:	f8cc 0004 	str.w	r0, [ip, #4]
+31002516:	f04f 33ff 	mov.w	r3, #4294967295	@ 0xffffffff
+3100251a:	f8cc 3008 	str.w	r3, [ip, #8]
+3100251e:	f8cc 200c 	str.w	r2, [ip, #12]
+31002522:	4770      	bx	lr
+31002524:	2303      	movs	r3, #3
+31002526:	f8cc 3000 	str.w	r3, [ip]
+3100252a:	4770      	bx	lr
+3100252c:	50004000 	.word	0x50004000
+31002530:	e0001000 	.word	0xe0001000
+

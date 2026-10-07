@@ -1,0 +1,50 @@
+{
+ "rnnoise_INT8__SSE-320__ethos-u85-256": {
+  "npu_total_cycles": 36086,
+  "npu_active_cycles": 35206,
+  "sram_rd_beats": 143,
+  "sram_wr_beats": 135,
+  "ext_rd_beats": 7650,
+  "ext_wr_beats": 36
+ },
+ "kws_micronet_m__SSE-320__ethos-u85-256": {
+  "npu_total_cycles": 199068,
+  "npu_active_cycles": 198564,
+  "sram_rd_beats": 41813,
+  "sram_wr_beats": 23431,
+  "ext_rd_beats": 10025,
+  "ext_wr_beats": 1
+ },
+ "wav2letter_pruned_int8__SSE-320__ethos-u85-256": {
+  "npu_total_cycles": 15147068,
+  "npu_active_cycles": 15146719,
+  "sram_rd_beats": 2709668,
+  "sram_wr_beats": 926420,
+  "ext_rd_beats": 1694536,
+  "ext_wr_beats": 37545
+ },
+ "rnnoise_INT8__SSE-320__ethos-u85-512": {
+  "npu_total_cycles": 55086,
+  "npu_active_cycles": 54330,
+  "sram_rd_beats": 143,
+  "sram_wr_beats": 135,
+  "ext_rd_beats": 7683,
+  "ext_wr_beats": 36
+ },
+ "kws_micronet_m__SSE-320__ethos-u85-512": {
+  "npu_total_cycles": 114068,
+  "npu_active_cycles": 113986,
+  "sram_rd_beats": 22294,
+  "sram_wr_beats": 17505,
+  "ext_rd_beats": 15790,
+  "ext_wr_beats": 1
+ },
+ "wav2letter_pruned_int8__SSE-320__ethos-u85-512": {
+  "npu_total_cycles": 7654068,
+  "npu_active_cycles": 7653598,
+  "sram_rd_beats": 908493,
+  "sram_wr_beats": 40950,
+  "ext_rd_beats": 1837913,
+  "ext_wr_beats": 19045
+ }
+}

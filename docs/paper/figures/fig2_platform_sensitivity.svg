@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="496" viewBox="0 0 900 496"><rect width="900" height="496" fill="#ffffff"/>
+<text x="40.0" y="26.0" font-family="Helvetica,Arial,sans-serif" font-size="14" font-weight="bold" text-anchor="start" fill="#1a1a1a">Which structural metrics survived a change of Corstone platform</text>
+<text x="40.0" y="45.0" font-family="Helvetica,Arial,sans-serif" font-size="10.5" font-weight="normal" text-anchor="start" fill="#6b6b6b">Same NPU, same MAC configuration, byte-identical Vela artifact; only the host platform changes.</text>
+<text x="40.0" y="62.0" font-family="Helvetica,Arial,sans-serif" font-size="10.5" font-weight="normal" text-anchor="start" fill="#6b6b6b">CLASS A holds timing-adapter state constant (SSE-310 ↔ SSE-315). CLASS B does not. The classes are never pooled.</text>
+<text x="232.0" y="94.0" font-family="Helvetica,Arial,sans-serif" font-size="10.5" font-weight="bold" text-anchor="start" fill="#1a1a1a">CLASS A  (TA state constant)</text>
+<text x="550.0" y="94.0" font-family="Helvetica,Arial,sans-serif" font-size="10.5" font-weight="bold" text-anchor="start" fill="#1a1a1a">CLASS B  (TA state differs)</text>
+<text x="220.0" y="123.0" font-family="Helvetica,Arial,sans-serif" font-size="10.5" font-weight="normal" text-anchor="end" fill="#1a1a1a">workload ranking</text>
+<rect x="232.0" y="108.0" width="200.0" height="17.0" fill="#009e73" opacity="0.85"/>
+<text x="442.0" y="121.0" font-family="Helvetica,Arial,sans-serif" font-size="10" font-weight="normal" text-anchor="start" fill="#6b6b6b">2/2</text>
+<text x="232.0" y="139.0" font-family="Helvetica,Arial,sans-serif" font-size="9" font-weight="normal" text-anchor="start" fill="#6b6b6b">robust in tested pairs</text>
+<rect x="550.0" y="108.0" width="200.0" height="17.0" fill="#009e73" opacity="0.85"/>
+<text x="760.0" y="121.0" font-family="Helvetica,Arial,sans-serif" font-size="10" font-weight="normal" text-anchor="start" fill="#6b6b6b">8/8</text>
+<text x="550.0" y="139.0" font-family="Helvetica,Arial,sans-serif" font-size="9" font-weight="normal" text-anchor="start" fill="#6b6b6b">robust in tested pairs</text>
+<text x="220.0" y="167.0" font-family="Helvetica,Arial,sans-serif" font-size="10.5" font-weight="normal" text-anchor="end" fill="#1a1a1a">MAC-step direction</text>
+<rect x="232.0" y="152.0" width="200.0" height="17.0" fill="#009e73" opacity="0.85"/>
+<text x="442.0" y="165.0" font-family="Helvetica,Arial,sans-serif" font-size="10" font-weight="normal" text-anchor="start" fill="#6b6b6b">7/7</text>
+<text x="232.0" y="183.0" font-family="Helvetica,Arial,sans-serif" font-size="9" font-weight="normal" text-anchor="start" fill="#6b6b6b">robust in tested pairs</text>
+<rect x="550.0" y="152.0" width="200.0" height="17.0" fill="#009e73" opacity="0.85"/>
+<text x="760.0" y="165.0" font-family="Helvetica,Arial,sans-serif" font-size="10" font-weight="normal" text-anchor="start" fill="#6b6b6b">32/32</text>
+<text x="550.0" y="183.0" font-family="Helvetica,Arial,sans-serif" font-size="9" font-weight="normal" text-anchor="start" fill="#6b6b6b">robust in tested pairs</text>
+<text x="220.0" y="211.0" font-family="Helvetica,Arial,sans-serif" font-size="10.5" font-weight="normal" text-anchor="end" fill="#1a1a1a">saturation verdict</text>
+<rect x="232.0" y="196.0" width="200.0" height="17.0" fill="#009e73" opacity="0.85"/>
+<text x="442.0" y="209.0" font-family="Helvetica,Arial,sans-serif" font-size="10" font-weight="normal" text-anchor="start" fill="#6b6b6b">7/7</text>
+<text x="232.0" y="227.0" font-family="Helvetica,Arial,sans-serif" font-size="9" font-weight="normal" text-anchor="start" fill="#6b6b6b">robust in tested pairs</text>
+<rect x="550.0" y="196.0" width="200.0" height="17.0" fill="#009e73" opacity="0.85"/>
+<text x="760.0" y="209.0" font-family="Helvetica,Arial,sans-serif" font-size="10" font-weight="normal" text-anchor="start" fill="#6b6b6b">20/20</text>
+<text x="550.0" y="227.0" font-family="Helvetica,Arial,sans-serif" font-size="9" font-weight="normal" text-anchor="start" fill="#6b6b6b">robust in tested pairs</text>
+<text x="220.0" y="255.0" font-family="Helvetica,Arial,sans-serif" font-size="10.5" font-weight="normal" text-anchor="end" fill="#1a1a1a">normalized workload ordering</text>
+<rect x="232.0" y="240.0" width="200.0" height="17.0" fill="#009e73" opacity="0.85"/>
+<text x="442.0" y="253.0" font-family="Helvetica,Arial,sans-serif" font-size="10" font-weight="normal" text-anchor="start" fill="#6b6b6b">2/2</text>
+<text x="232.0" y="271.0" font-family="Helvetica,Arial,sans-serif" font-size="9" font-weight="normal" text-anchor="start" fill="#6b6b6b">robust in tested pairs</text>
+<rect x="550.0" y="240.0" width="200.0" height="17.0" fill="#009e73" opacity="0.85"/>
+<text x="760.0" y="253.0" font-family="Helvetica,Arial,sans-serif" font-size="10" font-weight="normal" text-anchor="start" fill="#6b6b6b">8/8</text>
+<text x="550.0" y="271.0" font-family="Helvetica,Arial,sans-serif" font-size="9" font-weight="normal" text-anchor="start" fill="#6b6b6b">robust in tested pairs</text>
+<text x="220.0" y="299.0" font-family="Helvetica,Arial,sans-serif" font-size="10.5" font-weight="normal" text-anchor="end" fill="#1a1a1a">threshold scaling class</text>
+<rect x="232.0" y="284.0" width="200.0" height="17.0" fill="#009e73" opacity="0.85"/>
+<text x="442.0" y="297.0" font-family="Helvetica,Arial,sans-serif" font-size="10" font-weight="normal" text-anchor="start" fill="#6b6b6b">7/7</text>
+<text x="232.0" y="315.0" font-family="Helvetica,Arial,sans-serif" font-size="9" font-weight="normal" text-anchor="start" fill="#6b6b6b">ta state sensitive</text>
+<rect x="550.0" y="284.0" width="150.0" height="17.0" fill="#009e73" opacity="0.85"/>
+<rect x="700.0" y="284.0" width="50.0" height="17.0" fill="#d55e00" opacity="0.9"/>
+<text x="760.0" y="297.0" font-family="Helvetica,Arial,sans-serif" font-size="10" font-weight="normal" text-anchor="start" fill="#6b6b6b">24/32</text>
+<text x="550.0" y="315.0" font-family="Helvetica,Arial,sans-serif" font-size="9" font-weight="normal" text-anchor="start" fill="#6b6b6b">ta state sensitive</text>
+<rect x="220.0" y="338.0" width="13.0" height="11.0" fill="#009e73" opacity="0.88"/>
+<text x="238.0" y="348.0" font-family="Helvetica,Arial,sans-serif" font-size="10" font-weight="normal" text-anchor="start" fill="#1a1a1a">agreed across the platform pair</text>
+<rect x="470.0" y="338.0" width="13.0" height="11.0" fill="#d55e00" opacity="0.88"/>
+<text x="488.0" y="348.0" font-family="Helvetica,Arial,sans-serif" font-size="10" font-weight="normal" text-anchor="start" fill="#1a1a1a">disagreed</text>
+<text x="40.0" y="374.0" font-family="Helvetica,Arial,sans-serif" font-size="10" font-weight="normal" text-anchor="start" fill="#6b6b6b">The only disagreements are eight threshold scaling-class labels, all in CLASS B, every one PARTIAL on the TA_ON side and STRONG on the TA_OFF side —</text>
+<text x="40.0" y="390.0" font-family="Helvetica,Arial,sans-serif" font-size="10" font-weight="normal" text-anchor="start" fill="#6b6b6b">crossings of the frozen 0.75 cut point. No ranking, direction or saturation verdict changed anywhere.</text>
+<text x="40.0" y="412.0" font-family="Helvetica,Arial,sans-serif" font-size="10" font-weight="normal" text-anchor="start" fill="#6b6b6b">In CLASS B the timing-adapter state, the subsystem and the Fast Models implementation change together: the disagreements are ASSOCIATED_WITH those</text>
+<text x="40.0" y="428.0" font-family="Helvetica,Arial,sans-serif" font-size="10" font-weight="normal" text-anchor="start" fill="#6b6b6b">comparisons, never attributed to one factor.</text>
+</svg>

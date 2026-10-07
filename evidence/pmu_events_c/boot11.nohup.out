@@ -1,0 +1,88 @@
+mcc boot log: 10366 bytes -> /home/gihwan/evsweep/evidence_c_runs/boot11/mcc_boot.log
+Image loaded from \SOFTWARE\VECTORS.BIN
+Image loaded from \SOFTWARE\APP.BIN
+Image loaded from \SOFTWARE\DDR.BIN
+DDR memory test at 0x70000000: PASSED
+Clearing SCC CPUWAIT (0xFFFFFFFF80000000:0x00000000)
+set  1 rep 1 rc=1 valid=False ['rc_zero', 'required_flags_ok', 'golden_ok']
+set  1 rep 2 rc=1 valid=False ['rc_zero', 'required_flags_ok', 'golden_ok']
+set  1 rep 3 rc=1 valid=False ['rc_zero', 'required_flags_ok', 'golden_ok']
+set  2 rep 1 rc=1 valid=False ['rc_zero', 'required_flags_ok', 'golden_ok']
+set  2 rep 2 rc=1 valid=False ['rc_zero', 'required_flags_ok', 'golden_ok']
+set  2 rep 3 rc=1 valid=False ['rc_zero', 'required_flags_ok', 'golden_ok']
+set  3 rep 1 rc=1 valid=False ['rc_zero', 'required_flags_ok', 'golden_ok']
+set  3 rep 2 rc=1 valid=False ['rc_zero', 'required_flags_ok', 'golden_ok']
+set  3 rep 3 rc=1 valid=False ['rc_zero', 'required_flags_ok', 'golden_ok']
+set  4 rep 1 rc=1 valid=False ['rc_zero', 'required_flags_ok', 'golden_ok']
+set  4 rep 2 rc=1 valid=False ['rc_zero', 'required_flags_ok', 'golden_ok']
+set  4 rep 3 rc=1 valid=False ['rc_zero', 'required_flags_ok', 'golden_ok']
+set  5 rep 1 rc=1 valid=False ['rc_zero', 'required_flags_ok', 'golden_ok']
+set  5 rep 2 rc=1 valid=False ['rc_zero', 'required_flags_ok', 'golden_ok']
+set  5 rep 3 rc=1 valid=False ['rc_zero', 'required_flags_ok', 'golden_ok']
+set  6 rep 1 rc=1 valid=False ['rc_zero', 'required_flags_ok', 'golden_ok']
+set  6 rep 2 rc=1 valid=False ['rc_zero', 'required_flags_ok', 'golden_ok']
+set  6 rep 3 rc=1 valid=False ['rc_zero', 'required_flags_ok', 'golden_ok']
+set  7 rep 1 rc=1 valid=False ['rc_zero', 'required_flags_ok', 'golden_ok']
+set  7 rep 2 rc=1 valid=False ['rc_zero', 'required_flags_ok', 'golden_ok']
+set  7 rep 3 rc=1 valid=False ['rc_zero', 'required_flags_ok', 'golden_ok']
+set  8 rep 1 rc=1 valid=False ['rc_zero', 'required_flags_ok', 'golden_ok']
+set  8 rep 2 rc=1 valid=False ['rc_zero', 'required_flags_ok', 'golden_ok']
+set  8 rep 3 rc=1 valid=False ['rc_zero', 'required_flags_ok', 'golden_ok']
+set  9 rep 1 rc=1 valid=False ['rc_zero', 'required_flags_ok', 'golden_ok']
+set  9 rep 2 rc=1 valid=False ['rc_zero', 'required_flags_ok', 'golden_ok']
+set  9 rep 3 rc=1 valid=False ['rc_zero', 'required_flags_ok', 'golden_ok']
+set 10 rep 1 rc=1 valid=False ['rc_zero', 'required_flags_ok', 'golden_ok']
+set 10 rep 2 rc=1 valid=False ['rc_zero', 'required_flags_ok', 'golden_ok']
+set 10 rep 3 rc=1 valid=False ['rc_zero', 'required_flags_ok', 'golden_ok']
+set 11 rep 1 rc=1 valid=False ['rc_zero', 'required_flags_ok', 'golden_ok']
+set 11 rep 2 rc=1 valid=False ['rc_zero', 'required_flags_ok', 'golden_ok']
+set 11 rep 3 rc=1 valid=False ['rc_zero', 'required_flags_ok', 'golden_ok']
+set 12 rep 1 rc=1 valid=False ['rc_zero', 'required_flags_ok', 'golden_ok']
+set 12 rep 2 rc=1 valid=False ['rc_zero', 'required_flags_ok', 'golden_ok']
+set 12 rep 3 rc=1 valid=False ['rc_zero', 'required_flags_ok', 'golden_ok']
+set 13 rep 1 rc=1 valid=False ['rc_zero', 'required_flags_ok', 'golden_ok']
+set 13 rep 2 rc=1 valid=False ['rc_zero', 'required_flags_ok', 'golden_ok']
+set 13 rep 3 rc=1 valid=False ['rc_zero', 'required_flags_ok', 'golden_ok']
+set 14 rep 1 rc=1 valid=False ['rc_zero', 'required_flags_ok', 'golden_ok']
+set 14 rep 2 rc=1 valid=False ['rc_zero', 'required_flags_ok', 'golden_ok']
+set 14 rep 3 rc=1 valid=False ['rc_zero', 'required_flags_ok', 'golden_ok']
+set 15 rep 1 rc=1 valid=False ['rc_zero', 'required_flags_ok', 'golden_ok']
+set 15 rep 2 rc=1 valid=False ['rc_zero', 'required_flags_ok', 'golden_ok']
+set 15 rep 3 rc=1 valid=False ['rc_zero', 'required_flags_ok', 'golden_ok']
+set 16 rep 1 rc=1 valid=False ['rc_zero', 'required_flags_ok', 'golden_ok']
+set 16 rep 2 rc=1 valid=False ['rc_zero', 'required_flags_ok', 'golden_ok']
+set 16 rep 3 rc=1 valid=False ['rc_zero', 'required_flags_ok', 'golden_ok']
+set 17 rep 1 rc=1 valid=False ['rc_zero', 'required_flags_ok', 'golden_ok']
+set 17 rep 2 rc=1 valid=False ['rc_zero', 'required_flags_ok', 'golden_ok']
+set 17 rep 3 rc=1 valid=False ['rc_zero', 'required_flags_ok', 'golden_ok']
+set 18 rep 1 rc=1 valid=False ['rc_zero', 'required_flags_ok', 'golden_ok']
+set 18 rep 2 rc=1 valid=False ['rc_zero', 'required_flags_ok', 'golden_ok']
+set 18 rep 3 rc=1 valid=False ['rc_zero', 'required_flags_ok', 'golden_ok']
+set 19 rep 1 rc=1 valid=False ['rc_zero', 'required_flags_ok', 'golden_ok']
+set 19 rep 2 rc=1 valid=False ['rc_zero', 'required_flags_ok', 'golden_ok']
+set 19 rep 3 rc=1 valid=False ['rc_zero', 'required_flags_ok', 'golden_ok']
+set 20 rep 1 rc=1 valid=False ['rc_zero', 'required_flags_ok', 'golden_ok']
+set 20 rep 2 rc=1 valid=False ['rc_zero', 'required_flags_ok', 'golden_ok']
+set 20 rep 3 rc=1 valid=False ['rc_zero', 'required_flags_ok', 'golden_ok']
+set 21 rep 1 rc=1 valid=False ['rc_zero', 'required_flags_ok', 'golden_ok']
+set 21 rep 2 rc=1 valid=False ['rc_zero', 'required_flags_ok', 'golden_ok']
+set 21 rep 3 rc=1 valid=False ['rc_zero', 'required_flags_ok', 'golden_ok']
+set 22 rep 1 rc=1 valid=False ['rc_zero', 'required_flags_ok', 'golden_ok']
+set 22 rep 2 rc=1 valid=False ['rc_zero', 'required_flags_ok', 'golden_ok']
+set 22 rep 3 rc=1 valid=False ['rc_zero', 'required_flags_ok', 'golden_ok']
+{
+ "runs": 66,
+ "coverage": "COMPLETE",
+ "consistency": {
+  "CYCLE_EVENT_VS_PMCCNTR": "UNPROVEN",
+  "NPU_ACTIVE_LE_CYCLE": "UNPROVEN"
+ },
+ "verdict_counts": {
+  "COUNTED_NONZERO": 0,
+  "COUNTED_ZERO": 0,
+  "INCONSISTENT": 0,
+  "NOT_OBSERVED": 171
+ },
+ "refusal": null
+}
+--- campaign exit=0

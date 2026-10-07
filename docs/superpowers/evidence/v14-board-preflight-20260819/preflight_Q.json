@@ -1,0 +1,71 @@
+{
+  "storage": {
+    "mount_count": 0,
+    "block_device_write_holders": 0,
+    "uart_holders": {
+      "ttyUSB0": {
+        "holders": 0,
+        "root_inclusive": true
+      },
+      "ttyUSB1": {
+        "holders": 0,
+        "root_inclusive": true
+      },
+      "ttyUSB2": {
+        "holders": 0,
+        "root_inclusive": true
+      },
+      "ttyUSB3": {
+        "holders": 0,
+        "root_inclusive": true
+      }
+    },
+    "usb_off_confirmed": true,
+    "block_device_present": false
+  },
+  "baseline": {
+    "ddr_selftest_passed": true,
+    "cpuwait_cleared": true,
+    "pings": [
+      {
+        "answered": true,
+        "state": 1
+      },
+      {
+        "answered": true,
+        "state": 1
+      },
+      {
+        "answered": true,
+        "state": 1
+      }
+    ],
+    "protocol_errors": {
+      "rx_overrun": 0,
+      "bad_magic": 0,
+      "bad_version": 0,
+      "bad_crc": 0,
+      "length_error": 0,
+      "sequence_error": 0,
+      "parser_resync": 0
+    }
+  },
+  "candidate": {
+    "candidate_digests": {
+      "APP.BIN": "f745eebd1f1ddcb7a2015f7dab21d2bf4ceb270cf43c7f932aa8419770e7b25d",
+      "VECTORS.BIN": "6864a22bf98b0172ee7ace58aead9c6d85ebd3afec64ddae0771bbe2474d0d91",
+      "DDR.BIN": "81d37a219a6b4141d0b433796711ab8af2ee2c3c668a28143a3ffe6a574ade98"
+    },
+    "qualified_digests": {
+      "APP.BIN": "f745eebd1f1ddcb7a2015f7dab21d2bf4ceb270cf43c7f932aa8419770e7b25d",
+      "VECTORS.BIN": "6864a22bf98b0172ee7ace58aead9c6d85ebd3afec64ddae0771bbe2474d0d91",
+      "DDR.BIN": "81d37a219a6b4141d0b433796711ab8af2ee2c3c668a28143a3ffe6a574ade98"
+    },
+    "candidate_variant": "Q",
+    "manifest_variant": "Q",
+    "manifest_verified": true,
+    "real_elf_pass": true,
+    "read_order_equivalent": true,
+    "common_tail_shared": true
+  }
+}

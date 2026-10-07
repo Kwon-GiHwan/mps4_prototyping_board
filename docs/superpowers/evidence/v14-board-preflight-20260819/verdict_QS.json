@@ -1,0 +1,115 @@
+{
+  "authorized": true,
+  "mandatory_unproven": [],
+  "stages": {
+    "BASELINE": [
+      {
+        "detail": "DDR self-test PASSED",
+        "gate": "DDR_SELFTEST",
+        "layer": "inherited",
+        "threshold": "DDR self-test PASSED == True",
+        "verdict": "PASS"
+      },
+      {
+        "detail": "CPUWAIT cleared",
+        "gate": "CPUWAIT",
+        "layer": "inherited",
+        "threshold": "CPUWAIT cleared == True",
+        "verdict": "PASS"
+      },
+      {
+        "detail": "3/3 PINGs answered from IDLE",
+        "gate": "PING_LIVENESS",
+        "layer": "inherited",
+        "threshold": "3/3 answered with state == IDLE",
+        "verdict": "PASS"
+      },
+      {
+        "detail": "all seven protocol error counters zero",
+        "gate": "PROTOCOL_ERRORS",
+        "layer": "inherited",
+        "threshold": "all seven counters == 0",
+        "verdict": "PASS"
+      }
+    ],
+    "CANDIDATE": [
+      {
+        "detail": "every deployed artifact matches the qualified digest",
+        "gate": "CANDIDATE_IDENTITY",
+        "layer": "v14",
+        "threshold": "every deployed artifact digest equals the qualified digest",
+        "verdict": "PASS"
+      },
+      {
+        "detail": "candidate and manifest agree on QS",
+        "gate": "VARIANT_IDENTITY",
+        "layer": "v14",
+        "threshold": "candidate variant == manifest variant, in Q/QS/SQ",
+        "verdict": "PASS"
+      },
+      {
+        "detail": "manifest replayed and verified",
+        "gate": "MANIFEST_REPLAY",
+        "layer": "v14",
+        "threshold": "manifest replay == PASS",
+        "verdict": "PASS"
+      },
+      {
+        "detail": "REAL_ELF, read-order and common-tail evidence present",
+        "gate": "STATIC_GATE_EVIDENCE",
+        "layer": "v14",
+        "threshold": "all three present and true",
+        "verdict": "PASS"
+      }
+    ],
+    "STORAGE": [
+      {
+        "detail": "mount_count is 0",
+        "gate": "MOUNT_COUNT",
+        "layer": "inherited",
+        "threshold": "mount_count == 0",
+        "verdict": "PASS"
+      },
+      {
+        "detail": "block_device_write_holders is 0",
+        "gate": "BLOCK_WRITE_HOLDERS",
+        "layer": "inherited",
+        "threshold": "block_device_write_holders == 0",
+        "verdict": "PASS"
+      },
+      {
+        "detail": "all four FTDI ports free, root-inclusive",
+        "gate": "UART_OWNERSHIP",
+        "layer": "inherited",
+        "threshold": "root-inclusive holders == 0 on ttyUSB0..3",
+        "verdict": "PASS"
+      },
+      {
+        "detail": "USB_OFF confirmed and /dev/sdb absent",
+        "gate": "USB_OFF",
+        "layer": "inherited",
+        "threshold": "USB_OFF confirmed and /dev/sdb absent",
+        "verdict": "PASS"
+      }
+    ]
+  },
+  "state": "DEPLOYMENT_AUTHORIZED",
+  "transitions": [
+    {
+      "from": "INITIAL",
+      "reason": "STORAGE stage passed",
+      "to": "STORAGE_SAFE"
+    },
+    {
+      "from": "STORAGE_SAFE",
+      "reason": "BASELINE stage passed",
+      "to": "BASELINE_LIVE"
+    },
+    {
+      "from": "BASELINE_LIVE",
+      "reason": "CANDIDATE stage passed",
+      "to": "DEPLOYMENT_AUTHORIZED"
+    }
+  ]
+}
+PREBOARD_GATE GO

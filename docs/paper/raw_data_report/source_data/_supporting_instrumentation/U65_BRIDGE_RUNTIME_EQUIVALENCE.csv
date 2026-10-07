@@ -1,0 +1,4 @@
+cell,arm_pairs,records,output_crc,segment_count,segment_order,cycle_per_segment,active_per_segment,tail_total,sum_ccnt,sum_active,axi_beats_per_segment,axi_beats_sum,runs
+kws_micronet_m,A vs B,13 vs 13,IDENTICAL (== C0),EXACT,EXACT,EXACT 13/13,EXACT 13/13,1040 == 1040,218355 == 218355,218295 == 218295,"9/13 rows differ, |d|<=8",rd0/wr0 equal; axi1_rd +5,3/3 exact-equal each arm
+rnnoise_INT8,A vs B,22 vs 22,IDENTICAL (== C0),EXACT,EXACT,EXACT 22/22,EXACT 22/22,3040 == 3040,60598 == 60598,60511 == 60511,"13/22 rows differ, |d|<=8",axi0_rd +7; wr equal; axi1_rd -4,3/3 exact-equal each arm
+kws C0' container control (no IRQ),C0' vs C0,n/a,IDENTICAL,n/a,n/a,n/a,n/a,TOTAL 220068 == 220068,n/a,ACTIVE +1 / IDLE -1,n/a,all four beat totals IDENTICAL,1 (diagnostic)

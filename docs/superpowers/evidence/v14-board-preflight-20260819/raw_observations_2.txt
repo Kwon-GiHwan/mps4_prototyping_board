@@ -1,0 +1,17 @@
+# raw observations, second attempt (after USB_OFF and REBOOT)
+
+## storage / ownership (root-inclusive via operator-supplied sudo; credential not recorded)
+$ ls /dev/sdb*
+/dev/sdb
+/dev/sdb1
+$ findmnt -rn | grep -i sdb
+(none)
+
+## MCC USB_OFF reply
+USB_OFF
+Disabling debug USB...
+Cmd>
+
+## MCC REBOOT (do_reboot.py)
+DDR self-test PASSED: True
+CPUWAIT cleared    : True

@@ -1,0 +1,377 @@
+{
+ "probe": "rnnoise_INT8_board_integration_qualification",
+ "attempt": 2,
+ "attempt_1": {
+  "deployment_boot_restore": "PASS",
+  "measurement_observation": "NOT_OBSERVED",
+  "reason": "CAPTURE_STARTED_AFTER_APPLICATION_COMPLETION",
+  "preserved": true
+ },
+ "BOARD_QUALIFICATION_RUNS": 1,
+ "FORMAL_BOARD_SAMPLES": 0,
+ "steps": [
+  {
+   "step": "device absent before USB_ON",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "step": "mounts referencing card",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "step": "root-inclusive UART/block holders",
+   "status": "PASS",
+   "detail": 0
+  },
+  {
+   "step": "app UART (ttyUSB1) holders before capture",
+   "status": "PASS",
+   "detail": 0
+  },
+  {
+   "step": "runner protocol PING / counters",
+   "status": "NOT_APPLICABLE",
+   "detail": "MLEK stock runner implements no such protocol; board-level gates used instead"
+  },
+  {
+   "step": "source boot.bin",
+   "status": "OK",
+   "detail": "9dc61053ad9f4dd7"
+  },
+  {
+   "step": "source bram.bin",
+   "status": "OK",
+   "detail": "eb851d082bdb2628"
+  },
+  {
+   "step": "source ddr.bin",
+   "status": "OK",
+   "detail": "b8a49739dadbb686"
+  },
+  {
+   "step": "source images.txt",
+   "status": "OK",
+   "detail": "af688281435a73dd"
+  },
+  {
+   "step": "destination set discovered",
+   "status": "OK",
+   "detail": {
+    "boot.bin": "/SOFTWARE/boot.bin",
+    "bram.bin": "/SOFTWARE/bram.bin",
+    "ddr.bin": "/SOFTWARE/ddr.bin",
+    "images.txt": "/MB/HBI0376B/FI101/images.txt"
+   }
+  },
+  {
+   "step": "backup boot.bin",
+   "status": "OK",
+   "detail": "DID_NOT_EXIST"
+  },
+  {
+   "step": "backup bram.bin",
+   "status": "OK",
+   "detail": "DID_NOT_EXIST"
+  },
+  {
+   "step": "backup ddr.bin",
+   "status": "OK",
+   "detail": "81d37a219a6b4141"
+  },
+  {
+   "step": "backup images.txt",
+   "status": "OK",
+   "detail": "cb78a12efd33fa72"
+  },
+  {
+   "step": "device absent after USB_OFF",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "step": "source==declared==destination boot.bin",
+   "status": "MATCH",
+   "detail": "9dc61053ad9f4dd7"
+  },
+  {
+   "step": "source==declared==destination bram.bin",
+   "status": "MATCH",
+   "detail": "eb851d082bdb2628"
+  },
+  {
+   "step": "source==declared==destination ddr.bin",
+   "status": "MATCH",
+   "detail": "b8a49739dadbb686"
+  },
+  {
+   "step": "source==declared==destination images.txt",
+   "status": "MATCH",
+   "detail": "af688281435a73dd"
+  },
+  {
+   "step": "app UART listener open before reset",
+   "status": "OK",
+   "detail": "ttyUSB1"
+  },
+  {
+   "step": "capture owns expected tty",
+   "status": "PASS",
+   "detail": "pid 1862860 in ['1862860']"
+  },
+  {
+   "step": "no unexpected UART holder",
+   "status": "PASS",
+   "detail": [
+    "1862860"
+   ]
+  },
+  {
+   "step": "capture-before-reset guard",
+   "status": "ENFORCED",
+   "detail": "capture_started_at < reboot_issued_at"
+  },
+  {
+   "step": "DDR self-test",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "step": "CPUWAIT cleared",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "step": "marker observed within window",
+   "status": "PASS",
+   "detail": "3546 bytes captured"
+  },
+  {
+   "step": "completion marker",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "step": "no fatal/NPU error",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "step": "PMU profile block parsed",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "step": "board-emitted event set",
+   "status": "OK",
+   "detail": "ACTIVE,EXT_RD_DATA_BEAT_RECEIVED,EXT_WR_DATA_BEAT_WRITTEN,IDLE,SRAM_RD_DATA_BEAT_RECEIVED,SRAM_WR_DATA_BEAT_WRITTEN,TOTAL"
+  },
+  {
+   "step": "event family",
+   "status": "OK",
+   "detail": "U85_SRAM_EXT_FAMILY"
+  },
+  {
+   "step": "NPU TOTAL present and nonzero",
+   "status": "PASS",
+   "detail": 56460
+  },
+  {
+   "step": "TOTAL == ACTIVE + IDLE",
+   "status": "PASS",
+   "detail": "56460 == 50381 + 6079"
+  },
+  {
+   "step": "auxiliary zero counters (not an error)",
+   "status": "INFO",
+   "detail": "none"
+  },
+  {
+   "step": "STATIC evidence",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "step": "LIVE evidence",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "step": "event family is U85_SRAM_EXT_FAMILY",
+   "status": "PASS",
+   "detail": "U85_SRAM_EXT_FAMILY"
+  },
+  {
+   "step": "BOARD_MEASUREMENT_PATH",
+   "status": "QUALIFIED",
+   "detail": null
+  },
+  {
+   "step": "restored boot.bin",
+   "status": "MATCH",
+   "detail": null
+  },
+  {
+   "step": "restored bram.bin",
+   "status": "MATCH",
+   "detail": null
+  },
+  {
+   "step": "restored ddr.bin",
+   "status": "MATCH",
+   "detail": null
+  },
+  {
+   "step": "restored images.txt",
+   "status": "MATCH",
+   "detail": null
+  },
+  {
+   "step": "postflight DDR",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "step": "postflight CPUWAIT",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "step": "postflight /dev/sdb absent",
+   "status": "FAIL",
+   "detail": null
+  },
+  {
+   "step": "postflight mounts",
+   "status": "PASS",
+   "detail": null
+  },
+  {
+   "step": "postflight UART holders",
+   "status": "PASS",
+   "detail": 0
+  }
+ ],
+ "backup": {
+  "boot.bin": {
+   "existed": false,
+   "card_path": "/SOFTWARE/boot.bin"
+  },
+  "bram.bin": {
+   "existed": false,
+   "card_path": "/SOFTWARE/bram.bin"
+  },
+  "ddr.bin": {
+   "existed": true,
+   "sha256": "81d37a219a6b4141d0b433796711ab8af2ee2c3c668a28143a3ffe6a574ade98",
+   "card_path": "/SOFTWARE/ddr.bin"
+  },
+  "images.txt": {
+   "existed": true,
+   "sha256": "cb78a12efd33fa72555b94ee4b8ca6faef4d9504c971c52c6cb47c75096673de",
+   "card_path": "/MB/HBI0376B/FI101/images.txt"
+  }
+ },
+ "deploy": {
+  "source": {
+   "boot.bin": "9dc61053ad9f4dd799c0bb4c5031caaa5224b97d074398927ff2ab83b925837f",
+   "bram.bin": "eb851d082bdb2628bd9e0b01fd42f056e48e28fdfc5e0f6b5d1057298d5421c4",
+   "ddr.bin": "b8a49739dadbb68679b8197e5e266579a9af05808970bf0fec9464f95e9d5521",
+   "images.txt": "af688281435a73dda3b2247845149817ecc7a9bbdff5a3ccd2e4dfa52875423f"
+  },
+  "written": {
+   "boot.bin": "9dc61053ad9f4dd799c0bb4c5031caaa5224b97d074398927ff2ab83b925837f",
+   "bram.bin": "eb851d082bdb2628bd9e0b01fd42f056e48e28fdfc5e0f6b5d1057298d5421c4",
+   "ddr.bin": "b8a49739dadbb68679b8197e5e266579a9af05808970bf0fec9464f95e9d5521",
+   "images.txt": "af688281435a73dda3b2247845149817ecc7a9bbdff5a3ccd2e4dfa52875423f"
+  },
+  "readback": {
+   "boot.bin": "9dc61053ad9f4dd799c0bb4c5031caaa5224b97d074398927ff2ab83b925837f",
+   "bram.bin": "eb851d082bdb2628bd9e0b01fd42f056e48e28fdfc5e0f6b5d1057298d5421c4",
+   "ddr.bin": "b8a49739dadbb68679b8197e5e266579a9af05808970bf0fec9464f95e9d5521",
+   "images.txt": "af688281435a73dda3b2247845149817ecc7a9bbdff5a3ccd2e4dfa52875423f"
+  },
+  "all_match": true
+ },
+ "boot": {
+  "ddr_passed": true,
+  "cpuwait_cleared": true,
+  "log_tail": "4096000KB\r\n\r\nQSPI Init: PASSED\r\nReading images file \\MB\\HBI0376B\\FI101\\images.txt\r\n\r\nImage 0 LAR address 0x0200_11000000 offset of 0x0000_00000000 added\r\nWriting SRAM BIN file \\SOFTWARE\\boot.bin to Address 0x0200_11000000\r\nWriting segment 0 to LAR address 0x0200_11000000\r\nFile \\SOFTWARE\\boot.bin written to memory address 0x0200_11000000\r\nImage loaded from \\SOFTWARE\\boot.bin\r\n\r\nImage 1 LAR address 0x0100_12000000 offset of 0x0000_00000000 added\r\nWriting SRAM BIN file \\SOFTWARE\\bram.bin to Address 0x0100_12000000\r\nWriting segment 0 to LAR address 0x0100_12000000\r\n.........................\r\nFile \\SOFTWARE\\bram.bin written to memory address 0x0100_12000000\r\nImage loaded from \\SOFTWARE\\bram.bin\r\n\r\nImage 2 LAR address 0x0100_70000000 offset of 0x0000_00000000 added\r\nWriting SRAM BIN file \\SOFTWARE\\ddr.bin to Address 0x0100_70000000\r\nWriting segment 0 to LAR address 0x0100_70000000\r\n.....................................................................................\r\nFile \\SOFTWARE\\ddr.bin written to memory address 0x0100_70000000\r\nImage loaded from \\SOFTWARE\\ddr.bin\r\n\r\nSetting QSPI to XIP (QSPI) mode...\r\nBoard REV B or later - init ADV7513\r\nDDR (8GB-SR or 16GB-DR) SPD EEPROM detected...\r\nDDR memory test at 0x70000000: PASSED\r\n\r\nUART0: MCC, UART1: FPGA0\r\nReleasing CB_nRST\r\nClearing SCC CPUWAIT (0xFFFFFFFF80000000:0x00000000)\r\nUSB Serial Number = 500546259002\r\n\r\nCmd> \r\n\r\nCmd> \r\n\r\nCmd> \r\n\r\nCmd> \r\n\r\nCmd> \r\n\r\nCmd> \r\n\r\nCmd> \r\n\r\nCmd> \r\n\r\nCmd> \r\n\r\nCmd> \r\n\r\nCmd> \r\n\r\nCmd> \r\n\r\nCmd> \r\n\r\nCmd> "
+ },
+ "app_uart": "INFO - WARN - MPS4_SCC->CFG_ACLK reads 0. Assuming default clock of 32000000\r\nProcessor internal clock: 32000000Hz\r\nINFO - V2M-MPS4 revision A\r\nINFO - Application Note AN101, Revision A\r\nINFO - MPS4 build 1\r\nINFO - MPS4 core clock has been set to: 32000000Hz\r\nINFO - CPU ID: 0x411fd231\r\nINFO - CPU: Cortex-M85 r1p1\r\nINFO - Enabling I-cache.\r\nINFO - Enabling D-cache.\r\nINFO - Relocating vector table to 0x10000000\r\nINFO - Configured TA_SRAM\t@0x51102000\r\nINFO - Configured TA_EXT\t@0x51102400\r\nINFO - Initialising Ethos-U device@0x50004000\r\nINFO - Using Dedicated_Sram memory mode; fast cache size: 393216\r\nINFO - Ethos-U device initialised\r\nINFO - Ethos-U version info:\r\nINFO - \tArch:       v2.0.0\r\nINFO - \tDriver:     v1.0.0\r\nINFO - \tMACs/cc:    1024\r\nINFO - \tCmd stream: v1\r\nINFO - HDLCD resolution id: 4\r\nINFO - Target system design: Arm Corstone-320\r\nINFO - Device MPS4 HDLCD configured\r\nINFO - Resolution:    320 x 240\r\nINFO - Colour format: ARGB8888\r\nINFO - ARM ML Embedded Evaluation Kit\r\nINFO - Version 26.03.0 Build date: Apr 21 2026 @ 09:25:19\r\nINFO - Compiler: GNU-15.2.1\r\nINFO - Copyright 2021-2026 Arm Limited and/or its affiliates <open-source-office@arm.com>\r\nINFO - Creating allocator using tensor arena at 0x0x7001edd0\r\nINFO - Allocating tensors\r\nINFO - Model INPUT tensors: \r\nINFO - \ttensor type is int8\r\nINFO - \ttensor occupies 42 bytes with dimensions\r\nINFO - \t\t0:   1\r\nINFO - \t\t1:   1\r\nINFO - \t\t2:  42\r\nINFO - Scale = 0.221501\r\nINFO - ZeroPoint = 14\r\nINFO - \ttensor type is int8\r\nINFO - \ttensor occupies 24 bytes with dimensions\r\nINFO - \t\t0:   1\r\nINFO - \t\t1:  24\r\nINFO - Scale = 0.007843\r\nINFO - ZeroPoint = -1\r\nINFO - \ttensor type is int8\r\nINFO - \ttensor occupies 48 bytes with dimensions\r\nINFO - \t\t0:   1\r\nINFO - \t\t1:  48\r\nINFO - Scale = 0.047942\r\nINFO - ZeroPoint = -128\r\nINFO - \ttensor type is int8\r\nINFO - \ttensor occupies 96 bytes with dimensions\r\nINFO - \t\t0:   1\r\nINFO - \t\t1:  96\r\nINFO - Scale = 0.007843\r\nINFO - ZeroPoint = -1\r\nINFO - Model OUTPUT tensors: \r\nINFO - \ttensor type is int8\r\nINFO - \ttensor occupies 96 bytes with dimensions\r\nINFO - \t\t0:   1\r\nINFO - \t\t1:   1\r\nINFO - \t\t2:  96\r\nINFO - Scale = 0.007843\r\nINFO - ZeroPoint = -1\r\nINFO - \ttensor type is int8\r\nINFO - \ttensor occupies 22 bytes with dimensions\r\nINFO - \t\t0:   1\r\nINFO - \t\t1:   1\r\nINFO - \t\t2:  22\r\nINFO - Scale = 0.003906\r\nINFO - ZeroPoint = -128\r\nINFO - \ttensor type is int8\r\nINFO - \ttensor occupies 48 bytes with dimensions\r\nINFO - \t\t0:   1\r\nINFO - \t\t1:   1\r\nINFO - \t\t2:  48\r\nINFO - Scale = 0.047942\r\nINFO - ZeroPoint = -128\r\nINFO - \ttensor type is int8\r\nINFO - \ttensor occupies 24 bytes with dimensions\r\nINFO - \t\t0:   1\r\nINFO - \t\t1:   1\r\nINFO - \t\t2:  24\r\nINFO - Scale = 0.007843\r\nINFO - ZeroPoint = -1\r\nINFO - \ttensor type is int8\r\nINFO - \ttensor occupies 1 bytes with dimensions\r\nINFO - \t\t0:   1\r\nINFO - \t\t1:   1\r\nINFO - \t\t2:   1\r\nINFO - Scale = 0.003906\r\nINFO - ZeroPoint = -128\r\nINFO - Activation buffer (a.k.a tensor arena) size used: 1748\r\nINFO - Number of operators: 1\r\nINFO - \tOperator 0: ethos-u\r\nINFO - NPU memory mode likely to be: Dedicated_Sram\r\nINFO - Final results:\r\nINFO - Total number of inferences: 1\r\nINFO - Profile for Inference:\r\nINFO - NPU ACTIVE: 50381 cycles\r\nINFO - NPU ETHOSU_PMU_SRAM_RD_DATA_BEAT_RECEIVED: 143 beats\r\nINFO - NPU ETHOSU_PMU_SRAM_WR_DATA_BEAT_WRITTEN: 135 beats\r\nINFO - NPU ETHOSU_PMU_EXT_RD_DATA_BEAT_RECEIVED: 7838 beats\r\nINFO - NPU ETHOSU_PMU_EXT_WR_DATA_BEAT_WRITTEN: 36 beats\r\nINFO - NPU IDLE: 6079 cycles\r\nINFO - NPU TOTAL: 56460 cycles\r\nINFO - Inference completed.\r\nINFO - program terminating...\r\n\u0004\u0000",
+ "pmu_qualification": {
+  "marker": true,
+  "fatal": [],
+  "parsed": true,
+  "event_set": [
+   "ACTIVE",
+   "EXT_RD_DATA_BEAT_RECEIVED",
+   "EXT_WR_DATA_BEAT_WRITTEN",
+   "IDLE",
+   "SRAM_RD_DATA_BEAT_RECEIVED",
+   "SRAM_WR_DATA_BEAT_WRITTEN",
+   "TOTAL"
+  ],
+  "values": {
+   "ACTIVE": 50381,
+   "SRAM_RD_DATA_BEAT_RECEIVED": 143,
+   "SRAM_WR_DATA_BEAT_WRITTEN": 135,
+   "EXT_RD_DATA_BEAT_RECEIVED": 7838,
+   "EXT_WR_DATA_BEAT_WRITTEN": 36,
+   "IDLE": 6079,
+   "TOTAL": 56460
+  },
+  "emitted_names": {
+   "ACTIVE": "ACTIVE",
+   "SRAM_RD_DATA_BEAT_RECEIVED": "ETHOSU_PMU_SRAM_RD_DATA_BEAT_RECEIVED",
+   "SRAM_WR_DATA_BEAT_WRITTEN": "ETHOSU_PMU_SRAM_WR_DATA_BEAT_WRITTEN",
+   "EXT_RD_DATA_BEAT_RECEIVED": "ETHOSU_PMU_EXT_RD_DATA_BEAT_RECEIVED",
+   "EXT_WR_DATA_BEAT_WRITTEN": "ETHOSU_PMU_EXT_WR_DATA_BEAT_WRITTEN",
+   "IDLE": "IDLE",
+   "TOTAL": "TOTAL"
+  },
+  "family": "U85_SRAM_EXT_FAMILY",
+  "total": 56460,
+  "total_nonzero": true,
+  "identity_total_eq_active_plus_idle": true,
+  "STATIC": {
+   "chain": "StartProfiling -> hal_pmu_reset -> CYCCNT_Reset + EVCNTR_ALL_Reset -> start snapshot -> exactly one RunInference -> StopProfiling -> end snapshot -> delta",
+   "source": "UseCaseCommonUtils.cc:69-75, Profiler.cc:32-75, ethosu_profiler.c:150-190",
+   "verdict": "PASS"
+  },
+  "LIVE": {
+   "profile_block_parsed": true,
+   "total_nonzero": true,
+   "consistency_relation_valid": true,
+   "event_family": "U85_SRAM_EXT_FAMILY",
+   "verdict": "PASS"
+  },
+  "stale_exclusion_chain": {
+   "fresh_boot": true,
+   "pre_inference_pmu_reset_path": true,
+   "exactly_one_inference": true,
+   "complete_live_profile_block": true,
+   "nonzero_total": true,
+   "consistency_holds": true
+  },
+  "family_is_expected": true,
+  "verdict": "QUALIFIED"
+ },
+ "BOARD_MEASUREMENT_PATH": "QUALIFIED",
+ "restore": {
+  "readback": {
+   "boot.bin": null,
+   "bram.bin": null,
+   "ddr.bin": "81d37a219a6b4141d0b433796711ab8af2ee2c3c668a28143a3ffe6a574ade98",
+   "images.txt": "cb78a12efd33fa72555b94ee4b8ca6faef4d9504c971c52c6cb47c75096673de"
+  },
+  "all_match": true
+ },
+ "postflight": {
+  "ddr": true,
+  "cpuwait": true,
+  "sdb_absent": false,
+  "holders": 0
+ }
+}

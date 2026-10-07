@@ -1,0 +1,67 @@
+--- orig/UseCaseHandler.cc	2026-09-14 04:02:49.037642775 +0000
++++ /opt/arm/ml-embedded-evaluation-kit/source/app/use_case/inference_runner/src/UseCaseHandler.cc	2026-09-14 04:10:20.421071242 +0000
+@@ -97,19 +97,21 @@
+ #endif /* defined (DYNAMIC_OFM_BASE) && defined(DYNAMIC_OFM_SIZE) */
+ 
+ #if VERIFY_TEST_OUTPUT
+-static void DumpInputs(const Model& model, const char* message)
++static void DumpInputs(fwk::iface::Model& model, const char* message)
+ {
+     info("%s\n", message);
+     for (size_t inputIndex = 0; inputIndex < model.GetNumInputs(); inputIndex++) {
+-        arm::app::DumpTensor(model.GetInputTensor(inputIndex));
++        auto t = model.GetInputTensor(inputIndex);
++        arm::app::DumpTensorData(t->GetData<uint8_t>(), t->Bytes(), 16);
+     }
+ }
+ 
+-static void DumpOutputs(const Model& model, const char* message)
++static void DumpOutputs(fwk::iface::Model& model, const char* message)
+ {
+     info("%s\n", message);
+     for (size_t outputIndex = 0; outputIndex < model.GetNumOutputs(); outputIndex++) {
+-        arm::app::DumpTensor(model.GetOutputTensor(outputIndex));
++        auto t = model.GetOutputTensor(outputIndex);
++        arm::app::DumpTensorData(t->GetData<uint8_t>(), t->Bytes(), 16);
+     }
+ }
+ #endif /* VERIFY_TEST_OUTPUT */
+--- orig/UseCaseCommonUtils.hpp	2026-09-14 04:10:20.423071250 +0000
++++ /opt/arm/ml-embedded-evaluation-kit/source/app/main/include/UseCaseCommonUtils.hpp	2026-09-14 04:10:20.424071254 +0000
+@@ -50,15 +50,6 @@
+ #endif /* INTERACTIVE_MODE */
+ 
+ #if VERIFY_TEST_OUTPUT
+-    /**
+-     * @brief       Helper function to dump a tensor to stdout
+-     * @param[in]   tensor  tensor to be dumped
+-     * @param[in]   lineBreakForNumElements     number of elements
+-     *              after which line break will be added.
+-     **/
+-    void DumpTensor(const TfLiteTensor* tensor,
+-                    size_t lineBreakForNumElements = 16);
+-
+ 
+     void DumpTensorData(const uint8_t* tensorData,
+                         size_t size,
+--- orig/UseCaseCommonUtils.cc	2026-09-14 04:10:20.424071254 +0000
++++ /opt/arm/ml-embedded-evaluation-kit/source/app/main/UseCaseCommonUtils.cc	2026-09-14 04:10:20.424071254 +0000
+@@ -103,18 +103,6 @@
+         }
+     }
+ 
+-    void DumpTensor(const TfLiteTensor* tensor, const size_t lineBreakForNumElements)
+-    {
+-        if (!tensor) {
+-            printf_err("invalid tensor\n");
+-            return;
+-        }
+-
+-        const uint32_t tensorSz = tensor->bytes;
+-        const auto* tensorData  = tflite::GetTensorData<uint8_t>(tensor);
+-
+-        DumpTensorData(tensorData, tensorSz, lineBreakForNumElements);
+-    }
+ #endif /* VERIFY_TEST_OUTPUT */
+ } /* namespace app */
+ } /* namespace arm */

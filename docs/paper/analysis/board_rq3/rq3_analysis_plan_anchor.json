@@ -1,0 +1,75 @@
+{
+ "anchor": "paper-board-rq3-analysis-plan-anchor",
+ "created": "2026-08-26",
+ "inputs": {
+  "fvp": {
+   "name": "paper-fvp-formal-evidence-frozen",
+   "digest": "2dd77839432ac22ce21c31063456c18645465bb10d937f2fbd8f28c504b6aaba"
+  },
+  "board": {
+   "name": "paper-board-formal-evidence-frozen",
+   "digest": "abe945700781d79bbd34eeb96cc2997b13c25d1c4a3a0164f4e7e07a3ad8865a"
+  }
+ },
+ "plan_sha256": "4cdd25911e71a18d904a758d2a076b72bf457da0980883774c5d4a6724ebacff",
+ "analyzer_sha256": "d962ce56535cdf5ecd0dd531e92c548d6b34f4a8da408a3a842acd4bf3f10599",
+ "analyzer_test_sha256": "8c5e5866a509e2b3bb223b0811d98abfe77b50c0e75934e65f8a75a416f0539a",
+ "canonical": {
+  "fvp": "M1 after M1==M2==M3, cell SSE-320/ethos-u85/1024",
+  "board": "median(B1,B2,B3), all three valid formal observations",
+  "qualification_runs": "excluded from analysis input on both sides"
+ },
+ "primary": "workload-ranking preservation: Spearman rho + explicit rank inversion pairs, all 7 workloads, no pass/fail threshold",
+ "secondary": "normalized relative cost: total_i / geomean(total_1..7), each domain separately",
+ "not_preregistered": [
+  "L1",
+  "L2",
+  "RMSE",
+  "mean absolute %",
+  "board_norm/fvp_norm",
+  "relative_spread",
+  "CV",
+  "standard deviation",
+  "percent range",
+  "confidence interval",
+  "repeatability PASS/FAIL threshold",
+  "quantitative PMU cross-target metric",
+  "board ACTIVE/IDLE canonicalization"
+ ],
+ "pmu_cross_target": {
+  "SRAM_EXT": "NOT_EVALUABLE",
+  "TOTAL_ACTIVE_IDLE": "present in both frozen sets, but no board canonicalization was preregistered -> QUANTITATIVE COMPARISON NOT_PREREGISTERED",
+  "verdict": "MEASUREMENT PATH QUALIFIED / COMMON RAW FIELDS AVAILABLE / QUANTITATIVE COMPARISON NOT_PREREGISTERED"
+ },
+ "prohibited_enforced_in_code": [
+  "Board_TOTAL - FVP_TOTAL",
+  "Board_TOTAL / FVP_TOTAL",
+  "percent error",
+  "combined FVP+board geomean",
+  "workload subset reduction",
+  "wrong workload pairing",
+  "qualification sample as input",
+  "canonical board cost != median",
+  "SRAM/EXT cross-target comparison"
+ ],
+ "mutation_tests": {
+  "count": 28,
+  "result": "ALL_PASS",
+  "includes": [
+   "qualification sample rejected",
+   "incomplete triplet rejected",
+   "non-median canonical rejected",
+   "wrong FVP cell rejected",
+   "subset rejected",
+   "combined geomean rejected",
+   "absolute difference/ratio/percent rejected",
+   "shape distance rejected",
+   "new repeatability metric rejected",
+   "SRAM/EXT cross-target rejected",
+   "wrong workload pairing rejected",
+   "single swap yields exactly one named inversion",
+   "normalization scale-invariant"
+  ]
+ },
+ "analysis_status": "PLAN_FROZEN_NOT_YET_APPLIED"
+}

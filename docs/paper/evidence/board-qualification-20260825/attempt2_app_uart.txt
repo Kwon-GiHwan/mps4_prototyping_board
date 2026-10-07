@@ -1,0 +1,111 @@
+INFO - WARN - MPS4_SCC->CFG_ACLK reads 0. Assuming default clock of 32000000^M
+Processor internal clock: 32000000Hz^M
+INFO - V2M-MPS4 revision A^M
+INFO - Application Note AN101, Revision A^M
+INFO - MPS4 build 1^M
+INFO - MPS4 core clock has been set to: 32000000Hz^M
+INFO - CPU ID: 0x411fd231^M
+INFO - CPU: Cortex-M85 r1p1^M
+INFO - Enabling I-cache.^M
+INFO - Enabling D-cache.^M
+INFO - Relocating vector table to 0x10000000^M
+INFO - Configured TA_SRAM	@0x51102000^M
+INFO - Configured TA_EXT	@0x51102400^M
+INFO - Initialising Ethos-U device@0x50004000^M
+INFO - Using Dedicated_Sram memory mode; fast cache size: 393216^M
+INFO - Ethos-U device initialised^M
+INFO - Ethos-U version info:^M
+INFO - 	Arch:       v2.0.0^M
+INFO - 	Driver:     v1.0.0^M
+INFO - 	MACs/cc:    1024^M
+INFO - 	Cmd stream: v1^M
+INFO - HDLCD resolution id: 4^M
+INFO - Target system design: Arm Corstone-320^M
+INFO - Device MPS4 HDLCD configured^M
+INFO - Resolution:    320 x 240^M
+INFO - Colour format: ARGB8888^M
+INFO - ARM ML Embedded Evaluation Kit^M
+INFO - Version 26.03.0 Build date: Apr 21 2026 @ 09:25:19^M
+INFO - Compiler: GNU-15.2.1^M
+INFO - Copyright 2021-2026 Arm Limited and/or its affiliates <open-source-office@arm.com>^M
+INFO - Creating allocator using tensor arena at 0x0x7001edd0^M
+INFO - Allocating tensors^M
+INFO - Model INPUT tensors: ^M
+INFO - 	tensor type is int8^M
+INFO - 	tensor occupies 42 bytes with dimensions^M
+INFO - 		0:   1^M
+INFO - 		1:   1^M
+INFO - 		2:  42^M
+INFO - Scale = 0.221501^M
+INFO - ZeroPoint = 14^M
+INFO - 	tensor type is int8^M
+INFO - 	tensor occupies 24 bytes with dimensions^M
+INFO - 		0:   1^M
+INFO - 		1:  24^M
+INFO - Scale = 0.007843^M
+INFO - ZeroPoint = -1^M
+INFO - 	tensor type is int8^M
+INFO - 	tensor occupies 48 bytes with dimensions^M
+INFO - 		0:   1^M
+INFO - 		1:  48^M
+INFO - Scale = 0.047942^M
+INFO - ZeroPoint = -128^M
+INFO - 	tensor type is int8^M
+INFO - 	tensor occupies 96 bytes with dimensions^M
+INFO - 		0:   1^M
+INFO - 		1:  96^M
+INFO - Scale = 0.007843^M
+INFO - ZeroPoint = -1^M
+INFO - Model OUTPUT tensors: ^M
+INFO - 	tensor type is int8^M
+INFO - 	tensor occupies 96 bytes with dimensions^M
+INFO - 		0:   1^M
+INFO - 		1:   1^M
+INFO - 		2:  96^M
+INFO - Scale = 0.007843^M
+INFO - ZeroPoint = -1^M
+INFO - 	tensor type is int8^M
+INFO - 	tensor occupies 22 bytes with dimensions^M
+INFO - 		0:   1^M
+INFO - 		1:   1^M
+INFO - 		2:  22^M
+INFO - Scale = 0.003906^M
+INFO - ZeroPoint = -128^M
+INFO - 	tensor type is int8^M
+INFO - 	tensor occupies 48 bytes with dimensions^M
+INFO - 		0:   1^M
+INFO - 		1:   1^M
+INFO - 		2:  48^M
+INFO - Scale = 0.047942^M
+INFO - ZeroPoint = -128^M
+INFO - 	tensor type is int8^M
+INFO - 	tensor occupies 24 bytes with dimensions^M
+INFO - 		0:   1^M
+INFO - 		1:   1^M
+INFO - 		2:  24^M
+INFO - Scale = 0.007843^M
+INFO - ZeroPoint = -1^M
+INFO - 	tensor type is int8^M
+INFO - 	tensor occupies 1 bytes with dimensions^M
+INFO - 		0:   1^M
+INFO - 		1:   1^M
+INFO - 		2:   1^M
+INFO - Scale = 0.003906^M
+INFO - ZeroPoint = -128^M
+INFO - Activation buffer (a.k.a tensor arena) size used: 1748^M
+INFO - Number of operators: 1^M
+INFO - 	Operator 0: ethos-u^M
+INFO - NPU memory mode likely to be: Dedicated_Sram^M
+INFO - Final results:^M
+INFO - Total number of inferences: 1^M
+INFO - Profile for Inference:^M
+INFO - NPU ACTIVE: 50381 cycles^M
+INFO - NPU ETHOSU_PMU_SRAM_RD_DATA_BEAT_RECEIVED: 143 beats^M
+INFO - NPU ETHOSU_PMU_SRAM_WR_DATA_BEAT_WRITTEN: 135 beats^M
+INFO - NPU ETHOSU_PMU_EXT_RD_DATA_BEAT_RECEIVED: 7838 beats^M
+INFO - NPU ETHOSU_PMU_EXT_WR_DATA_BEAT_WRITTEN: 36 beats^M
+INFO - NPU IDLE: 6079 cycles^M
+INFO - NPU TOTAL: 56460 cycles^M
+INFO - Inference completed.^M
+INFO - program terminating...^M
+^D^@
