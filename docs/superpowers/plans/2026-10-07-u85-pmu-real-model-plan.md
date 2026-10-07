@@ -14,7 +14,9 @@
 | 2 | mobilenet, 표적 48개(포트 분리·PMCAXI_CHAN=EXT) | **완료** (부팅 18, 18/18 VALID under amendment 2). 36 NONZERO — `sram*` 24·`axi_latency` 7 전부 셈; `*_stall_limit` 12만 0. 부팅 14 실패→진단 15–17: 원인은 모델의 미세 수치 차이(5/1001 B, ≤4), 포트 분리 아님 — `evidence/pmu_events_c/VERDICT_2*.md` |
 | 3a | 전수형 171개 — mobilenet, 포트 분리·PMCAXI_CHAN, AXI 한도 OFF | **완료** (부팅 19, 66/66, 업로드 1회). TRM 57 / Reserved 47 NONZERO; 단계 2와 48/48 동일 |
 | 3b | `*_stall_limit` — AXI 한도 1건 | **완료** (부팅 20, 9/9). 12개 중 9개 셈; EXT **쓰기** 한도 3개는 이 라우팅에 EXT 쓰기가 없어 0 |
-| 합계 | 전 유효 캠페인 합집합 | **TRM-110 중 78개 실측 NONZERO**, 미관측 32 (sram2/3 22·ecc 6·no_event 1·ext 쓰기 한도 3). Reserved-61 중 53개 NONZERO — `evidence/pmu_events_c/VERDICT_3.md` |
+| 4 | wd fc/tc + EXT 쓰기 한도 | **완료** (부팅 21–23, 39/39 VALID, OFM 바이트 일치). FWD 모델(ad_medium)에서 fc 2개, MatMul 모델에서 tc 2개, 전 영역 EXT + 한도에서 EXT 쓰기 한도 3개 NONZERO. fc 해석 행은 계약 문구 오류로 미충족 → amendment 1, 사후 기술만 — `evidence/pmu_events_c/VERDICT_4.md` |
+| 합계(단계 4 후) | 전 유효 캠페인 합집합 | **TRM-110 중 81개 NONZERO**, 미관측 29 (sram2/3 22·ecc 6·no_event 1). Reserved-61 중 57개 — `step4_union_first_nonzero.csv` |
+| 합계(단계 3 시점) | 전 유효 캠페인 합집합 | **TRM-110 중 78개 실측 NONZERO**, 미관측 32 (sram2/3 22·ecc 6·no_event 1·ext 쓰기 한도 3). Reserved-61 중 53개 NONZERO — `evidence/pmu_events_c/VERDICT_3.md` |
 
 ## 재검토에서 확립된 사실
 

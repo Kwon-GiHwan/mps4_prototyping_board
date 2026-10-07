@@ -1,0 +1,57 @@
+{
+  "keep_model": true,
+  "validity": "model",
+  "ofm_mismatch_observed": [
+    [
+      0,
+      0
+    ]
+  ],
+  "requested_ids": [
+    17,
+    32,
+    35,
+    128,
+    140,
+    142,
+    143,
+    384,
+    388,
+    396,
+    398,
+    399,
+    526,
+    527,
+    542,
+    543,
+    654,
+    655,
+    670,
+    671
+  ],
+  "provenance": {
+    "board_serial": "FTDI-00FT46259002B",
+    "fpga_image": "FI101-r1p0 (109762 v0100)",
+    "build_id": "0x504d574c",
+    "authorization": "owner-verbal-2026-09-23",
+    "app_sha256": "0f215ef53ddd602ced432ecefe2733a5ac3f025fe03bd192a05bd311b2d00dc8",
+    "vectors_sha256": "13c906de50f28f449b55287e6af916c14d4c52c5924ab5a0580d3147c2070462",
+    "ddr_sha256": "81d37a219a6b4141d0b433796711ab8af2ee2c3c668a28143a3ffe6a574ade98",
+    "host_boot_index": 23,
+    "captured_at_utc": "2026-10-07T07:12:13.396229+00:00"
+  },
+  "runs": 9,
+  "rows": 60,
+  "refusal": null,
+  "consistency": {
+    "CYCLE_EVENT_VS_PMCCNTR": "PASS",
+    "NPU_ACTIVE_LE_CYCLE": "PASS"
+  },
+  "verdict_counts": {
+    "COUNTED_NONZERO": 13,
+    "COUNTED_ZERO": 7,
+    "INCONSISTENT": 0,
+    "NOT_OBSERVED": 0
+  },
+  "coverage": "COMPLETE_SUBSET(20)"
+}
