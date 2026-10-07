@@ -45,9 +45,24 @@ def event_sets(ids=None):
     return [(i + 1, ids[i * SLOTS:(i + 1) * SLOTS]) for i in range((len(ids) + SLOTS - 1) // SLOTS)]
 
 
-def run_validity(rec, codes):
-    """rec: dict with run_rc, required_flags_ok, pmu(dict). Returns (valid, failed_terms)."""
+STATUS_CMD_END = 1 << 5
+STATUS_FAULTS = (1 << 2) | (1 << 4) | (1 << 8) | (1 << 9)   # bus_status, cmd_parse_error, ecc_fault, branch_fault
+FLAGS_COMPLETED = 0xD                                     # COMPLETED | OUTPUT_CHANGED | COARSE_WINDOW
+MODEL_TERMS = ("vendor_rc_completed", "flags_completed", "stream_completed")
+
+
+def run_validity(rec, codes, mode="exact"):
+    """rec: dict with run_rc, required_flags_ok, pmu(dict). Returns (valid, failed_terms).
+    mode 'model' (step-2 amendment 2): completion replaces exact correctness."""
     p = rec["pmu"]; n = len(codes)
+    if mode == "model":
+        st = rec.get("seam_npu_status")
+        completion = {
+            "vendor_rc_completed": rec.get("vendor_rc") in (0, 2),
+            "flags_completed": (rec.get("valid_flags", 0) & FLAGS_COMPLETED) == FLAGS_COMPLETED,
+            "stream_completed": (st is not None and (st & STATUS_CMD_END) and not (st & STATUS_FAULTS)
+                                 and rec.get("seam_npu_qread") == rec.get("cms_len")),
+        }
     terms = {
         "rc_zero": rec["run_rc"] == 0,
         "required_flags_ok": bool(rec["required_flags_ok"]),
@@ -60,7 +75,11 @@ def run_validity(rec, codes):
         "valid_mask_full": p["event_valid_mask"] == (1 << n) - 1,
         "codes_echo": all(p["event_codes"][i] == codes[i] for i in range(n)),
     }
-    failed = [k for k in VALIDITY_TERMS if not terms[k]]
+    if mode == "model":
+        for k in ("rc_zero", "required_flags_ok", "golden_ok"):
+            terms.pop(k)
+        terms.update(completion)
+    failed = [k for k in terms if not terms[k]]
     return (not failed), failed
 
 

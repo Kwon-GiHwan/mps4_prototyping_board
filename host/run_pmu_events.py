@@ -4,7 +4,7 @@
   python3 run_pmu_events.py --out evidence/pmu_events/boot1 --host-boot-index N \
       --app-sha256 .. --vectors-sha256 .. --ddr-sha256 ..
 """
-import argparse, csv, datetime, json, pathlib, sys
+import argparse, csv, datetime, json, pathlib, struct, sys
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
 import zlib
 import pmu_events_parse as E
@@ -42,6 +42,8 @@ def main():
     ap.add_argument("--build-id", default=f"0x{E.BUILD_ID_PMEV:08x}")
     ap.add_argument("--check-golden", action="store_true", help="Tier C: GET_RESULT golden window after every RUN")
     ap.add_argument("--blob", help="Tier C step 1: PMWL workload blob to stage with LOAD_MODEL")
+    ap.add_argument("--validity", choices=("exact", "model"), default="exact",
+                    help="model: completion replaces exact OFM match (step-2 amendment 2)")
     ap.add_argument("--ids", help="Tier C step 2: comma-separated event ids or @file (default: all 171)")
     for k in ("app", "vectors", "ddr"): ap.add_argument(f"--{k}-sha256", required=True)
     a = ap.parse_args()
@@ -99,10 +101,13 @@ def main():
                         _, _, _, golden_crc = link.get_result(PMU_DIAG_GOLDEN_WINDOW_BASE, PMU_DIAG_GOLDEN_WINDOW_LEN, m.run_sequence)
                     except (Nack, ProtocolError) as e:
                         golden_crc = f"error: {e!r}"
-                r = dict(run_rc=rc, required_flags_ok=m.required_flags_ok(), pmu=m.pmu, seam_fired=seam)
+                tr = list(m.trailing) + [None] * 7
+                r = dict(run_rc=rc, required_flags_ok=m.required_flags_ok(), pmu=m.pmu, seam_fired=seam,
+                         valid_flags=m.valid_flags, vendor_rc=tr[1], seam_npu_status=tr[2], seam_npu_qread=tr[3],
+                         cms_len=(struct.unpack_from("<I", BLOB, 12)[0] if BLOB is not None else None))
                 if a.check_golden:
                     r["golden_ok"] = (golden_crc == GOLDEN_WINDOW_CRC)
-                ok, failed = E.run_validity(r, codes)
+                ok, failed = E.run_validity(r, codes, a.validity)
                 if "codes_echo" in failed and ok is False and m.pmu["event_valid_mask"] == (1 << len(codes)) - 1:
                     raise E.fail_rule("RULE_CODES_ECHO", f"set {set_id}: {m.pmu['event_codes'][:len(codes)]} != {codes}")
                 raw.append({"set_id": set_id, "rep": rep, "rc": rc, "valid_flags": m.valid_flags, "pmu": m.pmu,
@@ -119,7 +124,8 @@ def main():
                                      event_overflow=m.pmu["event_overflow"][slot], run_rc=rc, run_valid=ok,
                                      invalid_reasons=";".join(failed), window_cycles=m.pmu["npu_pmu_window_cycles"],
                                      cycle_valid=m.pmu["npu_pmu_cycle_valid"], valid_flags=m.valid_flags,
-                                     golden_crc=(f"0x{golden_crc:08x}" if isinstance(golden_crc, int) else golden_crc), **prov))
+                                     golden_crc=(f"0x{golden_crc:08x}" if isinstance(golden_crc, int) else golden_crc),
+                                     vendor_rc=tr[1], ofm_mismatch_count=tr[4], ofm_max_abs_diff=tr[5], **prov))
                 vrc = m.trailing[1] if len(m.trailing) >= 2 else None
                 st = (hex(m.trailing[2]), m.trailing[3]) if len(m.trailing) >= 4 else None
                 mm = tuple(m.trailing[4:7]) if len(m.trailing) >= 7 else None
@@ -142,7 +148,8 @@ def main():
     if per:
         with (out / "per_event.csv").open("w", newline="") as f:
             w = csv.DictWriter(f, fieldnames=list(per[0].keys())); w.writeheader(); w.writerows(per)
-    summ = dict(requested_ids=(sorted(set(ids)) if ids else "all"), provenance=prov, runs=len(raw) - 1, rows=len(rows), refusal=refusal,
+    mm = sorted({tuple(x["ofm_mismatch"][:2]) for x in raw if x.get("ofm_mismatch")})
+    summ = dict(validity=a.validity, ofm_mismatch_observed=[list(t) for t in mm], requested_ids=(sorted(set(ids)) if ids else "all"), provenance=prov, runs=len(raw) - 1, rows=len(rows), refusal=refusal,
                 consistency=E.consistency(rows), verdict_counts={v: sum(1 for p in per if p["verdict"] == v) for v in E.VERDICTS})
     try:
         E.check_coverage(by, ids); summ["coverage"] = "COMPLETE" if ids is None else f"COMPLETE_SUBSET({len(set(ids))})"
