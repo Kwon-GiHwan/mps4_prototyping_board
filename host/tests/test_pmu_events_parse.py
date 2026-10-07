@@ -47,6 +47,27 @@ class Validity(unittest.TestCase):
         self.assertEqual(tripped, set(E.VALIDITY_TERMS))
 
 
+class ModelValidity(unittest.TestCase):
+    def rec(self, **o):
+        r = rec([17, 35])
+        r.update(run_rc=1, required_flags_ok=False, valid_flags=0xD, vendor_rc=2,
+                 seam_npu_status=0xFFFF0020, seam_npu_qread=100, cms_len=100)
+        r.update(o); return r
+
+    def test_completion_replaces_exactness(self):
+        self.assertEqual(E.run_validity(self.rec(), [17, 35], "model"), (True, []))
+        self.assertFalse(E.run_validity(self.rec(), [17, 35])[0])          # exact mode still refuses rc 1
+
+    def test_each_model_term_reachable(self):
+        for term, o in {"vendor_rc_completed": dict(vendor_rc=3),
+                        "flags_completed": dict(valid_flags=0x9),
+                        "stream_completed": dict(seam_npu_status=0xFFFF0024)}.items():   # bus_status set
+            ok, failed = E.run_validity(self.rec(**o), [17, 35], "model")
+            self.assertFalse(ok); self.assertIn(term, failed)
+        for o in (dict(seam_npu_status=0xFFFF0000), dict(seam_npu_qread=99), dict(seam_npu_status=0xFFFF0120)):
+            self.assertIn("stream_completed", E.run_validity(self.rec(**o), [17, 35], "model")[1])
+
+
 class Verdicts(unittest.TestCase):
     def test_closed_set(self):
         self.assertEqual(E.verdict([5, 6, 7]), "COUNTED_NONZERO")
