@@ -1,0 +1,421 @@
+{
+ "model": "/opt/arm/ml-embedded-evaluation-kit/resources_downloaded/kws/kws_micronet_m.tflite",
+ "model_sha256": "c1feed3af5dac44de7477fb4161670ba18a3fc06039e4a14da41b1c4dd454cb4",
+ "vela_options": [
+  "--accelerator-config",
+  "ethos-u85-1024",
+  "--system-config",
+  "Ethos_U85_SYS_DRAM_Low",
+  "--memory-mode",
+  "Dedicated_Sram"
+ ],
+ "ops": [
+  {
+   "op": "CONV_2D",
+   "inputs": [
+    [
+     1,
+     49,
+     10,
+     1
+    ],
+    [
+     140,
+     10,
+     4,
+     1
+    ],
+    [
+     140
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     49,
+     10,
+     140
+    ]
+   ],
+   "n_mac": 2744000
+  },
+  {
+   "op": "DEPTHWISE_CONV_2D",
+   "inputs": [
+    [
+     1,
+     49,
+     10,
+     140
+    ],
+    [
+     1,
+     3,
+     3,
+     140
+    ],
+    [
+     140
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     25,
+     5,
+     140
+    ]
+   ],
+   "n_mac": 157500
+  },
+  {
+   "op": "CONV_2D",
+   "inputs": [
+    [
+     1,
+     25,
+     5,
+     140
+    ],
+    [
+     140,
+     1,
+     1,
+     140
+    ],
+    [
+     140
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     25,
+     5,
+     140
+    ]
+   ],
+   "n_mac": 2450000
+  },
+  {
+   "op": "DEPTHWISE_CONV_2D",
+   "inputs": [
+    [
+     1,
+     25,
+     5,
+     140
+    ],
+    [
+     1,
+     3,
+     3,
+     140
+    ],
+    [
+     140
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     25,
+     5,
+     140
+    ]
+   ],
+   "n_mac": 157500
+  },
+  {
+   "op": "CONV_2D",
+   "inputs": [
+    [
+     1,
+     25,
+     5,
+     140
+    ],
+    [
+     140,
+     1,
+     1,
+     140
+    ],
+    [
+     140
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     25,
+     5,
+     140
+    ]
+   ],
+   "n_mac": 2450000
+  },
+  {
+   "op": "DEPTHWISE_CONV_2D",
+   "inputs": [
+    [
+     1,
+     25,
+     5,
+     140
+    ],
+    [
+     1,
+     3,
+     3,
+     140
+    ],
+    [
+     140
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     25,
+     5,
+     140
+    ]
+   ],
+   "n_mac": 157500
+  },
+  {
+   "op": "CONV_2D",
+   "inputs": [
+    [
+     1,
+     25,
+     5,
+     140
+    ],
+    [
+     140,
+     1,
+     1,
+     140
+    ],
+    [
+     140
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     25,
+     5,
+     140
+    ]
+   ],
+   "n_mac": 2450000
+  },
+  {
+   "op": "DEPTHWISE_CONV_2D",
+   "inputs": [
+    [
+     1,
+     25,
+     5,
+     140
+    ],
+    [
+     1,
+     3,
+     3,
+     140
+    ],
+    [
+     140
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     25,
+     5,
+     140
+    ]
+   ],
+   "n_mac": 157500
+  },
+  {
+   "op": "CONV_2D",
+   "inputs": [
+    [
+     1,
+     25,
+     5,
+     140
+    ],
+    [
+     112,
+     1,
+     1,
+     140
+    ],
+    [
+     112
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     25,
+     5,
+     112
+    ]
+   ],
+   "n_mac": 1960000
+  },
+  {
+   "op": "DEPTHWISE_CONV_2D",
+   "inputs": [
+    [
+     1,
+     25,
+     5,
+     112
+    ],
+    [
+     1,
+     3,
+     3,
+     112
+    ],
+    [
+     112
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     25,
+     5,
+     112
+    ]
+   ],
+   "n_mac": 126000
+  },
+  {
+   "op": "CONV_2D",
+   "inputs": [
+    [
+     1,
+     25,
+     5,
+     112
+    ],
+    [
+     196,
+     1,
+     1,
+     112
+    ],
+    [
+     196
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     25,
+     5,
+     196
+    ]
+   ],
+   "n_mac": 2744000
+  },
+  {
+   "op": "AVERAGE_POOL_2D",
+   "inputs": [
+    [
+     1,
+     25,
+     5,
+     196
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     1,
+     1,
+     196
+    ]
+   ],
+   "n_mac": null
+  },
+  {
+   "op": "CONV_2D",
+   "inputs": [
+    [
+     1,
+     1,
+     1,
+     196
+    ],
+    [
+     12,
+     1,
+     1,
+     196
+    ],
+    [
+     12
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     1,
+     1,
+     12
+    ]
+   ],
+   "n_mac": 2352
+  },
+  {
+   "op": "RESHAPE",
+   "inputs": [
+    [
+     1,
+     1,
+     1,
+     12
+    ],
+    [
+     2
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     12
+    ]
+   ],
+   "n_mac": null
+  }
+ ],
+ "op_counts": {
+  "CONV_2D": 7,
+  "AVERAGE_POOL_2D": 1,
+  "RESHAPE": 1,
+  "DEPTHWISE_CONV_2D": 5
+ },
+ "n_mac": 15556352,
+ "n_mac_ops": 12,
+ "non_mac_ops": 2,
+ "vela": {
+  "core_clock": 500000000.0,
+  "nn_macs": 14208852.0,
+  "cycles_npu": 89266.0,
+  "cycles_sram_access": 37152.0,
+  "cycles_dram_access": 91446.0,
+  "cycles_total": 103661.0
+ },
+ "n_mac_vs_vela_nn_macs": 1.0948352477737118
+}
