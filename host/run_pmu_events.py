@@ -47,8 +47,10 @@ def main():
     ap.add_argument("--keep-model", action="store_true",
                     help="step 3: upload the blob once per boot; later sets only SET_MODE (MODEL builds)")
     ap.add_argument("--ids", help="Tier C step 2: comma-separated event ids or @file (default: all 171)")
+    ap.add_argument("--repeats", type=int, default=E.REPEATS, help="RUNs per set (screening: warm-up + measured)")
     for k in ("app", "vectors", "ddr"): ap.add_argument(f"--{k}-sha256", required=True)
     a = ap.parse_args()
+    E.REPEATS = a.repeats
     out = pathlib.Path(a.out); out.mkdir(parents=True, exist_ok=True)
     global BLOB
     if a.blob:
@@ -147,7 +149,7 @@ def main():
     for r in rows: by.setdefault(r["ev_type"], []).append(r["event_value"])
     per = [dict(ev_type=ev, name=names[ev], in_trm110=ev in trm, verdict=E.verdict(vals), values=vals,
                 tier="B-count", where=f"{prov['board_serial']} / {prov['fpga_image']} / PMEVCNTR[slot]",
-                how="EVENTS mode: PMEVTYPER=id, PMCNTENSET, run apU85Conv_TEST, read PMEVCNTR after disable; 3 repeats",
+                how=f"EVENTS mode: PMEVTYPER=id, PMCNTENSET, run apU85Conv_TEST, read PMEVCNTR after disable; {E.REPEATS} repeats",
                 boot=out.name, app_sha256=prov["app_sha256"], captured_at_utc=prov["captured_at_utc"],
                 authorization=prov["authorization"]) for ev, vals in sorted(by.items())]
     if per:

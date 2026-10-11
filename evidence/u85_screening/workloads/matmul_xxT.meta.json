@@ -1,0 +1,52 @@
+{
+ "model": "/tmp/scr/matmul_xxT.tflite",
+ "model_sha256": "ebfde77be33445b846bca0b38fd248057bf42fba18d7f891c0c6296f47daea93",
+ "vela_options": [
+  "--accelerator-config",
+  "ethos-u85-1024",
+  "--system-config",
+  "Ethos_U85_SYS_DRAM_Low",
+  "--memory-mode",
+  "Dedicated_Sram"
+ ],
+ "ops": [
+  {
+   "op": "BATCH_MATMUL",
+   "inputs": [
+    [
+     1,
+     64,
+     256
+    ],
+    [
+     1,
+     64,
+     256
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     64,
+     64
+    ]
+   ],
+   "n_mac": 1048576
+  }
+ ],
+ "op_counts": {
+  "BATCH_MATMUL": 1
+ },
+ "n_mac": 1048576,
+ "n_mac_ops": 1,
+ "non_mac_ops": 0,
+ "vela": {
+  "core_clock": 500000000.0,
+  "nn_macs": 1048576.0,
+  "cycles_npu": 2107.0,
+  "cycles_sram_access": 0.0,
+  "cycles_dram_access": 8333.0,
+  "cycles_total": 8333.0
+ },
+ "n_mac_vs_vela_nn_macs": 1.0
+}
