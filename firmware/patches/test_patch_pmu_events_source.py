@@ -123,6 +123,26 @@ class T(unittest.TestCase):
                         blk.index("fast = (uint8_t *)(uintptr_t)h[26];"))
         self.assertLess(blk.index("fast = (uint8_t *)(uintptr_t)h[26];"), blk.index("x.in_data_0      = fast;"))
 
+    def test_ta_profile_knob(self):
+        g = P.generate(BASE)
+        blk = g[g.index("#if defined(PMU_EVENTS_MODEL)"):g.index("#endif /* PMU_EVENTS_MODEL */")]
+        self.assertIn("static const uint32_t pmwl_ta_base[2] = {0x51102000U, 0x51102400U};", blk)   # MLEK mps4 TA bases
+        self.assertIn("#define PMWL_TA_VERSION 0x1117U", blk)
+        self.assertIn("{0x00U, 0x04U, 0x08U, 0x0CU, 0x10U, 0x14U, 0x18U, 0x1CU, 0x20U, 0x28U, 0x30U}", blk)  # timing_adapter.c map
+        # MLEK sys_dram_mid, Dedicated_Sram branch, pre-masked
+        self.assertIn("{{8U, 8U, 0U, 32U, 32U, 3999U, 1U, 4000U, 0U, 1U, 0U},", blk)
+        self.assertIn("{0U, 32U, 0U, 500U, 250U, 4000U, 1000U, 3750U, 0U, 1U, 0U}},", blk)
+        self.assertEqual(blk.count("{0U, 0U, 0U, 0U, 0U, 0xFFFFU, 0U, 0U, 0U, 1U, 0U}"), 2)
+        fn = blk[blk.index("static uint32_t pmwl_ta_apply(uint32_t prof)"):]
+        fn = fn[:fn.index("return bad;")]
+        self.assertIn("if (ta[0x38U / 4U] != PMWL_TA_VERSION) { bad = 1U; continue; }", fn)
+        self.assertLess(fn.index("ta[pmwl_ta_off[k] / 4U] = pmwl_ta_val"), fn.index("if (ta[pmwl_ta_off[k] / 4U] != pmwl_ta_val"))
+        self.assertIn("pmwl_ta_val[prof - 1U][p][k]", fn)
+        # applied in the wrap after knob_bad is cleared and before the vendor run; bad values refused
+        self.assertIn("if (h[27] < 1U || h[27] > 2U) { return PMWL_REFUSED; }", blk)
+        self.assertLess(blk.index("    pmwl_knob_bad = 0U;\n"), blk.index("if (pmwl_ta_apply(h[27]) != 0U) { pmwl_knob_bad = 1U; }"))
+        self.assertLess(blk.index("if (pmwl_ta_apply(h[27]) != 0U)"), blk.index("rc = __real_test_u85("))
+
     def test_step3_state_table(self):
         g = P.generate(BASE)
         self.assertIn("#if defined(PMU_EVENTS_MODEL)\n#define M_EVENTS_MODEL M(CB_SET_INSTRUMENTATION_MODE)\n#else\n#define M_EVENTS_MODEL 0U\n#endif", g)

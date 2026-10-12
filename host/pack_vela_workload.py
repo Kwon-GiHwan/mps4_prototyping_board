@@ -34,7 +34,7 @@ VELA_PROFILES = {
 }
 
 
-def knobs(axi=None, ports=None, axi_limit=None, power_ctrl=None, fast_base=None):
+def knobs(axi=None, ports=None, axi_limit=None, power_ctrl=None, fast_base=None, ta_profile=None):
     """Header v2 words 16..23. axi='ext:rd_weights'; ports={'cmd':'ext','const':'ext','arena':'sram','fast':'sram'}.
     Anything not given is OFF (0xFFFFFFFF) = vendor default (all EXT under USE_AXI_EXT)."""
     k = [OFF] * 16   # header words 16..31
@@ -63,6 +63,10 @@ def knobs(axi=None, ports=None, axi_limit=None, power_ctrl=None, fast_base=None)
         if ports is None or ports.get("fast") != "sram":
             raise SystemExit("--fast-base needs --ports with fast=sram (on-chip SRAM is behind the SRAM port)")
         k[10] = fast_base
+    if ta_profile is not None:   # word 27: timing adapters, 1 = MLEK sys_dram_mid, 2 = pass-through
+        if ta_profile not in (1, 2):
+            raise SystemExit(f"TA profile {ta_profile}: 1 (MLEK) or 2 (pass-through)")
+        k[11] = ta_profile
     return k
 COP1 = b"COP1"
 DA_OPTIMIZER_CONFIG, DA_COMMAND_STREAM, DA_NOP = 1, 2, 5
@@ -170,6 +174,7 @@ def main():
     ap.add_argument("--axi-limit", help="AXI outstanding-limit knob, e.g. sram=0x20000,ext=0x20000 (default OFF)")
     ap.add_argument("--power-ctrl", type=lambda x: int(x, 0), help="POWER_CTRL value, e.g. 0 = MLEK driver (default OFF = vendor 2)")
     ap.add_argument("--fast-base", type=lambda x: int(x, 0), help="fast scratch in on-chip SRAM at this address (default OFF = staging)")
+    ap.add_argument("--ta-profile", type=int, help="timing adapters: 1 = MLEK sys_dram_mid, 2 = pass-through (default OFF = untouched)")
     ap.add_argument("--ports", help="region ports, e.g. cmd=ext,const=ext,arena=sram,fast=sram (default OFF)")
     a = ap.parse_args()
     vela_opts = VELA_PROFILES[a.vela_profile]
@@ -185,7 +190,7 @@ def main():
     ifm, golden = reference(a.model, a.seed)
     ports = dict(kv.split("=") for kv in a.ports.split(",")) if a.ports else None
     lim = {kv.split("=")[0]: int(kv.split("=")[1], 0) for kv in a.axi_limit.split(",")} if a.axi_limit else None
-    kw = knobs(a.axi, ports, lim, a.power_ctrl, a.fast_base)
+    kw = knobs(a.axi, ports, lim, a.power_ctrl, a.fast_base, a.ta_profile)
     blob = pack(info, ifm, golden, kw)
     open(a.out, "wb").write(blob)
     meta = dict(model=a.model, model_sha256=hashlib.sha256(open(a.model, "rb").read()).hexdigest(),
@@ -196,7 +201,7 @@ def main():
                 fast_size=info["fast_size"], ifm_off=info["ifm_off"], ifm_len=len(ifm),
                 ofm_off=info["ofm_off"], ofm_len=len(golden), total=len(blob),
                 header_version=struct.unpack("<I", blob[4:8])[0], knobs=[f"0x{w:08x}" for w in kw],
-                axi=a.axi, ports=a.ports, axi_limit=a.axi_limit, power_ctrl=a.power_ctrl, fast_base=a.fast_base)
+                axi=a.axi, ports=a.ports, axi_limit=a.axi_limit, power_ctrl=a.power_ctrl, fast_base=a.fast_base, ta_profile=a.ta_profile)
     open(a.out + ".json", "w").write(json.dumps(meta, indent=2))
     print(json.dumps(meta, indent=1))
 
