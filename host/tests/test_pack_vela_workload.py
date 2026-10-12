@@ -55,6 +55,16 @@ class T(unittest.TestCase):
         with self.assertRaises(SystemExit): K.knobs(ports=dict(sram, fast="ext"), fast_base=0x31100000)
         with self.assertRaises(SystemExit): K.knobs(fast_base=0x31100000)
 
+    def test_ta_profile_is_word_27(self):
+        self.assertEqual(K.knobs()[11], K.OFF)
+        for prof in (1, 2):
+            k = K.knobs(ta_profile=prof)
+            self.assertEqual([i for i, w in enumerate(k) if w != K.OFF], [11])
+            b = K.pack(INFO, b"\x02" * 4, b"\x03" * 2, k)
+            self.assertEqual(struct.unpack("<I", b[64 + 11 * 4:64 + 12 * 4])[0], prof)   # header word 27
+        for bad in (0, 3):
+            with self.assertRaises(SystemExit): K.knobs(ta_profile=bad)
+
     def test_cop1_extraction(self):
         raw = b"\x11\x22\x33\x44" * 2
         cop = b"COP1" + struct.pack("<I", 1) + b"\x00" * 8 + struct.pack("<I", 2 | (2 << 16)) + raw
