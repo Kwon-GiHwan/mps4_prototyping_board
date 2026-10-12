@@ -20,6 +20,7 @@ RULES = ("RULE_INFERENCE_LINKED", "RULE_PMEVTYPER_LOOP_STORE", "RULE_PMEVCNTR_LO
          "RULE_BUILD_ID", "RULE_MAIN_PRESENT", "RULE_GEN_MODE2", "RULE_SEAM_HOOK", "RULE_EXT_ATTR", "RULE_EXT_DRAM", "RULE_MODEL")
 PMWL_MAGIC = 0x4C574D50
 RAISED_TIMEOUT = "#define BUSY_SLEEP_TIMEOUT 200000000"
+POWER_CTRL_HOOK = "write_reg(NPU_REG_POWER_CTRL, u85_power_ctrl_value(MAC_RAMP_VAR));"
 DRAM_SIZES = {"test3_weights": "TEST3_WEIGHTS_SIZE", "test3_in_data_0": "TEST3_IN_SIZE",
               "test3_scratch_buffer": "TEST3_SCRATCH_SIZE"}
 EXT_LITERAL = b"Enabling AXI EXT port testing"
@@ -94,6 +95,10 @@ def check(objdump_text, nm_text, gen_text, build_id, elf_bytes=None, expect_ext=
         raise GateFail(RULES[9], "model build lacks the step-2 apply seam")
     if expect_model and (gen_vendor_text is None or RAISED_TIMEOUT not in gen_vendor_text):
         raise GateFail(RULES[9], "generated vendor u85.c lacks the raised BUSY_SLEEP_TIMEOUT")
+    if expect_model and POWER_CTRL_HOOK not in gen_vendor_text:
+        raise GateFail(RULES[9], "generated vendor u85.c does not route POWER_CTRL through the runner hook")
+    if expect_model and not re.search(r"^[0-9a-f]+ T u85_power_ctrl_value$", nm_text, re.M):
+        raise GateFail(RULES[9], "u85_power_ctrl_value is not the runner's strong definition: the POWER_CTRL knob would be ignored")
     return True
 
 

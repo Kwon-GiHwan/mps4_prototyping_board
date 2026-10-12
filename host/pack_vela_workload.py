@@ -34,7 +34,7 @@ VELA_PROFILES = {
 }
 
 
-def knobs(axi=None, ports=None, axi_limit=None):
+def knobs(axi=None, ports=None, axi_limit=None, power_ctrl=None):
     """Header v2 words 16..23. axi='ext:rd_weights'; ports={'cmd':'ext','const':'ext','arena':'sram','fast':'sram'}.
     Anything not given is OFF (0xFFFFFFFF) = vendor default (all EXT under USE_AXI_EXT)."""
     k = [OFF] * 16   # header words 16..31
@@ -53,6 +53,10 @@ def knobs(axi=None, ports=None, axi_limit=None):
                 if v & ~0x31F3F:
                     raise SystemExit(f"AXI_{port.upper()} 0x{v:x} sets reserved bits")
                 k[word] = v
+    if power_ctrl is not None:   # word 25: POWER_CTRL.mac_step_cycles (6 bits); runner hook, read back at the seam
+        if not 0 <= power_ctrl <= 0x3F:
+            raise SystemExit(f"POWER_CTRL 0x{power_ctrl:x} outside the 6-bit mac_step_cycles field")
+        k[9] = power_ctrl
     return k
 COP1 = b"COP1"
 DA_OPTIMIZER_CONFIG, DA_COMMAND_STREAM, DA_NOP = 1, 2, 5
@@ -158,6 +162,7 @@ def main():
     ap.add_argument("--vela-profile", choices=sorted(VELA_PROFILES), default="packer")
     ap.add_argument("--axi", help="PMCAXI_CHAN knob, e.g. ext:rd_weights (default OFF)")
     ap.add_argument("--axi-limit", help="AXI outstanding-limit knob, e.g. sram=0x20000,ext=0x20000 (default OFF)")
+    ap.add_argument("--power-ctrl", type=lambda x: int(x, 0), help="POWER_CTRL value, e.g. 0 = MLEK driver (default OFF = vendor 2)")
     ap.add_argument("--ports", help="region ports, e.g. cmd=ext,const=ext,arena=sram,fast=sram (default OFF)")
     a = ap.parse_args()
     vela_opts = VELA_PROFILES[a.vela_profile]
@@ -173,7 +178,7 @@ def main():
     ifm, golden = reference(a.model, a.seed)
     ports = dict(kv.split("=") for kv in a.ports.split(",")) if a.ports else None
     lim = {kv.split("=")[0]: int(kv.split("=")[1], 0) for kv in a.axi_limit.split(",")} if a.axi_limit else None
-    kw = knobs(a.axi, ports, lim)
+    kw = knobs(a.axi, ports, lim, a.power_ctrl)
     blob = pack(info, ifm, golden, kw)
     open(a.out, "wb").write(blob)
     meta = dict(model=a.model, model_sha256=hashlib.sha256(open(a.model, "rb").read()).hexdigest(),
@@ -184,7 +189,7 @@ def main():
                 fast_size=info["fast_size"], ifm_off=info["ifm_off"], ifm_len=len(ifm),
                 ofm_off=info["ofm_off"], ofm_len=len(golden), total=len(blob),
                 header_version=struct.unpack("<I", blob[4:8])[0], knobs=[f"0x{w:08x}" for w in kw],
-                axi=a.axi, ports=a.ports, axi_limit=a.axi_limit)
+                axi=a.axi, ports=a.ports, axi_limit=a.axi_limit, power_ctrl=a.power_ctrl)
     open(a.out + ".json", "w").write(json.dumps(meta, indent=2))
     print(json.dumps(meta, indent=1))
 

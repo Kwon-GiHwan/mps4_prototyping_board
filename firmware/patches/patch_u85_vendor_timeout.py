@@ -21,6 +21,17 @@ OLD2 = re.compile(r"(\{\r?\n    int ret_code = 0;)(\r?\n)")
 NEW2 = r"\1 irq_never_triggered = false; /* Tier C step 2: per-run, not per-boot */\2"
 
 
+# Change 3 (runner-gap A/B): POWER_CTRL is written after the runner's knob seam, so a knob cannot
+# override it. Route the value through a hook; the weak default returns the vendor's MAC_RAMP_VAR
+# unchanged, and the MODEL runner supplies the strong one. Contract:
+# docs/superpowers/specs/2026-10-12-u85-power-ctrl-ab-contract.md
+OLD3 = re.compile(r"write_reg\(NPU_REG_POWER_CTRL, MAC_RAMP_VAR\);(?=\r?\n)")
+NEW3 = "write_reg(NPU_REG_POWER_CTRL, u85_power_ctrl_value(MAC_RAMP_VAR)); /* runner gap: hook */"
+OLD4 = re.compile(r"(\r?\n)(static int test_commands\()")
+NEW4 = (r"\1__attribute__((weak)) uint32_t u85_power_ctrl_value(uint32_t v) { return v; }"
+        r" /* runner gap: weak default */\1\2")
+
+
 def generate(text):
     out, n = OLD.subn(NEW, text)
     if n != 1:
@@ -28,6 +39,12 @@ def generate(text):
     out, n = OLD2.subn(NEW2, out)
     if n != 1:
         raise SystemExit(f"test_u85 entry anchor matched {n} times, need 1")
+    out, n = OLD3.subn(NEW3, out)
+    if n != 1:
+        raise SystemExit(f"POWER_CTRL anchor matched {n} times, need 1")
+    out, n = OLD4.subn(NEW4, out)
+    if n != 1:
+        raise SystemExit(f"test_commands anchor matched {n} times, need 1")
     return out
 
 

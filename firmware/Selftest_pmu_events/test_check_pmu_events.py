@@ -49,18 +49,25 @@ GEN_DRAM = GEN + 'strcmp(fmt, "Updating POWER_CTRL register with MAC_RAMP_VAR=%d
 
 
 OBJ_MODEL = OBJ + " 8000208: .word 0x4c574d50\n"
-VEND = "#define BUSY_SLEEP_TIMEOUT 200000000 /* Tier C step 1: was 10000 */\n"
+VEND = ("#define BUSY_SLEEP_TIMEOUT 200000000 /* Tier C step 1: was 10000 */\n"
+        "\t  write_reg(NPU_REG_POWER_CTRL, u85_power_ctrl_value(MAC_RAMP_VAR)); /* runner gap: hook */\n")
+NM_MODEL = NM_DRAM + "31000b00 T u85_power_ctrl_value\n"
 
 
 class T(unittest.TestCase):
     def test_model_rule(self):
-        self.assertTrue(g.check(OBJ_MODEL, NM_DRAM, GEN_DRAM, BID, ELF_EXT, True, True, True, VEND))
+        self.assertTrue(g.check(OBJ_MODEL, NM_MODEL, GEN_DRAM, BID, ELF_EXT, True, True, True, VEND))
         with self.assertRaises(g.GateFail) as cm:
-            g.check(OBJ_MODEL, NM_DRAM, GEN_DRAM.replace("Updating POWER_CTRL", "Updating XOWER_CTRL"), BID, ELF_EXT, True, True, True, VEND)
+            g.check(OBJ_MODEL, NM_MODEL, GEN_DRAM.replace("Updating POWER_CTRL", "Updating XOWER_CTRL"), BID, ELF_EXT, True, True, True, VEND)
         self.assertEqual(cm.exception.rule, "RULE_MODEL")
-        for obj, exp, vend in ((OBJ, True, VEND), (OBJ_MODEL, False, None),
-                               (OBJ_MODEL, True, VEND.replace("200000000", "10000"))):
-            with self.assertRaises(g.GateFail) as cm: g.check(obj, NM_DRAM, GEN_DRAM, BID, ELF_EXT, True, True, exp, vend)
+        for obj, nm, exp, vend in ((OBJ, NM_MODEL, True, VEND), (OBJ_MODEL, NM_MODEL, False, None),
+                                   (OBJ_MODEL, NM_MODEL, True, VEND.replace("200000000", "10000")),
+                                   # vendor copy writes POWER_CTRL directly: the knob cannot act
+                                   (OBJ_MODEL, NM_MODEL, True, VEND.replace("u85_power_ctrl_value(MAC_RAMP_VAR)", "MAC_RAMP_VAR")),
+                                   # only the weak default linked: the knob would be ignored silently
+                                   (OBJ_MODEL, NM_MODEL.replace("T u85_power_ctrl_value", "W u85_power_ctrl_value"), True, VEND),
+                                   (OBJ_MODEL, NM_DRAM, True, VEND)):
+            with self.assertRaises(g.GateFail) as cm: g.check(obj, nm, GEN_DRAM, BID, ELF_EXT, True, True, exp, vend)
             self.assertEqual(cm.exception.rule, "RULE_MODEL")
 
     def test_ext_dram_rule(self):

@@ -91,6 +91,23 @@ class T(unittest.TestCase):
         # the step-0b test3 wrap still exists in the #else branch
         self.assertIn("#else\nint __wrap_test_u85(", g)
 
+    def test_power_ctrl_knob(self):
+        g = P.generate(BASE)
+        blk = g[g.index("#if defined(PMU_EVENTS_MODEL)"):g.index("#endif /* PMU_EVENTS_MODEL */")]
+        # strong hook in the model branch; OFF passes the vendor value through
+        self.assertIn("uint32_t u85_power_ctrl_value(uint32_t v)\n{\n    return (pmwl_power_ctrl == PMWL_OFF) ? v : pmwl_power_ctrl;\n}", blk)
+        self.assertIn("pmwl_power_ctrl = h[25];", blk)
+        self.assertLess(blk.index("pmwl_power_ctrl = h[25];"), blk.index("rc = __real_test_u85("))
+        # the seam reads POWER_CTRL while the NPU is still powered, and the wrap refuses a mismatch
+        seam = g[g.index('strcmp(fmt, "Testing CPM signals\\n") == 0'):]
+        self.assertLess(seam.index("seam_power_ctrl = npu_read(NPU_OFF_POWER_CTRL);"), seam.index("seam_fired++;"))
+        self.assertIn("#define NPU_OFF_POWER_CTRL 0x38U", g)     # ethosu85_interface.h NPU_REG_POWER_CTRL
+        chk = blk.index("if (seam_power_ctrl != ((pmwl_power_ctrl == PMWL_OFF) ? PMWL_VENDOR_MAC_RAMP : pmwl_power_ctrl))")
+        self.assertLess(blk.index("rc = __real_test_u85("), chk)
+        self.assertLess(chk, blk.index("return pmwl_knob_bad ? PMWL_KNOB_NOT_HONOURED : rc;"))
+        self.assertIn("#define PMWL_VENDOR_MAC_RAMP 2U", blk)
+        self.assertIn("seam_power_ctrl = 0U;", g)                 # cleared when the window opens
+
     def test_step3_state_table(self):
         g = P.generate(BASE)
         self.assertIn("#if defined(PMU_EVENTS_MODEL)\n#define M_EVENTS_MODEL M(CB_SET_INSTRUMENTATION_MODE)\n#else\n#define M_EVENTS_MODEL 0U\n#endif", g)
