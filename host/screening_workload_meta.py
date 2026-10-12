@@ -4,15 +4,14 @@ Runs in the benchmark-runner container (needs `tflite` and `vela`). Uses the pac
 MAC = one multiply-accumulate. Only CONV_2D, DEPTHWISE_CONV_2D, FULLY_CONNECTED, BATCH_MATMUL carry
 MACs; every other op is listed with n_mac = None (not applicable, not zero).
 
-    python3 screening_workload_meta.py MODEL.tflite OUT.json
+    python3 screening_workload_meta.py MODEL.tflite OUT.json [packer|mlek]   (pack_vela_workload.py beside it)
 """
 import csv, glob, hashlib, json, subprocess, sys, tempfile
 import numpy as np
 import tflite
 from tflite.BuiltinOperator import BuiltinOperator as B
+from pack_vela_workload import VELA_PROFILES
 
-VELA = ["--accelerator-config", "ethos-u85-1024", "--system-config", "Ethos_U85_SYS_DRAM_Low",
-        "--memory-mode", "Dedicated_Sram"]
 OPNAME = {v: k for k, v in vars(B).items() if not k.startswith("_")}
 
 
@@ -48,24 +47,25 @@ def analyse(path):
     return ops
 
 
-def vela_summary(path):
+def vela_summary(path, vela):
     with tempfile.TemporaryDirectory() as d:
-        subprocess.run(["vela", path, *VELA, "--output-dir", d], check=True, capture_output=True)
+        subprocess.run(["vela", path, *vela, "--output-dir", d], check=True, capture_output=True)
         row = next(csv.DictReader(open(glob.glob(d + "/*_summary_*.csv")[0])))
     keep = ("core_clock", "nn_macs", "cycles_npu", "cycles_sram_access", "cycles_dram_access", "cycles_total")
     return {k: float(row[k]) for k in keep}
 
 
-def main(model, out):
+def main(model, out, profile="packer"):
+    vela = VELA_PROFILES[profile]
     ops = analyse(model)
     macs = [o["n_mac"] for o in ops if o["n_mac"] is not None]
     meta = dict(model=model, model_sha256=hashlib.sha256(open(model, "rb").read()).hexdigest(),
-                vela_options=VELA, ops=ops, op_counts={o: sum(1 for x in ops if x["op"] == o) for o in {x["op"] for x in ops}},
-                n_mac=sum(macs), n_mac_ops=len(macs), non_mac_ops=len(ops) - len(macs), vela=vela_summary(model))
+                vela_profile=profile, vela_options=vela, ops=ops, op_counts={o: sum(1 for x in ops if x["op"] == o) for o in {x["op"] for x in ops}},
+                n_mac=sum(macs), n_mac_ops=len(macs), non_mac_ops=len(ops) - len(macs), vela=vela_summary(model, vela))
     meta["n_mac_vs_vela_nn_macs"] = meta["n_mac"] / meta["vela"]["nn_macs"] if meta["vela"]["nn_macs"] else None
     json.dump(meta, open(out, "w"), indent=1)
     print(json.dumps({k: meta[k] for k in ("n_mac", "n_mac_ops", "non_mac_ops", "op_counts", "vela", "n_mac_vs_vela_nn_macs")}))
 
 
 if __name__ == "__main__":
-    main(*sys.argv[1:3])
+    main(*sys.argv[1:4])
