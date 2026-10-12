@@ -31,6 +31,18 @@ class T(unittest.TestCase):
         self.assertEqual(list(struct.unpack("<16I", b[64:128])), k)
         with self.assertRaises(SystemExit): K.knobs(axi_limit={"sram": 0x40000})   # reserved bit 18
 
+    def test_power_ctrl_is_word_25_and_v3(self):
+        self.assertEqual(K.knobs()[9], K.OFF)                       # default: vendor value
+        k = K.knobs(power_ctrl=0)
+        self.assertEqual(k[9], 0)
+        self.assertEqual([i for i, w in enumerate(k) if w != K.OFF], [9])
+        b = K.pack(INFO, b"\x02" * 4, b"\x03" * 2, k)
+        h = struct.unpack("<16I", b[:64]); self.assertEqual((h[1], h[2]), (3, 128))   # word 25 needs v3
+        self.assertEqual(struct.unpack("<I", b[64 + 9 * 4:64 + 10 * 4])[0], 0)          # header word 16 + 9
+        self.assertEqual(K.knobs(power_ctrl=63)[9], 63)
+        for bad in (64, -1):
+            with self.assertRaises(SystemExit): K.knobs(power_ctrl=bad)
+
     def test_cop1_extraction(self):
         raw = b"\x11\x22\x33\x44" * 2
         cop = b"COP1" + struct.pack("<I", 1) + b"\x00" * 8 + struct.pack("<I", 2 | (2 << 16)) + raw
