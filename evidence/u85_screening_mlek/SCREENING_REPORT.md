@@ -47,7 +47,7 @@ Write-stall ratios are N/A where screening 1 had 0 (ratio undefined); see `compa
    faster is consistent with the SRAM-port path (here backed by DDR staging, not on-chip SRAM) being the slower
    one — **not established**: no SRAM-port event was measured, and Vela options and AXI_SRAM changed together.
 4. **matmul is the control.** Same command stream, no fast scratch (so the AXI_SRAM change has nothing to act on):
-   every count identical across the two boots (28 and 33), npu_active 0.986 (within its 19 % CV).
+   `mac_active` (1,024) and EXT read/write beats (2,070 / 256) identical across boots 28 and 33, npu_active 0.986 (within its 19 % CV).
 5. **conv3x3 output is no longer byte-exact.** 27 of 200,704 OFM bytes differ by 1 from tflite_runtime,
    identically in all 35 RUNs (screening 1: 0 bytes). vendor_rc 2, valid under the completion rule (contract).
    The Mid_1024 Vela output computes this layer slightly differently; cause not investigated.
