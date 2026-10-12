@@ -108,6 +108,21 @@ class T(unittest.TestCase):
         self.assertIn("#define PMWL_VENDOR_MAC_RAMP 2U", blk)
         self.assertIn("seam_power_ctrl = 0U;", g)                 # cleared when the window opens
 
+    def test_onchip_fast_knob(self):
+        g = P.generate(BASE)
+        blk = g[g.index("#if defined(PMU_EVENTS_MODEL)"):g.index("#endif /* PMU_EVENTS_MODEL */")]
+        chk = blk[blk.index("    if (h[26] != PMWL_OFF) {"):]
+        chk = chk[:chk.index("        fast = (uint8_t *)(uintptr_t)h[26];")]
+        # every refusal condition present, and the refusal precedes the assignment
+        for cond in ("pmwl_region_ext(2U)", "(h[26] & 0xFFU) != 0U", "h[26] < (uint32_t)(uintptr_t)__StackTop",
+                     "h[26] > PMWL_SRAM_END", "h[7] > PMWL_SRAM_END - h[26]", "return PMWL_REFUSED;"):
+            self.assertIn(cond, chk)
+        self.assertIn("#define PMWL_SRAM_END 0x31400000U", blk)   # lnk.ld SRAM 0x31000000 + 0x00400000
+        # applied after the default placement, before the vendor run
+        self.assertLess(blk.index("if (pmwl_region_ext(2U)) { fast = dram; } else { fast = near; }"),
+                        blk.index("fast = (uint8_t *)(uintptr_t)h[26];"))
+        self.assertLess(blk.index("fast = (uint8_t *)(uintptr_t)h[26];"), blk.index("x.in_data_0      = fast;"))
+
     def test_step3_state_table(self):
         g = P.generate(BASE)
         self.assertIn("#if defined(PMU_EVENTS_MODEL)\n#define M_EVENTS_MODEL M(CB_SET_INSTRUMENTATION_MODE)\n#else\n#define M_EVENTS_MODEL 0U\n#endif", g)

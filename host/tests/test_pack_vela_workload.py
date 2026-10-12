@@ -43,6 +43,18 @@ class T(unittest.TestCase):
         for bad in (64, -1):
             with self.assertRaises(SystemExit): K.knobs(power_ctrl=bad)
 
+    def test_fast_base_is_word_26(self):
+        sram = {"cmd": "ext", "const": "ext", "arena": "ext", "fast": "sram"}
+        self.assertEqual(K.knobs(ports=sram)[10], K.OFF)
+        k = K.knobs(ports=sram, fast_base=0x31100000)
+        self.assertEqual(k[10], 0x31100000)
+        b = K.pack(INFO, b"\x02" * 4, b"\x03" * 2, k)
+        self.assertEqual(struct.unpack("<I", b[64 + 10 * 4:64 + 11 * 4])[0], 0x31100000)   # header word 26
+        for bad in (0x31100010, 0x30FFFF00, 0x31400000):
+            with self.assertRaises(SystemExit): K.knobs(ports=sram, fast_base=bad)
+        with self.assertRaises(SystemExit): K.knobs(ports=dict(sram, fast="ext"), fast_base=0x31100000)
+        with self.assertRaises(SystemExit): K.knobs(fast_base=0x31100000)
+
     def test_cop1_extraction(self):
         raw = b"\x11\x22\x33\x44" * 2
         cop = b"COP1" + struct.pack("<I", 1) + b"\x00" * 8 + struct.pack("<I", 2 | (2 << 16)) + raw
