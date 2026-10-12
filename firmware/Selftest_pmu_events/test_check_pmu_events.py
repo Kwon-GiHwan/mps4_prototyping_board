@@ -51,7 +51,7 @@ GEN_DRAM = GEN + 'strcmp(fmt, "Updating POWER_CTRL register with MAC_RAMP_VAR=%d
 OBJ_MODEL = OBJ + " 8000208: .word 0x4c574d50\n"
 VEND = ("#define BUSY_SLEEP_TIMEOUT 200000000 /* Tier C step 1: was 10000 */\n"
         "\t  write_reg(NPU_REG_POWER_CTRL, u85_power_ctrl_value(MAC_RAMP_VAR)); /* runner gap: hook */\n")
-NM_MODEL = NM_DRAM + "31000b00 T u85_power_ctrl_value\n"
+NM_MODEL = NM_DRAM + "310026b8 00000014 T u85_power_ctrl_value\n"   # real nm -S shape (with size)
 
 
 class T(unittest.TestCase):
