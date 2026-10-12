@@ -97,7 +97,7 @@ def check(objdump_text, nm_text, gen_text, build_id, elf_bytes=None, expect_ext=
         raise GateFail(RULES[9], "generated vendor u85.c lacks the raised BUSY_SLEEP_TIMEOUT")
     if expect_model and POWER_CTRL_HOOK not in gen_vendor_text:
         raise GateFail(RULES[9], "generated vendor u85.c does not route POWER_CTRL through the runner hook")
-    if expect_model and not re.search(r"^[0-9a-f]+ T u85_power_ctrl_value$", nm_text, re.M):
+    if expect_model and not re.search(r"^[0-9a-f]+(?: [0-9a-f]+)? T u85_power_ctrl_value$", nm_text, re.M):
         raise GateFail(RULES[9], "u85_power_ctrl_value is not the runner's strong definition: the POWER_CTRL knob would be ignored")
     return True
 
