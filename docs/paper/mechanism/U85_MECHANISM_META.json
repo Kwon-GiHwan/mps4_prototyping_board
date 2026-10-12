@@ -4,7 +4,8 @@
  "amendments": [
   "paper-u85-commandstream-rewrite-plan-anchor=8971ecd (P0-C0)",
   "analyzer v2->v3.1 (rejection-driven, pre-acceptance): 07a531a, bceaf17, 9d28d9c, 949c532",
-  "P0-D2 profiled re-acquisition (one-hot irq-history), appends to frozen P0-D"
+  "P0-D2 profiled re-acquisition (one-hot irq-history), appends to frozen P0-D",
+  "P0-E2 two-workload extension (wav2letter, mobilenet_v2), 2026-09-16: appends 6 cells; operator instruction, no manager GO"
  ],
  "qualifications": [
   "paper-u85-commandstream-rewrite-qualified=88d9c98",
@@ -32,5 +33,21 @@
   "P4",
   "narrative",
   "interpretation"
- ]
+ ],
+ "derived_sha256_note": "derived_sha256 is the September 2026-09-02 state and is not edited. Four of those files were appended to by P0-E2; their current digests are in derived_sha256_after_p0e2. U85_GROUP_DIFFERENTIAL.csv has no reproducible digest -- pd_groups.py orders rows through a set of strings, so PYTHONHASHSEED changes the byte sequence; see P0E2_LIMITATIONS.md.",
+ "derived_sha256_after_p0e2": {
+  "U85_FORMAL_MATRIX.csv": "c9e5d84c54a632a94b08962f013ad2fce0c4e917dc72fa8b575f3368bcde6b02",
+  "U85_OPERATOR_MATCH.csv": "c15456a625a1f1ce672003717b39c5fd8d7ba64fa9c4340025c526b937a43062",
+  "U85_256_512_DIFFERENTIAL.csv": "94ee51fb7953880918c142366bc6cc3d6988ae4597e1592f70c4019d6a3f50e0",
+  "U85_ATTRIBUTION_UNITS.csv": "108288bb96ddeec3f2da4c971abea6dd6d9840d14d0c14caf4c278ac465616e2",
+  "U85_GROUP_DIFFERENTIAL.csv": "154d0ccafd7d7c3965345414742967ec9523fd4b3a8b9257f952e3e06487ed1a"
+ },
+ "p0e2": {
+  "contract": "docs/superpowers/plans/2026-09-16-p0e2-two-workload-extension-plan.md",
+  "evidence": "docs/paper/mechanism/evidence/20260916-p0e2",
+  "results": "docs/paper/mechanism/P0E2_RESULTS.md",
+  "limitations": "docs/paper/mechanism/P0E2_LIMITATIONS.md",
+  "gates": "host/experiments/p0e2/gates.py",
+  "gate_tests": "host/tests/p0e2/test_gates.py"
+ }
 }
