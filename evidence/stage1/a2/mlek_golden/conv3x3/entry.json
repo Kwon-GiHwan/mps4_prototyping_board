@@ -1,0 +1,133 @@
+{
+ "blob_sha256": "5fcc95997b2c88cd1ced8e6e2f860d3f7c4859c1c6bc331f49b5a309a82260f3",
+ "cms_sha256": "f02d9e9f549f9ff7c90dc7639b7455694d3955b8e0271b3e30c209d61b2eed07",
+ "golden": {
+  "source": "MLEK b2c0bb2 inference_runner on FI101, VERIFY_TEST_OUTPUT dump (amendment 2)",
+  "input_sha256": "e5164a0f0c9da2afed8bba1a631e6bbd5df4626f0b411709fe8ead625e3a95f9",
+  "ofm_sha256": "603ffd7050a138536a7c291702d2c5fab3ef537950db4429e7b09ced76e4f59f"
+ },
+ "knobs": [
+  "0xffffffff",
+  "0x0000000a",
+  "0x00000002",
+  "0x00000000",
+  "0x00000000",
+  "0x00000004",
+  "0x00000004",
+  "0x00020f0b",
+  "0x00021f3f",
+  "0x00000000",
+  "0x31100000",
+  "0x00000001",
+  "0xffffffff",
+  "0xffffffff",
+  "0xffffffff",
+  "0xffffffff"
+ ],
+ "fast_size": 45472,
+ "arena_size": 401408,
+ "cms_len": 520,
+ "const_len": 45472,
+ "class": "isolated_operator",
+ "n_mac": 115605504,
+ "operator_type": "CONV_2D",
+ "shape": "[1, 56, 56, 64]->[1, 56, 56, 64]",
+ "input_shape": [
+  1,
+  56,
+  56,
+  64
+ ],
+ "output_shape": [
+  1,
+  56,
+  56,
+  64
+ ],
+ "kernel_shape": [
+  3,
+  3
+ ],
+ "weight_shape": [
+  64,
+  3,
+  3,
+  64
+ ],
+ "stride": [
+  1,
+  1
+ ],
+ "padding": "SAME",
+ "groups": 1,
+ "quant": {
+  "ifm_scale": 0.0078125,
+  "weight_scale": 0.0078125,
+  "ofm_scale": 0.3232787124753937,
+  "zero_points": 0
+ },
+ "weight_seed": 20261014,
+ "ifm_seed": null,
+ "model_sha256": "1aceed787b27036ae28bb8b03fc7a4c9b52b4be951558825a67380bc7c39f283",
+ "vela_sha256": "efe743125c7b0e3b568ed582149ad0ae509b16839f1143c4ac32a5434daf98aa",
+ "vela_nn_macs": 115605504.0,
+ "output_correctness": "byte-exact vs MLEK FI101 golden (amendment 2)",
+ "mlek_vela_sha256": "efe743125c7b0e3b568ed582149ad0ae509b16839f1143c4ac32a5434daf98aa",
+ "golden_validity": {
+  "G1_lengths": true,
+  "G2_same_vela_output": true,
+  "G3_ta_configured": true,
+  "G4_model_and_cms_unchanged": true,
+  "G5_blob_holds_dump": true
+ },
+ "numerical_difference_diagnostic": {
+  "vs": "tflite_runtime",
+  "tflite_ofm_sha256": "41050672211a09690ec62f5ac84320087b8d2d465401bc47470fd5b905d36f4f",
+  "mismatch_count": 20,
+  "positions": [
+   8276,
+   15312,
+   19250,
+   29080,
+   38413,
+   48239,
+   51635,
+   59285,
+   78742,
+   90652,
+   91072,
+   94520,
+   97755,
+   107308,
+   112779,
+   120040,
+   121137,
+   124603,
+   164686,
+   187647
+  ],
+  "signed_diff_mlek_minus_tflite": [
+   -1,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1,
+   -1
+  ],
+  "max_abs_diff": 1
+ }
+}

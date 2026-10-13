@@ -1,0 +1,2 @@
+mcc boot log: 10469 bytes -> mcc_boot.log
+app uart: 4919796 bytes -> app_uart.raw; marker seen; listener opened before REBOOT
