@@ -73,6 +73,18 @@ class Outcome(unittest.TestCase):
         (self.root / "workloads").mkdir(); (self.root / "x.json").rename(self.root / "workloads" / "w.meta.json")
         self.assertEqual(S.workload(self.root, "w")["outcome"], "NOT_EXECUTABLE")
 
+    def test_main_analyses_exactly_the_workloads_with_metadata(self):
+        write(self.root, "b"); write(self.root, "a")
+        (self.root / "workloads" / "a.pmwl.json").write_text("{}")   # blob metadata lives beside it in real roots
+        import contextlib, io
+        from unittest import mock
+        real_glob = pathlib.Path.glob
+        rev = lambda self_, pat: sorted(real_glob(self_, pat), reverse=True)   # filesystem order is not promised
+        with contextlib.redirect_stdout(io.StringIO()), mock.patch.object(pathlib.Path, "glob", rev):
+            S.main(str(self.root))
+        names = [r["name"] for r in json.load(open(self.root / "screening_summary.json"))]
+        self.assertEqual(names, ["a", "b"])                     # discovered, sorted, nothing else
+
     def test_outcomes_closed_set(self):
         write(self.root, "w")
         self.assertIn(S.workload(self.root, "w")["outcome"], S.OUTCOMES)

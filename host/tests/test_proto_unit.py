@@ -5,12 +5,14 @@ violation is exercised deliberately, including the cases a real board would
 only produce during a firmware/host mismatch.
 """
 
+import pathlib
 import sys
 import types
 
 import struct
 import zlib
 
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 import runner_proto as rp
 
 passed = 0
