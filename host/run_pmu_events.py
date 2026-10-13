@@ -1,28 +1,25 @@
 #!/usr/bin/env python3
 """One boot: upload a PMWL workload blob once, run each event set --repeats times, archive every run.
 
-  python3 run_pmu_events.py --out evidence/pmu_events/boot1 --host-boot-index N \
-      --app-sha256 .. --vectors-sha256 .. --ddr-sha256 ..
+  python3 run_pmu_events.py --out <dir> --host-boot-index N --blob <x.pmwl> --ids @<ids file> \
+      --validity model --keep-model --repeats 35 --app-sha256 .. --vectors-sha256 .. --ddr-sha256 ..
+(board/run_campaign.sh is the normal caller.)
 """
 import argparse, csv, datetime, json, pathlib, struct, sys
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
 import zlib
 import pmu_events_parse as E
-from runner_proto import (MAX_PAYLOAD, RunnerLink, PROTO_MEASURE_V2, Nack, ProtocolError,
-                          GOLDEN_WINDOW_CRC, PMU_DIAG_GOLDEN_WINDOW_BASE, PMU_DIAG_GOLDEN_WINDOW_LEN)
+from runner_proto import MAX_PAYLOAD, RunnerLink, PROTO_MEASURE_V2, Nack, ProtocolError
 
 
-BLOB = None   # Tier C step 1: a PMWL workload blob replaces the 64-byte dummy when --blob is given
 CHUNK = 4092   # MAX_PAYLOAD 4096 minus the 4-byte offset; halves the per-chunk ACK round trips vs 2048
 
 
 assert CHUNK + 4 <= MAX_PAYLOAD
 
 
-def prime(link):
-    """Walk the state machine to INPUT_READY exactly as run_pmu_diag.py / run_pmu_qual.py
-    do: a dummy blob (or the PMWL workload blob) and an empty input."""
-    blob = BLOB if BLOB is not None else b"\x00" * 64
+def prime(link, blob):
+    """Walk the state machine to INPUT_READY: stage the PMWL blob with LOAD_MODEL, empty input."""
     link.load_model_begin(len(blob), zlib.crc32(blob) & 0xFFFFFFFF)
     for off in range(0, len(blob), CHUNK):
         link.load_model_chunk(off, blob[off:off + CHUNK])
@@ -40,8 +37,7 @@ def main():
     ap.add_argument("--out", required=True); ap.add_argument("--port", default=PORT)
     ap.add_argument("--host-boot-index", type=int, required=True)
     ap.add_argument("--build-id", default=f"0x{E.BUILD_ID_PMEV:08x}")
-    ap.add_argument("--check-golden", action="store_true", help="Tier C: GET_RESULT golden window after every RUN")
-    ap.add_argument("--blob", help="Tier C step 1: PMWL workload blob to stage with LOAD_MODEL")
+    ap.add_argument("--blob", required=True, help="PMWL workload blob to stage with LOAD_MODEL")
     ap.add_argument("--validity", choices=("exact", "model"), default="exact",
                     help="model: completion replaces exact OFM match (step-2 amendment 2)")
     ap.add_argument("--keep-model", action="store_true",
@@ -52,9 +48,8 @@ def main():
     a = ap.parse_args()
     E.REPEATS = a.repeats
     out = pathlib.Path(a.out); out.mkdir(parents=True, exist_ok=True)
-    global BLOB
-    if a.blob:
-        BLOB = pathlib.Path(a.blob).read_bytes()
+    blob = pathlib.Path(a.blob).read_bytes()
+    cms_len = struct.unpack_from("<I", blob, 12)[0]   # PMWL header word 3
     prov = dict(PROV, build_id=a.build_id, app_sha256=a.app_sha256, vectors_sha256=a.vectors_sha256, ddr_sha256=a.ddr_sha256,
                 host_boot_index=a.host_boot_index, captured_at_utc=datetime.datetime.now(datetime.timezone.utc).isoformat())
     names = E.driver_ids(); trm = E.trm_ids()
@@ -90,7 +85,7 @@ def main():
                 raise E.fail_rule("RULE_MODE_NACK", f"applied={applied} count={cnt}")
             try:
                 if first or not a.keep_model:
-                    prime(link)
+                    prime(link, blob)
             except (Nack, ProtocolError) as e:
                 raise E.fail_rule("RULE_RUN_TRANSPORT", f"set {set_id} prime: {e!r}")
             for rep in range(1, E.REPEATS + 1):
@@ -102,23 +97,15 @@ def main():
                 if m is None or m.pmu is None: raise E.fail_rule("RULE_RECORD_SCHEMA", "no PMU block in record")
                 if m.pmu["record_schema_version"] != 1: raise E.fail_rule("RULE_RECORD_SCHEMA", str(m.pmu["record_schema_version"]))
                 seam = m.trailing[0] if len(m.trailing) >= 1 else None   # amendment 7: field 103
-                golden_crc = None
-                if a.check_golden:
-                    try:
-                        _, _, _, golden_crc = link.get_result(PMU_DIAG_GOLDEN_WINDOW_BASE, PMU_DIAG_GOLDEN_WINDOW_LEN, m.run_sequence)
-                    except (Nack, ProtocolError) as e:
-                        golden_crc = f"error: {e!r}"
                 tr = list(m.trailing) + [None] * 7
                 r = dict(run_rc=rc, required_flags_ok=m.required_flags_ok(), pmu=m.pmu, seam_fired=seam,
                          valid_flags=m.valid_flags, vendor_rc=tr[1], seam_npu_status=tr[2], seam_npu_qread=tr[3],
-                         cms_len=(struct.unpack_from("<I", BLOB, 12)[0] if BLOB is not None else None))
-                if a.check_golden:
-                    r["golden_ok"] = (golden_crc == GOLDEN_WINDOW_CRC)
+                         cms_len=cms_len)
                 ok, failed = E.run_validity(r, codes, a.validity)
                 if "codes_echo" in failed and ok is False and m.pmu["event_valid_mask"] == (1 << len(codes)) - 1:
                     raise E.fail_rule("RULE_CODES_ECHO", f"set {set_id}: {m.pmu['event_codes'][:len(codes)]} != {codes}")
                 raw.append({"set_id": set_id, "rep": rep, "rc": rc, "valid_flags": m.valid_flags, "pmu": m.pmu,
-                            "seam_fired": seam, "trailing": list(m.trailing), "golden_crc": golden_crc,
+                            "seam_fired": seam, "trailing": list(m.trailing),
                             "vendor_rc": (m.trailing[1] if len(m.trailing) >= 2 else None),
                             "base_fields": list(m.fields),
                             "seam_npu_status": (m.trailing[2] if len(m.trailing) >= 3 else None),
@@ -131,7 +118,6 @@ def main():
                                      event_overflow=m.pmu["event_overflow"][slot], run_rc=rc, run_valid=ok,
                                      invalid_reasons=";".join(failed), window_cycles=m.pmu["npu_pmu_window_cycles"],
                                      cycle_valid=m.pmu["npu_pmu_cycle_valid"], valid_flags=m.valid_flags,
-                                     golden_crc=(f"0x{golden_crc:08x}" if isinstance(golden_crc, int) else golden_crc),
                                      vendor_rc=tr[1], ofm_mismatch_count=tr[4], ofm_max_abs_diff=tr[5], **prov))
                 vrc = m.trailing[1] if len(m.trailing) >= 2 else None
                 st = (hex(m.trailing[2]), m.trailing[3]) if len(m.trailing) >= 4 else None
@@ -148,8 +134,8 @@ def main():
     by = {}
     for r in rows: by.setdefault(r["ev_type"], []).append(r["event_value"])
     per = [dict(ev_type=ev, name=names[ev], in_trm110=ev in trm, verdict=E.verdict(vals), values=vals,
-                tier="B-count", where=f"{prov['board_serial']} / {prov['fpga_image']} / PMEVCNTR[slot]",
-                how=f"EVENTS mode: PMEVTYPER=id, PMCNTENSET, run apU85Conv_TEST, read PMEVCNTR after disable; {E.REPEATS} repeats",
+                where=f"{prov['board_serial']} / {prov['fpga_image']} / PMEVCNTR[slot]",
+                how=f"EVENTS mode: PMEVTYPER=id, PMCNTENSET, PMWL blob via test_u85, PMEVCNTR read at the CPM seam; {E.REPEATS} repeats",
                 boot=out.name, app_sha256=prov["app_sha256"], captured_at_utc=prov["captured_at_utc"],
                 authorization=prov["authorization"]) for ev, vals in sorted(by.items())]
     if per:

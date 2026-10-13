@@ -24,14 +24,11 @@ AXI_CHANNELS = {"rd_cmd": 0, "rd_ifm": 1, "rd_weights": 2, "rd_scale_bias": 3, "
 ATTR_SRAM, ATTR_EXT = 0, 2      # MEM_ATTR indices used for the two ports
 MEM_ATTR_SRAM, MEM_ATTR_EXT = 0x0, 0x4   # bit 2 = EXT AXI port
 MLEK_INI = "/opt/arm/ml-embedded-evaluation-kit/scripts/vela/default_vela.ini"
-# Vela options after the model path. 'mlek' = MLEK resources.py run_vela() for ethos-u85-1024
-# (npu_config.py: Dedicated_Sram, Ethos_U85_SYS_DRAM_Mid_1024; arena_cache_size from the ini).
-VELA_PROFILES = {
-    "packer": ["--accelerator-config", "ethos-u85-1024", "--system-config", "Ethos_U85_SYS_DRAM_Low",
-               "--memory-mode", "Dedicated_Sram"],
-    "mlek": ["--accelerator-config", "ethos-u85-1024", "--optimise", "Performance", "--config", MLEK_INI,
-             "--memory-mode", "Dedicated_Sram", "--system-config", "Ethos_U85_SYS_DRAM_Mid_1024"],
-}
+# Vela options after the model path = MLEK resources.py run_vela() for ethos-u85-1024 (npu_config.py:
+# Dedicated_Sram, Ethos_U85_SYS_DRAM_Mid_1024; arena_cache_size 393216 from the ini). Reproduces MLEK's
+# shipped *_vela_Z256.tflite byte for byte when built for ethos-u85-256 / SYS_DRAM_Low.
+VELA_OPTIONS = ["--accelerator-config", "ethos-u85-1024", "--optimise", "Performance", "--config", MLEK_INI,
+                "--memory-mode", "Dedicated_Sram", "--system-config", "Ethos_U85_SYS_DRAM_Mid_1024"]
 
 
 def knobs(axi=None, ports=None, axi_limit=None, power_ctrl=None, fast_base=None, ta_profile=None):
@@ -168,8 +165,6 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--model", required=True); ap.add_argument("--out", required=True)
     ap.add_argument("--seed", type=int, default=1)
-    ap.add_argument("--memory-mode", default="Dedicated_Sram")
-    ap.add_argument("--vela-profile", choices=sorted(VELA_PROFILES), default="packer")
     ap.add_argument("--axi", help="PMCAXI_CHAN knob, e.g. ext:rd_weights (default OFF)")
     ap.add_argument("--axi-limit", help="AXI outstanding-limit knob, e.g. sram=0x20000,ext=0x20000 (default OFF)")
     ap.add_argument("--power-ctrl", type=lambda x: int(x, 0), help="POWER_CTRL value, e.g. 0 = MLEK driver (default OFF = vendor 2)")
@@ -177,13 +172,8 @@ def main():
     ap.add_argument("--ta-profile", type=int, help="timing adapters: 1 = MLEK sys_dram_mid, 2 = pass-through (default OFF = untouched)")
     ap.add_argument("--ports", help="region ports, e.g. cmd=ext,const=ext,arena=sram,fast=sram (default OFF)")
     a = ap.parse_args()
-    vela_opts = VELA_PROFILES[a.vela_profile]
-    if a.vela_profile == "packer":
-        vela_opts = vela_opts[:-1] + [a.memory_mode]
-    elif a.memory_mode != "Dedicated_Sram":
-        raise SystemExit("--memory-mode is fixed by the mlek profile")
     with tempfile.TemporaryDirectory() as d:
-        subprocess.run(["vela", a.model, *vela_opts, "--output-dir", d], check=True, capture_output=True)
+        subprocess.run(["vela", a.model, *VELA_OPTIONS, "--output-dir", d], check=True, capture_output=True)
         vela_out = glob.glob(os.path.join(d, "*_vela.tflite"))[0]
         info = inspect_vela(vela_out)
         vela_sha = hashlib.sha256(open(vela_out, "rb").read()).hexdigest()
@@ -195,8 +185,8 @@ def main():
     open(a.out, "wb").write(blob)
     meta = dict(model=a.model, model_sha256=hashlib.sha256(open(a.model, "rb").read()).hexdigest(),
                 vela_sha256=vela_sha, accelerator="ethos-u85-1024",
-                system_config=vela_opts[vela_opts.index("--system-config") + 1],
-                memory_mode=a.memory_mode, vela_profile=a.vela_profile, vela_options=vela_opts, seed=a.seed, blob_sha256=hashlib.sha256(blob).hexdigest(),
+                system_config="Ethos_U85_SYS_DRAM_Mid_1024", memory_mode="Dedicated_Sram",
+                vela_options=VELA_OPTIONS, seed=a.seed, blob_sha256=hashlib.sha256(blob).hexdigest(),
                 cms_len=len(info["cms"]), const_len=len(info["const"]), arena_size=info["arena_size"],
                 fast_size=info["fast_size"], ifm_off=info["ifm_off"], ifm_len=len(ifm),
                 ofm_off=info["ofm_off"], ofm_len=len(golden), total=len(blob),

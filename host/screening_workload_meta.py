@@ -1,16 +1,16 @@
 """Static metadata for a screening workload: per-op MACs from the original tflite, and Vela's prediction.
 
-Runs in the benchmark-runner container (needs `tflite` and `vela`). Uses the packer's Vela options.
+Runs in the benchmark-runner container (needs `tflite` and `vela`). Uses the packer's (MLEK) Vela options.
 MAC = one multiply-accumulate. Only CONV_2D, DEPTHWISE_CONV_2D, FULLY_CONNECTED, BATCH_MATMUL carry
 MACs; every other op is listed with n_mac = None (not applicable, not zero).
 
-    python3 screening_workload_meta.py MODEL.tflite OUT.json [packer|mlek]   (pack_vela_workload.py beside it)
+    python3 screening_workload_meta.py MODEL.tflite OUT.json   (pack_vela_workload.py beside it)
 """
 import csv, glob, hashlib, json, subprocess, sys, tempfile
 import numpy as np
 import tflite
 from tflite.BuiltinOperator import BuiltinOperator as B
-from pack_vela_workload import VELA_PROFILES
+from pack_vela_workload import VELA_OPTIONS
 
 OPNAME = {v: k for k, v in vars(B).items() if not k.startswith("_")}
 
@@ -55,12 +55,12 @@ def vela_summary(path, vela):
     return {k: float(row[k]) for k in keep}
 
 
-def main(model, out, profile="packer"):
-    vela = VELA_PROFILES[profile]
+def main(model, out):
+    vela = VELA_OPTIONS
     ops = analyse(model)
     macs = [o["n_mac"] for o in ops if o["n_mac"] is not None]
     meta = dict(model=model, model_sha256=hashlib.sha256(open(model, "rb").read()).hexdigest(),
-                vela_profile=profile, vela_options=vela, ops=ops, op_counts={o: sum(1 for x in ops if x["op"] == o) for o in {x["op"] for x in ops}},
+                vela_options=vela, ops=ops, op_counts={o: sum(1 for x in ops if x["op"] == o) for o in {x["op"] for x in ops}},
                 n_mac=sum(macs), n_mac_ops=len(macs), non_mac_ops=len(ops) - len(macs), vela=vela_summary(model, vela))
     meta["n_mac_vs_vela_nn_macs"] = meta["n_mac"] / meta["vela"]["nn_macs"] if meta["vela"]["nn_macs"] else None
     json.dump(meta, open(out, "w"), indent=1)
@@ -68,4 +68,4 @@ def main(model, out, profile="packer"):
 
 
 if __name__ == "__main__":
-    main(*sys.argv[1:4])
+    main(*sys.argv[1:3])

@@ -14,7 +14,7 @@ from that layout.
 | --- | --- |
 | `host/` | packer, workload metadata, board driver, parser, metrics, A/B outcome; `host/tests/` |
 | `firmware/` | the subset of the build tree this repo owns — **mirrors `/work/selftest` in the container path-for-path** (patchers, gate, base runner source, vendor `u85.c`, `Makefile.pmu_events`). Do not restructure it. |
-| `board/` | board-host scripts (copied to `~/evsweep` on `ssh gihwan`): deploy/restore/postflight/inspect, MCC helpers, `run_campaign.sh` |
+| `board/` | board-host scripts (synced to `~/evsweep` on `ssh gihwan`): deploy/restore/postflight/inspect, MCC helpers, `run_campaign.sh` |
 | `config/` | workload metadata (`workloads/*.meta.json`), PMU event set (`screening_ids.txt`) |
 | `docs/reference/` | PMU event lists (TRM 110, driver 171), PMU reference, MLEK board reference values |
 | `docs/specs/` | frozen contracts still in force: metric definitions, timing-adapter A/B |
@@ -40,9 +40,9 @@ FI101 has an NPU timing adapter in front of each NPU AXI port (`TA_SRAM` at `0x5
 
 ## Pipeline
 
-1. **Blob** (container, `ssh gihwan` → `docker exec benchmark-runner`): `host/pack_vela_workload.py --vela-profile mlek`
+1. **Blob** (container, `ssh gihwan` → `docker exec benchmark-runner`): `host/pack_vela_workload.py` (Vela options fixed to MLEK's)
    plus the knobs (`--ports`, `--axi-limit`, `--ta-profile`, `--fast-base`, `--power-ctrl`), and
-   `host/screening_workload_meta.py <model> <out> mlek` for N_MAC and Vela's prediction.
+   `host/screening_workload_meta.py <model> <out>` for N_MAC and Vela's prediction.
 2. **Image**: `make -f Makefile.pmu_events MODEL=1 all` in `/work/selftest` (gate `check_pmu_events.py` runs in
    `all`). Copy `firmware/` changes into the container first; back up `build_pmu_events_model` before rebuilding.
 3. **Deploy** (owner runs sudo): `sudo sh ~/evsweep/deploy.sh <staging> ~/evsweep/evidence_<new>` — always a new
@@ -52,7 +52,9 @@ FI101 has an NPU timing adapter in front of each NPU AXI port (`TA_SRAM` at `0x5
    `host/ab_outcome.py <ctrl> <treat>` for a one-variable A/B against MLEK.
 6. **Restore**: owner runs `sudo sh ~/evsweep/restore.sh ~/evsweep/evidence_m6`, then `sh ~/evsweep/postflight.sh`.
 
-Board-host copies: `board/*` → `~/evsweep/`, `host/*.py` → `~/evsweep/host/`. Keep them in sync before a campaign.
+Before every campaign: `sh sync.sh board` and `sh sync.sh container` (copy with repo-relative paths, then verify by
+sha256; `sh sync.sh check` only verifies). The board-host copy of `pmu_events_parse.py` finds the event lists via
+`host/..`, so `docs/reference/` must sit beside `host/` there too — never copy `host/*.py` alone.
 
 ## The one thing this project is about
 

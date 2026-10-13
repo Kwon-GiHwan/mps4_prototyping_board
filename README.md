@@ -15,4 +15,4 @@ evidence/    ta_ab/ (timing-adapter finding + MLEK-TA baseline arm), runner_gap/
 environment/ board card config, build environment, host setup
 ```
 
-Tests: `sh test.sh`. Pipeline and rules: `CLAUDE.md`. Earlier history: branch `refactor/unified-mlek-campaigns`.
+Tests: `sh test.sh`. Sync to board host / container: `sh sync.sh board|container|check`. Pipeline and rules: `CLAUDE.md`. Earlier history: branch `refactor/unified-mlek-campaigns`.
