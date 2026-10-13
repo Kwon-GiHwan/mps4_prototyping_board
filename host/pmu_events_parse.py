@@ -1,5 +1,5 @@
 """Tier B: event sets, per-run validity, per-event verdicts, consistency checks, refusals.
-Pure functions. Contract: docs/superpowers/specs/2026-09-23-pmu-events-tier-b-contract.md (+ amendment 1).
+Pure functions: event-id lists (docs/reference), per-run validity, per-event verdicts.
 """
 import json, pathlib
 
@@ -25,12 +25,12 @@ def refusal_rule(exc): return exc.rule
 
 
 def driver_ids():
-    d = json.loads((REPO / "docs/ethos_u85_pmu_sources/driver_events_171.json").read_text())
+    d = json.loads((REPO / "docs/reference/driver_events_171.json").read_text())
     return {int(v): n for v, n in d}
 
 
 def trm_ids():
-    return {int(v) for v, _, _ in json.loads((REPO / "docs/ethos_u85_pmu_sources/trm_events_110.json").read_text())}
+    return {int(v) for v, _, _ in json.loads((REPO / "docs/reference/trm_events_110.json").read_text())}
 
 
 def event_sets(ids=None):

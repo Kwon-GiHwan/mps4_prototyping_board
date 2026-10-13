@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Tier B: one boot, 22 sets x 3 repeats, archive every run under the contract.
+"""One boot: upload a PMWL workload blob once, run each event set --repeats times, archive every run.
 
   python3 run_pmu_events.py --out evidence/pmu_events/boot1 --host-boot-index N \
       --app-sha256 .. --vectors-sha256 .. --ddr-sha256 ..

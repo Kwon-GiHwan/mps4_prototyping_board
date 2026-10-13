@@ -1,11 +1,11 @@
-"""Ethos-U85 first-pass screening metrics (contract 2026-10-12-u85-screening-contract.md).
+"""Ethos-U85 screening metrics (definitions: docs/specs/screening-metrics.md).
 
 Reads each workload's campaign (runs.csv: one row per event per RUN) and its static metadata
 (N_MAC, Vela prediction), drops the warm-up RUNs, and writes per-run metrics, per-workload
 summaries and the fingerprint table.
 
     python3 host/screening_metrics.py evidence/u85_screening
-      expects  <root>/workloads/<name>.meta.json  and  <root>/<name>/runs.csv
+      expects  <root>/workloads/<name>.meta.json  and  <root>/<name>/runs.csv  (every meta present is analysed)
 """
 from __future__ import annotations
 
@@ -15,7 +15,6 @@ import statistics
 import sys
 from pathlib import Path
 
-WORKLOADS = ("kws_micronet_m", "mobilenet_v2_1.0_224_INT8", "ad_medium_int8", "conv3x3_56x56x64", "matmul_xxT")
 EVENTS = {35: "npu_active", 48: "mac_active", 386: "ext_rd_beats", 391: "ext_wr_beats",
           387: "ext_rd_req_stall", 392: "ext_wr_req_stall", 393: "ext_wr_data_stall", 396: "ext_enabled"}
 WARMUP, MEASURED = 5, 30
@@ -140,7 +139,8 @@ def fingerprint(results: list[dict]) -> str:
 
 def main(root: str) -> None:
     root_p = Path(root)
-    results = [workload(root_p, n) for n in WORKLOADS]
+    names = sorted(p.name[:-len(".meta.json")] for p in (root_p / "workloads").glob("*.meta.json"))
+    results = [workload(root_p, n) for n in names]
     with open(root_p / "screening_per_run.csv", "w", newline="") as f:
         rows = [dict(workload=r["name"], **{k: v for k, v in run.items()}) for r in results for run in r.get("per_run", [])]
         if rows:
