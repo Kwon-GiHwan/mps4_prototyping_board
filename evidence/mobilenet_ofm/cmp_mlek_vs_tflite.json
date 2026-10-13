@@ -1,0 +1,1 @@
+{"a": "MLEK_board", "b": "TFLite", "length": 1001, "mismatch_count": 7, "positions": [540, 620, 825, 880, 886, 912, 972], "a_values": [-116, -120, -123, -128, 23, -87, -119], "b_values": [-118, -121, -124, -127, 39, -95, -121], "signed_diff_a_minus_b": [2, 1, 1, -1, -16, 8, 2], "max_abs_diff": 16}

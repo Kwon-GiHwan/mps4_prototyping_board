@@ -1,0 +1,22 @@
+diff --git a/source/app/use_case/inference_runner/src/UseCaseHandler.cc b/source/app/use_case/inference_runner/src/UseCaseHandler.cc
+index 7c5a93a..33eaa00 100644
+--- a/source/app/use_case/inference_runner/src/UseCaseHandler.cc
++++ b/source/app/use_case/inference_runner/src/UseCaseHandler.cc
+@@ -97,7 +97,7 @@ static void PopulateDynamicOfm(const fwk::iface::Model& model)
+ #endif /* defined (DYNAMIC_OFM_BASE) && defined(DYNAMIC_OFM_SIZE) */
+ 
+ #if VERIFY_TEST_OUTPUT
+-static void DumpInputs(const Model& model, const char* message)
++static void DumpInputs(const fwk::iface::Model& model, const char* message)
+ {
+     info("%s\n", message);
+     for (size_t inputIndex = 0; inputIndex < model.GetNumInputs(); inputIndex++) {
+@@ -105,7 +105,7 @@ static void DumpInputs(const Model& model, const char* message)
+     }
+ }
+ 
+-static void DumpOutputs(const Model& model, const char* message)
++static void DumpOutputs(const fwk::iface::Model& model, const char* message)
+ {
+     info("%s\n", message);
+     for (size_t outputIndex = 0; outputIndex < model.GetNumOutputs(); outputIndex++) {

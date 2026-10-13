@@ -1,0 +1,7 @@
+/opt/arm/ml-embedded-evaluation-kit/source/app/main/include/UseCaseCommonUtils.hpp:59:27: error: 'TfLiteTensor' does not name a type
+/opt/arm/ml-embedded-evaluation-kit/source/app/main/UseCaseCommonUtils.cc:106:27: error: 'TfLiteTensor' does not name a type
+/opt/arm/ml-embedded-evaluation-kit/source/app/main/UseCaseCommonUtils.cc:113:43: error: request for member 'bytes' in '* tensor', which is of non-class type 'const int'
+/opt/arm/ml-embedded-evaluation-kit/source/app/main/UseCaseCommonUtils.cc:114:35: error: 'tflite' has not been declared
+/opt/arm/ml-embedded-evaluation-kit/source/app/main/UseCaseCommonUtils.cc:114:64: error: expected primary-expression before '>' token
+/opt/arm/ml-embedded-evaluation-kit/source/app/use_case/inference_runner/src/UseCaseHandler.cc:104:50: error: cannot convert 'std::shared_ptr<arm::app::fwk::iface::TensorIface>' to 'const TfLiteTensor*'
+/opt/arm/ml-embedded-evaluation-kit/source/app/use_case/inference_runner/src/UseCaseHandler.cc:112:51: error: cannot convert 'std::shared_ptr<arm::app::fwk::iface::TensorIface>' to 'const TfLiteTensor*'

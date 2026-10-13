@@ -14,7 +14,7 @@ from that layout.
 | --- | --- |
 | `host/` | shared modules + thin CLI scripts (below); `host/tests/` |
 | `firmware/` | the subset of the build tree this repo owns — **mirrors `/work/selftest` in the container path-for-path** (patchers, gate, base runner source, vendor `u85.c`, `Makefile.pmu_events`). Do not restructure it. |
-| `board/` | board-host scripts (synced to `~/evsweep` on `ssh gihwan`): deploy/restore/postflight/inspect, MCC helpers, `run_campaign.sh` |
+| `board/` | board-host scripts (synced to `~/evsweep` on `ssh gihwan`): deploy/restore/postflight/inspect, MCC helpers, `run_campaign.sh`; MLEK image set (boot/bram/ddr.bin + images.txt): `deploy_mlek.sh`/`restore_mlek.sh`, app-UART capture `mlek_app_capture.py` |
 | `config/` | **stage-0 profile** `mlek_baseline.json` + `baseline_ids.txt` + blob `mlek_baseline.manifest.json`; workload metadata (`workloads/*.meta.json`); screening PMU set (`screening_ids.txt`) |
 | `docs/reference/` | PMU event lists (TRM 110, driver 171), PMU reference, MLEK board reference values |
 | `docs/specs/` | frozen contracts still in force: MLEK baseline profile + per-run gate, metric definitions, timing-adapter A/B, tools verification |
@@ -30,6 +30,7 @@ from that layout.
 | `results.py` | runs.csv loading, warm-up/measured window, event names | metrics, A/B outcome |
 | `runner_proto.py` | UART protocol to the runner firmware | driver, board/postflight.sh |
 | `pmu_events_parse.py` | event sets, per-RUN validity, verdicts, refusals | driver |
+| `ofm_compare.py` | MLEK VERIFY_TEST_OUTPUT dump parsing, byte-by-byte OFM comparison (int8) | output verification |
 | `baseline_gate.py` | stage-0 per-run gate (B1–B3, R1–R6) and the MLEK-equivalence outcome | Mac, after every baseline campaign |
 | CLI | `pack_vela_workload.py`, `screening_workload_meta.py` (container); `run_pmu_events.py` (board host); `screening_metrics.py`, `ab_outcome.py`, `baseline_gate.py` (Mac) | |
 
