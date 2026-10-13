@@ -37,7 +37,8 @@ def event_sets(ids=None):
 STATUS_CMD_END = 1 << 5
 STATUS_FAULTS = (1 << 2) | (1 << 4) | (1 << 8) | (1 << 9)   # bus_status, cmd_parse_error, ecc_fault, branch_fault
 FLAGS_COMPLETED = 0xD                                     # COMPLETED | OUTPUT_CHANGED | COARSE_WINDOW
-MODEL_TERMS = ("vendor_rc_completed", "flags_completed", "stream_completed")
+KNOB_NOT_HONOURED = 0x7D                                  # runner rc when a knob read-back failed
+MODEL_TERMS = ("vendor_rc_completed", "flags_completed", "stream_completed", "knobs_honoured")
 
 
 def run_validity(rec, codes, mode="exact"):
@@ -51,6 +52,7 @@ def run_validity(rec, codes, mode="exact"):
             "flags_completed": (rec.get("valid_flags", 0) & FLAGS_COMPLETED) == FLAGS_COMPLETED,
             "stream_completed": (st is not None and (st & STATUS_CMD_END) and not (st & STATUS_FAULTS)
                                  and rec.get("seam_npu_qread") == rec.get("cms_len")),
+            "knobs_honoured": rec["run_rc"] != KNOB_NOT_HONOURED,   # mlek-baseline.md section 2
         }
     terms = {
         "rc_zero": rec["run_rc"] == 0,

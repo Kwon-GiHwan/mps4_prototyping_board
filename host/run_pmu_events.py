@@ -5,7 +5,7 @@
       --validity model --keep-model --repeats 35 --app-sha256 .. --vectors-sha256 .. --ddr-sha256 ..
 (board/run_campaign.sh is the normal caller.)
 """
-import argparse, csv, datetime, json, pathlib, sys
+import argparse, csv, datetime, hashlib, json, pathlib, sys
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
 import zlib
 import pmu_events_parse as E
@@ -51,7 +51,10 @@ def main():
     E.REPEATS = a.repeats
     out = pathlib.Path(a.out); out.mkdir(parents=True, exist_ok=True)
     blob = pathlib.Path(a.blob).read_bytes()
-    cms_len = pmwl.parse_header(blob)["cms_len"]   # also refuses a non-PMWL file before touching the board
+    hdr = pmwl.parse_header(blob)   # also refuses a non-PMWL file before touching the board
+    cms_len = hdr["cms_len"]
+    blob_id = dict(blob_sha256=hashlib.sha256(blob).hexdigest(), blob_knobs=[f"0x{w:08x}" for w in hdr["knobs"]],
+                   cms_sha256=hashlib.sha256(blob[hdr["cms_off"]:hdr["cms_off"] + cms_len]).hexdigest())
     prov = dict(PROV, build_id=a.build_id, app_sha256=a.app_sha256, vectors_sha256=a.vectors_sha256, ddr_sha256=a.ddr_sha256,
                 host_boot_index=a.host_boot_index, captured_at_utc=datetime.datetime.now(datetime.timezone.utc).isoformat())
     names = reference.driver_ids(); trm = reference.trm_ids()
@@ -144,7 +147,7 @@ def main():
         with (out / "per_event.csv").open("w", newline="") as f:
             w = csv.DictWriter(f, fieldnames=list(per[0].keys())); w.writeheader(); w.writerows(per)
     mm = sorted({tuple(x["ofm_mismatch"][:2]) for x in raw if x.get("ofm_mismatch")})
-    summ = dict(keep_model=a.keep_model, validity=a.validity, ofm_mismatch_observed=[list(t) for t in mm], requested_ids=(sorted(set(ids)) if ids else "all"), provenance=prov, runs=len(raw) - 1, rows=len(rows), refusal=refusal,
+    summ = dict(**blob_id, keep_model=a.keep_model, validity=a.validity, ofm_mismatch_observed=[list(t) for t in mm], requested_ids=(sorted(set(ids)) if ids else "all"), provenance=prov, runs=len(raw) - 1, rows=len(rows), refusal=refusal,
                 consistency=E.consistency(rows), verdict_counts={v: sum(1 for p in per if p["verdict"] == v) for v in E.VERDICTS})
     try:
         E.check_coverage(by, ids); summ["coverage"] = "COMPLETE" if ids is None else f"COMPLETE_SUBSET({len(set(ids))})"
