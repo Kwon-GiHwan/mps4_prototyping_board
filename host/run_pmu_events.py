@@ -45,7 +45,7 @@ def main():
     ap.add_argument("--keep-model", action="store_true",
                     help="step 3: upload the blob once per boot; later sets only SET_MODE (MODEL builds)")
     ap.add_argument("--ids", help="Tier C step 2: comma-separated event ids or @file (default: all 171)")
-    ap.add_argument("--repeats", type=int, default=E.REPEATS, help="RUNs per set (screening: warm-up + measured)")
+    ap.add_argument("--repeats", type=int, default=E.REPEATS, help="RUNs per set (warm-up + measured)")
     for k in ("app", "vectors", "ddr"): ap.add_argument(f"--{k}-sha256", required=True)
     a = ap.parse_args()
     E.REPEATS = a.repeats

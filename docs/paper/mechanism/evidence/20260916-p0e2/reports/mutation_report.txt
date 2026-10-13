@@ -1,0 +1,36 @@
+pristine gates.py sha256: a685bfa4183f7084798141b340215d65886dd8874d361324ac0b31d62e07859c
+baseline: GREEN
+
+ 1. RULE_P0E2_MODEL_SHA        accept any model digest                              RED (2 failing)
+ 2. RULE_P0E2_MODEL_SHA        accept a workload outside the closed set             RED (1 failing)
+ 3. RULE_P0E2_TOOLCHAIN        accept any toolchain version                         RED (2 failing)
+ 4. RULE_P0E2_PATCH_IDENTITY   accept any patch digest                              RED (2 failing)
+ 5. RULE_P0E2_PATCH_IDENTITY   accept a missing campaign tool                       RED (1 failing)
+ 6. RULE_P0E2_IRQ_VALID        accept a command stream missing IRQs                 RED (2 failing)
+ 7. RULE_P0E2_IRQ_VALID        accept fewer serviced launches than inserted         RED (1 failing)
+ 8. RULE_P0E2_IRQ_VALID        accept a cell with zero IRQ as a vacuous pass        RED (1 failing)
+ 9. RULE_P0E2_LAYER_CAP        accept an operation count over the cap               RED (2 failing)
+10. RULE_P0E2_LAYER_CAP        accept a batch split around the cap                  RED (1 failing)
+11. RULE_P0E2_LAYER_CAP        widen the cap to the looser of the two constants     RED (2 failing)
+12. RULE_P0E2_REPS_EXACT       accept disagreeing replicates                        RED (3 failing)
+13. RULE_P0E2_REPS_EXACT       accept two replicates as three                       RED (1 failing)
+14. RULE_P0E2_REPS_EXACT       accept a replicate with a field dropped              RED (1 failing)
+15. RULE_P0E2_REPS_EXACT       narrow the replicate vector to cycles only           RED (3 failing)
+16. RULE_P0E2_SUM_COHERENT     drop the absolute residual bound                     RED (2 failing)
+17. RULE_P0E2_SUM_COHERENT     drop the ratio bound                                 RED (1 failing)
+18. RULE_P0E2_SUM_COHERENT     divide by a zero clean total instead of refusing     RED (1 failing)
+19. RULE_P0E2_OUTPUT_CRC       accept differing output CRC                          RED (2 failing)
+20. RULE_P0E2_OUTPUT_CRC       accept two absent outputs as a match                 RED (1 failing)
+21. RULE_P0E2_IDENTITY_JOIN    accept a positional join key                         RED (2 failing)
+22. RULE_P0E2_IDENTITY_JOIN    accept identity sets that differ                     RED (1 failing)
+23. RULE_P0E2_IDENTITY_JOIN    accept a row lacking a key field                     RED (1 failing)
+24. RULE_P0E2_IDENTITY_JOIN    accept duplicate identities on the 256 side          RED (1 failing)
+25. RULE_P0E2_IDENTITY_JOIN    accept duplicate identities on the 512 side          RED (1 failing)
+26. RULE_P0E2_RESTORE          accept a file that is still patched                  RED (2 failing)
+27. RULE_P0E2_RESTORE          accept a file that vanished                          RED (1 failing)
+28. RULE_P0E2_RESTORE          accept a leftover patched copy                       RED (1 failing)
+
+restored digest: a685bfa4183f7084798141b340215d65886dd8874d361324ac0b31d62e07859c == a685bfa4183f7084798141b340215d65886dd8874d361324ac0b31d62e07859c -> True
+post-restore suite: GREEN
+
+mutations: 28, RED: 28, survivors: 0

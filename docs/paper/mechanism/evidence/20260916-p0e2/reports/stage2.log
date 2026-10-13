@@ -1,0 +1,70 @@
+== phase A: clean builds ==
+[patch] patch_app.py applied; backup: /opt/arm/ml-embedded-evaluation-kit/source/app/use_ca
+[build] wav2letter_pruned_int8__256_Low              clean c5ad41f10d36
+[build] wav2letter_pruned_int8__512_Mid512           clean 2cb1d6285f5e
+[build] wav2letter_pruned_int8__512_Low              clean 2e61ec6d4ee6
+[build] mobilenet_v2_1.0_224_INT8__256_Low           clean ba142efb669b
+[build] mobilenet_v2_1.0_224_INT8__512_Mid512        clean fe0c6f18a4a3
+[build] mobilenet_v2_1.0_224_INT8__512_Low           clean 3baf462121d8
+[revert] verified clean
+== phase B: profiled builds ==
+[patch] patch_app.py applied; backup: /opt/arm/ml-embedded-evaluation-kit/source/app/use_ca
+[patch] patch_driver_u85_v3.py applied driver v3
+applied device v3 helper
+[build] wav2letter_pruned_int8__256_Low              prof c4651aa2745c
+[build] wav2letter_pruned_int8__512_Mid512           prof 9d1777d805fc
+[build] wav2letter_pruned_int8__512_Low              prof 794993b6110b
+[build] mobilenet_v2_1.0_224_INT8__256_Low           prof 785cd03e7ac1
+[build] mobilenet_v2_1.0_224_INT8__512_Mid512        prof 336a2f1d4dd9
+[build] mobilenet_v2_1.0_224_INT8__512_Low           prof ab46bd4e8d66
+[revert] verified clean
+== runs ==
+   [r1] wav2letter_pruned_int8__256_Low/clean 94s
+   [r2] wav2letter_pruned_int8__256_Low/clean 94s
+   [r3] wav2letter_pruned_int8__256_Low/clean 95s
+[run] wav2letter_pruned_int8__256_Low              clean x3 exact-equal total=15147068 pl=None
+   [r1] wav2letter_pruned_int8__256_Low/prof 95s
+   [r2] wav2letter_pruned_int8__256_Low/prof 95s
+   [r3] wav2letter_pruned_int8__256_Low/prof 94s
+[run] wav2letter_pruned_int8__256_Low              prof  x3 exact-equal total=5030 pl=114
+   [r1] wav2letter_pruned_int8__512_Mid512/clean 72s
+   [r2] wav2letter_pruned_int8__512_Mid512/clean 72s
+   [r3] wav2letter_pruned_int8__512_Mid512/clean 72s
+[run] wav2letter_pruned_int8__512_Mid512           clean x3 exact-equal total=7654068 pl=None
+   [r1] wav2letter_pruned_int8__512_Mid512/prof 72s
+   [r2] wav2letter_pruned_int8__512_Mid512/prof 72s
+   [r3] wav2letter_pruned_int8__512_Mid512/prof 72s
+[run] wav2letter_pruned_int8__512_Mid512           prof  x3 exact-equal total=4030 pl=21
+   [r1] wav2letter_pruned_int8__512_Low/clean 80s
+   [r2] wav2letter_pruned_int8__512_Low/clean 81s
+   [r3] wav2letter_pruned_int8__512_Low/clean 80s
+[run] wav2letter_pruned_int8__512_Low              clean x3 exact-equal total=10137068 pl=None
+   [r1] wav2letter_pruned_int8__512_Low/prof 80s
+   [r2] wav2letter_pruned_int8__512_Low/prof 81s
+   [r3] wav2letter_pruned_int8__512_Low/prof 81s
+[run] wav2letter_pruned_int8__512_Low              prof  x3 exact-equal total=4030 pl=114
+   [r1] mobilenet_v2_1.0_224_INT8__256_Low/clean 26s
+   [r2] mobilenet_v2_1.0_224_INT8__256_Low/clean 26s
+   [r3] mobilenet_v2_1.0_224_INT8__256_Low/clean 26s
+[run] mobilenet_v2_1.0_224_INT8__256_Low           clean x3 exact-equal total=2874068 pl=None
+   [r1] mobilenet_v2_1.0_224_INT8__256_Low/prof 27s
+   [r2] mobilenet_v2_1.0_224_INT8__256_Low/prof 26s
+   [r3] mobilenet_v2_1.0_224_INT8__256_Low/prof 26s
+[run] mobilenet_v2_1.0_224_INT8__256_Low           prof  x3 exact-equal total=3030 pl=176
+   [r1] mobilenet_v2_1.0_224_INT8__512_Mid512/clean 22s
+   [r2] mobilenet_v2_1.0_224_INT8__512_Mid512/clean 22s
+   [r3] mobilenet_v2_1.0_224_INT8__512_Mid512/clean 22s
+[run] mobilenet_v2_1.0_224_INT8__512_Mid512        clean x3 exact-equal total=1914068 pl=None
+   [r1] mobilenet_v2_1.0_224_INT8__512_Mid512/prof 23s
+   [r2] mobilenet_v2_1.0_224_INT8__512_Mid512/prof 22s
+   [r3] mobilenet_v2_1.0_224_INT8__512_Mid512/prof 22s
+[run] mobilenet_v2_1.0_224_INT8__512_Mid512        prof  x3 exact-equal total=4030 pl=179
+   [r1] mobilenet_v2_1.0_224_INT8__512_Low/clean 22s
+   [r2] mobilenet_v2_1.0_224_INT8__512_Low/clean 22s
+   [r3] mobilenet_v2_1.0_224_INT8__512_Low/clean 21s
+[run] mobilenet_v2_1.0_224_INT8__512_Low           clean x3 exact-equal total=1869068 pl=None
+   [r1] mobilenet_v2_1.0_224_INT8__512_Low/prof 23s
+   [r2] mobilenet_v2_1.0_224_INT8__512_Low/prof 22s
+   [r3] mobilenet_v2_1.0_224_INT8__512_Low/prof 22s
+[run] mobilenet_v2_1.0_224_INT8__512_Low           prof  x3 exact-equal total=4030 pl=180
+STAGE2_DONE

@@ -15,10 +15,10 @@ from that layout.
 | `host/` | shared modules + thin CLI scripts (below); `host/tests/` |
 | `firmware/` | the subset of the build tree this repo owns — **mirrors `/work/selftest` in the container path-for-path** (patchers, gate, base runner source, vendor `u85.c`, `Makefile.pmu_events`). Do not restructure it. |
 | `board/` | board-host scripts (synced to `~/evsweep` on `ssh gihwan`): deploy/restore/postflight/inspect, MCC helpers, `run_campaign.sh`; MLEK image set (boot/bram/ddr.bin + images.txt): `deploy_mlek.sh`/`restore_mlek.sh`, app-UART capture `mlek_app_capture.py` |
-| `config/` | **stage-0 profile** `mlek_baseline.json` + `baseline_ids.txt` + blob `mlek_baseline.manifest.json`; workload metadata (`workloads/*.meta.json`); screening PMU set (`screening_ids.txt`) |
+| `config/` | **stage-0 profile** `mlek_baseline.json`, PMU set `baseline_ids.txt`, blob manifests `mlek_baseline.manifest.json` (kws, ad) and `.a1.json` (mobilenet, amendment 1) |
 | `docs/reference/` | PMU event lists (TRM 110, driver 171), PMU reference, MLEK board reference values |
-| `docs/specs/` | frozen contracts still in force: MLEK baseline profile + per-run gate, metric definitions, timing-adapter A/B, tools verification |
-| `evidence/` | `ta_ab/` (the TA finding), `runner_gap/` (static diff, hypothesis table, `mlek_diff_audit.md`), `tools_check/`, `mlek_baseline/` (boots 59–61), `mobilenet_ofm/` (three-way OFM comparison), `mlek_baseline_a1/` (boot 64, amendment 1) |
+| `docs/specs/` | frozen contract in force: `mlek-baseline.md` (profile, per-run gate, outcome, amendment 1) |
+| `evidence/` | `mlek_baseline/` (boots 59–61), `mlek_baseline_a1/` (boot 64, amendment 1), `mobilenet_ofm/` (three-way OFM comparison), `runner_gap/` (static diff, `mlek_diff_audit.md`); summaries only: `ta_ab/` (the TA finding), `tools_check/` (refactor verification) — raw data at `2ce4512` |
 | `environment/` | board card config, build environment, host Python/serial setup |
 
 ### host modules
@@ -26,13 +26,13 @@ from that layout.
 | module | owns | used by |
 | --- | --- | --- |
 | `pmwl.py` | PMWL blob format: header/knob word layout, knob encoding, TA profile tables, pack, parse_header | packer, driver |
-| `reference.py` | event lists (TRM 110 / driver 171), MLEK board NPU ACTIVE | parser, driver, A/B outcome |
-| `results.py` | runs.csv loading, warm-up/measured window, event names | metrics, A/B outcome |
+| `reference.py` | event lists (TRM 110 / driver 171), MLEK board NPU ACTIVE and B1 counters | parser, driver, gate |
+| `results.py` | runs.csv loading, warm-up/measured window, event names | gate |
 | `runner_proto.py` | UART protocol to the runner firmware | driver, board/postflight.sh |
 | `pmu_events_parse.py` | event sets, per-RUN validity, verdicts, refusals | driver |
 | `ofm_compare.py` | MLEK VERIFY_TEST_OUTPUT dump parsing, byte-by-byte OFM comparison (int8) | output verification |
 | `baseline_gate.py` | stage-0 per-run gate (B1–B3, R1–R6) and the MLEK-equivalence outcome | Mac, after every baseline campaign |
-| CLI | `pack_vela_workload.py`, `screening_workload_meta.py` (container); `run_pmu_events.py` (board host); `screening_metrics.py`, `ab_outcome.py`, `baseline_gate.py` (Mac) | |
+| CLI | `pack_vela_workload.py` (container); `run_pmu_events.py` (board host); `baseline_gate.py`, `ofm_compare.py` (Mac) | |
 
 A constant or layout lives in exactly one host module; scripts import it. **Host ↔ firmware is the exception, on
 purpose:** the runner firmware declares the PMWL layout and TA tables independently (in the patcher), and
@@ -62,16 +62,13 @@ FI101 has an NPU timing adapter in front of each NPU AXI port (`TA_SRAM` at `0x5
 1. **Blob** (container, `ssh gihwan` → `docker exec benchmark-runner`): `host/pack_vela_workload.py` (Vela options fixed to MLEK's)
    with `--profile /work/mps4_host/mlek_baseline.json` (the default condition: every knob, seed and the Vela version
    come from the profile) — or, for a one-variable A/B arm only, explicit knobs (`--ports`, `--axi-limit`,
-   `--ta-profile`, `--fast-base`, `--power-ctrl`). A new profile blob gets its digests into the manifest. Also
-   `host/screening_workload_meta.py <model> <out>` for N_MAC and Vela's prediction.
+   `--ta-profile`, `--fast-base`, `--power-ctrl`). A new profile blob gets its digests into the manifest.
 2. **Image**: `make -f Makefile.pmu_events MODEL=1 all` in `/work/selftest` (gate `check_pmu_events.py` runs in
    `all`). Copy `firmware/` changes into the container first; back up `build_pmu_events_model` before rebuilding.
 3. **Deploy** (owner runs sudo): `sudo sh ~/evsweep/deploy.sh <staging> ~/evsweep/evidence_<new>` — always a new
    evidence root. Restore reference for the original board image: `~/evsweep/evidence_m6`.
 4. **Measure**: `sh ~/evsweep/run_campaign.sh <staging> <out> <ids> <plan>` (one boot per plan line, 35 RUNs).
-5. **Analyse**: `host/screening_metrics.py <root>` (needs `<root>/workloads/*.meta.json`), then
-   `host/ab_outcome.py <ctrl> <treat>` for a one-variable A/B against MLEK. Baseline-profile data is used only
-   after `host/baseline_gate.py <root>/base` gives `BASELINE_PASS` for the workload (`docs/specs/mlek-baseline.md`).
+5. **Analyse**: baseline-profile data is used only after `host/baseline_gate.py <root>/base` gives `BASELINE_PASS` for the workload (`docs/specs/mlek-baseline.md`).
    Mobilenet uses amendment 1: blob golden = MLEK FI101 OFM on MLEK's input, gate with
    `--manifest config/mlek_baseline.manifest.a1.json`. The TFLite difference is a diagnostic, never pass/fail.
 6. **Restore**: owner runs `sudo sh ~/evsweep/restore.sh ~/evsweep/evidence_m6`, then `sh ~/evsweep/postflight.sh`.

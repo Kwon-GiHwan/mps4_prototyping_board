@@ -2,7 +2,7 @@
 # Copy the repo's runtime files to where they run, keeping repo-relative paths, then verify by sha256.
 #   sh sync.sh board       host/*.py, docs/reference/*.json, config/*  -> gihwan:~/evsweep/<same path>
 #                          board/*                                    -> gihwan:~/evsweep/
-#   sh sync.sh container   host/{pmwl,pack_vela_workload,screening_workload_meta}.py, config/mlek_baseline.json
+#   sh sync.sh container   host/{pmwl,pack_vela_workload}.py, config/mlek_baseline.json
 #                          -> /work/mps4_host/ (benchmark-runner, flat)
 #                          firmware/**                                -> /work/selftest/<same path>
 #   sh sync.sh check       verify both, change nothing
@@ -12,8 +12,8 @@ cd "$(dirname "$0")" || exit 2
 H=gihwan; EVS=evsweep; C=benchmark-runner
 export COPYFILE_DISABLE=1   # no macOS ._ files in the tar stream
 
-BOARD_FILES=$(ls host/*.py docs/reference/*.json config/*.txt config/*.json config/workloads/*.json)
-CT_HOST_FILES="host/pmwl.py host/pack_vela_workload.py host/screening_workload_meta.py config/mlek_baseline.json"
+BOARD_FILES=$(ls host/*.py docs/reference/*.json config/*.txt config/*.json)
+CT_HOST_FILES="host/pmwl.py host/pack_vela_workload.py config/mlek_baseline.json"
 CT_FW_FILES=$(cd firmware && git ls-files .)
 
 push_board() {
