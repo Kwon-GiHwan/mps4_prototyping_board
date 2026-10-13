@@ -1,0 +1,9 @@
+mcc boot log: 10527 bytes -> /home/gihwan/evsweep/evidence_baseline_a1/base_a1/mobilenet_v2_1.0_224_INT8/mcc_boot.log
+Image loaded from \SOFTWARE\VECTORS.BIN
+Image loaded from \SOFTWARE\APP.BIN
+Image loaded from \SOFTWARE\DDR.BIN
+DDR memory test at 0x70000000: PASSED
+Clearing SCC CPUWAIT (0xFFFFFFFF80000000:0x00000000)
+--- boot64 mobilenet_v2_1.0_224_INT8 base_a1 campaign exit=0
+35
+CAMPAIGN DONE

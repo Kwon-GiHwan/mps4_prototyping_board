@@ -1,0 +1,49 @@
+{
+ "ta_state": "TA profile 1 = MLEK ta_config_u85_sys_dram_mid, Dedicated_Sram branch; read back by the runner every RUN",
+ "manifest": "mlek_baseline.manifest.a1.json",
+ "workloads": {
+  "mobilenet_v2_1.0_224_INT8": {
+   "gate": "BASELINE_PASS",
+   "failed_boot": [],
+   "failed_runs": {},
+   "runs": 35,
+   "outcome": "MLEK_EQUIVALENT",
+   "measured": 30,
+   "medians": {
+    "npu_active": 1447421.5,
+    "sram_rd_beats": 672948.0,
+    "sram_wr_beats": 401443.0,
+    "ext_rd_beats": 301217.0,
+    "ext_wr_beats": 47887.0
+   },
+   "mlek_active_median": 1448049,
+   "active_delta": -0.00043334168940415693,
+   "beats_equal": true,
+   "numerical_difference_diagnostic": {
+    "vs": "tflite_runtime",
+    "tflite_ofm_sha256": "4b858a50decfd7498bef72372277aaf834f656852e34128d7ee68724407f7440",
+    "mismatch_count": 7,
+    "positions": [
+     540,
+     620,
+     825,
+     880,
+     886,
+     912,
+     972
+    ],
+    "signed_diff_mlek_minus_tflite": [
+     2,
+     1,
+     1,
+     -1,
+     -16,
+     8,
+     2
+    ],
+    "max_abs_diff": 16
+   }
+  }
+ },
+ "overall": "MLEK_EQUIVALENT"
+}
