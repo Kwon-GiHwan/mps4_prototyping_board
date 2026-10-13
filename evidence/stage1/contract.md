@@ -127,3 +127,18 @@ Stage 1 succeeds when the items below hold. Whatever does not hold is reported a
 - Every operator has a valid fingerprint.
 - Compute efficiency and traffic demand are comparable across models and operators.
 - Anomaly candidates are named with their next event sets.
+
+## Amendment 2 application (2026-10-14, recorded before the new boots and before their goldens exist)
+
+The general correctness rule is `docs/specs/mlek-baseline.md` amendment 2. In Stage 1 it applies as follows:
+- conv3x3 (boot 68), pw1x1 (boot 70) and fc1024 (boot 71) stay `UNRESOLVED` as recorded. Their RUNs, per-RUN rows
+  and gate results are kept unchanged in `per_run.csv` / `summary.json` under dataset `s1`.
+- Each of the three is re-measured on a new boot, one boot per operator, under amendment 2. These are dataset `a2`
+  with manifest `workload_manifest/manifest.a2.json`. The manifest holds the MLEK input and golden sha256, the
+  G1–G5 record, and the TFLite diagnostic. It is committed before the first `a2` boot.
+- The gate is otherwise this contract's: B1–B4, R1–R5, R6s, 35 RUNs, RUNs 1–5 warm-up.
+- An `a2` operator whose gate is `BASELINE_PASS` enters the Stage 1 fingerprint, labelled with its boot and
+  "amendment 2". Its input (MLEK's) differs from the seed-1 input of boots 65–71; this is stated with the table.
+- An `a2` operator that fails the gate stays `UNRESOLVED`; no other golden is tried without an owner decision.
+- Analysis: `host/analysis/stage1.py <s1 root> <out> --add a2 <a2 root> <manifest.a2.json>`. It writes both datasets
+  into one `per_run.csv` (column `dataset`) and one `summary.json`, where the `a2` entries are keyed `<workload>@a2`.

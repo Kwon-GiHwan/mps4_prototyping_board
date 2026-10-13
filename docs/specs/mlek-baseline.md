@@ -83,3 +83,55 @@ mobilenet it is the MLEK input above instead of seed 1, because the golden is fi
 MLEK used for the board reference values (stage B, same `std::rand` sequence).
 
 New boot: 64 (mobilenet only). The gate gains the gate value `INVALID` and the `--manifest` option.
+
+## Amendment 2 (2026-10-14, adopted by the owner, recorded before any MLEK golden for it exists) — general correctness rule
+
+Applies to every RUN measured after this amendment, for every workload (model or isolated operator), in Stage 1
+re-measurements and in later stages. It generalises amendment 1; it is not a per-workload exception. Nothing above is
+edited, and nothing recorded before it is re-judged:
+- Boot 61 (mobilenet) and Stage 1 boots 68 (conv3x3), 70 (pw1x1) and 71 (fc1024) stay `UNRESOLVED` under the
+  TFLite-exact R3 (`evidence/stage1/`).
+- Boots that passed under the TFLite-exact R3 (59, 60, 65, 66, 69) keep that result under the rule they were gated by.
+  A new boot of such a workload needs an MLEK golden first.
+
+Reason: on the same input, R3 against tflite_runtime rejected outputs whose difference is at most 1 LSB on three
+operators, and on mobilenet stock MLEK shows the same difference on FI101 (`evidence/mobilenet_ofm/REPORT.md`).
+The reference for "the custom runner executes like MLEK" is MLEK's own output on FI101.
+
+**Primary criterion (R3 under amendment 2):**
+- On the same input, custom FI101 OFM == MLEK FI101 OFM, byte-exact. Every RUN: `vendor_rc == 0` and
+  `ofm_mismatch_count == 0` against the blob golden. No count, position or tolerance allowance.
+- The input sha256 and the MLEK golden sha256 are fixed in the workload manifest before the boot.
+- B4: if the blob's IFM or golden sha256 (recorded by the driver) differs from the manifest's, gate `INVALID`.
+
+**Secondary diagnostic:** mismatch count, positions, signed difference and max |diff| of MLEK FI101 OFM vs the
+tflite_runtime OFM on the same input are recorded in the manifest (`numerical_difference_diagnostic`) and reported
+next to the result. They are never used for pass/fail.
+
+**How an MLEK golden is produced** (the amendment-1 procedure, fixed for every workload):
+- MLEK b2c0bb2 `inference_runner`, the stage-B cmake options (Z1024, Dedicated_Sram, FPGA SSE-320, activation buffer
+  0x00200000), `MODEL_PATH` = Vela output of the workload's `.tflite` with MLEK's Vela options, plus
+  `-DVERIFY_TEST_OUTPUT=1`.
+- The owner-authorised verification-only fix: the same 6 lines in 3 files, identical to
+  `evidence/mobilenet_ofm/verify_test_output_fix6.diff`. Applied only for the build; sources restored and checked by
+  sha256 afterwards. Any other compile error stops the procedure; the scope is not widened.
+- Input = MLEK's own `std::rand()` input, dumped on FI101 (`input tensors populated`). Golden = the dump after
+  inference (`output tensors post inference`) of the same boot.
+- Captured with the app UART listener open before REBOOT. MLEK image set deployed with `board/deploy_mlek.sh`, undone
+  with `board/restore_mlek.sh`. No MLEK performance number from this build is used.
+
+**Golden validity (G1–G5, `host/analysis/mlek_golden.py`).** A golden enters a manifest only if all hold. Otherwise
+there is no golden and the workload is not measured.
+- G1: the dumped input and output have exactly the model's IFM and OFM byte lengths.
+- G2: the Vela output MLEK was built with is byte-identical (sha256) to the Vela output the packer used for the blob.
+  So both ran the same command stream.
+- G3: the MLEK UART log shows `Configured TA_SRAM @0x51102000` and `Configured TA_EXT @0x51102400`. These are printed
+  by MLEK's `ta_config_u85_sys_dram_mid` path, the TA state of TA profile 1.
+- G4: the blob's model sha256 and cms sha256 equal the previously frozen ones for that workload: quantization, shapes
+  and command-stream generation are unchanged.
+- G5: the blob's IFM sha256 equals the dumped input, and its golden sha256 equals the dumped output.
+
+Unchanged by amendment 2: model files (quantization, tensor shapes), Vela 5.0.0 and MLEK options, TA profile 1, AXI
+0x20F0B / 0x21F3F, regions, fast scratch on-chip 0x31100000, POWER_CTRL 0, command stream, runner image, PMU set,
+35 RUNs with 5 warm-up, and the boot/RUN checks of the stage in force. The input is the one change: MLEK's input
+instead of seed 1, because the golden is fixed to it.

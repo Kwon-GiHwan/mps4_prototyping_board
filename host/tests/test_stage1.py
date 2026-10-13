@@ -9,7 +9,7 @@ KNOBS = ["0xffffffff", "0x0000000a", "0x00000002", "0x00000000", "0x00000000", "
          "0x00020f0b", "0x00021f3f", "0x00000000", "0x31100000", "0x00000001",
          "0xffffffff", "0xffffffff", "0xffffffff", "0xffffffff"]
 W = {"class": "isolated_operator", "n_mac": 1024 * 1000, "blob_sha256": "b" * 64, "cms_sha256": "c" * 64,
-     "golden": {"input_sha256": "i" * 64, "ofm_sha256": "g" * 64}, "operator_type": "CONV_2D", "shape": "x"}
+     "golden": {"source": "test", "input_sha256": "i" * 64, "ofm_sha256": "g" * 64}, "operator_type": "CONV_2D", "shape": "x"}
 # npu_active 2000, mac_active 1000 -> peak 0.5, ratio 0.5, active-cycle eff. 1.0
 VALUES = {35: 2000, 48: 1000, 130: 300, 135: 100, 140: 9000, 386: 50, 391: 10, 396: 9000}
 
@@ -101,11 +101,27 @@ class Analyse(unittest.TestCase):
 class Fingerprint(unittest.TestCase):
     def test_rows(self):
         per_run, summ = S.analyse(campaign(), {"op": W}, PROF, IDS)
-        t = S.fingerprint(summ, {"op": W})
+        t = S.fingerprint(summ)
         self.assertIn("| op | isolated_operator | 1,024,000 | 2,000 | 512.0 | 50.0% | 50.0% | 100.0% |", t)
         bad = campaign(name="op", row=lambda rep, ev: dict(run_rc=1) if rep == 1 else {})
         _, summ = S.analyse(bad, {"op": W}, PROF, IDS)
-        self.assertIn("| op | isolated_operator | BASELINE_FAIL |", S.fingerprint(summ, {"op": W}))
+        self.assertIn("| op | isolated_operator | BASELINE_FAIL |", S.fingerprint(summ))
+
+
+class Datasets(unittest.TestCase):
+    """Amendment 2: a re-measured dataset is keyed <workload>@<label> and never overwrites the s1 entry."""
+    def test_added_dataset_keeps_s1(self):
+        _, s1 = S.analyse(campaign(row=lambda rep, ev: dict(ofm_mismatch_count=29)), {"op": W}, PROF, IDS)
+        rows, a2 = S.analyse(campaign(), {"op": dict(W, numerical_difference_diagnostic={"mismatch_count": 29})},
+                             PROF, IDS, "a2")
+        s1.update(a2)
+        self.assertEqual((s1["op"]["status"], s1["op@a2"]["status"]), ("UNRESOLVED", "VALID"))
+        self.assertEqual((s1["op"]["dataset"], s1["op@a2"]["dataset"]), ("s1", "a2"))
+        self.assertEqual({r["dataset"] for r in rows}, {"a2"})
+        self.assertEqual(s1["op@a2"]["numerical_difference_diagnostic"], {"mismatch_count": 29})
+        t = S.fingerprint(s1)
+        self.assertIn("| op | isolated_operator | BASELINE_FAIL |", t)
+        self.assertIn("| op@a2 | isolated_operator | 1,024,000 | 2,000 |", t)
 
 
 if __name__ == "__main__":

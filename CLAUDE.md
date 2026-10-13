@@ -33,6 +33,7 @@ are as they were when written: flat `host/*.py` until the split into `host/{lib,
 | `lib/pmu_events_parse.py` | event sets, per-RUN validity, verdicts, refusals | driver |
 | `lib/mlek_profile.py` | frozen profile → `pmwl.knobs()` arguments | packer, gate |
 | `analysis/ofm_compare.py` | MLEK VERIFY_TEST_OUTPUT dump parsing, byte-by-byte OFM comparison (int8) | output verification |
+| `analysis/mlek_golden.py` | amendment-2 golden validity G1–G5 (MLEK FI101 dump vs blob meta) → manifest entry with the TFLite diagnostic | before every amendment-2 boot |
 | `analysis/baseline_gate.py` | stage-0 per-run gate (B1–B3, R1–R6) and the MLEK-equivalence outcome | Mac, after every baseline campaign |
 | CLI | `container/pack_vela_workload.py`, `container/make_op_model.py` (single-op INT8 tflite as flatbuffers), `container/workload_meta.py` (N_MAC, Vela prediction); `board/run_pmu_events.py`; `analysis/baseline_gate.py`, `analysis/ofm_compare.py`, `analysis/stage1.py` (Stage 1 gate, metrics, fingerprint) | |
 
@@ -73,6 +74,8 @@ FI101 has an NPU timing adapter in front of each NPU AXI port (`TA_SRAM` at `0x5
 5. **Analyse**: baseline-profile data is used only after `host/analysis/baseline_gate.py <root>/base` gives `BASELINE_PASS` for the workload (`docs/specs/mlek-baseline.md`).
    Mobilenet uses amendment 1: blob golden = MLEK FI101 OFM on MLEK's input, gate with
    `--manifest config/mlek_baseline.manifest.a1.json`. The TFLite difference is a diagnostic, never pass/fail.
+   **Amendment 2** makes this the general rule for every run after Stage 1 boots 65–71: golden = MLEK FI101 OFM on
+   MLEK's input, accepted only through `host/analysis/mlek_golden.py` (G1–G5), hashes fixed in the manifest first.
 6. **Restore**: owner runs `sudo sh ~/evsweep/restore.sh ~/evsweep/evidence_m6`, then `sh ~/evsweep/postflight.sh`.
 
 Before every campaign: `sh sync.sh board` and `sh sync.sh container` (copy with repo-relative paths, then verify by
