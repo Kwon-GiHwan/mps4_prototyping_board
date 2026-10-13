@@ -18,7 +18,7 @@ from that layout.
 | `config/` | **stage-0 profile** `mlek_baseline.json` + `baseline_ids.txt` + blob `mlek_baseline.manifest.json`; workload metadata (`workloads/*.meta.json`); screening PMU set (`screening_ids.txt`) |
 | `docs/reference/` | PMU event lists (TRM 110, driver 171), PMU reference, MLEK board reference values |
 | `docs/specs/` | frozen contracts still in force: MLEK baseline profile + per-run gate, metric definitions, timing-adapter A/B, tools verification |
-| `evidence/` | `ta_ab/` (the TA finding), `runner_gap/` (static diff, hypothesis table, `mlek_diff_audit.md`), `tools_check/`, `mlek_baseline/` |
+| `evidence/` | `ta_ab/` (the TA finding), `runner_gap/` (static diff, hypothesis table, `mlek_diff_audit.md`), `tools_check/`, `mlek_baseline/` (boots 59–61), `mobilenet_ofm/` (three-way OFM comparison), `mlek_baseline_a1/` (boot 64, amendment 1) |
 | `environment/` | board card config, build environment, host Python/serial setup |
 
 ### host modules
@@ -72,6 +72,8 @@ FI101 has an NPU timing adapter in front of each NPU AXI port (`TA_SRAM` at `0x5
 5. **Analyse**: `host/screening_metrics.py <root>` (needs `<root>/workloads/*.meta.json`), then
    `host/ab_outcome.py <ctrl> <treat>` for a one-variable A/B against MLEK. Baseline-profile data is used only
    after `host/baseline_gate.py <root>/base` gives `BASELINE_PASS` for the workload (`docs/specs/mlek-baseline.md`).
+   Mobilenet uses amendment 1: blob golden = MLEK FI101 OFM on MLEK's input, gate with
+   `--manifest config/mlek_baseline.manifest.a1.json`. The TFLite difference is a diagnostic, never pass/fail.
 6. **Restore**: owner runs `sudo sh ~/evsweep/restore.sh ~/evsweep/evidence_m6`, then `sh ~/evsweep/postflight.sh`.
 
 Before every campaign: `sh sync.sh board` and `sh sync.sh container` (copy with repo-relative paths, then verify by
