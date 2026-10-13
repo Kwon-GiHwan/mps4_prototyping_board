@@ -165,6 +165,30 @@ recorded as an amendment — never edited away. If a metric was not preregistere
 it is not computed after seeing the values; it may only be run later, labelled
 `POST_HOC_DESCRIPTIVE`.
 
+## NPU timing adapters — CRITICAL measurement condition
+
+FI101 has an NPU timing adapter in front of each NPU AXI port (`TA_SRAM` at
+`0x51102000`, `TA_EXT` at `0x51102400`, TA_VERSION `0x1117`). Their state alone
+changed NPU-active cycles 3.7–7× on the same command stream (`evidence/u85_ta/`,
+contract `566694b`). The vendor `test_u85` path never touches them; MLEK
+programs them at boot (`ta_config_u85_sys_dram_mid`).
+
+- **Every board measurement fixes the TA state explicitly** and records it with
+  the data: the profile (blob header word 27 / packer `--ta-profile`: 1 = MLEK
+  sys_dram_mid, 2 = pass-through) or the exact register values. "Untouched /
+  reset state" is not a fixed condition — the reset values have never been read.
+- **Every contract names the TA state** in its protocol, and every report and
+  results table states it next to the numbers. A number without its TA state is
+  not reported.
+- **Changing the TA state is a change of measurement condition**, like changing
+  the image or the Vela options: never mixed within one comparison, and stated
+  wherever results from two TA states appear together.
+- Comparing with MLEK numbers requires TA profile 1 (MLEK's own setting). MLEK's
+  board numbers are "FI101 + emulated SYS_DRAM_Mid", not the raw board.
+- All runner results before boot 49 (screening 1/2, fast_ext, POWER_CTRL, on-chip)
+  were taken with the TAs untouched. Their absolute values describe that state;
+  re-measure with a fixed profile before citing them.
+
 ## Standing constraints
 
 - Pushing to `origin/main` — **HOLD**. Feature branches may be pushed.
