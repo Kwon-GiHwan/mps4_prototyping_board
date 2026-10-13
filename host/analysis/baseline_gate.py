@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Stage-0 per-run gate and MLEK verification outcome (docs/specs/mlek-baseline.md sections 2-3).
 
-  python3 host/baseline_gate.py <campaign dir holding <workload>/{runs.csv,summary.json}> [--manifest M] [--out OUTCOME.json]
+  python3 host/analysis/baseline_gate.py <campaign dir holding <workload>/{runs.csv,summary.json}> [--manifest M] [--out OUTCOME.json]
 
 Gate per workload: BASELINE_PASS / BASELINE_FAIL / UNPROVEN / INVALID (amendment 1: the blob's IFM or golden is not
 the manifest's, so the output comparison means nothing). Outcome per workload and overall:
@@ -15,13 +15,13 @@ import pathlib
 import statistics
 import sys
 
-sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "lib"))
 import pmwl
 import reference
 import results
-from pack_vela_workload import from_profile
+from mlek_profile import knob_args
 
-REPO = pathlib.Path(__file__).resolve().parents[1]
+REPO = pathlib.Path(__file__).resolve().parents[2]
 PROFILE = REPO / "config" / "mlek_baseline.json"
 MANIFEST = REPO / "config" / "mlek_baseline.manifest.json"
 ACTIVE_TOL = 0.01      # |npu_active - MLEK| / MLEK
@@ -32,8 +32,7 @@ BEATS = (("sram_rd_beats", "SRAM_RD_DATA_BEAT_RECEIVED"), ("sram_wr_beats", "SRA
 
 def boot_checks(summ: dict, prof: dict, man: dict, ids: list[int]) -> list[str]:
     """B1-B3: failed check names for one boot's summary.json."""
-    kargs, _ = from_profile(prof, prof["vela"]["version"])
-    want_knobs = [f"0x{w:08x}" for w in pmwl.knobs(**kargs)]
+    want_knobs = [f"0x{w:08x}" for w in pmwl.knobs(**knob_args(prof))]
     prov = summ.get("provenance", {})
     failed = []
     if any(prov.get(k) != v for k, v in prof["image"].items()):

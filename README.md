@@ -6,7 +6,7 @@ Measures Arm Ethos-U85 (1024 MAC) PMU counters on the MPS4 FI101 board with a cu
 **Measurement condition that must always be fixed and stated: the NPU timing-adapter state** (see `CLAUDE.md`).
 
 ```
-host/        PMWL format, packer, board driver, parser, baseline gate, OFM comparison (+ tests)
+host/        lib/ (PMWL format, profile, parser, protocol), container/ (packer), board/ (driver), analysis/ (gate, OFM compare), tests/
 firmware/    mirror of the container build tree subset (/work/selftest): patchers, gate, runner source
 board/       board-host scripts (~/evsweep): deploy / restore / postflight / inspect / run_campaign, MLEK image deploy
 config/      stage-0 profile, PMU event set, blob manifests

@@ -9,11 +9,12 @@ Steps: vela (ethos-u85-1024) -> the single ethos-u op's inputs (COP1 payload, re
 scratch/scratch_fast sizes) + OfflineMemoryAllocation (IFM/OFM offsets in the arena) ->
 deterministic int8 IFM -> reference OFM from tflite_runtime on the ORIGINAL model -> blob.
 
-Blob layout, knob encoding and packing: pmwl.py (beside this file).
+Blob layout, knob encoding and packing: host/lib/pmwl.py; profile -> knobs: host/lib/mlek_profile.py.
 """
 import argparse, glob, hashlib, json, os, pathlib, struct, subprocess, sys, tempfile
-sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "lib"))
 import pmwl
+from mlek_profile import knob_args, parse_axi_limit, parse_ports
 
 MLEK_INI = "/opt/arm/ml-embedded-evaluation-kit/scripts/vela/default_vela.ini"
 # Vela options after the model path = MLEK resources.py run_vela() for ethos-u85-1024 (npu_config.py:
@@ -94,21 +95,10 @@ def reference(model, seed, ifm=None):
     return x.tobytes(), it.get_tensor(outs[0]["index"]).tobytes()
 
 
-def parse_ports(text):
-    return dict(kv.split("=") for kv in text.split(",")) if text else None
-
-
-def parse_axi_limit(text):
-    return {kv.split("=")[0]: int(kv.split("=")[1], 0) for kv in text.split(",")} if text else None
-
-
-def from_profile(prof, vela_version):
-    """Knob arguments and seed from a frozen profile (config/mlek_baseline.json); refuses a different Vela."""
+def check_vela(prof, vela_version):
+    """Refuse to pack under a profile whose Vela version or options differ from this packer's."""
     if vela_version != prof["vela"]["version"] or VELA_OPTIONS != prof["vela"]["options"]:
         raise SystemExit(f"Vela {vela_version} {VELA_OPTIONS} != profile {prof['vela']}")
-    k = prof["knobs"]
-    return dict(axi=None, ports=parse_ports(k["ports"]), axi_limit=parse_axi_limit(k["axi_limit"]),
-                power_ctrl=k["power_ctrl"], fast_base=int(k["fast_base"], 0), ta_profile=prof["ta_profile"]), prof["seed"]
 
 
 def main():
@@ -131,7 +121,8 @@ def main():
             raise SystemExit("--profile fixes every knob; drop the other knob flags")
         raw = open(a.profile, "rb").read(); profile_sha = hashlib.sha256(raw).hexdigest()
         ver = subprocess.run(["vela", "--version"], check=True, capture_output=True, text=True).stdout.strip()
-        kargs, a.seed = from_profile(json.loads(raw), ver)
+        prof = json.loads(raw); check_vela(prof, ver)
+        kargs, a.seed = knob_args(prof), prof["seed"]
     else:
         kargs = dict(axi=a.axi, ports=parse_ports(a.ports), axi_limit=parse_axi_limit(a.axi_limit),
                      power_ctrl=a.power_ctrl, fast_base=a.fast_base, ta_profile=a.ta_profile)

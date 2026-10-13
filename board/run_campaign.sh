@@ -21,7 +21,7 @@ grep -v '^#' "$PLAN" | while read -r B N C; do
   strings "$EV/mcc_boot.log" | grep -q "Clearing SCC CPUWAIT" || { echo "FAIL boot$B: CPUWAIT not released"; continue; }
   sleep 3
   date -u +%FT%TZ > "$EV/started_utc"
-  python3 "$EVS/host/run_pmu_events.py" --out "$EV" --host-boot-index "$B" --build-id 0x504d574c --blob "$BLOB" \
+  python3 "$EVS/host/board/run_pmu_events.py" --out "$EV" --host-boot-index "$B" --build-id 0x504d574c --blob "$BLOB" \
      --ids "@$IDS" --validity model --keep-model --repeats 35 \
      --app-sha256 "$APP" --vectors-sha256 "$VEC" --ddr-sha256 "$DDR" > "$EV/campaign.out" 2>&1 < /dev/null
   echo "--- boot$B $N $C campaign exit=$?"; date -u +%FT%TZ > "$EV/finished_utc"; grep -c "valid=True" "$EV/campaign.out"

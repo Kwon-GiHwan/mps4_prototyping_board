@@ -10,7 +10,7 @@ strings "$EV/mcc_boot.log" | grep -E "Image loaded|DDR memory test|CPUWAIT"
 strings "$EV/mcc_boot.log" | grep -q "Clearing SCC CPUWAIT" || { echo "FAIL: CPUWAIT not released"; exit 1; }
 sleep 3
 python3 - <<'PY' | tee "$EV/ping.txt"
-import sys; sys.path.insert(0, "/home/gihwan/evsweep/host")
+import sys; sys.path.insert(0, "/home/gihwan/evsweep/host/lib")
 from runner_proto import RunnerLink, PROTOCOLS
 P = "/dev/serial/by-id/usb-FTDI_USB__-__Serial_Converter_00FT46259002B-if01-port0"
 for proto in PROTOCOLS:

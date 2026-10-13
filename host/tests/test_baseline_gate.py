@@ -1,5 +1,5 @@
 import csv, json, sys, tempfile, unittest, pathlib
-REPO = pathlib.Path(__file__).resolve().parents[2]; sys.path.insert(0, str(REPO / "host"))
+REPO = pathlib.Path(__file__).resolve().parents[2]; sys.path.insert(0, str(REPO / "host" / "lib")); sys.path.insert(0, str(REPO / "host" / "analysis"))
 import baseline_gate as G
 import results
 

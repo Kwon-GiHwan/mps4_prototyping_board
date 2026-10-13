@@ -1,5 +1,5 @@
 import struct, sys, unittest, pathlib
-REPO = pathlib.Path(__file__).resolve().parents[2]; sys.path.insert(0, str(REPO / "host"))
+REPO = pathlib.Path(__file__).resolve().parents[2]; sys.path.insert(0, str(REPO / "host" / "lib"))
 import pmwl
 
 INFO = dict(cms=b"\x00" * 12 + struct.pack("<I", 0xFFFF0000), const=b"\x01" * 32, arena_size=64,

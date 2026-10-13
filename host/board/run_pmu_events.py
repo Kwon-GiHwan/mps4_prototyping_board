@@ -6,7 +6,7 @@
 (board/run_campaign.sh is the normal caller.)
 """
 import argparse, csv, datetime, hashlib, json, pathlib, sys
-sys.path.insert(0, str(pathlib.Path(__file__).parent))
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "lib"))
 import zlib
 import pmu_events_parse as E
 import pmwl

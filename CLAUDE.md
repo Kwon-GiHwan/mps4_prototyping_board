@@ -5,14 +5,15 @@ PMU measurements of an Arm Ethos-U85 (1024 MAC) on the MPS4 FI101 FPGA board, dr
 Bare-metal Cortex-M85, `arm-none-eabi-gcc 15.2.1`, `-O1 -g3`.
 
 History before the cleanup (V13–V15, paper campaign, Tier A/B/C, screenings 1/2, earlier A/Bs) lives on branch
-`refactor/unified-mlek-campaigns` (last commit `fe7541b`). Paths quoted inside `docs/specs/` and `evidence/` are
-from that layout.
+`refactor/unified-mlek-campaigns` (last commit `fe7541b`). Paths quoted inside frozen `docs/specs/` and `evidence/`
+are as they were when written: flat `host/*.py` until the split into `host/{lib,container,board,analysis}` after
+`570c4a0` (e.g. `host/baseline_gate.py` = `host/analysis/baseline_gate.py`).
 
 ## Layout
 
 | dir | what |
 | --- | --- |
-| `host/` | shared modules + thin CLI scripts (below); `host/tests/` |
+| `host/` | split by where code runs: `lib/` (shared modules), `container/`, `board/` (board host), `analysis/` (Mac); `tests/` |
 | `firmware/` | the subset of the build tree this repo owns — **mirrors `/work/selftest` in the container path-for-path** (patchers, gate, base runner source, vendor `u85.c`, `Makefile.pmu_events`). Do not restructure it. |
 | `board/` | board-host scripts (synced to `~/evsweep` on `ssh gihwan`): deploy/restore/postflight/inspect, MCC helpers, `run_campaign.sh`; MLEK image set (boot/bram/ddr.bin + images.txt): `deploy_mlek.sh`/`restore_mlek.sh`, app-UART capture `mlek_app_capture.py` |
 | `config/` | **stage-0 profile** `mlek_baseline.json`, PMU set `baseline_ids.txt`, blob manifests `mlek_baseline.manifest.json` (kws, ad) and `.a1.json` (mobilenet, amendment 1) |
@@ -25,14 +26,15 @@ from that layout.
 
 | module | owns | used by |
 | --- | --- | --- |
-| `pmwl.py` | PMWL blob format: header/knob word layout, knob encoding, TA profile tables, pack, parse_header | packer, driver |
-| `reference.py` | event lists (TRM 110 / driver 171), MLEK board NPU ACTIVE and B1 counters | parser, driver, gate |
-| `results.py` | runs.csv loading, warm-up/measured window, event names | gate |
-| `runner_proto.py` | UART protocol to the runner firmware | driver, board/postflight.sh |
-| `pmu_events_parse.py` | event sets, per-RUN validity, verdicts, refusals | driver |
-| `ofm_compare.py` | MLEK VERIFY_TEST_OUTPUT dump parsing, byte-by-byte OFM comparison (int8) | output verification |
-| `baseline_gate.py` | stage-0 per-run gate (B1–B3, R1–R6) and the MLEK-equivalence outcome | Mac, after every baseline campaign |
-| CLI | `pack_vela_workload.py` (container); `run_pmu_events.py` (board host); `baseline_gate.py`, `ofm_compare.py` (Mac) | |
+| `lib/pmwl.py` | PMWL blob format: header/knob word layout, knob encoding, TA profile tables, pack, parse_header | packer, driver |
+| `lib/reference.py` | event lists (TRM 110 / driver 171), MLEK board NPU ACTIVE and B1 counters | parser, driver, gate |
+| `lib/results.py` | runs.csv loading, warm-up/measured window, event names | gate |
+| `lib/runner_proto.py` | UART protocol to the runner firmware | driver, board/postflight.sh |
+| `lib/pmu_events_parse.py` | event sets, per-RUN validity, verdicts, refusals | driver |
+| `lib/mlek_profile.py` | frozen profile → `pmwl.knobs()` arguments | packer, gate |
+| `analysis/ofm_compare.py` | MLEK VERIFY_TEST_OUTPUT dump parsing, byte-by-byte OFM comparison (int8) | output verification |
+| `analysis/baseline_gate.py` | stage-0 per-run gate (B1–B3, R1–R6) and the MLEK-equivalence outcome | Mac, after every baseline campaign |
+| CLI | `container/pack_vela_workload.py`; `board/run_pmu_events.py`; `analysis/baseline_gate.py`, `analysis/ofm_compare.py` | |
 
 A constant or layout lives in exactly one host module; scripts import it. **Host ↔ firmware is the exception, on
 purpose:** the runner firmware declares the PMWL layout and TA tables independently (in the patcher), and
@@ -59,8 +61,8 @@ FI101 has an NPU timing adapter in front of each NPU AXI port (`TA_SRAM` at `0x5
 
 ## Pipeline
 
-1. **Blob** (container, `ssh gihwan` → `docker exec benchmark-runner`): `host/pack_vela_workload.py` (Vela options fixed to MLEK's)
-   with `--profile /work/mps4_host/mlek_baseline.json` (the default condition: every knob, seed and the Vela version
+1. **Blob** (container, `ssh gihwan` → `docker exec benchmark-runner`): `python3 /work/mps4_host/host/container/pack_vela_workload.py` (Vela options fixed to MLEK's)
+   with `--profile /work/mps4_host/config/mlek_baseline.json` (the default condition: every knob, seed and the Vela version
    come from the profile) — or, for a one-variable A/B arm only, explicit knobs (`--ports`, `--axi-limit`,
    `--ta-profile`, `--fast-base`, `--power-ctrl`). A new profile blob gets its digests into the manifest.
 2. **Image**: `make -f Makefile.pmu_events MODEL=1 all` in `/work/selftest` (gate `check_pmu_events.py` runs in
@@ -68,14 +70,14 @@ FI101 has an NPU timing adapter in front of each NPU AXI port (`TA_SRAM` at `0x5
 3. **Deploy** (owner runs sudo): `sudo sh ~/evsweep/deploy.sh <staging> ~/evsweep/evidence_<new>` — always a new
    evidence root. Restore reference for the original board image: `~/evsweep/evidence_m6`.
 4. **Measure**: `sh ~/evsweep/run_campaign.sh <staging> <out> <ids> <plan>` (one boot per plan line, 35 RUNs).
-5. **Analyse**: baseline-profile data is used only after `host/baseline_gate.py <root>/base` gives `BASELINE_PASS` for the workload (`docs/specs/mlek-baseline.md`).
+5. **Analyse**: baseline-profile data is used only after `host/analysis/baseline_gate.py <root>/base` gives `BASELINE_PASS` for the workload (`docs/specs/mlek-baseline.md`).
    Mobilenet uses amendment 1: blob golden = MLEK FI101 OFM on MLEK's input, gate with
    `--manifest config/mlek_baseline.manifest.a1.json`. The TFLite difference is a diagnostic, never pass/fail.
 6. **Restore**: owner runs `sudo sh ~/evsweep/restore.sh ~/evsweep/evidence_m6`, then `sh ~/evsweep/postflight.sh`.
 
 Before every campaign: `sh sync.sh board` and `sh sync.sh container` (copy with repo-relative paths, then verify by
-sha256; `sh sync.sh check` only verifies). The board-host copy of `pmu_events_parse.py` finds the event lists via
-`host/..`, so `docs/reference/` must sit beside `host/` there too — never copy `host/*.py` alone.
+sha256; `sh sync.sh check` only verifies). Every copy keeps the repo layout (`host/lib`, `host/board`, `docs/reference`, `config`); `lib/reference.py` finds the event lists at
+`host/lib/../../docs/reference`, so `docs/reference/` must sit beside `host/` there too — never copy modules alone.
 
 ## The one thing this project is about
 
