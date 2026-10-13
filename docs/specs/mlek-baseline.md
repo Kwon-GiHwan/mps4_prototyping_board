@@ -56,3 +56,30 @@ Overall: `UNRESOLVED` if any workload is, else `MLEK_DIFFERENT` if any workload 
 
 Descriptive only (not an outcome): change in npu_active against boots 57/58 (same image and TA profile 1, fast
 scratch in DDR, POWER_CTRL vendor 2) — two variables at once, so not attributable to either.
+
+## Amendment 1 (2026-10-14, adopted by the owner, recorded before boot 64) — mobilenet correctness
+
+Applies only to runs after this amendment. **Boot 61 stays `UNRESOLVED` under the original TFLite-exact criterion**
+(`evidence/mlek_baseline/OUTCOME.json`); nothing above is edited.
+
+Reason: on the same input, the MLEK FI101 OFM and the custom FI101 OFM are byte-identical, and both differ from
+tflite_runtime in 7 bytes (`evidence/mobilenet_ofm/REPORT.md`). The TFLite-exact rule therefore also rejects stock MLEK.
+
+For mobilenet_v2_1.0_224_INT8, R3 becomes:
+- **Golden = MLEK FI101 OFM**, fixed together with its input. Input = MLEK inference_runner's own input dumped on the
+  board: `ifm.bin` sha256 `be4e0171…3232`. Golden = `mlek_ofm.bin` sha256 `6f5b50a8…2f2f`. Both are recorded in
+  `config/mlek_baseline.manifest.a1.json`.
+- Every RUN: `vendor_rc == 0` and `ofm_mismatch_count == 0` against that golden (byte-exact). No count, position or
+  tolerance allowance.
+- New boot check **B4**: the blob's IFM sha256 and golden sha256 (recorded by the driver) must equal the manifest's.
+  If either differs, the comparison itself is invalid: gate `INVALID`, outcome `UNRESOLVED`.
+- The difference from tflite_runtime is a **numerical-difference diagnostic**, reported next to the outcome and never
+  used for pass/fail.
+
+Unchanged: Vela 5.0.0 / MLEK options, TA profile 1, AXI 0x20F0B / 0x21F3F, regions, fast scratch on-chip 0x31100000,
+POWER_CTRL 0, command stream (cms sha256 `884470be…` = boot 61 blob), image, PMU set, 35 RUNs with 5 warm-up, gate
+B1–B3 / R1–R6 on all RUNs, and the section-3 outcome rule. The input is the one exception to "unchanged": for
+mobilenet it is the MLEK input above instead of seed 1, because the golden is fixed to it. That input is also the one
+MLEK used for the board reference values (stage B, same `std::rand` sequence).
+
+New boot: 64 (mobilenet only). The gate gains the gate value `INVALID` and the `--manifest` option.

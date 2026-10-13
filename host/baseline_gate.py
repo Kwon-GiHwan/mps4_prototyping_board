@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Stage-0 per-run gate and MLEK verification outcome (docs/specs/mlek-baseline.md sections 2-3).
 
-  python3 host/baseline_gate.py <campaign dir holding <workload>/{runs.csv,summary.json}> [--out OUTCOME.json]
+  python3 host/baseline_gate.py <campaign dir holding <workload>/{runs.csv,summary.json}> [--manifest M] [--out OUTCOME.json]
 
-Gate per workload: BASELINE_PASS / BASELINE_FAIL / UNPROVEN. Outcome per workload and overall:
+Gate per workload: BASELINE_PASS / BASELINE_FAIL / UNPROVEN / INVALID (amendment 1: the blob's IFM or golden is not
+the manifest's, so the output comparison means nothing). Outcome per workload and overall:
 MLEK_EQUIVALENT / MLEK_DIFFERENT / UNRESOLVED.
 """
 from __future__ import annotations
@@ -63,8 +64,12 @@ def run_checks(run: dict) -> list[str]:
 def gate(wdir: pathlib.Path, prof: dict, man: dict, ids: list[int]) -> dict:
     if not (wdir / "summary.json").exists() or not (wdir / "runs.csv").exists():
         return {"gate": "UNPROVEN", "why": "missing summary.json or runs.csv"}
+    summ = json.loads((wdir / "summary.json").read_text())
+    gold = man.get("golden")
+    if gold and (summ.get("ifm_sha256") != gold["input_sha256"] or summ.get("golden_sha256") != gold["ofm_sha256"]):
+        return {"gate": "INVALID", "why": "B4: blob IFM or golden differs from the manifest's"}
     runs = results.load_runs(wdir / "runs.csv")
-    failed_boot = boot_checks(json.loads((wdir / "summary.json").read_text()), prof, man, ids)
+    failed_boot = boot_checks(summ, prof, man, ids)
     failed_runs = {r["rep"]: f for r in runs if (f := run_checks(r))}
     ok = not failed_boot and not failed_runs and len(runs) == prof["repeats"]
     return {"gate": "BASELINE_PASS" if ok else "BASELINE_FAIL", "failed_boot": failed_boot,
@@ -91,10 +96,11 @@ def overall(per: list[str]) -> str:
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("root"); ap.add_argument("--out")
+    ap.add_argument("root"); ap.add_argument("--out"); ap.add_argument("--manifest", default=str(MANIFEST))
     a = ap.parse_args()
     prof = json.loads(PROFILE.read_text())
-    man = json.loads(MANIFEST.read_text())["workloads"] if MANIFEST.exists() else {}
+    mpath = pathlib.Path(a.manifest)
+    man = json.loads(mpath.read_text())["workloads"] if mpath.exists() else {}
     ids = sorted(int(x) for x in (REPO / prof["pmu_ids_file"]).read_text().split())
     res = {}
     for name in sorted(man):   # every workload of the manifest; a missing directory is UNPROVEN
@@ -103,7 +109,9 @@ def main() -> int:
         runs = results.load_runs(wdir / "runs.csv") if g["gate"] != "UNPROVEN" else []
         mlek = dict(reference.mlek_b1(name), ACTIVE_median=reference.mlek_active()[name])
         res[name] = {**g, **outcome(g, runs, mlek)}
-    res = {"ta_state": prof["ta_state"], "workloads": res, "overall": overall([w["outcome"] for w in res.values()])}
+        if "numerical_difference_diagnostic" in man[name]:   # reported only, never used for pass/fail
+            res[name]["numerical_difference_diagnostic"] = man[name]["numerical_difference_diagnostic"]
+    res = {"ta_state": prof["ta_state"], "manifest": mpath.name, "workloads": res, "overall": overall([w["outcome"] for w in res.values()])}
     text = json.dumps(res, indent=1, default=str)
     if a.out:
         pathlib.Path(a.out).write_text(text)

@@ -83,6 +83,35 @@ class Gate(unittest.TestCase):
         self.assertEqual(run_gate(pathlib.Path(tempfile.mkdtemp()) / "absent")["gate"], "UNPROVEN")
 
 
+GOLD = {"input_sha256": "i" * 64, "ofm_sha256": "g" * 64}
+
+
+class Amendment1(unittest.TestCase):
+    MAN = dict(MAN, golden=GOLD, numerical_difference_diagnostic={"mismatch_count": 7})
+
+    def gate(self, **over):
+        hashes = dict(ifm_sha256=GOLD["input_sha256"], golden_sha256=GOLD["ofm_sha256"]); hashes.update(over)
+        return G.gate(campaign(summ=summary(**hashes)), PROF, self.MAN, IDS)
+
+    def test_pass_with_frozen_input_and_golden(self):
+        self.assertEqual(self.gate()["gate"], "BASELINE_PASS")       # the TFLite diagnostic does not fail it
+
+    def test_other_input_or_golden_invalid(self):
+        self.assertEqual(self.gate(ifm_sha256="x" * 64)["gate"], "INVALID")
+        self.assertEqual(self.gate(golden_sha256="x" * 64)["gate"], "INVALID")
+        g = G.gate(campaign(), PROF, self.MAN, IDS)                   # driver did not record them
+        self.assertEqual(g["gate"], "INVALID")
+        self.assertEqual(G.outcome(g, [], {})["outcome"], "UNRESOLVED")
+
+    def test_original_manifest_ignores_input_hash(self):
+        self.assertEqual(run_gate(campaign(summ=summary(ifm_sha256="x" * 64)))["gate"], "BASELINE_PASS")
+
+    def test_golden_mismatch_still_fails_r3(self):
+        g = G.gate(campaign(summ=summary(ifm_sha256=GOLD["input_sha256"], golden_sha256=GOLD["ofm_sha256"]),
+                            row=lambda rep, ev: dict(ofm_mismatch_count=1) if rep == 30 else {}), PROF, self.MAN, IDS)
+        self.assertEqual(g["failed_runs"], {30: ["R3_output"]})
+
+
 class Outcome(unittest.TestCase):
     def outcome(self, **campaign_kw):
         d = campaign(**campaign_kw)
