@@ -5,10 +5,12 @@
       --validity model --keep-model --repeats 35 --app-sha256 .. --vectors-sha256 .. --ddr-sha256 ..
 (board/run_campaign.sh is the normal caller.)
 """
-import argparse, csv, datetime, json, pathlib, struct, sys
+import argparse, csv, datetime, json, pathlib, sys
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
 import zlib
 import pmu_events_parse as E
+import pmwl
+import reference
 from runner_proto import MAX_PAYLOAD, RunnerLink, PROTO_MEASURE_V2, Nack, ProtocolError
 
 
@@ -49,10 +51,10 @@ def main():
     E.REPEATS = a.repeats
     out = pathlib.Path(a.out); out.mkdir(parents=True, exist_ok=True)
     blob = pathlib.Path(a.blob).read_bytes()
-    cms_len = struct.unpack_from("<I", blob, 12)[0]   # PMWL header word 3
+    cms_len = pmwl.parse_header(blob)["cms_len"]   # also refuses a non-PMWL file before touching the board
     prov = dict(PROV, build_id=a.build_id, app_sha256=a.app_sha256, vectors_sha256=a.vectors_sha256, ddr_sha256=a.ddr_sha256,
                 host_boot_index=a.host_boot_index, captured_at_utc=datetime.datetime.now(datetime.timezone.utc).isoformat())
-    names = E.driver_ids(); trm = E.trm_ids()
+    names = reference.driver_ids(); trm = reference.trm_ids()
     ids = None
     if a.ids:
         txt = pathlib.Path(a.ids[1:]).read_text() if a.ids.startswith("@") else a.ids

@@ -7,25 +7,25 @@ each workload's runs.csv for the invariants, and MLEK's board reference from doc
 """
 from __future__ import annotations
 
-import csv
 import json
 import statistics
 import sys
 from pathlib import Path
 
-REFERENCE = Path(__file__).resolve().parents[1] / "docs" / "reference" / "mlek_board_reference.json"
-WARMUP = 5
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from reference import mlek_active
+from results import load_runs, measured_valid
+
+KEYS = ("npu_active", "mac_active", "ext_rd_beats", "ext_wr_beats")
+INVARIANTS = ("mac_active", "ext_rd_beats", "ext_wr_beats")   # must not move between arms
 INVARIANT_TOL = 0.001          # mac_active and EXT beats may move by at most 0.1 %
 OUTCOMES = ("SUPPORTED", "PARTIAL_CONTRIBUTOR", "REFUTED", "UNRESOLVED")
 
 
 def medians(runs_csv: Path) -> dict:
-    """Median over measured RUNs (rep > WARMUP, valid) of npu_active, mac_active, EXT rd/wr beats."""
-    vals: dict[str, list[int]] = {"35": [], "48": [], "386": [], "391": []}
-    for r in csv.DictReader(open(runs_csv)):
-        if int(r["rep"]) > WARMUP and r["run_valid"] == "True" and r["ev_type"] in vals:
-            vals[r["ev_type"]].append(int(r["event_value"]))
-    return {k: statistics.median(v) if v else None for k, v in vals.items()}
+    """Median over the measured valid RUNs of npu_active, mac_active, EXT rd/wr beats."""
+    runs = measured_valid(load_runs(runs_csv))
+    return {k: statistics.median(r[k] for r in runs) if runs and all(k in r for r in runs) else None for k in KEYS}
 
 
 def closure(c: float, t: float, m: float) -> float:
@@ -36,12 +36,12 @@ def closure(c: float, t: float, m: float) -> float:
 def outcome(screened_c: bool, screened_t: bool, mc: dict, mt: dict, m: float) -> str:
     if not (screened_c and screened_t):
         return "UNRESOLVED"
-    for ev in ("48", "386", "391"):
+    for ev in INVARIANTS:
         if mc[ev] is None or mt[ev] is None or abs(mt[ev] - mc[ev]) > INVARIANT_TOL * max(mc[ev], 1):
             return "UNRESOLVED"   # the work or the traffic changed: not a one-variable comparison
-    if mc["35"] <= m:
+    if mc["npu_active"] <= m:
         return "UNRESOLVED"       # no gap to close
-    g = closure(mc["35"], mt["35"], m)
+    g = closure(mc["npu_active"], mt["npu_active"], m)
     if g >= 0.8:
         return "SUPPORTED"
     if g >= 0.2:
@@ -55,11 +55,6 @@ def overall(per: dict) -> str:
     if k == a and k in ("SUPPORTED", "PARTIAL_CONTRIBUTOR", "REFUTED"):
         return k
     return "UNRESOLVED"
-
-
-def mlek_active() -> dict:
-    """MLEK board NPU ACTIVE, median of B1-B3, per workload."""
-    return {n: w["ACTIVE_median"] for n, w in json.load(open(REFERENCE))["workloads"].items()}
 
 
 def main(ctrl_root: str, treat_root: str) -> None:
@@ -78,9 +73,9 @@ def main(ctrl_root: str, treat_root: str) -> None:
             continue
         mc, mt = medians(Path(ctrl_root) / n / "runs.csv"), medians(Path(treat_root) / n / "runs.csv")
         per[n] = outcome(sc[n]["outcome"] == "SCREENED", st[n]["outcome"] == "SCREENED", mc, mt, ref[n])
-        print(f"| {n} | {per[n]} | {mc['35']:,.0f} | {mt['35']:,.0f} | {ref[n]:,} | "
-              f"{closure(mc['35'], mt['35'], ref[n]):.3f} | "
-              f"{mc['35'] - mc['48']:,.0f} → {mt['35'] - mt['48']:,.0f} |")
+        print(f"| {n} | {per[n]} | {mc['npu_active']:,.0f} | {mt['npu_active']:,.0f} | {ref[n]:,} | "
+              f"{closure(mc['npu_active'], mt['npu_active'], ref[n]):.3f} | "
+              f"{mc['npu_active'] - mc['mac_active']:,.0f} → {mt['npu_active'] - mt['mac_active']:,.0f} |")
     print(f"\nOverall: **{overall(per)}**")
 
 

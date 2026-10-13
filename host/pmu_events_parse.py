@@ -1,8 +1,7 @@
-"""Pure functions: event-id lists (docs/reference), event sets, per-run validity, per-event verdicts,
-consistency checks, refusals with rule ids."""
-import json, pathlib
-
-REPO = pathlib.Path(__file__).resolve().parents[1]
+"""Pure functions: event sets, per-run validity, per-event verdicts, consistency checks, refusals with rule ids."""
+import pathlib, sys
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+from reference import driver_ids
 INSTRUMENTATION_EVENTS = 2
 BUILD_ID_PMEV = 0x504D4556
 SLOTS = 8
@@ -21,15 +20,6 @@ class Refusal(Exception):
 
 def fail_rule(rule, msg): return Refusal(rule, msg)
 def refusal_rule(exc): return exc.rule
-
-
-def driver_ids():
-    d = json.loads((REPO / "docs/reference/driver_events_171.json").read_text())
-    return {int(v): n for v, n in d}
-
-
-def trm_ids():
-    return {int(v) for v, _, _ in json.loads((REPO / "docs/reference/trm_events_110.json").read_text())}
 
 
 def event_sets(ids=None):

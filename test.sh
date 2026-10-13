@@ -9,7 +9,7 @@ run() {  # run <label> <dir> <command...>
   printf '%-45s rc=%s  %s\n' "$label" "$rc" "$(echo "$out" | tail -1)"
   [ $rc -eq 0 ] || fail=1
 }
-for m in test_pmu_events_parse test_pack_vela_workload test_screening_metrics test_ab_outcome; do
+for m in test_pmwl test_pmwl_firmware_contract test_reference_results test_pmu_events_parse test_pack_vela_workload test_screening_metrics test_ab_outcome; do
   run "host/$m" . python3 -B -m unittest host.tests.$m
 done
 run "host/test_proto_unit" . python3 -B host/tests/test_proto_unit.py

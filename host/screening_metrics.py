@@ -15,28 +15,15 @@ import statistics
 import sys
 from pathlib import Path
 
-EVENTS = {35: "npu_active", 48: "mac_active", 386: "ext_rd_beats", 391: "ext_wr_beats",
-          387: "ext_rd_req_stall", 392: "ext_wr_req_stall", 393: "ext_wr_data_stall", 396: "ext_enabled"}
-WARMUP, MEASURED = 5, 30
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from results import MEASURED, WARMUP, load_runs
+
 MACS_PER_CYCLE = 1024          # configured_MAC_count (contract: Vela convention, not TRM-verified)
 OUTCOMES = ("SCREENED", "UNPROVEN", "NOT_EXECUTABLE")
 METRICS = ("npu_active", "window_cycles", "npu_active_ratio", "peak_mac_efficiency",
            "mac_active_cycle_efficiency", "mac_active_ratio", "ext_beats_per_mac", "ext_rd_beats_per_mac",
            "ext_wr_beats_per_mac", "ext_read_req_stall_ratio", "ext_write_req_stall_ratio",
            "ext_write_data_stall_ratio")
-
-
-def load_runs(path: Path) -> list[dict]:
-    """One dict per RUN: rep, valid, overflow, window_cycles and the 8 counters."""
-    runs: dict[int, dict] = {}
-    for r in csv.DictReader(open(path)):
-        rep = int(r["rep"])
-        run = runs.setdefault(rep, {"rep": rep, "valid": r["run_valid"] == "True", "overflow": False,
-                                    "window_cycles": int(r["window_cycles"]) if r["window_cycles"] else None})
-        run["overflow"] |= r["event_overflow"] not in ("0", "False", "")
-        ev = int(r["ev_type"])
-        run[EVENTS[ev]] = int(r["event_value"]) if r["event_value"] not in ("", "None") else None
-    return [runs[k] for k in sorted(runs)]
 
 
 def ratio(a, b):
