@@ -2,6 +2,10 @@
 """Stage 1 screening analysis (evidence/stage1/contract.md): gate every RUN, derive M1-M11, aggregate, fingerprint.
 
   python3 host/analysis/stage1.py <campaign dir holding <workload>/{runs.csv,summary.json}> <out dir>
+      [--add <label> <campaign dir> <manifest>]...
+
+--add analyses a further dataset (amendment 2: `--add a2 <root> manifest.a2.json`) into the same outputs; its rows
+carry dataset=<label> and its summary entries are keyed <workload>@<label>. Dataset `s1` is unchanged by it.
 
 Writes per_run.csv, summary.csv, summary.json, fingerprint_table.md into <out dir>. Every RUN is written, valid or
 not; aggregates use the 30 measured RUNs of a workload whose gate is BASELINE_PASS, otherwise the workload is
@@ -9,6 +13,7 @@ UNRESOLVED and has no aggregate.
 """
 from __future__ import annotations
 
+import argparse
 import csv
 import json
 import pathlib
@@ -72,16 +77,17 @@ def stats(values: list[float]) -> dict:
             "deterministic": min(values) == max(values)}
 
 
-def analyse(root: pathlib.Path, man: dict, prof: dict, ids: list[int]) -> tuple[list[dict], dict]:
+def analyse(root: pathlib.Path, man: dict, prof: dict, ids: list[int], dataset: str = "s1") -> tuple[list[dict], dict]:
     per_run, summary = [], {}
     for name, w in man.items():
+        key = name if dataset == "s1" else f"{name}@{dataset}"
         g = gate(root / name, prof, w, ids, stage1_checks)
         runs = results.load_runs(root / name / "runs.csv") if (root / name / "runs.csv").exists() else []
         boot_ok = g["gate"] == "BASELINE_PASS"
         for r in runs:
             failed = g.get("failed_runs", {}).get(r["rep"], [])
             complete = all(r.get(k) is not None for k in RAW) and r["npu_active"]
-            row = dict(experiment_id="stage1", profile_id=prof["name"], workload=name, workload_class=w["class"],
+            row = dict(experiment_id="stage1", dataset=dataset, profile_id=prof["name"], workload=name, workload_class=w["class"],
                        operator=w.get("operator_type", ""), shape=w.get("shape", ""), run_id=r["rep"],
                        warmup_or_measured="warmup" if r["rep"] <= results.WARMUP else "measured",
                        input_sha256=w["golden"]["input_sha256"], blob_sha256=w["blob_sha256"],
@@ -92,17 +98,20 @@ def analyse(root: pathlib.Path, man: dict, prof: dict, ids: list[int]) -> tuple[
                        run_valid=boot_ok and not failed, failed_checks=";".join(failed))
             row.update(derive(r, w["n_mac"]) if complete else {k: None for k in DERIVED})
             per_run.append(row)
-        entry = {"class": w["class"], "n_mac": w["n_mac"], "gate": g["gate"], "failed_boot": g.get("failed_boot"),
+        entry = {"workload": name, "dataset": dataset, "golden_source": w["golden"]["source"],
+                 "class": w["class"], "n_mac": w["n_mac"], "gate": g["gate"], "failed_boot": g.get("failed_boot"),
                  "failed_runs": g.get("failed_runs"), "status": "VALID" if boot_ok else "UNRESOLVED"}
+        if "numerical_difference_diagnostic" in w:   # reported only, never used for pass/fail
+            entry["numerical_difference_diagnostic"] = w["numerical_difference_diagnostic"]
         if boot_ok:
             measured = [p for p in per_run if p["workload"] == name and p["warmup_or_measured"] == "measured"]
             entry["metrics"] = {k: stats([p[k] for p in measured]) for k in RAW + ("pmccntr",) + DERIVED
                                 if all(p[k] is not None for p in measured)}
-        summary[name] = entry
+        summary[key] = entry
     return per_run, summary
 
 
-FINGERPRINT = (("N_MAC", lambda e, w: f"{w['n_mac']:,}" if w["n_mac"] else "N/A"),
+FINGERPRINT = (("N_MAC", lambda e, n: f"{n:,}" if n else "N/A"),
                ("NPU cycles", lambda e, w: f"{e['npu_active']['median']:,.0f}"),
                ("MAC/cycle", lambda e, w: _f(e, "mac_throughput", "{:.1f}")),
                ("peak MAC eff.", lambda e, w: _f(e, "peak_mac_efficiency", "{:.1%}")),
@@ -119,22 +128,29 @@ def _f(e: dict, k: str, fmt: str) -> str:
     return fmt.format(e[k]["median"]) if k in e else "N/A"
 
 
-def fingerprint(summary: dict, man: dict) -> str:
+def fingerprint(summary: dict) -> str:
     head = "| workload | class | " + " | ".join(c for c, _ in FINGERPRINT) + " |"
     lines = [head, "| " + " | ".join(["---"] * (len(FINGERPRINT) + 2)) + " |"]
     for name, e in summary.items():
-        cells = ([fn(e["metrics"], man[name]) for _, fn in FINGERPRINT] if e["status"] == "VALID"
+        cells = ([fn(e["metrics"], e["n_mac"]) for _, fn in FINGERPRINT] if e["status"] == "VALID"
                  else [e["gate"]] + [""] * (len(FINGERPRINT) - 1))
         lines.append(f"| {name} | {e['class']} | " + " | ".join(cells) + " |")
     return "\n".join(lines) + "\n"
 
 
 def main() -> int:
-    root, out = pathlib.Path(sys.argv[1]), pathlib.Path(sys.argv[2]); out.mkdir(parents=True, exist_ok=True)
+    ap = argparse.ArgumentParser()
+    ap.add_argument("root"); ap.add_argument("out")
+    ap.add_argument("--add", nargs=3, action="append", default=[], metavar=("LABEL", "ROOT", "MANIFEST"))
+    a = ap.parse_args()
+    out = pathlib.Path(a.out); out.mkdir(parents=True, exist_ok=True)
     prof = json.loads(PROFILE.read_text())
-    man = json.loads(MANIFEST.read_text())["workloads"]
     ids = sorted(int(x) for x in IDS.read_text().split())
-    per_run, summary = analyse(root, man, prof, ids)
+    per_run, summary = analyse(pathlib.Path(a.root), json.loads(MANIFEST.read_text())["workloads"], prof, ids)
+    for label, root, mpath in a.add:
+        rows, summ = analyse(pathlib.Path(root), json.loads(pathlib.Path(mpath).read_text())["workloads"], prof, ids,
+                             label)
+        per_run += rows; summary.update(summ)
     with open(out / "per_run.csv", "w", newline="") as f:
         cols = list(per_run[0].keys()) if per_run else []
         w = csv.DictWriter(f, fieldnames=cols); w.writeheader(); w.writerows(per_run)
@@ -147,8 +163,8 @@ def main() -> int:
                                                                                  "min", "max", "deterministic")])
     (out / "summary.json").write_text(json.dumps({"ta_state": prof["ta_state"], "workloads": summary}, indent=1,
                                                  default=str))
-    (out / "fingerprint_table.md").write_text(fingerprint(summary, man))
-    print(fingerprint(summary, man))
+    (out / "fingerprint_table.md").write_text(fingerprint(summary))
+    print(fingerprint(summary))
     return 0 if all(e["status"] == "VALID" for e in summary.values()) else 1
 
 
