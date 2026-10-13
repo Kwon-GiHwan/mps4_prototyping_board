@@ -1,0 +1,56 @@
+{
+ "model": "/work/stage1/models/fc1024.tflite",
+ "model_sha256": "30f55a227bb81c7019a56d7c3b98daa10793ccf2f14ecd15591b1cc318c72beb",
+ "vela_options": [
+  "--accelerator-config",
+  "ethos-u85-1024",
+  "--optimise",
+  "Performance",
+  "--config",
+  "/opt/arm/ml-embedded-evaluation-kit/scripts/vela/default_vela.ini",
+  "--memory-mode",
+  "Dedicated_Sram",
+  "--system-config",
+  "Ethos_U85_SYS_DRAM_Mid_1024"
+ ],
+ "ops": [
+  {
+   "op": "FULLY_CONNECTED",
+   "inputs": [
+    [
+     1,
+     1024
+    ],
+    [
+     1024,
+     1024
+    ],
+    [
+     1024
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     1024
+    ]
+   ],
+   "n_mac": 1048576
+  }
+ ],
+ "op_counts": {
+  "FULLY_CONNECTED": 1
+ },
+ "n_mac": 1048576,
+ "n_mac_ops": 1,
+ "non_mac_ops": 0,
+ "vela": {
+  "core_clock": 1000000000.0,
+  "nn_macs": 1048576.0,
+  "cycles_npu": 87130.0,
+  "cycles_sram_access": 0.0,
+  "cycles_dram_access": 98479.0,
+  "cycles_total": 98479.0
+ },
+ "n_mac_vs_vela_nn_macs": 1.0
+}

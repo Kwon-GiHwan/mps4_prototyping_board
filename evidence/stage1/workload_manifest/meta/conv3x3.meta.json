@@ -1,0 +1,62 @@
+{
+ "model": "/work/stage1/models/conv3x3.tflite",
+ "model_sha256": "1aceed787b27036ae28bb8b03fc7a4c9b52b4be951558825a67380bc7c39f283",
+ "vela_options": [
+  "--accelerator-config",
+  "ethos-u85-1024",
+  "--optimise",
+  "Performance",
+  "--config",
+  "/opt/arm/ml-embedded-evaluation-kit/scripts/vela/default_vela.ini",
+  "--memory-mode",
+  "Dedicated_Sram",
+  "--system-config",
+  "Ethos_U85_SYS_DRAM_Mid_1024"
+ ],
+ "ops": [
+  {
+   "op": "CONV_2D",
+   "inputs": [
+    [
+     1,
+     56,
+     56,
+     64
+    ],
+    [
+     64,
+     3,
+     3,
+     64
+    ],
+    [
+     64
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     56,
+     56,
+     64
+    ]
+   ],
+   "n_mac": 115605504
+  }
+ ],
+ "op_counts": {
+  "CONV_2D": 1
+ },
+ "n_mac": 115605504,
+ "n_mac_ops": 1,
+ "non_mac_ops": 0,
+ "vela": {
+  "core_clock": 1000000000.0,
+  "nn_macs": 115605504.0,
+  "cycles_npu": 160049.0,
+  "cycles_sram_access": 30428.0,
+  "cycles_dram_access": 699999.0,
+  "cycles_total": 699999.0
+ },
+ "n_mac_vs_vela_nn_macs": 1.0
+}

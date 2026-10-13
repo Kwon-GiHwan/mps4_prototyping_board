@@ -1,0 +1,112 @@
+import csv, json, sys, tempfile, unittest, pathlib
+REPO = pathlib.Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(REPO / "host" / "lib")); sys.path.insert(0, str(REPO / "host" / "analysis"))
+import stage1 as S
+
+PROF = json.loads((REPO / "config" / "mlek_baseline.json").read_text())
+IDS = [35, 48, 130, 135, 140, 386, 391, 396]
+KNOBS = ["0xffffffff", "0x0000000a", "0x00000002", "0x00000000", "0x00000000", "0x00000004", "0x00000004",
+         "0x00020f0b", "0x00021f3f", "0x00000000", "0x31100000", "0x00000001",
+         "0xffffffff", "0xffffffff", "0xffffffff", "0xffffffff"]
+W = {"class": "isolated_operator", "n_mac": 1024 * 1000, "blob_sha256": "b" * 64, "cms_sha256": "c" * 64,
+     "golden": {"input_sha256": "i" * 64, "ofm_sha256": "g" * 64}, "operator_type": "CONV_2D", "shape": "x"}
+# npu_active 2000, mac_active 1000 -> peak 0.5, ratio 0.5, active-cycle eff. 1.0
+VALUES = {35: 2000, 48: 1000, 130: 300, 135: 100, 140: 9000, 386: 50, 391: 10, 396: 9000}
+
+
+def campaign(name="op", row=lambda rep, ev: {}, summ=None):
+    d = pathlib.Path(tempfile.mkdtemp()); w = d / name; w.mkdir()
+    s = dict(blob_sha256="b" * 64, cms_sha256="c" * 64, blob_knobs=KNOBS, ifm_sha256="i" * 64, golden_sha256="g" * 64,
+             provenance=dict(PROF["image"]), requested_ids=IDS, coverage="COMPLETE_SUBSET(8)", refusal=None, runs=35)
+    s.update(summ or {}); (w / "summary.json").write_text(json.dumps(s))
+    with open(w / "runs.csv", "w", newline="") as f:
+        cw = csv.DictWriter(f, fieldnames=["rep", "ev_type", "event_value", "event_overflow", "run_rc", "run_valid",
+                                           "window_cycles", "vendor_rc", "ofm_mismatch_count"])
+        cw.writeheader()
+        for rep in range(1, 36):
+            for ev in IDS:
+                r = dict(rep=rep, ev_type=ev, event_value=VALUES[ev], event_overflow=False, run_rc=0, run_valid=True,
+                         window_cycles=50_000, vendor_rc=0, ofm_mismatch_count=0)
+                r.update(row(rep, ev)); cw.writerow(r)
+    return d
+
+
+class Checks(unittest.TestCase):
+    def test_r6_replaced_by_mac_le_npu(self):
+        run = dict(valid=True, run_rc=0, vendor_rc=0, ofm_mismatch=0, overflow=False, npu_active=10, mac_active=10,
+                   window_cycles=100)
+        self.assertEqual(S.stage1_checks(run), [])                     # no cycle event needed
+        self.assertEqual(S.stage1_checks(dict(run, mac_active=11)), ["R6s_mac_le_npu"])
+        self.assertEqual(S.stage1_checks(dict(run, run_rc=0x7D)), ["R2_rc"])
+
+
+class Derive(unittest.TestCase):
+    def test_metrics(self):
+        run = {"npu_active": 2000, "mac_active": 1000, "sram_rd_beats": 300, "sram_wr_beats": 100,
+               "ext_rd_beats": 50, "ext_wr_beats": 10, "sram_enabled": 9000, "ext_enabled": 9000}
+        d = S.derive(run, 1024 * 1000)
+        self.assertEqual((d["mac_throughput"], d["peak_mac_efficiency"], d["mac_active_ratio"],
+                          d["mac_active_cycle_efficiency"], d["decomposition_residual"]), (512.0, 0.5, 0.5, 1.0, 0.0))
+        self.assertEqual((d["sram_beats_per_mac"], d["ext_beats_per_mac"]), (400 / 1_024_000, 60 / 1_024_000))
+        self.assertEqual((d["sram_beats_per_npu_cycle"], d["ext_beats_per_npu_cycle"]), (0.2, 0.03))
+        self.assertEqual(d["ext_enabled_per_npu_cycle"], 4.5)
+
+    def test_non_mac_workload(self):
+        run = {"npu_active": 10, "mac_active": 0, "sram_rd_beats": 1, "sram_wr_beats": 1, "ext_rd_beats": 1,
+               "ext_wr_beats": 1, "sram_enabled": 1, "ext_enabled": 1}
+        d = S.derive(run, None)
+        self.assertIsNone(d["peak_mac_efficiency"]); self.assertIsNone(d["sram_beats_per_mac"])
+
+    def test_stats(self):
+        s = S.stats([1.0, 2.0, 3.0, 4.0])
+        self.assertEqual((s["median"], s["mean"], s["min"], s["max"], s["deterministic"]), (2.5, 2.5, 1.0, 4.0, False))
+        self.assertAlmostEqual(s["std"], 1.2909944, places=6); self.assertAlmostEqual(s["cv"], 0.5163978, places=6)
+        self.assertTrue(S.stats([5.0, 5.0])["deterministic"])
+
+
+class Analyse(unittest.TestCase):
+    def test_valid_workload_uses_measured_runs(self):
+        # warm-up RUNs carry a different npu_active; the median must come from RUNs 6..35 only
+        d = campaign(row=lambda rep, ev: dict(event_value=3000) if rep <= 5 and ev == 35 else {})
+        per_run, summ = S.analyse(d, {"op": W}, PROF, IDS)
+        self.assertEqual(len(per_run), 35)
+        self.assertEqual(summ["op"]["status"], "VALID")
+        m = summ["op"]["metrics"]
+        self.assertEqual((m["npu_active"]["median"], m["npu_active"]["n"]), (2000, 30))
+        self.assertEqual(m["peak_mac_efficiency"]["median"], 0.5)
+        self.assertTrue(all(p["run_valid"] for p in per_run))
+        self.assertEqual({p["warmup_or_measured"] for p in per_run if p["run_id"] <= 5}, {"warmup"})
+
+    def test_failed_run_recorded_and_workload_unresolved(self):
+        d = campaign(row=lambda rep, ev: dict(ofm_mismatch_count=2) if rep == 20 else {})
+        per_run, summ = S.analyse(d, {"op": W}, PROF, IDS)
+        self.assertEqual(summ["op"]["status"], "UNRESOLVED"); self.assertNotIn("metrics", summ["op"])
+        bad = [p for p in per_run if not p["run_valid"]]
+        self.assertTrue(all(not p["run_valid"] for p in per_run))        # a failed gate invalidates the boot
+        r20 = next(p for p in per_run if p["run_id"] == 20)
+        self.assertEqual((r20["output_valid"], r20["failed_checks"]), (False, "R3_output"))
+        self.assertEqual(len(bad), 35)
+
+    def test_wrong_input_hash_invalid(self):
+        d = campaign(summ=dict(ifm_sha256="x" * 64))
+        _, summ = S.analyse(d, {"op": W}, PROF, IDS)
+        self.assertEqual((summ["op"]["gate"], summ["op"]["status"]), ("INVALID", "UNRESOLVED"))
+
+    def test_knob_failure_flag(self):
+        d = campaign(row=lambda rep, ev: dict(run_rc=0x7D) if rep == 9 else {})
+        per_run, _ = S.analyse(d, {"op": W}, PROF, IDS)
+        self.assertFalse(next(p for p in per_run if p["run_id"] == 9)["knobs_honoured"])
+
+
+class Fingerprint(unittest.TestCase):
+    def test_rows(self):
+        per_run, summ = S.analyse(campaign(), {"op": W}, PROF, IDS)
+        t = S.fingerprint(summ, {"op": W})
+        self.assertIn("| op | isolated_operator | 1,024,000 | 2,000 | 512.0 | 50.0% | 50.0% | 100.0% |", t)
+        bad = campaign(name="op", row=lambda rep, ev: dict(run_rc=1) if rep == 1 else {})
+        _, summ = S.analyse(bad, {"op": W}, PROF, IDS)
+        self.assertIn("| op | isolated_operator | BASELINE_FAIL |", S.fingerprint(summ, {"op": W}))
+
+
+if __name__ == "__main__":
+    unittest.main()

@@ -1,0 +1,43 @@
+{
+ "op": "conv3x3",
+ "operator_type": "CONV_2D",
+ "input_shape": [
+  1,
+  56,
+  56,
+  64
+ ],
+ "output_shape": [
+  1,
+  56,
+  56,
+  64
+ ],
+ "kernel_shape": [
+  3,
+  3
+ ],
+ "weight_shape": [
+  64,
+  3,
+  3,
+  64
+ ],
+ "stride": [
+  1,
+  1
+ ],
+ "padding": "SAME",
+ "groups": 1,
+ "n_mac": 115605504,
+ "weight_seed": 20261014,
+ "ifm_seed": 1,
+ "quant": {
+  "ifm_scale": 0.0078125,
+  "weight_scale": 0.0078125,
+  "ofm_scale": 0.3232787124753937,
+  "zero_points": 0
+ },
+ "acc_abs_max": 672668,
+ "model_sha256": "1aceed787b27036ae28bb8b03fc7a4c9b52b4be951558825a67380bc7c39f283"
+}

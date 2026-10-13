@@ -60,7 +60,8 @@ def run_checks(run: dict) -> list[str]:
     return [k for k, ok in checks.items() if not ok]
 
 
-def gate(wdir: pathlib.Path, prof: dict, man: dict, ids: list[int]) -> dict:
+def gate(wdir: pathlib.Path, prof: dict, man: dict, ids: list[int], checks=run_checks) -> dict:
+    """checks: the per-RUN check function (stage 0: run_checks; stage 1 replaces R6, see host/analysis/stage1.py)."""
     if not (wdir / "summary.json").exists() or not (wdir / "runs.csv").exists():
         return {"gate": "UNPROVEN", "why": "missing summary.json or runs.csv"}
     summ = json.loads((wdir / "summary.json").read_text())
@@ -69,7 +70,7 @@ def gate(wdir: pathlib.Path, prof: dict, man: dict, ids: list[int]) -> dict:
         return {"gate": "INVALID", "why": "B4: blob IFM or golden differs from the manifest's"}
     runs = results.load_runs(wdir / "runs.csv")
     failed_boot = boot_checks(summ, prof, man, ids)
-    failed_runs = {r["rep"]: f for r in runs if (f := run_checks(r))}
+    failed_runs = {r["rep"]: f for r in runs if (f := checks(r))}
     ok = not failed_boot and not failed_runs and len(runs) == prof["repeats"]
     return {"gate": "BASELINE_PASS" if ok else "BASELINE_FAIL", "failed_boot": failed_boot,
             "failed_runs": failed_runs, "runs": len(runs)}
