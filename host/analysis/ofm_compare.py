@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Mobilenet output verification: parse MLEK's VERIFY_TEST_OUTPUT UART dump, compare OFMs byte by byte.
 
-  python3 host/ofm_compare.py dump <app_uart.raw> <out dir>      -> ifm.bin, mlek_ofm.bin
-  python3 host/ofm_compare.py cmp <a.bin> <b.bin> [labels a b]   -> JSON: count, positions, values, signed diff, max
+  python3 host/analysis/ofm_compare.py dump <app_uart.raw> <out dir>      -> ifm.bin, mlek_ofm.bin
+  python3 host/analysis/ofm_compare.py cmp <a.bin> <b.bin> [labels a b]   -> JSON: count, positions, values, signed diff, max
 Bytes are compared as int8 (the model's output type); signed difference = a - b.
 """
 from __future__ import annotations

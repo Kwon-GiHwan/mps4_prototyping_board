@@ -1,5 +1,5 @@
 import sys, unittest, pathlib
-REPO = pathlib.Path(__file__).resolve().parents[2]; sys.path.insert(0, str(REPO / "host"))
+REPO = pathlib.Path(__file__).resolve().parents[2]; sys.path.insert(0, str(REPO / "host" / "analysis"))
 import ofm_compare as C
 
 # shape of MLEK DumpTensorData output: "\n\t" every 16 values, then info lines

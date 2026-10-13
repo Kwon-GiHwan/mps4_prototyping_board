@@ -12,7 +12,7 @@ import types
 import struct
 import zlib
 
-sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "lib"))
 import runner_proto as rp
 
 passed = 0

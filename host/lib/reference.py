@@ -4,7 +4,7 @@ from __future__ import annotations
 import json
 import pathlib
 
-REPO = pathlib.Path(__file__).resolve().parents[1]
+REPO = pathlib.Path(__file__).resolve().parents[2]
 REF = REPO / "docs" / "reference"
 
 

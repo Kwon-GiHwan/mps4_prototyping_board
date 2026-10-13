@@ -1,5 +1,5 @@
 import csv, sys, tempfile, unittest, pathlib
-REPO = pathlib.Path(__file__).resolve().parents[2]; sys.path.insert(0, str(REPO / "host"))
+REPO = pathlib.Path(__file__).resolve().parents[2]; sys.path.insert(0, str(REPO / "host" / "lib"))
 import reference, results
 
 
