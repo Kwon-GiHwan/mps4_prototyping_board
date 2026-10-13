@@ -1,0 +1,16 @@
+Traceback (most recent call last):
+  File "/home/gihwan/evsweep/host/run_pmu_events.py", line 162, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/home/gihwan/evsweep/host/run_pmu_events.py", line 69, in main
+    c = link.ping()
+        ^^^^^^^^^^^
+  File "/home/gihwan/evsweep/host/runner_proto.py", line 396, in ping
+    f = self.request(CMD_PING)
+        ^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/gihwan/evsweep/host/runner_proto.py", line 381, in request
+    frame = self.read_frame(timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/gihwan/evsweep/host/runner_proto.py", line 368, in read_frame
+    raise ProtocolError("timed out waiting for a frame")
+runner_proto.ProtocolError: timed out waiting for a frame

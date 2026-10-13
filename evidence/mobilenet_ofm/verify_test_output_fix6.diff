@@ -1,0 +1,58 @@
+diff --git a/source/app/main/UseCaseCommonUtils.cc b/source/app/main/UseCaseCommonUtils.cc
+index f8fcfac..f911e81 100644
+--- a/source/app/main/UseCaseCommonUtils.cc
++++ b/source/app/main/UseCaseCommonUtils.cc
+@@ -103,15 +103,15 @@ namespace app {
+         }
+     }
+ 
+-    void DumpTensor(const TfLiteTensor* tensor, const size_t lineBreakForNumElements)
++    void DumpTensor(const std::shared_ptr<fwk::iface::TensorIface>& tensor, const size_t lineBreakForNumElements)
+     {
+         if (!tensor) {
+             printf_err("invalid tensor\n");
+             return;
+         }
+ 
+-        const uint32_t tensorSz = tensor->bytes;
+-        const auto* tensorData  = tflite::GetTensorData<uint8_t>(tensor);
++        const uint32_t tensorSz = tensor->Bytes();
++        const auto* tensorData  = tensor->GetData<uint8_t>();
+ 
+         DumpTensorData(tensorData, tensorSz, lineBreakForNumElements);
+     }
+diff --git a/source/app/main/include/UseCaseCommonUtils.hpp b/source/app/main/include/UseCaseCommonUtils.hpp
+index 3243845..92bba04 100644
+--- a/source/app/main/include/UseCaseCommonUtils.hpp
++++ b/source/app/main/include/UseCaseCommonUtils.hpp
+@@ -56,7 +56,7 @@ namespace app {
+      * @param[in]   lineBreakForNumElements     number of elements
+      *              after which line break will be added.
+      **/
+-    void DumpTensor(const TfLiteTensor* tensor,
++    void DumpTensor(const std::shared_ptr<fwk::iface::TensorIface>& tensor,
+                     size_t lineBreakForNumElements = 16);
+ 
+ 
+diff --git a/source/app/use_case/inference_runner/src/UseCaseHandler.cc b/source/app/use_case/inference_runner/src/UseCaseHandler.cc
+index 7c5a93a..33eaa00 100644
+--- a/source/app/use_case/inference_runner/src/UseCaseHandler.cc
++++ b/source/app/use_case/inference_runner/src/UseCaseHandler.cc
+@@ -97,7 +97,7 @@ static void PopulateDynamicOfm(const fwk::iface::Model& model)
+ #endif /* defined (DYNAMIC_OFM_BASE) && defined(DYNAMIC_OFM_SIZE) */
+ 
+ #if VERIFY_TEST_OUTPUT
+-static void DumpInputs(const Model& model, const char* message)
++static void DumpInputs(const fwk::iface::Model& model, const char* message)
+ {
+     info("%s\n", message);
+     for (size_t inputIndex = 0; inputIndex < model.GetNumInputs(); inputIndex++) {
+@@ -105,7 +105,7 @@ static void DumpInputs(const Model& model, const char* message)
+     }
+ }
+ 
+-static void DumpOutputs(const Model& model, const char* message)
++static void DumpOutputs(const fwk::iface::Model& model, const char* message)
+ {
+     info("%s\n", message);
+     for (size_t outputIndex = 0; outputIndex < model.GetNumOutputs(); outputIndex++) {

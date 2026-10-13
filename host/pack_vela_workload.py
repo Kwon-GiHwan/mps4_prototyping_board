@@ -76,16 +76,20 @@ def inspect_vela(path):
                 ofm_off=offs[ofm_t], ofm_len=size(sg.Tensors(ofm_t)))
 
 
-def reference(model, seed):
+def reference(model, seed, ifm=None):
+    """IFM (seeded, or the given raw bytes) and the tflite_runtime OFM of the original model on it."""
     import numpy as np
     from tflite_runtime.interpreter import Interpreter
     it = Interpreter(model_path=model); it.allocate_tensors()
     ins, outs = it.get_input_details(), it.get_output_details()
     if len(ins) != 1 or len(outs) != 1:
         raise SystemExit(f"original model has {len(ins)} inputs / {len(outs)} outputs -- step 1 needs 1/1")
-    rng = np.random.default_rng(seed)
-    x = rng.integers(np.iinfo(ins[0]["dtype"]).min, np.iinfo(ins[0]["dtype"]).max + 1,
-                     size=ins[0]["shape"], dtype=ins[0]["dtype"])
+    if ifm is not None:
+        x = np.frombuffer(ifm, dtype=ins[0]["dtype"]).reshape(ins[0]["shape"])
+    else:
+        rng = np.random.default_rng(seed)
+        x = rng.integers(np.iinfo(ins[0]["dtype"]).min, np.iinfo(ins[0]["dtype"]).max + 1,
+                         size=ins[0]["shape"], dtype=ins[0]["dtype"])
     it.set_tensor(ins[0]["index"], x); it.invoke()
     return x.tobytes(), it.get_tensor(outs[0]["index"]).tobytes()
 
@@ -118,6 +122,8 @@ def main():
     ap.add_argument("--ta-profile", type=int, help="timing adapters: 1 = MLEK sys_dram_mid, 2 = pass-through (default OFF = untouched)")
     ap.add_argument("--ports", help="region ports, e.g. cmd=ext,const=ext,arena=sram,fast=sram (default OFF)")
     ap.add_argument("--profile", help="frozen profile JSON: knobs, seed and Vela from it; no other knob flags")
+    ap.add_argument("--ifm", help="raw IFM bytes to use instead of the seeded input (output verification only)")
+    ap.add_argument("--golden", help="raw OFM bytes the runner compares against instead of tflite_runtime's")
     a = ap.parse_args()
     profile_sha = None
     if a.profile:
@@ -134,7 +140,10 @@ def main():
         vela_out = glob.glob(os.path.join(d, "*_vela.tflite"))[0]
         info = inspect_vela(vela_out)
         vela_sha = hashlib.sha256(open(vela_out, "rb").read()).hexdigest()
-    ifm, golden = reference(a.model, a.seed)
+    ifm, golden = reference(a.model, a.seed, open(a.ifm, "rb").read() if a.ifm else None)
+    tflite_sha = hashlib.sha256(golden).hexdigest()
+    if a.golden:
+        golden = open(a.golden, "rb").read()
     kw = pmwl.knobs(**kargs)
     blob = pmwl.pack(info, ifm, golden, kw)
     open(a.out, "wb").write(blob)
@@ -147,6 +156,8 @@ def main():
                 ofm_off=info["ofm_off"], ofm_len=len(golden), total=len(blob),
                 header_version=pmwl.parse_header(blob)["version"], knobs=[f"0x{w:08x}" for w in kw],
                 cms_sha256=hashlib.sha256(info["cms"]).hexdigest(), profile=a.profile, profile_sha256=profile_sha,
+                ifm_file=a.ifm, ifm_sha256=hashlib.sha256(ifm).hexdigest(), tflite_ofm_sha256=tflite_sha,
+                golden_file=a.golden, golden_sha256=hashlib.sha256(golden).hexdigest(),
                 axi=kargs["axi"], ports=kargs["ports"], axi_limit=kargs["axi_limit"], power_ctrl=kargs["power_ctrl"],
                 fast_base=kargs["fast_base"], ta_profile=kargs["ta_profile"])
     open(a.out + ".json", "w").write(json.dumps(meta, indent=2))

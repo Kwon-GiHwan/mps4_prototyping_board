@@ -1,0 +1,2 @@
+62 mobilenet_v2_1.0_224_INT8 gtfl
+63 mobilenet_v2_1.0_224_INT8 gmlek

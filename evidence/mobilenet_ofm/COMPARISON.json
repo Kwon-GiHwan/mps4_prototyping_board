@@ -1,0 +1,81 @@
+{
+ "input": "MLEK board VERIFY_TEST_OUTPUT dump (std::rand, 150528 B), sha256 of ifm.bin; used for all three",
+ "MLEK_board_vs_TFLite": {
+  "length": 1001,
+  "mismatch_count": 7,
+  "positions": [
+   540,
+   620,
+   825,
+   880,
+   886,
+   912,
+   972
+  ],
+  "a_values": [
+   -116,
+   -120,
+   -123,
+   -128,
+   23,
+   -87,
+   -119
+  ],
+  "b_values": [
+   -118,
+   -121,
+   -124,
+   -127,
+   39,
+   -95,
+   -121
+  ],
+  "signed_diff_a_minus_b": [
+   2,
+   1,
+   1,
+   -1,
+   -16,
+   8,
+   2
+  ],
+  "max_abs_diff": 16
+ },
+ "custom_board_vs_MLEK_board": {
+  "source": "boot 63 (retry), blob golden = MLEK board OFM, 35 RUNs",
+  "runner_counts(rc,vendor_rc,count,maxdiff)": {
+   "('0', '0', '0', '0')": 35
+  },
+  "mismatch_count": 0,
+  "positions": [],
+  "max_abs_diff": 0
+ },
+ "custom_board_vs_TFLite": {
+  "source": "boot 62, blob golden = TFLite OFM, 35 RUNs",
+  "runner_counts(rc,vendor_rc,count,maxdiff)": {
+   "('1', '2', '7', '16')": 35
+  },
+  "runner_(count,maxdiff,first)": [
+   [
+    7,
+    16,
+    540
+   ]
+  ],
+  "derived_full": "custom == MLEK byte-exact (boot 63), so positions/values/diffs equal MLEK_board_vs_TFLite",
+  "mismatch_count": 7,
+  "positions": [
+   540,
+   620,
+   825,
+   880,
+   886,
+   912,
+   972
+  ],
+  "max_abs_diff": 16
+ },
+ "consistency_check": {
+  "runner_summary_equals_computed": true
+ }
+}
