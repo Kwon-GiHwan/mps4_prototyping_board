@@ -15,10 +15,10 @@ from that layout.
 | `host/` | shared modules + thin CLI scripts (below); `host/tests/` |
 | `firmware/` | the subset of the build tree this repo owns — **mirrors `/work/selftest` in the container path-for-path** (patchers, gate, base runner source, vendor `u85.c`, `Makefile.pmu_events`). Do not restructure it. |
 | `board/` | board-host scripts (synced to `~/evsweep` on `ssh gihwan`): deploy/restore/postflight/inspect, MCC helpers, `run_campaign.sh` |
-| `config/` | workload metadata (`workloads/*.meta.json`), PMU event set (`screening_ids.txt`) |
+| `config/` | **stage-0 profile** `mlek_baseline.json` + `baseline_ids.txt` + blob `mlek_baseline.manifest.json`; workload metadata (`workloads/*.meta.json`); screening PMU set (`screening_ids.txt`) |
 | `docs/reference/` | PMU event lists (TRM 110, driver 171), PMU reference, MLEK board reference values |
-| `docs/specs/` | frozen contracts still in force: metric definitions, timing-adapter A/B |
-| `evidence/` | `ta_ab/` (the TA finding, incl. the MLEK-TA baseline arm), `runner_gap/` (static diff, hypothesis table) |
+| `docs/specs/` | frozen contracts still in force: MLEK baseline profile + per-run gate, metric definitions, timing-adapter A/B, tools verification |
+| `evidence/` | `ta_ab/` (the TA finding), `runner_gap/` (static diff, hypothesis table, `mlek_diff_audit.md`), `tools_check/`, `mlek_baseline/` |
 | `environment/` | board card config, build environment, host Python/serial setup |
 
 ### host modules
@@ -30,7 +30,8 @@ from that layout.
 | `results.py` | runs.csv loading, warm-up/measured window, event names | metrics, A/B outcome |
 | `runner_proto.py` | UART protocol to the runner firmware | driver, board/postflight.sh |
 | `pmu_events_parse.py` | event sets, per-RUN validity, verdicts, refusals | driver |
-| CLI | `pack_vela_workload.py`, `screening_workload_meta.py` (container); `run_pmu_events.py` (board host); `screening_metrics.py`, `ab_outcome.py` (Mac) | |
+| `baseline_gate.py` | stage-0 per-run gate (B1–B3, R1–R6) and the MLEK-equivalence outcome | Mac, after every baseline campaign |
+| CLI | `pack_vela_workload.py`, `screening_workload_meta.py` (container); `run_pmu_events.py` (board host); `screening_metrics.py`, `ab_outcome.py`, `baseline_gate.py` (Mac) | |
 
 A constant or layout lives in exactly one host module; scripts import it. **Host ↔ firmware is the exception, on
 purpose:** the runner firmware declares the PMWL layout and TA tables independently (in the patcher), and
@@ -58,7 +59,9 @@ FI101 has an NPU timing adapter in front of each NPU AXI port (`TA_SRAM` at `0x5
 ## Pipeline
 
 1. **Blob** (container, `ssh gihwan` → `docker exec benchmark-runner`): `host/pack_vela_workload.py` (Vela options fixed to MLEK's)
-   plus the knobs (`--ports`, `--axi-limit`, `--ta-profile`, `--fast-base`, `--power-ctrl`), and
+   with `--profile /work/mps4_host/mlek_baseline.json` (the default condition: every knob, seed and the Vela version
+   come from the profile) — or, for a one-variable A/B arm only, explicit knobs (`--ports`, `--axi-limit`,
+   `--ta-profile`, `--fast-base`, `--power-ctrl`). A new profile blob gets its digests into the manifest. Also
    `host/screening_workload_meta.py <model> <out>` for N_MAC and Vela's prediction.
 2. **Image**: `make -f Makefile.pmu_events MODEL=1 all` in `/work/selftest` (gate `check_pmu_events.py` runs in
    `all`). Copy `firmware/` changes into the container first; back up `build_pmu_events_model` before rebuilding.
@@ -66,7 +69,8 @@ FI101 has an NPU timing adapter in front of each NPU AXI port (`TA_SRAM` at `0x5
    evidence root. Restore reference for the original board image: `~/evsweep/evidence_m6`.
 4. **Measure**: `sh ~/evsweep/run_campaign.sh <staging> <out> <ids> <plan>` (one boot per plan line, 35 RUNs).
 5. **Analyse**: `host/screening_metrics.py <root>` (needs `<root>/workloads/*.meta.json`), then
-   `host/ab_outcome.py <ctrl> <treat>` for a one-variable A/B against MLEK.
+   `host/ab_outcome.py <ctrl> <treat>` for a one-variable A/B against MLEK. Baseline-profile data is used only
+   after `host/baseline_gate.py <root>/base` gives `BASELINE_PASS` for the workload (`docs/specs/mlek-baseline.md`).
 6. **Restore**: owner runs `sudo sh ~/evsweep/restore.sh ~/evsweep/evidence_m6`, then `sh ~/evsweep/postflight.sh`.
 
 Before every campaign: `sh sync.sh board` and `sh sync.sh container` (copy with repo-relative paths, then verify by
@@ -94,15 +98,18 @@ mutation means a missing fixture — add the fixture, do not delete the mutation
 ## Traps already paid for
 
 - A build that compiles is not an image that runs; record `NOT_EXECUTABLE` rather than dropping a cell.
-- `model` validity mode does not use `run_rc`; a knob read-back failure (`PMWL_KNOB_NOT_HONOURED`, 0x7D) is visible
-  only in `run_rc`. Check it until the validity rule covers it.
+- `model` validity mode does not require `run_rc == 0` (vendor rc is judged instead). A knob read-back failure
+  (`PMWL_KNOB_NOT_HONOURED`, 0x7D) is caught by the `knobs_honoured` term since `f39eca8`; RUNs archived before
+  that commit were not checked by it. `baseline_gate.py` additionally requires `run_rc == 0` and an exact OFM.
 - Board restore is not "write the backups back": discover the destination set and abort if ambiguous.
 - Hardware order: the UART listener must be alive before `REBOOT`; `USB_OFF` only after the reboot and never while
   the card is mounted. Enforced by the scripts' guards.
 - PMU event names are generation-conditional (U85 emits `SRAM_*`/`EXT_*`); never hardcode by number across tools.
 - The PMCCNTR window of this runner includes CPU staging copies; latency is `npu_active` cycles, never PMCCNTR.
-- Fast scratch placement (DDR via SRAM port, DDR via EXT, on-chip SRAM) and POWER_CTRL do **not** move NPU cycles
-  (A/Bs on the old branch); the TA state does.
+- Fast scratch placement (DDR via SRAM port, DDR via EXT, on-chip SRAM) and POWER_CTRL did **not** move NPU cycles
+  in A/Bs on the old branch — all taken with the TAs untouched; the TA state does.
+- Still different from MLEK and untested (`evidence/runner_gap/mlek_diff_audit.md`): no soft reset/PROT, vendor
+  CFG_*_CAP writes, CPU busy-polling from on-chip SRAM with caches off (MLEK: WFE, caches on).
 
 ## Standing constraints
 
