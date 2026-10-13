@@ -1,3 +1,0 @@
-# tools verification (docs/specs/tools-verification.md), TA profile 1
-57 kws_micronet_m ta1
-58 ad_medium_int8 ta1

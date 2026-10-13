@@ -31,3 +31,5 @@ Control / screening 2 = 1.000–1.001.
    (kws / ad / mobilenet), peak MAC efficiency 16.7 / 41.5 / 20.2 %, Vela cycles_total error +12 / +1 / +62 %.
 4. The TA reset register values were not read out (no wire field); which TA register(s) carry the slowdown is
    not established.
+
+Raw data (runs.csv, summaries, blob metadata, fingerprints, boot logs) removed from the tree in the cleanup after `2ce4512`; recover with `git show 2ce4512:evidence/ta_ab/<path>`.
