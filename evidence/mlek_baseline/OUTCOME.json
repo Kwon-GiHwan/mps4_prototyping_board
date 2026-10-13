@@ -1,0 +1,190 @@
+{
+ "ta_state": "TA profile 1 = MLEK ta_config_u85_sys_dram_mid, Dedicated_Sram branch; read back by the runner every RUN",
+ "workloads": {
+  "ad_medium_int8": {
+   "gate": "BASELINE_PASS",
+   "failed_boot": [],
+   "failed_runs": {},
+   "runs": 35,
+   "outcome": "MLEK_EQUIVALENT",
+   "measured": 30,
+   "medians": {
+    "npu_active": 145763.5,
+    "sram_rd_beats": 70538.0,
+    "sram_wr_beats": 41888.0,
+    "ext_rd_beats": 44084.0,
+    "ext_wr_beats": 1.0
+   },
+   "mlek_active_median": 145976,
+   "active_delta": -0.0014557187482873897,
+   "beats_equal": true
+  },
+  "kws_micronet_m": {
+   "gate": "BASELINE_PASS",
+   "failed_boot": [],
+   "failed_runs": {},
+   "runs": 35,
+   "outcome": "MLEK_EQUIVALENT",
+   "measured": 30,
+   "medians": {
+    "npu_active": 90766.5,
+    "sram_rd_beats": 22664.0,
+    "sram_wr_beats": 17760.0,
+    "ext_rd_beats": 15815.0,
+    "ext_wr_beats": 1.0
+   },
+   "mlek_active_median": 91431,
+   "active_delta": -0.007267775699707976,
+   "beats_equal": true
+  },
+  "mobilenet_v2_1.0_224_INT8": {
+   "gate": "BASELINE_FAIL",
+   "failed_boot": [],
+   "failed_runs": {
+    "1": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "2": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "3": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "4": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "5": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "6": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "7": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "8": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "9": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "10": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "11": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "12": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "13": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "14": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "15": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "16": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "17": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "18": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "19": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "20": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "21": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "22": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "23": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "24": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "25": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "26": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "27": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "28": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "29": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "30": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "31": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "32": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "33": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "34": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "35": [
+     "R2_rc",
+     "R3_output"
+    ]
+   },
+   "runs": 35,
+   "outcome": "UNRESOLVED"
+  }
+ },
+ "overall": "UNRESOLVED"
+}
