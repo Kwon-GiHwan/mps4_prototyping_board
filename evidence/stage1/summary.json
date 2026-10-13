@@ -1,0 +1,1292 @@
+{
+ "ta_state": "TA profile 1 = MLEK ta_config_u85_sys_dram_mid, Dedicated_Sram branch; read back by the runner every RUN",
+ "workloads": {
+  "kws_micronet_m": {
+   "class": "model",
+   "n_mac": 15556352,
+   "gate": "BASELINE_PASS",
+   "failed_boot": [],
+   "failed_runs": {},
+   "status": "VALID",
+   "metrics": {
+    "npu_active": {
+     "n": 30,
+     "median": 90930.0,
+     "mean": 91062.96666666666,
+     "std": 746.8261803647224,
+     "cv": 0.00820120634877247,
+     "min": 89884,
+     "max": 92356,
+     "deterministic": false
+    },
+    "mac_active": {
+     "n": 30,
+     "median": 56450.0,
+     "mean": 56450.0,
+     "std": 0.0,
+     "cv": 0.0,
+     "min": 56450,
+     "max": 56450,
+     "deterministic": true
+    },
+    "sram_rd_beats": {
+     "n": 30,
+     "median": 22664.0,
+     "mean": 22664.0,
+     "std": 0.0,
+     "cv": 0.0,
+     "min": 22664,
+     "max": 22664,
+     "deterministic": true
+    },
+    "sram_wr_beats": {
+     "n": 30,
+     "median": 17760.0,
+     "mean": 17760.0,
+     "std": 0.0,
+     "cv": 0.0,
+     "min": 17760,
+     "max": 17760,
+     "deterministic": true
+    },
+    "ext_rd_beats": {
+     "n": 30,
+     "median": 15815.0,
+     "mean": 15815.0,
+     "std": 0.0,
+     "cv": 0.0,
+     "min": 15815,
+     "max": 15815,
+     "deterministic": true
+    },
+    "ext_wr_beats": {
+     "n": 30,
+     "median": 1.0,
+     "mean": 1.0,
+     "std": 0.0,
+     "cv": 0.0,
+     "min": 1,
+     "max": 1,
+     "deterministic": true
+    },
+    "sram_enabled": {
+     "n": 30,
+     "median": 5249237.0,
+     "mean": 5249544.333333333,
+     "std": 1499.209086504438,
+     "cv": 0.0002855884227864929,
+     "min": 5247254,
+     "max": 5252150,
+     "deterministic": false
+    },
+    "ext_enabled": {
+     "n": 30,
+     "median": 5249369.0,
+     "mean": 5249676.333333333,
+     "std": 1499.209086504438,
+     "cv": 0.00028558124183486575,
+     "min": 5247386,
+     "max": 5252282,
+     "deterministic": false
+    },
+    "pmccntr": {
+     "n": 30,
+     "median": 2624303.5,
+     "mean": 2624457.1666666665,
+     "std": 749.604543252219,
+     "cv": 0.00028562270048563783,
+     "min": 2623312,
+     "max": 2625760,
+     "deterministic": false
+    },
+    "mac_throughput": {
+     "n": 30,
+     "median": 171.0805235623646,
+     "mean": 170.8417999537295,
+     "std": 1.3978619751026065,
+     "cv": 0.0081822011678711,
+     "min": 168.43899692494261,
+     "max": 173.0714253927284,
+     "deterministic": false
+    },
+    "peak_mac_efficiency": {
+     "n": 30,
+     "median": 0.16707082379137167,
+     "mean": 0.16683769526731396,
+     "std": 0.0013650995850611391,
+     "cv": 0.0081822011678711,
+     "min": 0.16449120793451427,
+     "max": 0.16901506386008633,
+     "deterministic": false
+    },
+    "mac_active_ratio": {
+     "n": 30,
+     "median": 0.6208072146410342,
+     "mean": 0.6199409480698321,
+     "std": 0.00507248154930809,
+     "cv": 0.008182201167871087,
+     "min": 0.6112217939278445,
+     "max": 0.6280316852832539,
+     "deterministic": false
+    },
+    "mac_active_cycle_efficiency": {
+     "n": 30,
+     "median": 0.269118689105403,
+     "mean": 0.269118689105403,
+     "std": 0.0,
+     "cv": 0.0,
+     "min": 0.269118689105403,
+     "max": 0.269118689105403,
+     "deterministic": true
+    },
+    "decomposition_residual": {
+     "n": 30,
+     "median": 2.7755575615628914e-17,
+     "mean": 1.7578531223231644e-17,
+     "std": 1.36039101609631e-17,
+     "cv": 0.7738934492424647,
+     "min": 0.0,
+     "max": 2.7755575615628914e-17,
+     "deterministic": false
+    },
+    "sram_beats_per_mac": {
+     "n": 30,
+     "median": 0.002598552668389093,
+     "mean": 0.002598552668389093,
+     "std": 0.0,
+     "cv": 0.0,
+     "min": 0.002598552668389093,
+     "max": 0.002598552668389093,
+     "deterministic": true
+    },
+    "ext_beats_per_mac": {
+     "n": 30,
+     "median": 0.0010166908025737655,
+     "mean": 0.0010166908025737655,
+     "std": 0.0,
+     "cv": 0.0,
+     "min": 0.0010166908025737655,
+     "max": 0.0010166908025737655,
+     "deterministic": true
+    },
+    "sram_beats_per_npu_cycle": {
+     "n": 30,
+     "median": 0.4445617510123856,
+     "mean": 0.44394141514215935,
+     "std": 0.0036324179654425247,
+     "cv": 0.008182201167871099,
+     "min": 0.4376976049200918,
+     "max": 0.4497352142761782,
+     "deterministic": false
+    },
+    "ext_beats_per_npu_cycle": {
+     "n": 30,
+     "median": 0.17393599480536043,
+     "mean": 0.1736932867081039,
+     "std": 0.0014211934133544174,
+     "cv": 0.008182201167871099,
+     "min": 0.1712503789683399,
+     "max": 0.1759601263851186,
+     "deterministic": false
+    },
+    "sram_enabled_per_npu_cycle": {
+     "n": 30,
+     "median": 57.728329504647746,
+     "mean": 57.6510211859572,
+     "std": 0.4553013637471806,
+     "cv": 0.007897542044894155,
+     "min": 56.86853046905453,
+     "max": 58.378065061635,
+     "deterministic": false
+    },
+    "ext_enabled_per_npu_cycle": {
+     "n": 30,
+     "median": 57.729781170765236,
+     "mean": 57.65247082643807,
+     "std": 0.4553132249848757,
+     "cv": 0.007897549202281192,
+     "min": 56.869959721079304,
+     "max": 58.379533621111655,
+     "deterministic": false
+    }
+   }
+  },
+  "ad_medium_int8": {
+   "class": "model",
+   "n_mac": 62346720,
+   "gate": "BASELINE_PASS",
+   "failed_boot": [],
+   "failed_runs": {},
+   "status": "VALID",
+   "metrics": {
+    "npu_active": {
+     "n": 30,
+     "median": 146411.5,
+     "mean": 146237.43333333332,
+     "std": 836.849992050787,
+     "cv": 0.005722542942498674,
+     "min": 144372,
+     "max": 147346,
+     "deterministic": false
+    },
+    "mac_active": {
+     "n": 30,
+     "median": 93672.0,
+     "mean": 93672.0,
+     "std": 0.0,
+     "cv": 0.0,
+     "min": 93672,
+     "max": 93672,
+     "deterministic": true
+    },
+    "sram_rd_beats": {
+     "n": 30,
+     "median": 70538.0,
+     "mean": 70538.0,
+     "std": 0.0,
+     "cv": 0.0,
+     "min": 70538,
+     "max": 70538,
+     "deterministic": true
+    },
+    "sram_wr_beats": {
+     "n": 30,
+     "median": 41888.0,
+     "mean": 41888.0,
+     "std": 0.0,
+     "cv": 0.0,
+     "min": 41888,
+     "max": 41888,
+     "deterministic": true
+    },
+    "ext_rd_beats": {
+     "n": 30,
+     "median": 44084.0,
+     "mean": 44084.0,
+     "std": 0.0,
+     "cv": 0.0,
+     "min": 44084,
+     "max": 44084,
+     "deterministic": true
+    },
+    "ext_wr_beats": {
+     "n": 30,
+     "median": 1.0,
+     "mean": 1.0,
+     "std": 0.0,
+     "cv": 0.0,
+     "min": 1,
+     "max": 1,
+     "deterministic": true
+    },
+    "sram_enabled": {
+     "n": 30,
+     "median": 16062605.0,
+     "mean": 16062251.8,
+     "std": 1670.2289209194835,
+     "cv": 0.00010398473026798667,
+     "min": 16058310,
+     "max": 16064640,
+     "deterministic": false
+    },
+    "ext_enabled": {
+     "n": 30,
+     "median": 16062737.0,
+     "mean": 16062385.2,
+     "std": 1670.9471689372199,
+     "cv": 0.00010402858281204837,
+     "min": 16058442,
+     "max": 16064772,
+     "deterministic": false
+    },
+    "pmccntr": {
+     "n": 30,
+     "median": 8030987.5,
+     "mean": 8030810.9,
+     "std": 835.1144604597417,
+     "cv": 0.00010398880895822634,
+     "min": 8028840,
+     "max": 8032005,
+     "deterministic": false
+    },
+    "mac_throughput": {
+     "n": 30,
+     "median": 425.83219182565523,
+     "mean": 426.3525266612352,
+     "std": 2.446642535115405,
+     "cv": 0.005738543534091501,
+     "min": 423.131404992331,
+     "max": 431.8477267060095,
+     "deterministic": false
+    },
+    "peak_mac_efficiency": {
+     "n": 30,
+     "median": 0.41585174982974143,
+     "mean": 0.4163598893176125,
+     "std": 0.0023892993506986378,
+     "cv": 0.005738543534091501,
+     "min": 0.41321426268782324,
+     "max": 0.4217262956113374,
+     "deterministic": false
+    },
+    "mac_active_ratio": {
+     "n": 30,
+     "median": 0.639785911314866,
+     "mean": 0.6405676814660214,
+     "std": 0.003675925526624804,
+     "cv": 0.005738543534091475,
+     "min": 0.6357281500685461,
+     "max": 0.6488238716648658,
+     "deterministic": false
+    },
+    "mac_active_cycle_efficiency": {
+     "n": 30,
+     "median": 0.6499857881757622,
+     "mean": 0.6499857881757622,
+     "std": 0.0,
+     "cv": 0.0,
+     "min": 0.6499857881757622,
+     "max": 0.6499857881757622,
+     "deterministic": true
+    },
+    "decomposition_residual": {
+     "n": 30,
+     "median": 0.0,
+     "mean": -1.1102230246251566e-17,
+     "std": 3.0578950173096186e-17,
+     "cv": -2.754306972098739,
+     "min": -5.551115123125783e-17,
+     "max": 5.551115123125783e-17,
+     "deterministic": false
+    },
+    "sram_beats_per_mac": {
+     "n": 30,
+     "median": 0.0018032384061262565,
+     "mean": 0.0018032384061262565,
+     "std": 0.0,
+     "cv": 0.0,
+     "min": 0.0018032384061262565,
+     "max": 0.0018032384061262565,
+     "deterministic": true
+    },
+    "ext_beats_per_mac": {
+     "n": 30,
+     "median": 0.0007070941342222975,
+     "mean": 0.0007070941342222974,
+     "std": 0.0,
+     "cv": 0.0,
+     "min": 0.0007070941342222975,
+     "max": 0.0007070941342222975,
+     "deterministic": true
+    },
+    "sram_beats_per_npu_cycle": {
+     "n": 30,
+     "median": 0.7678769628649449,
+     "mean": 0.768815250624508,
+     "std": 0.004411879785382191,
+     "cv": 0.005738543534091481,
+     "min": 0.7630068003203344,
+     "max": 0.7787244063945917,
+     "deterministic": false
+    },
+    "ext_beats_per_npu_cycle": {
+     "n": 30,
+     "median": 0.301103445002945,
+     "mean": 0.3014713707130151,
+     "std": 0.001730006585118876,
+     "cv": 0.005738543534091505,
+     "min": 0.2991937344753166,
+     "max": 0.30535699443105313,
+     "deterministic": false
+    },
+    "sram_enabled_per_npu_cycle": {
+     "n": 30,
+     "median": 109.70864709349318,
+     "mean": 109.84022445642594,
+     "std": 0.6189571636499727,
+     "cv": 0.005635068270417778,
+     "min": 109.02041453449704,
+     "max": 111.22870085612169,
+     "deterministic": false
+    },
+    "ext_enabled_per_npu_cycle": {
+     "n": 30,
+     "median": 109.70954866216144,
+     "mean": 109.84113666411261,
+     "std": 0.6189557764858029,
+     "cv": 0.005635008843531284,
+     "min": 109.02131038508001,
+     "max": 111.22961516083451,
+     "deterministic": false
+    }
+   }
+  },
+  "mobilenet_v2_1.0_224_INT8": {
+   "class": "model",
+   "n_mac": 300775552,
+   "gate": "BASELINE_PASS",
+   "failed_boot": [],
+   "failed_runs": {},
+   "status": "VALID",
+   "metrics": {
+    "npu_active": {
+     "n": 30,
+     "median": 1448582.5,
+     "mean": 1448647.7,
+     "std": 1496.1453264743484,
+     "cv": 0.0010327875621342225,
+     "min": 1445735,
+     "max": 1450449,
+     "deterministic": false
+    },
+    "mac_active": {
+     "n": 30,
+     "median": 574795.0,
+     "mean": 574795.0,
+     "std": 0.0,
+     "cv": 0.0,
+     "min": 574795,
+     "max": 574795,
+     "deterministic": true
+    },
+    "sram_rd_beats": {
+     "n": 30,
+     "median": 672948.0,
+     "mean": 672948.0,
+     "std": 0.0,
+     "cv": 0.0,
+     "min": 672948,
+     "max": 672948,
+     "deterministic": true
+    },
+    "sram_wr_beats": {
+     "n": 30,
+     "median": 401443.0,
+     "mean": 401443.0,
+     "std": 0.0,
+     "cv": 0.0,
+     "min": 401443,
+     "max": 401443,
+     "deterministic": true
+    },
+    "ext_rd_beats": {
+     "n": 30,
+     "median": 301217.0,
+     "mean": 301217.0,
+     "std": 0.0,
+     "cv": 0.0,
+     "min": 301217,
+     "max": 301217,
+     "deterministic": true
+    },
+    "ext_wr_beats": {
+     "n": 30,
+     "median": 47887.0,
+     "mean": 47887.0,
+     "std": 0.0,
+     "cv": 0.0,
+     "min": 47887,
+     "max": 47887,
+     "deterministic": true
+    },
+    "sram_enabled": {
+     "n": 30,
+     "median": 129899136.0,
+     "mean": 129898960.13333334,
+     "std": 3004.474453249667,
+     "cv": 2.312931874255004e-05,
+     "min": 129892604,
+     "max": 129902680,
+     "deterministic": false
+    },
+    "ext_enabled": {
+     "n": 30,
+     "median": 129899268.0,
+     "mean": 129899093.53333333,
+     "std": 3005.2755767074045,
+     "cv": 2.313546226507133e-05,
+     "min": 129892736,
+     "max": 129902812,
+     "deterministic": false
+    },
+    "pmccntr": {
+     "n": 30,
+     "median": 64949253.0,
+     "mean": 64949165.06666667,
+     "std": 1502.2372266248335,
+     "cv": 2.3129430918517142e-05,
+     "min": 64945987,
+     "max": 64951025,
+     "deterministic": false
+    },
+    "mac_throughput": {
+     "n": 30,
+     "median": 207.63439622827025,
+     "mean": 207.62526475060105,
+     "std": 0.21451191611697806,
+     "cv": 0.0010331686578444548,
+     "min": 207.3672028454637,
+     "max": 208.04334957651298,
+     "deterministic": false
+    },
+    "peak_mac_efficiency": {
+     "n": 30,
+     "median": 0.20276796506667016,
+     "mean": 0.20275904760800884,
+     "std": 0.0002094842930829864,
+     "cv": 0.0010331686578444548,
+     "min": 0.20250703402877315,
+     "max": 0.20316733357081346,
+     "deterministic": false
+    },
+    "mac_active_ratio": {
+     "n": 30,
+     "median": 0.39679825034459115,
+     "mean": 0.39678079969851315,
+     "std": 0.00040994148628295833,
+     "cv": 0.0010331686578444448,
+     "min": 0.39628763231247705,
+     "max": 0.3975797777601013,
+     "deterministic": false
+    },
+    "mac_active_cycle_efficiency": {
+     "n": 30,
+     "median": 0.5110102297340791,
+     "mean": 0.5110102297340791,
+     "std": 0.0,
+     "cv": 0.0,
+     "min": 0.5110102297340791,
+     "max": 0.5110102297340791,
+     "deterministic": true
+    },
+    "decomposition_residual": {
+     "n": 30,
+     "median": 2.7755575615628914e-17,
+     "mean": 2.1279274638648835e-17,
+     "std": 1.1939978648902625e-17,
+     "cv": 0.56110834845923,
+     "min": 0.0,
+     "max": 2.7755575615628914e-17,
+     "deterministic": false
+    },
+    "sram_beats_per_mac": {
+     "n": 30,
+     "median": 0.003572068916026792,
+     "mean": 0.003572068916026792,
+     "std": 0.0,
+     "cv": 0.0,
+     "min": 0.003572068916026792,
+     "max": 0.003572068916026792,
+     "deterministic": true
+    },
+    "ext_beats_per_mac": {
+     "n": 30,
+     "median": 0.0011606794424568125,
+     "mean": 0.0011606794424568125,
+     "std": 0.0,
+     "cv": 0.0,
+     "min": 0.0011606794424568125,
+     "max": 0.0011606794424568125,
+     "deterministic": true
+    },
+    "sram_beats_per_npu_cycle": {
+     "n": 30,
+     "median": 0.7416843726649948,
+     "mean": 0.7416517543974552,
+     "std": 0.0007662513476788087,
+     "cv": 0.001033168657844461,
+     "min": 0.7407299394877035,
+     "max": 0.7431451822083577,
+     "deterministic": false
+    },
+    "ext_beats_per_npu_cycle": {
+     "n": 30,
+     "median": 0.24099697524908562,
+     "mean": 0.2409863765306757,
+     "std": 0.0002489795711989954,
+     "cv": 0.0010331686578444498,
+     "min": 0.24068684938250157,
+     "max": 0.2414716389933148,
+     "deterministic": false
+    },
+    "sram_enabled_per_npu_cycle": {
+     "n": 30,
+     "median": 89.67327462634938,
+     "mean": 89.66920745398039,
+     "std": 0.09058182361487184,
+     "cv": 0.0010101775870090055,
+     "min": 89.5599983177623,
+     "max": 89.84537553562721,
+     "deterministic": false
+    },
+    "ext_enabled_per_npu_cycle": {
+     "n": 30,
+     "median": 89.6733657499135,
+     "mean": 89.66929953931803,
+     "std": 0.09058127695174766,
+     "cv": 0.0010101704531775644,
+     "min": 89.56008932406448,
+     "max": 89.84546683866684,
+     "deterministic": false
+    }
+   }
+  },
+  "conv3x3": {
+   "class": "isolated_operator",
+   "n_mac": 115605504,
+   "gate": "BASELINE_FAIL",
+   "failed_boot": [],
+   "failed_runs": {
+    "1": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "2": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "3": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "4": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "5": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "6": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "7": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "8": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "9": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "10": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "11": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "12": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "13": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "14": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "15": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "16": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "17": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "18": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "19": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "20": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "21": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "22": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "23": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "24": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "25": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "26": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "27": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "28": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "29": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "30": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "31": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "32": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "33": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "34": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "35": [
+     "R2_rc",
+     "R3_output"
+    ]
+   },
+   "status": "UNRESOLVED"
+  },
+  "dw3x3": {
+   "class": "isolated_operator",
+   "n_mac": 3612672,
+   "gate": "BASELINE_PASS",
+   "failed_boot": [],
+   "failed_runs": {},
+   "status": "VALID",
+   "metrics": {
+    "npu_active": {
+     "n": 30,
+     "median": 144225.0,
+     "mean": 144097.1,
+     "std": 362.6868460198992,
+     "cv": 0.0025169614518258812,
+     "min": 143448,
+     "max": 144567,
+     "deterministic": false
+    },
+    "mac_active": {
+     "n": 30,
+     "median": 28224.0,
+     "mean": 28224.0,
+     "std": 0.0,
+     "cv": 0.0,
+     "min": 28224,
+     "max": 28224,
+     "deterministic": true
+    },
+    "sram_rd_beats": {
+     "n": 30,
+     "median": 1080.0,
+     "mean": 1080.0,
+     "std": 0.0,
+     "cv": 0.0,
+     "min": 1080,
+     "max": 1080,
+     "deterministic": true
+    },
+    "sram_wr_beats": {
+     "n": 30,
+     "median": 180.0,
+     "mean": 180.0,
+     "std": 0.0,
+     "cv": 0.0,
+     "min": 180,
+     "max": 180,
+     "deterministic": true
+    },
+    "ext_rd_beats": {
+     "n": 30,
+     "median": 28054.0,
+     "mean": 28054.0,
+     "std": 0.0,
+     "cv": 0.0,
+     "min": 28054,
+     "max": 28054,
+     "deterministic": true
+    },
+    "ext_wr_beats": {
+     "n": 30,
+     "median": 25088.0,
+     "mean": 25088.0,
+     "std": 0.0,
+     "cv": 0.0,
+     "min": 25088,
+     "max": 25088,
+     "deterministic": true
+    },
+    "sram_enabled": {
+     "n": 30,
+     "median": 15690109.0,
+     "mean": 15690170.533333333,
+     "std": 1294.152678018706,
+     "cv": 8.248174710844055e-05,
+     "min": 15686878,
+     "max": 15692406,
+     "deterministic": false
+    },
+    "ext_enabled": {
+     "n": 30,
+     "median": 15690241.0,
+     "mean": 15690303.933333334,
+     "std": 1295.912670890563,
+     "cv": 8.259321657482082e-05,
+     "min": 15687010,
+     "max": 15692538,
+     "deterministic": false
+    },
+    "pmccntr": {
+     "n": 30,
+     "median": 7844739.5,
+     "mean": 7844770.266666667,
+     "std": 647.076339009353,
+     "cv": 8.248505909202402e-05,
+     "min": 7843124,
+     "max": 7845888,
+     "deterministic": false
+    },
+    "mac_throughput": {
+     "n": 30,
+     "median": 25.048861636135356,
+     "mean": 25.071248156736537,
+     "std": 0.0631858945540867,
+     "cv": 0.0025202532462313375,
+     "min": 24.989603436468904,
+     "max": 25.184540739501422,
+     "deterministic": false
+    },
+    "peak_mac_efficiency": {
+     "n": 30,
+     "median": 0.024461778941538434,
+     "mean": 0.024483640778063025,
+     "std": 6.170497515047529e-05,
+     "cv": 0.0025202532462313375,
+     "min": 0.024403909605926664,
+     "max": 0.024594278065919357,
+     "deterministic": false
+    },
+    "mac_active_ratio": {
+     "n": 30,
+     "median": 0.19569423153230747,
+     "mean": 0.1958691262245042,
+     "std": 0.0004936398012038023,
+     "cv": 0.0025202532462313375,
+     "min": 0.19523127684741332,
+     "max": 0.19675422452735486,
+     "deterministic": false
+    },
+    "mac_active_cycle_efficiency": {
+     "n": 30,
+     "median": 0.125,
+     "mean": 0.125,
+     "std": 0.0,
+     "cv": 0.0,
+     "min": 0.125,
+     "max": 0.125,
+     "deterministic": true
+    },
+    "decomposition_residual": {
+     "n": 30,
+     "median": 0.0,
+     "mean": 0.0,
+     "std": 0.0,
+     "cv": null,
+     "min": 0.0,
+     "max": 0.0,
+     "deterministic": true
+    },
+    "sram_beats_per_mac": {
+     "n": 30,
+     "median": 0.00034877232142857144,
+     "mean": 0.00034877232142857144,
+     "std": 0.0,
+     "cv": 0.0,
+     "min": 0.00034877232142857144,
+     "max": 0.00034877232142857144,
+     "deterministic": true
+    },
+    "ext_beats_per_mac": {
+     "n": 30,
+     "median": 0.014709887861394558,
+     "mean": 0.01470988786139456,
+     "std": 0.0,
+     "cv": 0.0,
+     "min": 0.014709887861394558,
+     "max": 0.014709887861394558,
+     "deterministic": true
+    },
+    "sram_beats_per_npu_cycle": {
+     "n": 30,
+     "median": 0.008736349621978012,
+     "mean": 0.008744157420736793,
+     "std": 2.203749112516984e-05,
+     "cv": 0.0025202532462313483,
+     "min": 0.008715682002116665,
+     "max": 0.008783670737828342,
+     "deterministic": false
+    },
+    "ext_beats_per_npu_cycle": {
+     "n": 30,
+     "median": 0.3684659457231393,
+     "mean": 0.36879524893078947,
+     "std": 0.0009294574233125152,
+     "cv": 0.0025202532462313344,
+     "min": 0.36759426425117764,
+     "max": 0.37046177011878867,
+     "deterministic": false
+    },
+    "sram_enabled_per_npu_cycle": {
+     "n": 30,
+     "median": 108.78712433230697,
+     "mean": 108.8867516614915,
+     "std": 0.26996535585689907,
+     "cv": 0.0024793223393803753,
+     "min": 108.54506215111333,
+     "max": 109.37620601193464,
+     "deterministic": false
+    },
+    "ext_enabled_per_npu_cycle": {
+     "n": 30,
+     "median": 108.7880395181866,
+     "mean": 108.88767740124146,
+     "std": 0.2699553538220536,
+     "cv": 0.0024792094042679594,
+     "min": 108.54597522256117,
+     "max": 109.37712620601194,
+     "deterministic": false
+    }
+   }
+  },
+  "pw1x1": {
+   "class": "isolated_operator",
+   "n_mac": 25690112,
+   "gate": "BASELINE_FAIL",
+   "failed_boot": [],
+   "failed_runs": {
+    "1": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "2": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "3": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "4": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "5": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "6": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "7": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "8": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "9": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "10": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "11": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "12": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "13": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "14": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "15": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "16": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "17": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "18": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "19": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "20": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "21": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "22": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "23": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "24": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "25": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "26": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "27": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "28": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "29": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "30": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "31": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "32": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "33": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "34": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "35": [
+     "R2_rc",
+     "R3_output"
+    ]
+   },
+   "status": "UNRESOLVED"
+  },
+  "fc1024": {
+   "class": "isolated_operator",
+   "n_mac": 1048576,
+   "gate": "BASELINE_FAIL",
+   "failed_boot": [],
+   "failed_runs": {
+    "1": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "2": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "3": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "4": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "5": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "6": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "7": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "8": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "9": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "10": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "11": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "12": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "13": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "14": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "15": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "16": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "17": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "18": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "19": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "20": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "21": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "22": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "23": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "24": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "25": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "26": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "27": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "28": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "29": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "30": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "31": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "32": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "33": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "34": [
+     "R2_rc",
+     "R3_output"
+    ],
+    "35": [
+     "R2_rc",
+     "R3_output"
+    ]
+   },
+   "status": "UNRESOLVED"
+  }
+ }
+}
