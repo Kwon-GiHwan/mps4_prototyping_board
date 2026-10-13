@@ -1,0 +1,7 @@
+65 kws_micronet_m s1
+66 ad_medium_int8 s1
+67 mobilenet_v2_1.0_224_INT8 s1
+68 conv3x3 s1
+69 dw3x3 s1
+70 pw1x1 s1
+71 fc1024 s1
