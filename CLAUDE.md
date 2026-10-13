@@ -12,7 +12,7 @@ from that layout.
 
 | dir | what |
 | --- | --- |
-| `host/` | packer, workload metadata, board driver, parser, metrics, A/B outcome; `host/tests/` |
+| `host/` | shared modules + thin CLI scripts (below); `host/tests/` |
 | `firmware/` | the subset of the build tree this repo owns — **mirrors `/work/selftest` in the container path-for-path** (patchers, gate, base runner source, vendor `u85.c`, `Makefile.pmu_events`). Do not restructure it. |
 | `board/` | board-host scripts (synced to `~/evsweep` on `ssh gihwan`): deploy/restore/postflight/inspect, MCC helpers, `run_campaign.sh` |
 | `config/` | workload metadata (`workloads/*.meta.json`), PMU event set (`screening_ids.txt`) |
@@ -20,6 +20,23 @@ from that layout.
 | `docs/specs/` | frozen contracts still in force: metric definitions, timing-adapter A/B |
 | `evidence/` | `ta_ab/` (the TA finding, incl. the MLEK-TA baseline arm), `runner_gap/` (static diff, hypothesis table) |
 | `environment/` | board card config, build environment, host Python/serial setup |
+
+### host modules
+
+| module | owns | used by |
+| --- | --- | --- |
+| `pmwl.py` | PMWL blob format: header/knob word layout, knob encoding, TA profile tables, pack, parse_header | packer, driver |
+| `reference.py` | event lists (TRM 110 / driver 171), MLEK board NPU ACTIVE | parser, driver, A/B outcome |
+| `results.py` | runs.csv loading, warm-up/measured window, event names | metrics, A/B outcome |
+| `runner_proto.py` | UART protocol to the runner firmware | driver, board/postflight.sh |
+| `pmu_events_parse.py` | event sets, per-RUN validity, verdicts, refusals | driver |
+| CLI | `pack_vela_workload.py`, `screening_workload_meta.py` (container); `run_pmu_events.py` (board host); `screening_metrics.py`, `ab_outcome.py` (Mac) | |
+
+A constant or layout lives in exactly one host module; scripts import it. **Host ↔ firmware is the exception, on
+purpose:** the runner firmware declares the PMWL layout and TA tables independently (in the patcher), and
+`host/tests/test_pmwl_firmware_contract.py` requires the generated C to agree with `pmwl.py`. Never make one side
+import the other — a copy agrees with itself and proves nothing. Tests must not read their expected values back
+from the module under test.
 
 ## NPU timing adapters — CRITICAL measurement condition
 

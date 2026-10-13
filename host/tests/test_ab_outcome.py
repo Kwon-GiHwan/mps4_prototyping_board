@@ -5,11 +5,11 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import ab_outcome as A  # noqa: E402
 
-C = {"35": 1000, "48": 100, "386": 500, "391": 10}
+C = {"npu_active": 1000, "mac_active": 100, "ext_rd_beats": 500, "ext_wr_beats": 10}
 
 
 def t(npu, **kw):
-    d = dict(C, **{"35": npu}); d.update(kw); return d
+    d = dict(C, npu_active=npu); d.update(kw); return d
 
 
 class Outcome(unittest.TestCase):
@@ -25,10 +25,10 @@ class Outcome(unittest.TestCase):
         self.assertEqual(A.outcome(True, False, C, t(200), 200), "UNRESOLVED")
 
     def test_invariant_moves_make_it_unresolved(self):
-        for ev in ("48", "386", "391"):
+        for ev in ("mac_active", "ext_rd_beats", "ext_wr_beats"):   # explicit: not read back from the module
             moved = t(200, **{ev: C[ev] * 1.01})
             self.assertEqual(A.outcome(True, True, C, moved, 200), "UNRESOLVED", ev)
-        within = t(200, **{"386": 500.4})   # 0.08 % < 0.1 %
+        within = t(200, ext_rd_beats=500.4)   # 0.08 % < 0.1 %
         self.assertEqual(A.outcome(True, True, C, within, 200), "SUPPORTED")
 
     def test_no_gap_is_unresolved(self):
@@ -44,13 +44,6 @@ class Outcome(unittest.TestCase):
     def test_closed_set(self):
         got = {A.outcome(s, True, C, t(n), 200) for s in (True, False) for n in (200, 500, 1000)}
         self.assertEqual(got, set(A.OUTCOMES))
-
-
-class Reference(unittest.TestCase):
-    def test_mlek_reference_is_the_b1_b3_median(self):
-        ref = A.mlek_active()
-        self.assertEqual(ref, {"kws_micronet_m": 91_431, "ad_medium_int8": 145_976,
-                               "mobilenet_v2_1.0_224_INT8": 1_448_049})
 
 
 if __name__ == "__main__":

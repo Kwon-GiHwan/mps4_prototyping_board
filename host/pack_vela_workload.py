@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Pack a Vela-compiled model into a PMWL workload blob for the Tier C runner.
+"""Pack a Vela-compiled model into a PMWL workload blob for the runner.
 
 Runs where vela, tflite and tflite_runtime exist (the benchmark-runner container).
 
@@ -9,20 +9,12 @@ Steps: vela (ethos-u85-1024) -> the single ethos-u op's inputs (COP1 payload, re
 scratch/scratch_fast sizes) + OfflineMemoryAllocation (IFM/OFM offsets in the arena) ->
 deterministic int8 IFM -> reference OFM from tflite_runtime on the ORIGINAL model -> blob.
 
-Blob (little-endian, 16 u32 header):
-  0 magic 'PMWL'  1 version  2 cms_off 3 cms_len 4 const_off 5 const_len
-  6 arena_size 7 fast_size 8 ifm_arena_off 9 ifm_len 10 ifm_data_off
-  11 ofm_arena_off 12 ofm_len 13 golden_off 14 irq_mask 15 total_len
+Blob layout, knob encoding and packing: pmwl.py (beside this file).
 """
-import argparse, glob, hashlib, json, os, struct, subprocess, sys, tempfile
+import argparse, glob, hashlib, json, os, pathlib, struct, subprocess, sys, tempfile
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+import pmwl
 
-MAGIC = 0x4C574D50  # 'PMWL'
-VERSION = 1
-OFF = 0xFFFFFFFF
-AXI_CHANNELS = {"rd_cmd": 0, "rd_ifm": 1, "rd_weights": 2, "rd_scale_bias": 3, "rd_mem2mem": 4,
-                "rd_ifm_stream": 5, "rd_mem2mem_idx": 6, "wr_ofm": 8, "wr_mem2mem": 9}  # TRM PMCAXI_CHAN.CH_SEL
-ATTR_SRAM, ATTR_EXT = 0, 2      # MEM_ATTR indices used for the two ports
-MEM_ATTR_SRAM, MEM_ATTR_EXT = 0x0, 0x4   # bit 2 = EXT AXI port
 MLEK_INI = "/opt/arm/ml-embedded-evaluation-kit/scripts/vela/default_vela.ini"
 # Vela options after the model path = MLEK resources.py run_vela() for ethos-u85-1024 (npu_config.py:
 # Dedicated_Sram, Ethos_U85_SYS_DRAM_Mid_1024; arena_cache_size 393216 from the ini). Reproduces MLEK's
@@ -31,45 +23,8 @@ VELA_OPTIONS = ["--accelerator-config", "ethos-u85-1024", "--optimise", "Perform
                 "--memory-mode", "Dedicated_Sram", "--system-config", "Ethos_U85_SYS_DRAM_Mid_1024"]
 
 
-def knobs(axi=None, ports=None, axi_limit=None, power_ctrl=None, fast_base=None, ta_profile=None):
-    """Header v2 words 16..23. axi='ext:rd_weights'; ports={'cmd':'ext','const':'ext','arena':'sram','fast':'sram'}.
-    Anything not given is OFF (0xFFFFFFFF) = vendor default (all EXT under USE_AXI_EXT)."""
-    k = [OFF] * 16   # header words 16..31
-    if axi:
-        port, chan = axi.split(":")
-        k[0] = (1 << 8 if port == "ext" else 0) | AXI_CHANNELS[chan]
-    if ports:
-        idx = lambda r: ATTR_EXT if ports[r] == "ext" else ATTR_SRAM
-        k[1] = idx("const") | idx("arena") << 2 | idx("fast") << 4 | ATTR_SRAM << 6   # REGIONCFG, region 3 unused
-        k[2] = idx("cmd")                                                              # QCONFIG
-        k[3], k[4], k[5], k[6] = MEM_ATTR_SRAM, MEM_ATTR_SRAM, MEM_ATTR_EXT, MEM_ATTR_EXT
-    if axi_limit:   # {'sram': 0x20000, 'ext': 0x20000} -> words 23, 24 (TRM AXI_SRAM / AXI_EXT layout)
-        for port, word in (("sram", 7), ("ext", 8)):
-            if port in axi_limit:
-                v = axi_limit[port]
-                if v & ~0x31F3F:
-                    raise SystemExit(f"AXI_{port.upper()} 0x{v:x} sets reserved bits")
-                k[word] = v
-    if power_ctrl is not None:   # word 25: POWER_CTRL.mac_step_cycles (6 bits); runner hook, read back at the seam
-        if not 0 <= power_ctrl <= 0x3F:
-            raise SystemExit(f"POWER_CTRL 0x{power_ctrl:x} outside the 6-bit mac_step_cycles field")
-        k[9] = power_ctrl
-    if fast_base is not None:    # word 26: fast scratch base in on-chip SRAM; the runner checks range/port
-        if fast_base & 0xFF or not 0x31000000 <= fast_base < 0x31400000:
-            raise SystemExit(f"fast base 0x{fast_base:x}: must be 256-aligned inside on-chip SRAM 0x31000000-0x313FFFFF")
-        if ports is None or ports.get("fast") != "sram":
-            raise SystemExit("--fast-base needs --ports with fast=sram (on-chip SRAM is behind the SRAM port)")
-        k[10] = fast_base
-    if ta_profile is not None:   # word 27: timing adapters, 1 = MLEK sys_dram_mid, 2 = pass-through
-        if ta_profile not in (1, 2):
-            raise SystemExit(f"TA profile {ta_profile}: 1 (MLEK) or 2 (pass-through)")
-        k[11] = ta_profile
-    return k
 COP1 = b"COP1"
 DA_OPTIMIZER_CONFIG, DA_COMMAND_STREAM, DA_NOP = 1, 2, 5
-
-
-def align(n, a=16): return (n + a - 1) // a * a
 
 
 def extract_cms(cop):
@@ -135,32 +90,6 @@ def reference(model, seed):
     return x.tobytes(), it.get_tensor(outs[0]["index"]).tobytes()
 
 
-def pack(info, ifm, golden, knob_words=None):
-    if len(ifm) != info["ifm_len"] or len(golden) != info["ofm_len"]:
-        raise SystemExit(f"IFM/OFM size mismatch: {len(ifm)}/{info['ifm_len']}, {len(golden)}/{info['ofm_len']}")
-    kw = list(knob_words or [OFF] * 16) + [OFF] * (16 - len(knob_words or []))
-    v3 = any(w != OFF for w in kw[7:16])
-    v2 = v3 or any(w != OFF for w in kw[0:7])
-    knob_bytes = 64 if v3 else (32 if v2 else 0)
-    cms_off = 64 + knob_bytes
-    const_off = align(cms_off + len(info["cms"]))
-    ifm_data_off = align(const_off + len(info["const"]))
-    golden_off = align(ifm_data_off + len(ifm))
-    total = align(golden_off + len(golden))
-    hdr = struct.pack("<16I", MAGIC, 3 if v3 else (2 if v2 else VERSION), cms_off, len(info["cms"]), const_off, len(info["const"]),
-                      info["arena_size"], info["fast_size"], info["ifm_off"], len(ifm), ifm_data_off,
-                      info["ofm_off"], len(golden), golden_off, 0xFFFF, total)
-    blob = bytearray(total); blob[0:64] = hdr
-    if knob_bytes:
-        blob[64:64 + knob_bytes] = struct.pack("<%dI" % (knob_bytes // 4), *kw[:knob_bytes // 4])
-    for off, b in ((cms_off, info["cms"]), (const_off, info["const"]), (ifm_data_off, ifm), (golden_off, golden)):
-        blob[off:off + len(b)] = b
-    stop = struct.unpack("<I", info["cms"][-4:])[0]
-    if stop != 0xFFFF0000:
-        raise SystemExit(f"command stream does not end in NPU_OP_STOP mask 0xFFFF (last word 0x{stop:08x})")
-    return bytes(blob)
-
-
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--model", required=True); ap.add_argument("--out", required=True)
@@ -180,8 +109,8 @@ def main():
     ifm, golden = reference(a.model, a.seed)
     ports = dict(kv.split("=") for kv in a.ports.split(",")) if a.ports else None
     lim = {kv.split("=")[0]: int(kv.split("=")[1], 0) for kv in a.axi_limit.split(",")} if a.axi_limit else None
-    kw = knobs(a.axi, ports, lim, a.power_ctrl, a.fast_base, a.ta_profile)
-    blob = pack(info, ifm, golden, kw)
+    kw = pmwl.knobs(a.axi, ports, lim, a.power_ctrl, a.fast_base, a.ta_profile)
+    blob = pmwl.pack(info, ifm, golden, kw)
     open(a.out, "wb").write(blob)
     meta = dict(model=a.model, model_sha256=hashlib.sha256(open(a.model, "rb").read()).hexdigest(),
                 vela_sha256=vela_sha, accelerator="ethos-u85-1024",
@@ -190,7 +119,7 @@ def main():
                 cms_len=len(info["cms"]), const_len=len(info["const"]), arena_size=info["arena_size"],
                 fast_size=info["fast_size"], ifm_off=info["ifm_off"], ifm_len=len(ifm),
                 ofm_off=info["ofm_off"], ofm_len=len(golden), total=len(blob),
-                header_version=struct.unpack("<I", blob[4:8])[0], knobs=[f"0x{w:08x}" for w in kw],
+                header_version=pmwl.parse_header(blob)["version"], knobs=[f"0x{w:08x}" for w in kw],
                 axi=a.axi, ports=a.ports, axi_limit=a.axi_limit, power_ctrl=a.power_ctrl, fast_base=a.fast_base, ta_profile=a.ta_profile)
     open(a.out + ".json", "w").write(json.dumps(meta, indent=2))
     print(json.dumps(meta, indent=1))
