@@ -5,6 +5,7 @@ import re, sys, unittest, pathlib
 REPO = pathlib.Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO / "host")); sys.path.insert(0, str(REPO / "firmware" / "patches"))
 import pmwl
+import pmu_events_parse
 import patch_pmu_events_source as P
 
 GEN = P.generate((REPO / "firmware" / "Selftest_pmu" / "runner_pmu_main.c").read_text())
@@ -69,6 +70,10 @@ class Knobs(unittest.TestCase):
         self.assertIn(f"if (h[{W('fast_base')}] != PMWL_OFF) {{", BLK)
         self.assertIn(f"if (h[{W('axi_chan')}] != PMWL_OFF) {{", BLK)
         self.assertEqual(sorted(pmwl.TA_PROFILES), list(range(1, max(pmwl.TA_PROFILES) + 1)))
+
+    def test_knob_not_honoured_rc(self):
+        # the host validity term knobs_honoured matches the rc the runner returns on a read-back failure
+        self.assertIn(f"#define PMWL_KNOB_NOT_HONOURED 0x{pmu_events_parse.KNOB_NOT_HONOURED:X}\n", GEN)
 
     def test_onchip_sram_end(self):
         self.assertIn(f"#define PMWL_SRAM_END 0x{pmwl.ONCHIP_SRAM[1]:08X}U", BLK)

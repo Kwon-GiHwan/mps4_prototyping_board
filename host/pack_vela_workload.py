@@ -90,6 +90,23 @@ def reference(model, seed):
     return x.tobytes(), it.get_tensor(outs[0]["index"]).tobytes()
 
 
+def parse_ports(text):
+    return dict(kv.split("=") for kv in text.split(",")) if text else None
+
+
+def parse_axi_limit(text):
+    return {kv.split("=")[0]: int(kv.split("=")[1], 0) for kv in text.split(",")} if text else None
+
+
+def from_profile(prof, vela_version):
+    """Knob arguments and seed from a frozen profile (config/mlek_baseline.json); refuses a different Vela."""
+    if vela_version != prof["vela"]["version"] or VELA_OPTIONS != prof["vela"]["options"]:
+        raise SystemExit(f"Vela {vela_version} {VELA_OPTIONS} != profile {prof['vela']}")
+    k = prof["knobs"]
+    return dict(axi=None, ports=parse_ports(k["ports"]), axi_limit=parse_axi_limit(k["axi_limit"]),
+                power_ctrl=k["power_ctrl"], fast_base=int(k["fast_base"], 0), ta_profile=prof["ta_profile"]), prof["seed"]
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--model", required=True); ap.add_argument("--out", required=True)
@@ -100,16 +117,25 @@ def main():
     ap.add_argument("--fast-base", type=lambda x: int(x, 0), help="fast scratch in on-chip SRAM at this address (default OFF = staging)")
     ap.add_argument("--ta-profile", type=int, help="timing adapters: 1 = MLEK sys_dram_mid, 2 = pass-through (default OFF = untouched)")
     ap.add_argument("--ports", help="region ports, e.g. cmd=ext,const=ext,arena=sram,fast=sram (default OFF)")
+    ap.add_argument("--profile", help="frozen profile JSON: knobs, seed and Vela from it; no other knob flags")
     a = ap.parse_args()
+    profile_sha = None
+    if a.profile:
+        if any(v is not None for v in (a.axi, a.axi_limit, a.power_ctrl, a.fast_base, a.ta_profile, a.ports)):
+            raise SystemExit("--profile fixes every knob; drop the other knob flags")
+        raw = open(a.profile, "rb").read(); profile_sha = hashlib.sha256(raw).hexdigest()
+        ver = subprocess.run(["vela", "--version"], check=True, capture_output=True, text=True).stdout.strip()
+        kargs, a.seed = from_profile(json.loads(raw), ver)
+    else:
+        kargs = dict(axi=a.axi, ports=parse_ports(a.ports), axi_limit=parse_axi_limit(a.axi_limit),
+                     power_ctrl=a.power_ctrl, fast_base=a.fast_base, ta_profile=a.ta_profile)
     with tempfile.TemporaryDirectory() as d:
         subprocess.run(["vela", a.model, *VELA_OPTIONS, "--output-dir", d], check=True, capture_output=True)
         vela_out = glob.glob(os.path.join(d, "*_vela.tflite"))[0]
         info = inspect_vela(vela_out)
         vela_sha = hashlib.sha256(open(vela_out, "rb").read()).hexdigest()
     ifm, golden = reference(a.model, a.seed)
-    ports = dict(kv.split("=") for kv in a.ports.split(",")) if a.ports else None
-    lim = {kv.split("=")[0]: int(kv.split("=")[1], 0) for kv in a.axi_limit.split(",")} if a.axi_limit else None
-    kw = pmwl.knobs(a.axi, ports, lim, a.power_ctrl, a.fast_base, a.ta_profile)
+    kw = pmwl.knobs(**kargs)
     blob = pmwl.pack(info, ifm, golden, kw)
     open(a.out, "wb").write(blob)
     meta = dict(model=a.model, model_sha256=hashlib.sha256(open(a.model, "rb").read()).hexdigest(),
@@ -120,7 +146,9 @@ def main():
                 fast_size=info["fast_size"], ifm_off=info["ifm_off"], ifm_len=len(ifm),
                 ofm_off=info["ofm_off"], ofm_len=len(golden), total=len(blob),
                 header_version=pmwl.parse_header(blob)["version"], knobs=[f"0x{w:08x}" for w in kw],
-                axi=a.axi, ports=a.ports, axi_limit=a.axi_limit, power_ctrl=a.power_ctrl, fast_base=a.fast_base, ta_profile=a.ta_profile)
+                cms_sha256=hashlib.sha256(info["cms"]).hexdigest(), profile=a.profile, profile_sha256=profile_sha,
+                axi=kargs["axi"], ports=kargs["ports"], axi_limit=kargs["axi_limit"], power_ctrl=kargs["power_ctrl"],
+                fast_base=kargs["fast_base"], ta_profile=kargs["ta_profile"])
     open(a.out + ".json", "w").write(json.dumps(meta, indent=2))
     print(json.dumps(meta, indent=1))
 

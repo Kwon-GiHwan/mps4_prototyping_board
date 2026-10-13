@@ -21,3 +21,8 @@ def trm_ids() -> set[int]:
 def mlek_active() -> dict[str, int]:
     """MLEK board NPU ACTIVE, median of boots B1-B3, per workload (TA: MLEK profile)."""
     return {n: w["ACTIVE_median"] for n, w in json.loads((REF / "mlek_board_reference.json").read_text())["workloads"].items()}
+
+
+def mlek_b1(workload: str) -> dict[str, int]:
+    """MLEK board B1 counters of one workload by MLEK name (ACTIVE, SRAM_/EXT_ beats, IDLE, TOTAL)."""
+    return json.loads((REF / "mlek_board_reference.json").read_text())["workloads"][workload]["B1"]

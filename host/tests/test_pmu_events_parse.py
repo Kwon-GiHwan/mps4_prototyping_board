@@ -61,11 +61,16 @@ class ModelValidity(unittest.TestCase):
     def test_each_model_term_reachable(self):
         for term, o in {"vendor_rc_completed": dict(vendor_rc=3),
                         "flags_completed": dict(valid_flags=0x9),
-                        "stream_completed": dict(seam_npu_status=0xFFFF0024)}.items():   # bus_status set
+                        "stream_completed": dict(seam_npu_status=0xFFFF0024),   # bus_status set
+                        "knobs_honoured": dict(run_rc=0x7D)}.items():
             ok, failed = E.run_validity(self.rec(**o), [17, 35], "model")
             self.assertFalse(ok); self.assertIn(term, failed)
         for o in (dict(seam_npu_status=0xFFFF0000), dict(seam_npu_qread=99), dict(seam_npu_status=0xFFFF0120)):
             self.assertIn("stream_completed", E.run_validity(self.rec(**o), [17, 35], "model")[1])
+
+    def test_model_terms_closed(self):
+        self.assertEqual(set(E.MODEL_TERMS), {"vendor_rc_completed", "flags_completed", "stream_completed", "knobs_honoured"})
+        self.assertEqual(E.run_validity(self.rec(run_rc=0), [17, 35], "model"), (True, []))
 
 
 class Verdicts(unittest.TestCase):
