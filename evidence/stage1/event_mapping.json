@@ -1,0 +1,65 @@
+{
+ "source": "docs/reference/driver_events_171.json (U85 core-driver header) cross-checked with docs/reference/trm_events_110.json (TRM); every id is in both with the same name",
+ "events": [
+  {
+   "stage1_name": "NPU_ACTIVE",
+   "event_id": 35,
+   "driver_name": "npu_active",
+   "trm_description": "NPU in running state",
+   "per_run_column": "npu_active"
+  },
+  {
+   "stage1_name": "MAC_ACTIVE",
+   "event_id": 48,
+   "driver_name": "mac_active",
+   "trm_description": "MAC is doing block traversal. Valid blk_cmd and not stalled",
+   "per_run_column": "mac_active"
+  },
+  {
+   "stage1_name": "SRAM_RD_DATA_BEAT",
+   "event_id": 130,
+   "driver_name": "sram_rd_data_beat_received",
+   "trm_description": "Read bandwidth (rready & rvalid) sum over SRAM AXI ports",
+   "per_run_column": "sram_rd_beats"
+  },
+  {
+   "stage1_name": "SRAM_WR_DATA_BEAT",
+   "event_id": 135,
+   "driver_name": "sram_wr_data_beat_written",
+   "trm_description": "Write bandwidth (wvalid & wready) sum over SRAM AXI ports",
+   "per_run_column": "sram_wr_beats"
+  },
+  {
+   "stage1_name": "EXT_RD_DATA_BEAT",
+   "event_id": 386,
+   "driver_name": "ext_rd_data_beat_received",
+   "trm_description": "Read bandwidth (rready & rvalid) sum over EXT AXI ports",
+   "per_run_column": "ext_rd_beats"
+  },
+  {
+   "stage1_name": "EXT_WR_DATA_BEAT",
+   "event_id": 391,
+   "driver_name": "ext_wr_data_beat_written",
+   "trm_description": "Write bandwidth (wvalid & wready) sum over EXT AXI ports",
+   "per_run_column": "ext_wr_beats"
+  },
+  {
+   "stage1_name": "SRAM_ENABLED_CYCLES",
+   "event_id": 140,
+   "driver_name": "sram_enabled_cycles",
+   "trm_description": "Memory clock cycle (aclken_input), sum over SRAM AXI ports",
+   "per_run_column": "sram_enabled"
+  },
+  {
+   "stage1_name": "EXT_ENABLED_CYCLES",
+   "event_id": 396,
+   "driver_name": "ext_enabled_cycles",
+   "trm_description": "Memory clock cycle (aclken_input), sum over EXT AXI ports",
+   "per_run_column": "ext_enabled"
+  }
+ ],
+ "pmccntr": {
+  "what": "NPU PMU cycle counter over the runner's measurement window (window_cycles); always recorded, not one of the 8 slots; includes CPU staging copies -- sanity/reference only, never latency"
+ },
+ "ids_file": "config/stage1_ids.txt"
+}

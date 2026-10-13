@@ -6,7 +6,7 @@ from pathlib import Path
 
 WARMUP, MEASURED = 5, 30   # RUNs 1..WARMUP are warm-up; analyses need MEASURED valid RUNs after them
 EVENTS = {17: "cycle", 32: "npu_idle", 35: "npu_active", 48: "mac_active", 130: "sram_rd_beats", 135: "sram_wr_beats",
-          386: "ext_rd_beats", 391: "ext_wr_beats",
+          140: "sram_enabled", 386: "ext_rd_beats", 391: "ext_wr_beats",
           387: "ext_rd_req_stall", 392: "ext_wr_req_stall", 393: "ext_wr_data_stall", 396: "ext_enabled"}
 
 

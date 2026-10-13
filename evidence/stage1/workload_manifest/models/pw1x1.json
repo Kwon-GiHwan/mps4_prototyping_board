@@ -1,0 +1,43 @@
+{
+ "op": "pw1x1",
+ "operator_type": "CONV_2D",
+ "input_shape": [
+  1,
+  56,
+  56,
+  64
+ ],
+ "output_shape": [
+  1,
+  56,
+  56,
+  128
+ ],
+ "kernel_shape": [
+  1,
+  1
+ ],
+ "weight_shape": [
+  128,
+  1,
+  1,
+  64
+ ],
+ "stride": [
+  1,
+  1
+ ],
+ "padding": "SAME",
+ "groups": 1,
+ "n_mac": 25690112,
+ "weight_seed": 20261014,
+ "ifm_seed": 1,
+ "quant": {
+  "ifm_scale": 0.0078125,
+  "weight_scale": 0.0078125,
+  "ofm_scale": 0.09657203494094488,
+  "zero_points": 0
+ },
+ "acc_abs_max": 200944,
+ "model_sha256": "fc77bda282d4f8d491bc4c0a7ce9c9324959840a0913c1d0da364129c9b1a9e3"
+}

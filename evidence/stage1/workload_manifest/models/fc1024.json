@@ -1,0 +1,31 @@
+{
+ "op": "fc1024",
+ "operator_type": "FULLY_CONNECTED",
+ "input_shape": [
+  1,
+  1024
+ ],
+ "output_shape": [
+  1,
+  1024
+ ],
+ "kernel_shape": null,
+ "weight_shape": [
+  1024,
+  1024
+ ],
+ "stride": null,
+ "padding": null,
+ "groups": 1,
+ "n_mac": 1048576,
+ "weight_seed": 20261014,
+ "ifm_seed": 1,
+ "quant": {
+  "ifm_scale": 0.0078125,
+  "weight_scale": 0.0078125,
+  "ofm_scale": 0.27301938515009844,
+  "zero_points": 0
+ },
+ "acc_abs_max": 568090,
+ "model_sha256": "30f55a227bb81c7019a56d7c3b98daa10793ccf2f14ecd15591b1cc318c72beb"
+}
