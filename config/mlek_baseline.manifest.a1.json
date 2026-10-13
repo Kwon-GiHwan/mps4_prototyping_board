@@ -1,0 +1,40 @@
+{
+  "what": "Amendment 1 (docs/specs/mlek-baseline.md): mobilenet golden = MLEK FI101 OFM for the MLEK input. Frozen before boot 64.",
+  "workloads": {
+    "mobilenet_v2_1.0_224_INT8": {
+      "blob_sha256": "0d51cf9eaf86d8e3aa9628a8da966d04f28f86610f6ceb9bd7ed94ae0996c7fd",
+      "cms_sha256": "884470be9f7997aee49998b20b363a597124e756f666990643f1d3d679c7fc3f",
+      "vela_sha256": "031fade0e9b7136e2ed55a23422efbcc7aba28a32c8ebd3e043afbcc2f44bb75",
+      "model_sha256": "bd8d56b80557a5fca7acf14f61e5339285c02810f7d7afa714b9763fc4b86e95",
+      "golden": {
+        "source": "MLEK b2c0bb2 inference_runner on FI101, VERIFY_TEST_OUTPUT dump (evidence/mobilenet_ofm)",
+        "input_sha256": "be4e01717eced208f5e6ae99120a754290c1dcc6ae7b9d367e6eac6c265d3232",
+        "ofm_sha256": "6f5b50a88b78e40769082de573ad0192e492c1048b357c71d01619462e432f2f"
+      },
+      "numerical_difference_diagnostic": {
+        "vs": "tflite_runtime",
+        "tflite_ofm_sha256": "4b858a50decfd7498bef72372277aaf834f656852e34128d7ee68724407f7440",
+        "mismatch_count": 7,
+        "positions": [
+          540,
+          620,
+          825,
+          880,
+          886,
+          912,
+          972
+        ],
+        "signed_diff_mlek_minus_tflite": [
+          2,
+          1,
+          1,
+          -1,
+          -16,
+          8,
+          2
+        ],
+        "max_abs_diff": 16
+      }
+    }
+  }
+}

@@ -54,7 +54,9 @@ def main():
     hdr = pmwl.parse_header(blob)   # also refuses a non-PMWL file before touching the board
     cms_len = hdr["cms_len"]
     blob_id = dict(blob_sha256=hashlib.sha256(blob).hexdigest(), blob_knobs=[f"0x{w:08x}" for w in hdr["knobs"]],
-                   cms_sha256=hashlib.sha256(blob[hdr["cms_off"]:hdr["cms_off"] + cms_len]).hexdigest())
+                   cms_sha256=hashlib.sha256(blob[hdr["cms_off"]:hdr["cms_off"] + cms_len]).hexdigest(),
+                   ifm_sha256=hashlib.sha256(blob[hdr["ifm_data_off"]:hdr["ifm_data_off"] + hdr["ifm_len"]]).hexdigest(),
+                   golden_sha256=hashlib.sha256(blob[hdr["golden_off"]:hdr["golden_off"] + hdr["ofm_len"]]).hexdigest())
     prov = dict(PROV, build_id=a.build_id, app_sha256=a.app_sha256, vectors_sha256=a.vectors_sha256, ddr_sha256=a.ddr_sha256,
                 host_boot_index=a.host_boot_index, captured_at_utc=datetime.datetime.now(datetime.timezone.utc).isoformat())
     names = reference.driver_ids(); trm = reference.trm_ids()
