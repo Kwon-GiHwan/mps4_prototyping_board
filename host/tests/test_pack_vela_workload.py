@@ -1,0 +1,75 @@
+import struct, sys, unittest, pathlib
+REPO = pathlib.Path(__file__).resolve().parents[2]; sys.path.insert(0, str(REPO / "host"))
+import pack_vela_workload as K
+
+INFO = dict(cms=b"\x00" * 12 + struct.pack("<I", 0xFFFF0000), const=b"\x01" * 32, arena_size=64,
+            fast_size=16, ifm_off=0, ifm_len=4, ofm_off=8, ofm_len=2)
+
+
+class T(unittest.TestCase):
+    def test_default_is_v1_all_off(self):
+        self.assertEqual(K.knobs(), [K.OFF] * 16)
+        b = K.pack(INFO, b"\x02" * 4, b"\x03" * 2, K.knobs())
+        h = struct.unpack("<16I", b[:64]); self.assertEqual((h[1], h[2]), (1, 64))
+
+    def test_v2_split_ports(self):
+        k = K.knobs("ext:rd_weights", {"cmd": "ext", "const": "ext", "arena": "sram", "fast": "sram"})
+        self.assertEqual(k[0], 0x102)                       # AXI_SEL ext | CH_SEL rd_weights
+        self.assertEqual(k[1], 2 | 0 << 2 | 0 << 4 | 0 << 6)  # REGIONCFG: const->ATTR2(EXT), arena/fast->ATTR0
+        self.assertEqual(k[2], 2)                           # QCONFIG: cmd -> ATTR2
+        self.assertEqual(k[3:7], [0x0, 0x0, 0x4, 0x4])      # MEM_ATTR0..3
+        b = K.pack(INFO, b"\x02" * 4, b"\x03" * 2, k)
+        h = struct.unpack("<16I", b[:64]); self.assertEqual((h[1], h[2]), (2, 96))
+        self.assertEqual(list(struct.unpack("<8I", b[64:96])), k[:8])
+
+    def test_v3_axi_limit(self):
+        k = K.knobs("ext:rd_weights", {"cmd": "ext", "const": "ext", "arena": "sram", "fast": "sram"},
+                    {"sram": 0x20000, "ext": 0x20000})
+        self.assertEqual(k[7:9], [0x20000, 0x20000])
+        b = K.pack(INFO, b"\x02" * 4, b"\x03" * 2, k)
+        h = struct.unpack("<16I", b[:64]); self.assertEqual((h[1], h[2]), (3, 128))
+        self.assertEqual(list(struct.unpack("<16I", b[64:128])), k)
+        with self.assertRaises(SystemExit): K.knobs(axi_limit={"sram": 0x40000})   # reserved bit 18
+
+    def test_power_ctrl_is_word_25_and_v3(self):
+        self.assertEqual(K.knobs()[9], K.OFF)                       # default: vendor value
+        k = K.knobs(power_ctrl=0)
+        self.assertEqual(k[9], 0)
+        self.assertEqual([i for i, w in enumerate(k) if w != K.OFF], [9])
+        b = K.pack(INFO, b"\x02" * 4, b"\x03" * 2, k)
+        h = struct.unpack("<16I", b[:64]); self.assertEqual((h[1], h[2]), (3, 128))   # word 25 needs v3
+        self.assertEqual(struct.unpack("<I", b[64 + 9 * 4:64 + 10 * 4])[0], 0)          # header word 16 + 9
+        self.assertEqual(K.knobs(power_ctrl=63)[9], 63)
+        for bad in (64, -1):
+            with self.assertRaises(SystemExit): K.knobs(power_ctrl=bad)
+
+    def test_fast_base_is_word_26(self):
+        sram = {"cmd": "ext", "const": "ext", "arena": "ext", "fast": "sram"}
+        self.assertEqual(K.knobs(ports=sram)[10], K.OFF)
+        k = K.knobs(ports=sram, fast_base=0x31100000)
+        self.assertEqual(k[10], 0x31100000)
+        b = K.pack(INFO, b"\x02" * 4, b"\x03" * 2, k)
+        self.assertEqual(struct.unpack("<I", b[64 + 10 * 4:64 + 11 * 4])[0], 0x31100000)   # header word 26
+        for bad in (0x31100010, 0x30FFFF00, 0x31400000):
+            with self.assertRaises(SystemExit): K.knobs(ports=sram, fast_base=bad)
+        with self.assertRaises(SystemExit): K.knobs(ports=dict(sram, fast="ext"), fast_base=0x31100000)
+        with self.assertRaises(SystemExit): K.knobs(fast_base=0x31100000)
+
+    def test_ta_profile_is_word_27(self):
+        self.assertEqual(K.knobs()[11], K.OFF)
+        for prof in (1, 2):
+            k = K.knobs(ta_profile=prof)
+            self.assertEqual([i for i, w in enumerate(k) if w != K.OFF], [11])
+            b = K.pack(INFO, b"\x02" * 4, b"\x03" * 2, k)
+            self.assertEqual(struct.unpack("<I", b[64 + 11 * 4:64 + 12 * 4])[0], prof)   # header word 27
+        for bad in (0, 3):
+            with self.assertRaises(SystemExit): K.knobs(ta_profile=bad)
+
+    def test_cop1_extraction(self):
+        raw = b"\x11\x22\x33\x44" * 2
+        cop = b"COP1" + struct.pack("<I", 1) + b"\x00" * 8 + struct.pack("<I", 2 | (2 << 16)) + raw
+        self.assertEqual(K.extract_cms(cop), raw)
+
+
+if __name__ == "__main__":
+    unittest.main()

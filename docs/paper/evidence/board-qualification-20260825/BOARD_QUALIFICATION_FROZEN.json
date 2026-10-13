@@ -1,0 +1,56 @@
+{
+ "freeze": "paper-board-qualification-frozen",
+ "created": "2026-08-25",
+ "BOARD_MEASUREMENT_PATH": "QUALIFIED",
+ "BOARD_QUALIFICATION_RUNS_cumulative": 2,
+ "valid_observations": 1,
+ "FORMAL_BOARD_SAMPLES": 0,
+ "attempt_1": {
+  "observation": "NOT_OBSERVED",
+  "reason": "CAPTURE_STARTED_AFTER_APPLICATION_COMPLETION",
+  "preserved": true,
+  "evidence_sha256": "04f2297d1dc5939e761412d649cb1f2af7895756a70ab661e027cdec2b653868"
+ },
+ "attempt_2": {
+  "observation": "QUALIFIED",
+  "evidence_sha256": "5857a9b245c546f131d5765449a6c4cd0243e61300ca57bdd0445be8aa7399e5",
+  "app_uart_sha256": "1520a539ea2796d8b6256743bcdef7a5c91398fcf3bf2d2013ff12d366f3445f",
+  "console_sha256": "d9af7cbcc385e7db7fba43bb9c2e70f06065fcdc15f47dbd15cee89d23fd4aa2"
+ },
+ "harness_frozen": "b78b5f8905a36f3bcffc95308ac1d724e255aa12e70f44e97268e2ea3768efe8",
+ "artifact_anchor": "d0d385758cd7f0f5b93965d62b878754d920b29d4248b64c2b33eec07218918a",
+ "live_record": {
+  "ACTIVE": 50381,
+  "IDLE": 6079,
+  "TOTAL": 56460,
+  "SRAM_RD_DATA_BEAT_RECEIVED": 143,
+  "SRAM_WR_DATA_BEAT_WRITTEN": 135,
+  "EXT_RD_DATA_BEAT_RECEIVED": 7838,
+  "EXT_WR_DATA_BEAT_WRITTEN": 36
+ },
+ "static_verdict": "PASS",
+ "live_verdict": "PASS",
+ "rq3_admissible_events": [
+  "TOTAL",
+  "ACTIVE",
+  "IDLE",
+  "SRAM_RD_DATA_BEAT_RECEIVED",
+  "SRAM_WR_DATA_BEAT_WRITTEN",
+  "EXT_RD_DATA_BEAT_RECEIVED",
+  "EXT_WR_DATA_BEAT_WRITTEN"
+ ],
+ "not_evaluable": [
+  "CC_STALLED_ON_BLOCKDEP"
+ ],
+ "comparisons_performed": "none - qualification data only",
+ "board_state_at_close": {
+  "restored": "4/4",
+  "sdb_absent": true,
+  "mounts": 0,
+  "uart_holders": 0,
+  "ddr": "PASSED",
+  "cpuwait": "cleared"
+ },
+ "campaign_210": "HOLD",
+ "runner_patch": "NOT AUTHORIZED"
+}

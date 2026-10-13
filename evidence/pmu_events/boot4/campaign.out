@@ -1,0 +1,19 @@
+REFUSED RULE_RUN_TRANSPORT: set 1 rep 1: Nack('NACK STATE (cmd 0x30, state IDLE)')
+{
+ "runs": 0,
+ "coverage": "RULE_SET_COVERAGE: covered 0/171",
+ "consistency": {
+  "CYCLE_EVENT_VS_PMCCNTR": "UNPROVEN",
+  "NPU_ACTIVE_LE_CYCLE": "UNPROVEN"
+ },
+ "verdict_counts": {
+  "COUNTED_NONZERO": 0,
+  "COUNTED_ZERO": 0,
+  "INCONSISTENT": 0,
+  "NOT_OBSERVED": 0
+ },
+ "refusal": {
+  "rule": "RULE_RUN_TRANSPORT",
+  "msg": "RULE_RUN_TRANSPORT: set 1 rep 1: Nack('NACK STATE (cmd 0x30, state IDLE)')"
+ }
+}

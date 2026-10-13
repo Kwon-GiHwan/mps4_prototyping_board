@@ -1,0 +1,71 @@
+{
+ "converter": "svglib+reportlab, pure Python, vector",
+ "sources_modified": false,
+ "figures": [
+  {
+   "figure": "fig1_mac_scaling",
+   "source_svg": "figures/fig1_mac_scaling.svg",
+   "source_sha256": "08a9d2408cb152654e8b181f0b8c6d8f558925576c763ac1183480fd5c293b7f",
+   "derived_pdf": "figures/fig1_mac_scaling.pdf",
+   "derived_sha256": "f5389842ff13cf4a4443c4e44b9d58c34bf2796b377b0b12e0efcce8f21930af",
+   "width_pt": 721.5,
+   "height_pt": 279.0,
+   "vector": true,
+   "rasterized": false,
+   "fonts_embedded": true,
+   "font_substitution": "Helvetica -> Arimo (metric-compatible, Apache-2.0) so the PDF embeds all fonts"
+  },
+  {
+   "figure": "fig2_platform_sensitivity",
+   "source_svg": "figures/fig2_platform_sensitivity.svg",
+   "source_sha256": "994438047941d17f25aed5841beb2337a0290bfcc6fe61b80fa8660aca489162",
+   "derived_pdf": "figures/fig2_platform_sensitivity.pdf",
+   "derived_sha256": "f5b4062455a0ef502ff800c8ec5b6bb7b1ad4f23ef7a2f34e4080e40c47804b8",
+   "width_pt": 675.0,
+   "height_pt": 372.0,
+   "vector": true,
+   "rasterized": false,
+   "fonts_embedded": true,
+   "font_substitution": "Helvetica -> Arimo (metric-compatible, Apache-2.0) so the PDF embeds all fonts"
+  },
+  {
+   "figure": "fig3_board_relative_cost",
+   "source_svg": "figures/fig3_board_relative_cost.svg",
+   "source_sha256": "65c222650763f3893a4ec66faadcedea6018904d4c9e8a36ec8ba8570248285c",
+   "derived_pdf": "figures/fig3_board_relative_cost.pdf",
+   "derived_sha256": "defc3a7cc1188b5381cd5b03a09c84352ffe9d19b6c9940cc5e320a1faa731cb",
+   "width_pt": 675.0,
+   "height_pt": 457.5,
+   "vector": true,
+   "rasterized": false,
+   "fonts_embedded": true,
+   "font_substitution": "Helvetica -> Arimo (metric-compatible, Apache-2.0) so the PDF embeds all fonts"
+  },
+  {
+   "figure": "fig4_u85_group_delta",
+   "source_svg": "figures/fig4_u85_group_delta.svg",
+   "source_sha256": "961102f9939d8373c9fbaaf1f8444ffe13f615539a950514c29c06199cb2ae08",
+   "derived_pdf": "figures/fig4_u85_group_delta.pdf",
+   "derived_sha256": "43a39de0f0292cd5349acb355fc6019dba1ab362048dbacdd37a7d9c82e20437",
+   "width_pt": 705.0,
+   "height_pt": 450.0,
+   "vector": true,
+   "rasterized": false,
+   "fonts_embedded": true,
+   "font_substitution": "Helvetica -> Arimo (metric-compatible, Apache-2.0) so the PDF embeds all fonts"
+  },
+  {
+   "figure": "fig5_u85_memory_robustness",
+   "source_svg": "figures/fig5_u85_memory_robustness.svg",
+   "source_sha256": "1b1a239959cc5b20d844bfccbe79a44542dae9279d7fa228fcecf451dc0e4d88",
+   "derived_pdf": "figures/fig5_u85_memory_robustness.pdf",
+   "derived_sha256": "22ac6cf5203a050cbcd3967c3e38ebff69c5b30bd7bfbcd98d79999c37fefacb",
+   "width_pt": 705.0,
+   "height_pt": 431.25,
+   "vector": true,
+   "rasterized": false,
+   "fonts_embedded": true,
+   "font_substitution": "Helvetica -> Arimo (metric-compatible, Apache-2.0) so the PDF embeds all fonts"
+  }
+ ]
+}

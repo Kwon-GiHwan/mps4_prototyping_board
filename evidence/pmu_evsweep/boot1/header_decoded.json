@@ -1,0 +1,22 @@
+{
+  "pmcr": {
+    "raw": "0x00004000",
+    "cnt_en": 0,
+    "num_event_cnt": 8
+  },
+  "config": {
+    "raw": "0x2000251a",
+    "macs_per_cc_log2": 10,
+    "macs": 1024,
+    "cmd_stream_version": 1,
+    "num_axi_sram_log2": 1,
+    "sram_ports": 2,
+    "num_axi_ext_log2": 1,
+    "ext_ports": 2,
+    "num_wd_log2": 2,
+    "weight_decoders": 4,
+    "custom_dma": 0,
+    "product": 2
+  },
+  "source": "TRM 102685 r0p0 BASE.CONFIG / PMU.PMCR bit definitions; read by the sweep image before any PMU write"
+}

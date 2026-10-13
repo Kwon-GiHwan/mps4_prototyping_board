@@ -1,0 +1,79 @@
+{
+ "anchor": "paper-board-rnnoise-preprobe-anchor",
+ "created": "2026-08-25",
+ "purpose": "board measurement-path qualification only; NOT a paper sample",
+ "BOARD_QUALIFICATION_RUNS": 0,
+ "FORMAL_BOARD_SAMPLES": 0,
+ "artifact_identity": {
+  "workload": "rnnoise_INT8",
+  "model_sha256": "9c582545b7c13af44616c44b654f4fe721aa2585630b0ca173ca3589f6f11c2c",
+  "vela_sha256": "5bc1ee088fd731dbb9fed4a0d8ddcea92c11600e82b5041371149465510bee79",
+  "vela_artifact": "rnnoise_INT8_vela.tflite",
+  "generated_cc_body_sha256": "bd04a8dd23e7f22ea541e93d600f6480e2df1064f9c38ed502f9c3e31d94bea1",
+  "generated_cc_raw_sha256_informational": "8546bd76e380409561638cc434be1d5aa6badbd1292ad362133f073d24773de4",
+  "fpga_axf_sha256": "83a69be4620ad1a6997efa17b5cebbe92838f94cb49bef4f2974cb0f416c9cf7",
+  "axf_bytes": 3901488
+ },
+ "configuration": {
+  "FPGA_PLATFORM_SSE_320": "ON",
+  "npu": "U85",
+  "npu_config_id": "Z1024",
+  "memory_mode": "Dedicated_Sram",
+  "arena": 2097152,
+  "vela_cpu_operators": 0,
+  "timing_adapter_cache": "ETHOS_U_NPU_TIMING_ADAPTER_ENABLED:BOOL=ON"
+ },
+ "source_closure": {
+  "mlek_commit": "b2c0bb2884698b7328f65c41b7c8c51ca9bec386",
+  "source_date_epoch": 1776763519,
+  "embedded_build_stamp": "Version %s Build date: Apr 21 2026 @ 09:25:19",
+  "dependency_pins": {
+   "avh": "11012b5",
+   "cmsis-6": "fdbbc52f",
+   "cmsis-dsp": "e366b076",
+   "cmsis-nn": "a3f311a",
+   "core-driver": "0356707",
+   "core-platform": "02d0290",
+   "cortex-dfp": "cd38dbb",
+   "executorch": "17adba19d0",
+   "tensorflow": "f2b2b3f5"
+  }
+ },
+ "deployment_set": [
+  "mlek_inference_runner.axf",
+  "mlek_inference_runner.map",
+  "sectors"
+ ],
+ "sectors_manifest": [
+  "hal-test",
+  "images.txt",
+  "inference_runner"
+ ],
+ "pmu_lifecycle_static_gate": {
+  "verdict": "PASS",
+  "profiled_region": "UseCaseCommonUtils.cc:69-75 RunInference()",
+  "start": "Profiler::StartProfiling -> hal_pmu_reset -> platform_reset_counters -> ETHOSU_PMU_CYCCNT_Reset + EVCNTR_ALL_Reset; then start snapshot",
+  "inference": "model.RunInference() exactly once",
+  "stop": "Profiler::StopProfiling -> end snapshot -> UpdateRunningStats(start,end) delta over the region",
+  "total_identity": "IDLE = npu_total_ccnt - NPU_ACTIVE (ethosu_profiler.c:184-190), so TOTAL = ACTIVE + IDLE is source-verified and the consistency check is admissible",
+  "caveat": "static gate only; it does not by itself establish that the Ethos-U power-release lifecycle preserves the values on the board"
+ },
+ "u85_events_configured_by_stock_runner": [
+  "NPU_ACTIVE",
+  "SRAM_RD_DATA_BEAT_RECEIVED",
+  "SRAM_WR_DATA_BEAT_WRITTEN",
+  "EXT_RD_DATA_BEAT_RECEIVED",
+  "EXT_WR_DATA_BEAT_WRITTEN",
+  "NPU IDLE (derived)",
+  "NPU TOTAL (CCNT)"
+ ],
+ "not_configured": [
+  "CC_STALLED_ON_BLOCKDEP (present in driver enum, never configured)"
+ ],
+ "prohibitions": [
+  "no runner patching",
+  "no qualification value in the paper dataset",
+  "no FVP-vs-board absolute cycle comparison",
+  "formal board campaign remains HOLD"
+ ]
+}

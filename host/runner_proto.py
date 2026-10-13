@@ -176,6 +176,7 @@ class Measurement:
     fields: tuple
     trailing_words: int  # present but not understood by this host version
     pmu: dict | None = None
+    trailing: tuple = ()  # trailing record words themselves, for images that append fields
 
     def required_flags_ok(self) -> bool:
         return (self.valid_flags & RUN_VALID_REQUIRED_MASK) == RUN_VALID_REQUIRED_MASK
@@ -223,6 +224,7 @@ def parse_measurement_payload(payload: bytes) -> Measurement:
         # distinguishable from one that measured zeros.
         pmu=(decode_pmu_block(body[RME_KNOWN_FIELDS_V1:])
              if total_words >= RME_PMU_TOTAL_WORDS else None),
+        trailing=tuple(body[RME_KNOWN_FIELDS_V1 + RME_PMU_FIELDS_V1:]),
     )
     return m
 

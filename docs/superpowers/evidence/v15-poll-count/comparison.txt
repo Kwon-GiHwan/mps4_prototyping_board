@@ -1,0 +1,23 @@
+V14 Q reference (frozen) -- measured loop, 6 instructions
+    ldr.w	r2, [ip, #24]
+    cmp	r2, r0
+    beq.n	3100250c <v14_primary_q+0x4c>
+    adds	r1, #1
+    subs	r3, #1
+    bne.n	310024ce <v14_primary_q+0xe>
+
+V15 S5, counter published -- measured loop, 6 instructions
+    ldr	r2, [r1, #4]
+    tst.w	r2, #32
+    bne.n	31002504 <v15_primary_s5+0x44>
+    adds	r0, #1
+    subs	r3, #1
+    bne.n	310024ca <v15_primary_s5+0xa>
+
+V15 S5, no counter (scratch) -- measured loop, 5 instructions
+    ldr	r2, [r0, #4]
+    tst.w	r2, #32
+    bne.n	310024f4 <v15_primary_s5+0x34>
+    subs	r3, #1
+    bne.n	310024c6 <v15_primary_s5+0x6>
+

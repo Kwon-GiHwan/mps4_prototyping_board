@@ -1,0 +1,70 @@
+{
+ "stage": "FULL_PAPER_REVIEW",
+ "date": "2026-09-04",
+ "mode": "review only; no manuscript edit",
+ "manuscript_under_review": "paper-manuscript-x3-integrated=08436d2",
+ "experimental_state": {
+  "X0": "ACCEPTED/FROZEN",
+  "X1": "ACCEPTED/FROZEN",
+  "X3": "ACCEPTED/FROZEN",
+  "X2": "HOLD",
+  "X4": "HOLD",
+  "X5": "HOLD",
+  "new_measurements": "HOLD"
+ },
+ "overall_verdict": "READY_WITH_MAJOR_TEXT_EDITS",
+ "counts": {
+  "BLOCKER": 1,
+  "MAJOR": 6,
+  "MODERATE": 5,
+  "MINOR": 4,
+  "TEXT_ONLY": 12,
+  "EXISTING_DATA_ONLY": 2,
+  "NEW_EXPERIMENT": 0
+ },
+ "x2_necessity": "X2_NOT_NEEDED",
+ "story": {
+  "CURRENT_THESIS": "implicit/scope-shaped; no thesis sentence",
+  "STORY_COHERENT": "PARTIAL",
+  "STORY_DILUTION": "flagged (mild; located in the contribution list)"
+ },
+ "rq_closure": {
+  "RQ1": "PARTIAL (wording, not evidence)",
+  "RQ2": "YES",
+  "RQ3": "YES",
+  "RQ4": "YES",
+  "X1/X3": "validation, correctly not an RQ"
+ },
+ "audits_passed": [
+  "platform roles (no prohibited implication)",
+  "TA semantics",
+  "cross-generation causality",
+  "U85 mechanism",
+  "board validation",
+  "instrumentation/bridge scope",
+  "Vela/FVP domain separation",
+  "X0 num_macs correction preserved"
+ ],
+ "claims_audited": 30,
+ "claims_reverified_from_raw_evidence": [
+  "92 cells / 276 samples",
+  "CLASS A 14/14 cycle equality",
+  "X3 agreement counts"
+ ],
+ "top5_issues": [
+  "B1 no citations / no References",
+  "M1 no abstract",
+  "M2 no figures",
+  "M3 RQ1 broader than the evidence",
+  "M4 contribution list disproportionate and incomplete"
+ ],
+ "file_sha256": {
+  "CLAIM_EVIDENCE_AUDIT.csv": "e9531df833466216d939faa3aa7795ae8be9cf2ada4f0095016e2ab6662aae14",
+  "FULL_PAPER_REVIEW.md": "084001d90a6fd44aba4281ccf0ee4496d9c2daba616bc7c0e764f9d5e959ed74",
+  "PLATFORM_ROLE_AUDIT.md": "a3ee98f1f1da915324f81a1e3869fd1589ceaff59313979da393d74c70489f84",
+  "REVIEW_ACTION_PLAN.md": "0f44bfc7f920137598bb7bc1baeb81d1af044021f9ea75e4c8ded09b711b61bf",
+  "REVIEW_INSTRUCTION.md": "1f0ac4599c692881bbe6b435f1be634f309c69ed9b1782cf0ab62767de904548",
+  "RQ_CLOSURE_MATRIX.csv": "7b29ad18169d388eebc2d72addc36a18ee4f88237d45ebefc9d8368394ecc33c",
+  "X2_NECESSITY_DECISION.md": "4c06273f7a5e81c66156c79c6a39da70806d5824493a12758d36f705739b0910"
+ }
+}

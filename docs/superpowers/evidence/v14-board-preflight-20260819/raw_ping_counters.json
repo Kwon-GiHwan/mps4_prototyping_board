@@ -1,0 +1,41 @@
+{
+  "port": "usb-FTDI_USB__-__Serial_Converter_00FT46259002B-if01-port0",
+  "pings": [
+    {
+      "answered": true,
+      "state": 1,
+      "version": 1,
+      "rx_overrun": 0,
+      "bad_magic": 0,
+      "bad_version": 0,
+      "bad_crc": 0,
+      "length_error": 0,
+      "sequence_error": 0,
+      "parser_resync": 0
+    },
+    {
+      "answered": true,
+      "state": 1,
+      "version": 1,
+      "rx_overrun": 0,
+      "bad_magic": 0,
+      "bad_version": 0,
+      "bad_crc": 0,
+      "length_error": 0,
+      "sequence_error": 0,
+      "parser_resync": 0
+    },
+    {
+      "answered": true,
+      "state": 1,
+      "version": 1,
+      "rx_overrun": 0,
+      "bad_magic": 0,
+      "bad_version": 0,
+      "bad_crc": 0,
+      "length_error": 0,
+      "sequence_error": 0,
+      "parser_resync": 0
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+# preregistered judgements (plan A8) applied to NPU TOTAL (primary) and NPU ACTIVE (parallel); METRIC_DEPENDENT when they disagree
+judgement,TOTAL_value,TOTAL_holds,ACTIVE_value,ACTIVE_holds,label
+MEMORY_SHAPE_INTERACTION:conv1x1,"[0.4628, 0.1323]",True,"[0.4016, 0.226]",False,METRIC_DEPENDENT
+MEMORY_SHAPE_INTERACTION:conv3x3,"[0.3551, 0.0493]",True,"[0.3288, 0.0335]",True,HOLDS_BOTH
+MEMORY_SHAPE_INTERACTION:dw3x3,"[0.0, 0.4916]",False,"[0.0737, 0.2517]",False,FAILS_BOTH
+SHAPE_EFFECT:conv1x1:base,0.4628,True,0.4016,True,HOLDS_BOTH
+SHAPE_EFFECT:conv1x1:equalized,0.1323,True,0.226,True,HOLDS_BOTH
+SHAPE_EFFECT:conv3x3:base,0.3551,True,0.3288,True,HOLDS_BOTH
+SHAPE_EFFECT:conv3x3:equalized,0.0493,False,0.0335,False,FAILS_BOTH
+SHAPE_EFFECT:dw3x3:base,0.0,False,0.0737,False,FAILS_BOTH
+SHAPE_EFFECT:dw3x3:bridge_legacy_relaxed,0.4916,True,0.2517,True,HOLDS_BOTH
+SHAPE_EFFECT:dw3x3:equalized,0.4916,True,0.2517,True,HOLDS_BOTH
+TYPE_DEPENDENT:base,"[1.1648, 0.9356, 1.0]",True,"[1.0201, 0.9133, 1.053]",True,HOLDS_BOTH
+TYPE_DEPENDENT:equalized,"[0.7542, 0.5612, 0.6741]",True,"[0.77, 0.5394, 0.4855]",True,HOLDS_BOTH

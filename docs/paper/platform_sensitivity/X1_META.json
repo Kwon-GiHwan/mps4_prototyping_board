@@ -1,0 +1,53 @@
+{
+ "stage": "X1",
+ "status": "COMPLETE",
+ "date": "2026-09-04",
+ "contract_tag": "paper-platform-sensitivity-x1-plan-anchor",
+ "evidence_tag": "paper-platform-sensitivity-x1-evidence-frozen",
+ "raw_evidence_root": "gihwan:/home/gihwan/mps4/X1_PLATFORM_SENSITIVITY_20260904T002134Z",
+ "cells_attempted": 92,
+ "cells_successful": 92,
+ "formal_samples": 276,
+ "artifact_identity_failures": 0,
+ "rule_failures": 0,
+ "class_a": {
+  "pair": "U65 SSE-310 vs SSE-315",
+  "ta": "TA_OFF/TA_OFF",
+  "disagreements": 0,
+  "value_identical_cells": "14/14"
+ },
+ "class_b": {
+  "pairs": [
+   "U55 SSE-300 vs SSE-310",
+   "U65 SSE-300 vs SSE-310",
+   "U65 SSE-300 vs SSE-315"
+  ],
+  "disagreements": 8,
+  "kind": "scaling-class label only, all PARTIAL(TA_ON)->STRONG(TA_OFF)"
+ },
+ "questions": {
+  "Q1_ranking": "preserved (rho=1.0 everywhere)",
+  "Q2_step_direction": "preserved 32/32",
+  "Q3_scaling_class": "CLASS A 7/7 preserved; CLASS B 24/32",
+  "Q4_saturation": "preserved 20/20",
+  "Q5_normalized_order": "preserved everywhere",
+  "Q6": "0 in CLASS A, 8 in CLASS B; reported non-causally, never pooled"
+ },
+ "holds": [
+  "X2",
+  "X3",
+  "X4",
+  "X5",
+  "manuscript narrative"
+ ],
+ "file_sha256": {
+  "X1_ANALYSIS_CONTRACT.md": "40d47364ea9092e71ef4e4286a39ffad78acf12ac88c8d82a1ac0811a2120240",
+  "x1_analyzer.py": "3231625b173848c9bde1f225483c1a55ba2996649570abb5d8c68fabbf043fa4",
+  "x1_analyzer_test.py": "e7673da8646ead943837a28d334211dafe55a75e45b5fab10d26ceef1067e042",
+  "X1_FORMAL_CELLS.json": "e370364f456d2e27b56f770b66c32f8781737b74dc20fdfb1463103cbe4f6890",
+  "X1_EVIDENCE_FROZEN.md": "14c7dc4fb79b393a86d8bb9834d70c08b5149d1c082064cea103b95075f81b5a",
+  "X1_STRUCTURAL_RESULTS.json": "180785c3ab30d29378b826378eabbe2c41779a31ddd80a6aa51379a1ff11bba9",
+  "X1_RESULTS.md": "a19b78b48514b3962fcd2ea4aadb125e47282741bc4f66f59a5f791b17c5848c",
+  "X1_LIMITATIONS.md": "dd2114ecc326cd1d6730b77b8c66ff0874c2dfd5a49c509831ff3c989681b2f8"
+ }
+}

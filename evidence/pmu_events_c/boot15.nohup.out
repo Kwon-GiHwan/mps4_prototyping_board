@@ -1,0 +1,25 @@
+mcc boot log: 10527 bytes -> /home/gihwan/evsweep/evidence_c_runs/boot15/mcc_boot.log
+Image loaded from \SOFTWARE\VECTORS.BIN
+Image loaded from \SOFTWARE\APP.BIN
+Image loaded from \SOFTWARE\DDR.BIN
+DDR memory test at 0x70000000: PASSED
+Clearing SCC CPUWAIT (0xFFFFFFFF80000000:0x00000000)
+set  1 rep 1 rc=1 vendor_rc=2 seam_status/qread=('0xffff0020', 17468) valid=False ['rc_zero', 'required_flags_ok']
+set  1 rep 2 rc=1 vendor_rc=2 seam_status/qread=('0xffff0020', 17468) valid=False ['rc_zero', 'required_flags_ok']
+set  1 rep 3 rc=1 vendor_rc=2 seam_status/qread=('0xffff0020', 17468) valid=False ['rc_zero', 'required_flags_ok']
+{
+ "runs": 3,
+ "coverage": "COMPLETE_SUBSET(5)",
+ "consistency": {
+  "CYCLE_EVENT_VS_PMCCNTR": "UNPROVEN",
+  "NPU_ACTIVE_LE_CYCLE": "UNPROVEN"
+ },
+ "verdict_counts": {
+  "COUNTED_NONZERO": 0,
+  "COUNTED_ZERO": 0,
+  "INCONSISTENT": 0,
+  "NOT_OBSERVED": 5
+ },
+ "refusal": null
+}
+--- campaign exit=0

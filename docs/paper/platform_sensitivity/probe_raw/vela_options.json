@@ -1,0 +1,29 @@
+{
+ "vela_version": "5.0.0",
+ "accelerator_configs": [
+  "ethos-u55-32",
+  "ethos-u55-64",
+  "ethos-u55-128",
+  "ethos-u55-256",
+  "ethos-u65-256",
+  "ethos-u65-512",
+  "ethos-u85-128",
+  "ethos-u85-256",
+  "ethos-u85-512",
+  "ethos-u85-1024",
+  "ethos-u85-2048"
+ ],
+ "system_configs": [
+  "Ethos_U55_High_End_Embedded",
+  "Ethos_U65_High_End",
+  "Ethos_U85_SYS_DRAM_Low",
+  "Ethos_U85_SYS_DRAM_Mid_512",
+  "Ethos_U85_SYS_DRAM_Mid_1024",
+  "Ethos_U85_SYS_DRAM_High_2048"
+ ],
+ "memory_modes": [
+  "Sram_Only",
+  "Shared_Sram",
+  "Dedicated_Sram"
+ ]
+}

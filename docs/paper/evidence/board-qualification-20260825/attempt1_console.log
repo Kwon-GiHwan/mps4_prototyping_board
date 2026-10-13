@@ -1,0 +1,53 @@
+
+== PREFLIGHT ==
+  device absent before USB_ON                    PASS
+  mounts referencing card                        PASS
+  root-inclusive UART/block holders              PASS  0
+  runner protocol PING / counters                NOT_APPLICABLE  MLEK stock runner implements no such protocol; board-level gates used instead
+
+== SOURCE ARTIFACT (anchored) ==
+  source boot.bin                                OK  9dc61053ad9f4dd7
+  source bram.bin                                OK  eb851d082bdb2628
+  source ddr.bin                                 OK  b8a49739dadbb686
+  source images.txt                              OK  af688281435a73dd
+
+== READ-ONLY BACKUP ==
+  destination set discovered                     OK  {'boot.bin': '/SOFTWARE/boot.bin', 'bram.bin': '/SOFTWARE/bram.bin', 'ddr.bin': '/SOFTWARE
+  backup boot.bin                                OK  DID_NOT_EXIST
+  backup bram.bin                                OK  DID_NOT_EXIST
+  backup ddr.bin                                 OK  81d37a219a6b4141
+  backup images.txt                              OK  cb78a12efd33fa72
+
+== DEPLOY (anchored rnnoise artifact only) ==
+
+== READ-BACK VERIFY ==
+  device absent after USB_OFF                    PASS
+  source==declared==destination boot.bin         MATCH  9dc61053ad9f4dd7
+  source==declared==destination bram.bin         MATCH  eb851d082bdb2628
+  source==declared==destination ddr.bin          MATCH  b8a49739dadbb686
+  source==declared==destination images.txt       MATCH  af688281435a73dd
+
+== FRESH BOOT ==
+  DDR self-test                                  PASS
+  CPUWAIT cleared                                PASS
+
+== ONE INFERENCE ==
+  completion marker                              FAIL
+  no fatal/NPU error                             PASS
+
+== RESTORE ==
+  restored boot.bin                              MATCH
+  restored bram.bin                              MATCH
+  restored ddr.bin                               MATCH
+  restored images.txt                            MATCH
+
+== POSTFLIGHT ==
+  postflight DDR                                 PASS
+  postflight CPUWAIT                             PASS
+  postflight /dev/sdb absent                     FAIL
+  postflight mounts                              PASS
+  postflight UART holders                        PASS  0
+
+evidence -> /tmp/probe_out/evidence.json
+
+[exited with code 0]

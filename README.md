@@ -7,6 +7,12 @@ qualification 증거. 실제 보드에서 실행·검증된 결과다. FVP 시�
 프로젝트 전체(FVP 캠페인, MLEK 7개 모델, per-layer mechanism study)의 맥락은
 `docs/presentation/`과 Obsidian vault `npu_benchmark/`에 있다.
 
+새 MLEK 전체 조합 실행기는 [host/campaigns](host/campaigns/README.md)다.
+[설정 예시](environment/campaigns/mlek.example.json)에서 모델 발견·대상·옵션을
+정하고 `python3 -m host.campaigns plan` / `run`으로 실행한다. 아래 매뉴얼과
+기존 qualification은 역사적 경로이며, 새 실행기의 실환경 자격 검증은 아직 남아 있다.
+과거 bringup 스크립트는 [host/legacy](host/legacy/README.md)로 분류했다.
+
 ---
 
 ## 사용 매뉴얼
@@ -109,7 +115,7 @@ docker exec -it benchmark-runner sh -lc 'cd /work/selftest && ls'
 #### 1.4 보드 시리얼
 
 FTDI 4포트, 115200 8N1. 보드의 FTDI 시리얼 번호 `00FT46259002B`가 스크립트 29곳에
-하드코딩돼 있다 (`host-environment/serial-bindings.yaml`). 다른 보드로 옮기면 전부
+하드코딩돼 있다 (`environment/host/serial-bindings.yaml`). 다른 보드로 옮기면 전부
 바꿔야 한다.
 
 ```
@@ -123,14 +129,14 @@ SD 카드는 MCC의 `USB_ON`으로 `/dev/sdb1`에 노출되고 `/mnt`에 마운�
 #### 1.5 보드 복구 아카이브
 
 `fi101_00.bit` 등 벤더 플랫폼 바이너리는 저장소에 없다. 해시는
-`board-config/RECOVERY_ARCHIVE.sha256`, 실물은
+`environment/board/RECOVERY_ARCHIVE.sha256`, 실물은
 `~/Documents/Projects/personal/mps4_board_recovery/`. **미러만으로는 보드를 재구성할 수
 없다.** 복구는 "백업을 다시 쓰기"가 아니라, 카드에 원래 없던 `boot.bin`/`bram.bin`을
 삭제하고 덮어쓴 것을 복원하는 것이다.
 
 ### 2. 펌웨어 빌드 (커스텀 러너, 컨테이너 안)
 
-빌드 트리는 `/work/selftest/`. 로컬 재현이 필요하면 `build-env/selftest-worktree.tgz`를
+빌드 트리는 `/work/selftest/`. 로컬 재현이 필요하면 `environment/build/archive/selftest-worktree.tgz`를
 빈 디렉터리에 풀어 쓴다 (벤더 원본 `fi101-selftest-src.tgz`는 빌드되지 않는다).
 
 ```sh
@@ -163,7 +169,7 @@ make -f Makefile.pmu_qual QUAL=Q1 clean bins check manifest hashes   # hook 활�
 ### 3. 보드 배포와 부팅 (서버에서, `/usr/bin/python3`)
 
 SD 카드 `\SOFTWARE\` 아래 세 파일이 `images.txt`로 로드된다
-(`board-config/current/images.txt`):
+(`environment/board/current/images.txt`):
 
 ```
 IMAGE0  VECTORS.BIN  0x11000000  port 2  RAM
@@ -392,9 +398,11 @@ firmware/          펌웨어 소스 (마일스톤별 Makefile + 러너)
 host/              호스트 툴링 (프로토콜 클라이언트 · MCC 트랜스포트 · 수집·분석 · 시험)
 provenance/        이미지별 동결 증거 (MANIFEST · SHA256SUMS · raw log)
 evidence/          bring-up 원시 UART 캡처
-board-config/      보드 설정 스냅샷 (현재 + 역사적)
-build-env/         빌드 환경 provenance (툴체인 · 컨테이너 digest · 작업 트리 아카이브)
-host-environment/  호스트 실행 환경 (인터프리터 · 의존성 · 시리얼 바인딩)
+environment/       환경 설정과 복구 기록 (environment/README.md 참고)
+  board/current/    보드 설정 스냅샷
+  board/history/    과거 보드 설정 이력
+  build/            빌드 환경 기록; archive/에 과거 컨테이너 프로젝트·외부 아카이브
+  host/             호스트 인터프리터·의존성·시리얼 바인딩 기록
 docs/MIRROR.md     이 트리의 상세 구조와 무결성 확인 절차
 docs/presentation/ 프로젝트 설명 발표자료 (md)
 ```
@@ -426,11 +434,11 @@ exit 0을 낸 적이 있어, 검증기가 조용히 통과하는 경로를 전�
 
 ## 재현
 
-빌드는 `build-env/`의 작업 트리 아카이브에서 재현된다. Clean 추출 후 두 이미지가 비트 단위로
+빌드는 `environment/build/archive/`의 작업 트리 아카이브에서 재현된다. Clean 추출 후 두 이미지가 비트 단위로
 일치하는 것을 확인했다.
 
 다만 **Arm 벤더 소스와 컴파일된 `.BIN`은 재배포 조건이 확인되지 않아 이 저장소에 포함하지
-않았다**(`.gitignore` 참조). 해시는 `build-env/BUILD_ENVIRONMENT.yaml`에 기록돼 있어 동일성
+않았다**(`.gitignore` 참조). 해시는 `environment/build/BUILD_ENVIRONMENT.yaml`에 기록돼 있어 동일성
 확인은 가능하다. 보드 플랫폼 바이너리(FPGA 비트스트림 등 113 MB)도 별도 아카이브에 있다.
 **이 저장소만으로는 보드를 재구성할 수 없다.**
 

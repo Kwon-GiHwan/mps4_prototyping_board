@@ -1,0 +1,13 @@
+mcc boot log: 10366 bytes -> /home/gihwan/evsweep/evidence/postflight/mcc_boot.log
+Image loaded from \SOFTWARE\VECTORS.BIN
+Image loaded from \SOFTWARE\APP.BIN
+Image loaded from \SOFTWARE\DDR.BIN
+DDR memory test at 0x70000000: PASSED
+Clearing SCC CPUWAIT (0xFFFFFFFF80000000:0x00000000)
+[functional-v1] PING -> Counters(state=1, version=1, rx_bytes=20, tx_bytes=0, rx_overrun=0, bad_magic=0, bad_version=0, bad_crc=0, length_error=0, sequence_error=0, parser_resync=0)
+
+Cmd> 
+POSTFLIGHT DONE: card withdrawn, board on restored image
+ffa3e5bd0363f791d61f9673074c625865f1e6a8f24e53ee303372c64ef3597d  APP.BIN
+45e943c577e3744104d53cf57c7d0afb369ff68a99e5e6906971d71503f06c92  VECTORS.BIN
+81d37a219a6b4141d0b433796711ab8af2ee2c3c668a28143a3ffe6a574ade98  DDR.BIN

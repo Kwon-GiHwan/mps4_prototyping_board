@@ -1,0 +1,13 @@
+{
+ "transitions_rows": 56,
+ "improved": 50,
+ "plateau": 1,
+ "reversed": 2,
+ "not_available": 3,
+ "evaluable": 53,
+ "ladders_total": 21,
+ "ladders_with_reversal": 1,
+ "ladders_with_plateau": 1,
+ "ladders_with_2plus_points": 20,
+ "legacy_rule_triggered": 2
+}

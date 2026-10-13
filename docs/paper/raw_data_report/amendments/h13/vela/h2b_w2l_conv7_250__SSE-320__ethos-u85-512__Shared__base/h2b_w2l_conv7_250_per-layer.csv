@@ -1,0 +1,2 @@
+Original Operator,NNG Operator,Target,Staging Usage,Peak% (Staging),Op Cycles,Network% (cycles),NPU,SRAM AC,DRAM AC,OnFlash AC,OffFlash AC,MAC Count,Network% (MAC),Util% (MAC),Name
+Conv2D,Conv2D,NPU,179264,100.0,161911,100.0,161911,62386,83247,0,0,64750000,100.0,78.10762934575168,model_3/conv2d_7/BiasAdd;model_3/conv2d_7/Conv2D;model_3/conv2d_7/BiasAdd/ReadVariableOp/resource1

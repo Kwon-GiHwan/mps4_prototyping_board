@@ -1,0 +1,7 @@
+{
+ "spearman_rho": 1.0,
+ "inversion_count": 0,
+ "inversion_pairs": [],
+ "workloads": 7,
+ "threshold": "NONE - no pass/fail rule preregistered"
+}

@@ -1,0 +1,15 @@
+metric,op_cond,spread,median,n,max,min
+TOTAL,conv1x1|base,0.4628,1.1648,9,1.1648,0.702
+TOTAL,conv1x1|equalized,0.1323,0.7542,9,0.8027,0.6704
+TOTAL,conv3x3|base,0.3551,0.9356,9,0.9356,0.5806
+TOTAL,conv3x3|equalized,0.0493,0.5612,9,0.5612,0.5118
+TOTAL,dw3x3|base,0.0,1.0,9,1.0,1.0
+TOTAL,dw3x3|equalized,0.4916,0.6741,9,1.0,0.5084
+TOTAL,dw3x3|bridge_legacy_relaxed,0.4916,0.6741,9,1.0,0.5084
+ACTIVE,conv1x1|base,0.4016,1.0201,9,1.0366,0.6349
+ACTIVE,conv1x1|equalized,0.226,0.77,9,0.7867,0.5607
+ACTIVE,conv3x3|base,0.3288,0.9133,9,0.9146,0.5858
+ACTIVE,conv3x3|equalized,0.0335,0.5394,9,0.5399,0.5064
+ACTIVE,dw3x3|base,0.0737,1.053,9,1.0955,1.0218
+ACTIVE,dw3x3|equalized,0.2517,0.4855,9,0.7002,0.4485
+ACTIVE,dw3x3|bridge_legacy_relaxed,0.2517,0.4855,9,0.7002,0.4485

@@ -1,0 +1,49 @@
+{
+ "stage": "X3",
+ "status": "COMPLETE",
+ "date": "2026-09-04",
+ "type": "synthesis only; no new data",
+ "inputs": {
+  "x0": "paper-platform-sensitivity-x0-frozen=78018ac",
+  "x1_evidence": "paper-platform-sensitivity-x1-evidence-frozen=0bf3f3c",
+  "x1_results": "paper-platform-sensitivity-x1-results-frozen=3ad7bb9"
+ },
+ "recomputed_from_frozen_evidence": true,
+ "agreement": {
+  "workload_ranking|CLASS_A": "2/2",
+  "workload_ranking|CLASS_B": "8/8",
+  "mac_step_direction|CLASS_A": "7/7",
+  "mac_step_direction|CLASS_B": "32/32",
+  "scaling_class|CLASS_A": "7/7",
+  "scaling_class|CLASS_B": "24/32",
+  "saturation_verdict|CLASS_A": "7/7",
+  "saturation_verdict|CLASS_B": "20/20",
+  "normalized_workload_ordering|CLASS_A": "2/2",
+  "normalized_workload_ordering|CLASS_B": "8/8"
+ },
+ "class_a_exact_cycles": "14/14",
+ "class_a_classification": "NO_OBSERVED_CYCLE_DIFFERENCE_UNDER_TESTED_TA_OFF_PAIR",
+ "ta_interpretation": "ASSOCIATED_WITH only; subsystem/FM and TA NOT_SEPARATED in CLASS B",
+ "qualification": {
+  "workload_ranking": "ROBUST_IN_TESTED_PAIRS",
+  "mac_step_direction": "ROBUST_IN_TESTED_PAIRS",
+  "saturation_verdict": "ROBUST_IN_TESTED_PAIRS",
+  "normalized_workload_ordering": "ROBUST_IN_TESTED_PAIRS",
+  "threshold_scaling_class": "TA_STATE_SENSITIVE",
+  "raw_cross_platform_cycles": "NOT_COMPARABLE",
+  "memory_pmu_counters": "GENERATION_SPECIFIC_NOT_COMMON",
+  "transfer_to_TA_ON": "NOT_EVALUABLE"
+ },
+ "no_new_metric_or_score": true,
+ "holds": [
+  "X2",
+  "X4",
+  "X5",
+  "manuscript narrative update"
+ ],
+ "file_sha256": {
+  "X3_METRIC_ROBUSTNESS.md": "9a9207e83b93d214927c4135efb78f903c5af6b4d55bf1cdee04989e0621e39e",
+  "X3_METRIC_QUALIFICATION.csv": "e2a4a348d8394db6f610ef82555290422cae3462ed7cda1281e63169c4b30295",
+  "X3_LIMITATIONS.md": "fd88fae194c94197a55737efb5e9efd7540f5fead01f79b0723d7b77b3931c18"
+ }
+}

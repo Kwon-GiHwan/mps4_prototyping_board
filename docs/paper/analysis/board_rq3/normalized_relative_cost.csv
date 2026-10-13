@@ -1,0 +1,8 @@
+workload,fvp_normalized_cost,board_normalized_cost
+rnnoise_INT8,0.152103,0.161883
+kws_micronet_m,0.279095,0.285794
+ad_medium_int8,0.437129,0.445937
+vww4_128_128_INT8,0.712914,0.702711
+yolo-fastest_192_face_v4,1.360563,1.330867
+mobilenet_v2_1.0_224_INT8,4.356996,4.268025
+wav2letter_pruned_int8,12.7514,12.143209

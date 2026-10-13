@@ -1,0 +1,163 @@
+% ACM SIGMETRICS 2027 submission -- bibliography
+%
+% Converted from the 17-entry manual reference list frozen in the manuscript.
+% Metadata rule carried over from Phase 1 / 1.5: nothing is invented. Where a
+% field (DOI, pages, issue, publisher, publication date) was not verified
+% against the source, it is OMITTED rather than guessed. Omissions are itemized
+% in CONVERSION_PROVENANCE.md.
+%
+% Arm platform documents are cited as primary evidence for the measured system.
+% They are manual-type entries identified by their Arm document number, which is
+% the stable identifier Arm itself uses. Several carry no verified publication
+% date and therefore no year field; BibTeX renders those as 'n.d.', which is the
+% correct scholarly form for an undated document and is preferred here over an
+% invented date.
+
+@manual{arm:ethosu85trm,
+  title        = {Arm Ethos-U85 NPU Technical Reference Manual},
+  organization = {Arm Ltd.},
+  note         = {Arm document 102685},
+  url          = {https://developer.arm.com/documentation/102685}
+}
+
+@manual{arm:ethosu85to,
+  title        = {Arm Ethos-U85 NPU Technical Overview},
+  organization = {Arm Ltd.},
+  note         = {Arm document 102684},
+  url          = {https://developer.arm.com/documentation/102684}
+}
+
+@manual{arm:mldevguide,
+  title        = {ML Developers Guide for Cortex-M Processors and Ethos-U NPU},
+  organization = {Arm Ltd.},
+  note         = {Arm document 109267},
+  url          = {https://developer.arm.com/documentation/109267}
+}
+
+@manual{arm:corstone320,
+  title        = {Arm Corstone-320 Reference Package Technical Overview},
+  organization = {Arm Ltd.},
+  note         = {Arm document 109761},
+  url          = {https://developer.arm.com/documentation/109761}
+}
+
+@manual{arm:fvpsse320,
+  title        = {Fixed Virtual Platforms for Arm Corstone SSE-320},
+  organization = {Arm Ltd.},
+  note         = {Arm document 109760},
+  url          = {https://developer.arm.com/documentation/109760}
+}
+
+@manual{arm:fastmodels,
+  title        = {Fast Models Fixed Virtual Platforms (FVP) Reference Guide},
+  organization = {Arm Ltd.},
+  note         = {Arm document 100966},
+  url          = {https://developer.arm.com/documentation/100966}
+}
+
+@manual{arm:vela,
+  title        = {Ethos-U Vela Compiler},
+  organization = {Arm Ltd.},
+  note         = {Version 5.0.0 used in this work; the documentation labels its
+                  performance estimates experimental},
+  url          = {https://review.mlplatform.org/plugins/gitiles/ml/ethos-u/ethos-u-vela}
+}
+
+@manual{arm:mlek,
+  title        = {ML Embedded Evaluation Kit},
+  organization = {Arm Ltd.},
+  url          = {https://review.mlplatform.org/plugins/gitiles/ml/ethos-u/ml-embedded-evaluation-kit}
+}
+
+@manual{arm:ethosu55trm,
+  title        = {Arm Ethos-U55 NPU Technical Reference Manual},
+  organization = {Arm Ltd.},
+  edition      = {Revision r2p0},
+  note         = {Arm document 102420\_0200\_02\_en},
+  url          = {https://developer.arm.com/documentation/102420}
+}
+
+@manual{arm:ethosu65trm,
+  title        = {Arm Ethos-U65 NPU Technical Reference Manual},
+  organization = {Arm Ltd.},
+  edition      = {Revision r0p0},
+  note         = {Arm document 102023\_0000\_06\_en},
+  url          = {https://developer.arm.com/documentation/102023}
+}
+
+@inproceedings{jouppi2017tpu,
+  author    = {Jouppi, Norman P. and Young, Cliff and Patil, Nishant and
+               Patterson, David and others},
+  title     = {In-Datacenter Performance Analysis of a Tensor Processing Unit},
+  booktitle = {Proceedings of the International Symposium on Computer
+               Architecture (ISCA)},
+  year      = {2017},
+  note      = {arXiv:1704.04760}
+}
+
+@misc{samajdar2018scalesim,
+  author = {Samajdar, Ananda and Zhu, Yuhao and Whatmough, Paul and
+            Mattina, Matthew and Krishna, Tushar},
+  title  = {SCALE-Sim: Systolic CNN Accelerator Simulator},
+  year   = {2018},
+  note   = {arXiv:1811.02883}
+}
+
+@inproceedings{parashar2019timeloop,
+  author    = {Parashar, Angshuman and Raina, Priyanka and Shao, Yakun Sophia
+               and Chen, Yu-Hsin and Ying, Victor A. and Mukkara, Anurag and
+               Venkatesan, Rangharajan and Khailany, Brucek and
+               Keckler, Stephen W. and Emer, Joel S.},
+  title     = {Timeloop: A Systematic Approach to DNN Accelerator Evaluation},
+  booktitle = {Proceedings of the IEEE International Symposium on Performance
+               Analysis of Systems and Software (ISPASS)},
+  year      = {2019}
+}
+
+@inproceedings{gutierrez2014sources,
+  author    = {Gutierrez, Anthony and Pusdesris, Joseph and
+               Dreslinski, Ronald G. and Mudge, Trevor and Sudanthi, Chander
+               and Emmons, Christopher D. and Hayenga, Mitchell and
+               Paver, Nigel},
+  title     = {Sources of Error in Full-System Simulation},
+  booktitle = {Proceedings of the IEEE International Symposium on Performance
+               Analysis of Systems and Software (ISPASS)},
+  year      = {2014}
+}
+
+@inproceedings{banbury2021mlperftiny,
+  author    = {Banbury, Colby and Reddi, Vijay Janapa and Torelli, Peter and
+               Holleman, Jeremy and Jeffries, Nat and Kiraly, Csaba and
+               Montino, Pietro and Kanter, David and Ahmed, Sebastian and
+               Pau, Danilo and Thakker, Urmish and Torrini, Antonio and
+               Warden, Peter and Cordaro, Jay and Di Guglielmo, Giuseppe and
+               Duarte, Javier and Gibellini, Stephen and Parekh, Videet and
+               Tran, Honson and Tran, Nhan and Wenxu, Niu and Xuesong, Xu},
+  title     = {MLPerf Tiny Benchmark},
+  booktitle = {Proceedings of the Neural Information Processing Systems Track
+               on Datasets and Benchmarks},
+  year      = {2021},
+  note      = {arXiv:2106.07597}
+}
+
+@inproceedings{banbury2021micronets,
+  author    = {Banbury, Colby and Zhou, Chuteng and Fedorov, Igor and
+               Matas, Ramon and Thakker, Urmish and Gope, Dibakar and
+               Reddi, Vijay Janapa and Mattina, Matthew and Whatmough, Paul},
+  title     = {MicroNets: Neural Network Architectures for Deploying TinyML
+               Applications on Commodity Microcontrollers},
+  booktitle = {Proceedings of Machine Learning and Systems (MLSys)},
+  year      = {2021},
+  note      = {arXiv:2010.11267}
+}
+
+@inproceedings{david2021tflm,
+  author    = {David, Robert and Duke, Jared and Jain, Advait and
+               Reddi, Vijay Janapa and Jeffries, Nat and Li, Jian and
+               Kreeger, Nick and Nappier, Ian and Natraj, Meghna and
+               Wang, Tiezhen and Warden, Pete and Rhodes, Rocky},
+  title     = {TensorFlow Lite Micro: Embedded Machine Learning for TinyML
+               Systems},
+  booktitle = {Proceedings of Machine Learning and Systems (MLSys)},
+  year      = {2021}
+}

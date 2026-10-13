@@ -1,0 +1,81 @@
+{
+ "task": "PHASE-1 REVIEW GATE",
+ "mode": "REVIEW_ONLY",
+ "date": "2026-09-04",
+ "inputs": {
+  "manuscript_tag": "paper-manuscript-review-phase1-frozen",
+  "manuscript_commit": "f09bba6",
+  "full_review_tag": "paper-full-review-frozen",
+  "full_review_commit": "9359c7a",
+  "frozen_evidence_consulted": [
+   "docs/paper/platform_sensitivity/X3_METRIC_QUALIFICATION.csv",
+   "docs/paper/platform_sensitivity/TIMING_ADAPTER_AUDIT.md",
+   "docs/paper/platform_sensitivity/x1_analyzer.py",
+   "docs/paper/PROJECT_RECORD.md"
+  ]
+ },
+ "verdict": "PHASE1_NEEDS_SMALL_TEXT_FIX",
+ "axis_verdicts": {
+  "thesis_clauses_supported": "1/3",
+  "thesis_clause_verdicts": {"C1": "SUPPORTED", "C2": "TOO_BROAD", "C3": "TOO_BROAD"},
+  "abstract": "ABSTRACT_NEEDS_TEXT_FIX",
+  "abstract_unsupported_claims": 0,
+  "rq1": "RQ1_PARTIALLY_CLOSED",
+  "contribution_hierarchy": "PASS",
+  "related_work_positioning": "2 issues (1 OVERBROAD_FIELD_CLAIM, 1 attribution) + 2 cross-reference errors",
+  "platform_roles": "PLATFORM_ROLES_COHERENT",
+  "story": "STORY_HIERARCHY_PASS",
+  "conclusion": "ABSENT — no Conclusion section exists"
+ },
+ "fix_counts": {
+  "TEXT_ONLY": 13,
+  "REFERENCE_ONLY": 1,
+  "EXISTING_DATA_ONLY": 0,
+  "NEW_EXPERIMENT": 0,
+  "tooling": 1
+ },
+ "findings": [
+  {"id": "F1",  "class": "TEXT_ONLY",      "where": "2.1", "issue": "board work cross-referenced as Section 6; is Section 5"},
+  {"id": "F2",  "class": "TEXT_ONLY",      "where": "2.1", "issue": "operation-level gap cross-referenced as Section 7; is Section 6"},
+  {"id": "F3",  "class": "TEXT_ONLY",      "where": "3.1", "issue": "structural comparison cross-referenced as Section 5; is Section 4.6"},
+  {"id": "F4",  "class": "TEXT_ONLY",      "where": "7",   "issue": "'differed ~4x purely by adapter state' asserts causation contradicting 4.6/8.13 NOT_SEPARATED for the same CLASS B pair", "severity": "highest"},
+  {"id": "F5",  "class": "TEXT_ONLY",      "where": "3.7", "issue": "'no cross-platform cycle ratio is computed anywhere' over-scoped given F4"},
+  {"id": "F6",  "class": "TEXT_ONLY",      "where": "1",   "issue": "thesis clause C2 generalizes beyond one workload/transition/generation"},
+  {"id": "F7",  "class": "TEXT_ONLY",      "where": "1",   "issue": "thesis clause C3 'far better than raw labels' implies a transfer evaluation never performed on the raw layer"},
+  {"id": "F8",  "class": "TEXT_ONLY",      "where": "Abstract", "issue": "'Four findings' gives X1/X3 headline parity contradicting the supporting tier in section 1"},
+  {"id": "F9",  "class": "TEXT_ONLY",      "where": "2.1", "issue": "'commonly characterized ... rather than measurement' is an OVERBROAD_FIELD_CLAIM"},
+  {"id": "F10", "class": "TEXT_ONLY",      "where": "2.1", "issue": "'such suites' sweeps MicroNets [14], an architecture paper, into benchmark suites"},
+  {"id": "F11", "class": "TEXT_ONLY",      "where": "4.5", "issue": "RQ1 per-axis answer present in Results but not assembled in the RQ1 statement"},
+  {"id": "F12", "class": "TEXT_ONLY",      "where": "document", "issue": "no Conclusion section; recommend deferring to items 7-14"},
+  {"id": "F13", "class": "TEXT_ONLY",      "where": "closing note", "issue": "stale 'STOP for full-paper review'; frozen-source list omits platform-sensitivity tags that 4.6 depends on"},
+  {"id": "F14", "class": "REFERENCE_ONLY", "where": "References", "issue": "no primary Arm citation for U55/U65; only U85 manuals cited"},
+  {"id": "F15", "class": "tooling",        "where": "phase1_consistency_check.py", "issue": "rule 11 matches only 'X caused'; missed 'purely by adapter state'"}
+ ],
+ "scientific_contradictions_found": 0,
+ "new_experiments_required": 0,
+ "holds_unchanged": ["X2", "X4", "X5", "REVIEW_ACTION_PLAN 7-14", "new measurements"],
+ "x2_recommendation": "REMAINS_HOLD — revised RQ1 does not require a controlled U65-vs-U85 substrate",
+ "manuscript_modified": false,
+ "outputs": [
+  "docs/paper/review/PHASE1_REVIEW.md",
+  "docs/paper/review/PHASE1_THESIS_TRACE.csv",
+  "docs/paper/review/PHASE1_REFERENCE_ROLE_AUDIT.csv",
+  "docs/paper/review/PHASE1_ACTIONS.md",
+  "docs/paper/review/PHASE1_REVIEW_META.json"
+ ],
+ "verification_level": "review / static analysis",
+ "executed": [
+  "full read of the six Phase-1 change surfaces and the Results/Discussion/Limitations passages they reference",
+  "cross-reference resolution of every section pointer in the changed text",
+  "trace of every abstract figure to its results line (15 rows)",
+  "comparison of the 3.1 platform table against frozen X0/X1/X3 artifacts and x1_analyzer.py TA map",
+  "grep sweep for platform-role conflicts and for causal phrasing outside the checker rule set",
+  "primary-source verification of the [12] numeric claim (13-17% MAPE) via web search"
+ ],
+ "not_executed": [
+  "no build, simulation, board run, or measurement",
+  "no re-derivation of frozen analyzer outputs",
+  "no external peer review",
+  "no verification of Arm document contents beyond identifier resolution"
+ ]
+}

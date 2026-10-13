@@ -1,0 +1,1 @@
+{"cell": "dnn_s_quantized__Sram_Only__512", "model": "dnn_s_quantized", "mode": "Sram_Only", "macs": 512, "system_config": "Ethos_U85_SYS_DRAM_Mid_512", "status": "OK", "vela_sha256": "a8d3c664eb142c24b089b584d8547b67a0df291804b2a0c6b4bd4d4f7f9b812f", "axf_sha256": "fc0d5c01b91e05b722d4aef8268d4ef8ac6baa6cf21d37d6da6637df1fb995a7", "total": 9068, "crc": "0:48:0x5974B086"}

@@ -1,0 +1,32 @@
+{
+  "model": "/opt/arm/ml-embedded-evaluation-kit/resources_downloaded/img_class/mobilenet_v2_1.0_224_INT8.tflite",
+  "model_sha256": "bd8d56b80557a5fca7acf14f61e5339285c02810f7d7afa714b9763fc4b86e95",
+  "vela_sha256": "66c970e76b1953719b41682e5600ae769ddfa2485e5f3a30ffc024076cb7bf27",
+  "accelerator": "ethos-u85-1024",
+  "system_config": "Ethos_U85_SYS_DRAM_Low",
+  "memory_mode": "Dedicated_Sram",
+  "seed": 1,
+  "blob_sha256": "928e7be7a4c6a826ce3fec4b590aac6825e6b75062189e28f61dd965e9d221f3",
+  "cms_len": 17468,
+  "const_len": 3558096,
+  "arena_size": 150528,
+  "fast_size": 1510336,
+  "ifm_off": 0,
+  "ifm_len": 150528,
+  "ofm_off": 0,
+  "ofm_len": 1001,
+  "total": 3727168,
+  "header_version": 1,
+  "knobs": [
+    "0xffffffff",
+    "0xffffffff",
+    "0xffffffff",
+    "0xffffffff",
+    "0xffffffff",
+    "0xffffffff",
+    "0xffffffff",
+    "0xffffffff"
+  ],
+  "axi": null,
+  "ports": null
+}

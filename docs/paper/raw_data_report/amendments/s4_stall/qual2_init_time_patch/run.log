@@ -1,0 +1,15 @@
+patch status stock 56b2fecb3c5f4327a9c0b2ecfa070416efa84f54496cbaf0e5750649c089963f
+passclean rnnoise_INT8__SSE-320__ethos-u85-256           R1 SUCCESS total=36086 G2=True s4={'MAC_ACTIVE': None, 'MAC_STALLED_BY_W': None, 'MAC_STALLED_BY_IB': None, 'AO_STALLED_BY_OB': None, 'NPU_IDLE': None, 'OVS': None} wall=0.7s
+passclean rnnoise_INT8__SSE-320__ethos-u85-256           R2 SUCCESS total=36086 G2=True s4={'MAC_ACTIVE': None, 'MAC_STALLED_BY_W': None, 'MAC_STALLED_BY_IB': None, 'AO_STALLED_BY_OB': None, 'NPU_IDLE': None, 'OVS': None} wall=0.7s
+passclean rnnoise_INT8__SSE-320__ethos-u85-256           R3 SUCCESS total=36086 G2=True s4={'MAC_ACTIVE': None, 'MAC_STALLED_BY_W': None, 'MAC_STALLED_BY_IB': None, 'AO_STALLED_BY_OB': None, 'NPU_IDLE': None, 'OVS': None} wall=0.7s
+patch apply applied pass A v2 a50bc3b2e59ace6c0422f35623e4c6bade074bf75206af46859ae80dc8d54f2b 
+passA rnnoise_INT8__SSE-320__ethos-u85-256           R1 SUCCESS total=36086 G2=False s4={'MAC_ACTIVE': 0, 'MAC_STALLED_BY_W': 0, 'MAC_STALLED_BY_IB': 0, 'AO_STALLED_BY_OB': None, 'NPU_IDLE': None, 'OVS': 0} wall=0.7s
+passA rnnoise_INT8__SSE-320__ethos-u85-256           R2 SUCCESS total=36086 G2=False s4={'MAC_ACTIVE': 0, 'MAC_STALLED_BY_W': 0, 'MAC_STALLED_BY_IB': 0, 'AO_STALLED_BY_OB': None, 'NPU_IDLE': None, 'OVS': 0} wall=0.7s
+passA rnnoise_INT8__SSE-320__ethos-u85-256           R3 SUCCESS total=36086 G2=False s4={'MAC_ACTIVE': 0, 'MAC_STALLED_BY_W': 0, 'MAC_STALLED_BY_IB': 0, 'AO_STALLED_BY_OB': None, 'NPU_IDLE': None, 'OVS': 0} wall=0.7s
+patch revert reverted 56b2fecb3c5f4327a9c0b2ecfa070416efa84f54496cbaf0e5750649c089963f 
+patch apply applied pass B v2 e80524f3d67a5e728bff2c93d9fcf493bb4b2a843a525cad9468e0785f6198a7 
+passB rnnoise_INT8__SSE-320__ethos-u85-256           R1 SUCCESS total=36086 G2=False s4={'MAC_ACTIVE': 0, 'MAC_STALLED_BY_W': None, 'MAC_STALLED_BY_IB': None, 'AO_STALLED_BY_OB': 0, 'NPU_IDLE': 0, 'OVS': 0} wall=0.7s
+passB rnnoise_INT8__SSE-320__ethos-u85-256           R2 SUCCESS total=36086 G2=False s4={'MAC_ACTIVE': 0, 'MAC_STALLED_BY_W': None, 'MAC_STALLED_BY_IB': None, 'AO_STALLED_BY_OB': 0, 'NPU_IDLE': 0, 'OVS': 0} wall=0.7s
+passB rnnoise_INT8__SSE-320__ethos-u85-256           R3 SUCCESS total=36086 G2=False s4={'MAC_ACTIVE': 0, 'MAC_STALLED_BY_W': None, 'MAC_STALLED_BY_IB': None, 'AO_STALLED_BY_OB': 0, 'NPU_IDLE': 0, 'OVS': 0} wall=0.7s
+patch revert reverted 56b2fecb3c5f4327a9c0b2ecfa070416efa84f54496cbaf0e5750649c089963f 
+S4_DONE

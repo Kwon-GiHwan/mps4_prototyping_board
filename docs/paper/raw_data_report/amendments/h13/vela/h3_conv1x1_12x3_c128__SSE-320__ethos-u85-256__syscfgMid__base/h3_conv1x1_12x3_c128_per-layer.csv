@@ -1,0 +1,2 @@
+Original Operator,NNG Operator,Target,Staging Usage,Peak% (Staging),Op Cycles,Network% (cycles),NPU,SRAM AC,DRAM AC,OnFlash AC,OffFlash AC,MAC Count,Network% (MAC),Util% (MAC),Name
+Conv2D,Conv2D,NPU,0,100,11249,100.0,4118,0,11249,0,0,589824,100.0,20.481820606276113,StatefulPartitionedCall_1:0

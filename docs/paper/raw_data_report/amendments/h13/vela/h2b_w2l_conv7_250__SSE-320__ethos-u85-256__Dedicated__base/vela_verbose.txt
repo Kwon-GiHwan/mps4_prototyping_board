@@ -1,0 +1,70 @@
+Schedule: 'graph_MIN_BUFFERED'
+	0: Operation Conv2D  - OFM 1, 1, 148, 250
+		Kernel: size=7,1 stride=1,1, dilation=1,1 padding=[t:0,l:3,b:0,r:3,n:0,f:0]
+		Time index = 0
+		Operator Config = OFM Block=[1, 1, 128, 16], IFM Block=[1, 1, 136, 16], OFM UBlock=[1, 4, 8] Traversal=PartKernel, AccType=Acc32
+		IFM Stripe   = [1, 1, 148, 250]
+		IFM2 Stripe  = []
+		OFM Stripe   = [1, 1, 148, 250]
+		Assigned Cascade = 0
+		Encoded Weights = 276080 bytes
+		Weight buffer = 140832 bytes
+		Depth slices = [0, 16, 80, 144, 208, 250]
+		sub-operations: -
+		Estimated Perf: Macs=64750000 Cycles=308641
+		Memory Used: 140832 bytes (op=0, buf=140832, ccd=0, nl=0)
+	Cascades:
+################################################################################
+Allocation, memory Dram, usage mask: FeatureMap
+Start Time - End Time  : Start Addr -   End Addr: Tensor Size: Memory Usage: Format         : Name
+         0 -          1:     0x9090 -    0x12120:       37008:        74016: NHWC           : model_3/leaky_re_lu_6/LeakyRelu
+         0 -          3:        0x0 -     0x9090:       37008:        74016: NHWC           : model_3/conv2d_7/BiasAdd;model_3/conv2d_7/Conv2D;model_3/conv2d_7/BiasAdd/ReadVariableOp/resource1
+Allocation Peak Tensor Size: 74016 bytes == 72.28125 KiB
+################################################################################
+Allocation, memory Sram, usage mask: Staging
+Start Time - End Time  : Start Addr -   End Addr: Tensor Size: Memory Usage: Format         : Name
+         0 -          1:        0x0 -    0x22620:      140832:       140832: Unknown        : #4294967295
+Allocation Peak Tensor Size: 140832 bytes == 137.53125 KiB
+################################################################################
+Tensor Allocation for read-only NPU tensors:
+Start Time - End Time  : Start Addr -   End Addr: Tensor Size: Memory Usage: Format         : Name
+         0 -          1:        0x0 -    0x43670:      276080:       276080: Unknown        : model_3/conv2d_7/Conv2D
+Allocation Peak Tensor Size: 276080 bytes == 269.609375 KiB
+Warning: Option --verbose-tensor-purpose is deprecated and will be removed in a future release.
+
+################################################################################
+Performance for NPU Grap /tmp/xq/h13_h2b_w2l_conv7_250__SSE-320__ethos-u85-256__Dedicated/vela/h2b_w2l_conv7_250
+Original Operator    NNG Operator         Target Staging Usage  Peak% (Staging)  Op Cycles Network% (cycles)        NPU    SRAM AC    DRAM AC OnFlash AC OffFlash AC  MAC Count Network% (MAC)  Util% (MAC) Name                 
+-------------------- -------------------- ------ ------------- ---------------- ---------- ----------------- ---------- ---------- ---------- ---------- ----------- ---------- -------------- ------------ -------------------- 
+Conv2D               Conv2D               NPU           140832           100.00    2656249            100.00     315865      25642    2656249          0           0   64750000         100.00         9.52 model_3/conv2d_7/BiasAdd;model_3/conv2d_7/Conv2D;model_3/conv2d_7/BiasAdd/ReadVariableOp/resource1 
+
+Network summary for h2b_w2l_conv7_250
+Accelerator configuration               Ethos_U85_256
+System configuration             Ethos_U85_SYS_DRAM_Low
+Memory mode                            Dedicated_Sram
+Accelerator clock                                 500 MHz
+Design peak SRAM bandwidth                      14.90 GB/s
+Design peak DRAM bandwidth                       3.49 GB/s
+
+Total SRAM used                                137.53 KiB
+Total DRAM used                                341.89 KiB
+
+CPU operators = 0 (0.0%)
+NPU operators = 1 (100.0%)
+
+Average SRAM bandwidth                           0.15 GB/s
+Input   SRAM bandwidth                           0.00 MB/batch
+Weight  SRAM bandwidth                           0.78 MB/batch
+Output  SRAM bandwidth                           0.00 MB/batch
+Total   SRAM bandwidth                           0.79 MB/batch
+Total   SRAM bandwidth            per input      0.79 MB/inference (batch size 1)
+
+Average DRAM bandwidth                           1.67 GB/s
+Input   DRAM bandwidth                           8.30 MB/batch
+Weight  DRAM bandwidth                           0.26 MB/batch
+Output  DRAM bandwidth                           0.28 MB/batch
+Total   DRAM bandwidth                           8.85 MB/batch
+Total   DRAM bandwidth            per input      8.85 MB/inference (batch size 1)
+
+Neural network macs                          64750000 MACs/batch
+

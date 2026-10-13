@@ -1,0 +1,16 @@
+{
+  "storage": {
+    "mount_count": 0,
+    "block_device_write_holders": null,
+    "uart_holders": {
+      "ttyUSB0": {"holders": 0, "root_inclusive": false},
+      "ttyUSB1": {"holders": 0, "root_inclusive": false},
+      "ttyUSB2": {"holders": 0, "root_inclusive": false},
+      "ttyUSB3": {"holders": 0, "root_inclusive": false}
+    },
+    "usb_off_confirmed": null,
+    "block_device_present": true
+  },
+  "baseline": {},
+  "candidate": {}
+}

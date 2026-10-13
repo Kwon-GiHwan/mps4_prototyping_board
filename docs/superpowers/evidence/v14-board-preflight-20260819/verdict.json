@@ -1,0 +1,50 @@
+{
+  "authorized": false,
+  "mandatory_unproven": [
+    "BLOCK_WRITE_HOLDERS",
+    "UART_OWNERSHIP",
+    "USB_OFF"
+  ],
+  "stages": {
+    "BASELINE": [],
+    "CANDIDATE": [],
+    "STORAGE": [
+      {
+        "detail": "mount_count is 0",
+        "gate": "MOUNT_COUNT",
+        "layer": "inherited",
+        "threshold": "mount_count == 0",
+        "verdict": "PASS"
+      },
+      {
+        "detail": "block_device_write_holders was not established",
+        "gate": "BLOCK_WRITE_HOLDERS",
+        "layer": "inherited",
+        "threshold": "block_device_write_holders == 0",
+        "verdict": "UNPROVEN"
+      },
+      {
+        "detail": "ttyUSB0 was not checked for root-owned holders",
+        "gate": "UART_OWNERSHIP",
+        "layer": "inherited",
+        "threshold": "root-inclusive holders == 0 on ttyUSB0..3",
+        "verdict": "UNPROVEN"
+      },
+      {
+        "detail": "USB_OFF was not confirmed either way",
+        "gate": "USB_OFF",
+        "layer": "inherited",
+        "threshold": "USB_OFF confirmed and /dev/sdb absent",
+        "verdict": "UNPROVEN"
+      }
+    ]
+  },
+  "state": "STOPPED",
+  "transitions": [
+    {
+      "from": "INITIAL",
+      "reason": "STORAGE stage is UNPROVEN",
+      "to": "STOPPED"
+    }
+  ]
+}

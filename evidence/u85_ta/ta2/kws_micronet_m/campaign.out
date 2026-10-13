@@ -1,0 +1,50 @@
+set  1 rep 1 rc=0 vendor_rc=0 seam_status/qread=('0xffff0020', 2572) ofm_mismatch(count,maxdiff,first)=(0, 0, 4294967295) valid=True 
+set  1 rep 2 rc=0 vendor_rc=0 seam_status/qread=('0xffff0020', 2572) ofm_mismatch(count,maxdiff,first)=(0, 0, 4294967295) valid=True 
+set  1 rep 3 rc=0 vendor_rc=0 seam_status/qread=('0xffff0020', 2572) ofm_mismatch(count,maxdiff,first)=(0, 0, 4294967295) valid=True 
+set  1 rep 4 rc=0 vendor_rc=0 seam_status/qread=('0xffff0020', 2572) ofm_mismatch(count,maxdiff,first)=(0, 0, 4294967295) valid=True 
+set  1 rep 5 rc=0 vendor_rc=0 seam_status/qread=('0xffff0020', 2572) ofm_mismatch(count,maxdiff,first)=(0, 0, 4294967295) valid=True 
+set  1 rep 6 rc=0 vendor_rc=0 seam_status/qread=('0xffff0020', 2572) ofm_mismatch(count,maxdiff,first)=(0, 0, 4294967295) valid=True 
+set  1 rep 7 rc=0 vendor_rc=0 seam_status/qread=('0xffff0020', 2572) ofm_mismatch(count,maxdiff,first)=(0, 0, 4294967295) valid=True 
+set  1 rep 8 rc=0 vendor_rc=0 seam_status/qread=('0xffff0020', 2572) ofm_mismatch(count,maxdiff,first)=(0, 0, 4294967295) valid=True 
+set  1 rep 9 rc=0 vendor_rc=0 seam_status/qread=('0xffff0020', 2572) ofm_mismatch(count,maxdiff,first)=(0, 0, 4294967295) valid=True 
+set  1 rep 10 rc=0 vendor_rc=0 seam_status/qread=('0xffff0020', 2572) ofm_mismatch(count,maxdiff,first)=(0, 0, 4294967295) valid=True 
+set  1 rep 11 rc=0 vendor_rc=0 seam_status/qread=('0xffff0020', 2572) ofm_mismatch(count,maxdiff,first)=(0, 0, 4294967295) valid=True 
+set  1 rep 12 rc=0 vendor_rc=0 seam_status/qread=('0xffff0020', 2572) ofm_mismatch(count,maxdiff,first)=(0, 0, 4294967295) valid=True 
+set  1 rep 13 rc=0 vendor_rc=0 seam_status/qread=('0xffff0020', 2572) ofm_mismatch(count,maxdiff,first)=(0, 0, 4294967295) valid=True 
+set  1 rep 14 rc=0 vendor_rc=0 seam_status/qread=('0xffff0020', 2572) ofm_mismatch(count,maxdiff,first)=(0, 0, 4294967295) valid=True 
+set  1 rep 15 rc=0 vendor_rc=0 seam_status/qread=('0xffff0020', 2572) ofm_mismatch(count,maxdiff,first)=(0, 0, 4294967295) valid=True 
+set  1 rep 16 rc=0 vendor_rc=0 seam_status/qread=('0xffff0020', 2572) ofm_mismatch(count,maxdiff,first)=(0, 0, 4294967295) valid=True 
+set  1 rep 17 rc=0 vendor_rc=0 seam_status/qread=('0xffff0020', 2572) ofm_mismatch(count,maxdiff,first)=(0, 0, 4294967295) valid=True 
+set  1 rep 18 rc=0 vendor_rc=0 seam_status/qread=('0xffff0020', 2572) ofm_mismatch(count,maxdiff,first)=(0, 0, 4294967295) valid=True 
+set  1 rep 19 rc=0 vendor_rc=0 seam_status/qread=('0xffff0020', 2572) ofm_mismatch(count,maxdiff,first)=(0, 0, 4294967295) valid=True 
+set  1 rep 20 rc=0 vendor_rc=0 seam_status/qread=('0xffff0020', 2572) ofm_mismatch(count,maxdiff,first)=(0, 0, 4294967295) valid=True 
+set  1 rep 21 rc=0 vendor_rc=0 seam_status/qread=('0xffff0020', 2572) ofm_mismatch(count,maxdiff,first)=(0, 0, 4294967295) valid=True 
+set  1 rep 22 rc=0 vendor_rc=0 seam_status/qread=('0xffff0020', 2572) ofm_mismatch(count,maxdiff,first)=(0, 0, 4294967295) valid=True 
+set  1 rep 23 rc=0 vendor_rc=0 seam_status/qread=('0xffff0020', 2572) ofm_mismatch(count,maxdiff,first)=(0, 0, 4294967295) valid=True 
+set  1 rep 24 rc=0 vendor_rc=0 seam_status/qread=('0xffff0020', 2572) ofm_mismatch(count,maxdiff,first)=(0, 0, 4294967295) valid=True 
+set  1 rep 25 rc=0 vendor_rc=0 seam_status/qread=('0xffff0020', 2572) ofm_mismatch(count,maxdiff,first)=(0, 0, 4294967295) valid=True 
+set  1 rep 26 rc=0 vendor_rc=0 seam_status/qread=('0xffff0020', 2572) ofm_mismatch(count,maxdiff,first)=(0, 0, 4294967295) valid=True 
+set  1 rep 27 rc=0 vendor_rc=0 seam_status/qread=('0xffff0020', 2572) ofm_mismatch(count,maxdiff,first)=(0, 0, 4294967295) valid=True 
+set  1 rep 28 rc=0 vendor_rc=0 seam_status/qread=('0xffff0020', 2572) ofm_mismatch(count,maxdiff,first)=(0, 0, 4294967295) valid=True 
+set  1 rep 29 rc=0 vendor_rc=0 seam_status/qread=('0xffff0020', 2572) ofm_mismatch(count,maxdiff,first)=(0, 0, 4294967295) valid=True 
+set  1 rep 30 rc=0 vendor_rc=0 seam_status/qread=('0xffff0020', 2572) ofm_mismatch(count,maxdiff,first)=(0, 0, 4294967295) valid=True 
+set  1 rep 31 rc=0 vendor_rc=0 seam_status/qread=('0xffff0020', 2572) ofm_mismatch(count,maxdiff,first)=(0, 0, 4294967295) valid=True 
+set  1 rep 32 rc=0 vendor_rc=0 seam_status/qread=('0xffff0020', 2572) ofm_mismatch(count,maxdiff,first)=(0, 0, 4294967295) valid=True 
+set  1 rep 33 rc=0 vendor_rc=0 seam_status/qread=('0xffff0020', 2572) ofm_mismatch(count,maxdiff,first)=(0, 0, 4294967295) valid=True 
+set  1 rep 34 rc=0 vendor_rc=0 seam_status/qread=('0xffff0020', 2572) ofm_mismatch(count,maxdiff,first)=(0, 0, 4294967295) valid=True 
+set  1 rep 35 rc=0 vendor_rc=0 seam_status/qread=('0xffff0020', 2572) ofm_mismatch(count,maxdiff,first)=(0, 0, 4294967295) valid=True 
+{
+ "runs": 35,
+ "coverage": "COMPLETE_SUBSET(8)",
+ "consistency": {
+  "CYCLE_EVENT_VS_PMCCNTR": "UNPROVEN",
+  "NPU_ACTIVE_LE_CYCLE": "PASS"
+ },
+ "verdict_counts": {
+  "COUNTED_NONZERO": 5,
+  "COUNTED_ZERO": 3,
+  "INCONSISTENT": 0,
+  "NOT_OBSERVED": 0
+ },
+ "refusal": null
+}

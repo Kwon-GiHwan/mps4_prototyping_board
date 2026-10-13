@@ -1,0 +1,17 @@
+ref,short,role,load_bearing,supports_claim,scope_check,verdict,note
+1,Arm Ethos-U85 NPU Technical Reference Manual,PRIMARY_SOURCE,yes,U85 MAC configurations and PMU event space,within scope,PASS,primary Arm authority for the U85 facts the paper measures
+2,Arm Ethos-U85 NPU Technical Overview,PRIMARY_SOURCE,yes,U85 generation characteristics,within scope,PASS,
+3,Arm ML Developers Guide for Cortex-M and Ethos-U,TOOL/DOCUMENTATION,no,NPU/compiler relationship,within scope,WEAK,overlaps [1][2]; cited once in a lump
+4,Arm Corstone-320 Reference Package Technical Overview,PRIMARY_SOURCE,yes,definition of the simulated subsystem,within scope,PASS,
+5,Fixed Virtual Platforms for Arm Corstone SSE-320,PRIMARY_SOURCE,yes,FVP that hosts the U85 formal sweep,within scope,PASS,
+6,Fast Models FVP Reference Guide,TOOL/DOCUMENTATION,no,FVP behaviour generally,within scope,WEAK,under-used: the Fast Models version skew in 3.3 (11.22.35/11.24.13/11.27.25/11.31.28) is asserted uncited
+7,Ethos-U Vela compiler,TOOL/DOCUMENTATION,yes,"Vela emits the command stream AND labels its performance estimates EXPERIMENTAL",within scope,PASS,load-bearing: external warrant for treating Vela output as a prediction under test in 4.2
+8,ML Embedded Evaluation Kit,TOOL/DOCUMENTATION,yes,runner and build system for every measurement; TA disabled for sse-310/315,within scope,PASS,load-bearing for 3.1 capability-vs-benchmark distinction
+9,Jouppi et al. TPU ISCA 2017,ORIGINAL_RESEARCH,no,canonical measured account of a production systolic accelerator,within scope,PASS,positioning contrast is factual
+10,Samajdar et al. SCALE-Sim arXiv 2018,ORIGINAL_RESEARCH,no,systolic-array modelling of bandwidth/dataflow/aspect ratio,within scope,PASS,
+11,Parashar et al. Timeloop ISPASS 2019,ORIGINAL_RESEARCH,no,mapping-space search projecting performance and energy,within scope,PASS,
+12,Gutierrez et al. Sources of Error in Full-System Simulation ISPASS 2014,ORIGINAL_RESEARCH,yes,"mean absolute runtime error 13-17% after targeted corrections",VERIFIED against source,PASS,"MAPE 13% SPEC CPU2006, 16%/17% PARSEC single/dual after simulator modifications; manuscript correctly says mean ABSOLUTE and does not claim the signed means (5%, -11%, -12%)"
+13,Banbury et al. MLPerf Tiny NeurIPS D&B 2021,ORIGINAL_RESEARCH,yes,standardized end-to-end TinyML latency/accuracy/energy measurement,within scope,PASS,anchors the workload lineage and the system-level contrast
+14,Banbury et al. MicroNets MLSys 2021,ORIGINAL_RESEARCH,yes,provenance of kws_micronet_m,within scope,PASS_WITH_NOTE,"correctly used as workload provenance, but the following sentence sweeps it into 'such suites' (F10) - MicroNets is a NAS/architecture paper, not a benchmark suite"
+15,David et al. TensorFlow Lite Micro MLSys 2021,ORIGINAL_RESEARCH,no,runtime on which the workloads execute,within scope,PASS,
+-,Ethos-U55 / Ethos-U65 Technical Reference Manuals,PRIMARY_SOURCE,n/a,"U55/U65 MAC configurations and AXI* PMU family",MISSING,MISSING_NEAR_NEIGHBOR,"paper measures U55/U65 across 92 validation cells and much of the formal sweep but cites primary manuals only for U85; REFERENCE_ONLY fix"

@@ -1,0 +1,396 @@
+# H13 — H1′·H2′·H3′ 검증 캠페인 계획서 (2026-09-14, 실행 전 고정)
+
+GO 전문: `2026-09-14-h1-h3-verification-GO.md`. 가설 원문: `docs/paper/raw_data_report/amendments/A10_revised_hypotheses.md`.
+매니저 대조 체크리스트: `docs/paper/raw_data_report/amendments/manager_review_20260914_v7_directive.md` §0.
+실행 기록·원시 증거·분석기: `docs/paper/raw_data_report/amendments/h13/` (서버 `/tmp/h13/`).
+
+이 문서의 판정 기준·예측값은 **해당 측정을 보기 전에** 고정한 것이다. 결과를 본 뒤 고치지 않는다.
+바꿔야 한다면 §9에 amendment로 추가한다(원문은 남긴다). 기존 frozen evidence·X4·S4는 건드리지 않는다.
+
+## 0. 공통 조건과 게이트
+
+| 항목 | 값 |
+|---|---|
+| 환경 | X4와 동일: 컨테이너 `benchmark-runner`, `/tmp/xqbin/stage1.py` 하니스, FVP `fvp_avh/FVP_Corstone_SSE-320`(U85)·`fvp_installed/...SSE-300_Ethos-U55/U65`, MLEK 26.03.0, Vela 5.0.0, GCC 15.2.1, `SOURCE_DATE_EPOCH=1776763519` |
+| TA 명시 | 모든 빌드에 SRAM·EXT 16개 파라미터(MAXR/MAXW/MAXRW/RLATENCY/WLATENCY/PULSE_ON/PULSE_OFF/BWCAP)를 `-D`로 **전부** 넘긴다. 기본값은 `ta_parameters.csv`의 프로파일 값. 자동 선택에 맡기지 않는다 |
+| 산출물 고정 | 런타임(TA) 실험은 MAC별 Vela 산출물을 동결 SHA와 동일하게 재생성해 사용한다(G1) |
+| 입력 | stock `inference_runner`의 `std::rand() & 0xFF`(srand 없음, A7). 입력 바이트는 검증 빌드가 UART에 덤프한다 |
+| 반복 | 조건(arm)마다 독립 FVP 프로세스 3회 |
+| 출력 검증 | arm마다 stock 소스 + `-DVERIFY_TEST_OUTPUT=1`(MLEK 기본 제공 옵션, 코드 패치 없음) 빌드를 1회 추가 실행해 입력·출력 텐서 hex 덤프를 얻는다. 같은 셀의 모든 arm에서 출력이 동일해야 한다 |
+| 계측 영향 | 검증 빌드의 PMU 카운터 6종이 같은 arm의 stock 빌드와 동일한지 기록한다(덤프는 추론 창 밖이므로 동일 예상). 다르면 `INSTRUMENTATION_DEVIATION`으로 기록하고 stock 값만 결과에 쓴다 |
+| 원시 증거 | 전체 UART, cmake/vela 명령, generated `timing_adapter_settings.h`, AXF·Vela·cc-body SHA, `results.jsonl` |
+| 구조 정보 | 합성 모델은 `vela --verbose-schedule --verbose-performance`로 op·OFM·block·ublock·per-op cycle을 남긴다 |
+
+게이트(모두 통과해야 그 arm의 값이 결과에 들어간다):
+
+| 게이트 | 내용 | 실패 시 |
+|---|---|---|
+| G1 | Vela 산출물 SHA·cc body SHA = 동결값(기존 셀). 합성 모델은 같은 MAC의 모든 arm에서 동일 | `RULE_H13_ARTIFACT` → 해당 arm NOT_EVALUABLE |
+| G2 | 각 셀의 기본 프로파일 arm이 동결 카운터(TOTAL·ACTIVE·beat 4종)를 정확히 재현 | `RULE_H13_BASE_MISMATCH` → 해당 셀 전체 NOT_EVALUABLE |
+| G3 | 3회 반복의 카운터 벡터 동일 | `RULE_H13_REPS_DIFFER` → arm NOT_EVALUABLE |
+| G4 | generated header의 16개 TA 값 = 요청값 | `RULE_H13_TA_HEADER` → arm NOT_EVALUABLE |
+| G5 | 상태 SUCCESS, `Inference completed.`, overflow/에러 문자열 없음 | `RULE_H13_RUN` → arm NOT_EVALUABLE |
+| G6 | 검증 빌드 출력 덤프가 같은 셀의 기준 arm과 동일 | `RULE_H13_OUTPUT_MISMATCH` → 해당 실험 중단(GO §7) |
+
+MAXR/MAXW는 헤더 주석대로 6비트 필드다. 요청값과 실제 적용값이 다를 수 있는 경우(예: 64)는 H1-B에서
+64와 0(무제한)·63을 함께 측정해 **경험적으로** 구분한다. FVP는 NPU 자체 outstanding 제한을 파라미터로
+노출하지 않는다(`--list-params` 확인: `ethosu.num_macs`·`diagnostics`·`extra_args`뿐). 따라서 "NPU 자체
+제한"은 측정으로만 추정하고 값을 단정하지 않는다.
+
+## 1. H1-A — 읽기·쓰기 지연 분리 (RNNoise U85 256·512·1024·2048)
+
+프로파일: 256 = low, 512·1024·2048 = mid (X4와 동일). 나머지 TA 파라미터는 해당 프로파일 값.
+
+| arm 군 | EXT_RLATENCY | EXT_WLATENCY |
+|---|---|---|
+| 읽기 sweep | 0 / 125 / 250 / 500 / 1000 | 250 |
+| 쓰기 sweep | 500 | 0 / 125 / 250 / 500 |
+| 둘 다 0 | 0 | 0 |
+| 기본(G2) | 프로파일 기본 (250/125 또는 500/250) | |
+
+동일 define 조합은 한 번만 측정한다(512·1024·2048의 500/250은 기본 arm과 같다).
+
+**지표 (사전 정의).** k_r = [C(R=1000,W=250) − C(R=0,W=250)] / 1000 · k_w = [C(R=500,W=500) − C(R=500,W=0)] / 500.
+둘 다 "설정 1 사이클당 실행 사이클 변화"이며 왕복 횟수가 아니다(체크리스트 C2).
+
+**판정 (MAC별).**
+
+| 조건 | 결과값 |
+|---|---|
+| k_w ≤ 0.2·k_r | `READ_DOMINANT` |
+| k_r ≤ 0.2·k_w | `WRITE_DOMINANT` |
+| 그 외 | `MIXED` |
+| 가산성: C(0,0) 예측 = C(R=0,W=250) − [C(R=500,W=250) − C(R=500,W=0)] 가 실측 C(0,0)의 ±5% 이내 | `ADDITIVE` / 아니면 `NON_ADDITIVE` |
+| MAC 간: 네 MAC의 k_r 최대/최소 비 ≤ 1.15 | `SENSITIVITY_SIMILAR_ACROSS_MAC` / 아니면 `SENSITIVITY_DIFFERS_ACROSS_MAC` |
+
+X4 결합 sweep(읽기 L·쓰기 L/2)의 기울기 k와 k_r + ½·k_w를 비교해 기록한다(설명적, 판정 아님).
+
+## 2. H1-B — 요청 동시성 (RNNoise U85 256·512)
+
+| 변수 | 수준 |
+|---|---|
+| EXT_MAXR | 1 / 4 / 16 / 63 / 64 / 0(무제한) |
+| EXT_RLATENCY | 250 / 1000 (EXT_WLATENCY = 프로파일 기본: 256→125, 512→250) |
+| 고정 | MAXW·MAXRW(0)·BWCAP·pulse·SRAM = 프로파일 값 |
+
+기본 프로파일의 MAXR은 256(low) = 24, 512(mid) = 64. 64가 6비트 필드에서 0(무제한)으로 적용되는지는
+64 arm과 0 arm의 사이클 동일 여부로 판단한다(동일이면 `MAXR64_IS_UNLIMITED`, 다르면 `MAXR64_DISTINCT`).
+
+**지표.** s(M) = [C(R=1000, MAXR=M) − C(R=250, MAXR=M)] / 750.
+
+**판정 (MAC별).**
+
+| 조건 | 결과값 |
+|---|---|
+| s가 M에 대해 비증가이고 s(63 또는 0) ≤ 0.8·s(1) | `CONCURRENCY_REDUCES_SENSITIVITY` |
+| 모든 M에서 s(M)이 s(1)의 ±5% 이내 | `CONCURRENCY_NO_EFFECT_IN_RANGE` |
+| 그 외 | `PARTIAL_OR_NON_MONOTONE` |
+| 보조: s(4)와 s(16)이 같고 s(1)만 다르면 | "NPU 측 outstanding 상한이 4 이하일 가능성"으로 기록(추정, 단정 아님) |
+
+## 3. H1-C — 예측 검증과 일반화
+
+### 3a. 미측정 지연 375·750 (RNNoise 4 MAC, 읽기 L·쓰기 L/2 결합, X4와 같은 결합 방식)
+
+예측 모델은 X4의 공통 구간 0/250/500/1000 네 점으로 **지금** 고정한다.
+M1 = 선형 회귀 a + kL, M2 = 인접 점 구간 선형 보간.
+
+| MAC | a | k | M1 C(375) | M1 C(750) | M2 C(375) | M2 C(750) |
+|---|---|---|---|---|---|---|
+| 256 | 16,286 | 97.26 | 52,757 | 89,229 | 49,086 | 89,086 |
+| 512 | 12,886 | 86.74 | 45,415 | 77,943 | 43,086 | 78,086 |
+| 1024 | 8,686 | 84.91 | 40,529 | 72,372 | 38,586 | 72,086 |
+| 2048 | 9,086 | 92.00 | 43,586 | 78,086 | 42,086 | 78,086 |
+
+허용 오차: M1 ±5%, M2 ±2% (예측값 기준). 판정(MAC별, 두 지연값 모두 충족해야 함):
+
+| 조건 | 결과값 |
+|---|---|
+| M1 통과 | `LINEAR_ADEQUATE` |
+| M1 실패, M2 통과 | `PIECEWISE_ADEQUATE` (곡률 확인) |
+| 둘 다 실패 | `NEITHER_MODEL_PREDICTS` |
+
+### 3b. KWS·AD U85 256·512 — 읽기 지연 0/250/500/1000, 쓰기 250 고정 (H1-A 읽기 sweep과 같은 설계) + 기본 arm(G2)
+
+**지표.** 민감도 비 ρ = C(R=1000) / C(R=0). **판정(셀별):** ρ ≥ 1.10 → `LATENCY_SENSITIVE`, 그 외 `ROBUST_IN_RANGE`.
+**일반화 판정:** KWS·AD 네 셀 모두 `LATENCY_SENSITIVE` → `GENERALISES_TO_KWS_AD`; 모두 `ROBUST` → `RNNOISE_SPECIFIC`; 섞이면 `PARTIAL`.
+k_r도 계산해 RNNoise와 비교하되 크기 비교는 서술로만 한다(모델마다 실행 사이클 규모가 다름).
+
+## 4. H2-A — Wav2Letter U85 외부 대역폭 × 지연
+
+| 셀 | EXT_BWCAP 수준 (0.5× / 1× / 2× / 0) | EXT (R, W) 지연 |
+|---|---|---|
+| 512 (mid, 기본 3750) | 1875 / 3750 / 7500 / 0 | (500, 250) 기본 · (0, 0) |
+| 256 (low, 기본 2344) | 1172 / 2344 / 4688 / 0 | (250, 125) 기본 · (0, 0) |
+
+pulse는 프로파일 값 유지(mid 4000/1000, low 4000/1000)하고 기록한다. 명목 상한 = BWCAP × 16 B ÷ (PULSE_ON + PULSE_OFF).
+달성 전송률 = (EXT_RD + EXT_WR beat) × 16 B ÷ TOTAL cycles.
+
+**판정(셀별).**
+
+| 조건 | 결과값 |
+|---|---|
+| 기본 지연에서 C(2× 또는 0) ≤ 0.90·C(1×) | `EXT_CAP_CONSTRAINED` (개입 효과) |
+| 기본 지연에서 모든 수준의 사이클이 C(1×)의 ±5% 이내 **이고** 1×에서 달성 전송률 < 0.9·명목 상한 | `EXT_CAP_NOT_BINDING_IN_RANGE` |
+| 모든 수준 ±5% 이내인데 달성 전송률 ≥ 0.9·명목 상한 (cap을 올려도 전송률이 안 오름) | `CAP_RAISE_INEFFECTIVE_NOT_EVIDENCE` (대역폭 무관의 근거로 쓰지 않음, GO §4) |
+| 0.5×에서 ≥ 10% 증가하지만 2×/0에서 < 10% 감소 | `CAP_LOWERING_SLOWS_ONLY` |
+| 지연 0 arm에서 cap 효과(2× 대비 1×의 감소율)가 기본 지연 arm과 5%p 이상 다름 | 추가 표기 `LATENCY_CAP_INTERACTION` |
+
+H2-B 진행 조건: 512 또는 256이 `EXT_CAP_CONSTRAINED`. 아니면 H2-B 대신 "잔여 비용은 시험 범위의 외부 지연·대역폭에 반응하지 않음"으로 기록하고 SRAM·계산 쪽 조사는 다음 계약 후보로 남긴다(GO §4 분기표).
+
+## 5. H2-B — 대표 레이어 가중치 배치 (조건부)
+
+- Wav2Letter의 가중치 바이트가 가장 큰 Conv 연산 1개를 원본 tflite에서 읽어(가중치·양자화 파라미터 그대로) 단일 연산 tflite로 만든다. 입력 형상은 원본 스케줄의 해당 연산 IFM 형상.
+- 배치 두 가지: `Dedicated_Sram`(가중치 EXT) vs `Sram_Only`(가중치·arena 모두 SRAM). U85 512(주)·256(확인). TA는 기본 프로파일.
+- Vela `--verbose-schedule`로 두 배치의 command stream·block 구성 차이를 기록한다. 스케줄이 달라지면 그 사실을 결과와 함께 적는다.
+- 판정: `Dedicated` 대비 `Sram_Only`에서 EXT beat가 ≥ 50% 줄고 TOTAL이 ≥ 10% 줄면 `WEIGHT_PLACEMENT_SENSITIVE`; EXT beat는 줄었는데 TOTAL이 ±5% 이내면 `WEIGHT_TRAFFIC_NOT_COST_DRIVER`; 그 외 `INCONCLUSIVE`(이유 기록).
+
+## 6. §6 — SRAM 대역폭 상한 (KWS·AD × U55-256 Shared_Sram · U65-512 Dedicated_Sram)
+
+SRAM_BWCAP 기본 4000 (pulse 3999/1 → 1 word/cycle). 수준 2000 / 4000 / 8000 / 0. 나머지 고정.
+달성 SRAM 전송률 = (SRAM/AXI0 RD + WR beat) × word ÷ TOTAL (U55 8 B, U65 16 B).
+
+**판정(셀별).** C(2000) ≥ 1.10·C(4000) → `SRAM_CAP_LOWERING_SLOWS`; C(8000 또는 0) ≤ 0.90·C(4000) → `SRAM_CAP_CONSTRAINED_AT_DEFAULT`;
+둘 다 아니면 `SRAM_CAP_NOT_BINDING_IN_RANGE`. 기본 cap(1 word/cycle)이 인터페이스 실효 상한과 같은 값이므로 물리 SRAM 대역폭은 배제하지 않는다(GO §6).
+
+## 7. H3 — 합성 모델 공간 형상 (U85 256·512)
+
+모델 생성: 로컬 TensorFlow 2.21 venv, Keras → TFLite full-integer INT8(대표 데이터 = 고정 seed 균일 난수), 가중치 고정 seed.
+C_in = C_out = 128. 1×1 Conv(H3-A) · 3×3 Conv same-padding · 3×3 DWConv same-padding(H3-B).
+
+| 면적 | 형상 (H×W) |
+|---|---|
+| 36 | 1×36, 36×1, 2×18, 18×2, 3×12, 12×3, 4×9, 9×4, 6×6 |
+| 64 | 1×64, 2×32, 4×16, 8×8 |
+| 256 | 1×256, 4×64, 8×32, 16×16 |
+
+실행 매트릭스:
+- 주: 51 모델 × MAC {256, 512} × MLEK 기본 sys-config(256 Low / 512 Mid_512) × 기본 TA.
+- 메모리 완화: 면적 36의 27 모델 × 2 MAC × TA 완화(EXT R/W 지연 0, EXT_BWCAP 0, SRAM 지연 0, 나머지 동일).
+- Vela 공통 가정 대조군: 1×1 면적 36의 9 모델 × 2 MAC × sys-config `Ethos_U85_SYS_DRAM_Mid_512` 공통 × 기본 TA.
+
+수집: TOTAL·ACTIVE·beat, `--verbose-schedule`(OFM block·IFM block·ublock), `--verbose-performance`(연산별 cycle), encoded weight 크기, 각 차원의 block 나머지(OFM 크기 mod block 크기).
+
+**지표.** r = C_512 / C_256 (같은 모델, 같은 조건).
+
+**판정.**
+
+| 조건 | 결과값 |
+|---|---|
+| 같은 면적·같은 연산 종류 안에서 max r − min r ≥ 0.10 | `SHAPE_EFFECT` (면적만의 설명 반증) |
+| 연산 종류별 면적 36 중앙값 r: 36 → 64 → 256 순으로 감소하고 r(256) ≤ r(36) − 0.10 | `AREA_EFFECT` |
+| 면적 36에서 1×1 Conv · 3×3 Conv · 3×3 DW의 중앙값 r 중 최대−최소 ≥ 0.10 | `TYPE_DEPENDENT` |
+| TA 완화 조건에서 형상 간 spread(max r − min r)가 기본 TA의 50% 미만 | `MEMORY_SHAPE_INTERACTION` |
+| ublock/block 경계와 r의 관계: OFM 차원이 block 배수인 형상의 r 중앙값이 배수가 아닌 형상보다 ≥ 0.05 낮으면 | `BLOCK_ALIGNMENT_ASSOCIATED` (서술적, 통제 개입은 형상 자체) |
+
+H×W ÷ MAC 같은 비율을 이용률로 쓰지 않는다. 1024→2048 확장은 이 결과 뒤에 별도 판단.
+
+## 8. 실행 순서·비용 추정·산출물
+
+| 단계 | arm 수 | 예상 시간 |
+|---|---|---|
+| S1: H1-A + H1-B + H1-C(3a·3b) | ≈ 40 + 24 + 8 + 18 | RNNoise/KWS/AD arm ≈ 2분(stock+검증 빌드) → ≈ 3시간 |
+| S2: H2-A + §6 | 16 + 16 | Wav2Letter arm ≈ 12분, KWS/AD U55·U65 ≈ 3분 → ≈ 4시간 |
+| S3: H3 (모델 생성 로컬 → scp) | 102 + 54 + 18 | ≈ 3시간 |
+| S4: H2-B (조건부) | 4 | ≈ 1시간 |
+
+산출물: `h13/results.jsonl`, `h13/uart/`, `h13/verify/`(검증 빌드 덤프), `h13/manifest.csv`(arm × 16 TA 값 × SHA),
+`h13/h13_analyze.py`(+unittest, 돌연변이 검사), `h13/H13_RESULTS.md`(가설별 예측 대 관측 표, 7개 요인 갱신 판정), 그래프, 발표 반영.
+
+## 9. Amendments
+
+### A1 (2026-09-14, S1 실행 전) — 출력 검증 빌드는 MLEK stock 옵션만으로는 컴파일되지 않는다
+
+§0의 "`-DVERIFY_TEST_OUTPUT=1`(코드 패치 없음)"은 성립하지 않았다. MLEK 26.03의 `VERIFY_TEST_OUTPUT` 경로는
+구 API(`TfLiteTensor*`, `const Model&`)를 참조해 컴파일 오류 3종이 난다(스모크 1–3, `h13/smoke/`).
+대응: `#if VERIFY_TEST_OUTPUT` 가드 **안쪽만** 고친 3-파일 패치(`h13/verify_build/verify_patch.diff`,
+`verify_patch.py`, 원본과 다이제스트는 `verify_build/orig/`). 가드 밖 코드는 바뀌지 않으므로 stock 빌드의
+바이트는 동일해야 하며, 이를 매 arm의 G1(stock AXF SHA = 동결 AXF SHA)로 검사한다. 스모크 4 결과:
+stock AXF = 동결 AXF(True), 검증 빌드 SUCCESS, 출력 덤프 sha `305bc17f…`, 검증 빌드 PMU 6종 = stock(동일).
+캠페인 종료 시 세 파일을 `orig/`의 다이제스트로 복원한다. 측정값은 항상 stock 빌드에서만 취한다.
+
+### A2 (2026-09-14, 매니저 답변 반영 — `manager_log.md` 9번째 교환)
+
+- **G1 정정.** 동결 AXF와의 일치는 기본 arm에만 요구한다(TA가 다른 arm은 AXF가 달라지는 것이 정상). 그 외 arm은
+  Vela 산출물·cc body SHA 동일성(G1)과 arm 내 3회 반복 동일성(G3)으로 검사한다. 이미 분석기가 그렇게 구현돼 있다.
+- **G6 강화.** `VERIFY_TEST_OUTPUT`는 덤프 경로이지 정답 검사가 아니다. 분석기는 검증 UART에서 출력 바이트 목록을
+  추출해 같은 셀의 기준 arm과 **바이트 단위로** 비교하고, 덤프 길이가 러너가 선언한 OUTPUT 텐서 바이트 합과 같지
+  않으면 `INCOMPLETE_DUMP`로 `RULE_H13_OUTPUT_MISMATCH`를 낸다. PMU 일치는 출력 동일성의 근거로 쓰지 않는다.
+- **H2-B 설계 정정.** (i) 대표 레이어(op 15, 7-tap 250→250)는 원본 flatbuffer에서 연산·텐서·양자화 레코드·가중치/bias
+  버퍼를 그대로 복사해 잘라낸다(재양자화 없음). 원본 전체 모델을 실행해 얻은 텐서 38(IFM)을 추출 모델에 넣었을 때
+  텐서 39(OFM)와 바이트 동일해야 한다(`gen_h2b_model.py`가 검사, `h2b_manifest.json`의 `ofm_identical_to_original`).
+  (ii) 주 비교는 **Shared_Sram ↔ Sram_Only**(arena는 둘 다 SRAM, 가중치만 EXT ↔ SRAM). Dedicated_Sram은 전체 배치
+  효과의 보조 대조군. (iii) SRAM 적재 가능성은 Vela 요약의 SRAM 사용량(가중치+IFM/OFM+scratch)으로 확인해 기록한다.
+  (iv) 모드별 스케줄·tiling 차이는 `--verbose-schedule` 덤프로 기록한다. (v) 결과는 이 레이어에 한정하며 16 MB·4 MB
+  레이어로 일반화하지 않는다. §5의 판정 문구는 유지하되 "Dedicated 대비 Sram_Only"를 "Shared_Sram 대비 Sram_Only"로 읽는다.
+
+### A3 (2026-09-14, S1 실행 중 추가 — 결과를 보고 고친 것이 아니라 arm을 더한 것)
+
+요인 6("지연 0의 잔여 비용")이 동시 요청 수에 반응하는지 보기 위해 H1-B에 arm 4개를 더한다: RNNoise U85 256·512 ×
+EXT_MAXR {1, 63} × 지연 (0, 0). 판정값은 두지 않고 서술 지표 `C00_by_maxr`로 기록한다(C(0,0)이 MAXR에 따라 5% 이상
+움직이면 "지연 0 잔여 비용의 일부가 요청 직렬화에 반응"으로만 적는다). GO §3 H1-B 범위 안이다.
+
+### A4 (2026-09-14, S2 판정 뒤 — 매니저 답변 10번째 교환) — H2-B는 NOT_TRIGGERED, 별도 탐색 실험 H2-B-X
+
+- 원계획 §5의 H2-B는 진행 조건(`EXT_CAP_CONSTRAINED`)이 512·256 모두 미충족이므로 `NOT_TRIGGERED`로 기록한다.
+- 대신 **H2-B-X**(탐색 확장)를 실행한다. 목적: BWCAP 완화 효과가 작다는 결과가 "가중치 배치 효과 없음"을 뜻하지 않으므로,
+  대표 레이어(op 15, 원본 flatbuffer에서 그대로 잘라낸 7-tap 250→250)의 가중치 배치가 실행 비용과 EXT/SRAM 전송량을
+  바꾸는지 서술적으로 대조한다. 결과를 H2′의 검증 성공/실패로 합치지 않는다.
+- arm 6개: memory mode {Shared_Sram, Sram_Only, Dedicated_Sram} × MAC {512, 256}, TA 16값은 MAC 프로파일 기본, 산출물은
+  모드별로 Vela 재컴파일(모드가 다르면 산출물이 다른 것이 정상 — G1은 같은 셀 안 arm 동일성만 본다).
+- 비교 기준(사전): 주 대조 Shared_Sram(가중치 EXT, arena SRAM) ↔ Sram_Only(모두 SRAM). Dedicated_Sram은 보조.
+  기록값: TOTAL, EXT_RD/WR beat, SRAM_RD/WR beat, 출력 바이트 동일성(G6), Vela `--verbose-allocation`·`--verbose-tensor-purpose`로
+  실제 텐서 배치(가중치·IFM/OFM·scratch가 어느 메모리에 놓였는지), `--verbose-schedule`로 스케줄·block·tiling 차이.
+  스케줄이 다르면 "가중치 배치와 컴파일러 변경의 결합 효과"로 해석한다. 판정값은 두지 않는다.
+- 문구 정정(매니저): §6 SRAM 결과는 "평가한 4개 구성에서 SRAM BWCAP을 절반으로 낮추면 사이클이 35–64% 증가했다. 기본 cap을
+  완화하면 0.8–5.3% 감소했으나 사전 임계값 10%에는 미달했다. 기본 TA cap 완화의 효과는 평가 범위에서 작았으며, 이 결과로
+  물리 SRAM 대역폭의 제약까지 배제하지 않는다"로 쓴다('순간 접촉'·'인터페이스 실효 상한' 표현 금지). H2-A는 "cap 완화·지연
+  제거에 따른 개선이 사전 임계값 미만"으로 쓴다. A3에서 지연 0에서도 MAXR 효과가 관측됐으므로 지연 0의 잔여 비용을
+  메모리와 무관한 비용으로 분류하지 않는다.
+
+### A5 (2026-09-14, S3 부분 결과를 본 뒤 추가한 **진단** arm — 판정값 없음)
+
+관측: 모든 arm의 TOTAL이 1,000 사이클 격자 위에 있다(RNNoise는 항상 …086, KWS·AD·Wav2Letter·합성 모델은 …068; U55
+RNNoise는 …059). RNNoise 4 MAC의 C(0,0) = 21,086 / 16,086 / 11,086 / 11,086은 정확히 5,000 간격이고, 합성 1×1 Conv
+면적 36은 256에서 6,068, 512에서 7,068이다. 이 격자가 TA pulse 게이팅(EXT 4000/1000, SRAM 3999/1)에서 오는지, 지연
+설정에서 오는지, CPU·드라이버 쪽(인터럽트 후 PMU 정지까지)에서 오는지 모르면 H3·요인 6의 해석이 흔들린다.
+GO §2 "TA 설정 변경(…등의 독립 조작)" 범위 안에서 arm 7개를 추가한다(RNNoise U85 256 기본 프로파일 기준, KWS 256 1개):
+
+| arm | 변경 | 보는 것 |
+|---|---|---|
+| r137_w125 | 읽기 지연 137(125의 배수 아님) | 잔여(mod 1000)가 바뀌면 지연 기원 |
+| eoff0 | EXT_PULSE_OFF 0 (차단 창 없음) | 값·잔여가 바뀌면 EXT pulse 기원 |
+| eon2000_eoff500 | EXT pulse 주기 5000→2500, 듀티 동일 | 격자 간격이 바뀌는지 |
+| soff0 | SRAM_PULSE_OFF 0 | SRAM pulse 기원 여부 |
+| eoff0_soff0 | 둘 다 0 | 두 pulse를 없애도 격자가 남으면 CPU/드라이버 쪽 |
+| r0_w0_eoff0_soff0 | 지연 0 + pulse 없음 | 잔여 비용의 하한 |
+| KWS eoff0 | KWS 256에서 EXT 차단 창 없음 | 모델 간 공통성 |
+
+해석 규칙(사전): 잔여가 pulse 변경에만 반응 → "격자는 TA pulse 게이팅"; 지연 137에서 잔여가 바뀌고 pulse 변경에는
+불변 → "지연 기원"; 어느 것에도 불변 → "CPU/드라이버 측 정지 시점 기원(미확인)". 이 진단은 요인 6의 해석에만 쓰고
+가설 판정값을 만들지 않는다.
+
+### A6 (2026-09-14, S3 후반·S4·S5 실행 중) — 빌드 실패 33건의 원인과 조치
+
+원인: MLEK configure는 매번 GitHub archive(flatbuffers v25.9.23, ruy, gemmlowp)를 새로 내려받는데 GitHub가 간헐적으로
+HTTP 504를 반환해 S3의 dw3x3 셀 23 arm, S4의 256 MAC 3 arm, S5 진단 7 arm이 configure에서 실패했다(`results.jsonl`의
+`BUILD_FAILED:configure` 레코드에 오류 로그 보존). 실험 조건과 무관한 외부 요인이다.
+조치: 하니스가 `-DFETCHCONTENT_BASE_DIR=/tmp/h13/fc_cache -DFETCHCONTENT_UPDATES_DISCONNECTED=ON`을 넘겨 한 번 받은
+같은 버전의 소스를 재사용한다. 캐시를 채운 뒤 RNNoise 256 기본 arm을 다시 빌드해 stock AXF SHA = 동결 AXF SHA,
+TOTAL 36,086, 검증 빌드 SUCCESS를 확인했다(`results_cachecheck.jsonl`). 실패한 arm은 같은 정의로 재실행한다
+(하니스는 measurement가 있는 arm만 완료로 세므로 실패 레코드는 자동 재시도 대상).
+
+### A7 (2026-09-15) — A5 결과와 quantum 진단
+
+A5 결과: 읽기 지연 137 → 27,086(125와 동일, 잔여 불변) · EXT pulse 2000/500 → 34,086(−2,000, 잔여 불변) · SRAM_PULSE_OFF 0 →
+36,086(불변) · **EXT_PULSE_OFF 0은 네 arm 모두 FVP가 완주하지 못해 3,600 s 타임아웃**(`FAILURE_TIMEOUT`, NOT_EVALUABLE;
+UART는 "NPU memory mode likely to be" 직후에서 멈춤). 이 FVP·TA에서 PULSE_OFF=0은 "차단 없음"이 아니라 정지다.
+추가 진단(A7, `h13_quantum.py`, `quantum.jsonl`): 같은 stock AXF(동결과 동일)를 Fast Models 스케줄링 quantum 기본(10,000)·
+1,000·100·10으로 실행 → TOTAL은 네 경우 모두 36,086, ACTIVE만 35,206/35,200/35,212/35,216. 사전 해석 규칙에 따라 격자는
+"CPU/드라이버/모델 측 정지 시점 기원(미확인)"으로 기록한다. 결론: PMU TOTAL은 1,000 사이클 단위로 양자화돼 있고 ACTIVE는
+그렇지 않다. 사전 판정은 계약대로 TOTAL로 유지하되, 소형 모델(수천 사이클) 결과에는 ACTIVE 기반 민감도 검사를 POST_HOC으로
+덧붙인다(H13_RESULTS §6c). 이 검사는 판정을 바꾸지 않고 "TOTAL 양자화에 취약한 판정"을 표시하는 용도다.
+
+### 종료 기록 (2026-09-15)
+
+- 검증 빌드용 3파일을 `h13/verify_build/orig/`의 원본으로 복원, 다이제스트 일치 확인(UseCaseHandler.cc 5fb1a446…, UseCaseCommonUtils.hpp
+  721d283f…, UseCaseCommonUtils.cc 61bebbb5…). 서버에는 `/tmp/h13/`(원시 증거·캐시)와 S4 캠페인의 `ethosu_profiler.c.bak.stall`
+  백업 파일(빌드에 포함되지 않음)이 남아 있다.
+- 매니저 최종 검토 요청(§8 요인표·취약 판정 병기·v9 진행)은 ChatGPT 탭이 닫혀 있어 전달되지 않았다(`manager_bridge` 오류 기록).
+  유저가 탭을 열면 재전송한다. 발표 v9는 GO §7 산출물("검증 결과를 반영한 v7")에 따라 진행하되 취약 판정은 TOTAL 기준 성립·ACTIVE
+  기준 불성립으로 병기한다.
+
+
+### A8 (2026-09-15, 측정 전 고정) — H3-R 보강 실험: 양자화 고정 · 실효 TA 동일화 (매니저 GO `2026-09-15-h3r-verification-GO.md`)
+
+**목적.** §6b′의 두 통제 문제를 제거한 뒤 H3의 형상 결과가 남는지 본다: (1) 형상마다 따로 calibration된 INT8 양자화, (2) relaxed 조건에서도
+MAC 간 달랐던 EXT_MAXR/EXT_MAXW 적용값. 기존 H3·H13·X4·frozen evidence는 수정하지 않고 H3-R을 `amendments/h3r/`에 별도 캠페인으로 저장한다.
+실행 에이전트 지시서: `2026-09-15-h3r-agent-brief.md`. 판정 코드: `h3r/h3r_analyze.py`(+`test_h3r_analyze.py`, `mutation_check.py` → `mutation_log.md`, 20 돌연변이 전부 RED).
+
+**기준 자료 (이 커밋에서 고정).**
+
+| 항목 | 값 |
+|---|---|
+| 기준 커밋 | `bbb1e71` (브랜치 `refactor/unified-mlek-campaigns`) |
+| 기준 모델 | H13 S3의 6×6 INT8 모델 3개, 서버 `/tmp/h13/models/`: `h3_conv1x1_6x6_c128` sha256 `e0a1edbf…da71b` · `h3_conv3x3_6x6_c128` `d9fb69c8…a4345` · `h3_dw3x3_6x6_c128` `c906b2de…bef7a` (`h13/h3_manifest.json`과 일치, 사본 `h3r/base_models/`) |
+| 기존 evidence 다이제스트 (보존 게이트) | `h13/results.jsonl` `d880c79e…3480` · `h13/h13_results.json` `ec4319a7…eed1` · `h13/h3_manifest.json` `80ece833…4c05` · `h13/h3_blocks.csv` `910d47b4…92e2e` (`h3r_analyze.PRESERVED`) |
+| 도구 | 컨테이너 `benchmark-runner`: MLEK `26.03-8-gb2c0bb2` (`b2c0bb28…`), Vela 5.0.0, GCC 15.2.1 (Arm GNU 15.2.Rel1), FVP `FVP_Corstone_SSE-320` Fast Models 11.27.25 sha256 `9cf4a25f…ee3e`, `SOURCE_DATE_EPOCH=1776763519`, 하니스 `/tmp/xqbin/stage1.py`(X4·H13과 동일). 로컬 TF 2.21.0 / numpy 2.5.3 (venv `~/.venvs/h3r-tf`, flatbuffer 편집·인터프리터 확인만) |
+| TA 드라이버 | `dependencies/core-platform/drivers/timing_adapter/src/timing_adapter.c` sha256 `ce8711b7…4788`: `MAXR/MAXW/MAXRW & 0x3F`, `RLATENCY/WLATENCY & 0xFFF`, `PULSE_ON/OFF/BWCAP & 0xFFFF` (`h3r_analyze.TA_MASK`) |
+| 메모리 모드·Vela | `Dedicated_Sram`, `--optimise Performance`, system_config 256 = `Ethos_U85_SYS_DRAM_Low`, 512 = `Ethos_U85_SYS_DRAM_Mid_512` (H3와 동일, MAC별로 다르므로 "물리 MAC 배열 크기만 다른 실험"이라 부르지 않는다), `--verbose-schedule --verbose-performance` |
+| 입력 | stock `inference_runner` `std::rand() & 0xFF`(A7). 검증 빌드가 입력·출력을 UART에 덤프 |
+
+**모델 (GO §2).** 연산 종류별 기준 6×6 모델의 flatbuffer에서 IFM(텐서 0)·OFM(텐서 3)의 `shape`만 `[1,H,W,128]`로 바꿔 재직렬화한다
+(`h3r/gen_h3r_models.py`, `gen_h2b_model.py`의 절단 방식). 가중치·bias 버퍼, 양자화 레코드, 연산자 코드·버전·옵션, 채널 수, 메타데이터 버퍼는
+손대지 않는다. 재calibration·재양자화·가중치 재생성 없음. 9형상: 1×36, 2×18, 3×12, 4×9, 6×6, 9×4, 12×3, 18×2, 36×1 → 27모델 `h3r_<op>_<H>x<W>_c128`.
+6×6 파생본은 기준과 바이트 동일해야 한다(자기 검사). 3×3 SAME-padding은 형상에 따라 경계·패딩 비중이 다르다는 사실을 model manifest와
+결과 해석에 명시한다(예: 1×36은 위·아래 행 전체가 패딩, 36×1은 좌·우 열 전체가 패딩).
+
+**G1′ (`h3r/check_g1prime.py` → `h3r_manifest.json`·`model_manifest.csv`).** 기준 vs 파생 27모델을 필드 단위로 비교. 반드시 동일: 최종 INT8 가중치
+버퍼 sha256, bias 버퍼 sha256, 입력/출력/가중치/bias 양자화(scale 전부·zero-point 전부·quantized_dimension), opcode·버전, builtin options
+(padding/stride/dilation/activation/depth_multiplier), 텐서 수·dtype·이름·연결(inputs/outputs), 채널 수, 가중치·bias shape, 메타데이터 버퍼.
+허용 차이: IFM/OFM shape(및 shape_signature — 기준 모델에는 없음)와 재직렬화 오프셋(파일 전체 sha). 규칙 id `RULE_G1P_WEIGHTS/BIAS/QUANT/OPERATOR/STRUCTURE/SHAPE`.
+G1′ 실패 모델은 분석기가 `RULE_H3R_G1PRIME`으로 거부한다. float 가중치 해시는 이 검사의 대용으로 쓰지 않는다.
+
+**기능 확인 (`h3r/func_check.py` → `func_check.json`).** TF 인터프리터로 27모델 로드·실행·출력 크기 확인. 연산 종류별 공통 입력 벡터
+= `numpy.random.default_rng(20260915)`의 int8 4,608바이트를 각 H×W로 reshape, 입력 바이트 sha256 기록. 동일 형상의 MAC·TA 변경 전후 NPU 출력
+동일성은 서버 검증 빌드로 따로 검사한다(출력 게이트). 서로 다른 형상의 출력이 같아야 한다는 조건은 없다. 인터프리터 성공은 NPU 출력 검증을 대신하지 않는다.
+
+**조건 (16값 전부 `-D`로 명시, 자동 기본값 의존 없음). 요청값 → 적용값(드라이버 마스크).**
+
+| 값 | base 256 (low) | base 512 (mid) | equalized 256·512 | bridge_legacy_relaxed 256 (DW) | bridge_legacy_relaxed 512 (DW) |
+|---|---|---|---|---|---|
+| SRAM_MAXR / MAXW / MAXRW | 8 / 8 / 0 | 8 / 8 / 0 | 8 / 8 / 0 | 8 / 8 / 0 | 8 / 8 / 0 |
+| SRAM_RLATENCY / WLATENCY | 16 / 16 | 32 / 32 | 0 / 0 | 0 / 0 | 0 / 0 |
+| SRAM_PULSE_ON / OFF / BWCAP | 3999 / 1 / 4000 | 3999 / 1 / 4000 | 3999 / 1 / 4000 | 3999 / 1 / 4000 | 3999 / 1 / 4000 |
+| EXT_MAXR / MAXW / MAXRW (요청 → 적용) | 24 / 12 / 0 | 64 / 32 / 0 → **0** / 32 / 0 | 0 / 0 / 0 | 24 / 12 / 0 | 64 / 32 / 0 → **0** / 32 / 0 |
+| EXT_RLATENCY / WLATENCY | 250 / 125 | 500 / 250 | 0 / 0 | 0 / 0 | 0 / 0 |
+| EXT_PULSE_ON / OFF | 4000 / 1000 | 4000 / 1000 | 4000 / 1000 | 4000 / 1000 | 4000 / 1000 |
+| EXT_BWCAP | 2344 | 3750 | 0 | 0 | 0 |
+
+- base = H3와 같은 MAC별 MLEK 프로파일(`ta_parameters.csv` low/mid). equalized = GO §3.1의 7개 0 + 나머지 9값을 두 MAC에 같은 값으로 명시
+  (SRAM 요청 제한·pulse·BWCAP은 두 프로파일이 이미 같은 값이므로 그 값을 쓴다; EXT_PULSE_OFF는 완주가 확인된 1000, 0은 쓰지 않는다).
+  bridge_legacy_relaxed = H3 relaxed 정의 그대로(프로파일 위에 `EXT_RLATENCY/EXT_WLATENCY/EXT_BWCAP/SRAM_RLATENCY/SRAM_WLATENCY = 0`);
+  `make_cells.py`가 `h13/results.jsonl`의 DW relaxed arm `defines`와 바이트 동일함을 검사한다. "무제한"은 해당 TA 요청 제한 또는 bandwidth quota가 해제됐다는 뜻으로만 쓴다.
+- 실효 적용값 검증: `-D` 값 → `CMakeCache.txt`(하니스가 16값을 읽어 `ta_cache`) → generated `timing_adapter_settings.h`(`ta_header`) → 드라이버 마스크(`applied()`).
+  세 열(요청·헤더·적용)을 `ta_matrix.csv`에 기록한다. equalized는 두 MAC의 적용값 16개가 전부 같아야 통과.
+
+**실행 규모.** 27모델 × {256, 512} × {base, equalized} = 108 arm + DW 9모델 × {256, 512} × bridge_legacy_relaxed = 18 arm → **126 arm**, arm당 stock FVP 3회(378회)
++ 검증 빌드 1회(126회). 면적 64·256, MAC 1024·2048, S4 stall, `EXT_PULSE_OFF=0`, "1×1 Conv equalized-24/12"는 실행하지 않는다. 첫 qualification 셀:
+`h3r_conv1x1_6x6_c128` 256 base(3회 + 검증 빌드) — 게이트 통과 후 나머지. anchor 비교: H3 `h3_conv1x1_6x6_c128` 256 base TOTAL 6,068 / ACTIVE 5,909과 같은지 **관측으로 기록**(게이트 아님 — 모델 바이트가 재직렬화로 다를 수 있음).
+
+**게이트 (`h3r_analyze.py`, 모두 규칙 id).**
+
+| 게이트 | 검사 | 실패 시 |
+|---|---|---|
+| 실행 | 3회 SUCCESS, TOTAL/ACTIVE/IDLE/SRAM_RD/WR/EXT_RD/WR 전부 존재(None은 값이 아니다, 0으로 대체하지 않는다) | `RULE_H3R_RUN` → arm 제외 |
+| 반복 | 3회의 7개 카운터 벡터 동일 (None==None 불허) | `RULE_H3R_REPS_DIFFER` → arm 제외 |
+| 설정 | 헤더 16값 = 요청, CMakeCache 16값 = 요청; equalized의 두 MAC 적용값 16개 동일 | `RULE_H3R_TA_CONFIG` → arm(또는 모델) 제외 |
+| G1 | 같은 모델·MAC의 모든 TA arm에서 Vela 산출물 sha·cc body sha 동일 | `RULE_H3R_ARTIFACT` → 셀 제외 |
+| G1′ | manifest의 `g1prime_pass == True` | `RULE_H3R_G1PRIME` → 모델 제외 |
+| 출력 | 같은 모델의 모든 arm(두 MAC × TA)에서 검증 빌드 출력 바이트 동일, 덤프 길이 = 러너 선언 OUTPUT 바이트 합, 검증 빌드 없는 arm 불허 | `RULE_H3R_OUTPUT_MISMATCH` → 모델 제외 |
+| 보존 | 위 h13 4개 파일 sha256 불변 | `RULE_H3R_PRESERVATION` → 분석 중단 |
+
+TA 변경으로 AXF가 달라지는 것은 정상이고 과거 동결 AXF와의 일치는 요구하지 않는다. 검증 빌드 PMU ≠ stock PMU이면 `INSTRUMENTATION_DEVIATION`으로 기록하고 stock만 쓴다.
+게이트 실패(모델 유효성·출력·설정)가 나오면 증거를 보존하고 영향받는 후속 실행을 중단한다. 하니스는 같은 모델의 출력 덤프 sha가 앞선 arm과 다르면 즉시 멈춘다.
+
+**판정 (§7 식 그대로, 측정 전 고정; TOTAL과 ACTIVE에 각각 적용).** r = C512 / C256, scaling_efficiency = 1/(2r), spread = max r − min r (연산 종류·조건별 9형상).
+
+| 판정 | 조건 | 적용 범위 |
+|---|---|---|
+| `SHAPE_EFFECT:<op>:<cond>` | spread ≥ 0.10 | op ∈ {conv1x1, conv3x3, dw3x3} × cond ∈ {base, equalized, (dw3x3만) bridge_legacy_relaxed} |
+| `MEMORY_SHAPE_INTERACTION:<op>` | spread_equalized < 0.5 × spread_base | op 3종 |
+| `TYPE_DEPENDENT:<cond>` | 연산 종류별 중앙값 r의 최대−최소 ≥ 0.10 | cond ∈ {base, equalized} |
+
+- 판정은 보고되는 소수 4자리 값으로 한다. TOTAL = 기존 연구와 연결하는 주 분석, ACTIVE = 사전 지정 병렬 분석. 두 판정이 같으면 `HOLDS_BOTH`/`FAILS_BOTH`,
+  다르면 `METRIC_DEPENDENT`로 표시(`h3r_judgements_total_vs_active.csv`). ACTIVE는 TOTAL의 대체물이 아니고, TOTAL 격자 1,000은 검증된 ±1,000 오차가 아니다.
+- `AREA_EFFECT`는 면적 36만 측정하므로 새로 판정하지 않는다. DW 연결 대조군(bridge ↔ equalized)은 r·spread·사이클·traffic의 변화를 **서술**로 보고하고 임계값을 두지 않는다.
+- 결과를 보고 임계값을 바꾸지 않는다. 가설과 반대되는 결과는 실패가 아니다.
+
+**Q1–Q5 비교 계획 (`h3r_tables.py`).** Q1 `h3_vs_h3r_base.csv`: 같은 형상의 H3 base(`h13/results.jsonl`, 읽기만) ↔ H3-R base — TOTAL·ACTIVE·r·역전 여부·
+encoded weight·block·traffic; "기존 6개 역전 재현"은 게이트가 아니다. Q2 `base_vs_equalized.csv`: 모델별 MAC별 사이클 변화, r, spread, traffic — TA 설정 묶음의 개입 효과로만
+서술(지연·대역폭·동시성 중 하나의 효과라고 쓰지 않는다). Q3 `dw_bridge_vs_equalized.csv`(+ H3 relaxed 열): DW 9형상 × 2 MAC, bridge ↔ equalized ↔ 기존 relaxed의 r·spread·사이클·traffic.
+Q4 `h3r_judgements_total_vs_active.csv` + 작은 사이클 차이 대표 사례 원시값 + H3의 4건 불일치가 재현되는지. Q5 `h3r_blocks.csv`(`h3_blocks.py` 방식): 형상·MAC·조건별 OFM/IFM block·ublock·traversal·
+encoded weight·traffic — H×W/MAC 비율을 이용률로 부르지 않고, 3×3 경계·패딩 효과를 특정 ublock 비효율로 자동 귀속하지 않는다.
+
+**산출물 (`amendments/h3r/`).** `h3r_manifest.json`·`model_manifest.csv`(G1′), `func_check.json`, `h3r_cells.json`·`ta_matrix.csv`, `h3r_sweep.py`(서버 하니스 사본, `/tmp/h3r/`),
+`results.jsonl`·`uart/`·`verify/`·`vela/`·`run_*.log`, `h3r_results.json`, `runs_all.csv`, `h3r_models_conditions_metrics.csv`, 위 Q1–Q5 표, `h3r_plots.py`, `H3R_RESULTS.md`(GO §10 순서),
+발표 v10(`docs/presentation/build/make_cf_v10.py`). 계획 커밋(이 A8 + 판정 코드)과 결과 커밋을 분리한다.

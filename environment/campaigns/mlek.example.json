@@ -1,0 +1,209 @@
+{
+  "schema_version": 1,
+  "build": {
+    "mlek_root": "/path/to/ml-embedded-evaluation-kit",
+    "vela": "vela",
+    "cmake": "cmake",
+    "vela_config": "scripts/vela/default_vela.ini",
+    "toolchain_file": "scripts/cmake/toolchains/bare-metal-gcc.cmake",
+    "epoch": 1776763519,
+    "jobs": 1,
+    "timeout_seconds": 1800
+  },
+  "discover_models": {
+    "root": "resources_downloaded",
+    "include": [
+      "**/*.tflite"
+    ],
+    "exclude": [
+      "**/*_vela.tflite"
+    ]
+  },
+  "targets": [
+    {
+      "id": "sse300-u55",
+      "kind": "fvp",
+      "npu": "ethos-u55",
+      "platform": "mps3",
+      "subsystem": "sse-300",
+      "supported_macs": [
+        32,
+        64,
+        128,
+        256
+      ],
+      "timing_adapter": "ON",
+      "system_config": "Ethos_U55_High_End_Embedded",
+      "memory_mode": "Shared_Sram",
+      "executable": "/path/to/fvp/FVP_Corstone_SSE-300_Ethos-U55",
+      "mac_parameter": "ethosu.num_macs",
+      "board_prefix": "mps3_board"
+    },
+    {
+      "id": "sse300-u65",
+      "kind": "fvp",
+      "npu": "ethos-u65",
+      "platform": "mps3",
+      "subsystem": "sse-300",
+      "supported_macs": [
+        256,
+        512
+      ],
+      "timing_adapter": "ON",
+      "system_config": "Ethos_U65_High_End",
+      "memory_mode": "Dedicated_Sram",
+      "executable": "/path/to/fvp/FVP_Corstone_SSE-300_Ethos-U65",
+      "mac_parameter": "ethosu.num_macs",
+      "board_prefix": "mps3_board"
+    },
+    {
+      "id": "sse310-u55",
+      "kind": "fvp",
+      "npu": "ethos-u55",
+      "platform": "mps3",
+      "subsystem": "sse-310",
+      "supported_macs": [
+        32,
+        64,
+        128,
+        256
+      ],
+      "timing_adapter": "OFF",
+      "system_config": "Ethos_U55_High_End_Embedded",
+      "memory_mode": "Shared_Sram",
+      "executable": "/path/to/fvp/FVP_Corstone_SSE-310",
+      "mac_parameter": "ethosu.num_macs",
+      "board_prefix": "mps3_board"
+    },
+    {
+      "id": "sse310-u65",
+      "kind": "fvp",
+      "npu": "ethos-u65",
+      "platform": "mps3",
+      "subsystem": "sse-310",
+      "supported_macs": [
+        256,
+        512
+      ],
+      "timing_adapter": "OFF",
+      "system_config": "Ethos_U65_High_End",
+      "memory_mode": "Dedicated_Sram",
+      "executable": "/path/to/fvp/FVP_Corstone_SSE-310_Ethos-U65",
+      "mac_parameter": "ethosu.num_macs",
+      "board_prefix": "mps3_board"
+    },
+    {
+      "id": "sse315-u65",
+      "kind": "fvp",
+      "npu": "ethos-u65",
+      "platform": "mps4",
+      "subsystem": "sse-315",
+      "supported_macs": [
+        256,
+        512
+      ],
+      "timing_adapter": "OFF",
+      "system_config": "Ethos_U65_High_End",
+      "memory_mode": "Dedicated_Sram",
+      "executable": "/path/to/fvp/FVP_Corstone_SSE-315",
+      "mac_parameter": "mps4_board.subsystem.ethosu.num_macs",
+      "board_prefix": "mps4_board"
+    },
+    {
+      "id": "sse320-u85",
+      "kind": "fvp",
+      "npu": "ethos-u85",
+      "platform": "mps4",
+      "subsystem": "sse-320",
+      "supported_macs": [
+        128,
+        256,
+        512,
+        1024,
+        2048
+      ],
+      "timing_adapter": "ON",
+      "system_config": "Ethos_U85_SYS_DRAM_Mid_1024",
+      "memory_mode": "Dedicated_Sram",
+      "executable": "/path/to/fvp/FVP_Corstone_SSE-320",
+      "mac_parameter": "mps4_board.subsystem.ethosu.num_macs",
+      "board_prefix": "mps4_board"
+    },
+    {
+      "id": "mps4-fi101-u85",
+      "kind": "board",
+      "npu": "ethos-u85",
+      "platform": "mps4",
+      "subsystem": "sse-320",
+      "supported_macs": [
+        1024
+      ],
+      "timing_adapter": "ON",
+      "system_config": "Ethos_U85_SYS_DRAM_Mid_1024",
+      "memory_mode": "Dedicated_Sram",
+      "board": {
+        "adapter": "mps4",
+        "mcc_port": "/dev/REPLACE_MCC",
+        "uart_port": "/dev/REPLACE_UART",
+        "block_device": "/dev/REPLACE_BOARD_USB_DISK",
+        "partition": "/dev/REPLACE_BOARD_USB_PARTITION",
+        "filesystem_label": "M1SDP",
+        "destinations": {
+          "sectors/inference_runner/boot.bin": "SOFTWARE/boot.bin",
+          "sectors/inference_runner/bram.bin": "SOFTWARE/bram.bin",
+          "sectors/inference_runner/ddr.bin": "SOFTWARE/ddr.bin",
+          "sectors/images.txt": "MB/HBI0376B/FI101/images.txt"
+        }
+      }
+    }
+  ],
+  "variants": [
+    {
+      "id": "performance",
+      "macs": [
+        32,
+        64,
+        128,
+        256,
+        512,
+        1024,
+        2048
+      ],
+      "activation_bytes": 2097152,
+      "optimise": "Performance",
+      "vela_options": [
+        "--show-cpu-operations"
+      ],
+      "cmake_options": {
+        "CMAKE_BUILD_TYPE": "Release"
+      },
+      "fvp_parameters": {}
+    },
+    {
+      "id": "size",
+      "macs": [
+        32,
+        64,
+        128,
+        256,
+        512,
+        1024,
+        2048
+      ],
+      "activation_bytes": 2097152,
+      "optimise": "Size",
+      "vela_options": [
+        "--show-cpu-operations"
+      ],
+      "cmake_options": {
+        "CMAKE_BUILD_TYPE": "Release"
+      },
+      "fvp_parameters": {}
+    }
+  ],
+  "measurement": {
+    "repetitions": 3,
+    "timeout_seconds": 3600,
+    "repeat_policy": "record"
+  }
+}

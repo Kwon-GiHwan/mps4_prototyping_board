@@ -1,0 +1,4 @@
+H3R h3r_conv1x1_6x6_c128__SSE-320__ethos-u85-256   base                   R1 SUCCESS total=6068 hdr=True vfy=9946a899
+H3R h3r_conv1x1_6x6_c128__SSE-320__ethos-u85-256   base                   R2 SUCCESS total=6068 hdr=True vfy=9946a899
+H3R h3r_conv1x1_6x6_c128__SSE-320__ethos-u85-256   base                   R3 SUCCESS total=6068 hdr=True vfy=9946a899
+H3R_DONE qual

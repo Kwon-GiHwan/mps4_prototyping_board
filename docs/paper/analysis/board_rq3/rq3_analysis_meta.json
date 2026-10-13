@@ -1,0 +1,22 @@
+{
+ "applied_to": {
+  "fvp": "paper-fvp-formal-evidence-frozen",
+  "board": "paper-board-formal-evidence-frozen"
+ },
+ "plan_anchor": "671f35efe30b6e82c6433f88dff793c5b09e2c062947e91c6d1f8c2bf7f640b4",
+ "workloads": 7,
+ "fvp_samples_used": 7,
+ "board_samples_used": 21,
+ "fvp_geomean": 322714.988,
+ "board_geomean": 340671.821,
+ "rule_failures": 0,
+ "not_evaluable": [
+  "SRAM/EXT cross-target consistency"
+ ],
+ "not_preregistered": [
+  "aggregate shape-distance metric",
+  "board repeatability variability statistic",
+  "quantitative PMU cross-target comparison"
+ ],
+ "analysis_status": "APPLIED_ONCE"
+}

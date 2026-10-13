@@ -1,0 +1,150 @@
+# Makefile.pmu_interval_v11a -- generated-source PMU_INTERVAL_ENTRY_DIAG_V11A build.
+
+TOOLCHAIN := /opt/arm/gcc-arm-none-eabi/bin/arm-none-eabi-
+CC        := $(TOOLCHAIN)gcc
+OBJCOPY   := $(TOOLCHAIN)objcopy
+OBJDUMP   := $(TOOLCHAIN)objdump
+SIZE      := $(TOOLCHAIN)size
+NM        := $(TOOLCHAIN)nm
+READELF   := $(TOOLCHAIN)readelf
+
+CMSIS_INC := /opt/arm/ml-embedded-evaluation-kit/dependencies/cmsis-6/CMSIS/Core/Include
+
+BUILD  := build_pmu_interval_v11a
+GEN    := $(BUILD)/generated
+TARGET := $(BUILD)/runner_pmu_interval_v11a
+BUILD_ID := 0x41314950
+
+PATCHER := patches/patch_pmu_interval_v11a.py
+GATE    := Selftest_pmu_diag/check_pmu_interval_v11a.py
+RUNNER_SRC := Selftest_pmu_diag/runner_pmu_diag_main.c
+VENDOR_SRC := Drivers/u85_driver/u85.c
+ENTRY_SRC := Selftest_pmu_diag/pmu_interval_v11a_entry.S
+GEN_RUNNER := $(GEN)/Selftest_pmu_diag/runner_pmu_diag_main.c
+GEN_VENDOR := $(GEN)/Drivers/u85_driver/u85.c
+GEN_RUNNER_OBJ := $(GEN_RUNNER:.c=.o)
+GEN_VENDOR_OBJ := $(GEN_VENDOR:.c=.o)
+ENTRY_OBJ := $(BUILD)/$(ENTRY_SRC:.S=.o)
+GEN_STAMP := $(GEN)/.generated
+PREPROCESSED := $(BUILD)/runner_pmu_interval_v11a_main.i
+MANIFEST := $(BUILD)/pmu_interval_v11a_manifest.json
+
+PROFILE_CFLAGS := -DMEASUREMENT_BUILD -DPMU_DIAG_BUILD -DPMU_QUAL_SCHEMA_V8 \
+                  -DPMU_INTERVAL_ENTRY_DIAG_V11A -DPMU_QUAL_MODE_Q1 \
+                  -DPMU_DIAG_CASE_A -DPMU_DIAG_SEAM_S1 \
+                  -DPMU_DIAG_USES_PRIVATE_DRIVER
+
+SRCDIRS := Device_SSE-320 Drivers Selftest Selftest_cli Selftest_pmu \
+           Selftest_pmu_diag Serial Sleep Tests $(GEN)/Drivers $(GEN)/Selftest_pmu_diag
+SRCS    := $(shell find Device_SSE-320 Drivers Selftest Selftest_cli Selftest_pmu \
+                      Selftest_pmu_diag Serial Sleep Tests -name '*.c' -not -name '._*')
+SRCS := $(filter-out Selftest/retarget.c Selftest/main.c Selftest/raw_rx_main.c \
+                     Selftest/runner_v1_main.c Selftest_pmu/runner_pmu_main.c \
+                     Selftest_measure/runner_measure_main.c \
+                     Selftest_pmu_diag/runner_pmu_diag_main.c \
+                     Selftest_pmu_diag/u85_diag.c Drivers/u85_driver/u85.c,$(SRCS))
+SRCS := $(sort $(SRCS))
+BASE_OBJS := $(patsubst %.c,$(BUILD)/%.o,$(SRCS))
+OBJS := $(BASE_OBJS) $(GEN_RUNNER_OBJ) $(GEN_VENDOR_OBJ) $(ENTRY_OBJ)
+DEPS := $(OBJS:.o=.d)
+
+INCDIRS := $(sort $(dir $(shell find Device_SSE-320 Drivers Selftest Selftest_cli \
+                      Selftest_pmu Selftest_pmu_diag Serial Sleep Tests LinkScripts \
+                      -name '*.h' -not -name '._*')))
+INCS    := $(addprefix -I,$(INCDIRS)) -I$(CMSIS_INC) -I$(GEN)
+
+ARCHFLAGS := -mcpu=cortex-m85+nomve+nofp -mthumb -mfloat-abi=soft
+LEGACY_C := -Wno-error=int-conversion \
+            -Wno-error=incompatible-pointer-types \
+            -Wno-error=implicit-function-declaration \
+            -Wno-error=implicit-int \
+            -Wno-error=return-mismatch \
+            -Wno-error=discarded-qualifiers
+CFLAGS := $(ARCHFLAGS) -std=gnu11 -O1 -g3 -ffunction-sections -fdata-sections \
+          -fno-builtin-printf -Wno-unused-variable -Wno-unused-function \
+          -Wno-missing-braces $(LEGACY_C) $(PROFILE_CFLAGS) \
+          -DRUNNER_FIRMWARE_BUILD_ID=$(BUILD_ID) $(INCS) -MMD -MP
+ASFLAGS := $(ARCHFLAGS) -x assembler-with-cpp $(PROFILE_CFLAGS) \
+           -DRUNNER_FIRMWARE_BUILD_ID=$(BUILD_ID) $(INCS) -MMD -MP
+WRAP_SYMS := printf vprintf fprintf vfprintf puts putchar fwrite _write _write_r fputc serial_print
+WRAPFLAGS := $(foreach s,$(WRAP_SYMS),-Wl,--wrap=$(s))
+LDFLAGS   := $(ARCHFLAGS) --specs=nano.specs --specs=nosys.specs \
+             -T $(BUILD)/lnk.ld -T LinkScripts/lnk.measure.overlay.ld \
+             -T LinkScripts/lnk.pmu_diag.overlay.ld \
+             -Wl,-Map=$(TARGET).map,--cref -Wl,--gc-sections \
+             -Wl,--print-memory-usage $(WRAPFLAGS)
+
+.PHONY: all clean bins check manifest preprocess
+all: bins check manifest
+
+$(BUILD)/lnk.ld: LinkScripts/lnk.ld.S LinkScripts/region_defs.h LinkScripts/region_limits.h
+	@mkdir -p $(dir $@)
+	$(CC) -E -P -x c -ILinkScripts $< -o $@
+
+$(GEN_STAMP): $(RUNNER_SRC) $(VENDOR_SRC) $(PATCHER)
+	@mkdir -p $(GEN)
+	python3 $(PATCHER) \
+	    --runner-src $(RUNNER_SRC) \
+	    --vendor-src $(VENDOR_SRC) \
+	    --out-runner $(GEN_RUNNER) \
+	    --out-vendor $(GEN_VENDOR)
+	@touch $@
+
+$(GEN_RUNNER) $(GEN_VENDOR): $(GEN_STAMP)
+
+$(BUILD)/%.o: %.c
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(GEN)/%.o: $(GEN)/%.c
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(BUILD)/%.o: %.S
+	@mkdir -p $(dir $@)
+	$(CC) $(ASFLAGS) -c $< -o $@
+
+$(TARGET).elf: $(OBJS) $(BUILD)/lnk.ld LinkScripts/lnk.measure.overlay.ld LinkScripts/lnk.pmu_diag.overlay.ld
+	$(CC) $(OBJS) $(LDFLAGS) -o $@ -lm
+	$(SIZE) $@
+
+bins: $(TARGET).elf
+	$(OBJCOPY) -O binary --only-section=.vectors_rom $(TARGET).elf $(BUILD)/VECTORS.BIN
+	$(OBJCOPY) -O binary --only-section=.text --only-section=.ARM.extab \
+	    --only-section=.ARM.exidx --only-section=.preinit_array --only-section=.init_array \
+	    --only-section=.fini_array --only-section=.copy.table --only-section=.zero.table \
+	    --only-section=.vectors_ram --only-section=.data $(TARGET).elf $(BUILD)/APP.BIN
+	$(OBJCOPY) -O binary --only-section=.ddr $(TARGET).elf $(BUILD)/DDR.BIN
+
+preprocess: $(PREPROCESSED)
+
+$(PREPROCESSED): $(GEN_RUNNER)
+	$(CC) $(CFLAGS) -E $(GEN_RUNNER) -o $@
+
+manifest: $(TARGET).elf $(GEN_RUNNER) $(GEN_VENDOR) $(PREPROCESSED) $(GATE) Selftest_pmu_diag/check_pmu_qual.py bins
+	python3 $(GATE) \
+	    --build-id $(BUILD_ID) \
+	    --vendor-src $(VENDOR_SRC) \
+	    --interface-header Drivers/u85_driver/interface.h \
+	    --vendor-object $(GEN_VENDOR_OBJ) \
+	    --regs-header Selftest_pmu/npu_pmu_regs.h \
+	    --preprocessed $(PREPROCESSED) \
+	    --runner-generated $(GEN_RUNNER) \
+	    --vendor-generated $(GEN_VENDOR) \
+	    --elf $(TARGET).elf \
+	    --map $(TARGET).map \
+	    --app-bin $(BUILD)/APP.BIN \
+	    --vectors-bin $(BUILD)/VECTORS.BIN \
+	    --ddr-bin $(BUILD)/DDR.BIN \
+	    --objdump $(OBJDUMP) \
+	    --nm $(NM) \
+	    --readelf $(READELF) \
+	    --cflags "$(CFLAGS)" \
+	    --manifest-out $(MANIFEST)
+
+check: manifest
+
+clean:
+	rm -rf $(BUILD)
+
+-include $(DEPS)

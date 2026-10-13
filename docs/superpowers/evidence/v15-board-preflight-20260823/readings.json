@@ -1,0 +1,54 @@
+{
+ "baseline": {
+  "cpuwait_cleared": true,
+  "ddr_selftest_passed": true,
+  "pings": [
+   {
+    "answered": true,
+    "state": 1
+   },
+   {
+    "answered": true,
+    "state": 1
+   },
+   {
+    "answered": true,
+    "state": 1
+   }
+  ],
+  "protocol_errors": {
+   "bad_crc": 0,
+   "bad_magic": 0,
+   "bad_version": 0,
+   "length_error": 0,
+   "parser_resync": 0,
+   "rx_overrun": 0,
+   "sequence_error": 0
+  }
+ },
+ "candidate": {},
+ "storage": {
+  "block_device_present": false,
+  "block_device_write_holders": 0,
+  "mount_count": 0,
+  "uart_holders": {
+   "ttyUSB0": {
+    "holders": 0,
+    "root_inclusive": true
+   },
+   "ttyUSB1": {
+    "holders": 0,
+    "root_inclusive": true
+   },
+   "ttyUSB2": {
+    "holders": 0,
+    "root_inclusive": true
+   },
+   "ttyUSB3": {
+    "holders": 0,
+    "root_inclusive": true
+   }
+  },
+  "usb_off_confirmed": true
+ }
+}
