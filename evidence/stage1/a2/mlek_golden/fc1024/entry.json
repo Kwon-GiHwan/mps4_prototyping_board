@@ -1,0 +1,79 @@
+{
+ "blob_sha256": "34cf91bac824e1b4608d5b4914addff33aaef5db74eabc74ee7626bbfa33ac7b",
+ "cms_sha256": "5c6376c9c969bb3f3deaf589c3b04c9b0a2ea05a87c74800c004a5411d92e297",
+ "golden": {
+  "source": "MLEK b2c0bb2 inference_runner on FI101, VERIFY_TEST_OUTPUT dump (amendment 2)",
+  "input_sha256": "89ce99eb736e413e302d18227b4eaa23530b3f9d1524a5210b813851e759165b",
+  "ofm_sha256": "e393e3fbbf2adaa5a3cf756bb8ce88bcc1a245f60b23414363edda6ea32a69cc"
+ },
+ "knobs": [
+  "0xffffffff",
+  "0x0000000a",
+  "0x00000002",
+  "0x00000000",
+  "0x00000000",
+  "0x00000004",
+  "0x00000004",
+  "0x00020f0b",
+  "0x00021f3f",
+  "0x00000000",
+  "0x31100000",
+  "0x00000001",
+  "0xffffffff",
+  "0xffffffff",
+  "0xffffffff",
+  "0xffffffff"
+ ],
+ "fast_size": 0,
+ "arena_size": 2048,
+ "cms_len": 348,
+ "const_len": 1059008,
+ "class": "isolated_operator",
+ "n_mac": 1048576,
+ "operator_type": "FULLY_CONNECTED",
+ "shape": "[1, 1024]->[1, 1024]",
+ "input_shape": [
+  1,
+  1024
+ ],
+ "output_shape": [
+  1,
+  1024
+ ],
+ "kernel_shape": null,
+ "weight_shape": [
+  1024,
+  1024
+ ],
+ "stride": null,
+ "padding": null,
+ "groups": 1,
+ "quant": {
+  "ifm_scale": 0.0078125,
+  "weight_scale": 0.0078125,
+  "ofm_scale": 0.27301938515009844,
+  "zero_points": 0
+ },
+ "weight_seed": 20261014,
+ "ifm_seed": null,
+ "model_sha256": "30f55a227bb81c7019a56d7c3b98daa10793ccf2f14ecd15591b1cc318c72beb",
+ "vela_sha256": "fb43dd72048fccdee8e79d3095489e1da91c2105cb27d768e0afd916601d03b2",
+ "vela_nn_macs": 1048576.0,
+ "output_correctness": "byte-exact vs MLEK FI101 golden (amendment 2)",
+ "mlek_vela_sha256": "fb43dd72048fccdee8e79d3095489e1da91c2105cb27d768e0afd916601d03b2",
+ "golden_validity": {
+  "G1_lengths": true,
+  "G2_same_vela_output": true,
+  "G3_ta_configured": true,
+  "G4_model_and_cms_unchanged": true,
+  "G5_blob_holds_dump": true
+ },
+ "numerical_difference_diagnostic": {
+  "vs": "tflite_runtime",
+  "tflite_ofm_sha256": "e393e3fbbf2adaa5a3cf756bb8ce88bcc1a245f60b23414363edda6ea32a69cc",
+  "mismatch_count": 0,
+  "positions": [],
+  "signed_diff_mlek_minus_tflite": [],
+  "max_abs_diff": 0
+ }
+}
