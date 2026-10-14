@@ -103,3 +103,15 @@ Whether to measure it at all goes back to the owner, and the guide §13 stop con
 
 Stopped here, before writing the Stage 2A contract: event 33 failed the source-level check. No blob, image, deploy or
 boot was made for Stage 2A.
+
+## Owner decision (2026-10-14, after this audit)
+
+- **Event 33** is left out of Stage 2A, and event **52** `mac_stalled_by_w_or_acc` takes its slot. 33 is kept for a
+  later dependency analysis once its meaning is confirmed.
+- **Events 52 and 55** are labelled driver-derived. They are auxiliary evidence: neither alone can give `SUPPORTED`,
+  and the most either can give is `PARTIAL_SUPPORT`.
+- **`mac_active + mac_stalled_by_ib ≤ npu_active`** is a validity gate only if the exclusivity of the two states is
+  confirmed by source or TRM. It is not confirmed: only the driver comments state it, and the event ↔ bit mapping is
+  inferred. So it is recorded as a diagnostic sanity check only.
+
+Recorded in `contract.md` §2 and §4.
