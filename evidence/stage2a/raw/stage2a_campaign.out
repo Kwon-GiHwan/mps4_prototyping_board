@@ -1,0 +1,25 @@
+mcc boot log: 10366 bytes -> /home/gihwan/evsweep/stage2a_raw/s2a/conv3x3/mcc_boot.log
+Image loaded from \SOFTWARE\VECTORS.BIN
+Image loaded from \SOFTWARE\APP.BIN
+Image loaded from \SOFTWARE\DDR.BIN
+DDR memory test at 0x70000000: PASSED
+Clearing SCC CPUWAIT (0xFFFFFFFF80000000:0x00000000)
+--- boot75 conv3x3 s2a campaign exit=0
+35
+mcc boot log: 10366 bytes -> /home/gihwan/evsweep/stage2a_raw/s2a/dw3x3/mcc_boot.log
+Image loaded from \SOFTWARE\VECTORS.BIN
+Image loaded from \SOFTWARE\APP.BIN
+Image loaded from \SOFTWARE\DDR.BIN
+DDR memory test at 0x70000000: PASSED
+Clearing SCC CPUWAIT (0xFFFFFFFF80000000:0x00000000)
+--- boot76 dw3x3 s2a campaign exit=0
+35
+mcc boot log: 10366 bytes -> /home/gihwan/evsweep/stage2a_raw/s2a/pw1x1/mcc_boot.log
+Image loaded from \SOFTWARE\VECTORS.BIN
+Image loaded from \SOFTWARE\APP.BIN
+Image loaded from \SOFTWARE\DDR.BIN
+DDR memory test at 0x70000000: PASSED
+Clearing SCC CPUWAIT (0xFFFFFFFF80000000:0x00000000)
+--- boot77 pw1x1 s2a campaign exit=0
+35
+CAMPAIGN DONE

@@ -16,10 +16,10 @@ are as they were when written: flat `host/*.py` until the split into `host/{lib,
 | `host/` | split by where code runs: `lib/` (shared modules), `container/`, `board/` (board host), `analysis/` (Mac); `tests/` |
 | `firmware/` | the subset of the build tree this repo owns — **mirrors `/work/selftest` in the container path-for-path** (patchers, gate, base runner source, vendor `u85.c`, `Makefile.pmu_events`). Do not restructure it. |
 | `board/` | board-host scripts (synced to `~/evsweep` on `ssh gihwan`): deploy/restore/postflight/inspect, MCC helpers, `run_campaign.sh`; MLEK image set (boot/bram/ddr.bin + images.txt): `deploy_mlek.sh`/`restore_mlek.sh`, app-UART capture `mlek_app_capture.py` |
-| `config/` | **stage-0 profile** `mlek_baseline.json`, PMU sets `baseline_ids.txt` (stage 0) / `stage1_ids.txt`, blob manifests `mlek_baseline.manifest.json` (kws, ad) and `.a1.json` (mobilenet, amendment 1) |
+| `config/` | **stage-0 profile** `mlek_baseline.json`, PMU sets `baseline_ids.txt` (stage 0) / `stage1_ids.txt` / `stage2a_ids.txt`, blob manifests `mlek_baseline.manifest.json` (kws, ad) and `.a1.json` (mobilenet, amendment 1) |
 | `docs/reference/` | PMU event lists (TRM 110, driver 171), PMU reference, MLEK board reference values |
 | `docs/specs/` | frozen contract in force: `mlek-baseline.md` (profile, per-run gate, outcome, amendment 1); Stage 1 contract: `evidence/stage1/contract.md` |
-| `evidence/` | `stage1/` (boots 65–71 = dataset s1; boots 72–74 = dataset a2 under amendment 2, MLEK goldens in `stage1/a2/mlek_golden/`), `mlek_baseline/` (boots 59–61), `mlek_baseline_a1/` (boot 64, amendment 1), `mobilenet_ofm/` (three-way OFM comparison), `runner_gap/` (static diff, `mlek_diff_audit.md`); summaries only: `ta_ab/` (the TA finding), `tools_check/` (refactor verification) — raw data at `2ce4512` |
+| `evidence/` | `stage2a/` (boots 75–77, component attribution; event audit, dw3x3 MLEK golden), `stage1/` (boots 65–71 = dataset s1; boots 72–74 = dataset a2 under amendment 2, MLEK goldens in `stage1/a2/mlek_golden/`), `mlek_baseline/` (boots 59–61), `mlek_baseline_a1/` (boot 64, amendment 1), `mobilenet_ofm/` (three-way OFM comparison), `runner_gap/` (static diff, `mlek_diff_audit.md`); summaries only: `ta_ab/` (the TA finding), `tools_check/` (refactor verification) — raw data at `2ce4512` |
 | `environment/` | board card config, build environment, host Python/serial setup |
 
 ### host modules
@@ -35,7 +35,7 @@ are as they were when written: flat `host/*.py` until the split into `host/{lib,
 | `analysis/ofm_compare.py` | MLEK VERIFY_TEST_OUTPUT dump parsing, byte-by-byte OFM comparison (int8) | output verification |
 | `analysis/mlek_golden.py` | amendment-2 golden validity G1–G5 (MLEK FI101 dump vs blob meta) → manifest entry with the TFLite diagnostic | before every amendment-2 boot |
 | `analysis/baseline_gate.py` | stage-0 per-run gate (B1–B3, R1–R6) and the MLEK-equivalence outcome | Mac, after every baseline campaign |
-| CLI | `container/pack_vela_workload.py`, `container/make_op_model.py` (single-op INT8 tflite as flatbuffers), `container/workload_meta.py` (N_MAC, Vela prediction); `board/run_pmu_events.py`; `analysis/baseline_gate.py`, `analysis/ofm_compare.py`, `analysis/stage1.py` (Stage 1 gate, metrics, fingerprint) | |
+| CLI | `container/pack_vela_workload.py`, `container/make_op_model.py` (single-op INT8 tflite as flatbuffers), `container/workload_meta.py` (N_MAC, Vela prediction); `board/run_pmu_events.py`; `analysis/baseline_gate.py`, `analysis/ofm_compare.py`, `analysis/stage1.py` (Stage 1 gate, metrics, fingerprint), `analysis/stage2a.py` (Stage 2A metrics, reproduction, hypothesis status, routing) | |
 
 A constant or layout lives in exactly one host module; scripts import it. **Host ↔ firmware is the exception, on
 purpose:** the runner firmware declares the PMWL layout and TA tables independently (in the patcher), and
