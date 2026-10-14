@@ -1,0 +1,23 @@
+# Arm Ethos-U55 NPU TRM r2p0, 102420_0200_02_en
+# https://documentation-service.arm.com/static/60b5e972e022752339b44b4c  pdf sha256 8740573e718a46b443e8e5a61837961a8856e8b987ecb9deca1238bec1f744c2
+## Table 4-81 Field EV_TYPE values (pdftotext -layout, lines 3526-3538): 0x21 and 0x37 are absent
+Table 4-81: Field EV_TYPE values
+Value           Name                             Meaning
+0x00 (default) no_event                          No event counted (the event never occurs)
+0x11            Cycle                            Event occurs every cycle.
+0x20            NPU idle                         NPU in stopped state
+0x23            NPU running                      NPU in running state
+0x30            MAC: ACTIVE (8 or 16 bit)        MAC is doing block traversal. Valid blk_cmd and not stalled.
+0x31            MAC: ACTIVE 8-bit                MAC is doing 8-bit block traversal. Valid blk_cmd and not stalled
+0x32            MAC: ACTIVE 16-bit               MAC is doing 16-bit block traversal. Valid blk_cmd and not stalled
+0x40            AO: ACTIVE (8-bit or 16-bit) AO is doing block traversal of ACC or IB. Valid blk_cmd and not stalled
+0x41            AO: ACTIVE 8-bit                 AO is doing 8-bit block traversal of ACC or IB. Valid blk_cmd and not stalled
+0x42            AO: ACTIVE 16-bit                AO is doing 16-bit block traversal of ACC or IB. Valid blk_cmd and not stalled
+0x50            WD: ACTIVE                       WD is decoding weight stream. Valid ofd_cmd and not stalled.
+## Central Control (line 1115-1116)
+The Central Control (CC) is the main control unit inside the NPU. The CC controls how the NPU
+processes neural networks, maintains synchronization, and handles data dependencies.
+## NPU_SET_BLOCKDEP semantics (lines 6246-6248)
+NPU_SET_BLOCKDEP takes a block oﬀset k as a parameter. The block dependency guarantees
+that IFM block read n in the kernel does not start until all OFM block writes of the previous kernel
+operation, except max(k-n, 0), are complete and written to memory.

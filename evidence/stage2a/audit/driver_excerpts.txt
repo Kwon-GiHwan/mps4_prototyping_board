@@ -1,0 +1,127 @@
+# /opt/arm/ml-embedded-evaluation-kit/dependencies/core-driver/src/ethosu85_interface.h
+8a5cbe762158db15651d65b278d71495e27b174ecacc1c7f988413f5dd665f41  /opt/arm/ml-embedded-evaluation-kit/dependencies/core-driver/src/ethosu85_interface.h
+core-driver commit 03567073fe2b9802c0bd73f9534da6f8a03924d1 Wed Nov 5 16:20:23 2025 +0100
+## enum pmu_event (selected)
+790:    CC_STALLED_ON_BLOCKDEP = 33,
+791:    NPU_ACTIVE = 35,
+792:    MAC_ACTIVE = 48,
+793:    MAC_DPU_ACTIVE = 51,
+794:    MAC_STALLED_BY_W_OR_ACC = 52,
+795:    MAC_STALLED_BY_W = 53,
+796:    MAC_STALLED_BY_ACC = 54,
+797:    MAC_STALLED_BY_IB = 55,
+798:    AO_ACTIVE = 64,
+799:    AO_STALLED_BY_BS_OR_OB = 67,
+800:    AO_STALLED_BY_BS = 68,
+801:    AO_STALLED_BY_OB = 69,
+802:    AO_STALLED_BY_AB_OR_CB = 70,
+803:    AO_STALLED_BY_AB = 71,
+804:    AO_STALLED_BY_CB = 72,
+805:    WD_ACTIVE = 80,
+806:    WD_STALLED = 81,
+## MAC_STATUS
+// mac_status_r - MAC_STATUS
+struct mac_status_r
+{
+#ifndef __cplusplus
+    union
+    {
+        struct
+        {
+            uint32_t mac_active : 1; // Valid block command and not stalled
+            uint32_t reserved0 : 2;
+            uint32_t mac_dpu_active : 1; // At least one DPU is active
+            uint32_t mac_stalled_by_w_or_acc : 1; // MAC stalled by WB or AB (not IB)
+            uint32_t mac_stalled_by_w : 1; // MAC stalled by WB (not IB)
+            uint32_t mac_stalled_by_acc : 1; // MAC stalled by AB (not IB)
+            uint32_t mac_stalled_by_ib : 1; // MAC stalled by IB
+            uint32_t reserved1 : 24;
+        };
+        uint32_t word;
+    };
+## AO_STATUS
+// ao_status_r - AO_STATUS
+struct ao_status_r
+{
+#ifndef __cplusplus
+    union
+    {
+        struct
+        {
+            uint32_t ao_active : 1; // Valid block command and not stalled
+            uint32_t reserved0 : 2;
+            uint32_t ao_stalled_by_bs_or_ob : 1; // Stalled by bias scale data or output block
+            uint32_t ao_stalled_by_bs : 1; // Stalled by bias scale data
+            uint32_t ao_stalled_by_ob : 1; // Stalled by output block
+            uint32_t ao_stalled_by_ab_or_cb : 1; // Stalled by accumulator or chaining buffer
+            uint32_t ao_stalled_by_ab : 1; // Stalled by accumulator buffer
+            uint32_t ao_stalled_by_cb : 1; // Stalled by chaining buffer
+            uint32_t reserved1 : 23;
+        };
+        uint32_t word;
+    };
+## NPU_SET_BLOCKDEP
+// Block number of blocks dependency
+struct npu_set_blockdep_t
+{
+#ifdef __cplusplus
+private:
+#endif
+    uint32_t opcode:10; //  opcode
+    uint32_t reserved0:4;
+    uint32_t control:2; //  control
+    uint32_t blockdep:3; //  Block number of blocks dependency between kernel operations
+    uint32_t reserved1:13;
+## any other occurrence of blockdep / stalled_by_ib
+201:#define NPU_REG_BLOCKDEP 0x08BC
+601:    NPU_SET_BLOCKDEP = 303,
+790:    CC_STALLED_ON_BLOCKDEP = 33,
+797:    MAC_STALLED_BY_IB = 55,
+1241:    CMD0_OPCODE_NPU_SET_BLOCKDEP = 303,
+1430:    PMU_EVENT_CC_STALLED_ON_BLOCKDEP = 33,
+1437:    PMU_EVENT_MAC_STALLED_BY_IB = 55,
+2141:    "CMD0_OPCODE_NPU_SET_BLOCKDEP",
+2676:    "PMU_EVENT_CC_STALLED_ON_BLOCKDEP",
+2698:    "PMU_EVENT_MAC_STALLED_BY_IB",
+7739:// blockdep_r - State managed by NPU_SET_BLOCKDEP
+7740:struct blockdep_r
+7755:    CONSTEXPR blockdep_r() :
+7758:    CONSTEXPR blockdep_r(uint32_t init) :
+7769:    blockdep_r copy()
+7778:    CONSTEXPR blockdep_r& set_value(uint32_t value)
+11195:            uint32_t mac_stalled_by_ib : 1; // MAC stalled by IB
+11272:    CONSTEXPR uint32_t get_mac_stalled_by_ib() const
+11277:    CONSTEXPR mac_status_r& set_mac_stalled_by_ib(uint32_t value)
+13563:    STRUCT blockdep_r BLOCKDEP; // 0x08BC
+13763:        BLOCKDEP = 0;
+14651:        case (static_cast<uint32_t>(NPU_NAMESPACE::cmd_ctrl::CMD0_CTRL) << 14) | static_cast<uint32_t>(NPU_NAMESPACE::cmd0_opcode::NPU_SET_BLOCKDEP):
+14653:            const npu_set_blockdep_t& v = *reinterpret_cast<const npu_set_blockdep_t*>(in);
+14654:            op = "NPU_SET_BLOCKDEP";
+18974:struct npu_set_blockdep_t
+18982:    uint32_t blockdep:3; //  Block number of blocks dependency between kernel operations
+18986:    npu_set_blockdep_t(uint32_t _blockdep) :
+18987:        opcode(static_cast<uint16_t>(NPU_NAMESPACE::cmd0_opcode::NPU_SET_BLOCKDEP)),
+18990:        blockdep(_blockdep & ((1U << 3)-1)),
+18993:    CONSTEXPR npu_set_blockdep_t() :
+18994:        opcode(static_cast<uint16_t>(NPU_NAMESPACE::cmd0_opcode::NPU_SET_BLOCKDEP)),
+18997:        blockdep(0),
+19002:        return opcode == static_cast<uint16_t>(NPU_NAMESPACE::cmd0_opcode::NPU_SET_BLOCKDEP) && control == static_cast<uint8_t>(NPU_NAMESPACE::cmd_ctrl::CMD0_CTRL);
+19006:        opcode = static_cast<uint16_t>(NPU_NAMESPACE::cmd0_opcode::NPU_SET_BLOCKDEP); control = static_cast<uint8_t>(NPU_NAMESPACE::cmd_ctrl::CMD0_CTRL);
+19013:        word |= uint32_t(blockdep) << 16;
+19020:    CONSTEXPR npu_set_blockdep_t& set_opcode(NPU_NAMESPACE::cmd0_opcode value)
+19029:    CONSTEXPR npu_set_blockdep_t& set_control(NPU_NAMESPACE::cmd_ctrl value)
+19034:    CONSTEXPR uint32_t get_blockdep() const
+19036:        return static_cast<uint32_t>(blockdep);
+19038:    CONSTEXPR npu_set_blockdep_t& set_blockdep(uint32_t value)
+19041:        blockdep = static_cast<uint8_t>(value & ((1U << 3)-1));
+19047:        fields.push_back(std::make_pair<std::string, std::string>("blockdep", std::to_string(blockdep)));
+24006:    NPU_SET_(blockdep) \
+24223:    FUNC(cmd0_opcode, NPU_SET_BLOCKDEP) SEP \
+24380:    FUNC(pmu_event, CC_STALLED_ON_BLOCKDEP) SEP \
+24387:    FUNC(pmu_event, MAC_STALLED_BY_IB) SEP \
+conv3x3.a2.pmwl cms sha f02d9e9f len 520
+   NPU_OP_DMA_START NPU_SET_BLOCKDEP(0) NPU_OP_DMA_WAIT(0) NPU_OP_CONV NPU_OP_DMA_START NPU_SET_BLOCKDEP(7) NPU_OP_DMA_WAIT(0) NPU_OP_CONV NPU_OP_STOP
+dw3x3.s1.pmwl cms sha ef0e4326 len 532
+   NPU_OP_DMA_START NPU_SET_BLOCKDEP(0) NPU_OP_DMA_WAIT(0) NPU_OP_DEPTHWISE NPU_OP_DMA_START NPU_SET_BLOCKDEP(7) NPU_OP_DMA_WAIT(0) NPU_OP_DEPTHWISE NPU_OP_STOP
+pw1x1.a2.pmwl cms sha fad308dc len 520
+   NPU_OP_DMA_START NPU_SET_BLOCKDEP(0) NPU_OP_DMA_WAIT(0) NPU_OP_CONV NPU_OP_DMA_START NPU_SET_BLOCKDEP(7) NPU_OP_DMA_WAIT(0) NPU_OP_CONV NPU_OP_STOP
