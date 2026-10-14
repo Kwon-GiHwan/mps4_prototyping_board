@@ -1,0 +1,91 @@
+{
+ "blob_sha256": "e9559d78e46c447b0a2fd6e312af0fe152b6f6b38ab9a7c2999b2b6f2ca3c843",
+ "cms_sha256": "ef0e4326cfed29c1a262d11c4a24bf3600964d77ada937e880a42c8d30076700",
+ "golden": {
+  "source": "MLEK b2c0bb2 inference_runner on FI101, VERIFY_TEST_OUTPUT dump (amendment 2)",
+  "input_sha256": "b8239649db0499340c5d233e16f925819f6da18ef598529bea21439dc41b9a7a",
+  "ofm_sha256": "8fb8fb241b088afc53fe1548d1df01111649b15577e8b6647b45587721191cba"
+ },
+ "knobs": [
+  "0xffffffff",
+  "0x0000000a",
+  "0x00000002",
+  "0x00000000",
+  "0x00000000",
+  "0x00000004",
+  "0x00000004",
+  "0x00020f0b",
+  "0x00021f3f",
+  "0x00000000",
+  "0x31100000",
+  "0x00000001",
+  "0xffffffff",
+  "0xffffffff",
+  "0xffffffff",
+  "0xffffffff"
+ ],
+ "fast_size": 2880,
+ "arena_size": 802816,
+ "cms_len": 532,
+ "const_len": 2880,
+ "class": "isolated_operator",
+ "n_mac": 3612672,
+ "operator_type": "DEPTHWISE_CONV_2D",
+ "shape": "[1, 56, 56, 128]->[1, 56, 56, 128]",
+ "input_shape": [
+  1,
+  56,
+  56,
+  128
+ ],
+ "output_shape": [
+  1,
+  56,
+  56,
+  128
+ ],
+ "kernel_shape": [
+  3,
+  3
+ ],
+ "weight_shape": [
+  1,
+  3,
+  3,
+  128
+ ],
+ "stride": [
+  1,
+  1
+ ],
+ "padding": "SAME",
+ "groups": 128,
+ "quant": {
+  "ifm_scale": 0.0078125,
+  "weight_scale": 0.0078125,
+  "ofm_scale": 0.03636253537155512,
+  "zero_points": 0
+ },
+ "weight_seed": 20261014,
+ "ifm_seed": null,
+ "model_sha256": "5b6b86cc139ee4314f0e474f163ed761dcffc4a72349971d807df4ada80127ab",
+ "vela_sha256": "ffd625704f977a8e52eae76e9e4eeac24c70ce93999f093f8c695d2fc1be4403",
+ "vela_nn_macs": 3612672.0,
+ "output_correctness": "byte-exact vs MLEK FI101 golden (amendment 2)",
+ "mlek_vela_sha256": "ffd625704f977a8e52eae76e9e4eeac24c70ce93999f093f8c695d2fc1be4403",
+ "golden_validity": {
+  "G1_lengths": true,
+  "G2_same_vela_output": true,
+  "G3_ta_configured": true,
+  "G4_model_and_cms_unchanged": true,
+  "G5_blob_holds_dump": true
+ },
+ "numerical_difference_diagnostic": {
+  "vs": "tflite_runtime",
+  "tflite_ofm_sha256": "8fb8fb241b088afc53fe1548d1df01111649b15577e8b6647b45587721191cba",
+  "mismatch_count": 0,
+  "positions": [],
+  "signed_diff_mlek_minus_tflite": [],
+  "max_abs_diff": 0
+ }
+}
