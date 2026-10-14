@@ -16,7 +16,7 @@ Correlation decides no cause. A status says only how the counters line up with e
 | H2 input buffer / data supply † | IB stall 78.9 % vs 18.8 %, HIGHER; excess 60.1 pp ≥ ΔI 59.7 pp | Driver-derived only: event ↔ status-bit mapping unconfirmed. No TRM-documented input-supply event in this set | PARTIAL_SUPPORT (cap) | Stage 3: IFM read request stall / outstanding / AXI latency on the IFM channel, as TRM-documented confirmation |
 | H3 command / pipeline dependency | — | Event 33 not measured (owner decision) | UNRESOLVED | Separate dependency analysis once event 33's meaning is confirmed |
 | H3b weight / accumulator back-pressure † | — | W/ACC stall 0 in dw3x3 and conv3x3 | REFUTED | — |
-| H4 output / activation side | AO active 17.6 % vs 5.9 %, HIGHER; excess 11.7 pp | Excess < ΔI. AO active is work, not a stall | PARTIAL_SUPPORT | Stage 3: AO stall split 67–72 and write request stall |
+| H4 output / activation side | AO active 17.6 % vs 5.9 %, HIGHER; excess 11.6 pp | Excess < ΔI. AO active is work, not a stall | PARTIAL_SUPPORT | Stage 3: AO stall split 67–72 and write request stall |
 | H5 spatial packing / shape mapping (P5) | Active-cycle efficiency 12.5 % vs 66.7 %, LOWER; DPU / MAC-active not lower (1.000 = 1.000) | WD-stalled and IB-stall ratios are HIGHER, so temporal stalls are present as well | UNRESOLVED | — (see `routing.md`, open item) |
 | H6 low active-cycle efficiency with DPU inactivity (question 2) | Active-cycle efficiency LOWER | `mac_dpu_active` == `mac_active` in every RUN, so event 51 cannot show DPU inactivity inside MAC-active cycles | UNRESOLVED | Needs a different observable than event 51 |
 
