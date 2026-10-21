@@ -1,0 +1,597 @@
+{
+ "model": "/opt/arm/ml-embedded-evaluation-kit/resources_downloaded/asr/wav2letter_pruned_int8.tflite",
+ "model_sha256": "e0814a0e586f2f2881f7fe96e6bc0b8e4cfecc8d64ced56d8f7ca85b9b7ab257",
+ "vela_options": [
+  "--accelerator-config",
+  "ethos-u85-1024",
+  "--optimise",
+  "Performance",
+  "--config",
+  "/opt/arm/ml-embedded-evaluation-kit/scripts/vela/default_vela.ini",
+  "--memory-mode",
+  "Dedicated_Sram",
+  "--system-config",
+  "Ethos_U85_SYS_DRAM_Mid_1024"
+ ],
+ "ops": [
+  {
+   "op": "RESHAPE",
+   "inputs": [
+    [
+     1,
+     296,
+     39
+    ],
+    [
+     4
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     1,
+     296,
+     39
+    ]
+   ],
+   "n_mac": null
+  },
+  {
+   "op": "CONV_2D",
+   "inputs": [
+    [
+     1,
+     1,
+     296,
+     39
+    ],
+    [
+     250,
+     1,
+     48,
+     39
+    ],
+    [
+     250
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     1,
+     148,
+     250
+    ]
+   ],
+   "n_mac": 69264000
+  },
+  {
+   "op": "LEAKY_RELU",
+   "inputs": [
+    [
+     1,
+     1,
+     148,
+     250
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     1,
+     148,
+     250
+    ]
+   ],
+   "n_mac": null
+  },
+  {
+   "op": "CONV_2D",
+   "inputs": [
+    [
+     1,
+     1,
+     148,
+     250
+    ],
+    [
+     250,
+     1,
+     7,
+     250
+    ],
+    [
+     250
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     1,
+     148,
+     250
+    ]
+   ],
+   "n_mac": 64750000
+  },
+  {
+   "op": "LEAKY_RELU",
+   "inputs": [
+    [
+     1,
+     1,
+     148,
+     250
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     1,
+     148,
+     250
+    ]
+   ],
+   "n_mac": null
+  },
+  {
+   "op": "CONV_2D",
+   "inputs": [
+    [
+     1,
+     1,
+     148,
+     250
+    ],
+    [
+     250,
+     1,
+     7,
+     250
+    ],
+    [
+     250
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     1,
+     148,
+     250
+    ]
+   ],
+   "n_mac": 64750000
+  },
+  {
+   "op": "LEAKY_RELU",
+   "inputs": [
+    [
+     1,
+     1,
+     148,
+     250
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     1,
+     148,
+     250
+    ]
+   ],
+   "n_mac": null
+  },
+  {
+   "op": "CONV_2D",
+   "inputs": [
+    [
+     1,
+     1,
+     148,
+     250
+    ],
+    [
+     250,
+     1,
+     7,
+     250
+    ],
+    [
+     250
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     1,
+     148,
+     250
+    ]
+   ],
+   "n_mac": 64750000
+  },
+  {
+   "op": "LEAKY_RELU",
+   "inputs": [
+    [
+     1,
+     1,
+     148,
+     250
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     1,
+     148,
+     250
+    ]
+   ],
+   "n_mac": null
+  },
+  {
+   "op": "CONV_2D",
+   "inputs": [
+    [
+     1,
+     1,
+     148,
+     250
+    ],
+    [
+     250,
+     1,
+     7,
+     250
+    ],
+    [
+     250
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     1,
+     148,
+     250
+    ]
+   ],
+   "n_mac": 64750000
+  },
+  {
+   "op": "LEAKY_RELU",
+   "inputs": [
+    [
+     1,
+     1,
+     148,
+     250
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     1,
+     148,
+     250
+    ]
+   ],
+   "n_mac": null
+  },
+  {
+   "op": "CONV_2D",
+   "inputs": [
+    [
+     1,
+     1,
+     148,
+     250
+    ],
+    [
+     250,
+     1,
+     7,
+     250
+    ],
+    [
+     250
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     1,
+     148,
+     250
+    ]
+   ],
+   "n_mac": 64750000
+  },
+  {
+   "op": "LEAKY_RELU",
+   "inputs": [
+    [
+     1,
+     1,
+     148,
+     250
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     1,
+     148,
+     250
+    ]
+   ],
+   "n_mac": null
+  },
+  {
+   "op": "CONV_2D",
+   "inputs": [
+    [
+     1,
+     1,
+     148,
+     250
+    ],
+    [
+     250,
+     1,
+     7,
+     250
+    ],
+    [
+     250
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     1,
+     148,
+     250
+    ]
+   ],
+   "n_mac": 64750000
+  },
+  {
+   "op": "LEAKY_RELU",
+   "inputs": [
+    [
+     1,
+     1,
+     148,
+     250
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     1,
+     148,
+     250
+    ]
+   ],
+   "n_mac": null
+  },
+  {
+   "op": "CONV_2D",
+   "inputs": [
+    [
+     1,
+     1,
+     148,
+     250
+    ],
+    [
+     250,
+     1,
+     7,
+     250
+    ],
+    [
+     250
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     1,
+     148,
+     250
+    ]
+   ],
+   "n_mac": 64750000
+  },
+  {
+   "op": "LEAKY_RELU",
+   "inputs": [
+    [
+     1,
+     1,
+     148,
+     250
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     1,
+     148,
+     250
+    ]
+   ],
+   "n_mac": null
+  },
+  {
+   "op": "CONV_2D",
+   "inputs": [
+    [
+     1,
+     1,
+     148,
+     250
+    ],
+    [
+     2000,
+     1,
+     32,
+     250
+    ],
+    [
+     2000
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     1,
+     148,
+     2000
+    ]
+   ],
+   "n_mac": 2368000000
+  },
+  {
+   "op": "LEAKY_RELU",
+   "inputs": [
+    [
+     1,
+     1,
+     148,
+     2000
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     1,
+     148,
+     2000
+    ]
+   ],
+   "n_mac": null
+  },
+  {
+   "op": "CONV_2D",
+   "inputs": [
+    [
+     1,
+     1,
+     148,
+     2000
+    ],
+    [
+     2000,
+     1,
+     1,
+     2000
+    ],
+    [
+     2000
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     1,
+     148,
+     2000
+    ]
+   ],
+   "n_mac": 592000000
+  },
+  {
+   "op": "LEAKY_RELU",
+   "inputs": [
+    [
+     1,
+     1,
+     148,
+     2000
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     1,
+     148,
+     2000
+    ]
+   ],
+   "n_mac": null
+  },
+  {
+   "op": "CONV_2D",
+   "inputs": [
+    [
+     1,
+     1,
+     148,
+     2000
+    ],
+    [
+     29,
+     1,
+     1,
+     2000
+    ],
+    [
+     29
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     1,
+     148,
+     29
+    ]
+   ],
+   "n_mac": 8584000
+  },
+  {
+   "op": "SOFTMAX",
+   "inputs": [
+    [
+     1,
+     1,
+     148,
+     29
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     1,
+     148,
+     29
+    ]
+   ],
+   "n_mac": null
+  }
+ ],
+ "op_counts": {
+  "SOFTMAX": 1,
+  "CONV_2D": 11,
+  "RESHAPE": 1,
+  "LEAKY_RELU": 10
+ },
+ "n_mac": 3491098000,
+ "n_mac_ops": 11,
+ "non_mac_ops": 12,
+ "vela": {
+  "core_clock": 1000000000.0,
+  "nn_macs": 3491110876.0,
+  "cycles_npu": 5233545.0,
+  "cycles_sram_access": 564054.0,
+  "cycles_dram_access": 3278433.0,
+  "cycles_total": 5761355.0
+ },
+ "n_mac_vs_vela_nn_macs": 0.9999963117756905
+}

@@ -1,0 +1,150 @@
+{
+ "seq": 64,
+ "cell_id": "vww4_128_128_INT8__SSE-320__ethos-u85-1024",
+ "model": "vww4_128_128_INT8",
+ "platform": "SSE-320",
+ "mac_config": 1024,
+ "system_config": "Ethos_U85_SYS_DRAM_Mid_1024",
+ "memory_mode": "Dedicated_Sram",
+ "npu_config_id": "Z1024",
+ "fvp": "/opt/arm/fvp_installed_320/models/Linux64_GCC-9.3/FVP_Corstone_SSE-320",
+ "build_ok": true,
+ "reproduction_gate": {
+  "vela_sha_matches_anchor": true,
+  "cc_body_sha_matches_anchor": true,
+  "axf_sha_matches_anchor": true,
+  "timing_adapter_on": true,
+  "embedded_stamp_matches_epoch": true
+ },
+ "reproduction_gate_failed": [],
+ "artifact_identity": {
+  "model_sha256": "5e76364e80c45776b735563679d45f611cab7ce7fef2ec4e2db088afe009ccae",
+  "vela_sha256": "637711c9bb5046bbf7f9010d1e1f1c25e9ea6cf643d74e8eb225c66b4ba6fed7",
+  "generated_cc_body_sha256": "603af847c8ff275eb5425ff00feacc104d1e9581eb6eb8ad536e8a376c96d749",
+  "axf_sha256": "50abba5cf2fa6ffc71e751657ff40eb410e62cb995e93d5e455f1e3a6ba6aa26"
+ },
+ "timing_adapter_cache": "ETHOS_U_NPU_TIMING_ADAPTER_ENABLED:BOOL=ON",
+ "embedded_build_stamp": "Version %s Build date: Apr 21 2026 @ 09:25:19",
+ "frozen_expected": {
+  "vela_sha256": "637711c9bb5046bbf7f9010d1e1f1c25e9ea6cf643d74e8eb225c66b4ba6fed7",
+  "generated_cc_body_sha256": "603af847c8ff275eb5425ff00feacc104d1e9581eb6eb8ad536e8a376c96d749",
+  "axf_sha256": "50abba5cf2fa6ffc71e751657ff40eb410e62cb995e93d5e455f1e3a6ba6aa26"
+ },
+ "reps": [
+  {
+   "tag": "R1",
+   "status": "SUCCESS",
+   "inference_count_line": 1,
+   "wall_clock_s": 2.758,
+   "survivors_after_cleanup": [],
+   "stage1_parser": {
+    "npu_total_cycles": 230068,
+    "npu_active_cycles": 229082,
+    "npu_idle_cycles": 986,
+    "axi0_rd_beats": null,
+    "axi0_wr_beats": null,
+    "axi1_rd_beats": null
+   },
+   "uart_path": "/tmp/r1out/uart/vww4_128_128_INT8__SSE-320__ethos-u85-1024.R1.uart.txt",
+   "uart_sha256": "769fa069ce817f646b22746d30279eadd566219a8340f8e72d345dc97325e9c8",
+   "pmu": {
+    "event_set": [
+     "ACTIVE",
+     "EXT_RD_DATA_BEAT_RECEIVED",
+     "EXT_WR_DATA_BEAT_WRITTEN",
+     "IDLE",
+     "SRAM_RD_DATA_BEAT_RECEIVED",
+     "SRAM_WR_DATA_BEAT_WRITTEN",
+     "TOTAL"
+    ],
+    "generation": "U85_SRAM_EXT_FAMILY",
+    "total_identity_holds": true,
+    "counters": {
+     "ACTIVE": 229082,
+     "SRAM_RD_DATA_BEAT_RECEIVED": 69326,
+     "SRAM_WR_DATA_BEAT_WRITTEN": 60045,
+     "EXT_RD_DATA_BEAT_RECEIVED": 23761,
+     "EXT_WR_DATA_BEAT_WRITTEN": 1,
+     "IDLE": 986,
+     "TOTAL": 230068
+    },
+    "emitted_names": {
+     "ACTIVE": "ACTIVE",
+     "SRAM_RD_DATA_BEAT_RECEIVED": "ETHOSU_PMU_SRAM_RD_DATA_BEAT_RECEIVED",
+     "SRAM_WR_DATA_BEAT_WRITTEN": "ETHOSU_PMU_SRAM_WR_DATA_BEAT_WRITTEN",
+     "EXT_RD_DATA_BEAT_RECEIVED": "ETHOSU_PMU_EXT_RD_DATA_BEAT_RECEIVED",
+     "EXT_WR_DATA_BEAT_WRITTEN": "ETHOSU_PMU_EXT_WR_DATA_BEAT_WRITTEN",
+     "IDLE": "IDLE",
+     "TOTAL": "TOTAL"
+    },
+    "units": {
+     "ACTIVE": "cycles",
+     "SRAM_RD_DATA_BEAT_RECEIVED": "beats",
+     "SRAM_WR_DATA_BEAT_WRITTEN": "beats",
+     "EXT_RD_DATA_BEAT_RECEIVED": "beats",
+     "EXT_WR_DATA_BEAT_WRITTEN": "beats",
+     "IDLE": "cycles",
+     "TOTAL": "cycles"
+    }
+   }
+  },
+  {
+   "tag": "R2",
+   "status": "SUCCESS",
+   "inference_count_line": 1,
+   "wall_clock_s": 2.707,
+   "survivors_after_cleanup": [],
+   "stage1_parser": {
+    "npu_total_cycles": 230068,
+    "npu_active_cycles": 229082,
+    "npu_idle_cycles": 986,
+    "axi0_rd_beats": null,
+    "axi0_wr_beats": null,
+    "axi1_rd_beats": null
+   },
+   "uart_path": "/tmp/r1out/uart/vww4_128_128_INT8__SSE-320__ethos-u85-1024.R2.uart.txt",
+   "uart_sha256": "53518c7458b2b53f79b1f4094fa37b6c9904950c8f042d0e940a066cdf3e0c06",
+   "pmu": {
+    "event_set": [
+     "ACTIVE",
+     "EXT_RD_DATA_BEAT_RECEIVED",
+     "EXT_WR_DATA_BEAT_WRITTEN",
+     "IDLE",
+     "SRAM_RD_DATA_BEAT_RECEIVED",
+     "SRAM_WR_DATA_BEAT_WRITTEN",
+     "TOTAL"
+    ],
+    "generation": "U85_SRAM_EXT_FAMILY",
+    "total_identity_holds": true,
+    "counters": {
+     "ACTIVE": 229082,
+     "SRAM_RD_DATA_BEAT_RECEIVED": 69326,
+     "SRAM_WR_DATA_BEAT_WRITTEN": 60045,
+     "EXT_RD_DATA_BEAT_RECEIVED": 23761,
+     "EXT_WR_DATA_BEAT_WRITTEN": 1,
+     "IDLE": 986,
+     "TOTAL": 230068
+    },
+    "emitted_names": {
+     "ACTIVE": "ACTIVE",
+     "SRAM_RD_DATA_BEAT_RECEIVED": "ETHOSU_PMU_SRAM_RD_DATA_BEAT_RECEIVED",
+     "SRAM_WR_DATA_BEAT_WRITTEN": "ETHOSU_PMU_SRAM_WR_DATA_BEAT_WRITTEN",
+     "EXT_RD_DATA_BEAT_RECEIVED": "ETHOSU_PMU_EXT_RD_DATA_BEAT_RECEIVED",
+     "EXT_WR_DATA_BEAT_WRITTEN": "ETHOSU_PMU_EXT_WR_DATA_BEAT_WRITTEN",
+     "IDLE": "IDLE",
+     "TOTAL": "TOTAL"
+    },
+    "units": {
+     "ACTIVE": "cycles",
+     "SRAM_RD_DATA_BEAT_RECEIVED": "beats",
+     "SRAM_WR_DATA_BEAT_WRITTEN": "beats",
+     "EXT_RD_DATA_BEAT_RECEIVED": "beats",
+     "EXT_WR_DATA_BEAT_WRITTEN": "beats",
+     "IDLE": "cycles",
+     "TOTAL": "cycles"
+    }
+   }
+  }
+ ],
+ "elapsed_s": 59.0
+}

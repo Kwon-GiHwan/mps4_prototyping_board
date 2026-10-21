@@ -1,0 +1,41 @@
+{
+ "seq": 67,
+ "cell_id": "wav2letter_pruned_int8__SSE-320__ethos-u85-1024",
+ "repetition": 1,
+ "formal_sample": "M1",
+ "gate": {
+  "vela_sha_matches_anchor": true,
+  "cc_body_sha_matches_anchor": true,
+  "axf_sha_matches_anchor": true,
+  "timing_adapter_on": true,
+  "embedded_stamp_matches_epoch": true
+ },
+ "artifact_identity": {
+  "model_sha256": "e0814a0e586f2f2881f7fe96e6bc0b8e4cfecc8d64ced56d8f7ca85b9b7ab257",
+  "vela_sha256": "4c5b640211f0aaa60eaf65ee5c9c4096a43022fd2c34127042e1304bf45def7b",
+  "generated_cc_body_sha256": "bf965705ccdeeb8feec951ece6b36c9dc98bfc245783f4645171705017876878",
+  "generated_cc_raw_sha256_informational": "a04c75fcef75f4408b4ea96c12a94808a55babc2f9dacb82435ff4c59ce2d38a",
+  "axf_sha256": "e28c25ae8cbd9ebfca2580afd88c3878c92911e48e50875608bfa8257d028a3b"
+ },
+ "platform": "SSE-320",
+ "npu": "ethos-u85",
+ "mac_config": 1024,
+ "fvp": "/opt/arm/fvp_installed_320/models/Linux64_GCC-9.3/FVP_Corstone_SSE-320",
+ "timing_adapter_cache": "ETHOS_U_NPU_TIMING_ADAPTER_ENABLED:BOOL=ON",
+ "embedded_build_stamp": "Version %s Build date: Apr 21 2026 @ 09:25:19",
+ "source_date_epoch": 1776763519,
+ "measurement": {
+  "status": "SUCCESS",
+  "inference_count_line": 1,
+  "npu_total_cycles": 4115068,
+  "npu_active_cycles": 4114227,
+  "npu_idle_cycles": 841,
+  "axi0_rd_beats": null,
+  "axi0_wr_beats": null,
+  "axi1_rd_beats": null,
+  "wall_clock_s": 68.017,
+  "owned_pgid": 1124168,
+  "survivors_after_cleanup": []
+ },
+ "elapsed_s": 124.9
+}
