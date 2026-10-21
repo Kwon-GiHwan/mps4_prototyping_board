@@ -15,7 +15,7 @@ Same layout as `../npu_utilization/` (board, runner). Do not mix the two in one 
 | --- | --- | --- |
 | `raw/<workload>/` | every record of the U85-1024 cell | see below |
 | `summary.csv` | per workload × metric: n, median, mean, std, cv, min, max, deterministic | computed from `raw/` |
-| `npu_utilization.csv` | MAC/cycle and peak MAC eff. per workload | `summary.csv` medians and `n_mac.meta.json` |
+| `npu_utilization.csv` | MAC/cycle, peak MAC eff. and NPU active rate per workload | `summary.csv` medians and `n_mac.meta.json` |
 
 Cycle metrics use five runs (M1–M3, R1–R2); beat metrics use two (R1–R2, the formal runs did not read beats). Every
 metric is identical across its runs.
@@ -25,6 +25,11 @@ metric is identical across its runs.
 
 Definitions as in `host/analysis/stage1.py`, with npu_active = MLEK `NPU ACTIVE`: MAC/cycle = N_MAC / npu_active;
 peak MAC eff. = N_MAC / (1024 × npu_active).
+
+NPU active rate = MLEK `NPU ACTIVE` / `NPU TOTAL` (TOTAL = ACTIVE + IDLE in every run), per run, then the median.
+TOTAL is the window MLEK's profiler wraps around one inference, so the rate is 98.9–99.98 % for every model: IDLE
+is a fixed 215–986 cycles. It says how much of that window the NPU was busy, not how busy the MACs were. The board
+runner's event set has no TOTAL counter, so `../npu_utilization_mps4/` has no matching column.
 
 ## Files in each `raw/<workload>/`
 
