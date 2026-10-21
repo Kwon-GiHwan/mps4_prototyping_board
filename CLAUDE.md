@@ -21,7 +21,7 @@ are as they were when written: flat `host/*.py` until the split into `host/{lib,
 | `docs/specs/` | frozen contract in force: `mlek-baseline.md` (profile, per-run gate, outcome, amendment 1); Stage 1 contract: `evidence/stage1/contract.md` |
 | `evidence/` | `stage2a/` (boots 75–77, component attribution; event audit, dw3x3 MLEK golden), `stage1/` (boots 65–71 = dataset s1; boots 72–74 = dataset a2 under amendment 2, MLEK goldens in `stage1/a2/mlek_golden/`), `mlek_baseline/` (boots 59–61), `mlek_baseline_a1/` (boot 64, amendment 1), `mobilenet_ofm/` (three-way OFM comparison), `runner_gap/` (static diff, `mlek_diff_audit.md`); summaries only: `ta_ab/` (the TA finding), `tools_check/` (refactor verification) — raw data at `2ce4512` |
 | `environment/` | board card config, build environment, host Python/serial setup |
-| `results/` | reading copies grouped for a question, byte-identical to `evidence/` originals: `stage1_npu_utilization/` (raw per workload, `summary.csv`, NPU utilization table) |
+| `results/` | reading copies grouped for a question; originals stay in `evidence/`: `npu_utilization/` (MLEK models kws, ad, mobilenet from Stage 1: raw per workload, `summary.csv`, `npu_utilization.csv`) |
 
 ### host modules
 
