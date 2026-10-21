@@ -98,5 +98,77 @@ class Header(unittest.TestCase):
         with self.assertRaises(ValueError): pmwl.parse_header(good[:4] + struct.pack("<I", 9) + good[8:])
 
 
+INFO4 = dict(INFO, inputs=[(0, 4), (32, 3)], outputs=[(8, 2), (40, 5)])
+IFMS4, GOLDS4 = [b"\x02" * 4, b"\x04" * 3], [b"\x03" * 2, b"\x05" * 5]
+
+
+class IoTable(unittest.TestCase):
+    """Header version 4: several IFMs/OFMs in an IO table at words 32..63 (n_in, n_out, then 3 words per entry)."""
+
+    def test_one_in_one_out_is_byte_identical_to_the_legacy_call(self):
+        info = dict(INFO, inputs=[(0, 4)], outputs=[(8, 2)])
+        for kw in (pmwl.knobs(), pmwl.knobs(ports={"cmd": "ext", "const": "ext", "arena": "ext", "fast": "sram"}),
+                   pmwl.knobs(ta_profile=1)):
+            self.assertEqual(pmwl.pack(info, [b"\x02" * 4], [b"\x03" * 2], kw),
+                             pmwl.pack(INFO, b"\x02" * 4, b"\x03" * 2, kw))
+
+    def test_v4_layout(self):
+        kw = pmwl.knobs(ta_profile=1)
+        b = pmwl.pack(INFO4, IFMS4, GOLDS4, kw)
+        h = struct.unpack("<16I", b[:64])
+        self.assertEqual((h[1], h[2]), (4, 256))                 # cms after header, 16 knob words, 32 table words
+        self.assertEqual(list(struct.unpack("<16I", b[64:128])), kw)
+        t = struct.unpack("<32I", b[128:256])
+        self.assertEqual(t[:2], (2, 2))
+        ents = [t[2 + 3 * k:5 + 3 * k] for k in range(4)]
+        self.assertEqual([e[:2] for e in ents], [(0, 4), (32, 3), (8, 2), (40, 5)])
+        for e, data in zip(ents, IFMS4 + GOLDS4):
+            self.assertEqual(b[e[2]:e[2] + e[1]], data)
+            self.assertEqual(e[2] % 16, 0)
+        self.assertEqual(t[14:], (0,) * 18)                      # unused entries are zero
+        self.assertEqual((h[8:11], h[11:14]), (ents[0], ents[2]))  # header IFM/OFM = entry 0 of each list
+        self.assertEqual(h[15], len(b))
+
+    def test_v4_carries_all_knob_words_even_when_off(self):
+        b = pmwl.pack(INFO4, IFMS4, GOLDS4, pmwl.knobs())
+        self.assertEqual(struct.unpack("<I", b[4:8])[0], 4)
+        self.assertEqual(list(struct.unpack("<16I", b[64:128])), [pmwl.OFF] * 16)
+
+    def test_parse_v4_roundtrip(self):
+        kw = pmwl.knobs(ta_profile=1)
+        b = pmwl.pack(INFO4, IFMS4, GOLDS4, kw)
+        h = pmwl.parse_header(b)
+        self.assertEqual((h["version"], h["knobs"]), (4, kw))
+        self.assertEqual([(e["arena_off"], e["len"]) for e in h["inputs"]], [(0, 4), (32, 3)])
+        self.assertEqual([(e["arena_off"], e["len"]) for e in h["outputs"]], [(8, 2), (40, 5)])
+        self.assertEqual([b[e["data_off"]:e["data_off"] + e["len"]] for e in h["inputs"]], IFMS4)
+        self.assertEqual([b[e["golden_off"]:e["golden_off"] + e["len"]] for e in h["outputs"]], GOLDS4)
+
+    def test_parse_v1_has_one_entry_each(self):
+        b = pmwl.pack(INFO, b"\x02" * 4, b"\x03" * 2, pmwl.knobs())
+        h = pmwl.parse_header(b)
+        self.assertEqual(h["inputs"], [dict(arena_off=0, len=4, data_off=h["ifm_data_off"])])
+        self.assertEqual(h["outputs"], [dict(arena_off=8, len=2, golden_off=h["golden_off"])])
+
+    def test_parse_refuses_bad_tables(self):
+        good = pmwl.pack(INFO4, IFMS4, GOLDS4, pmwl.knobs())
+
+        def with_word(w, v):
+            b = bytearray(good); struct.pack_into("<I", b, 4 * w, v); return bytes(b)
+        for w, v in ((32, 0), (33, 0), (32, 9), (34, 4),     # no input, no output, 9 + 2 > 10, IFM entry 0 != header
+                     (34 + 3 * 2 + 1, 3),                    # OFM entry 0 length != header
+                     (34 + 3 * 1 + 1, 64),                   # IFM entry 1 outside the 64-byte arena
+                     (34 + 3 * 3 + 2, len(good))):           # golden 1 outside the blob
+            with self.assertRaises(ValueError, msg=(w, v)): pmwl.parse_header(with_word(w, v))
+
+    def test_pack_refuses(self):
+        with self.assertRaises(SystemExit): pmwl.pack(INFO4, IFMS4[:1], GOLDS4)                   # count mismatch
+        with self.assertRaises(SystemExit): pmwl.pack(INFO4, [b"\x02" * 4, b"\x04"], GOLDS4)      # length mismatch
+        many = dict(INFO, inputs=[(0, 1)] * 6, outputs=[(8, 1)] * 5)
+        with self.assertRaises(SystemExit): pmwl.pack(many, [b"\x00"] * 6, [b"\x00"] * 5)        # 11 > 10 entries
+        with self.assertRaises(SystemExit):
+            pmwl.pack(dict(INFO, inputs=[(62, 4)], outputs=[(8, 2)]), [b"\x02" * 4], [b"\x03" * 2])  # outside arena
+
+
 if __name__ == "__main__":
     unittest.main()

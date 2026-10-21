@@ -60,8 +60,10 @@ def inspect_vela(path):
     t = lambda k: sg.Tensors(op.Inputs(k))
     data = lambda k: m.Buffers(t(k).Buffer()).DataAsNumpy().tobytes() if m.Buffers(t(k).Buffer()).DataLength() else b""
     size = lambda tt: int(__import__("numpy").prod([tt.Shape(j) for j in range(tt.ShapeLength())]))
-    if op.InputsLength() != 5 or op.OutputsLength() != 1:
-        raise SystemExit(f"expected 5 inputs / 1 output, got {op.InputsLength()}/{op.OutputsLength()}")
+    # inputs 0-3: command stream, read_only, scratch (arena), scratch_fast; then the IFMs. Outputs: the OFMs.
+    if op.InputsLength() < 5 or op.OutputsLength() < 1 or op.InputsLength() - 4 + op.OutputsLength() > pmwl.IO_MAX:
+        raise SystemExit(f"expected 5..{4 + pmwl.IO_MAX - 1} inputs / 1.. outputs ({pmwl.IO_MAX} IFMs + OFMs at most), "
+                         f"got {op.InputsLength()}/{op.OutputsLength()}")
     offs = {}
     for i in range(m.MetadataLength()):
         md = m.Metadata(i)
@@ -69,30 +71,43 @@ def inspect_vela(path):
             raw = m.Buffers(md.Buffer()).DataAsNumpy().tobytes()
             w = struct.unpack("<%di" % (len(raw) // 4), raw)
             offs = {ti: o for ti, o in enumerate(w[3:]) if o >= 0}
-    ifm_t, ofm_t = op.Inputs(4), op.Outputs(0)
-    if ifm_t not in offs or ofm_t not in offs:
+    ifm_ts = [op.Inputs(k) for k in range(4, op.InputsLength())]
+    ofm_ts = [op.Outputs(k) for k in range(op.OutputsLength())]
+    if any(ti not in offs for ti in ifm_ts + ofm_ts):
         raise SystemExit("OfflineMemoryAllocation lacks IFM/OFM offsets")
+    io = lambda tis: [dict(name=sg.Tensors(ti).Name().decode(), off=offs[ti], len=size(sg.Tensors(ti))) for ti in tis]
+    ins, outs = io(ifm_ts), io(ofm_ts)
     return dict(cms=extract_cms(data(0)), const=data(1), arena_size=size(t(2)), fast_size=size(t(3)),
-                ifm_off=offs[ifm_t], ifm_len=size(sg.Tensors(ifm_t)),
-                ofm_off=offs[ofm_t], ofm_len=size(sg.Tensors(ofm_t)))
+                ifm_off=ins[0]["off"], ifm_len=ins[0]["len"], ofm_off=outs[0]["off"], ofm_len=outs[0]["len"],
+                ifms=ins, ofms=outs, inputs=[(e["off"], e["len"]) for e in ins],
+                outputs=[(e["off"], e["len"]) for e in outs])
 
 
-def reference(model, seed, ifm=None):
-    """IFM (seeded, or the given raw bytes) and the tflite_runtime OFM of the original model on it."""
+def reference(model, seed, ifm=None, in_names=None, out_names=None):
+    """IFMs (seeded, or the given raw bytes for a one-IFM model) and the tflite_runtime OFMs of the original model
+    on them, as lists in the order of in_names / out_names (the Vela op's order; matched by tensor name). The seeded
+    IFMs are drawn from one generator in that order, so a one-IFM model gets the same bytes as before."""
     import numpy as np
     from tflite_runtime.interpreter import Interpreter
     it = Interpreter(model_path=model); it.allocate_tensors()
     ins, outs = it.get_input_details(), it.get_output_details()
-    if len(ins) != 1 or len(outs) != 1:
-        raise SystemExit(f"original model has {len(ins)} inputs / {len(outs)} outputs -- step 1 needs 1/1")
-    if ifm is not None:
-        x = np.frombuffer(ifm, dtype=ins[0]["dtype"]).reshape(ins[0]["shape"])
-    else:
-        rng = np.random.default_rng(seed)
-        x = rng.integers(np.iinfo(ins[0]["dtype"]).min, np.iinfo(ins[0]["dtype"]).max + 1,
-                         size=ins[0]["shape"], dtype=ins[0]["dtype"])
-    it.set_tensor(ins[0]["index"], x); it.invoke()
-    return x.tobytes(), it.get_tensor(outs[0]["index"]).tobytes()
+    by_name = lambda ds, names: [next(d for d in ds if d["name"] == n) for n in names] if names else ds
+    try:
+        ins, outs = by_name(ins, in_names), by_name(outs, out_names)
+    except StopIteration:
+        raise SystemExit(f"Vela IFM/OFM names {in_names}/{out_names} not all in the original model") from None
+    if ifm is not None and len(ins) != 1:
+        raise SystemExit(f"--ifm gives one IFM; the model has {len(ins)}")
+    rng = np.random.default_rng(seed)
+    xs = []
+    for d in ins:
+        if ifm is not None:
+            x = np.frombuffer(ifm, dtype=d["dtype"]).reshape(d["shape"])
+        else:
+            x = rng.integers(np.iinfo(d["dtype"]).min, np.iinfo(d["dtype"]).max + 1, size=d["shape"], dtype=d["dtype"])
+        it.set_tensor(d["index"], x); xs.append(x.tobytes())
+    it.invoke()
+    return xs, [it.get_tensor(d["index"]).tobytes() for d in outs]
 
 
 def check_vela(prof, vela_version):
@@ -131,12 +146,16 @@ def main():
         vela_out = glob.glob(os.path.join(d, "*_vela.tflite"))[0]
         info = inspect_vela(vela_out)
         vela_sha = hashlib.sha256(open(vela_out, "rb").read()).hexdigest()
-    ifm, golden = reference(a.model, a.seed, open(a.ifm, "rb").read() if a.ifm else None)
-    tflite_sha = hashlib.sha256(golden).hexdigest()
+    ifms, golds = reference(a.model, a.seed, open(a.ifm, "rb").read() if a.ifm else None,
+                            [e["name"] for e in info["ifms"]], [e["name"] for e in info["ofms"]])
+    tflite_sha = hashlib.sha256(b"".join(golds)).hexdigest()
     if a.golden:
-        golden = open(a.golden, "rb").read()
+        if len(golds) != 1:
+            raise SystemExit(f"--golden gives one OFM; the model has {len(golds)}")
+        golds = [open(a.golden, "rb").read()]
+    ifm, golden = b"".join(ifms), b"".join(golds)   # hashes below cover every IFM / OFM in IO-table order
     kw = pmwl.knobs(**kargs)
-    blob = pmwl.pack(info, ifm, golden, kw)
+    blob = pmwl.pack(info, ifms, golds, kw)
     open(a.out, "wb").write(blob)
     meta = dict(model=a.model, model_sha256=hashlib.sha256(open(a.model, "rb").read()).hexdigest(),
                 vela_sha256=vela_sha, accelerator="ethos-u85-1024",
@@ -145,6 +164,9 @@ def main():
                 cms_len=len(info["cms"]), const_len=len(info["const"]), arena_size=info["arena_size"],
                 fast_size=info["fast_size"], ifm_off=info["ifm_off"], ifm_len=len(ifm),
                 ofm_off=info["ofm_off"], ofm_len=len(golden), total=len(blob),
+                **({} if len(ifms) == 1 and len(golds) == 1 else dict(
+                    ifms=[dict(e, sha256=hashlib.sha256(x).hexdigest()) for e, x in zip(info["ifms"], ifms)],
+                    ofms=[dict(e, sha256=hashlib.sha256(x).hexdigest()) for e, x in zip(info["ofms"], golds)])),
                 header_version=pmwl.parse_header(blob)["version"], knobs=[f"0x{w:08x}" for w in kw],
                 cms_sha256=hashlib.sha256(info["cms"]).hexdigest(), profile=a.profile, profile_sha256=profile_sha,
                 ifm_file=a.ifm, ifm_sha256=hashlib.sha256(ifm).hexdigest(), tflite_ofm_sha256=tflite_sha,

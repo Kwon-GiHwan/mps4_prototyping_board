@@ -7,7 +7,10 @@ Blob (little-endian u32 words):
   words  0..15  header (HEADER_FIELDS)
   words 16..31  knobs  (KNOB_FIELDS; OFF = leave the vendor/reset state). Present from header version 2
                 (words 16..23) / 3 (words 16..31); the packer picks the smallest version that holds the knobs.
-  then cms, const, IFM data, reference OFM, each 16-byte aligned.
+  words 32..63  IO table, version 4 only (a model with more than one IFM or OFM): n_in, n_out, then
+                (arena_off, len, data_off) per IFM and (arena_off, len, golden_off) per OFM, unused words 0.
+                Entry 0 of each list repeats the header's IFM / OFM words. Versions 1-3 hold one IFM and one OFM.
+  then cms, const, IFM data, reference OFM, each 16-byte aligned (version 4: every IFM, then every OFM).
 """
 from __future__ import annotations
 
@@ -24,6 +27,9 @@ HEADER_FIELDS = ("magic", "version", "cms_off", "cms_len", "const_off", "const_l
 KNOB_FIELDS = ("axi_chan", "regioncfg", "qconfig", "mem_attr0", "mem_attr1", "mem_attr2", "mem_attr3",
                "axi_sram", "axi_ext", "power_ctrl", "fast_base", "ta_profile")   # words 16.., rest reserved
 V2_KNOBS = 7   # version 2 carries knob words 16..23 (axi_chan..mem_attr3 + word 23 reserved in v2)
+IO_WORD = HEADER_WORDS + KNOB_WORDS   # version 4 IO table starts here
+IO_MAX = 10                           # IFMs + OFMs per blob
+IO_WORDS = 2 + 3 * IO_MAX
 
 
 def word(name: str) -> int:
@@ -105,30 +111,50 @@ def align(n: int, a: int = 16) -> int:
     return (n + a - 1) // a * a
 
 
-def pack(info: dict, ifm: bytes, golden: bytes, knob_words: list[int] | None = None) -> bytes:
-    """info: cms, const, arena_size, fast_size, ifm_off, ifm_len, ofm_off, ofm_len (from the Vela output)."""
-    if len(ifm) != info["ifm_len"] or len(golden) != info["ofm_len"]:
-        raise SystemExit(f"IFM/OFM size mismatch: {len(ifm)}/{info['ifm_len']}, {len(golden)}/{info['ofm_len']}")
+def pack(info: dict, ifm, golden, knob_words: list[int] | None = None) -> bytes:
+    """info: cms, const, arena_size, fast_size and either ifm_off/ofm_off (one IFM, one OFM; ifm and golden are
+    bytes) or inputs/outputs = [(arena_off, len)] (ifm and golden are lists of bytes, one per entry).
+    One IFM and one OFM give header version 1-3, byte for byte as before; more give version 4."""
+    ins = info.get("inputs") or [(info["ifm_off"], info["ifm_len"])]
+    outs = info.get("outputs") or [(info["ofm_off"], info["ofm_len"])]
+    ifms = [ifm] if isinstance(ifm, (bytes, bytearray)) else list(ifm)
+    golds = [golden] if isinstance(golden, (bytes, bytearray)) else list(golden)
+    if len(ifms) != len(ins) or len(golds) != len(outs):
+        raise SystemExit(f"IFM/OFM count mismatch: {len(ifms)}/{len(ins)}, {len(golds)}/{len(outs)}")
+    if len(ins) + len(outs) > IO_MAX:
+        raise SystemExit(f"{len(ins)} IFMs + {len(outs)} OFMs > {IO_MAX}")
+    for (off, n), b in zip(ins + outs, ifms + golds):
+        if len(b) != n:
+            raise SystemExit(f"IFM/OFM size mismatch: {len(b)} bytes for a {n}-byte tensor")
+        if off + n > info["arena_size"]:
+            raise SystemExit(f"tensor at arena offset {off} + {n} outside the {info['arena_size']}-byte arena")
     kw = list(knob_words or [OFF] * KNOB_WORDS) + [OFF] * (KNOB_WORDS - len(knob_words or []))
-    v3 = any(w != OFF for w in kw[V2_KNOBS:KNOB_WORDS])
+    v4 = len(ins) + len(outs) > 2
+    v3 = v4 or any(w != OFF for w in kw[V2_KNOBS:KNOB_WORDS])
     v2 = v3 or any(w != OFF for w in kw[0:V2_KNOBS])
     knob_bytes = 4 * KNOB_WORDS if v3 else (32 if v2 else 0)
-    cms_off = 4 * HEADER_WORDS + knob_bytes
+    cms_off = 4 * HEADER_WORDS + knob_bytes + (4 * IO_WORDS if v4 else 0)
     const_off = align(cms_off + len(info["cms"]))
-    ifm_data_off = align(const_off + len(info["const"]))
-    golden_off = align(ifm_data_off + len(ifm))
-    total = align(golden_off + len(golden))
-    fields = dict(magic=MAGIC, version=3 if v3 else (2 if v2 else 1), cms_off=cms_off, cms_len=len(info["cms"]),
-                  const_off=const_off, const_len=len(info["const"]), arena_size=info["arena_size"],
-                  fast_size=info["fast_size"], ifm_arena_off=info["ifm_off"], ifm_len=len(ifm),
-                  ifm_data_off=ifm_data_off, ofm_arena_off=info["ofm_off"], ofm_len=len(golden),
-                  golden_off=golden_off, irq_mask=0xFFFF, total_len=total)
+    data_offs, off = [], align(const_off + len(info["const"]))
+    for b in ifms + golds:
+        data_offs.append(off); off = align(off + len(b))
+    total = off
+    ents = [(a, n, d) for (a, n), d in zip(ins + outs, data_offs)]
+    fi, fo = ents[0], ents[len(ins)]
+    fields = dict(magic=MAGIC, version=4 if v4 else (3 if v3 else (2 if v2 else 1)), cms_off=cms_off,
+                  cms_len=len(info["cms"]), const_off=const_off, const_len=len(info["const"]),
+                  arena_size=info["arena_size"], fast_size=info["fast_size"],
+                  ifm_arena_off=fi[0], ifm_len=fi[1], ifm_data_off=fi[2], ofm_arena_off=fo[0], ofm_len=fo[1],
+                  golden_off=fo[2], irq_mask=0xFFFF, total_len=total)
     blob = bytearray(total)
     blob[0:4 * HEADER_WORDS] = struct.pack(f"<{HEADER_WORDS}I", *(fields[f] for f in HEADER_FIELDS))
     if knob_bytes:
         blob[4 * HEADER_WORDS:4 * HEADER_WORDS + knob_bytes] = struct.pack("<%dI" % (knob_bytes // 4),
                                                                         *kw[:knob_bytes // 4])
-    for off, b in ((cms_off, info["cms"]), (const_off, info["const"]), (ifm_data_off, ifm), (golden_off, golden)):
+    if v4:
+        table = [len(ins), len(outs)] + [w for e in ents for w in e]
+        struct.pack_into(f"<{IO_WORDS}I", blob, 4 * IO_WORD, *(table + [0] * (IO_WORDS - len(table))))
+    for off, b in [(cms_off, info["cms"]), (const_off, info["const"])] + list(zip(data_offs, ifms + golds)):
         blob[off:off + len(b)] = b
     stop = struct.unpack("<I", info["cms"][-4:])[0]
     if stop != 0xFFFF0000:
@@ -137,17 +163,35 @@ def pack(info: dict, ifm: bytes, golden: bytes, knob_words: list[int] | None = N
 
 
 def parse_header(blob: bytes) -> dict:
-    """Header fields by name, plus 'knobs' (16 words, OFF where the version does not carry them)."""
+    """Header fields by name, plus 'knobs' (16 words, OFF where the version does not carry them) and 'inputs' /
+    'outputs' (one entry each before version 4). Refuses an IO table the runner would refuse."""
     if len(blob) < 4 * HEADER_WORDS:
         raise ValueError("blob shorter than the PMWL header")
     h = dict(zip(HEADER_FIELDS, struct.unpack_from(f"<{HEADER_WORDS}I", blob, 0)))
     if h["magic"] != MAGIC:
         raise ValueError(f"not a PMWL blob (magic 0x{h['magic']:08x})")
-    n = {1: 0, 2: 8, 3: KNOB_WORDS}.get(h["version"])
+    n = {1: 0, 2: 8, 3: KNOB_WORDS, 4: KNOB_WORDS}.get(h["version"])
     if n is None:
         raise ValueError(f"unknown PMWL version {h['version']}")
     k = list(struct.unpack_from(f"<{n}I", blob, 4 * HEADER_WORDS)) + [OFF] * (KNOB_WORDS - n)
     if h["version"] == 2:
         k[V2_KNOBS] = OFF   # v2 word 23 was reserved (firmware does the same)
     h["knobs"] = k
+    first_in = (h["ifm_arena_off"], h["ifm_len"], h["ifm_data_off"])
+    first_out = (h["ofm_arena_off"], h["ofm_len"], h["golden_off"])
+    if h["version"] == 4:
+        t = struct.unpack_from(f"<{IO_WORDS}I", blob, 4 * IO_WORD)
+        n_in, n_out = t[0], t[1]
+        if n_in < 1 or n_out < 1 or n_in + n_out > IO_MAX:
+            raise ValueError(f"IO table: {n_in} IFMs, {n_out} OFMs")
+        ents = [t[2 + 3 * i:5 + 3 * i] for i in range(n_in + n_out)]
+        if ents[0] != first_in or ents[n_in] != first_out:
+            raise ValueError("IO table entry 0 differs from the header's IFM/OFM words")
+    else:
+        n_in, ents = 1, [first_in, first_out]
+    for a, ln, d in ents:
+        if a + ln > h["arena_size"] or d + ln > h["total_len"]:
+            raise ValueError(f"IO entry ({a}, {ln}, {d}) outside the arena or the blob")
+    h["inputs"] = [dict(arena_off=a, len=ln, data_off=d) for a, ln, d in ents[:n_in]]
+    h["outputs"] = [dict(arena_off=a, len=ln, golden_off=d) for a, ln, d in ents[n_in:]]
     return h

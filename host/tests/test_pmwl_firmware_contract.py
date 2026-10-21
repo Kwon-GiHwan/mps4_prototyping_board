@@ -36,17 +36,58 @@ class Header(unittest.TestCase):
                      f"memcpy(cst, s + h[{W('const_off')}], h[{W('const_len')}]);",
                      f"arena = dram; dram += pmwl_al256(h[{W('arena_size')}]);",
                      f"h[{W('fast_size')}] > PMWL_SRAM_END - h[{W('fast_base')}]",
-                     f"memset(arena + h[{W('ofm_arena_off')}], 0xA5, h[{W('ofm_len')}]);",
-                     f"memcpy(arena + h[{W('ifm_arena_off')}], s + h[{W('ifm_data_off')}], h[{W('ifm_len')}]);",
                      f"x.out_ver_data_0 = s + h[{W('golden_off')}];",
                      f"__real_test_u85(eTest, h[{W('irq_mask')}], h[{W('ofm_len')}], h[{W('cms_len')}], &x);"):
             self.assertIn(stmt, BLK, stmt)
 
     def test_versions_and_knob_span(self):
-        self.assertIn(f"h[{W('version')}] < 1U || h[{W('version')}] > 3U", BLK)
+        self.assertIn(f"h[{W('version')}] < 1U || h[{W('version')}] > 4U", BLK)
         self.assertIn(f"memcpy(&h[{pmwl.HEADER_WORDS}], s + {4 * pmwl.HEADER_WORDS}U, "
-                      f"((h[1] == 3U) ? {pmwl.KNOB_WORDS}U : 8U) * 4U);", BLK)
+                      f"((h[1] >= 3U) ? {pmwl.KNOB_WORDS}U : 8U) * 4U);", BLK)
         self.assertIn(f"if (h[1] == 2U) {{ h[{pmwl.HEADER_WORDS + pmwl.V2_KNOBS}] = PMWL_OFF; }}", BLK)
+
+
+class IoTable(unittest.TestCase):
+    """Version 4: the runner reads the IO table where pmwl.py writes it and walks every entry."""
+
+    def test_table_place_and_size(self):
+        self.assertIn(f"#define PMWL_IO_MAX {pmwl.IO_MAX}U", BLK)
+        self.assertIn("uint32_t io[2U + 3U * PMWL_IO_MAX]", BLK)
+        self.assertEqual(pmwl.IO_WORDS, 2 + 3 * pmwl.IO_MAX)
+        self.assertIn("if (h[1] == 4U) {", BLK)
+        self.assertIn(f"memcpy(io, s + {4 * pmwl.IO_WORD}U, sizeof io);", BLK)
+
+    def test_entry_layout_is_the_header_ifm_ofm_words(self):
+        # an entry is (arena_off, len, data_off); entry 0 of each list repeats header words 8..10 / 11..13
+        self.assertEqual(pmwl.HEADER_FIELDS[W("ifm_arena_off"):W("golden_off") + 1],
+                         ("ifm_arena_off", "ifm_len", "ifm_data_off", "ofm_arena_off", "ofm_len", "golden_off"))
+        self.assertIn(f"io[2] != h[{W('ifm_arena_off')}] || io[3] != h[{W('ifm_len')}] "
+                      f"|| io[4] != h[{W('ifm_data_off')}]", BLK)
+        self.assertIn(f"io[2U + 3U * io[0]] != h[{W('ofm_arena_off')}] || io[3U + 3U * io[0]] != h[{W('ofm_len')}] "
+                      f"|| io[4U + 3U * io[0]] != h[{W('golden_off')}]", BLK)
+        self.assertIn(f"for (i = 0U; i < 6U; i++) {{ io[2U + i] = h[{W('ifm_arena_off')}U + i]; }}", BLK)
+        self.assertIn("io[0] = 1U; io[1] = 1U;", BLK)
+
+    def test_counts_and_bounds_refused(self):
+        self.assertIn("io[0] < 1U || io[1] < 1U || io[1] > PMWL_IO_MAX || io[0] > PMWL_IO_MAX - io[1]", BLK)
+        self.assertIn(f"io[e + 1U] > h[{W('arena_size')}] || io[e] > h[{W('arena_size')}] - io[e + 1U] "
+                      f"|| io[e + 1U] > h[{W('total_len')}] || io[e + 2U] > h[{W('total_len')}] - io[e + 1U]", BLK)
+        self.assertIn("for (k = 0U; k < io[0] + io[1]; k++) {\n        e = 2U + 3U * k;\n        if (", BLK)
+
+    def test_every_ifm_copied_every_ofm_poisoned_and_compared(self):
+        poison = ("for (k = 0U; k < io[1]; k++) {  /* poison every OFM, then copy every IFM (they may overlap) */\n"
+                  "        e = 2U + 3U * (io[0] + k);\n        memset(arena + io[e], 0xA5, io[e + 1U]);\n    }\n")
+        copy = ("for (k = 0U; k < io[0]; k++) {\n        e = 2U + 3U * k;\n"
+                "        memcpy(arena + io[e], s + io[e + 2U], io[e + 1U]);\n    }\n")
+        self.assertIn(poison + "    " + copy, BLK)            # poison before copy: an IFM may share an OFM's bytes
+        compare = BLK[BLK.index("at = 0U;"):BLK.index("if (pmwl_knob_pending) { pmwl_knob_bad = 1U; }")]
+        for stmt in ("for (k = 0U; k < io[1]; k++) {", "e = 2U + 3U * (io[0] + k);",
+                     "o = (const int8_t *)(arena + io[e]);", "g = (const int8_t *)(s + io[e + 2U]);",
+                     "for (i = 0U; i < io[e + 1U]; i++, at++) {", "if (ofm_mm_count == 0U) { ofm_mm_first = at; }",
+                     "ofm_mm_count++;"):
+            self.assertIn(stmt, compare, stmt)
+        self.assertLess(BLK.index(copy), BLK.index("rc = __real_test_u85("))
+        self.assertLess(BLK.index("rc = __real_test_u85("), BLK.index("at = 0U;"))
 
 
 class Knobs(unittest.TestCase):
