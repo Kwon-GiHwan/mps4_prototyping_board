@@ -1,0 +1,2 @@
+78 vww4_128_128_INT8 x1
+79 wav2letter_pruned_int8 x1

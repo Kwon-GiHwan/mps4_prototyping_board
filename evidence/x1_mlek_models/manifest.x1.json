@@ -1,0 +1,100 @@
+{
+ "what": "Exploratory x1 (evidence/x1_mlek_models/contract.md): MLEK models not measured in Stage 1; frozen before boot 78.",
+ "profile": "config/mlek_baseline.json",
+ "boots": {
+  "78": "vww4_128_128_INT8",
+  "79": "wav2letter_pruned_int8"
+ },
+ "workloads": {
+  "vww4_128_128_INT8": {
+   "blob_sha256": "b7c15f01c4be6199003e5570463bf8c252a5f5f16732af17d0d6821e8b8ca2f4",
+   "cms_sha256": "11315c67b6b05364f7ad9e3e21ba81f0e48d8829448f918d5d5ae6f8fc6676d7",
+   "golden": {
+    "source": "tflite_runtime OFM of the original model on the seed-1 IFM (stage 0 R3); no MLEK FI101 golden (exploratory, contract.md)",
+    "input_sha256": "08b13036cc52d935154c4cfd905be7ed88f5c80f4f7360a292d8ee9c7cf645a5",
+    "ofm_sha256": "553da457aa108ed63cfde8e791710a7087a0e05c25f13110e8625ea58acd6486"
+   },
+   "knobs": [
+    "0xffffffff",
+    "0x0000000a",
+    "0x00000002",
+    "0x00000000",
+    "0x00000000",
+    "0x00000004",
+    "0x00000004",
+    "0x00020f0b",
+    "0x00021f3f",
+    "0x00000000",
+    "0x31100000",
+    "0x00000001",
+    "0xffffffff",
+    "0xffffffff",
+    "0xffffffff",
+    "0xffffffff"
+   ],
+   "fast_size": 131840,
+   "arena_size": 16384,
+   "cms_len": 12960,
+   "const_len": 340368,
+   "class": "model",
+   "n_mac": 18828800,
+   "n_mac_ops": 54,
+   "non_mac_ops": 20,
+   "op_counts": {
+    "AVERAGE_POOL_2D": 1,
+    "PAD": 8,
+    "RESHAPE": 1,
+    "ADD": 10,
+    "CONV_2D": 37,
+    "DEPTHWISE_CONV_2D": 17
+   },
+   "vela_nn_macs": 18763264.0,
+   "model_sha256": "5e76364e80c45776b735563679d45f611cab7ce7fef2ec4e2db088afe009ccae",
+   "vela_sha256": "637711c9bb5046bbf7f9010d1e1f1c25e9ea6cf643d74e8eb225c66b4ba6fed7"
+  },
+  "wav2letter_pruned_int8": {
+   "blob_sha256": "5b8c9d06dea13bea1ede77bd6e80ed4a665b63a29589fe10409737a2b39792ef",
+   "cms_sha256": "621a1592f5ed81402022915ab8032775ca824034c820e9ed83cc566e6589efbb",
+   "golden": {
+    "source": "tflite_runtime OFM of the original model on the seed-1 IFM (stage 0 R3); no MLEK FI101 golden (exploratory, contract.md)",
+    "input_sha256": "2403a15edceb67313e8cba301be0e6eb694977c3a3c02793147d86b3c0243630",
+    "ofm_sha256": "45ed8eeb82d402d72b1711c7782f7d3055d4948e83b2f4a47e03394e6894aad9"
+   },
+   "knobs": [
+    "0xffffffff",
+    "0x0000000a",
+    "0x00000002",
+    "0x00000000",
+    "0x00000000",
+    "0x00000004",
+    "0x00000004",
+    "0x00020f0b",
+    "0x00021f3f",
+    "0x00000000",
+    "0x31100000",
+    "0x00000001",
+    "0xffffffff",
+    "0xffffffff",
+    "0xffffffff",
+    "0xffffffff"
+   ],
+   "fast_size": 333888,
+   "arena_size": 296000,
+   "cms_len": 5632,
+   "const_len": 14488640,
+   "class": "model",
+   "n_mac": 3491098000,
+   "n_mac_ops": 11,
+   "non_mac_ops": 12,
+   "op_counts": {
+    "SOFTMAX": 1,
+    "CONV_2D": 11,
+    "RESHAPE": 1,
+    "LEAKY_RELU": 10
+   },
+   "vela_nn_macs": 3491110876.0,
+   "model_sha256": "e0814a0e586f2f2881f7fe96e6bc0b8e4cfecc8d64ced56d8f7ca85b9b7ab257",
+   "vela_sha256": "4c5b640211f0aaa60eaf65ee5c9c4096a43022fd2c34127042e1304bf45def7b"
+  }
+ }
+}
