@@ -1,0 +1,118 @@
+################################################################################
+Allocation, memory Dram, usage mask: FeatureMap
+Start Time - End Time  : Start Addr -   End Addr: Tensor Size: Memory Usage: Format         : Name
+         0 -          1:       0x20 -       0x60:          64:           96: NHWC           : ifm
+         0 -          3:        0x0 -       0x20:          32:           96: NHWC           : ofm
+Allocation Peak Tensor Size: 96 bytes == 0.09375 KiB
+################################################################################
+Allocation, memory Sram, usage mask: Staging
+Start Time - End Time  : Start Addr -   End Addr: Tensor Size: Memory Usage: Format         : Name
+Allocation Peak Tensor Size: 0 bytes == 0 KiB
+################################################################################
+Tensor Allocation for read-only NPU tensors:
+Start Time - End Time  : Start Addr -   End Addr: Tensor Size: Memory Usage: Format         : Name
+         0 -          1:        0x0 -      0x170:         368:          368: Unknown        : weights
+Allocation Peak Tensor Size: 368 bytes == 0.359375 KiB
+High level NPU operations:
+0 Conv2D , subOps:[  - ], size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0] OFM Block=[1, 4, 4, 16], IFM Block=[1, 4, 4, 16], OFM UBlock=[2, 4, 16] Traversal=PartKernel, AccType=Acc32
+  IFM: ifm, [1, 4, 4, 4], format: 1, Dram:FeatureMap, address: 0x20
+  OFM: ofm, [1, 4, 4, 2], format: 1, Dram:FeatureMap, address: 0x0
+  Weights: weights, 4 ranges, buffering: 0, Dram:ReadOnly, address: 0x0, format: Default
+High level command stream:
+0 Conv2D OFM area [0, 0, 0, 0 - 1, 4, 4, 2], IFM [0, 0, 0, 0 - 1, 4, 4, 4], IFM2 [ - ]
+Register command stream: 87 words
+  Offset: Payload Param Code - Command                        Param, Fields
+// Conv2D , subOps:[  - ], size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0] OFM Block=[1, 4, 4, 16], IFM Block=[1, 4, 4, 16], OFM UBlock=[2, 4, 16] Traversal=PartKernel, AccType=Acc32
+0x000000: 40000000 001e 4024 - NPU_SET_OFM_SCALE                 30, shift = 30, dbl_rnd = 0, round_mode = ROUND_MODE_OFM_DOUBLE_SYMMETRIC, scale = 1073741824
+0x000008:          0001 0105 - NPU_SET_IFM_PRECISION              1, activation_type = ACTIVATION_TYPE_SIGNED, activation_precision = ACTIVATION_PRECISION_B8, activation_format = ACTIVATION_FORMAT_NHWC, activation_storage = ACTIVATION_STORAGE_TILE2X2
+0x00000c:          0001 010f - NPU_SET_IFM_REGION                 1, region = 1
+0x000010: 00000020 0000 4000 - NPU_SET_IFM_BASE0                  0, addr = 0x20
+0x000018: 00000000 0000 4001 - NPU_SET_IFM_BASE1                  0, addr = 0x0
+0x000020: 00000000 0000 4002 - NPU_SET_IFM_BASE2                  0, addr = 0x0
+0x000028: 00000000 0000 4003 - NPU_SET_IFM_BASE3                  0, addr = 0x0
+0x000030:          0003 010b - NPU_SET_IFM_HEIGHT0_M1             3, height_m1 = 3
+0x000034:          0003 010c - NPU_SET_IFM_HEIGHT1_M1             3, height_m1 = 3
+0x000038:          0003 010a - NPU_SET_IFM_WIDTH0_M1              3, width_m1 = 3
+0x00003c:          0003 0104 - NPU_SET_IFM_DEPTH_M1               3, depth_m1 = 3
+0x000040: 00000010 0000 4005 - NPU_SET_IFM_STRIDE_Y               0, addr = 0x10
+0x000048: 00000004 0000 4004 - NPU_SET_IFM_STRIDE_X               0, addr = 0x4
+0x000050: 00000001 0000 4006 - NPU_SET_IFM_STRIDE_C               0, addr = 0x1
+0x000058:          0000 0109 - NPU_SET_IFM_ZERO_POINT             0, zero_point = 0
+0x00005c:          0000 0107 - NPU_SET_IFM_UPSCALE                0, mode = IFM_UPSCALE_MODE_NONE
+0x000060:          0000 0100 - NPU_SET_IFM_PAD_TOP                0, pad = 0
+0x000064:          0000 0101 - NPU_SET_IFM_PAD_LEFT               0, pad = 0
+0x000068:          0000 0103 - NPU_SET_IFM_PAD_BOTTOM             0, pad = 0
+0x00006c:          0000 0102 - NPU_SET_IFM_PAD_RIGHT              0, pad = 0
+0x000070:          0001 0114 - NPU_SET_OFM_PRECISION              1, activation_type = ACTIVATION_TYPE_SIGNED, activation_precision = ACTIVATION_PRECISION_B8, activation_format = ACTIVATION_FORMAT_NHWC, scale_mode = OFM_SCALE_MODE_PER_CHANNEL, activation_reverse = ACTIVATION_REVERSE_NONE, activation_transpose = ACTIVATION_TRANSPOSE_HWC, activation_storage = ACTIVATION_STORAGE_TILE2X2
+0x000074:          0001 011f - NPU_SET_OFM_REGION                 1, region = 1
+0x000078: 00000000 0000 4010 - NPU_SET_OFM_BASE0                  0, addr = 0x0
+0x000080: 00000000 0000 4011 - NPU_SET_OFM_BASE1                  0, addr = 0x0
+0x000088: 00000000 0000 4012 - NPU_SET_OFM_BASE2                  0, addr = 0x0
+0x000090: 00000000 0000 4013 - NPU_SET_OFM_BASE3                  0, addr = 0x0
+0x000098:          0003 0112 - NPU_SET_OFM_HEIGHT_M1              3, height_m1 = 3
+0x00009c:          0003 0111 - NPU_SET_OFM_WIDTH_M1               3, width_m1 = 3
+0x0000a0:          0001 0113 - NPU_SET_OFM_DEPTH_M1               1, depth_m1 = 1
+0x0000a4:          0003 011b - NPU_SET_OFM_HEIGHT0_M1             3, height_m1 = 3
+0x0000a8:          0003 011c - NPU_SET_OFM_HEIGHT1_M1             3, height_m1 = 3
+0x0000ac:          0003 011a - NPU_SET_OFM_WIDTH0_M1              3, width_m1 = 3
+0x0000b0: 00000008 0000 4015 - NPU_SET_OFM_STRIDE_Y               0, addr = 0x8
+0x0000b8: 00000002 0000 4014 - NPU_SET_OFM_STRIDE_X               0, addr = 0x2
+0x0000c0: 00000001 0000 4016 - NPU_SET_OFM_STRIDE_C               0, addr = 0x1
+0x0000c8:          0000 0118 - NPU_SET_OFM_ZERO_POINT             0, zero_point = 0
+0x0000cc:          0000 0121 - NPU_SET_KERNEL_HEIGHT_M1           0, height_m1 = 0
+0x0000d0:          0000 0120 - NPU_SET_KERNEL_WIDTH_M1            0, width_m1 = 0
+0x0000d4:          0004 0122 - NPU_SET_KERNEL_STRIDE              4, stride_x_lsb = 0, stride_y_lsb = 0, weight_order = WEIGHT_ORDER_PART_KERNEL_FIRST, dilation_x = KERNEL_DILATION_NONE, dilation_y = KERNEL_DILATION_NONE, decomposition = KERNEL_DECOMPOSITION_D8X8, stride_x_msb = 0, stride_y_msb = 0
+0x0000d8:          0000 012e - NPU_SET_WEIGHT_FORMAT              0, weight_format = WEIGHT_FORMAT_SWD, weight_sparsity = WEIGHT_SPARSITY_NONE
+0x0000dc:          0000 0128 - NPU_SET_WEIGHT_REGION              0, region = 0
+0x0000e0: 000000a0 0000 4020 - NPU_SET_WEIGHT_BASE                0, addr = 0xa0
+0x0000e8: 00000040 0000 4021 - NPU_SET_WEIGHT_LENGTH              0, length = 64
+0x0000f0: 000000e0 0000 4090 - NPU_SET_WEIGHT1_BASE               0, addr = 0xe0
+0x0000f8: 00000030 0000 4091 - NPU_SET_WEIGHT1_LENGTH             0, length = 48
+0x000100: 00000110 0000 4092 - NPU_SET_WEIGHT2_BASE               0, addr = 0x110
+0x000108: 00000030 0000 4093 - NPU_SET_WEIGHT2_LENGTH             0, length = 48
+0x000110: 00000140 0000 4094 - NPU_SET_WEIGHT3_BASE               0, addr = 0x140
+0x000118: 00000030 0000 4095 - NPU_SET_WEIGHT3_LENGTH             0, length = 48
+0x000120:          0000 0129 - NPU_SET_SCALE_REGION               0, region = 0
+0x000124: 00000000 0000 4022 - NPU_SET_SCALE_BASE                 0, addr = 0x0
+0x00012c: 000000a0 0000 4023 - NPU_SET_SCALE_LENGTH               0, length = 160
+0x000134:          0000 0125 - NPU_SET_ACTIVATION                 0, activation_function = ACTIVATION_FUNCTION_LUT_NONE, table = 0, activation_clip_range = ACTIVATION_CLIP_RANGE_B16
+0x000138:          ff80 0126 - NPU_SET_ACTIVATION_MIN         65408, clip_boundary = 65408
+0x00013c:          007f 0127 - NPU_SET_ACTIVATION_MAX           127, clip_boundary = 127
+0x000140:          0003 0116 - NPU_SET_OFM_BLK_HEIGHT_M1          3, height_m1 = 3
+0x000144:          0003 0115 - NPU_SET_OFM_BLK_WIDTH_M1           3, width_m1 = 3
+0x000148:          000f 0117 - NPU_SET_OFM_BLK_DEPTH_M1          15, depth_m1 = 15
+0x00014c:          0400 0124 - NPU_SET_ACC_FORMAT              1024, acc_format = ACC_FORMAT_I32, acc_input = ACC_INPUT_RESET, acc_output = ACC_OUTPUT_ENABLE, microblock = MICROBLOCK_U2X4
+0x000150:          0000 012f - NPU_SET_BLOCKDEP                   0, blockdep = 0
+0x000154:          0000 0002 - NPU_OP_CONV                        0, weights_ifm2 = 0
+0x000158:          ffff 0000 - NPU_OP_STOP                    65535, mask = 65535
+
+################################################################################
+Performance for NPU Grap /work/study_conv1x1/vela/conv1x1
+Original Operator    NNG Operator         Target Staging Usage  Peak% (Staging)  Op Cycles Network% (cycles)        NPU    SRAM AC    DRAM AC OnFlash AC OffFlash AC  MAC Count Network% (MAC)  Util% (MAC) Name                 
+-------------------- -------------------- ------ ------------- ---------------- ---------- ----------------- ---------- ---------- ---------- ---------- ----------- ---------- -------------- ------------ -------------------- 
+Conv2D               Conv2D               NPU                0           100.00        442            100.00        442          0        390          0           0        128         100.00         0.03 ofm                  
+
+Network summary for conv1x1
+Accelerator configuration              Ethos_U85_1024
+System configuration             Ethos_U85_SYS_DRAM_Mid_1024
+Memory mode                            Dedicated_Sram
+Accelerator clock                                1000 MHz
+Design peak DRAM bandwidth                      22.35 GB/s
+
+Total DRAM used                                  0.45 KiB
+
+CPU operators = 0 (0.0%)
+NPU operators = 1 (100.0%)
+
+Average DRAM bandwidth                           2.45 GB/s
+Input   DRAM bandwidth                           0.00 MB/batch
+Weight  DRAM bandwidth                           0.00 MB/batch
+Output  DRAM bandwidth                           0.00 MB/batch
+Total   DRAM bandwidth                           0.00 MB/batch
+Total   DRAM bandwidth            per input      0.00 MB/inference (batch size 1)
+
+Original Weights Size                            0.02 KiB
+NPU Encoded Weights Size                         0.20 KiB
+
+Neural network macs                               128 MACs/batch
+
