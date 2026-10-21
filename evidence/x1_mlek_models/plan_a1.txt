@@ -1,0 +1,4 @@
+80 kws_micronet_m ctl
+81 rnnoise_INT8 x1
+82 yolo-fastest_192_face_v4 x1
+83 yolo-fastest_192_face_v4 x1neg

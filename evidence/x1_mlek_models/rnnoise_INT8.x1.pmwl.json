@@ -1,0 +1,130 @@
+{
+  "model": "/opt/arm/ml-embedded-evaluation-kit/resources_downloaded/noise_reduction/rnnoise_INT8.tflite",
+  "model_sha256": "9c582545b7c13af44616c44b654f4fe721aa2585630b0ca173ca3589f6f11c2c",
+  "vela_sha256": "5bc1ee088fd731dbb9fed4a0d8ddcea92c11600e82b5041371149465510bee79",
+  "accelerator": "ethos-u85-1024",
+  "system_config": "Ethos_U85_SYS_DRAM_Mid_1024",
+  "memory_mode": "Dedicated_Sram",
+  "vela_options": [
+    "--accelerator-config",
+    "ethos-u85-1024",
+    "--optimise",
+    "Performance",
+    "--config",
+    "/opt/arm/ml-embedded-evaluation-kit/scripts/vela/default_vela.ini",
+    "--memory-mode",
+    "Dedicated_Sram",
+    "--system-config",
+    "Ethos_U85_SYS_DRAM_Mid_1024"
+  ],
+  "seed": 1,
+  "blob_sha256": "5c3990a9c991f58a17f18ed7d6cc950edc277e62446adcc797e2f907fc4a03dc",
+  "cms_len": 7296,
+  "const_len": 117024,
+  "arena_size": 384,
+  "fast_size": 704,
+  "ifm_off": 96,
+  "ifm_len": 210,
+  "ofm_off": 96,
+  "ofm_len": 191,
+  "total": 125024,
+  "ifms": [
+    {
+      "name": "vad_gru_prev_state_int8",
+      "off": 96,
+      "len": 24,
+      "sha256": "61a6cce5be7d54f4e9b303ba730f39d269455457535e16254d24cc6f558278e2"
+    },
+    {
+      "name": "main_input_int8",
+      "off": 192,
+      "len": 42,
+      "sha256": "52ace3d77db9088a2276d41a270cccb2d8d10f4f052c1b2d0ee3da5e86b26b00"
+    },
+    {
+      "name": "noise_gru_prev_state_int8",
+      "off": 144,
+      "len": 48,
+      "sha256": "843a5fb79327d74aea2f7b419c772021c7806cea2583c4442942f58f5da1363f"
+    },
+    {
+      "name": "denoise_gru_prev_state_int8",
+      "off": 0,
+      "len": 96,
+      "sha256": "73767ea10b89d11d9017bc9269730bdf7e9065c2fd24e7f8a5af576cd7b2def0"
+    }
+  ],
+  "ofms": [
+    {
+      "name": "Identity_3_int8",
+      "off": 96,
+      "len": 24,
+      "sha256": "c54b1c2050b598692b525c7bd24964f95bb32c80552f5bf74300891cb16c3eee"
+    },
+    {
+      "name": "Identity_4_int8",
+      "off": 128,
+      "len": 1,
+      "sha256": "380918b946a526640a40df5dced6516794f3d97bbd9e6bb553d037c4439f31c3"
+    },
+    {
+      "name": "Identity_2_int8",
+      "off": 144,
+      "len": 48,
+      "sha256": "7dcf67ca783245a0a1964cc38ab6945b83d771aa2f10f616411b6b005d00b0d1"
+    },
+    {
+      "name": "Identity_int8",
+      "off": 0,
+      "len": 96,
+      "sha256": "8e49a752c755d0c76145c0e198038522904843da09fcce3651d98c5d02179f9c"
+    },
+    {
+      "name": "Identity_1_int8",
+      "off": 192,
+      "len": 22,
+      "sha256": "7c19ac573fa1f391bb3ff182dce95f0b20f090a3f39736d734c63d9ce8815ac3"
+    }
+  ],
+  "header_version": 4,
+  "knobs": [
+    "0xffffffff",
+    "0x0000000a",
+    "0x00000002",
+    "0x00000000",
+    "0x00000000",
+    "0x00000004",
+    "0x00000004",
+    "0x00020f0b",
+    "0x00021f3f",
+    "0x00000000",
+    "0x31100000",
+    "0x00000001",
+    "0xffffffff",
+    "0xffffffff",
+    "0xffffffff",
+    "0xffffffff"
+  ],
+  "cms_sha256": "6f1a31d4ddfc2ab502866ea702507f6400beb32d481beef9166bbb69b7f7fe15",
+  "profile": "/work/mps4_host/config/mlek_baseline.json",
+  "profile_sha256": "b2a40af97d2cfe61df88896c91e30f45a3ffa0fe7a7342299a4b757ba63c3d52",
+  "ifm_file": null,
+  "ifm_sha256": "2bec58b8e345961a9c6b7a79f805f5048d60325bd75c564e5ca5ce0a9f56ed14",
+  "tflite_ofm_sha256": "82c40b157c314fbc0ff06128d0a48b037febd6f173317008294dfa129060adea",
+  "golden_file": null,
+  "golden_sha256": "82c40b157c314fbc0ff06128d0a48b037febd6f173317008294dfa129060adea",
+  "axi": null,
+  "ports": {
+    "cmd": "ext",
+    "const": "ext",
+    "arena": "ext",
+    "fast": "sram"
+  },
+  "axi_limit": {
+    "sram": 134923,
+    "ext": 139071
+  },
+  "power_ctrl": 0,
+  "fast_base": 823132160,
+  "ta_profile": 1
+}

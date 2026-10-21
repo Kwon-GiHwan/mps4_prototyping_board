@@ -37,3 +37,34 @@ Golden = tflite_runtime OFM of the original model on the seed-1 IFM (the stage-0
   `UNRESOLVED (x1)`, with the mismatch count, as the `s1` operators were. No MLEK golden is made to rescue them in
   this pass.
 - Any other failure → `UNRESOLVED (x1)`, not reported as a utilization value.
+
+## Amendment 1 (2026-10-21, owner request, recorded before boot 80) — rnnoise and yolo-fastest
+
+**TA state: profile 1, unchanged.** The owner asked to make the runner accept the two `NOT_EXECUTABLE` models and
+measure them. Commit `f21cd27` adds PMWL header version 4 (an IO table: every IFM copied, every OFM poisoned and
+compared, entry 0 = the header words). This changes the runner image, so it is a change of measurement condition:
+
+| | Scope above (boots 78–79) | This amendment (boots 80–83) |
+| --- | --- | --- |
+| image APP | `2c2fa435…` | `26f6129a…` (VECTORS, DDR unchanged) |
+
+Blobs (`manifest.x1.json`; both Vela outputs equal MLEK's own, sha256 = the FVP campaign's `vela_sha256`):
+
+| boot | workload | blob | IFMs / OFMs | purpose |
+| --- | --- | --- | --- | --- |
+| 80 | kws_micronet_m | `f11271cb…` (Stage 1 boot 65 blob, v3) | 1 / 1 | control: the new image on an old blob |
+| 81 | rnnoise_INT8 | `5c3990a9…` (v4) | 4 / 5 | measurement |
+| 82 | yolo-fastest_192_face_v4 | `1f71e475…` (v4) | 1 / 2 | measurement |
+| 83 | yolo-fastest_192_face_v4 | `13a9cd7f…` = boot 82's blob with golden byte 10 of OFM 1 raised by 5 | 1 / 2 | negative control |
+
+Golden: tflite_runtime OFMs of the original model on seed-1 IFMs (one generator, IO-table order). Rules:
+
+- **Control (boot 80)** passes only if the gate is `BASELINE_PASS`, `mac_active` is 56,450 in every measured RUN and
+  the `npu_active` median lies in Stage 1 boot 65's range [89,884, 92,356]. Otherwise rnnoise and yolo results are
+  `UNRESOLVED (x1)` whatever their own gate says.
+- **Negative control (boot 83)** passes only if every RUN reports `ofm_mismatch_count` 1, `ofm_max_abs_diff` 5,
+  `ofm_first_mismatch` 2602 (= 2,592 bytes of OFM 0 + 10) and `vendor_rc` 0 (the vendor's memcmp sees OFM 0 only).
+  Otherwise the OFM comparison of version 4 is unproven and boots 81–82 are `UNRESOLVED (x1)`.
+- Boots 81–82: status as in "Correctness and status" above. rnnoise's state IFMs and OFMs share arena bytes
+  (Vela places them in place); the OFM poison is overwritten there by the IFM copy, as for every earlier
+  overlapping IFM/OFM.

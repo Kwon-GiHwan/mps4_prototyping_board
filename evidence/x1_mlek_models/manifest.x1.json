@@ -1,9 +1,13 @@
 {
- "what": "Exploratory x1 (evidence/x1_mlek_models/contract.md): MLEK models not measured in Stage 1; frozen before boot 78.",
+ "what": "Exploratory x1 (evidence/x1_mlek_models/contract.md): MLEK models not measured in Stage 1; frozen before boot 78. Amendment 1 (rnnoise, yolo-fastest, image 26f6129a) frozen before boot 80.",
  "profile": "config/mlek_baseline.json",
  "boots": {
   "78": "vww4_128_128_INT8",
-  "79": "wav2letter_pruned_int8"
+  "79": "wav2letter_pruned_int8",
+  "80": "kws_micronet_m (control, stage 1 blob, new image)",
+  "81": "rnnoise_INT8",
+  "82": "yolo-fastest_192_face_v4",
+  "83": "yolo-fastest_192_face_v4 negative control"
  },
  "workloads": {
   "vww4_128_128_INT8": {
@@ -95,6 +99,188 @@
    "vela_nn_macs": 3491110876.0,
    "model_sha256": "e0814a0e586f2f2881f7fe96e6bc0b8e4cfecc8d64ced56d8f7ca85b9b7ab257",
    "vela_sha256": "4c5b640211f0aaa60eaf65ee5c9c4096a43022fd2c34127042e1304bf45def7b"
+  },
+  "rnnoise_INT8": {
+   "blob_sha256": "5c3990a9c991f58a17f18ed7d6cc950edc277e62446adcc797e2f907fc4a03dc",
+   "cms_sha256": "6f1a31d4ddfc2ab502866ea702507f6400beb32d481beef9166bbb69b7f7fe15",
+   "golden": {
+    "source": "tflite_runtime OFMs of the original model on the seed-1 IFMs (stage 0 R3), all IFMs/OFMs in IO-table order; no MLEK FI101 golden (exploratory, contract.md)",
+    "input_sha256": "2bec58b8e345961a9c6b7a79f805f5048d60325bd75c564e5ca5ce0a9f56ed14",
+    "ofm_sha256": "82c40b157c314fbc0ff06128d0a48b037febd6f173317008294dfa129060adea"
+   },
+   "knobs": [
+    "0xffffffff",
+    "0x0000000a",
+    "0x00000002",
+    "0x00000000",
+    "0x00000000",
+    "0x00000004",
+    "0x00000004",
+    "0x00020f0b",
+    "0x00021f3f",
+    "0x00000000",
+    "0x31100000",
+    "0x00000001",
+    "0xffffffff",
+    "0xffffffff",
+    "0xffffffff",
+    "0xffffffff"
+   ],
+   "fast_size": 704,
+   "arena_size": 384,
+   "cms_len": 7296,
+   "const_len": 117024,
+   "class": "model",
+   "n_mac": 86952,
+   "n_mac_ops": 9,
+   "non_mac_ops": 59,
+   "op_counts": {
+    "SPLIT": 3,
+    "QUANTIZE": 4,
+    "SPLIT_V": 3,
+    "UNPACK": 3,
+    "TANH": 3,
+    "PACK": 3,
+    "RESHAPE": 6,
+    "MUL": 9,
+    "SUB": 3,
+    "CONCATENATION": 2,
+    "LOGISTIC": 8,
+    "FULLY_CONNECTED": 9,
+    "ADD": 12
+   },
+   "vela_nn_macs": 87510.0,
+   "model_sha256": "9c582545b7c13af44616c44b654f4fe721aa2585630b0ca173ca3589f6f11c2c",
+   "vela_sha256": "5bc1ee088fd731dbb9fed4a0d8ddcea92c11600e82b5041371149465510bee79",
+   "header_version": 4,
+   "ifms": [
+    {
+     "name": "vad_gru_prev_state_int8",
+     "off": 96,
+     "len": 24,
+     "sha256": "61a6cce5be7d54f4e9b303ba730f39d269455457535e16254d24cc6f558278e2"
+    },
+    {
+     "name": "main_input_int8",
+     "off": 192,
+     "len": 42,
+     "sha256": "52ace3d77db9088a2276d41a270cccb2d8d10f4f052c1b2d0ee3da5e86b26b00"
+    },
+    {
+     "name": "noise_gru_prev_state_int8",
+     "off": 144,
+     "len": 48,
+     "sha256": "843a5fb79327d74aea2f7b419c772021c7806cea2583c4442942f58f5da1363f"
+    },
+    {
+     "name": "denoise_gru_prev_state_int8",
+     "off": 0,
+     "len": 96,
+     "sha256": "73767ea10b89d11d9017bc9269730bdf7e9065c2fd24e7f8a5af576cd7b2def0"
+    }
+   ],
+   "ofms": [
+    {
+     "name": "Identity_3_int8",
+     "off": 96,
+     "len": 24,
+     "sha256": "c54b1c2050b598692b525c7bd24964f95bb32c80552f5bf74300891cb16c3eee"
+    },
+    {
+     "name": "Identity_4_int8",
+     "off": 128,
+     "len": 1,
+     "sha256": "380918b946a526640a40df5dced6516794f3d97bbd9e6bb553d037c4439f31c3"
+    },
+    {
+     "name": "Identity_2_int8",
+     "off": 144,
+     "len": 48,
+     "sha256": "7dcf67ca783245a0a1964cc38ab6945b83d771aa2f10f616411b6b005d00b0d1"
+    },
+    {
+     "name": "Identity_int8",
+     "off": 0,
+     "len": 96,
+     "sha256": "8e49a752c755d0c76145c0e198038522904843da09fcce3651d98c5d02179f9c"
+    },
+    {
+     "name": "Identity_1_int8",
+     "off": 192,
+     "len": 22,
+     "sha256": "7c19ac573fa1f391bb3ff182dce95f0b20f090a3f39736d734c63d9ce8815ac3"
+    }
+   ]
+  },
+  "yolo-fastest_192_face_v4": {
+   "blob_sha256": "1f71e47582c53916ad72afc660b5a03f4ef0789bfa726dd5414ae9250641928e",
+   "cms_sha256": "fa50d14e8b41f637afbe6f5da41fe752cb3558e7479928fbe8c0e233919328d3",
+   "golden": {
+    "source": "tflite_runtime OFMs of the original model on the seed-1 IFMs (stage 0 R3), all IFMs/OFMs in IO-table order; no MLEK FI101 golden (exploratory, contract.md)",
+    "input_sha256": "a77b14b44c38c94c742e791baedc216a8025055a8340fb6926f0cfc5e0dd4c52",
+    "ofm_sha256": "2e0d0bf1250ffca7154dd11e848d11b9c05ddf2e641f5fb6fb7848b7f45c22c8"
+   },
+   "knobs": [
+    "0xffffffff",
+    "0x0000000a",
+    "0x00000002",
+    "0x00000000",
+    "0x00000000",
+    "0x00000004",
+    "0x00000004",
+    "0x00020f0b",
+    "0x00021f3f",
+    "0x00000000",
+    "0x31100000",
+    "0x00000001",
+    "0xffffffff",
+    "0xffffffff",
+    "0xffffffff",
+    "0xffffffff"
+   ],
+   "fast_size": 370112,
+   "arena_size": 36864,
+   "cms_len": 21056,
+   "const_len": 392192,
+   "class": "model",
+   "n_mac": 38916000,
+   "n_mac_ops": 84,
+   "non_mac_ops": 29,
+   "op_counts": {
+    "ADD": 18,
+    "PAD": 5,
+    "RESIZE_NEAREST_NEIGHBOR": 1,
+    "DEPTHWISE_CONV_2D": 28,
+    "CONV_2D": 56,
+    "CONCATENATION": 2,
+    "MAX_POOL_2D": 3
+   },
+   "vela_nn_macs": 38807136.0,
+   "model_sha256": "e94bcdb011784bead70ab0c0e9d2dae1a9ea5f103b43e1e6fac3019302cf71ab",
+   "vela_sha256": "aa143485cf3e64da4d46b58fe7cb2dbeab95193740ee0e13815ce3c0bdd1238b",
+   "header_version": 4,
+   "ifms": [
+    {
+     "name": "image_input",
+     "off": 0,
+     "len": 36864,
+     "sha256": "a77b14b44c38c94c742e791baedc216a8025055a8340fb6926f0cfc5e0dd4c52"
+    }
+   ],
+   "ofms": [
+    {
+     "name": "Identity_1",
+     "off": 0,
+     "len": 2592,
+     "sha256": "cfeea8a8ee154c7ac138590928f2469eb8d61bdb6e5cfc9848d26c3f4638e37e"
+    },
+    {
+     "name": "Identity",
+     "off": 2592,
+     "len": 648,
+     "sha256": "cb35b8a42de97316104e5294db49e796e64e8bbc457923ecb79a96eedfa46b8f"
+    }
+   ]
   }
  }
 }

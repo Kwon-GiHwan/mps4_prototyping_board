@@ -1,0 +1,94 @@
+{
+  "model": "/opt/arm/ml-embedded-evaluation-kit/resources_downloaded/object_detection/yolo-fastest_192_face_v4.tflite",
+  "model_sha256": "e94bcdb011784bead70ab0c0e9d2dae1a9ea5f103b43e1e6fac3019302cf71ab",
+  "vela_sha256": "aa143485cf3e64da4d46b58fe7cb2dbeab95193740ee0e13815ce3c0bdd1238b",
+  "accelerator": "ethos-u85-1024",
+  "system_config": "Ethos_U85_SYS_DRAM_Mid_1024",
+  "memory_mode": "Dedicated_Sram",
+  "vela_options": [
+    "--accelerator-config",
+    "ethos-u85-1024",
+    "--optimise",
+    "Performance",
+    "--config",
+    "/opt/arm/ml-embedded-evaluation-kit/scripts/vela/default_vela.ini",
+    "--memory-mode",
+    "Dedicated_Sram",
+    "--system-config",
+    "Ethos_U85_SYS_DRAM_Mid_1024"
+  ],
+  "seed": 1,
+  "blob_sha256": "1f71e47582c53916ad72afc660b5a03f4ef0789bfa726dd5414ae9250641928e",
+  "cms_len": 21056,
+  "const_len": 392192,
+  "arena_size": 36864,
+  "fast_size": 370112,
+  "ifm_off": 0,
+  "ifm_len": 36864,
+  "ofm_off": 0,
+  "ofm_len": 3240,
+  "total": 453616,
+  "ifms": [
+    {
+      "name": "image_input",
+      "off": 0,
+      "len": 36864,
+      "sha256": "a77b14b44c38c94c742e791baedc216a8025055a8340fb6926f0cfc5e0dd4c52"
+    }
+  ],
+  "ofms": [
+    {
+      "name": "Identity_1",
+      "off": 0,
+      "len": 2592,
+      "sha256": "cfeea8a8ee154c7ac138590928f2469eb8d61bdb6e5cfc9848d26c3f4638e37e"
+    },
+    {
+      "name": "Identity",
+      "off": 2592,
+      "len": 648,
+      "sha256": "cb35b8a42de97316104e5294db49e796e64e8bbc457923ecb79a96eedfa46b8f"
+    }
+  ],
+  "header_version": 4,
+  "knobs": [
+    "0xffffffff",
+    "0x0000000a",
+    "0x00000002",
+    "0x00000000",
+    "0x00000000",
+    "0x00000004",
+    "0x00000004",
+    "0x00020f0b",
+    "0x00021f3f",
+    "0x00000000",
+    "0x31100000",
+    "0x00000001",
+    "0xffffffff",
+    "0xffffffff",
+    "0xffffffff",
+    "0xffffffff"
+  ],
+  "cms_sha256": "fa50d14e8b41f637afbe6f5da41fe752cb3558e7479928fbe8c0e233919328d3",
+  "profile": "/work/mps4_host/config/mlek_baseline.json",
+  "profile_sha256": "b2a40af97d2cfe61df88896c91e30f45a3ffa0fe7a7342299a4b757ba63c3d52",
+  "ifm_file": null,
+  "ifm_sha256": "a77b14b44c38c94c742e791baedc216a8025055a8340fb6926f0cfc5e0dd4c52",
+  "tflite_ofm_sha256": "2e0d0bf1250ffca7154dd11e848d11b9c05ddf2e641f5fb6fb7848b7f45c22c8",
+  "golden_file": null,
+  "golden_sha256": "2e0d0bf1250ffca7154dd11e848d11b9c05ddf2e641f5fb6fb7848b7f45c22c8",
+  "axi": null,
+  "ports": {
+    "cmd": "ext",
+    "const": "ext",
+    "arena": "ext",
+    "fast": "sram"
+  },
+  "axi_limit": {
+    "sram": 134923,
+    "ext": 139071
+  },
+  "power_ctrl": 0,
+  "fast_base": 823132160,
+  "ta_profile": 1
+}

@@ -1,0 +1,1412 @@
+{
+ "model": "/opt/arm/ml-embedded-evaluation-kit/resources_downloaded/noise_reduction/rnnoise_INT8.tflite",
+ "model_sha256": "9c582545b7c13af44616c44b654f4fe721aa2585630b0ca173ca3589f6f11c2c",
+ "vela_options": [
+  "--accelerator-config",
+  "ethos-u85-1024",
+  "--optimise",
+  "Performance",
+  "--config",
+  "/opt/arm/ml-embedded-evaluation-kit/scripts/vela/default_vela.ini",
+  "--memory-mode",
+  "Dedicated_Sram",
+  "--system-config",
+  "Ethos_U85_SYS_DRAM_Mid_1024"
+ ],
+ "ops": [
+  {
+   "op": "FULLY_CONNECTED",
+   "inputs": [
+    [
+     1,
+     96
+    ],
+    [
+     288,
+     96
+    ],
+    [
+     288
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     288
+    ]
+   ],
+   "n_mac": 27648
+  },
+  {
+   "op": "SPLIT_V",
+   "inputs": [
+    [
+     1,
+     288
+    ],
+    [
+     3
+    ],
+    []
+   ],
+   "outputs": [
+    [
+     1,
+     96
+    ],
+    [
+     1,
+     96
+    ],
+    [
+     1,
+     96
+    ]
+   ],
+   "n_mac": null
+  },
+  {
+   "op": "RESHAPE",
+   "inputs": [
+    [
+     1,
+     1,
+     42
+    ],
+    [
+     2
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     42
+    ]
+   ],
+   "n_mac": null
+  },
+  {
+   "op": "FULLY_CONNECTED",
+   "inputs": [
+    [
+     1,
+     42
+    ],
+    [
+     24,
+     42
+    ],
+    [
+     24
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     24
+    ]
+   ],
+   "n_mac": 1008
+  },
+  {
+   "op": "TANH",
+   "inputs": [
+    [
+     1,
+     24
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     24
+    ]
+   ],
+   "n_mac": null
+  },
+  {
+   "op": "RESHAPE",
+   "inputs": [
+    [
+     1,
+     24
+    ],
+    [
+     3
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     1,
+     24
+    ]
+   ],
+   "n_mac": null
+  },
+  {
+   "op": "UNPACK",
+   "inputs": [
+    [
+     1,
+     1,
+     24
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     24
+    ]
+   ],
+   "n_mac": null
+  },
+  {
+   "op": "FULLY_CONNECTED",
+   "inputs": [
+    [
+     1,
+     24
+    ],
+    [
+     72,
+     24
+    ],
+    [
+     72
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     72
+    ]
+   ],
+   "n_mac": 1728
+  },
+  {
+   "op": "SPLIT",
+   "inputs": [
+    [],
+    [
+     1,
+     72
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     24
+    ],
+    [
+     1,
+     24
+    ],
+    [
+     1,
+     24
+    ]
+   ],
+   "n_mac": null
+  },
+  {
+   "op": "FULLY_CONNECTED",
+   "inputs": [
+    [
+     1,
+     48
+    ],
+    [
+     144,
+     48
+    ],
+    [
+     144
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     144
+    ]
+   ],
+   "n_mac": 6912
+  },
+  {
+   "op": "SPLIT_V",
+   "inputs": [
+    [
+     1,
+     144
+    ],
+    [
+     3
+    ],
+    []
+   ],
+   "outputs": [
+    [
+     1,
+     48
+    ],
+    [
+     1,
+     48
+    ],
+    [
+     1,
+     48
+    ]
+   ],
+   "n_mac": null
+  },
+  {
+   "op": "FULLY_CONNECTED",
+   "inputs": [
+    [
+     1,
+     24
+    ],
+    [
+     72,
+     24
+    ],
+    [
+     72
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     72
+    ]
+   ],
+   "n_mac": 1728
+  },
+  {
+   "op": "SPLIT_V",
+   "inputs": [
+    [
+     1,
+     72
+    ],
+    [
+     3
+    ],
+    []
+   ],
+   "outputs": [
+    [
+     1,
+     24
+    ],
+    [
+     1,
+     24
+    ],
+    [
+     1,
+     24
+    ]
+   ],
+   "n_mac": null
+  },
+  {
+   "op": "ADD",
+   "inputs": [
+    [
+     1,
+     24
+    ],
+    [
+     1,
+     24
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     24
+    ]
+   ],
+   "n_mac": null
+  },
+  {
+   "op": "LOGISTIC",
+   "inputs": [
+    [
+     1,
+     24
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     24
+    ]
+   ],
+   "n_mac": null
+  },
+  {
+   "op": "SUB",
+   "inputs": [
+    [],
+    [
+     1,
+     24
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     24
+    ]
+   ],
+   "n_mac": null
+  },
+  {
+   "op": "ADD",
+   "inputs": [
+    [
+     1,
+     24
+    ],
+    [
+     1,
+     24
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     24
+    ]
+   ],
+   "n_mac": null
+  },
+  {
+   "op": "LOGISTIC",
+   "inputs": [
+    [
+     1,
+     24
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     24
+    ]
+   ],
+   "n_mac": null
+  },
+  {
+   "op": "MUL",
+   "inputs": [
+    [
+     1,
+     24
+    ],
+    [
+     1,
+     24
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     24
+    ]
+   ],
+   "n_mac": null
+  },
+  {
+   "op": "ADD",
+   "inputs": [
+    [
+     1,
+     24
+    ],
+    [
+     1,
+     24
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     24
+    ]
+   ],
+   "n_mac": null
+  },
+  {
+   "op": "TANH",
+   "inputs": [
+    [
+     1,
+     24
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     24
+    ]
+   ],
+   "n_mac": null
+  },
+  {
+   "op": "MUL",
+   "inputs": [
+    [
+     1,
+     24
+    ],
+    [
+     1,
+     24
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     24
+    ]
+   ],
+   "n_mac": null
+  },
+  {
+   "op": "MUL",
+   "inputs": [
+    [
+     1,
+     24
+    ],
+    [
+     1,
+     24
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     24
+    ]
+   ],
+   "n_mac": null
+  },
+  {
+   "op": "ADD",
+   "inputs": [
+    [
+     1,
+     24
+    ],
+    [
+     1,
+     24
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     24
+    ]
+   ],
+   "n_mac": null
+  },
+  {
+   "op": "PACK",
+   "inputs": [
+    [
+     1,
+     24
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     1,
+     24
+    ]
+   ],
+   "n_mac": null
+  },
+  {
+   "op": "QUANTIZE",
+   "inputs": [
+    [
+     1,
+     1,
+     24
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     1,
+     24
+    ]
+   ],
+   "n_mac": null
+  },
+  {
+   "op": "QUANTIZE",
+   "inputs": [
+    [
+     1,
+     1,
+     24
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     1,
+     24
+    ]
+   ],
+   "n_mac": null
+  },
+  {
+   "op": "CONCATENATION",
+   "inputs": [
+    [
+     1,
+     1,
+     24
+    ],
+    [
+     1,
+     1,
+     24
+    ],
+    [
+     1,
+     1,
+     42
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     1,
+     90
+    ]
+   ],
+   "n_mac": null
+  },
+  {
+   "op": "UNPACK",
+   "inputs": [
+    [
+     1,
+     1,
+     90
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     90
+    ]
+   ],
+   "n_mac": null
+  },
+  {
+   "op": "FULLY_CONNECTED",
+   "inputs": [
+    [
+     1,
+     90
+    ],
+    [
+     144,
+     90
+    ],
+    [
+     144
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     144
+    ]
+   ],
+   "n_mac": 12960
+  },
+  {
+   "op": "SPLIT",
+   "inputs": [
+    [],
+    [
+     1,
+     144
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     48
+    ],
+    [
+     1,
+     48
+    ],
+    [
+     1,
+     48
+    ]
+   ],
+   "n_mac": null
+  },
+  {
+   "op": "ADD",
+   "inputs": [
+    [
+     1,
+     48
+    ],
+    [
+     1,
+     48
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     48
+    ]
+   ],
+   "n_mac": null
+  },
+  {
+   "op": "LOGISTIC",
+   "inputs": [
+    [
+     1,
+     48
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     48
+    ]
+   ],
+   "n_mac": null
+  },
+  {
+   "op": "MUL",
+   "inputs": [
+    [
+     1,
+     48
+    ],
+    [
+     1,
+     48
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     48
+    ]
+   ],
+   "n_mac": null
+  },
+  {
+   "op": "SUB",
+   "inputs": [
+    [],
+    [
+     1,
+     48
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     48
+    ]
+   ],
+   "n_mac": null
+  },
+  {
+   "op": "ADD",
+   "inputs": [
+    [
+     1,
+     48
+    ],
+    [
+     1,
+     48
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     48
+    ]
+   ],
+   "n_mac": null
+  },
+  {
+   "op": "LOGISTIC",
+   "inputs": [
+    [
+     1,
+     48
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     48
+    ]
+   ],
+   "n_mac": null
+  },
+  {
+   "op": "MUL",
+   "inputs": [
+    [
+     1,
+     48
+    ],
+    [
+     1,
+     48
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     48
+    ]
+   ],
+   "n_mac": null
+  },
+  {
+   "op": "ADD",
+   "inputs": [
+    [
+     1,
+     48
+    ],
+    [
+     1,
+     48
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     48
+    ]
+   ],
+   "n_mac": null
+  },
+  {
+   "op": "MUL",
+   "inputs": [
+    [
+     1,
+     48
+    ],
+    [
+     1,
+     48
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     48
+    ]
+   ],
+   "n_mac": null
+  },
+  {
+   "op": "ADD",
+   "inputs": [
+    [
+     1,
+     48
+    ],
+    [
+     1,
+     48
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     48
+    ]
+   ],
+   "n_mac": null
+  },
+  {
+   "op": "PACK",
+   "inputs": [
+    [
+     1,
+     48
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     1,
+     48
+    ]
+   ],
+   "n_mac": null
+  },
+  {
+   "op": "QUANTIZE",
+   "inputs": [
+    [
+     1,
+     1,
+     48
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     1,
+     48
+    ]
+   ],
+   "n_mac": null
+  },
+  {
+   "op": "QUANTIZE",
+   "inputs": [
+    [
+     1,
+     1,
+     24
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     1,
+     24
+    ]
+   ],
+   "n_mac": null
+  },
+  {
+   "op": "CONCATENATION",
+   "inputs": [
+    [
+     1,
+     1,
+     24
+    ],
+    [
+     1,
+     1,
+     48
+    ],
+    [
+     1,
+     1,
+     42
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     1,
+     114
+    ]
+   ],
+   "n_mac": null
+  },
+  {
+   "op": "UNPACK",
+   "inputs": [
+    [
+     1,
+     1,
+     114
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     114
+    ]
+   ],
+   "n_mac": null
+  },
+  {
+   "op": "FULLY_CONNECTED",
+   "inputs": [
+    [
+     1,
+     114
+    ],
+    [
+     288,
+     114
+    ],
+    [
+     288
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     288
+    ]
+   ],
+   "n_mac": 32832
+  },
+  {
+   "op": "SPLIT",
+   "inputs": [
+    [],
+    [
+     1,
+     288
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     96
+    ],
+    [
+     1,
+     96
+    ],
+    [
+     1,
+     96
+    ]
+   ],
+   "n_mac": null
+  },
+  {
+   "op": "ADD",
+   "inputs": [
+    [
+     1,
+     96
+    ],
+    [
+     1,
+     96
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     96
+    ]
+   ],
+   "n_mac": null
+  },
+  {
+   "op": "LOGISTIC",
+   "inputs": [
+    [
+     1,
+     96
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     96
+    ]
+   ],
+   "n_mac": null
+  },
+  {
+   "op": "MUL",
+   "inputs": [
+    [
+     1,
+     96
+    ],
+    [
+     1,
+     96
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     96
+    ]
+   ],
+   "n_mac": null
+  },
+  {
+   "op": "SUB",
+   "inputs": [
+    [],
+    [
+     1,
+     96
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     96
+    ]
+   ],
+   "n_mac": null
+  },
+  {
+   "op": "ADD",
+   "inputs": [
+    [
+     1,
+     96
+    ],
+    [
+     1,
+     96
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     96
+    ]
+   ],
+   "n_mac": null
+  },
+  {
+   "op": "LOGISTIC",
+   "inputs": [
+    [
+     1,
+     96
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     96
+    ]
+   ],
+   "n_mac": null
+  },
+  {
+   "op": "MUL",
+   "inputs": [
+    [
+     1,
+     96
+    ],
+    [
+     1,
+     96
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     96
+    ]
+   ],
+   "n_mac": null
+  },
+  {
+   "op": "ADD",
+   "inputs": [
+    [
+     1,
+     96
+    ],
+    [
+     1,
+     96
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     96
+    ]
+   ],
+   "n_mac": null
+  },
+  {
+   "op": "TANH",
+   "inputs": [
+    [
+     1,
+     96
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     96
+    ]
+   ],
+   "n_mac": null
+  },
+  {
+   "op": "MUL",
+   "inputs": [
+    [
+     1,
+     96
+    ],
+    [
+     1,
+     96
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     96
+    ]
+   ],
+   "n_mac": null
+  },
+  {
+   "op": "ADD",
+   "inputs": [
+    [
+     1,
+     96
+    ],
+    [
+     1,
+     96
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     96
+    ]
+   ],
+   "n_mac": null
+  },
+  {
+   "op": "PACK",
+   "inputs": [
+    [
+     1,
+     96
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     1,
+     96
+    ]
+   ],
+   "n_mac": null
+  },
+  {
+   "op": "RESHAPE",
+   "inputs": [
+    [
+     1,
+     1,
+     96
+    ],
+    [
+     2
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     96
+    ]
+   ],
+   "n_mac": null
+  },
+  {
+   "op": "FULLY_CONNECTED",
+   "inputs": [
+    [
+     1,
+     96
+    ],
+    [
+     22,
+     96
+    ],
+    [
+     22
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     22
+    ]
+   ],
+   "n_mac": 2112
+  },
+  {
+   "op": "RESHAPE",
+   "inputs": [
+    [
+     1,
+     22
+    ],
+    [
+     3
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     1,
+     22
+    ]
+   ],
+   "n_mac": null
+  },
+  {
+   "op": "LOGISTIC",
+   "inputs": [
+    [
+     1,
+     1,
+     22
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     1,
+     22
+    ]
+   ],
+   "n_mac": null
+  },
+  {
+   "op": "RESHAPE",
+   "inputs": [
+    [
+     1,
+     1,
+     24
+    ],
+    [
+     2
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     24
+    ]
+   ],
+   "n_mac": null
+  },
+  {
+   "op": "FULLY_CONNECTED",
+   "inputs": [
+    [
+     1,
+     24
+    ],
+    [
+     1,
+     24
+    ],
+    [
+     1
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     1
+    ]
+   ],
+   "n_mac": 24
+  },
+  {
+   "op": "RESHAPE",
+   "inputs": [
+    [
+     1,
+     1
+    ],
+    [
+     3
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     1,
+     1
+    ]
+   ],
+   "n_mac": null
+  },
+  {
+   "op": "LOGISTIC",
+   "inputs": [
+    [
+     1,
+     1,
+     1
+    ]
+   ],
+   "outputs": [
+    [
+     1,
+     1,
+     1
+    ]
+   ],
+   "n_mac": null
+  }
+ ],
+ "op_counts": {
+  "SPLIT": 3,
+  "QUANTIZE": 4,
+  "SPLIT_V": 3,
+  "UNPACK": 3,
+  "TANH": 3,
+  "PACK": 3,
+  "RESHAPE": 6,
+  "MUL": 9,
+  "SUB": 3,
+  "CONCATENATION": 2,
+  "LOGISTIC": 8,
+  "FULLY_CONNECTED": 9,
+  "ADD": 12
+ },
+ "n_mac": 86952,
+ "n_mac_ops": 9,
+ "non_mac_ops": 59,
+ "vela": {
+  "core_clock": 1000000000.0,
+  "nn_macs": 87510.0,
+  "cycles_npu": 31334.0,
+  "cycles_sram_access": 157.0,
+  "cycles_dram_access": 29091.0,
+  "cycles_total": 33040.0
+ },
+ "n_mac_vs_vela_nn_macs": 0.9936235858758999
+}
