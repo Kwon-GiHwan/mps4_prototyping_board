@@ -135,6 +135,10 @@ mutation means a missing fixture — add the fixture, do not delete the mutation
   in A/Bs on the old branch — all taken with the TAs untouched; the TA state does.
 - Still different from MLEK and untested (`evidence/runner_gap/mlek_diff_audit.md`): no soft reset/PROT, vendor
   CFG_*_CAP writes, CPU busy-polling from on-chip SRAM with caches off (MLEK: WFE, caches on).
+- **Open equivalence items E1–E5** (`evidence/runner_gap/open_equivalence_items.md`, recorded 2026-10-27, unresolved):
+  CAP read-back, MLEK's TA EXT MAXR read-back, executed-model trace + MLEK-golden OFMs, PMU counting window, and the
+  remaining execution differences one at a time. Until they close, never claim the runner is "equivalent to MLEK" or
+  "uses the vendor driver unmodified"; claim only the measured reproduction (NPU active ±0.4 %, beats equal).
 
 ## Standing constraints
 
