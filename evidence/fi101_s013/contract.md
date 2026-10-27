@@ -101,3 +101,33 @@ their counters are used, their correctness is not claimed.
 Order changed: **Stage 1 is analysed and reported first; Stage 0 checks are applied afterwards** and decide which
 Stage 1 rows stand. Until then every Stage 1 row carries the label `PROVISIONAL (Stage 0 pending)`. Stage 3 data are
 collected in the same boots and analysed later. Boots, image, sets and every formula above are unchanged.
+
+## Amendment 2 (2026-10-28, owner decision "do what can run alongside Stage 1", frozen before boot 101)
+
+Two additions for the follow-up table (MAC low / WD stall / AO vs MAC / Vela), Stage 1 conditions unchanged.
+
+1. **Vela detail, no board**: the seven models recompiled with the profile's options plus `--verbose-schedule
+   --verbose-performance --verbose-weights`; every `_vela.tflite` hash equals the measured blob's Vela output.
+   Stored in `vela/verbose/` (per-operator OFM block, ublock, cascade, estimated cycles and MACs).
+2. **Per-channel traffic, boots 101–116** on the same image (`2bb04bfa`), TA profile 1: the measured blobs of
+   rnnoise, kws, vww4 and yolo-fastest with **only header word 16** (`PMCAXI_CHAN`) set to `BW_CH_SEL_EN | CH_SEL`
+   (`make_chan_blob.py`; 4 bytes differ from the measured blob), one boot per (model, channel):
+   `rd_weights` 0x402, `rd_ifm` 0x401, `wr_ofm` 0x408, `rd_mem2mem` 0x404. One PMU set = Pass B
+   (`35 128 130 132 135 384 386 391`), 10 RUNs. Wav2letter and mobilenet are left out (upload 33 / 9 min per boot).
+
+   | boot | model | channel | boot | model | channel |
+   | --- | --- | --- | --- | --- | --- |
+   | 101 | rnnoise | rd_weights | 109 | vww4 | rd_weights |
+   | 102 | rnnoise | rd_ifm | 110 | vww4 | rd_ifm |
+   | 103 | rnnoise | wr_ofm | 111 | vww4 | wr_ofm |
+   | 104 | rnnoise | rd_mem2mem | 112 | vww4 | rd_mem2mem |
+   | 105 | kws | rd_weights | 113 | yolo | rd_weights |
+   | 106 | kws | rd_ifm | 114 | yolo | rd_ifm |
+   | 107 | kws | wr_ofm | 115 | yolo | wr_ofm |
+   | 108 | kws | rd_mem2mem | 116 | yolo | rd_mem2mem |
+
+   Rules: a RUN is valid as in the main contract including `knobs_honoured` (the runner reads `PMCAXI_CHAN` back).
+   `CHANNEL_FILTER_WORKS` per model needs every channel's beats ≤ the unfiltered Pass B beats of boots 94–98 for the
+   same event, at least one channel below it, and `npu_active` and `mac_active` unaffected (S0-4 rule against
+   the same model's boot 94–98). Otherwise `CHANNEL_FILTER_UNPROVEN`, and no per-channel number is reported.
+   Per-channel shares (channel beats / unfiltered beats) are descriptive.

@@ -1,0 +1,16 @@
+101 rnnoise_INT8 rd_weights
+102 rnnoise_INT8 rd_ifm
+103 rnnoise_INT8 wr_ofm
+104 rnnoise_INT8 rd_mem2mem
+105 kws_micronet_m rd_weights
+106 kws_micronet_m rd_ifm
+107 kws_micronet_m wr_ofm
+108 kws_micronet_m rd_mem2mem
+109 vww4_128_128_INT8 rd_weights
+110 vww4_128_128_INT8 rd_ifm
+111 vww4_128_128_INT8 wr_ofm
+112 vww4_128_128_INT8 rd_mem2mem
+113 yolo-fastest_192_face_v4 rd_weights
+114 yolo-fastest_192_face_v4 rd_ifm
+115 yolo-fastest_192_face_v4 wr_ofm
+116 yolo-fastest_192_face_v4 rd_mem2mem
