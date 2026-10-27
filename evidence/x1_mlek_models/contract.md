@@ -171,3 +171,5 @@ Deploy `~/evsweep/evidence_w2l_meas` (APP `38ce118c`, VECTORS `589f8b88`, DDR `8
   active-cycle efficiency 96.8 %.
 - Final x1 statuses: rnnoise `VALID (x1)`; vww4, yolo-fastest, wav2letter `UNRESOLVED (x1)` (need an MLEK FI101
   golden). No MLEK model is `NOT_EXECUTABLE` on the board any more.
+
+**Correction (2026-10-28):** "MLEK board 4,141,085" above is MLEK's NPU **TOTAL** for wav2letter; its **ACTIVE** was 4,135,110 (IDLE 5,975; one qualification inference on 2026-08-25, `BOARD_EXECUTABILITY_QUALIFICATION.md` on branch `refactor/unified-mlek-campaigns`, commit `eaa1fa7`). The runner's `npu_active` (4,130,710–4,133,546) is therefore within 0.11 % of MLEK ACTIVE.

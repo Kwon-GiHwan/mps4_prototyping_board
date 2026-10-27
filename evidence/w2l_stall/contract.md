@@ -113,3 +113,5 @@ Consequences recorded elsewhere: x1 amendment 3 and `results/npu_utilization_mps
 not complete within 900 s"; in fact the host waited ~5 s. wav2letter is executable; a measurement under
 `mlek_r10` on `38ce118c` with the fixed host is the next step (x1 amendment 4). Earlier valid RUNs are unaffected:
 a RUN either delivered RUN_COMPLETE or was refused.
+
+**Correction (2026-10-28):** "MLEK board 4,141,085" above is MLEK's NPU **TOTAL** for wav2letter; its **ACTIVE** was 4,135,110 (IDLE 5,975; one qualification inference on 2026-08-25, `BOARD_EXECUTABILITY_QUALIFICATION.md` on branch `refactor/unified-mlek-campaigns`, commit `eaa1fa7`). The runner's `npu_active` (4,130,710–4,133,546) is therefore within 0.11 % of MLEK ACTIVE.
