@@ -156,3 +156,18 @@ two RUNs with the fixed host completed in 6.6 s. "Stalled" and `NOT_EXECUTABLE (
   golden = tflite_runtime (no MLEK FI101 golden), so an exact OFM → `VALID (x1)` and a differing OFM →
   `UNRESOLVED (x1)`, counters kept. A refusal → recorded as is.
 - Report in `results/npu_utilization_mps4/` replaces the wav2letter row.
+
+## Results of amendment 4 (recorded 2026-10-28, after boot 93)
+
+Deploy `~/evsweep/evidence_w2l_meas` (APP `38ce118c`, VECTORS `589f8b88`, DDR `81d37a21`, read back). Raw data
+`raw_a4/`, analysis `analysis_a4/`. **TA state: profile 1.**
+
+- **Boot 93 (wav2letter): `UNRESOLVED (x1)`.** 10/10 RUNs complete and valid: `vendor_rc` 2 (OFM ≠ golden),
+  `read_seam_fired` 1, QREAD 5,632 (= cms_len), STATUS `0xFFFF0020`, `knobs_honoured`. OFM vs tflite_runtime:
+  2 bytes, max |diff| 6, first at 3,262, identical in every RUN. The Stage 1 gate gives `BASELINE_FAIL` (R2 rc, R3
+  output) as for vww4 and yolo; the counters are kept.
+- Measured RUNs 3–10: `npu_active` median 4,132,039 (4,131,205–4,133,546; MLEK board 2026-08-25: 4,141,085; FVP
+  U85-1024: 4,114,227), `mac_active` 3,521,802 in every RUN, peak MAC efficiency 82.51 %, MAC active ratio 85.2 %,
+  active-cycle efficiency 96.8 %.
+- Final x1 statuses: rnnoise `VALID (x1)`; vww4, yolo-fastest, wav2letter `UNRESOLVED (x1)` (need an MLEK FI101
+  golden). No MLEK model is `NOT_EXECUTABLE` on the board any more.

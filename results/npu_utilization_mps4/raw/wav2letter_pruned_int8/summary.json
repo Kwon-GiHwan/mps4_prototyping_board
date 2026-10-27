@@ -23,7 +23,12 @@
   "golden_sha256": "45ed8eeb82d402d72b1711c7782f7d3055d4948e83b2f4a47e03394e6894aad9",
   "keep_model": true,
   "validity": "model",
-  "ofm_mismatch_observed": [],
+  "ofm_mismatch_observed": [
+    [
+      2,
+      6
+    ]
+  ],
   "requested_ids": [
     35,
     48,
@@ -42,24 +47,21 @@
     "app_sha256": "38ce118cb9cbdb4f8811d6158d429a7b43de21865be7b73fe1f41353d7f6964f",
     "vectors_sha256": "589f8b886af9be7cef546f1b3f5ef4e3bb39673b7d693f9ec98531068ba8bb64",
     "ddr_sha256": "81d37a219a6b4141d0b433796711ab8af2ee2c3c668a28143a3ffe6a574ade98",
-    "host_boot_index": 89,
-    "captured_at_utc": "2026-10-27T10:52:57.034999+00:00"
+    "host_boot_index": 93,
+    "captured_at_utc": "2026-10-27T18:10:42.856816+00:00"
   },
-  "runs": 0,
-  "rows": 0,
-  "refusal": {
-    "rule": "RULE_RUN_TRANSPORT",
-    "msg": "RULE_RUN_TRANSPORT: set 1 rep 1: RunSequenceError('no RUN_COMPLETE within 900.0s (ACK was seen)')"
-  },
+  "runs": 10,
+  "rows": 80,
+  "refusal": null,
   "consistency": {
     "CYCLE_EVENT_VS_PMCCNTR": "UNPROVEN",
-    "NPU_ACTIVE_LE_CYCLE": "UNPROVEN"
+    "NPU_ACTIVE_LE_CYCLE": "PASS"
   },
   "verdict_counts": {
-    "COUNTED_NONZERO": 0,
+    "COUNTED_NONZERO": 8,
     "COUNTED_ZERO": 0,
     "INCONSISTENT": 0,
     "NOT_OBSERVED": 0
   },
-  "coverage": "RULE_SET_COVERAGE: covered 0/8"
+  "coverage": "COMPLETE_SUBSET(8)"
 }

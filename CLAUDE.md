@@ -25,7 +25,7 @@ new hash. Hashes quoted in `docs/specs/`, `evidence/` and older commit messages 
 | `docs/specs/` | frozen contract in force: `mlek-baseline.md` (profile, per-run gate, outcome, amendment 1); Stage 1 contract: `evidence/stage1/contract.md` |
 | `evidence/` | `stage2a/` (boots 75–77, component attribution; event audit, dw3x3 MLEK golden), `stage1/` (boots 65–71 = dataset s1; boots 72–74 = dataset a2 under amendment 2, MLEK goldens in `stage1/a2/mlek_golden/`), `mlek_baseline/` (boots 59–61), `mlek_baseline_a1/` (boot 64, amendment 1), `mobilenet_ofm/` (three-way OFM comparison), `runner_gap/` (static diff, `mlek_diff_audit.md`); summaries only: `ta_ab/` (the TA finding), `tools_check/` (refactor verification) — raw data at `2ce4512` |
 | `environment/` | board card config, build environment, host Python/serial setup |
-| `results/` | reading copies grouped for a question; originals stay in `evidence/`: `npu_utilization_mps4/` (MLEK models kws, ad, mobilenet from Stage 1: raw per workload, `summary.csv`, `npu_utilization.csv`); `npu_utilization_fvp/` (same layout, all seven MLEK models on FVP U85-1024 from the old branch; no MAC_ACTIVE) |
+| `results/` | reading copies grouped for a question; originals stay in `evidence/`: `npu_utilization_mps4/` (all seven MLEK models: kws, ad, mobilenet from Stage 1, the rest from x1; raw per workload, `summary.csv`, `npu_utilization.csv`); `npu_utilization_fvp/` (same layout, all seven MLEK models on FVP U85-1024 from the old branch; no MAC_ACTIVE) |
 
 ### host modules
 
@@ -123,6 +123,9 @@ mutation means a missing fixture — add the fixture, do not delete the mutation
 ## Traps already paid for
 
 - A build that compiles is not an image that runs; record `NOT_EXECUTABLE` rather than dropping a cell.
+- A refusal is not a stall until the board says so: `RunnerLink.run()` waited only ~5 s whatever its timeout
+  until `52254b9` (wav2letter's 6.6 s RUN looked stalled, `evidence/w2l_stall/`). After a RUN refusal, PING the runner:
+  state 6 (`ST_RESULT_READY`) means the firmware finished.
 - `model` validity mode does not require `run_rc == 0` (vendor rc is judged instead). A knob read-back failure
   (`PMWL_KNOB_NOT_HONOURED`, 0x7D) is caught by the `knobs_honoured` term since `f39eca8`; RUNs archived before
   that commit were not checked by it. `baseline_gate.py` additionally requires `run_rc == 0` and an exact OFM.
