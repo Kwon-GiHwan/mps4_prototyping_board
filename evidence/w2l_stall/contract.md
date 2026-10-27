@@ -79,3 +79,37 @@ Boot 92 is read only if boot 91 passes its control. Outcomes for boot 92:
 | `W2L_NO_IRQ_AT_END` | RUN_COMPLETE, `vendor_rc` ≠ 0, QREAD = 5,632 | the stream ran to its end but no IRQ with bit 1 came; STATUS says why (C3) |
 | `W2L_COMPLETES` | RUN_COMPLETE, `vendor_rc` 0, OFM compared | D1/D2 alone let it finish: the stall was the wait/IRQ path (C3); OFM vs tflite_runtime recorded as is |
 | `W2L_CPU_SIDE` | no RUN_COMPLETE within 600 s | the CPU never returns although the wait is bounded and the IRQ guarded: CPU fault or a hang outside `sleep()` |
+
+### Step 2 result (boots 91–92, recorded 2026-10-28) — root cause found on the host
+
+Deploy `~/evsweep/evidence_w2l_diag` (APP `26ffe4e2`, read back). Raw data `raw_diag/` (board root
+`~/evsweep/evidence_w2l_diagr`). **TA state: profile 1.** (A first launch before the deploy existed was stopped
+during its reboot capture with no RUN sent; set aside as `~/evsweep/aborted_w2l_diagr_no_deploy`.)
+
+- Boot 91 control PASS: 10/10 RUNs `run_rc` 0, `vendor_rc` 0, OFM exact, `mac_active` 56,450, `npu_active`
+  90,108–91,725, QREAD 2,572 (= cms_len), STATUS `0xFFFF0020`. PMCCNTR window 3.38 M (2.62 M on `38ce118c`;
+  the DWT-polling wait is the only change).
+- Boot 92 by the preregistered rule: `W2L_CPU_SIDE` (no RUN_COMPLETE "within 600 s"). **That reading is wrong**:
+  - After the refusal, PING answered with state 6 = `ST_RESULT_READY`: the firmware had finished the RUN.
+  - Every wav2letter boot lasted 33 min 29–30 s whatever the RUN wait (boot 87: 120 s, 89: 900 s, 92: 600 s).
+    The wait was never spent.
+  - Cause, `host/lib/runner_proto.py` `RunnerLink.run()`: each `read_frame()` call waits at most 5 s and raises
+    `ProtocolError` on silence; `run()` caught that and **broke out of the loop**, then reported "no RUN_COMPLETE
+    within {timeout}s". The firmware sends nothing inside the measured window, so any RUN longer than ~5 s was
+    abandoned after ~5 s. wav2letter's RUN takes 6.6 s (14.5 MB copy ≈ 4.9 s at 50 MHz, plus inference). The
+    padded kws of step 1 took 246 M cycles = 4.9 s and just made it.
+  - C1, C2, C3 are not the cause: the firmware, the NPU and the vendor wait were fine.
+
+Fix (TDD): `run()` continues on a silent read and gives up only at its deadline. `host/tests/test_proto_unit.py`
+"a RUN longer than one read waits for the whole timeout": RED before the fix (40 s of silence rejected), GREEN
+after; silence beyond the timeout is still rejected.
+
+`POST_HOC_DESCRIPTIVE` — two RUNs sent by hand with the fixed host to the wav2letter blob still staged on the diag
+image (not a campaign, not a measurement): RUN_COMPLETE after 6.6 s each; `read_seam_fired` 1; QREAD 5,632 (=
+cms_len, the whole stream); STATUS `0xFFFF0020`; `vendor_rc` 2 (OFM ≠ tflite_runtime golden: 2 bytes, max |diff|
+6, first at 3,262); NPU_ACTIVE 4,130,710 / 4,133,517 (MLEK board, 2026-08-25: 4,141,085); MAC_ACTIVE 3,521,802.
+
+Consequences recorded elsewhere: x1 amendment 3 and `results/npu_utilization_mps4` state that wav2letter "did
+not complete within 900 s"; in fact the host waited ~5 s. wav2letter is executable; a measurement under
+`mlek_r10` on `38ce118c` with the fixed host is the next step (x1 amendment 4). Earlier valid RUNs are unaffected:
+a RUN either delivered RUN_COMPLETE or was refused.

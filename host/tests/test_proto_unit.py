@@ -139,6 +139,61 @@ try:
 except Exception as exc:
     check("stale frame skipped", False, repr(exc))
 
+print("\n=== a RUN longer than one read waits for the whole timeout ===")
+# The firmware forbids UART TX inside the window, so a long RUN is silent between the ACK and RUN_COMPLETE.
+# wav2letter: a 14.5 MB copy alone takes ~4.9 s at 50 MHz; boots 87/89/92 gave up after ~5 s although the
+# requested wait was 120/900/600 s (evidence/w2l_stall).
+
+
+class FakeClock:
+    def __init__(self) -> None:
+        self.now = 1000.0
+
+    def time(self) -> float:
+        return self.now
+
+
+class SilentGapSerial(FakeSerial):
+    """Bytes become readable only at their release time; every read costs the real port's 0.2 s timeout."""
+
+    def __init__(self, clock: FakeClock, schedule) -> None:
+        super().__init__(b"")
+        self._clock, self._pending = clock, list(schedule)   # [(release_after_s, bytes)]
+        self._t0 = clock.now
+
+    def read(self, n: int = 1) -> bytes:
+        while self._pending and self._clock.now - self._t0 >= self._pending[0][0]:
+            self._script.extend(self._pending.pop(0)[1])
+        if not self._script:
+            self._clock.now += 0.2
+        return super().read(n)
+
+
+def run_with_gap(gap_s, timeout_s):
+    clock = FakeClock()
+    link = make_link(b"", rp.PROTO_MEASURE_V2)
+    link._ser = SilentGapSerial(clock, [(0.0, f(ACK_RUN, SEQ1)),
+                                        (gap_s, f(rp.CMD_RUN_COMPLETE, SEQ1, run_complete_payload()))])
+    real_time = rp.time
+    rp.time = types.SimpleNamespace(time=clock.time)
+    try:
+        return link.run(timeout=timeout_s)
+    finally:
+        rp.time = real_time
+
+
+try:
+    rc = run_with_gap(gap_s=40.0, timeout_s=120)
+    check("RUN_COMPLETE after 40 s of silence accepted", rc == 0, "rc=%d" % rc)
+except Exception as exc:
+    check("RUN_COMPLETE after 40 s of silence accepted", False, repr(exc))
+
+try:
+    run_with_gap(gap_s=200.0, timeout_s=120)
+    check("silence beyond the timeout still rejected", False, "accepted")
+except rp.RunSequenceError as exc:
+    check("silence beyond the timeout still rejected", "no RUN_COMPLETE within 120.0s" in str(exc), str(exc)[:50])
+
 print("\n=== functional-v1 unchanged ===")
 link = make_link(f(ACK_RUN, SEQ1, b"\x00\x00\x00\x00"), rp.PROTO_FUNCTIONAL_V1)
 try:

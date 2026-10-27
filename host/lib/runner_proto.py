@@ -454,7 +454,9 @@ class RunnerLink:
             try:
                 frame = self.read_frame(min(5.0, max(0.5, deadline - time.time())))
             except ProtocolError:
-                break
+                # One read's silence, not the RUN's: the firmware sends nothing inside the window, so a RUN
+                # longer than one read is silent until RUN_COMPLETE. Keep waiting until the deadline.
+                continue
 
             if frame.sequence != seq and frame.command != CMD_RUN_COMPLETE:
                 # A straggler from an earlier exchange; count it, do not act on it.
