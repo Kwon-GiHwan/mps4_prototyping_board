@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """POST_HOC_DESCRIPTIVE: how much of Vela's chosen OFM blocks and ublocks a model's operators actually fill.
 
-  python3 host/analysis/vela_block_fill.py <dir with <model>.verbose.txt> <out.csv>
+  python3 host/analysis/vela_block_fill.py <dir with <model>.verbose.txt> <out.csv> [<per-operator out.csv>]
 
 Per operator (from `vela --verbose-schedule`): fill = OFM elements / (blocks x block elements), blocks = per-axis
 ceil(OFM / block) over H, W, C; same for the ublock. Model value = MAC-weighted mean over operators with MACs > 0.
@@ -49,17 +49,27 @@ def model_fill(ops):
             sum(fill(o["ofm"], o["ublock"]) * o["macs"] for o in ops) / w, len(ops), w)
 
 
-def main(src, out):
-    rows = []
+def main(src, out, per_op=None):
+    rows, oprows = [], []
     for f in sorted(pathlib.Path(src).glob("*.verbose.txt")):
-        b, u, n, macs = model_fill(parse(f.read_text()))
+        ops = parse(f.read_text())
+        name = f.name.replace(".verbose.txt", "")
+        for i, o in enumerate(ops):
+            oprows.append(dict(model=name, index=i, op=o["op"], ofm_hwc="x".join(map(str, o["ofm"])),
+                               block_hwc="x".join(map(str, o["block"])), ublock_hwc="x".join(map(str, o["ublock"])),
+                               macs=o["macs"], vela_cycles=o["cycles"], block_fill=fill(o["ofm"], o["block"]),
+                               ublock_fill=fill(o["ofm"], o["ublock"])))
+        b, u, n, macs = model_fill(ops)
         rows.append(dict(model=f.name.replace(".verbose.txt", ""), ops_with_macs=n, vela_macs=macs,
                          block_fill_mac_weighted=b, ublock_fill_mac_weighted=u))
     with open(out, "w", newline="") as fh:
         w = csv.DictWriter(fh, fieldnames=list(rows[0]), lineterminator="\n"); w.writeheader(); w.writerows(rows)
+    if per_op:
+        with open(per_op, "w", newline="") as fh:
+            w = csv.DictWriter(fh, fieldnames=list(oprows[0]), lineterminator="\n"); w.writeheader(); w.writerows(oprows)
     for r in rows:
         print(r)
 
 
 if __name__ == "__main__":
-    main(*sys.argv[1:3])
+    main(*sys.argv[1:4])

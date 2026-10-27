@@ -146,3 +146,27 @@
 실제 실행한 것: PMU 레퍼런스·Stage 2A 감사·Tier B 기록·x1 원시 기록(boot 80, 93) 대조, PMCCNTR·enabled_cycles·DWT 창 비교
 실행하지 않은 것: 어떤 Pass의 보드 측정도, system counter 판독, PMCCNTR_CFG·PMCLUT·NPU_OP_PMU_MASK의 보드 동작 확인
 ```
+
+## 가설 → 후속 지표 대응 (2026-10-28 추가)
+
+Stage 1 잠정 관측(KWS·RNNoise 블록 채움률 낮음, VWW4·YOLO는 채움률 높은데 효율 낮음 등)에서 나올 가설마다, 후속 실험에
+쓸 지표와 그 상태. **측정 중** = fi101_s013 boots 94–124에 들어 있음 / **도구 있음** = 보드 없이 지금 계산 가능 /
+**개발 필요** = 펌웨어·호스트·생성기 작업 후 가능. 보드 값은 TA profile 1.
+
+| 가설 | 지표 | 상태 |
+| --- | --- | --- |
+| 블록·ublock 채움률이 낮아 MAC 밀도가 낮다 (KWS, RNNoise) | 연산별 OFM block / ublock 채움률 (`host/analysis/vela_block_fill.py`, 연산별 CSV 포함) | 도구 있음 (POST_HOC_DESCRIPTIVE) |
+| | `mac_dpu_active / mac_active` (MAC은 진행 중인데 DPU가 비어 있는 비율의 보완) | 측정 중 (Pass A) |
+| | 채널·형상만 바꾼 합성 연산의 Cycles/MAC, MAC active-cycle 효율 — 기준 INT8 모델에서 형상만 바꿔 파생(양자화 바이트 동일, FVP H3-R 교훈) | 개발 필요 (Stage 4 생성기) |
+| 입력 버퍼·메모리 대기가 MAC을 막는다 (VWW4, YOLO) | `mac_stalled_by_ib / npu_active` | 측정 중 (Pass A) |
+| | IFM 읽기 채널 트래픽 (`PMCAXI_CHAN` rd_ifm) | 측정 중 (boots 101–124) |
+| | SRAM/EXT 요청 stall, outstanding 제한, 포트 분배 | 측정 중 (Pass C, E, F, G) |
+| | IB stall과 메모리 stall의 동시 발생 비율 (`PMCLUT`) | 개발 필요 (러너 미구현, 보드 미검증) |
+| | 채널별 지연 분포 (`axi_latency_*` + `PMCAXI_CHAN`) | 개발 필요 (채널별 blob, 이번 캠페인 밖) |
+| 가중치 공급·WD 버퍼 | `wd_stalled`, `wd_stalled_by_wd_buf`, 가중치 읽기 채널 트래픽 | 측정 중 (Pass A, D; boots 101–124 rd_weights) |
+| AO·출력 경로 | `ao_active`, AO stall 6종, OFM 쓰기 채널 트래픽 | 측정 중 (Pass A, D, E; wr_ofm) |
+| 특정 연산·그룹이 지배한다 | 그룹별 사이클·stall, Σgroup / 전체 | 개발 필요 (Stage 2 그룹 계측) |
+| Vela 추정의 설명력 | 모델 전체 Vela cycles·bytes vs 실측; 연산별 Vela 추정(`vela/verbose/*_per-layer.csv`) | 모델 단위 측정 중 · 연산 단위는 Stage 2 후 |
+
+블록 채움률은 컴파일 결과에서 계산한 값이고 하드웨어 점유율이 아니다. 모델 단위 비교는 연관성만 말하며 인과는
+Stage 2(연산별 실측)와 Stage 4(형상 통제)에서 확인한다.
