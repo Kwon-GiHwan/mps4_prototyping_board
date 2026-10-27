@@ -127,3 +127,14 @@ Results of amendment 2 (boots 80–87, analysis in `analysis_a2/`):
   shown on the board, and boot 85 becomes `VALID (x1)`. Fail → boots 85–86 stay `UNRESOLVED (x1)`.
 - **Boot 89**: the host waits up to 900 s for each RUN_COMPLETE. A record that arrives answers "slow"; none answers
   "stalled". Status as in "Correctness and status".
+
+## Results of amendment 3 (recorded 2026-10-27, after boots 88–89)
+
+- **Boot 88 (rnnoise negative control): PASS.** Every RUN: `ofm_mismatch_count` 1, `ofm_max_abs_diff` 5,
+  `ofm_first_mismatch` 169, `vendor_rc` 0, read seam fired once. The version-4 comparison of every OFM is shown on
+  the board, so boot 85 (rnnoise) is `VALID (x1)`.
+- **Boot 89 (wav2letter): NOT_EXECUTABLE (x1).** LOAD_MODEL_END answered (the scaled wait works); the first RUN was
+  acknowledged but no RUN_COMPLETE came within 900 s — stalled, not slow. Cause unknown; not investigated here.
+- Final x1 statuses: rnnoise `VALID (x1)`; vww4, yolo-fastest `UNRESOLVED (x1)` (OFM differs from tflite_runtime:
+  1 byte / 1 LSB and 955 bytes / max 7); wav2letter `NOT_EXECUTABLE (x1)`. Reported in `results/npu_utilization_mps4/`.
+- Board restored to `evidence_m6` and postflight passed after boot 89.

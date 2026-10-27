@@ -1,32 +1,40 @@
-# NPU utilization — collected files
+# NPU utilization on the board (MPS4 FI101, Ethos-U85 1024 MAC) — all seven MLEK models
 
-**TA state: profile 1 (MLEK `ta_config_u85_sys_dram_mid`).** MLEK models only, measured with the runner in Stage 1
-(boots 65–67). The originals stay in `evidence/stage1/`, whose paths the frozen contract quotes. Each `raw/` folder
-is a byte-identical copy of its original. The two CSVs keep the original rows of these three models unchanged.
+**TA state: profile 1 (MLEK `ta_config_u85_sys_dram_mid`), read back every RUN.** Runner measurements, not stock
+MLEK. Two measurement sets, stated per row (`dataset`, `status`, `measured_runs`):
 
-| part | what | copied from |
+| dataset | models | boots | image | RUNs (warm-up) | correctness | source |
+| --- | --- | --- | --- | --- | --- | --- |
+| `s1` (Stage 1) | kws, ad, mobilenet | 65–67 | APP `2c2fa435` | 35 (5) | byte-exact vs golden (gate `BASELINE_PASS`) | `evidence/stage1/raw/s1/` |
+| `x1` (exploratory) | vww4, rnnoise, yolo-fastest, wav2letter | 84–86, 89 | APP `38ce118c` (restructured runner) | 10 (2), profile `mlek_r10` | see `status` | `evidence/x1_mlek_models/raw_a2/`, `raw_a3/` |
+
+The two images are shown equivalent for these counters by the x1 controls (boots 80–82): kws, ad and mobilenet run on
+`38ce118c` reproduce Stage 1's `mac_active` and beat counters exactly, with `npu_active` medians inside Stage 1's
+ranges (`evidence/x1_mlek_models/analysis_a2/`).
+
+## Status per model
+
+| model | status | why |
 | --- | --- | --- |
-| `raw/<workload>/` | one boot (35 RUNs) per workload | `evidence/stage1/raw/s1/<w>/` (boots 65, 66, 67) |
-| `summary.csv` | per workload × metric: n, median, mean, std, cv, min, max, deterministic | rows of `evidence/stage1/summary.csv` |
-| `npu_utilization.csv` | MAC/cycle, peak MAC eff., MAC active ratio, MAC active-cycle eff. per workload | derived from `summary.csv` medians and `evidence/stage1/summary.json` (`n_mac`) |
+| kws, ad, mobilenet | `VALID (s1)` | Stage 1 gate passed |
+| rnnoise | `VALID (x1)` | gate passed; the multi-OFM comparison is shown on the board by the negative control (boot 88: 1 mismatch, 5, at 169 in every RUN) |
+| vww4 | `UNRESOLVED (x1)` | 1 OFM byte differs by 1 LSB from tflite_runtime; counters kept |
+| yolo-fastest | `UNRESOLVED (x1)` | 955 OFM bytes differ (max 7 LSB) from tflite_runtime; counters kept |
+| wav2letter | `NOT_EXECUTABLE (x1)` | the blob loads (14.5 MB, LOAD_MODEL_END answered) but the first RUN never completes (no RUN_COMPLETE within 900 s, boot 89); cause not yet known |
+
+`UNRESOLVED` rows need an MLEK FI101 golden (amendment-2 rule) before they can be called correct; their counters are
+reported as measured. Do not average `UNRESOLVED` or `NOT_EXECUTABLE` rows into a headline number without saying so.
+
+## Files
+
+| part | what |
+| --- | --- |
+| `raw/<workload>/` | one boot per workload: `raw_runs.json`, `runs.csv`, `per_event.csv`, `summary.json`, `campaign.out`, `mcc_boot.log`, `started_utc`, `finished_utc` (byte-identical copies of the evidence folders above; wav2letter holds the refused boot) |
+| `summary.csv` | per workload × metric: n, median, mean, std, cv, min, max, deterministic. s1 rows are Stage 1's; x1 rows are computed with `host/analysis/stage1.py`'s `derive`/`stats` over measured RUNs 3–10 (rnnoise equals the tool's own output on all 20 metrics) |
+| `npu_utilization.csv` | MAC/cycle, peak MAC eff., MAC active ratio, MAC active-cycle eff., `status`, `measured_runs` per workload |
 
 Definitions (`host/analysis/stage1.py`, 1024 MAC): MAC/cycle = N_MAC / npu_active; peak MAC eff. = N_MAC /
 (1024 × npu_active); MAC active ratio = mac_active / npu_active; MAC active-cycle eff. = N_MAC / (1024 × mac_active).
+N_MAC from the original MLEK tflite (`workload_meta.py`). FVP counterparts: `../npu_utilization_fvp/`.
 
-## Files in each `raw/<workload>/`
-
-| file | content |
-| --- | --- |
-| `raw_runs.json` | records as received over UART: ping + 35 RUN records; everything else is derived from it |
-| `runs.csv` | one row per RUN × event (280 rows), with validity, OFM comparison, hashes and boot index |
-| `per_event.csv` | per event: the 35 values and a verdict |
-| `summary.json` | blob / input / golden hashes, knobs, requested events, consistency checks |
-| `campaign.out` | campaign log, one line per RUN (rc, vendor_rc, OFM mismatch, valid) |
-| `mcc_boot.log` | MCC reboot and FPGA image load |
-| `started_utc`, `finished_utc` | campaign start and end |
-
-## Not here
-
-- Isolated operators (conv3x3, dw3x3, pw1x1, fc1024): not MLEK models. Still in `evidence/stage1/`.
-- MLEK models rnnoise, vww4, yolo-fastest and wav2letter: never measured with the runner. Stock-MLEK board cycle
-  counts (no MAC_ACTIVE) exist on branch `refactor/unified-mlek-campaigns`, `docs/paper/evidence/board-stage-b*/`.
+Open items that bound what these numbers mean (runner vs MLEK execution path): `evidence/runner_gap/open_equivalence_items.md`.

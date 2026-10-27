@@ -1,0 +1,2 @@
+88 rnnoise_INT8 x1neg
+89 wav2letter_pruned_int8 x1
