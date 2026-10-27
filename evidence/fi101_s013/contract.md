@@ -95,3 +95,9 @@ channel and are **not** in this campaign.
 No group-level cost (Stage 2), no latency distribution, no statement on the physical DRAM (the memory system is
 the TA-emulated SYS_DRAM_Mid). vww4, yolo-fastest, wav2letter OFMs differ from tflite_runtime (`UNRESOLVED (x1)`);
 their counters are used, their correctness is not claimed.
+
+## Amendment 1 (2026-10-28, owner decision, during boots 94–100, before any Stage 1 table)
+
+Order changed: **Stage 1 is analysed and reported first; Stage 0 checks are applied afterwards** and decide which
+Stage 1 rows stand. Until then every Stage 1 row carries the label `PROVISIONAL (Stage 0 pending)`. Stage 3 data are
+collected in the same boots and analysed later. Boots, image, sets and every formula above are unchanged.
