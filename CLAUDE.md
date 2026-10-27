@@ -65,6 +65,18 @@ FI101 has an NPU timing adapter in front of each NPU AXI port (`TA_SRAM` at `0x5
 - Comparing with MLEK requires TA profile 1. MLEK's board numbers are "FI101 + emulated SYS_DRAM_Mid".
 - All runner results before boot 49 (on the old branch) were taken with the TAs untouched.
 
+## Measurement scope — every MLEK model by default
+
+Owner decision (2026-10-27): a measurement campaign covers **all seven MLEK use-case models**, not a subset:
+`kws_micronet_m`, `ad_medium_int8`, `mobilenet_v2_1.0_224_INT8`, `vww4_128_128_INT8`, `rnnoise_INT8`,
+`yolo-fastest_192_face_v4`, `wav2letter_pruned_int8` (original tflite in the container under
+`/opt/arm/ml-embedded-evaluation-kit/resources_downloaded/`). `dnn_s_quantized` (inference_runner default) is excluded.
+
+- Exception: a targeted experiment that asks a specific question (isolated operators, a one-variable A/B, an event
+  audit) may use a subset. Its contract names the subset and why.
+- A model that cannot be measured is recorded as `NOT_EXECUTABLE` with the reason, never silently dropped.
+- Measure under the current profile (`config/mlek_r10.json`: 10 RUNs, TA profile 1) unless the contract says otherwise.
+
 ## Pipeline
 
 1. **Blob** (container, `ssh gihwan` → `docker exec benchmark-runner`): `python3 /work/mps4_host/host/container/pack_vela_workload.py` (Vela options fixed to MLEK's)
