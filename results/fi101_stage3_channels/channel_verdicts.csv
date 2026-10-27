@@ -1,0 +1,2 @@
+model,channels,verdict
+rnnoise_INT8,"rd_ifm,rd_mem2mem,rd_weights,wr_ofm",CHANNEL_FILTER_WORKS
