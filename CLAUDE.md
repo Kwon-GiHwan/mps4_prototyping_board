@@ -142,6 +142,8 @@ mutation means a missing fixture — add the fixture, do not delete the mutation
   CAP read-back, MLEK's TA EXT MAXR read-back, executed-model trace + MLEK-golden OFMs, PMU counting window, and the
   remaining execution differences one at a time. Until they close, never claim the runner is "equivalent to MLEK" or
   "uses the vendor driver unmodified"; claim only the measured reproduction (NPU active ±0.4 %, beats equal).
+- **Pending (owner: later): MLEK FI101 goldens** for vww4, yolo-fastest, wav2letter (`UNRESOLVED (x1)`, same file,
+  ~2–3 h, MLEK authorization). Their counters are valid; only the OFM verdict waits.
 
 ## Standing constraints
 

@@ -35,6 +35,25 @@ metrics; it does not separate the effect of each remaining difference, nor show 
 | E4 | PMU counting window | Runner: hold clock/power (`CMD=0`), reset and arm counters, run, read the counters at the vendor's "Testing CPM signals" printf before power release (`CMD=0xC`); `read_seam_fired` is recorded per RUN. MLEK: enable at `ethosu_inference_begin`, disable at `_end`. PMCCNTR already known to include staging copies (latency uses `npu_active`, never PMCCNTR). The reviewer notes `CMD=0` is not a stop/reset command; what it holds must be confirmed against the TRM. | Write down start/stop points of both paths; check whether counters are stopped before reading; report PMCCNTR and NPU_ACTIVE separately; confirm event selection/overflow handling match; confirm the seam fires exactly once per RUN in every boot and keeps its position relative to NPU start and power release. | Both windows are defined, and every ratio uses a denominator whose window is the same in both paths (or the difference is quantified). |
 | E5 | Remaining execution differences, one at a time | Untested: CPU busy-poll with D-cache off (MLEK: `__WFE()`, caches on); no soft reset before a job (MLEK resets to a known state; PROT is read-only, so the gap is "secure/privileged state not set by reset and not compared", not "PROT not written"); fast scratch at `0x31100000` instead of `0x31000000` (`CFG_SRAM_HASH*` may map addresses to SRAM0/1 differently). | Separate verification runs on the seven MLEK models, one change each, never overwriting the baseline: wait mode / cache; reset policy (A→A vs A→B→A); scratch base (compare per-port SRAM0/SRAM1 beats, not only totals; confirm the reserved fast-scratch region ≥ the Vela budget from the memory map). | Each change leaves the reported metrics unchanged within run-to-run spread, or its effect is recorded. |
 
+## Pending: MLEK FI101 goldens for the `UNRESOLVED (x1)` models (recorded 2026-10-28, owner: later)
+
+vww4, yolo-fastest and wav2letter are `UNRESOLVED (x1)` in `results/npu_utilization_mps4/`: their counters are
+valid and reported, but their OFMs differ from the tflite_runtime golden (vww4 1 byte / 1 LSB, yolo 955 bytes /
+max 7, wav2letter 2 bytes / max 6; boots 84, 86, 93; TA profile 1). Amendment 2's rule needs the MLEK FI101 OFM
+on MLEK's input as golden. Same MLEK side as E3; deferred by the owner so the per-model event measurement can go
+first (event counters do not depend on the verdict).
+
+| step | what | estimate |
+| --- | --- | --- |
+| 1 | MLEK images per model with the blob's IFM and the VERIFY_TEST_OUTPUT dump (`evidence/stage1/a2/mlek_golden/` procedure) | 30–40 min, container |
+| 2 | MLEK on FI101 per model: deploy, run, capture (`deploy_mlek.sh`, `mlek_app_capture.py`); ~10 min each on 2026-10-13 | 30–40 min, owner sudo per model |
+| 3 | `host/analysis/mlek_golden.py` G1–G5, hashes into the manifest before any runner boot | 10 min |
+| 4 | runner re-measurement with the MLEK goldens in the blobs (the runner keeps only mismatch counts, not the OFM) | ~40 min (wav2letter upload ~33 min) |
+| 5 | restore + postflight | 5 min |
+
+Needs a fresh MLEK-run authorization (CLAUDE.md). Equal OFM → `VALID (x1)`; different → the runner executes the
+model differently from MLEK (E3), investigate.
+
 Priority: E1 and E2 are single read-backs; E3 and E4 decide what the numbers mean; E5 is the longest. E1, E2 and
 the MLEK side of E3 need MLEK runs on FI101 (fresh authorization, CLAUDE.md standing constraints).
 
