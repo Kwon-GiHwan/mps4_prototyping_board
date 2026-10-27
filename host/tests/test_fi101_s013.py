@@ -41,5 +41,32 @@ class Stage0(unittest.TestCase):
         self.assertEqual(S.ratio(r, 48, 35), (0.5 + 0.25) / 2)
 
 
+def brun(active=100, mac=50, beats=None, valid=True, set_id=2):
+    ev = {35: active, 48: mac}
+    ev.update(beats or {e: 10 for e in S.CHAN_EVENTS})
+    return dict(ev=ev, ovf=set(), valid=valid, window=1000, infer=120, infer_cpu=120, sys=None, host_s=None)
+
+
+class Channels(unittest.TestCase):
+    def base(self):
+        return {(2, 3): brun(), (2, 4): brun(active=101)}
+
+    def test_works(self):
+        ch = {"rd_weights": {(1, 3): brun(beats={e: 4 for e in S.CHAN_EVENTS})},
+              "wr_ofm": {(1, 3): brun(beats={e: 10 for e in S.CHAN_EVENTS})}}
+        self.assertEqual(S.channel_check(self.base(), ch)[0], "CHANNEL_FILTER_WORKS")
+
+    def test_each_condition_can_fail(self):
+        above = {e: 11 for e in S.CHAN_EVENTS}
+        for ch in ({"x": {(1, 3): brun(beats=above)}},                                   # above unfiltered
+                   {"x": {(1, 3): brun()}},                                              # nothing below
+                   {"x": {(1, 3): brun(active=120, beats={e: 4 for e in S.CHAN_EVENTS})}},   # execution changed
+                   {"x": {(1, 3): brun(valid=False, beats={e: 4 for e in S.CHAN_EVENTS})}},  # invalid run
+                   {"lo": {(1, 3): brun(beats={e: 4 for e in S.CHAN_EVENTS})},              # one below, one above
+                    "hi": {(1, 3): brun(beats=above)}},
+                   {}):
+            self.assertEqual(S.channel_check(self.base(), ch)[0], "CHANNEL_FILTER_UNPROVEN", ch)
+
+
 if __name__ == "__main__":
     unittest.main()
