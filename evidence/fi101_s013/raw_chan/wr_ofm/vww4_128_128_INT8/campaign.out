@@ -1,0 +1,25 @@
+set  1 rep 1 rc=1 vendor_rc=2 seam_status/qread=('0xffff0020', 12960) ofm_mismatch(count,maxdiff,first)=(1, 1, 1) valid=True 
+set  1 rep 2 rc=1 vendor_rc=2 seam_status/qread=('0xffff0020', 12960) ofm_mismatch(count,maxdiff,first)=(1, 1, 1) valid=True 
+set  1 rep 3 rc=1 vendor_rc=2 seam_status/qread=('0xffff0020', 12960) ofm_mismatch(count,maxdiff,first)=(1, 1, 1) valid=True 
+set  1 rep 4 rc=1 vendor_rc=2 seam_status/qread=('0xffff0020', 12960) ofm_mismatch(count,maxdiff,first)=(1, 1, 1) valid=True 
+set  1 rep 5 rc=1 vendor_rc=2 seam_status/qread=('0xffff0020', 12960) ofm_mismatch(count,maxdiff,first)=(1, 1, 1) valid=True 
+set  1 rep 6 rc=1 vendor_rc=2 seam_status/qread=('0xffff0020', 12960) ofm_mismatch(count,maxdiff,first)=(1, 1, 1) valid=True 
+set  1 rep 7 rc=1 vendor_rc=2 seam_status/qread=('0xffff0020', 12960) ofm_mismatch(count,maxdiff,first)=(1, 1, 1) valid=True 
+set  1 rep 8 rc=1 vendor_rc=2 seam_status/qread=('0xffff0020', 12960) ofm_mismatch(count,maxdiff,first)=(1, 1, 1) valid=True 
+set  1 rep 9 rc=1 vendor_rc=2 seam_status/qread=('0xffff0020', 12960) ofm_mismatch(count,maxdiff,first)=(1, 1, 1) valid=True 
+set  1 rep 10 rc=1 vendor_rc=2 seam_status/qread=('0xffff0020', 12960) ofm_mismatch(count,maxdiff,first)=(1, 1, 1) valid=True 
+{
+ "runs": 10,
+ "coverage": "RULE_SET_COVERAGE: covered 8/171",
+ "consistency": {
+  "CYCLE_EVENT_VS_PMCCNTR": "UNPROVEN",
+  "NPU_ACTIVE_LE_CYCLE": "PASS"
+ },
+ "verdict_counts": {
+  "COUNTED_NONZERO": 2,
+  "COUNTED_ZERO": 6,
+  "INCONSISTENT": 0,
+  "NOT_OBSERVED": 0
+ },
+ "refusal": null
+}

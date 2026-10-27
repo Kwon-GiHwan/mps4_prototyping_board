@@ -9,6 +9,11 @@
    "model": "rnnoise_INT8",
    "channels": "rd_ifm,rd_mem2mem,rd_weights,wr_ofm",
    "verdict": "CHANNEL_FILTER_WORKS"
+  },
+  {
+   "model": "vww4_128_128_INT8",
+   "channels": "rd_ifm,rd_mem2mem,rd_weights,wr_ofm",
+   "verdict": "CHANNEL_FILTER_WORKS"
   }
  ],
  "channels": [
@@ -514,6 +519,258 @@
    "ev_type": 391,
    "channel_median": 0.0,
    "unfiltered_median": 36.0,
+   "share": 0.0
+  },
+  {
+   "model": "vww4_128_128_INT8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_ifm",
+   "ev_type": 128,
+   "channel_median": 3978.0,
+   "unfiltered_median": 7440.0,
+   "share": 0.5346774193548387
+  },
+  {
+   "model": "vww4_128_128_INT8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_ifm",
+   "ev_type": 130,
+   "channel_median": 54444.0,
+   "unfiltered_median": 69326.0,
+   "share": 0.7853330640740848
+  },
+  {
+   "model": "vww4_128_128_INT8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_ifm",
+   "ev_type": 132,
+   "channel_median": 0.0,
+   "unfiltered_median": 9038.0,
+   "share": 0.0
+  },
+  {
+   "model": "vww4_128_128_INT8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_ifm",
+   "ev_type": 135,
+   "channel_median": 2101.0,
+   "unfiltered_median": 60045.0,
+   "share": 0.03499042384878008
+  },
+  {
+   "model": "vww4_128_128_INT8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_ifm",
+   "ev_type": 384,
+   "channel_median": 874.0,
+   "unfiltered_median": 3150.0,
+   "share": 0.27746031746031746
+  },
+  {
+   "model": "vww4_128_128_INT8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_ifm",
+   "ev_type": 386,
+   "channel_median": 2174.0,
+   "unfiltered_median": 23761.0,
+   "share": 0.09149446572113969
+  },
+  {
+   "model": "vww4_128_128_INT8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_ifm",
+   "ev_type": 391,
+   "channel_median": 0.0,
+   "unfiltered_median": 1.0,
+   "share": 0.0
+  },
+  {
+   "model": "vww4_128_128_INT8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_mem2mem",
+   "ev_type": 128,
+   "channel_median": 0.0,
+   "unfiltered_median": 7440.0,
+   "share": 0.0
+  },
+  {
+   "model": "vww4_128_128_INT8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_mem2mem",
+   "ev_type": 130,
+   "channel_median": 0.0,
+   "unfiltered_median": 69326.0,
+   "share": 0.0
+  },
+  {
+   "model": "vww4_128_128_INT8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_mem2mem",
+   "ev_type": 132,
+   "channel_median": 0.0,
+   "unfiltered_median": 9038.0,
+   "share": 0.0
+  },
+  {
+   "model": "vww4_128_128_INT8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_mem2mem",
+   "ev_type": 135,
+   "channel_median": 0.0,
+   "unfiltered_median": 60045.0,
+   "share": 0.0
+  },
+  {
+   "model": "vww4_128_128_INT8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_mem2mem",
+   "ev_type": 384,
+   "channel_median": 149.0,
+   "unfiltered_median": 3150.0,
+   "share": 0.0473015873015873
+  },
+  {
+   "model": "vww4_128_128_INT8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_mem2mem",
+   "ev_type": 386,
+   "channel_median": 2101.0,
+   "unfiltered_median": 23761.0,
+   "share": 0.08842220445267455
+  },
+  {
+   "model": "vww4_128_128_INT8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_mem2mem",
+   "ev_type": 391,
+   "channel_median": 0.0,
+   "unfiltered_median": 1.0,
+   "share": 0.0
+  },
+  {
+   "model": "vww4_128_128_INT8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_weights",
+   "ev_type": 128,
+   "channel_median": 798.0,
+   "unfiltered_median": 7440.0,
+   "share": 0.10725806451612903
+  },
+  {
+   "model": "vww4_128_128_INT8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_weights",
+   "ev_type": 130,
+   "channel_median": 6122.0,
+   "unfiltered_median": 69326.0,
+   "share": 0.08830741713065805
+  },
+  {
+   "model": "vww4_128_128_INT8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_weights",
+   "ev_type": 132,
+   "channel_median": 0.0,
+   "unfiltered_median": 9038.0,
+   "share": 0.0
+  },
+  {
+   "model": "vww4_128_128_INT8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_weights",
+   "ev_type": 135,
+   "channel_median": 0.0,
+   "unfiltered_median": 60045.0,
+   "share": 0.0
+  },
+  {
+   "model": "vww4_128_128_INT8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_weights",
+   "ev_type": 384,
+   "channel_median": 1120.0,
+   "unfiltered_median": 3150.0,
+   "share": 0.35555555555555557
+  },
+  {
+   "model": "vww4_128_128_INT8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_weights",
+   "ev_type": 386,
+   "channel_median": 15586.0,
+   "unfiltered_median": 23761.0,
+   "share": 0.6559488237027061
+  },
+  {
+   "model": "vww4_128_128_INT8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_weights",
+   "ev_type": 391,
+   "channel_median": 0.0,
+   "unfiltered_median": 1.0,
+   "share": 0.0
+  },
+  {
+   "model": "vww4_128_128_INT8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "wr_ofm",
+   "ev_type": 128,
+   "channel_median": 0.0,
+   "unfiltered_median": 7440.0,
+   "share": 0.0
+  },
+  {
+   "model": "vww4_128_128_INT8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "wr_ofm",
+   "ev_type": 130,
+   "channel_median": 0.0,
+   "unfiltered_median": 69326.0,
+   "share": 0.0
+  },
+  {
+   "model": "vww4_128_128_INT8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "wr_ofm",
+   "ev_type": 132,
+   "channel_median": 8897.0,
+   "unfiltered_median": 9038.0,
+   "share": 0.984399203363576
+  },
+  {
+   "model": "vww4_128_128_INT8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "wr_ofm",
+   "ev_type": 135,
+   "channel_median": 0.0,
+   "unfiltered_median": 60045.0,
+   "share": 0.0
+  },
+  {
+   "model": "vww4_128_128_INT8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "wr_ofm",
+   "ev_type": 384,
+   "channel_median": 0.0,
+   "unfiltered_median": 3150.0,
+   "share": 0.0
+  },
+  {
+   "model": "vww4_128_128_INT8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "wr_ofm",
+   "ev_type": 386,
+   "channel_median": 0.0,
+   "unfiltered_median": 23761.0,
+   "share": 0.0
+  },
+  {
+   "model": "vww4_128_128_INT8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "wr_ofm",
+   "ev_type": 391,
+   "channel_median": 0.0,
+   "unfiltered_median": 1.0,
    "share": 0.0
   }
  ]

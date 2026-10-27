@@ -41,3 +41,21 @@ Reading: kws reads weights from both ports — 75 % of EXT read beats directly f
 from the on-chip fast scratch, which the DMA channel fills (13 % of EXT reads). IFM reads are SRAM-side (72 %). The
 three channels cover 91 % of EXT and 96 % of SRAM reads. Write side: beats 0 again, transactions 3,036 vs 3,170
 unfiltered (not equal this time) — still not interpretable.
+
+## vww4_128_128_INT8 (boots 109–112) — `CHANNEL_FILTER_WORKS`
+
+| channel | EXT rd beats | share | SRAM rd beats | share | EXT rd trans | SRAM rd trans |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| unfiltered | 23,761 | — | 69,326 | — | 3,150 | 7,440 |
+| rd_weights | 15,586 | 65.6 % | 6,122 | 8.8 % | 1,120 | 798 |
+| rd_ifm | 2,174 | 9.1 % | 54,444 | 78.5 % | 874 | 3,978 |
+| rd_mem2mem (DMA) | 2,101 | 8.8 % | 0 | 0.0 % | 149 | 0 |
+| sum of the three | 19,861 | 83.6 % | 60,566 | 87.4 % | | |
+
+wr_ofm: SRAM wr beats 0 (unfiltered 60,045), SRAM wr trans 8,897 (unfiltered 9,038).
+
+Reading: vww4's SRAM reads are mostly IFM (78.5 %, 54,444 beats; ≈ 13.7 beats per transaction), its EXT reads mostly
+weights (65.6 %). IFM also comes over EXT in short bursts (2,174 beats in 874 transactions ≈ 2.5 beats each).
+In beats per `npu_active` cycle the IFM stream is small (≈ 0.23 SRAM beats / cycle over 2 ports), so the input-buffer
+stall seen in Stage 1 (`mac_stalled_by_ib` 28 %) is not explained by IFM volume alone — latency or access pattern
+remain candidates (not measured here). Write side: beats 0, transactions 8,897 vs 9,038.
