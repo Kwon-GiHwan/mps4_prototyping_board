@@ -138,3 +138,21 @@ Results of amendment 2 (boots 80–87, analysis in `analysis_a2/`):
 - Final x1 statuses: rnnoise `VALID (x1)`; vww4, yolo-fastest `UNRESOLVED (x1)` (OFM differs from tflite_runtime:
   1 byte / 1 LSB and 955 bytes / max 7); wav2letter `NOT_EXECUTABLE (x1)`. Reported in `results/npu_utilization_mps4/`.
 - Board restored to `evidence_m6` and postflight passed after boot 89.
+
+## Amendment 4 (2026-10-28, owner decision, recorded before boot 93) — wav2letter re-measured with the fixed host
+
+**TA state: profile 1, unchanged; image `38ce118c…`, profile `mlek_r10` (10 RUNs) as in amendment 2.**
+
+Correction to the results of amendments 2 and 3: boots 87 and 89 did **not** wait 120 s / 900 s. The host's
+`RunnerLink.run()` gave up after ~5 s of silence whatever the timeout (`evidence/w2l_stall/contract.md`, step 2;
+fixed in `52254b9`). On the diagnostic image the firmware was found in `ST_RESULT_READY` after such a refusal, and
+two RUNs with the fixed host completed in 6.6 s. "Stalled" and `NOT_EXECUTABLE (x1)` for wav2letter are withdrawn.
+
+| boot | workload | blob | purpose |
+| --- | --- | --- | --- |
+| 93 | wav2letter_pruned_int8 | `5b8c9d06…` (unchanged) | measurement, host with the `52254b9` fix, RUN wait 120 s |
+
+- Analysed like every x1 boot (`stage1.py --profile config/mlek_r10.json`), status by "Correctness and status":
+  golden = tflite_runtime (no MLEK FI101 golden), so an exact OFM → `VALID (x1)` and a differing OFM →
+  `UNRESOLVED (x1)`, counters kept. A refusal → recorded as is.
+- Report in `results/npu_utilization_mps4/` replaces the wav2letter row.
