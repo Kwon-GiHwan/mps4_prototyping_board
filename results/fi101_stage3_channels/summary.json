@@ -14,6 +14,11 @@
    "model": "vww4_128_128_INT8",
    "channels": "rd_ifm,rd_mem2mem,rd_weights,wr_ofm",
    "verdict": "CHANNEL_FILTER_WORKS"
+  },
+  {
+   "model": "yolo-fastest_192_face_v4",
+   "channels": "rd_ifm,rd_mem2mem,rd_weights,wr_ofm",
+   "verdict": "CHANNEL_FILTER_WORKS"
   }
  ],
  "channels": [
@@ -771,6 +776,258 @@
    "ev_type": 391,
    "channel_median": 0.0,
    "unfiltered_median": 1.0,
+   "share": 0.0
+  },
+  {
+   "model": "yolo-fastest_192_face_v4",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_ifm",
+   "ev_type": 128,
+   "channel_median": 15947.0,
+   "unfiltered_median": 22757.0,
+   "share": 0.7007514171463726
+  },
+  {
+   "model": "yolo-fastest_192_face_v4",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_ifm",
+   "ev_type": 130,
+   "channel_median": 185400.0,
+   "unfiltered_median": 236070.0,
+   "share": 0.7853602744948532
+  },
+  {
+   "model": "yolo-fastest_192_face_v4",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_ifm",
+   "ev_type": 132,
+   "channel_median": 0.0,
+   "unfiltered_median": 18108.0,
+   "share": 0.0
+  },
+  {
+   "model": "yolo-fastest_192_face_v4",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_ifm",
+   "ev_type": 135,
+   "channel_median": 7052.0,
+   "unfiltered_median": 188708.0,
+   "share": 0.037369904826504444
+  },
+  {
+   "model": "yolo-fastest_192_face_v4",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_ifm",
+   "ev_type": 384,
+   "channel_median": 1338.0,
+   "unfiltered_median": 4007.0,
+   "share": 0.3339156476166708
+  },
+  {
+   "model": "yolo-fastest_192_face_v4",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_ifm",
+   "ev_type": 386,
+   "channel_median": 3519.0,
+   "unfiltered_median": 29347.0,
+   "share": 0.11991004191229086
+  },
+  {
+   "model": "yolo-fastest_192_face_v4",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_ifm",
+   "ev_type": 391,
+   "channel_median": 0.0,
+   "unfiltered_median": 517.0,
+   "share": 0.0
+  },
+  {
+   "model": "yolo-fastest_192_face_v4",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_mem2mem",
+   "ev_type": 128,
+   "channel_median": 0.0,
+   "unfiltered_median": 22757.0,
+   "share": 0.0
+  },
+  {
+   "model": "yolo-fastest_192_face_v4",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_mem2mem",
+   "ev_type": 130,
+   "channel_median": 0.0,
+   "unfiltered_median": 236070.0,
+   "share": 0.0
+  },
+  {
+   "model": "yolo-fastest_192_face_v4",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_mem2mem",
+   "ev_type": 132,
+   "channel_median": 0.0,
+   "unfiltered_median": 18108.0,
+   "share": 0.0
+  },
+  {
+   "model": "yolo-fastest_192_face_v4",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_mem2mem",
+   "ev_type": 135,
+   "channel_median": 0.0,
+   "unfiltered_median": 188708.0,
+   "share": 0.0
+  },
+  {
+   "model": "yolo-fastest_192_face_v4",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_mem2mem",
+   "ev_type": 384,
+   "channel_median": 482.0,
+   "unfiltered_median": 4007.0,
+   "share": 0.12028949338657349
+  },
+  {
+   "model": "yolo-fastest_192_face_v4",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_mem2mem",
+   "ev_type": 386,
+   "channel_median": 7052.0,
+   "unfiltered_median": 29347.0,
+   "share": 0.24029713428970592
+  },
+  {
+   "model": "yolo-fastest_192_face_v4",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_mem2mem",
+   "ev_type": 391,
+   "channel_median": 0.0,
+   "unfiltered_median": 517.0,
+   "share": 0.0
+  },
+  {
+   "model": "yolo-fastest_192_face_v4",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_weights",
+   "ev_type": 128,
+   "channel_median": 3204.0,
+   "unfiltered_median": 22757.0,
+   "share": 0.14079184426769786
+  },
+  {
+   "model": "yolo-fastest_192_face_v4",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_weights",
+   "ev_type": 130,
+   "channel_median": 27052.0,
+   "unfiltered_median": 236070.0,
+   "share": 0.11459312915660609
+  },
+  {
+   "model": "yolo-fastest_192_face_v4",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_weights",
+   "ev_type": 132,
+   "channel_median": 0.0,
+   "unfiltered_median": 18108.0,
+   "share": 0.0
+  },
+  {
+   "model": "yolo-fastest_192_face_v4",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_weights",
+   "ev_type": 135,
+   "channel_median": 0.0,
+   "unfiltered_median": 188708.0,
+   "share": 0.0
+  },
+  {
+   "model": "yolo-fastest_192_face_v4",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_weights",
+   "ev_type": 384,
+   "channel_median": 1042.0,
+   "unfiltered_median": 4007.0,
+   "share": 0.26004492138757174
+  },
+  {
+   "model": "yolo-fastest_192_face_v4",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_weights",
+   "ev_type": 386,
+   "channel_median": 14300.0,
+   "unfiltered_median": 29347.0,
+   "share": 0.4872729750911507
+  },
+  {
+   "model": "yolo-fastest_192_face_v4",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_weights",
+   "ev_type": 391,
+   "channel_median": 0.0,
+   "unfiltered_median": 517.0,
+   "share": 0.0
+  },
+  {
+   "model": "yolo-fastest_192_face_v4",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "wr_ofm",
+   "ev_type": 128,
+   "channel_median": 0.0,
+   "unfiltered_median": 22757.0,
+   "share": 0.0
+  },
+  {
+   "model": "yolo-fastest_192_face_v4",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "wr_ofm",
+   "ev_type": 130,
+   "channel_median": 0.0,
+   "unfiltered_median": 236070.0,
+   "share": 0.0
+  },
+  {
+   "model": "yolo-fastest_192_face_v4",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "wr_ofm",
+   "ev_type": 132,
+   "channel_median": 17641.0,
+   "unfiltered_median": 18108.0,
+   "share": 0.9742102937927988
+  },
+  {
+   "model": "yolo-fastest_192_face_v4",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "wr_ofm",
+   "ev_type": 135,
+   "channel_median": 0.0,
+   "unfiltered_median": 188708.0,
+   "share": 0.0
+  },
+  {
+   "model": "yolo-fastest_192_face_v4",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "wr_ofm",
+   "ev_type": 384,
+   "channel_median": 0.0,
+   "unfiltered_median": 4007.0,
+   "share": 0.0
+  },
+  {
+   "model": "yolo-fastest_192_face_v4",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "wr_ofm",
+   "ev_type": 386,
+   "channel_median": 0.0,
+   "unfiltered_median": 29347.0,
+   "share": 0.0
+  },
+  {
+   "model": "yolo-fastest_192_face_v4",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "wr_ofm",
+   "ev_type": 391,
+   "channel_median": 0.0,
+   "unfiltered_median": 517.0,
    "share": 0.0
   }
  ]

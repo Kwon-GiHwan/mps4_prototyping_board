@@ -59,3 +59,20 @@ weights (65.6 %). IFM also comes over EXT in short bursts (2,174 beats in 874 tr
 In beats per `npu_active` cycle the IFM stream is small (≈ 0.23 SRAM beats / cycle over 2 ports), so the input-buffer
 stall seen in Stage 1 (`mac_stalled_by_ib` 28 %) is not explained by IFM volume alone — latency or access pattern
 remain candidates (not measured here). Write side: beats 0, transactions 8,897 vs 9,038.
+
+## yolo-fastest_192_face_v4 (boots 113–116) — `CHANNEL_FILTER_WORKS`
+
+| channel | EXT rd beats | share | SRAM rd beats | share | EXT rd trans | SRAM rd trans |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| unfiltered | 29,347 | — | 236,070 | — | 4,007 | 22,757 |
+| rd_weights | 14,300 | 48.7 % | 27,052 | 11.5 % | 1,042 | 3,204 |
+| rd_ifm | 3,519 | 12.0 % | 185,400 | 78.5 % | 1,338 | 15,947 |
+| rd_mem2mem (DMA) | 7,052 | 24.0 % | 0 | 0.0 % | 482 | 0 |
+| sum of the three | 24,871 | 84.7 % | 212,452 | 90.0 % | | |
+
+wr_ofm: SRAM wr beats 0 (unfiltered 188,708), SRAM wr trans 17,641 (unfiltered 18,108).
+
+Reading: yolo's SRAM reads are mostly IFM (78.5 %, 185,400 beats ≈ 11.6 beats per transaction; ≈ 0.41 SRAM beats per
+`npu_active` cycle over 2 ports); its EXT reads split between weights (48.7 %) and DMA (24.0 %, the largest DMA share
+so far — weights staged into the fast scratch). As for vww4, IFM volume is moderate while Stage 1 showed
+`mac_stalled_by_ib` 34 %. Write side: beats 0, transactions 17,641 vs 18,108.
