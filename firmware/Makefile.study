@@ -1,4 +1,4 @@
-# Study image: Study_conv1x1/conv1x1_main.c in place of the vendor Selftest main.
+# Study image: study/conv1x1/conv1x1_main.c in place of the vendor Selftest main, on common/.
 # Build shape is Makefile.gcc (same vendor sources, linker script and BIN split); only the main differs.
 #   make -f Makefile.study [EVENT_SET=1|2]   -> build_study_conv1x1_e<set>/{VECTORS,APP,DDR}.BIN
 
@@ -12,7 +12,7 @@ EVENT_SET ?= 1
 BUILD  := build_study_conv1x1_e$(EVENT_SET)
 TARGET := $(BUILD)/study_conv1x1
 
-SRCDIRS := Device_SSE-320 Drivers Selftest Selftest_cli Serial Sleep Tests Study_conv1x1
+SRCDIRS := Device_SSE-320 Drivers Selftest Selftest_cli Serial Sleep Tests common study/conv1x1
 SRCS    := $(shell find $(SRCDIRS) -name '*.c' -not -name '._*')
 SRCS    := $(filter-out Selftest/retarget.c Selftest/main.c Selftest/raw_rx_main.c \
                         Selftest/runner_v1_main.c,$(SRCS))
@@ -20,7 +20,7 @@ SRCS    := $(sort $(SRCS))
 OBJS    := $(patsubst %.c,$(BUILD)/%.o,$(SRCS))
 DEPS    := $(OBJS:.o=.d)
 
-INCDIRS := $(sort $(dir $(shell find $(SRCDIRS) Selftest_pmu LinkScripts -name '*.h' -not -name '._*')))
+INCDIRS := $(sort $(dir $(shell find $(SRCDIRS) LinkScripts -name '*.h' -not -name '._*')))
 INCS    := $(addprefix -I,$(INCDIRS)) -I$(CMSIS_INC)
 
 ARCHFLAGS := -mcpu=cortex-m85+nomve+nofp -mthumb -mfloat-abi=soft
@@ -58,7 +58,7 @@ $(BUILD)/%.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 # the study main's own sources get -Wall -Werror; the vendor sources keep their flags
-$(BUILD)/Study_conv1x1/%.o: CFLAGS += -Wall -Werror
+$(BUILD)/study/conv1x1/%.o: CFLAGS += -Wall -Werror
 
 $(TARGET).elf: $(OBJS) $(LDSCRIPT)
 	$(CC) $(OBJS) $(LDFLAGS) -o $@ $(LDLIBS)

@@ -13,6 +13,7 @@ for m in test_pmwl test_pmwl_firmware_contract test_reference_results test_pmu_e
   run "host/$m" . python3 -B -m unittest host.tests.$m
 done
 run "host/test_proto_unit" . python3 -B host/tests/test_proto_unit.py
-run "firmware/patches" firmware/patches python3 -B -m unittest test_patch_pmu_events_source test_patch_u85_vendor_timeout
-run "firmware/Selftest_pmu_events" firmware/Selftest_pmu_events python3 -B -m unittest test_check_pmu_events
+run "firmware/runner" firmware/runner python3 -B -m unittest test_runner_sources
+run "firmware/gate" firmware/gate python3 -B -m unittest test_check_runner
+run "firmware/vendor" firmware/vendor python3 -B -m unittest test_patch_u85_vendor_timeout
 [ $fail -eq 0 ] && echo "ALL PASS" || { echo "FAILED"; exit 1; }

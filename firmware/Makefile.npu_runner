@@ -1,0 +1,103 @@
+# Measurement runner image: runner/ + common/ on the Arm FI101 selftest tree, PMWL workload blobs.
+#
+# The vendor tree (Device_SSE-320, Drivers, Selftest_cli, Serial, Sleep, Tests) is Arm's and is never edited; its
+# u85.c is compiled from a generated copy with the raised BUSY_SLEEP_TIMEOUT and the POWER_CTRL hook
+# (vendor/patch_u85_vendor_timeout.py), and --wrap=test_u85 lets runner/pmwl.c put the blob in place of test3.
+#
+#   make -f Makefile.npu_runner all      (container, /work/selftest)
+
+TOOLCHAIN := /opt/arm/gcc-arm-none-eabi/bin/arm-none-eabi-
+CC        := $(TOOLCHAIN)gcc
+OBJCOPY   := $(TOOLCHAIN)objcopy
+OBJDUMP   := $(TOOLCHAIN)objdump
+SIZE      := $(TOOLCHAIN)size
+NM        := $(TOOLCHAIN)nm
+CMSIS_INC := /opt/arm/ml-embedded-evaluation-kit/dependencies/cmsis-6/CMSIS/Core/Include
+
+BUILD    := build_npu_runner
+BUILD_ID := 0x504D574C
+TARGET   := $(BUILD)/npu_runner
+
+VENDOR_DIRS := Device_SSE-320 Drivers Selftest_cli Serial Sleep Tests
+OWN_DIRS    := common runner
+VENDOR_C    := Drivers/u85_driver/u85.c
+GEN_VENDOR  := $(BUILD)/generated/Drivers/u85_driver/u85.c
+VENDOR_PATCH := vendor/patch_u85_vendor_timeout.py
+
+SRCS := $(shell find $(VENDOR_DIRS) $(OWN_DIRS) -name '*.c' -not -name '._*')
+SRCS := $(sort $(filter-out $(VENDOR_C),$(SRCS)))
+OWN_SRCS := $(sort $(filter $(addsuffix /%,$(OWN_DIRS)),$(SRCS)))
+OBJS := $(patsubst %.c,$(BUILD)/%.o,$(SRCS)) $(GEN_VENDOR:.c=.o)
+DEPS := $(OBJS:.o=.d)
+
+INCDIRS := $(sort $(dir $(shell find $(VENDOR_DIRS) $(OWN_DIRS) LinkScripts -name '*.h' -not -name '._*')))
+INCS    := $(addprefix -I,$(INCDIRS)) -I$(CMSIS_INC)
+
+ARCHFLAGS := -mcpu=cortex-m85+nomve+nofp -mthumb -mfloat-abi=soft
+LEGACY_C  := -Wno-error=int-conversion -Wno-error=incompatible-pointer-types \
+             -Wno-error=implicit-function-declaration -Wno-error=implicit-int \
+             -Wno-error=return-mismatch -Wno-error=discarded-qualifiers
+CFLAGS := $(ARCHFLAGS) -std=gnu11 -O1 -g3 -ffunction-sections -fdata-sections \
+          -fno-builtin-printf -Wno-unused-variable -Wno-unused-function \
+          -Wno-missing-braces $(LEGACY_C) \
+          -DRUNNER_FIRMWARE_BUILD_ID=$(BUILD_ID) $(INCS) -MMD -MP
+# Our own modules: no implicit declarations, no missing prototypes across modules.
+OWN_CFLAGS := -Werror=implicit-function-declaration
+
+WRAP_SYMS := printf vprintf fprintf vfprintf puts putchar fwrite _write _write_r fputc serial_print test_u85
+WRAPFLAGS := $(foreach s,$(WRAP_SYMS),-Wl,--wrap=$(s))
+LDSCRIPT  := $(BUILD)/lnk.ld
+LDOVERLAY := LinkScripts/lnk.measure.overlay.ld
+LDFLAGS   := $(ARCHFLAGS) --specs=nano.specs --specs=nosys.specs -T $(LDSCRIPT) -T $(LDOVERLAY) \
+             -Wl,-Map=$(TARGET).map,--cref -Wl,--gc-sections -Wl,--print-memory-usage $(WRAPFLAGS)
+LDLIBS    := -lm
+
+VECTOR_SECTIONS := --only-section=.vectors_rom
+APP_SECTIONS    := --only-section=.text --only-section=.ARM.extab --only-section=.ARM.exidx \
+                   --only-section=.preinit_array --only-section=.init_array --only-section=.fini_array \
+                   --only-section=.copy.table --only-section=.zero.table --only-section=.vectors_ram --only-section=.data
+DDR_SECTIONS    := --only-section=.ddr
+
+.PHONY: all clean bins check hashes
+all: bins check
+
+$(LDSCRIPT): LinkScripts/lnk.ld.S LinkScripts/region_defs.h LinkScripts/region_limits.h
+	@mkdir -p $(dir $@)
+	$(CC) -E -P -x c -ILinkScripts $< -o $@
+
+$(BUILD)/%.o: %.c
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(patsubst %.c,$(BUILD)/%.o,$(OWN_SRCS)): CFLAGS += $(OWN_CFLAGS)
+
+$(GEN_VENDOR): $(VENDOR_C) $(VENDOR_PATCH)
+	python3 $(VENDOR_PATCH) --base $(VENDOR_C) --out $(GEN_VENDOR)
+$(GEN_VENDOR:.c=.o): $(GEN_VENDOR)
+	$(CC) $(CFLAGS) -DUSE_AXI_EXT=1 -c $< -o $@
+
+$(TARGET).elf: $(OBJS) $(LDSCRIPT) $(LDOVERLAY)
+	$(CC) $(OBJS) $(LDFLAGS) -o $@ $(LDLIBS)
+	$(SIZE) $@
+
+bins: $(TARGET).elf
+	$(OBJCOPY) -O binary $(VECTOR_SECTIONS) $(TARGET).elf $(BUILD)/VECTORS.BIN
+	$(OBJCOPY) -O binary $(APP_SECTIONS)    $(TARGET).elf $(BUILD)/APP.BIN
+	$(OBJCOPY) -O binary $(DDR_SECTIONS)    $(TARGET).elf $(BUILD)/DDR.BIN
+	@ls -l $(BUILD)/VECTORS.BIN $(BUILD)/APP.BIN $(BUILD)/DDR.BIN
+
+check: $(TARGET).elf
+	python3 gate/check_measure_symbols.py --elf $(TARGET).elf --map $(TARGET).map --objdump $(OBJDUMP) --nm $(NM) --profile clean
+	$(OBJDUMP) -d $(TARGET).elf > $(TARGET).objdump
+	$(NM) -S $(TARGET).elf > $(TARGET).nm
+	cat $(OWN_SRCS) $(wildcard $(addsuffix /*.h,$(OWN_DIRS))) > $(BUILD)/own_sources.txt
+	python3 gate/check_runner.py --objdump $(TARGET).objdump --nm $(TARGET).nm --src $(BUILD)/own_sources.txt \
+	    --elf $(TARGET).elf --vendor $(GEN_VENDOR) --build-id $(BUILD_ID)
+
+hashes: bins
+	@sha256sum $(BUILD)/APP.BIN $(BUILD)/DDR.BIN $(BUILD)/VECTORS.BIN
+
+clean:
+	rm -rf $(BUILD)
+
+-include $(DEPS)
