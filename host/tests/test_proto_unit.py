@@ -170,6 +170,13 @@ try:
 except Exception as exc:
     check("unknown protocol name rejected", False, repr(exc))
 
+# LOAD_MODEL_END: the runner CRCs the whole staged blob before it answers, so the wait grows with the blob.
+# wav2letter (14,510,256 B) timed out at the old fixed 10 s (boot 79).
+check("load-end timeout floor for small blobs", rp.load_end_timeout(145_728) == 10.0)
+check("load-end timeout grows with the blob", rp.load_end_timeout(14_510_256) == 4.0 * 14_510_256 / 1048576,
+      "%.1f s" % rp.load_end_timeout(14_510_256))
+check("load-end timeout above the old 10 s for wav2letter", rp.load_end_timeout(14_510_256) > 50.0)
+
 print("\n=== SUMMARY ===")
 print("passed: %d   failed: %d" % (passed, failed))
 sys.exit(1 if failed else 0)

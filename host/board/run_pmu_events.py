@@ -11,7 +11,7 @@ import zlib
 import pmu_events_parse as E
 import pmwl
 import reference
-from runner_proto import MAX_PAYLOAD, RunnerLink, PROTO_MEASURE_V2, Nack, ProtocolError
+from runner_proto import MAX_PAYLOAD, RunnerLink, PROTO_MEASURE_V2, Nack, ProtocolError, load_end_timeout
 
 
 CHUNK = 4092   # MAX_PAYLOAD 4096 minus the 4-byte offset; halves the per-chunk ACK round trips vs 2048
@@ -25,7 +25,7 @@ def prime(link, blob):
     link.load_model_begin(len(blob), zlib.crc32(blob) & 0xFFFFFFFF)
     for off in range(0, len(blob), CHUNK):
         link.load_model_chunk(off, blob[off:off + CHUNK])
-    link.load_model_end()
+    link.load_model_end(timeout=load_end_timeout(len(blob)))
     link.load_input(b"")
 
 PORT = "/dev/serial/by-id/usb-FTDI_USB__-__Serial_Converter_00FT46259002B-if01-port0"

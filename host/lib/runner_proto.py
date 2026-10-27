@@ -285,6 +285,15 @@ def build_frame(command: int, sequence: int, payload: bytes = b"", flags: int = 
     return body + struct.pack("<I", zlib.crc32(body) & 0xFFFFFFFF)
 
 
+LOAD_END_TIMEOUT_S = 10.0   # floor for the LOAD_MODEL_END reply
+LOAD_END_S_PER_MIB = 4.0    # the runner CRCs the whole staged blob (nibble table, uncached DDR) before replying
+
+
+def load_end_timeout(total_len: int) -> float:
+    """Seconds to wait for the LOAD_MODEL_END reply for a blob of total_len bytes."""
+    return max(LOAD_END_TIMEOUT_S, LOAD_END_S_PER_MIB * total_len / (1 << 20))
+
+
 class RunnerLink:
     def __init__(self, port: str, baud: int = 115200,
                  protocol: str = PROTO_FUNCTIONAL_V1) -> None:
@@ -410,8 +419,8 @@ class RunnerLink:
         f = self.request(CMD_LOAD_MODEL_CHUNK, struct.pack("<I", offset) + data)
         return struct.unpack("<III", f.payload[:12])
 
-    def load_model_end(self) -> tuple[int, int, int]:
-        f = self.request(CMD_LOAD_MODEL_END, timeout=10.0)
+    def load_model_end(self, timeout: float = LOAD_END_TIMEOUT_S) -> tuple[int, int, int]:
+        f = self.request(CMD_LOAD_MODEL_END, timeout=timeout)
         return struct.unpack("<III", f.payload[:12])  # computed, expected, total
 
     def load_input(self, data: bytes = b"") -> int:

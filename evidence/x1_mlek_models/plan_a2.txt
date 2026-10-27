@@ -1,0 +1,8 @@
+80 kws_micronet_m ctl
+81 ad_medium_int8 ctl
+82 mobilenet_v2_1.0_224_INT8 ctl
+83 yolo-fastest_192_face_v4 x1neg
+84 vww4_128_128_INT8 x1
+85 rnnoise_INT8 x1
+86 yolo-fastest_192_face_v4 x1
+87 wav2letter_pruned_int8 x1

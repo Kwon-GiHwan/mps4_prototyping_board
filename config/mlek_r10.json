@@ -1,6 +1,6 @@
 {
   "name": "mlek_r10",
-  "what": "Profile mlek_baseline with 10 RUNs per boot (2 warm-up, 8 measured; owner decision 2026-10-27) on runner image 26f6129a (PMWL header v4, commit f21cd27). Every other condition is mlek_baseline's. For new measurements only; data under mlek_baseline keeps 35 RUNs.",
+  "what": "Profile mlek_baseline with 10 RUNs per boot (2 warm-up, 8 measured; owner decision 2026-10-27) on the restructured runner image (firmware/runner + common, Makefile.npu_runner, commit 369fb88; PMWL header v4). Every other condition is mlek_baseline's. For new measurements only; data under mlek_baseline keeps 35 RUNs.",
   "ta_profile": 1,
   "ta_state": "TA profile 1 = MLEK ta_config_u85_sys_dram_mid, Dedicated_Sram branch; read back by the runner every RUN",
   "vela": {
@@ -26,8 +26,8 @@
   },
   "seed": 1,
   "image": {
-    "app_sha256": "26f6129af93255cf52fdff58418b06afe39ba3936e101b3c31f7f7991d1cd15a",
-    "vectors_sha256": "d8c32b141943300a28583c764359e3b0cdcedfadac4f70d406a0c9f33d674851",
+    "app_sha256": "38ce118cb9cbdb4f8811d6158d429a7b43de21865be7b73fe1f41353d7f6964f",
+    "vectors_sha256": "589f8b886af9be7cef546f1b3f5ef4e3bb39673b7d693f9ec98531068ba8bb64",
     "ddr_sha256": "81d37a219a6b4141d0b433796711ab8af2ee2c3c668a28143a3ffe6a574ade98"
   },
   "pmu_ids_file": "config/baseline_ids.txt",

@@ -68,3 +68,38 @@ Golden: tflite_runtime OFMs of the original model on seed-1 IFMs (one generator,
 - Boots 81–82: status as in "Correctness and status" above. rnnoise's state IFMs and OFMs share arena bytes
   (Vela places them in place); the OFM poison is overwritten there by the IFM copy, as for every earlier
   overlapping IFM/OFM.
+
+## Amendment 2 (2026-10-27, owner decisions, recorded before boot 80) — restructured runner, 10 RUNs, all remaining boots
+
+**TA state: profile 1, unchanged.** Status of what came before:
+- boot 78 (vww4, image `2c2fa435`, 35 RUNs): completed, 35/35 valid; kept on the board host, not analysed here.
+- boot 79 (wav2letter): refused `RULE_RUN_TRANSPORT` — the LOAD_MODEL_END reply did not arrive within the fixed
+  10 s while the runner CRC'd the 14.5 MB blob. Host fix: the wait scales with the blob (`load_end_timeout`,
+  4 s/MiB, floor 10 s; wav2letter 55 s).
+- Amendment 1 boots 80–83 on image `26f6129a` were never run: the owner chose to restructure the firmware first.
+
+Owner decisions (2026-10-27): firmware restructured into purpose modules with the Arm selftest path unchanged
+(commit `369fb88`); new measurements use profile `config/mlek_r10.json` = 10 RUNs, RUNs 1–2 warm-up, 8 measured.
+Every boot below therefore runs on the **restructured image APP `38ce118c…`** (VECTORS `589f8b88…`, DDR unchanged)
+with 10 RUNs, which replaces the image and RUN count above. Analysis: `host/analysis/stage1.py … --profile
+config/mlek_r10.json`.
+
+| boot | workload | blob | purpose |
+| --- | --- | --- | --- |
+| 80 | kws_micronet_m | `f11271cb…` (Stage 1 boot 65) | control |
+| 81 | ad_medium_int8 | `55fa924c…` (Stage 1 boot 66) | control |
+| 82 | mobilenet_v2_1.0_224_INT8 | `0d51cf9e…` (Stage 1 boot 67, MLEK input) | control |
+| 83 | yolo-fastest_192_face_v4 | `13a9cd7f…` (OFM 1 golden byte 10 + 5) | negative control |
+| 84 | vww4_128_128_INT8 | `b7c15f01…` | measurement |
+| 85 | rnnoise_INT8 | `5c3990a9…` (v4) | measurement |
+| 86 | yolo-fastest_192_face_v4 | `1f71e475…` (v4) | measurement |
+| 87 | wav2letter_pruned_int8 | `5b8c9d06…` | measurement |
+
+- **Controls (80–82)** pass only if each gate is `BASELINE_PASS` under `mlek_r10` against the Stage 1 manifest entry,
+  every measured RUN's `mac_active` and four beat counters equal Stage 1's (kws 56,450 / 22,664 / 17,760 / 15,815 / 1;
+  ad 93,672 / 70,538 / 41,888 / 44,084 / 1; mobilenet 574,795 / 672,948 / 401,443 / 301,217 / 47,887), and the
+  `npu_active` median lies in Stage 1's range (kws [89,884, 92,356]; ad [144,372, 147,346]; mobilenet
+  [1,445,735, 1,450,449]). Any failure: the restructured image is not shown equivalent and boots 84–87 are
+  `UNRESOLVED (x1)`.
+- **Negative control (83)**: as in amendment 1 (every RUN `ofm_mismatch_count` 1, max 5, first 2602, `vendor_rc` 0).
+- Boots 84–87: status as in "Correctness and status" above.

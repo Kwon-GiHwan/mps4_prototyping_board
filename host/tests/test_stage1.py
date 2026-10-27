@@ -109,9 +109,8 @@ class TenRunProfile(unittest.TestCase):
         same = {k for k in PROF if k not in ("name", "what", "image", "repeats", "warmup")}
         self.assertEqual({k: R10[k] for k in same}, {k: PROF[k] for k in same})
         self.assertEqual((R10["repeats"], R10["warmup"]), (10, 2))
-        self.assertEqual(R10["image"]["app_sha256"][:8], "26f6129a")
-        self.assertEqual((R10["image"]["vectors_sha256"], R10["image"]["ddr_sha256"]),
-                         (PROF["image"]["vectors_sha256"], PROF["image"]["ddr_sha256"]))
+        self.assertEqual((R10["image"]["app_sha256"][:8], R10["image"]["vectors_sha256"][:8]), ("38ce118c", "589f8b88"))
+        self.assertEqual(R10["image"]["ddr_sha256"], PROF["image"]["ddr_sha256"])
 
     def test_ten_runs_use_runs_3_to_10(self):
         d = campaign(row=lambda rep, ev: dict(event_value=3000) if rep <= 2 and ev == 35 else {}, reps=10, prof=R10)
