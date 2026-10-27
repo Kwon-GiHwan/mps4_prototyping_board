@@ -14,3 +14,11 @@
 114 yolo-fastest_192_face_v4 rd_ifm
 115 yolo-fastest_192_face_v4 wr_ofm
 116 yolo-fastest_192_face_v4 rd_mem2mem
+117 mobilenet_v2_1.0_224_INT8 rd_weights
+118 mobilenet_v2_1.0_224_INT8 rd_ifm
+119 mobilenet_v2_1.0_224_INT8 wr_ofm
+120 mobilenet_v2_1.0_224_INT8 rd_mem2mem
+121 wav2letter_pruned_int8 rd_weights
+122 wav2letter_pruned_int8 rd_ifm
+123 wav2letter_pruned_int8 wr_ofm
+124 wav2letter_pruned_int8 rd_mem2mem

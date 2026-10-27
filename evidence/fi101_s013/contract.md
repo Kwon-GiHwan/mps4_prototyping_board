@@ -131,3 +131,10 @@ Two additions for the follow-up table (MAC low / WD stall / AO vs MAC / Vela), S
    same event, at least one channel below it, and `npu_active` and `mac_active` unaffected (S0-4 rule against
    the same model's boot 94–98). Otherwise `CHANNEL_FILTER_UNPROVEN`, and no per-channel number is reported.
    Per-channel shares (channel beats / unfiltered beats) are descriptive.
+
+## Amendment 3 (2026-10-28, owner decision, before boot 101)
+
+Amendment 2 left mobilenet and wav2letter out of the per-channel boots for upload time without the owner's
+decision; that exclusion is withdrawn. **All seven models**: boots 117–120 mobilenet and 121–124 wav2letter, same
+channels, same blob rule (word 16 only), same set and rules. Owner condition: each model's per-channel result is
+added to the results as soon as its boots finish.
