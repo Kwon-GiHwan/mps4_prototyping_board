@@ -35,6 +35,7 @@ class Results(unittest.TestCase):
     def test_measured_valid_drops_warmup_and_invalid(self):
         runs = [dict(rep=r, valid=(r != 7)) for r in range(1, 11)]
         self.assertEqual([r["rep"] for r in results.measured_valid(runs)], [6, 8, 9, 10])
+        self.assertEqual([r["rep"] for r in results.measured_valid(runs, 2)], [3, 4, 5, 6, 8, 9, 10])
 
 
 if __name__ == "__main__":

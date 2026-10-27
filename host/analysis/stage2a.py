@@ -67,7 +67,7 @@ def analyse(root: pathlib.Path, man: dict, prof: dict, ids: list[int]) -> tuple[
             failed = g.get("failed_runs", {}).get(r["rep"], [])
             complete = all(r.get(k) is not None for k in RAW) and r["npu_active"]
             row = dict(experiment_id="stage2a", profile_id=prof["name"], workload=name, run_id=r["rep"],
-                       warmup_or_measured="warmup" if r["rep"] <= results.WARMUP else "measured",
+                       warmup_or_measured="warmup" if r["rep"] <= prof["warmup"] else "measured",
                        input_sha256=w["golden"]["input_sha256"], golden_sha256=w["golden"]["ofm_sha256"],
                        blob_sha256=w["blob_sha256"], command_stream_sha256=w["cms_sha256"], n_mac=w["n_mac"],
                        pmccntr=r["window_cycles"], **{k: r.get(k) for k in RAW},

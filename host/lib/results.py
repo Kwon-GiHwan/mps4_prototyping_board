@@ -4,7 +4,7 @@ from __future__ import annotations
 import csv
 from pathlib import Path
 
-WARMUP, MEASURED = 5, 30   # RUNs 1..WARMUP are warm-up; analyses need MEASURED valid RUNs after them
+WARMUP, MEASURED = 5, 30   # profile mlek_baseline: RUNs 1..WARMUP are warm-up, then MEASURED (a profile's "warmup" overrides)
 EVENTS = {17: "cycle", 32: "npu_idle", 35: "npu_active", 48: "mac_active", 51: "mac_dpu_active",
           52: "mac_stalled_by_w_or_acc", 55: "mac_stalled_by_ib", 64: "ao_active", 80: "wd_active", 81: "wd_stalled",
           130: "sram_rd_beats", 135: "sram_wr_beats",
@@ -37,6 +37,6 @@ def load_runs(path: Path) -> list[dict]:
     return [runs[k] for k in sorted(runs)]
 
 
-def measured_valid(runs: list[dict]) -> list[dict]:
+def measured_valid(runs: list[dict], warmup: int = WARMUP) -> list[dict]:
     """The RUNs an analysis may use: after the warm-up, and valid."""
-    return [r for r in runs if r["rep"] > WARMUP and r["valid"]]
+    return [r for r in runs if r["rep"] > warmup and r["valid"]]

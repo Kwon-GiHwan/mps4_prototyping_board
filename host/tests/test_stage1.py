@@ -14,16 +14,17 @@ W = {"class": "isolated_operator", "n_mac": 1024 * 1000, "blob_sha256": "b" * 64
 VALUES = {35: 2000, 48: 1000, 130: 300, 135: 100, 140: 9000, 386: 50, 391: 10, 396: 9000}
 
 
-def campaign(name="op", row=lambda rep, ev: {}, summ=None):
+def campaign(name="op", row=lambda rep, ev: {}, summ=None, reps=35, prof=None):
     d = pathlib.Path(tempfile.mkdtemp()); w = d / name; w.mkdir()
     s = dict(blob_sha256="b" * 64, cms_sha256="c" * 64, blob_knobs=KNOBS, ifm_sha256="i" * 64, golden_sha256="g" * 64,
-             provenance=dict(PROF["image"]), requested_ids=IDS, coverage="COMPLETE_SUBSET(8)", refusal=None, runs=35)
+             provenance=dict((prof or PROF)["image"]), requested_ids=IDS, coverage="COMPLETE_SUBSET(8)", refusal=None,
+             runs=reps)
     s.update(summ or {}); (w / "summary.json").write_text(json.dumps(s))
     with open(w / "runs.csv", "w", newline="") as f:
         cw = csv.DictWriter(f, fieldnames=["rep", "ev_type", "event_value", "event_overflow", "run_rc", "run_valid",
                                            "window_cycles", "vendor_rc", "ofm_mismatch_count"])
         cw.writeheader()
-        for rep in range(1, 36):
+        for rep in range(1, reps + 1):
             for ev in IDS:
                 r = dict(rep=rep, ev_type=ev, event_value=VALUES[ev], event_overflow=False, run_rc=0, run_valid=True,
                          window_cycles=50_000, vendor_rc=0, ofm_mismatch_count=0)
@@ -96,6 +97,39 @@ class Analyse(unittest.TestCase):
         d = campaign(row=lambda rep, ev: dict(run_rc=0x7D) if rep == 9 else {})
         per_run, _ = S.analyse(d, {"op": W}, PROF, IDS)
         self.assertFalse(next(p for p in per_run if p["run_id"] == 9)["knobs_honoured"])
+
+
+R10 = json.loads((REPO / "config" / "mlek_r10.json").read_text())
+
+
+class TenRunProfile(unittest.TestCase):
+    """Profile mlek_r10: 10 RUNs per boot, RUNs 1-2 warm-up, 8 measured (owner decision 2026-10-27)."""
+
+    def test_profile_differs_from_the_frozen_one_only_in_runs_image_and_name(self):
+        same = {k for k in PROF if k not in ("name", "what", "image", "repeats", "warmup")}
+        self.assertEqual({k: R10[k] for k in same}, {k: PROF[k] for k in same})
+        self.assertEqual((R10["repeats"], R10["warmup"]), (10, 2))
+        self.assertEqual(R10["image"]["app_sha256"][:8], "26f6129a")
+        self.assertEqual((R10["image"]["vectors_sha256"], R10["image"]["ddr_sha256"]),
+                         (PROF["image"]["vectors_sha256"], PROF["image"]["ddr_sha256"]))
+
+    def test_ten_runs_use_runs_3_to_10(self):
+        d = campaign(row=lambda rep, ev: dict(event_value=3000) if rep <= 2 and ev == 35 else {}, reps=10, prof=R10)
+        per_run, summ = S.analyse(d, {"op": W}, R10, IDS)
+        self.assertEqual(summ["op"]["status"], "VALID")
+        self.assertEqual((summ["op"]["metrics"]["npu_active"]["median"], summ["op"]["metrics"]["npu_active"]["n"]),
+                         (2000, 8))
+        self.assertEqual([p["run_id"] for p in per_run if p["warmup_or_measured"] == "warmup"], [1, 2])
+
+    def test_run_count_must_match_the_profile(self):
+        _, summ = S.analyse(campaign(reps=35, prof=R10), {"op": W}, R10, IDS)     # 35 RUNs under the 10-RUN profile
+        self.assertEqual((summ["op"]["gate"], summ["op"]["status"]), ("BASELINE_FAIL", "UNRESOLVED"))
+        _, summ = S.analyse(campaign(reps=10, prof=R10), {"op": W}, PROF, IDS)    # 10 RUNs under the 35-RUN profile
+        self.assertEqual(summ["op"]["status"], "UNRESOLVED")
+
+    def test_image_must_match_the_profile(self):
+        _, summ = S.analyse(campaign(reps=10), {"op": W}, R10, IDS)              # old image under mlek_r10
+        self.assertIn("B1_image", summ["op"]["failed_boot"])
 
 
 class Fingerprint(unittest.TestCase):

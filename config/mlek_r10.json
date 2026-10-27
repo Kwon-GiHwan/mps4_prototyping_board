@@ -1,0 +1,36 @@
+{
+  "name": "mlek_r10",
+  "what": "Profile mlek_baseline with 10 RUNs per boot (2 warm-up, 8 measured; owner decision 2026-10-27) on runner image 26f6129a (PMWL header v4, commit f21cd27). Every other condition is mlek_baseline's. For new measurements only; data under mlek_baseline keeps 35 RUNs.",
+  "ta_profile": 1,
+  "ta_state": "TA profile 1 = MLEK ta_config_u85_sys_dram_mid, Dedicated_Sram branch; read back by the runner every RUN",
+  "vela": {
+    "version": "5.0.0",
+    "options": [
+      "--accelerator-config",
+      "ethos-u85-1024",
+      "--optimise",
+      "Performance",
+      "--config",
+      "/opt/arm/ml-embedded-evaluation-kit/scripts/vela/default_vela.ini",
+      "--memory-mode",
+      "Dedicated_Sram",
+      "--system-config",
+      "Ethos_U85_SYS_DRAM_Mid_1024"
+    ]
+  },
+  "knobs": {
+    "ports": "cmd=ext,const=ext,arena=ext,fast=sram",
+    "axi_limit": "sram=0x20F0B,ext=0x21F3F",
+    "fast_base": "0x31100000",
+    "power_ctrl": 0
+  },
+  "seed": 1,
+  "image": {
+    "app_sha256": "26f6129af93255cf52fdff58418b06afe39ba3936e101b3c31f7f7991d1cd15a",
+    "vectors_sha256": "d8c32b141943300a28583c764359e3b0cdcedfadac4f70d406a0c9f33d674851",
+    "ddr_sha256": "81d37a219a6b4141d0b433796711ab8af2ee2c3c668a28143a3ffe6a574ade98"
+  },
+  "pmu_ids_file": "config/baseline_ids.txt",
+  "repeats": 10,
+  "warmup": 2
+}

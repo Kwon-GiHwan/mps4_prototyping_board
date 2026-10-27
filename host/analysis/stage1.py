@@ -2,14 +2,15 @@
 """Stage 1 screening analysis (evidence/stage1/contract.md): gate every RUN, derive M1-M11, aggregate, fingerprint.
 
   python3 host/analysis/stage1.py <campaign dir holding <workload>/{runs.csv,summary.json}> <out dir>
-      [--add <label> <campaign dir> <manifest>]...
+      [--add <label> <campaign dir> <manifest>]... [--profile config/mlek_r10.json]
 
 --add analyses a further dataset (amendment 2: `--add a2 <root> manifest.a2.json`) into the same outputs; its rows
 carry dataset=<label> and its summary entries are keyed <workload>@<label>. Dataset `s1` is unchanged by it.
 
 Writes per_run.csv, summary.csv, summary.json, fingerprint_table.md into <out dir>. Every RUN is written, valid or
 not; aggregates use the 30 measured RUNs of a workload whose gate is BASELINE_PASS, otherwise the workload is
-UNRESOLVED and has no aggregate.
+UNRESOLVED and has no aggregate. RUN count, warm-up and image come from the profile (default mlek_baseline:
+35 RUNs, 5 warm-up; mlek_r10: 10 RUNs, 2 warm-up).
 """
 from __future__ import annotations
 
@@ -89,7 +90,7 @@ def analyse(root: pathlib.Path, man: dict, prof: dict, ids: list[int], dataset: 
             complete = all(r.get(k) is not None for k in RAW) and r["npu_active"]
             row = dict(experiment_id="stage1", dataset=dataset, profile_id=prof["name"], workload=name, workload_class=w["class"],
                        operator=w.get("operator_type", ""), shape=w.get("shape", ""), run_id=r["rep"],
-                       warmup_or_measured="warmup" if r["rep"] <= results.WARMUP else "measured",
+                       warmup_or_measured="warmup" if r["rep"] <= prof["warmup"] else "measured",
                        input_sha256=w["golden"]["input_sha256"], blob_sha256=w["blob_sha256"],
                        command_stream_sha256=w["cms_sha256"], configured_mac_count=M_CONFIGURED, n_mac=w["n_mac"],
                        pmccntr=r["window_cycles"], **{k: r.get(k) for k in RAW},
@@ -142,9 +143,11 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("root"); ap.add_argument("out")
     ap.add_argument("--add", nargs=3, action="append", default=[], metavar=("LABEL", "ROOT", "MANIFEST"))
+    ap.add_argument("--profile", default=str(PROFILE), help="measurement profile (RUN count, warm-up, image); "
+                    "default config/mlek_baseline.json")
     a = ap.parse_args()
     out = pathlib.Path(a.out); out.mkdir(parents=True, exist_ok=True)
-    prof = json.loads(PROFILE.read_text())
+    prof = json.loads(pathlib.Path(a.profile).read_text())
     ids = sorted(int(x) for x in IDS.read_text().split())
     per_run, summary = analyse(pathlib.Path(a.root), json.loads(MANIFEST.read_text())["workloads"], prof, ids)
     for label, root, mpath in a.add:
