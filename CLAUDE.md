@@ -14,14 +14,14 @@ are as they were when written: flat `host/*.py` until the split into `host/{lib,
 | dir | what |
 | --- | --- |
 | `host/` | split by where code runs: `lib/` (shared modules), `container/`, `board/` (board host), `analysis/` (Mac); `tests/` |
-| `firmware/` | the subset of the build tree this repo owns — **mirrors `/work/selftest` in the container path-for-path** (patchers, gate, base runner source, vendor `u85.c`, `Makefile.pmu_events`). Do not restructure it. |
+| `firmware/` | our sources on top of Arm's FI101 selftest tree, **copied to `/work/selftest` in the container path-for-path**: `common/` (NPU registers, PMU, timing adapters, timestamps; shared), `runner/` (measurement runner: protocol, measured RUN, PMWL blob, printf seams), `study/conv1x1/` (register-level study image), `gate/` (build gates), `vendor/` (generated copy of Arm's `u85.c` with the raised timeout and the POWER_CTRL hook; Arm's file is never edited), `LinkScripts/` overlay, `Makefile.npu_runner`, `Makefile.study`. Arm's vendor tree itself stays in the container. |
 | `board/` | board-host scripts (synced to `~/evsweep` on `ssh gihwan`): deploy/restore/postflight/inspect, MCC helpers, `run_campaign.sh`; MLEK image set (boot/bram/ddr.bin + images.txt): `deploy_mlek.sh`/`restore_mlek.sh`, app-UART capture `mlek_app_capture.py` |
 | `config/` | **stage-0 profile** `mlek_baseline.json` (35 RUNs, 5 warm-up); `mlek_r10.json` = the same conditions with 10 RUNs (2 warm-up) on the restructured runner image `38ce118c`, for new measurements from 2026-10-27; PMU sets `baseline_ids.txt` (stage 0) / `stage1_ids.txt` / `stage2a_ids.txt`, blob manifests `mlek_baseline.manifest.json` (kws, ad) and `.a1.json` (mobilenet, amendment 1) |
 | `docs/reference/` | PMU event lists (TRM 110, driver 171), PMU reference, MLEK board reference values |
 | `docs/specs/` | frozen contract in force: `mlek-baseline.md` (profile, per-run gate, outcome, amendment 1); Stage 1 contract: `evidence/stage1/contract.md` |
 | `evidence/` | `stage2a/` (boots 75–77, component attribution; event audit, dw3x3 MLEK golden), `stage1/` (boots 65–71 = dataset s1; boots 72–74 = dataset a2 under amendment 2, MLEK goldens in `stage1/a2/mlek_golden/`), `mlek_baseline/` (boots 59–61), `mlek_baseline_a1/` (boot 64, amendment 1), `mobilenet_ofm/` (three-way OFM comparison), `runner_gap/` (static diff, `mlek_diff_audit.md`); summaries only: `ta_ab/` (the TA finding), `tools_check/` (refactor verification) — raw data at `2ce4512` |
 | `environment/` | board card config, build environment, host Python/serial setup |
-| `results/` | reading copies grouped for a question; originals stay in `evidence/`: `npu_utilization/` (MLEK models kws, ad, mobilenet from Stage 1: raw per workload, `summary.csv`, `npu_utilization.csv`); `npu_utilization_fvp/` (same layout, all seven MLEK models on FVP U85-1024 from the old branch; no MAC_ACTIVE) |
+| `results/` | reading copies grouped for a question; originals stay in `evidence/`: `npu_utilization_mps4/` (MLEK models kws, ad, mobilenet from Stage 1: raw per workload, `summary.csv`, `npu_utilization.csv`); `npu_utilization_fvp/` (same layout, all seven MLEK models on FVP U85-1024 from the old branch; no MAC_ACTIVE) |
 
 ### host modules
 
@@ -39,8 +39,8 @@ are as they were when written: flat `host/*.py` until the split into `host/{lib,
 | CLI | `container/pack_vela_workload.py`, `container/make_op_model.py` (single-op INT8 tflite as flatbuffers), `container/workload_meta.py` (N_MAC, Vela prediction); `board/run_pmu_events.py`; `analysis/baseline_gate.py`, `analysis/ofm_compare.py`, `analysis/stage1.py` (Stage 1 gate, metrics, fingerprint), `analysis/stage2a.py` (Stage 2A metrics, reproduction, hypothesis status, routing) | |
 
 A constant or layout lives in exactly one host module; scripts import it. **Host ↔ firmware is the exception, on
-purpose:** the runner firmware declares the PMWL layout and TA tables independently (in the patcher), and
-`host/tests/test_pmwl_firmware_contract.py` requires the generated C to agree with `pmwl.py`. Never make one side
+purpose:** the runner firmware declares the PMWL layout and TA tables independently (`firmware/runner/pmwl.c`,
+`firmware/common/ta.c`), and `host/tests/test_pmwl_firmware_contract.py` requires the C to agree with `pmwl.py`. Never make one side
 import the other — a copy agrees with itself and proves nothing. Tests must not read their expected values back
 from the module under test.
 
@@ -67,8 +67,8 @@ FI101 has an NPU timing adapter in front of each NPU AXI port (`TA_SRAM` at `0x5
    with `--profile /work/mps4_host/config/mlek_baseline.json` (the default condition: every knob, seed and the Vela version
    come from the profile) — or, for a one-variable A/B arm only, explicit knobs (`--ports`, `--axi-limit`,
    `--ta-profile`, `--fast-base`, `--power-ctrl`). A new profile blob gets its digests into the manifest.
-2. **Image**: `make -f Makefile.pmu_events MODEL=1 all` in `/work/selftest` (gate `check_pmu_events.py` runs in
-   `all`). Copy `firmware/` changes into the container first; back up `build_pmu_events_model` before rebuilding.
+2. **Image**: `make -f Makefile.npu_runner all` in `/work/selftest` (gates `gate/check_measure_symbols.py` and
+   `gate/check_runner.py` run in `all`). `sh sync.sh container` first; back up `build_npu_runner` before rebuilding.
 3. **Deploy** (owner runs sudo): `sudo sh ~/evsweep/deploy.sh <staging> ~/evsweep/evidence_<new>` — always a new
    evidence root. Restore reference for the original board image: `~/evsweep/evidence_m6`.
 4. **Measure**: `sh ~/evsweep/run_campaign.sh <staging> <out> <ids> <plan> [repeats]` (one boot per plan line;

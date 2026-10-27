@@ -9,7 +9,7 @@ Data from branch `refactor/unified-mlek-campaigns` (`fe7541b`), paper campaign 2
 re-measurement (R1, R2). N_MAC computed on 2026-10-21 with `host/container/workload_meta.py` on the original MLEK
 tflite files (sha256 equal to the FVP records' `model_sha256`; kws, ad and mobilenet reproduce the Stage 1 values).
 
-Same layout as `../npu_utilization/` (board, runner). Do not mix the two in one comparison without saying so.
+Same layout as `../npu_utilization_mps4/` (board, runner). Do not mix the two in one comparison without saying so.
 
 | part | what | from |
 | --- | --- | --- |

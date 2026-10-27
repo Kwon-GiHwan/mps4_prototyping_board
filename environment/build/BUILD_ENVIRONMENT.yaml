@@ -39,9 +39,9 @@ vendor_source:
   status: UPSTREAM REFERENCE ONLY -- does not rebuild, see restore_drill
   sha256: 0811b0b7e5a34f12b87a9db5919bd0bc710b70d798ed14a43621c2d781d55518
   note: >-
-    FI101 Selftest distribution. Extract, then overlay firmware/ from the repository root on top
-    (Selftest_measure/, Selftest_pmu/, Selftest/runner_v1_main.c,
-    Selftest/raw_rx_main.c, LinkScripts/, Makefile.*).
+    FI101 Selftest distribution (Arm). Extract, then overlay firmware/ from the repository root on top
+    (common/, runner/, study/, gate/, vendor/, LinkScripts/, Makefile.*). Recorded 2026-08-08 for the
+    earlier layout (Selftest_measure/, Selftest_pmu/); firmware/ was restructured 2026-10-27.
 
 container:
   image_tag: "fpga-simulator:latest"

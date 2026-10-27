@@ -1,6 +1,6 @@
 """PMWL workload blob format: header and knob word layout, knob encoding, packing, header parsing.
 
-The runner firmware declares the same layout independently (firmware/patches/patch_pmu_events_source.py);
+The runner firmware declares the same layout independently (firmware/runner/pmwl.c, firmware/common/ta.c);
 host/tests/test_pmwl_firmware_contract.py asserts the two agree. Neither imports the other.
 
 Blob (little-endian u32 words):
