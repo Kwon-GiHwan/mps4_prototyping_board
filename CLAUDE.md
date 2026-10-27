@@ -9,6 +9,10 @@ History before the cleanup (V13–V15, paper campaign, Tier A/B/C, screenings 1/
 are as they were when written: flat `host/*.py` until the split into `host/{lib,container,board,analysis}` after
 `570c4a0` (e.g. `host/baseline_gate.py` = `host/analysis/baseline_gate.py`).
 
+**History rewritten 2026-10-27** to remove a file that held a credential: every commit from 2026-09-08 on has a
+new hash. Hashes quoted in `docs/specs/`, `evidence/` and older commit messages are the old ones; look them up in
+`environment/history_rewrite_20261027.tsv` (old → new).
+
 ## Layout
 
 | dir | what |
