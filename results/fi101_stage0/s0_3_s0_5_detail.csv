@@ -1,0 +1,8 @@
+model,infer_npu_cycles,infer_cpu_cycles,cpu_minus_npu,cpu_over_npu,active_spread_pct,active_cv_pct,per_set_median_range_pct
+ad_medium_int8,148432,169007,20574,1.13861,2.04,0.48,0.73
+kws_micronet_m,93348,101756,8408,1.09008,2.89,0.72,0.95
+mobilenet_v2_1.0_224_INT8,1450765,1791365,340600,1.23477,0.33,0.1,0.11
+rnnoise_INT8,53040,53039,-1,0.99998,3.35,0.79,1.01
+vww4_128_128_INT8,238112,269315,31203,1.13104,1.33,0.35,0.44
+wav2letter_pruned_int8,4133625,4146467,12842,1.00311,0.12,0.03,0.05
+yolo-fastest_192_face_v4,450642,592332,141689,1.31442,1.07,0.33,0.45

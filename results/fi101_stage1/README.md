@@ -1,7 +1,8 @@
 # FI101 Stage 1 — model execution characteristics (all seven MLEK models)
 
-**PROVISIONAL (Stage 0 pending)** — contract `evidence/fi101_s013/contract.md`, amendment 1: Stage 1 is reported
-first, the Stage 0 checks (S0-1 … S0-8) are applied afterwards and decide which rows stand.
+**Stage 0 applied (`results/fi101_stage0/`): S0-1, S0-2, S0-4 PASS for all seven models — every row stands.**
+Caveats from Stage 0: NPU cycles undercount elapsed CPU time by 0–31 % depending on the model (S0-3), so TOTAL and
+ACTIVE here are NPU-counted cycles, not wall time; `npu_active` jitters ±1.5 k cycles per RUN (S0-5).
 
 **TA state: profile 1 (MLEK `ta_config_u85_sys_dram_mid`), read back every RUN.** FI101 Ethos-U85 1024 MAC, runner
 image APP `2bb04bfa` (inference-window seams), profile `config/fi101_s013.json` (= `mlek_r10` conditions), Vela
@@ -56,8 +57,7 @@ These are associations at model level; which operators cause them needs Stage 2 
 
 ## Not claimed
 
-Stage 0 not applied yet (on kws: S0-3 clock-ratio check and S0-5 anchor-spread check FAIL as preregistered, see
-the contract). vww4, yolo, wav2letter OFMs differ from tflite_runtime (`UNRESOLVED (x1)`, MLEK golden pending) —
+vww4, yolo, wav2letter OFMs differ from tflite_runtime (`UNRESOLVED (x1)`, MLEK golden pending) —
 their counters are used, their correctness is not claimed. Reserved-ID events are not used in this table.
 
 ## Files

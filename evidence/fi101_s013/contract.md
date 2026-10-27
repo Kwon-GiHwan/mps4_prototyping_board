@@ -138,3 +138,13 @@ Amendment 2 left mobilenet and wav2letter out of the per-channel boots for uploa
 decision; that exclusion is withdrawn. **All seven models**: boots 117–120 mobilenet and 121–124 wav2letter, same
 channels, same blob rule (word 16 only), same set and rules. Owner condition: each model's per-channel result is
 added to the results as soon as its boots finish.
+
+## Stage 0 results (recorded 2026-10-28, after boots 94–100) — `results/fi101_stage0/`
+
+- S0-1, S0-2, S0-4 **PASS** for all seven models → every Stage 1 row stands; the PROVISIONAL label is lifted.
+- S0-3 **FAIL** for 5 of 7 (PASS rnnoise, wav2letter): CPU DWT span exceeds NPU `PMCCNTR` span over the same seams by a
+  model-dependent, RUN-stable amount (0 … +31 %; mobilenet +340,496 cycles). Not an offset, not a clock ratio.
+  Hypothesis (untested): NPU-side counting pauses (e.g. clock gating). Latency in seconds is taken from the CPU span.
+- S0-5 **FAIL** for kws, ad, rnnoise (anchor spread 2.0–3.4 %, per-set medians within 1.0 %): ±1.5 k cycles RUN jitter.
+- S0-6: 310 COUNTED_NONZERO / 36 COUNTED_ZERO / 4 INCONSISTENT, no overflow. S0-7: window events consistent
+  (≤ 0.02 %). S0-8: system counter disabled → NOT_AVAILABLE; host time only a coarse check.

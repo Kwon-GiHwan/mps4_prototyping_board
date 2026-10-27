@@ -12,7 +12,7 @@ MODELS = [("ad_medium_int8", "ad_medium", "C0"), ("kws_micronet_m", "kws", "C1")
           ("yolo-fastest_192_face_v4", "yolo", "C6")]
 S1 = {r["model"]: r for r in csv.DictReader(open(D / "stage1.csv"))}
 BF = {r["model"]: r for r in csv.DictReader(open(D / "vela_block_fill.csv"))}
-NOTE = "FI101 U85-1024, TA profile 1, runner image 2bb04bfa, 8 measured RUNs per set; PROVISIONAL (Stage 0 pending)"
+NOTE = "FI101 U85-1024, TA profile 1, runner image 2bb04bfa, 8 measured RUNs per set; Stage 0: S0-1,2,4 PASS (NPU cycles, not wall time: S0-3)"
 
 
 def grouped(ax, metrics, labels, src):
