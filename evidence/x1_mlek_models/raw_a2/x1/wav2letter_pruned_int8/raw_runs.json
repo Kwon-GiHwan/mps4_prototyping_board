@@ -1,0 +1,17 @@
+[
+ {
+  "ping": {
+   "state": 1,
+   "version": 1,
+   "rx_bytes": 20,
+   "tx_bytes": 0,
+   "rx_overrun": 0,
+   "bad_magic": 0,
+   "bad_version": 0,
+   "bad_crc": 0,
+   "length_error": 0,
+   "sequence_error": 0,
+   "parser_resync": 0
+  }
+ }
+]
