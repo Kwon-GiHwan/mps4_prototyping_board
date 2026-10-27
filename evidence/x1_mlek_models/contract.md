@@ -103,3 +103,27 @@ config/mlek_r10.json`.
   `UNRESOLVED (x1)`.
 - **Negative control (83)**: as in amendment 1 (every RUN `ofm_mismatch_count` 1, max 5, first 2602, `vendor_rc` 0).
 - Boots 84–87: status as in "Correctness and status" above.
+
+## Amendment 3 (2026-10-27, owner decisions, recorded before boot 88) — negative control redone, wav2letter retried
+
+**TA state: profile 1, unchanged; image `38ce118c…`, profile `mlek_r10` (10 RUNs) as in amendment 2.**
+
+Results of amendment 2 (boots 80–87, analysis in `analysis_a2/`):
+- Controls 80–82 passed every rule: the restructured image reproduces Stage 1.
+- Boot 83 (yolo negative control) is **not interpretable**: its rule assumed the real output equals the golden, but
+  yolo's output already differs from tflite_runtime (955 bytes, max 7, first 4 in boot 86), so the injected byte
+  cannot be told apart. By the amendment-1 rule the version-4 OFM comparison stays unproven, so rnnoise (85) and yolo
+  (86) are `UNRESOLVED (x1)`. vww4 (84): 1 OFM byte off by 1 LSB from tflite_runtime → `UNRESOLVED (x1)`.
+- Boot 87 (wav2letter): LOAD_MODEL_END now answered, but no RUN_COMPLETE within the host's fixed 120 s.
+
+| boot | workload | blob | purpose |
+| --- | --- | --- | --- |
+| 88 | rnnoise_INT8 | `eff2ba10…` = boot 85's blob with byte 0 of the LAST OFM's golden raised by 5 (int8 −87 → −82) | negative control |
+| 89 | wav2letter_pruned_int8 | `5b8c9d06…` (unchanged) | measurement, RUN wait 900 s (`RUN_TIMEOUT`) |
+
+- **Boot 88 passes** only if every RUN reports `ofm_mismatch_count` 1, `ofm_max_abs_diff` 5, `ofm_first_mismatch`
+  169 (= 24 + 1 + 48 + 96, the four earlier OFMs) and `vendor_rc` 0. rnnoise's real output matched its golden in
+  every RUN of boot 85, so exactly the injected byte must be caught. Pass → the version-4 comparison of every OFM is
+  shown on the board, and boot 85 becomes `VALID (x1)`. Fail → boots 85–86 stay `UNRESOLVED (x1)`.
+- **Boot 89**: the host waits up to 900 s for each RUN_COMPLETE. A record that arrives answers "slow"; none answers
+  "stalled". Status as in "Correctness and status".

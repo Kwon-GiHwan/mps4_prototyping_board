@@ -46,6 +46,7 @@ def main():
                     help="step 3: upload the blob once per boot; later sets only SET_MODE (MODEL builds)")
     ap.add_argument("--ids", help="Tier C step 2: comma-separated event ids or @file (default: all 171)")
     ap.add_argument("--repeats", type=int, default=E.REPEATS, help="RUNs per set (warm-up + measured)")
+    ap.add_argument("--run-timeout", type=float, default=120.0, help="seconds to wait for RUN_COMPLETE")
     for k in ("app", "vectors", "ddr"): ap.add_argument(f"--{k}-sha256", required=True)
     a = ap.parse_args()
     E.REPEATS = a.repeats
@@ -100,7 +101,7 @@ def main():
                 raise E.fail_rule("RULE_RUN_TRANSPORT", f"set {set_id} prime: {e!r}")
             for rep in range(1, E.REPEATS + 1):
                 try:
-                    rc = link.run(timeout=120.0)
+                    rc = link.run(timeout=a.run_timeout)
                 except (Nack, ProtocolError) as e:
                     raise E.fail_rule("RULE_RUN_TRANSPORT", f"set {set_id} rep {rep}: {e!r}")
                 m = link.last_measurement

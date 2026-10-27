@@ -1,5 +1,5 @@
 {
- "what": "Exploratory x1 (evidence/x1_mlek_models/contract.md): MLEK models not measured in Stage 1; frozen before boot 78. Amendment 1 (rnnoise, yolo-fastest, image 26f6129a) frozen before boot 80. Amendment 2: image 38ce118c, profile mlek_r10, boots 80-87, frozen before boot 80.",
+ "what": "Exploratory x1 (evidence/x1_mlek_models/contract.md): MLEK models not measured in Stage 1; frozen before boot 78. Amendment 1 (rnnoise, yolo-fastest, image 26f6129a) frozen before boot 80. Amendment 2: image 38ce118c, profile mlek_r10, boots 80-87, frozen before boot 80. Amendment 3: boots 88-89, frozen before boot 88.",
  "profile": "config/mlek_baseline.json",
  "boots": {
   "78": "vww4_128_128_INT8 (image 2c2fa435, 35 RUNs; not analysed)",
@@ -11,7 +11,9 @@
   "84": "vww4_128_128_INT8",
   "85": "rnnoise_INT8",
   "86": "yolo-fastest_192_face_v4",
-  "87": "wav2letter_pruned_int8"
+  "87": "wav2letter_pruned_int8",
+  "88": "rnnoise_INT8 negative control (blob eff2ba10, last OFM byte 0 +5)",
+  "89": "wav2letter_pruned_int8 retry, RUN wait 900 s"
  },
  "workloads": {
   "vww4_128_128_INT8": {
