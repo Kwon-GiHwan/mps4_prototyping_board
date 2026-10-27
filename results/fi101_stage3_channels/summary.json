@@ -1,12 +1,269 @@
 {
  "channel_verdicts": [
   {
+   "model": "kws_micronet_m",
+   "channels": "rd_ifm,rd_mem2mem,rd_weights,wr_ofm",
+   "verdict": "CHANNEL_FILTER_WORKS"
+  },
+  {
    "model": "rnnoise_INT8",
    "channels": "rd_ifm,rd_mem2mem,rd_weights,wr_ofm",
    "verdict": "CHANNEL_FILTER_WORKS"
   }
  ],
  "channels": [
+  {
+   "model": "kws_micronet_m",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_ifm",
+   "ev_type": 128,
+   "channel_median": 2700.0,
+   "unfiltered_median": 3337.0,
+   "share": 0.8091099790230746
+  },
+  {
+   "model": "kws_micronet_m",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_ifm",
+   "ev_type": 130,
+   "channel_median": 16213.0,
+   "unfiltered_median": 22664.0,
+   "share": 0.7153635721849629
+  },
+  {
+   "model": "kws_micronet_m",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_ifm",
+   "ev_type": 132,
+   "channel_median": 0.0,
+   "unfiltered_median": 3170.0,
+   "share": 0.0
+  },
+  {
+   "model": "kws_micronet_m",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_ifm",
+   "ev_type": 135,
+   "channel_median": 2087.0,
+   "unfiltered_median": 17760.0,
+   "share": 0.11751126126126125
+  },
+  {
+   "model": "kws_micronet_m",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_ifm",
+   "ev_type": 384,
+   "channel_median": 325.0,
+   "unfiltered_median": 1609.0,
+   "share": 0.20198881292728402
+  },
+  {
+   "model": "kws_micronet_m",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_ifm",
+   "ev_type": 386,
+   "channel_median": 470.0,
+   "unfiltered_median": 15815.0,
+   "share": 0.02971862156180841
+  },
+  {
+   "model": "kws_micronet_m",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_ifm",
+   "ev_type": 391,
+   "channel_median": 0.0,
+   "unfiltered_median": 1.0,
+   "share": 0.0
+  },
+  {
+   "model": "kws_micronet_m",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_mem2mem",
+   "ev_type": 128,
+   "channel_median": 0.0,
+   "unfiltered_median": 3337.0,
+   "share": 0.0
+  },
+  {
+   "model": "kws_micronet_m",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_mem2mem",
+   "ev_type": 130,
+   "channel_median": 0.0,
+   "unfiltered_median": 22664.0,
+   "share": 0.0
+  },
+  {
+   "model": "kws_micronet_m",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_mem2mem",
+   "ev_type": 132,
+   "channel_median": 0.0,
+   "unfiltered_median": 3170.0,
+   "share": 0.0
+  },
+  {
+   "model": "kws_micronet_m",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_mem2mem",
+   "ev_type": 135,
+   "channel_median": 0.0,
+   "unfiltered_median": 17760.0,
+   "share": 0.0
+  },
+  {
+   "model": "kws_micronet_m",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_mem2mem",
+   "ev_type": 384,
+   "channel_median": 135.0,
+   "unfiltered_median": 1609.0,
+   "share": 0.0839030453697949
+  },
+  {
+   "model": "kws_micronet_m",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_mem2mem",
+   "ev_type": 386,
+   "channel_median": 2087.0,
+   "unfiltered_median": 15815.0,
+   "share": 0.13196332595637053
+  },
+  {
+   "model": "kws_micronet_m",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_mem2mem",
+   "ev_type": 391,
+   "channel_median": 0.0,
+   "unfiltered_median": 1.0,
+   "share": 0.0
+  },
+  {
+   "model": "kws_micronet_m",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_weights",
+   "ev_type": 128,
+   "channel_median": 397.0,
+   "unfiltered_median": 3337.0,
+   "share": 0.11896913395265209
+  },
+  {
+   "model": "kws_micronet_m",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_weights",
+   "ev_type": 130,
+   "channel_median": 5551.0,
+   "unfiltered_median": 22664.0,
+   "share": 0.244925873632192
+  },
+  {
+   "model": "kws_micronet_m",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_weights",
+   "ev_type": 132,
+   "channel_median": 0.0,
+   "unfiltered_median": 3170.0,
+   "share": 0.0
+  },
+  {
+   "model": "kws_micronet_m",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_weights",
+   "ev_type": 135,
+   "channel_median": 0.0,
+   "unfiltered_median": 17760.0,
+   "share": 0.0
+  },
+  {
+   "model": "kws_micronet_m",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_weights",
+   "ev_type": 384,
+   "channel_median": 789.0,
+   "unfiltered_median": 1609.0,
+   "share": 0.490366687383468
+  },
+  {
+   "model": "kws_micronet_m",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_weights",
+   "ev_type": 386,
+   "channel_median": 11857.0,
+   "unfiltered_median": 15815.0,
+   "share": 0.7497312677837497
+  },
+  {
+   "model": "kws_micronet_m",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_weights",
+   "ev_type": 391,
+   "channel_median": 0.0,
+   "unfiltered_median": 1.0,
+   "share": 0.0
+  },
+  {
+   "model": "kws_micronet_m",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "wr_ofm",
+   "ev_type": 128,
+   "channel_median": 0.0,
+   "unfiltered_median": 3337.0,
+   "share": 0.0
+  },
+  {
+   "model": "kws_micronet_m",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "wr_ofm",
+   "ev_type": 130,
+   "channel_median": 0.0,
+   "unfiltered_median": 22664.0,
+   "share": 0.0
+  },
+  {
+   "model": "kws_micronet_m",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "wr_ofm",
+   "ev_type": 132,
+   "channel_median": 3036.0,
+   "unfiltered_median": 3170.0,
+   "share": 0.9577287066246056
+  },
+  {
+   "model": "kws_micronet_m",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "wr_ofm",
+   "ev_type": 135,
+   "channel_median": 0.0,
+   "unfiltered_median": 17760.0,
+   "share": 0.0
+  },
+  {
+   "model": "kws_micronet_m",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "wr_ofm",
+   "ev_type": 384,
+   "channel_median": 0.0,
+   "unfiltered_median": 1609.0,
+   "share": 0.0
+  },
+  {
+   "model": "kws_micronet_m",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "wr_ofm",
+   "ev_type": 386,
+   "channel_median": 0.0,
+   "unfiltered_median": 15815.0,
+   "share": 0.0
+  },
+  {
+   "model": "kws_micronet_m",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "wr_ofm",
+   "ev_type": 391,
+   "channel_median": 0.0,
+   "unfiltered_median": 1.0,
+   "share": 0.0
+  },
   {
    "model": "rnnoise_INT8",
    "verdict": "CHANNEL_FILTER_WORKS",

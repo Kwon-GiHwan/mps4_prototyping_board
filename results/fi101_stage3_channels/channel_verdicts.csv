@@ -1,2 +1,3 @@
 model,channels,verdict
+kws_micronet_m,"rd_ifm,rd_mem2mem,rd_weights,wr_ofm",CHANNEL_FILTER_WORKS
 rnnoise_INT8,"rd_ifm,rd_mem2mem,rd_weights,wr_ofm",CHANNEL_FILTER_WORKS

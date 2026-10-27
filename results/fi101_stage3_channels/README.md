@@ -24,3 +24,20 @@ AXI W beats carry no channel ID; not verified.)
 Reading: rnnoise's DRAM reads are mostly weights (82 %); weights come over EXT only. The rest of EXT reads (≈16 %)
 and of SRAM reads (≈63 %) belong to channels not measured here (command stream, scale/bias, IFM stream, mem2mem
 index). Average weight burst on EXT: 6,397 / 434 ≈ 14.7 beats per transaction.
+
+## kws_micronet_m (boots 105–108) — `CHANNEL_FILTER_WORKS`
+
+| channel | EXT rd beats | share | SRAM rd beats | share | EXT rd trans | SRAM rd trans |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| unfiltered | 15,815 | — | 22,664 | — | 1,609 | 3,337 |
+| rd_weights | 11,857 | 75.0 % | 5,551 | 24.5 % | 789 | 397 |
+| rd_ifm | 470 | 3.0 % | 16,213 | 71.5 % | 325 | 2,700 |
+| rd_mem2mem (DMA) | 2,087 | 13.2 % | 0 | 0.0 % | 135 | 0 |
+| sum of the three | 14,414 | 91.1 % | 21,764 | 96.0 % | | |
+
+wr_ofm: SRAM wr beats 0 (unfiltered 17,760), SRAM wr trans 3,036 (unfiltered 3,170).
+
+Reading: kws reads weights from both ports — 75 % of EXT read beats directly from DRAM and 24.5 % of SRAM read beats
+from the on-chip fast scratch, which the DMA channel fills (13 % of EXT reads). IFM reads are SRAM-side (72 %). The
+three channels cover 91 % of EXT and 96 % of SRAM reads. Write side: beats 0 again, transactions 3,036 vs 3,170
+unfiltered (not equal this time) — still not interpretable.
