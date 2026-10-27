@@ -1,5 +1,6 @@
 model,channels,verdict
 kws_micronet_m,"rd_ifm,rd_mem2mem,rd_weights,wr_ofm",CHANNEL_FILTER_WORKS
+mobilenet_v2_1.0_224_INT8,"rd_ifm,rd_mem2mem,rd_weights,wr_ofm",CHANNEL_FILTER_WORKS
 rnnoise_INT8,"rd_ifm,rd_mem2mem,rd_weights,wr_ofm",CHANNEL_FILTER_WORKS
 vww4_128_128_INT8,"rd_ifm,rd_mem2mem,rd_weights,wr_ofm",CHANNEL_FILTER_WORKS
 yolo-fastest_192_face_v4,"rd_ifm,rd_mem2mem,rd_weights,wr_ofm",CHANNEL_FILTER_WORKS

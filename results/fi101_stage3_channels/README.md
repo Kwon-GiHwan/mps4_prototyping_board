@@ -76,3 +76,18 @@ Reading: yolo's SRAM reads are mostly IFM (78.5 %, 185,400 beats ≈ 11.6 beats 
 `npu_active` cycle over 2 ports); its EXT reads split between weights (48.7 %) and DMA (24.0 %, the largest DMA share
 so far — weights staged into the fast scratch). As for vww4, IFM volume is moderate while Stage 1 showed
 `mac_stalled_by_ib` 34 %. Write side: beats 0, transactions 17,641 vs 18,108.
+
+## mobilenet_v2_1.0_224_INT8 (boots 117–120) — `CHANNEL_FILTER_WORKS`
+
+| channel | EXT rd beats | share | SRAM rd beats | share | EXT rd trans | SRAM rd trans |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| unfiltered | 301,217 | — | 672,948 | — | 23,373 | 61,383 |
+| rd_weights | 195,310 | 64.8 % | 178,359 | 26.5 % | 12,325 | 13,807 |
+| rd_ifm | 59,440 | 19.7 % | 443,635 | 65.9 % | 5,771 | 35,804 |
+| rd_mem2mem (DMA) | 28,122 | 9.3 % | 0 | 0.0 % | 1,784 | 0 |
+| sum of the three | 282,872 | 93.9 % | 621,994 | 92.4 % | | |
+
+wr_ofm: SRAM wr beats 0 (unfiltered 401,443), SRAM wr trans 33,889 (unfiltered 35,664).
+
+Reading: mobilenet reads weights from both ports (65 % of EXT, 27 % of SRAM reads) and IFM mostly from SRAM (66 %),
+plus a visible IFM share over EXT (20 %, the largest so far). Write side: beats 0, transactions 33,889 vs 35,664.

@@ -6,6 +6,11 @@
    "verdict": "CHANNEL_FILTER_WORKS"
   },
   {
+   "model": "mobilenet_v2_1.0_224_INT8",
+   "channels": "rd_ifm,rd_mem2mem,rd_weights,wr_ofm",
+   "verdict": "CHANNEL_FILTER_WORKS"
+  },
+  {
    "model": "rnnoise_INT8",
    "channels": "rd_ifm,rd_mem2mem,rd_weights,wr_ofm",
    "verdict": "CHANNEL_FILTER_WORKS"
@@ -272,6 +277,258 @@
    "ev_type": 391,
    "channel_median": 0.0,
    "unfiltered_median": 1.0,
+   "share": 0.0
+  },
+  {
+   "model": "mobilenet_v2_1.0_224_INT8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_ifm",
+   "ev_type": 128,
+   "channel_median": 35804.0,
+   "unfiltered_median": 61383.0,
+   "share": 0.5832885326556213
+  },
+  {
+   "model": "mobilenet_v2_1.0_224_INT8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_ifm",
+   "ev_type": 130,
+   "channel_median": 443635.0,
+   "unfiltered_median": 672948.0,
+   "share": 0.6592411300724573
+  },
+  {
+   "model": "mobilenet_v2_1.0_224_INT8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_ifm",
+   "ev_type": 132,
+   "channel_median": 0.0,
+   "unfiltered_median": 35664.0,
+   "share": 0.0
+  },
+  {
+   "model": "mobilenet_v2_1.0_224_INT8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_ifm",
+   "ev_type": 135,
+   "channel_median": 28058.0,
+   "unfiltered_median": 401443.0,
+   "share": 0.06989286150213106
+  },
+  {
+   "model": "mobilenet_v2_1.0_224_INT8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_ifm",
+   "ev_type": 384,
+   "channel_median": 5771.0,
+   "unfiltered_median": 23373.0,
+   "share": 0.24690882642365122
+  },
+  {
+   "model": "mobilenet_v2_1.0_224_INT8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_ifm",
+   "ev_type": 386,
+   "channel_median": 59440.0,
+   "unfiltered_median": 301217.0,
+   "share": 0.19733281986076484
+  },
+  {
+   "model": "mobilenet_v2_1.0_224_INT8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_ifm",
+   "ev_type": 391,
+   "channel_median": 0.0,
+   "unfiltered_median": 47887.0,
+   "share": 0.0
+  },
+  {
+   "model": "mobilenet_v2_1.0_224_INT8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_mem2mem",
+   "ev_type": 128,
+   "channel_median": 0.0,
+   "unfiltered_median": 61383.0,
+   "share": 0.0
+  },
+  {
+   "model": "mobilenet_v2_1.0_224_INT8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_mem2mem",
+   "ev_type": 130,
+   "channel_median": 0.0,
+   "unfiltered_median": 672948.0,
+   "share": 0.0
+  },
+  {
+   "model": "mobilenet_v2_1.0_224_INT8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_mem2mem",
+   "ev_type": 132,
+   "channel_median": 0.0,
+   "unfiltered_median": 35664.0,
+   "share": 0.0
+  },
+  {
+   "model": "mobilenet_v2_1.0_224_INT8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_mem2mem",
+   "ev_type": 135,
+   "channel_median": 0.0,
+   "unfiltered_median": 401443.0,
+   "share": 0.0
+  },
+  {
+   "model": "mobilenet_v2_1.0_224_INT8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_mem2mem",
+   "ev_type": 384,
+   "channel_median": 1784.0,
+   "unfiltered_median": 23373.0,
+   "share": 0.07632738630043212
+  },
+  {
+   "model": "mobilenet_v2_1.0_224_INT8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_mem2mem",
+   "ev_type": 386,
+   "channel_median": 28122.0,
+   "unfiltered_median": 301217.0,
+   "share": 0.09336126447046482
+  },
+  {
+   "model": "mobilenet_v2_1.0_224_INT8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_mem2mem",
+   "ev_type": 391,
+   "channel_median": 0.0,
+   "unfiltered_median": 47887.0,
+   "share": 0.0
+  },
+  {
+   "model": "mobilenet_v2_1.0_224_INT8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_weights",
+   "ev_type": 128,
+   "channel_median": 13807.0,
+   "unfiltered_median": 61383.0,
+   "share": 0.22493198442565532
+  },
+  {
+   "model": "mobilenet_v2_1.0_224_INT8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_weights",
+   "ev_type": 130,
+   "channel_median": 178359.0,
+   "unfiltered_median": 672948.0,
+   "share": 0.2650412810499474
+  },
+  {
+   "model": "mobilenet_v2_1.0_224_INT8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_weights",
+   "ev_type": 132,
+   "channel_median": 0.0,
+   "unfiltered_median": 35664.0,
+   "share": 0.0
+  },
+  {
+   "model": "mobilenet_v2_1.0_224_INT8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_weights",
+   "ev_type": 135,
+   "channel_median": 0.0,
+   "unfiltered_median": 401443.0,
+   "share": 0.0
+  },
+  {
+   "model": "mobilenet_v2_1.0_224_INT8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_weights",
+   "ev_type": 384,
+   "channel_median": 12325.0,
+   "unfiltered_median": 23373.0,
+   "share": 0.5273178453771445
+  },
+  {
+   "model": "mobilenet_v2_1.0_224_INT8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_weights",
+   "ev_type": 386,
+   "channel_median": 195310.0,
+   "unfiltered_median": 301217.0,
+   "share": 0.6484029785835461
+  },
+  {
+   "model": "mobilenet_v2_1.0_224_INT8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_weights",
+   "ev_type": 391,
+   "channel_median": 0.0,
+   "unfiltered_median": 47887.0,
+   "share": 0.0
+  },
+  {
+   "model": "mobilenet_v2_1.0_224_INT8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "wr_ofm",
+   "ev_type": 128,
+   "channel_median": 0.0,
+   "unfiltered_median": 61383.0,
+   "share": 0.0
+  },
+  {
+   "model": "mobilenet_v2_1.0_224_INT8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "wr_ofm",
+   "ev_type": 130,
+   "channel_median": 0.0,
+   "unfiltered_median": 672948.0,
+   "share": 0.0
+  },
+  {
+   "model": "mobilenet_v2_1.0_224_INT8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "wr_ofm",
+   "ev_type": 132,
+   "channel_median": 33889.0,
+   "unfiltered_median": 35664.0,
+   "share": 0.9502299237326155
+  },
+  {
+   "model": "mobilenet_v2_1.0_224_INT8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "wr_ofm",
+   "ev_type": 135,
+   "channel_median": 0.0,
+   "unfiltered_median": 401443.0,
+   "share": 0.0
+  },
+  {
+   "model": "mobilenet_v2_1.0_224_INT8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "wr_ofm",
+   "ev_type": 384,
+   "channel_median": 0.0,
+   "unfiltered_median": 23373.0,
+   "share": 0.0
+  },
+  {
+   "model": "mobilenet_v2_1.0_224_INT8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "wr_ofm",
+   "ev_type": 386,
+   "channel_median": 0.0,
+   "unfiltered_median": 301217.0,
+   "share": 0.0
+  },
+  {
+   "model": "mobilenet_v2_1.0_224_INT8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "wr_ofm",
+   "ev_type": 391,
+   "channel_median": 0.0,
+   "unfiltered_median": 47887.0,
    "share": 0.0
   },
   {
