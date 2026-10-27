@@ -45,9 +45,37 @@ Raw data `raw_c1/` (board root `~/evsweep/evidence_w2l_c1r`). **TA state: profil
 - 10/10 RUNs complete: `run_rc` 0, `vendor_rc` 0, `ofm_mismatch_count` 0, `run_valid` True in every RUN.
 - `mac_active` 56,450 in every RUN (= Stage 1 and the x1 control); `npu_active` 90,482–92,317, inside Stage 1's
   range [89,884, 92,356].
-- PMCCNTR window 246.01 M cycles per RUN (the kws control: a few M): the 14.5 MB CPU copy into S DRAM
+- PMCCNTR window 246.01 M cycles per RUN (the unpadded kws control, boot 80: 2.62 M): the 14.5 MB CPU copy into S DRAM
   is inside the window and finishes every RUN.
 
 Reading: the CPU copy over wav2letter's whole S DRAM range and NPU arena traffic at `0x70ED_2B00` work. The
 footprint alone does not stall a RUN. NPU reads of constants above `0x7050_C100` are not covered by this step
 (kws reads its constants at their original low offsets). Next: step 2 (where the NPU stops, C2/C3).
+
+## Step 2 — where the RUN stops (boots 91–92, frozen 2026-10-28 before boot 91)
+
+**Diagnostic image** APP `26ffe4e2…` (VECTORS `589f8b88`, DDR `81d37a21`, both = `38ce118c`'s), built with
+`make -f Makefile.npu_runner BUILD=build_npu_runner_diag VENDOR_PATCH=vendor/patch_u85_diag.py all` (gates PASS).
+It differs from `38ce118c` only in the generated vendor copy (`firmware/vendor/patch_u85_diag.py`, tested and
+mutation-tested):
+
+- D1 the IRQ wait ends after 2,000,000,000 DWT CYCCNT cycles instead of 200,000,000 loop iterations;
+- D2 an NPU IRQ without STATUS bit 1 disables NPU0_IRQn after 16 entries (the vendor never clears it).
+
+Never used for a measurement. Host side unchanged; STATUS and QREAD arrive in the existing `seam_npu_status` /
+`seam_npu_qread` fields (read at the CPM seam after the wait), the wait length in the PMCCNTR window.
+**TA state: profile 1.** RUN wait 600 s.
+
+| boot | blob | RUNs | role |
+| --- | --- | --- | --- |
+| 91 | `kws_micronet_m.ctl` = `f11271cb…` | 10 | control: the diag image runs a normal model unchanged (`vendor_rc` 0, OFM exact, `mac_active` 56,450, QREAD = its cms length) |
+| 92 | `wav2letter_pruned_int8.x1` = `5b8c9d06…` | 2 | the stalled model |
+
+Boot 92 is read only if boot 91 passes its control. Outcomes for boot 92:
+
+| outcome | condition | reading |
+| --- | --- | --- |
+| `W2L_NPU_STOPPED` | RUN_COMPLETE arrives, `vendor_rc` ≠ 0, QREAD < 5,632 | the NPU stopped inside the command stream; QREAD names the command (Vela `--verbose-register-command-stream` offsets), STATUS its error bits → C2 (operator) or a bus/parse error |
+| `W2L_NO_IRQ_AT_END` | RUN_COMPLETE, `vendor_rc` ≠ 0, QREAD = 5,632 | the stream ran to its end but no IRQ with bit 1 came; STATUS says why (C3) |
+| `W2L_COMPLETES` | RUN_COMPLETE, `vendor_rc` 0, OFM compared | D1/D2 alone let it finish: the stall was the wait/IRQ path (C3); OFM vs tflite_runtime recorded as is |
+| `W2L_CPU_SIDE` | no RUN_COMPLETE within 600 s | the CPU never returns although the wait is bounded and the IRQ guarded: CPU fault or a hang outside `sleep()` |
