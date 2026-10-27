@@ -1,0 +1,97 @@
+# FI101 Stage 0 → Stage 1 + 3 — contract (frozen 2026-10-28, before boot 94)
+
+Plan and review: owner's FI101 analysis plan; feasibility `docs/plan/fi101_analysis_plan_review.md`.
+Owner decision 2026-10-28: run Stage 0, then Stage 1 + Stage 3 (model-level); first fix the window problem —
+**TOTAL, ACTIVE and inference latency are measured as different quantities.**
+
+**TA state: profile 1 (MLEK `ta_config_u85_sys_dram_mid`), read back every RUN.** Profile `config/fi101_s013.json`
+(= `mlek_r10`: Vela options, knobs, seed 1, 10 RUNs with 2 warm-up; only the image and the PMU sets differ).
+
+## Image (Stage 0 change)
+
+APP `2bb04bfa…`, VECTORS `2ad2f560…`, DDR `81d37a21…` (`make -f Makefile.npu_runner all`, gates PASS). Differs from
+`38ce118c` only in `firmware/runner/{io_wrap.c,measure.c,measure.h}`:
+
+- **start seam**: at the vendor's "Updating POWER_CTRL" printf, after the knob writes and right before the vendor writes
+  POWER_CTRL and starts the NPU, read NPU `PMCCNTR`, DWT `CYCCNT`, system counter `CNTCV[31:0]` and `CNTCR`;
+- at the existing CPM seam (after the NPU stopped) additionally read DWT and `CNTCV`;
+- record 109 → 117 fields (8 appended; hosts skip unknown trailing words).
+
+Nothing is written to the NPU, the TA or the system counter. Host: `run_pmu_events.py` decodes the new words, records
+host wall time per RUN, and takes explicit PMU sets; validity term `start_seam_once` for these records.
+
+## Window definitions (preregistered)
+
+| name | definition | meaning |
+| --- | --- | --- |
+| `runner_window` | `PMCCNTR` at the CPM seam (= existing `npu_pmu_window_cycles`) | PMU arm → after the NPU stopped; **includes the CPU staging copies**. Not a model time. |
+| `infer_cycles` (TOTAL) | `PMCCNTR`(CPM seam) − `PMCCNTR`(start seam) | right before NPU start → after NPU stop, NPU clock; includes a few CPU register accesses on both ends. The model's inference time. |
+| `active` (ACTIVE) | event 35 `npu_active` | NPU in running state. |
+| `infer_cpu_cycles` | DWT(CPM seam) − DWT(start seam) | same span on the CPU clock |
+| `infer_sys_ticks` | CNTCV(CPM) − CNTCV(start) | same span on the system counter (meaningful only if `CNTCR` bit 0 = 1) |
+| `host_run_s` | host wall time RUN sent → RUN_COMPLETE parsed | includes copies and UART frame time; coarse clock cross-check |
+
+Latency is reported from `infer_cycles` and `active`; `runner_window` is reported only as the runner's window.
+
+## Boots
+
+Staging `~/evsweep_s013` (image above + blobs below), one boot per model, `--repeats 10`, ids `config/fi101_passes.txt`
+(7 sets A–G, 70 RUNs per boot), RUN wait 120 s.
+
+| boot | model | blob (unchanged from) |
+| --- | --- | --- |
+| 94 | kws_micronet_m | `f11271cb…` (Stage 1 / x1 control) |
+| 95 | ad_medium_int8 | `55fa924c…` (x1 control) |
+| 96 | rnnoise_INT8 | `5c3990a9…` (x1 boot 85) |
+| 97 | vww4_128_128_INT8 | `b7c15f01…` (x1 boot 84) |
+| 98 | yolo-fastest_192_face_v4 | `1f71e475…` (x1 boot 86) |
+| 99 | mobilenet_v2_1.0_224_INT8 | `0d51cf9e…` (x1 control) |
+| 100 | wav2letter_pruned_int8 | `5b8c9d06…` (x1 boot 93) |
+
+## Stage 0 checks (per model; PASS / FAIL / UNPROVEN)
+
+| id | check | rule |
+| --- | --- | --- |
+| S0-1 | start seam | every RUN valid with `start_seam_once` (exactly one start seam) |
+| S0-2 | window order | every RUN: `active` ≤ `infer_cycles` ≤ `runner_window` |
+| S0-3 | NPU vs CPU clock | per RUN `infer_cycles / infer_cpu_cycles` within [0.99, 1.01] |
+| S0-4 | image does not change NPU execution | measured RUNs: `mac_active` and the four aggregate beats (130, 135, 386, 391) equal the same blob's values on `38ce118c` (x1 boots 80–82, 84–86, 93); `active` median inside that boot's [min, max] widened by 0.5 % |
+| S0-5 | anchor across passes | `active` over all measured RUNs of all 7 sets: (max − min) / median ≤ 2 % |
+| S0-6 | event validity | per event per model: `COUNTED_NONZERO` / `COUNTED_ZERO` / `INCONSISTENT` over measured RUNs; any overflow bit → that event `OVERFLOW` |
+| S0-7 | window events | descriptive: `cycle`(17) vs `runner_window`; `npu_idle`(32) + `active` vs `runner_window`; `*_enabled_cycles` vs 2 × `runner_window` |
+| S0-8 | clock frequency | descriptive: `infer_sys_ticks` ratio if the counter runs (`CNTCR` bit 0), else `NOT_AVAILABLE`; `host_run_s` vs `runner_window` / 50 MHz |
+
+A model with S0-1, S0-2 or S0-4 FAIL is reported `UNRESOLVED (s013)` and kept out of Stage 1/3 tables. An event that is
+not `COUNTED_NONZERO` is not used in a ratio.
+
+## Stage 1 / Stage 3 metrics (descriptive, per model, medians over measured RUNs)
+
+Every ratio uses two events **from the same RUN** (same set); `N_MAC` from the original tflite (`workload_meta.py`).
+Bytes = beats × 16 (128-bit ports). Aggregate events are summed over the 2 ports of their kind.
+
+| stage | metric | formula |
+| --- | --- | --- |
+| 1 | inference cycles / latency | `infer_cycles`; µs = `infer_cycles` / f, f from S0-8 (else 50 MHz nominal, labelled) |
+| 1 | active ratio in the inference window | `active / infer_cycles` |
+| 1 | MAC / DPU / AO / WD active | `48 / 35`, `51 / 35`, `64 / 35`, `80 / 35` (set A) |
+| 1 | WD stalled | `81 / 35` (set A) |
+| 1 | MAC/cycle, peak eff., MAC active ratio, active-cycle eff. | as in `host/analysis/stage1.py` (denominator `active`) |
+| 1 | Vela vs board (whole model) | Vela `cycles_npu` vs `active`; Vela SRAM/DRAM bytes vs measured bytes |
+| 3 | traffic | SRAM/EXT RD/WR bytes (set B), per-port bytes (sets F, G) |
+| 3 | memory intensity | total bytes / N_MAC |
+| 3 | effective bandwidth | bytes / `active`, per port kind and per port |
+| 3 | average burst | RD beats / RD trans accepted (set B; SRAM, EXT) |
+| 3 | request stall ratio | `131 / (2 × 35)`, `387 / (2 × 35)`, `137 / (2 × 35)`, `393 / (2 × 35)` (set C) |
+| 3 | outstanding pressure | `142, 143, 398 / (2 × 35)` (set C), `399` (set E) |
+| 3 | port imbalance | (max − min) / sum over SRAM0/1 and over EXT0/1 bytes (sets F, G) |
+| 2-pre | unit stalls (model level) | `53, 55, 52, 54 / 35`; AO `67, 69, 70, 72 / 35`; WD `83 / 35`; `33 / 35` (sets A, D, E) |
+
+Reserved-ID events (33, 52–55, 67–72, 83) are reported with "meaning inferred from driver status bits"
+(`evidence/stage2a/event_semantics_audit.md`). Latency thresholds and per-channel traffic need a `PMCAXI_CHAN` blob per
+channel and are **not** in this campaign.
+
+## Not claimed
+
+No group-level cost (Stage 2), no latency distribution, no statement on the physical DRAM (the memory system is
+the TA-emulated SYS_DRAM_Mid). vww4, yolo-fastest, wav2letter OFMs differ from tflite_runtime (`UNRESOLVED (x1)`);
+their counters are used, their correctness is not claimed.

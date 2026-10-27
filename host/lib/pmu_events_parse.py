@@ -22,9 +22,29 @@ def fail_rule(rule, msg): return Refusal(rule, msg)
 def refusal_rule(exc): return exc.rule
 
 
-def event_sets(ids=None):
-    """Sets of 8 over the requested driver ids ascending (default: all 171 -> 22 sets, last has 3)."""
+def parse_ids_text(txt):
+    """An ids file: one id per line (a sweep, sorted into sets of 8) or several ids per line (one explicit set per
+    line, order kept). '#' starts a comment. Returns (ids, None) or (None, sets); a mix of the two forms is refused."""
+    lines = [ln.split("#")[0].replace(",", " ").split() for ln in txt.splitlines()]
+    lines = [[int(x) for x in ln] for ln in lines if ln]
+    if all(len(ln) == 1 for ln in lines):
+        return [ln[0] for ln in lines], None
+    if any(len(ln) == 1 for ln in lines):
+        raise ValueError("ids file mixes one-id lines with set lines")
+    return None, lines
+
+
+def event_sets(ids=None, sets=None):
+    """Sets of 8 over the requested driver ids ascending (default: all 171 -> 22 sets, last has 3), or the explicit
+    sets as given (FI101 Stage 0 passes: an anchor id may appear in every set)."""
     known = driver_ids()
+    if sets is not None:
+        if ids is not None:
+            raise ValueError("give ids or sets, not both")
+        for s in sets:
+            if not 1 <= len(s) <= SLOTS or len(set(s)) != len(s) or set(s) - set(known):
+                raise ValueError(f"bad event set {s}")
+        return [(i + 1, list(s)) for i, s in enumerate(sets)]
     if ids is None:
         ids = known
     unknown = sorted(set(ids) - set(known))
@@ -69,6 +89,8 @@ def run_validity(rec, codes, mode="exact"):
         for k in ("rc_zero", "required_flags_ok"):
             terms.pop(k)
         terms.update(completion)
+    if rec.get("start_seam_fired") is not None:   # FI101 Stage 0 image: the inference window needs its start
+        terms["start_seam_once"] = rec["start_seam_fired"] == 1
     failed = [k for k in terms if not terms[k]]
     return (not failed), failed
 

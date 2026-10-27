@@ -9,11 +9,11 @@ run() {  # run <label> <dir> <command...>
   printf '%-45s rc=%s  %s\n' "$label" "$rc" "$(echo "$out" | tail -1)"
   [ $rc -eq 0 ] || fail=1
 }
-for m in test_pmwl test_pmwl_firmware_contract test_reference_results test_pmu_events_parse test_pack_vela_workload test_baseline_gate test_ofm_compare test_mlek_golden test_stage1 test_stage2a; do
+for m in test_pmwl test_pmwl_firmware_contract test_reference_results test_pmu_events_parse test_run_pmu_events test_pack_vela_workload test_baseline_gate test_ofm_compare test_mlek_golden test_stage1 test_stage2a; do
   run "host/$m" . python3 -B -m unittest host.tests.$m
 done
 run "host/test_proto_unit" . python3 -B host/tests/test_proto_unit.py
 run "firmware/runner" firmware/runner python3 -B -m unittest test_runner_sources
 run "firmware/gate" firmware/gate python3 -B -m unittest test_check_runner
-run "firmware/vendor" firmware/vendor python3 -B -m unittest test_patch_u85_vendor_timeout
+run "firmware/vendor" firmware/vendor python3 -B -m unittest test_patch_u85_vendor_timeout test_patch_u85_diag
 [ $fail -eq 0 ] && echo "ALL PASS" || { echo "FAILED"; exit 1; }

@@ -51,6 +51,20 @@ class ReadSeam(unittest.TestCase):
             self.assertIn(stmt, cpm)
         self.assertIn("measurement_active && instr_cfg.mode == INSTRUMENTATION_EVENTS", IO)
 
+    def test_start_seam_reads_after_the_knobs_before_the_npu_starts(self):
+        # Stage 0 (docs/plan/fi101_analysis_plan_review.md): the inference window is start seam -> CPM seam,
+        # so PMCCNTR no longer has to include the CPU staging copies to time a model.
+        st = between(IO, "/* Stage 0 start seam", "seam_start_fired++;")
+        self.assertIn("measurement_active && instr_cfg.mode == INSTRUMENTATION_EVENTS", st)
+        self.assertIn('strcmp(fmt, "Updating POWER_CTRL register with MAC_RAMP_VAR=%d \\n") == 0', st)
+        order = ["npu_pmu_read_cycles", "seam_start_dwt = read_timestamp();", "seam_start_sys = REG32(SYSCNT_READ_CNTCV_LO);"]
+        idx = [st.index(x) for x in order]
+        self.assertEqual(idx, sorted(idx))
+        self.assertLess(IO.index("pmwl_knob_pending = 0U;"), IO.index("/* Stage 0 start seam"))
+        cpm = between(IO, 'strcmp(fmt, "Testing CPM signals\\n") == 0', "seam_fired++;")
+        self.assertLess(cpm.index("npu_pmu_read_cycles"), cpm.index("seam_end_dwt = read_timestamp();"))
+        self.assertIn("seam_end_sys = REG32(SYSCNT_READ_CNTCV_LO);", cpm)
+
     def test_apply_seam_writes_then_reads_back(self):
         ap = between(IO, '"Updating POWER_CTRL register with MAC_RAMP_VAR=%d \\n"', "pmwl_knob_pending = 0U;")
         self.assertLess(ap.index("npu_write(off[k], pmwl_knob[k]);"), ap.index("npu_read(off[k]) != pmwl_knob[k]"))
@@ -59,7 +73,9 @@ class ReadSeam(unittest.TestCase):
     def test_seam_state_cleared_when_the_window_opens(self):
         open_ = between(MEASURE, "/* ================= WINDOW OPENS ================= */", "measurement_active = 1U;")
         for stmt in ("seam_fired = 0U;", "seam_power_ctrl = 0U;", "ofm_mm_count = 0U;", "ofm_mm_first = 0xFFFFFFFFU;",
-                     "last_vendor_rc = -1;", "seam_ev[k] = 0U;"):
+                     "last_vendor_rc = -1;", "seam_ev[k] = 0U;", "seam_start_fired = 0U;",
+                     "seam_start_cyc_lo = 0U;", "seam_start_dwt = 0U;", "seam_end_dwt = 0U;", "seam_start_sys = 0U;",
+                     "seam_end_sys = 0U;"):
             self.assertIn(stmt, open_)
 
 
@@ -67,10 +83,13 @@ class Record(unittest.TestCase):
     def test_events_record_comes_from_the_seam(self):
         self.assertIn("r.npu_pmu_window_cycles_lo = seam_cycle_lo;", MEASURE)
         self.assertIn("r.event_values[i] = seam_ev[i];", MEASURE)
-        self.assertIn("#define MEASUREMENT_FIELD_COUNT 109U", MEASURE_H)
+        self.assertIn("#define MEASUREMENT_FIELD_COUNT 117U", MEASURE_H)
         tail = ("put32(&c, r->read_seam_fired);\n    put32(&c, r->vendor_rc);\n    put32(&c, r->seam_npu_status);\n"
                 "    put32(&c, r->seam_npu_qread);\n    put32(&c, r->ofm_mismatch_count);\n"
-                "    put32(&c, r->ofm_max_abs_diff);\n    put32(&c, r->ofm_first_mismatch);\n}")
+                "    put32(&c, r->ofm_max_abs_diff);\n    put32(&c, r->ofm_first_mismatch);\n"
+                "    put32(&c, r->start_seam_fired);\n    put32(&c, r->start_npu_cycle_lo);\n"
+                "    put32(&c, r->start_npu_cycle_hi);\n    put32(&c, r->start_cpu_ts);\n    put32(&c, r->end_cpu_ts);\n"
+                "    put32(&c, r->start_sys_cnt);\n    put32(&c, r->end_sys_cnt);\n    put32(&c, r->sys_cntcr);\n}")
         self.assertIn(tail, MEASURE)
         self.assertEqual(PMWL.count("last_vendor_rc = rc;"), 1)
 

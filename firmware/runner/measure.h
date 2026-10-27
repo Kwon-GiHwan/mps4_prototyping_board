@@ -173,6 +173,15 @@ typedef struct {
     uint32_t ofm_mismatch_count;           /* OFM bytes != reference     */
     uint32_t ofm_max_abs_diff;             /* as int8                    */
     uint32_t ofm_first_mismatch;           /* index, 0xFFFFFFFF = none   */
+    /* Stage 0: the inference window = start seam (right before the NPU starts) -> CPM seam. */
+    uint32_t start_seam_fired;             /* start seam arrivals        */
+    uint32_t start_npu_cycle_lo;           /* PMCCNTR at the start seam  */
+    uint32_t start_npu_cycle_hi;
+    uint32_t start_cpu_ts;                 /* DWT CYCCNT at start seam   */
+    uint32_t end_cpu_ts;                   /* DWT CYCCNT at CPM seam     */
+    uint32_t start_sys_cnt;                /* system counter CNTCV[31:0] */
+    uint32_t end_sys_cnt;
+    uint32_t sys_cntcr;                    /* counter control: enabled?  */
 } measurement_record_t;
 
 /* NOTE FOR THE HOST: this is 47, not the 42 it was, and not the "40" the
@@ -181,7 +190,7 @@ typedef struct {
  * The ABI header's total_payload_words is the authority -- never hardcode. */
 /* 47 + 55 appended for milestone 1. The ABI header's total_payload_words
  * remains the authority; hosts skip trailing words they do not know. */
-#define MEASUREMENT_FIELD_COUNT 109U
+#define MEASUREMENT_FIELD_COUNT 117U
 #define MEASUREMENT_PAYLOAD_SIZE (MEASUREMENT_FIELD_COUNT * 4U)
 
 /* ------------------------------------------------------------------------ */
@@ -277,6 +286,8 @@ extern volatile int32_t last_vendor_rc;
 extern volatile uint32_t seam_status, seam_qread;
 extern volatile uint32_t ofm_mm_count, ofm_mm_max, ofm_mm_first;
 extern volatile uint32_t seam_power_ctrl;
+extern volatile uint32_t seam_start_fired, seam_start_cyc_lo, seam_start_cyc_hi, seam_start_dwt, seam_end_dwt,
+                         seam_start_sys, seam_end_sys, seam_sys_cntcr;
 extern volatile uint32_t seam_fired, seam_cycle_lo, seam_cycle_hi, seam_cycle_stable,
                          seam_cycle_retries, seam_ovf, seam_ev[RUNNER_MAX_NPU_EVENT_COUNTERS];
 /* run result, read by GET_RESULT and cleared by RESET_RUNNER (proto.c) */

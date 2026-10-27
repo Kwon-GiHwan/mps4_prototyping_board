@@ -1,6 +1,11 @@
 /* Logging wrappers (--wrap=printf ...): inert, plus the two printf seams of the vendor test_u85. */
 #include "runner.h"
 
+/* SSE-320 system counter (platform_base_address.h): CNTCV[31:0] in the read frame, CNTCR in the control
+ * frame. Read only, never enabled here: CNTCR bit 0 says whether the counts mean anything. */
+#define SYSCNT_READ_CNTCV_LO 0x58101000U
+#define SYSCNT_CNTRL_CNTCR   0x58100000U
+
 /* ------------------------------------------------------------------------ */
 /* CONTRACT 3: logging wrappers                                              */
 /*                                                                           */
@@ -27,6 +32,8 @@ int __wrap_printf(const char *fmt, ...)
         seam_cycle_lo = (uint32_t)(cyc & 0xFFFFFFFFU);
         seam_cycle_hi = (uint32_t)(cyc >> 32);
         seam_cycle_stable = st; seam_cycle_retries = rt;
+        seam_end_dwt = read_timestamp();
+        seam_end_sys = REG32(SYSCNT_READ_CNTCV_LO);
         seam_ovf = npu_pmu_overflow_status();
         for (unsigned k = 0; k < instr_cfg.event_count; k++) {
             seam_ev[k] = pmu_reg_read(NPU_REG_PMEVCNTR_BASE + 4U * k);
@@ -50,6 +57,19 @@ int __wrap_printf(const char *fmt, ...)
             }
         }
         pmwl_knob_pending = 0U;
+    }
+    /* Stage 0 start seam: the same printf, after the knobs, right before the vendor writes POWER_CTRL and
+     * starts the NPU. Start seam -> CPM seam is the inference window; the staging copies lie before it. */
+    if (measurement_active && instr_cfg.mode == INSTRUMENTATION_EVENTS
+        && strcmp(fmt, "Updating POWER_CTRL register with MAC_RAMP_VAR=%d \n") == 0) {
+        uint32_t st = 0U, rt = 0U;
+        uint64_t cyc = npu_pmu_read_cycles(&st, &rt);
+        seam_start_cyc_lo = (uint32_t)(cyc & 0xFFFFFFFFU);
+        seam_start_cyc_hi = (uint32_t)(cyc >> 32);
+        seam_start_dwt = read_timestamp();
+        seam_start_sys = REG32(SYSCNT_READ_CNTCV_LO);
+        seam_sys_cntcr = REG32(SYSCNT_CNTRL_CNTCR);
+        seam_start_fired++;
     }
     (void)fmt;
     suppressed_printf_calls++;

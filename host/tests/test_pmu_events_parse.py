@@ -32,6 +32,47 @@ class Subset(unittest.TestCase):
         self.assertEqual(len(E.event_sets()), 22)   # default stays the full sweep
 
 
+class ExplicitSets(unittest.TestCase):
+    """FI101 Stage 0: a pass is a named set of up to 8 ids in the order given; an anchor id may repeat across sets."""
+    def test_one_id_per_line_keeps_the_sorted_sweep(self):
+        ids, sets = E.parse_ids_text("35\n17\n# c\n140\n")
+        self.assertEqual((ids, sets), ([35, 17, 140], None))
+        self.assertEqual(E.event_sets(ids), [(1, [17, 35, 140])])
+
+    def test_lines_with_several_ids_are_sets_in_order(self):
+        ids, sets = E.parse_ids_text("# pass A\n35 48 51\n35,130 135\n")
+        self.assertEqual(sets, [[35, 48, 51], [35, 130, 135]])
+        self.assertEqual(E.event_sets(sets=sets), [(1, [35, 48, 51]), (2, [35, 130, 135])])
+
+    def test_bad_sets_refused(self):
+        with self.assertRaises(ValueError): E.event_sets(sets=[[35, 48, 51, 52, 53, 55, 64, 80, 81]])   # 9 > 8
+        with self.assertRaises(ValueError): E.event_sets(sets=[[35, 35]])                               # repeat in a set
+        with self.assertRaises(ValueError): E.event_sets(sets=[[35, 9999]])                             # unknown id
+        with self.assertRaises(ValueError): E.event_sets(sets=[[]])
+        with self.assertRaises(ValueError): E.event_sets([35], sets=[[35]])                             # not both
+
+    def test_mixed_file_refused(self):
+        with self.assertRaises(ValueError): E.parse_ids_text("35 48\n17\n")
+
+
+class StartSeam(unittest.TestCase):
+    """FI101 Stage 0: records from an image with the start seam must show it fired exactly once."""
+    def rec(self, **o):
+        r = rec([17, 35]); r.update(o); return r
+
+    def test_absent_field_is_not_judged(self):
+        self.assertEqual(E.run_validity(self.rec(), [17, 35]), (True, []))
+
+    def test_exactly_once(self):
+        self.assertEqual(E.run_validity(self.rec(start_seam_fired=1), [17, 35]), (True, []))
+        for n in (0, 2):
+            ok, failed = E.run_validity(self.rec(start_seam_fired=n), [17, 35])
+            self.assertFalse(ok); self.assertEqual(failed, ["start_seam_once"])
+            ok, failed = E.run_validity(dict(self.rec(start_seam_fired=n), vendor_rc=0, valid_flags=0xD,
+                                             seam_npu_status=0xFFFF0020, seam_npu_qread=7, cms_len=7), [17, 35], "model")
+            self.assertEqual(failed, ["start_seam_once"])
+
+
 class Validity(unittest.TestCase):
     def test_green(self): self.assertEqual(E.run_validity(rec([17, 35]), [17, 35]), (True, []))
     def test_each_term_reachable(self):

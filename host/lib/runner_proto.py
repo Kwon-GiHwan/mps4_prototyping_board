@@ -443,6 +443,8 @@ class RunnerLink:
 
         self._seq = (self._seq + 1) & 0xFFFFFFFF
         seq = self._seq
+        self.last_run_host_s = None   # host wall time, RUN sent -> RUN_COMPLETE parsed (UART frame time included)
+        t_sent = time.time()
         self.send_raw(build_frame(CMD_RUN, seq))
 
         acked = False
@@ -483,6 +485,7 @@ class RunnerLink:
                 # firmware's own run counter and is the value GET_RESULT wants;
                 # the protocol frame sequence is a different namespace.
                 self.last_measurement = parse_measurement_payload(frame.payload)
+                self.last_run_host_s = time.time() - t_sent
                 rc = self.last_measurement.run_rc
                 break
 

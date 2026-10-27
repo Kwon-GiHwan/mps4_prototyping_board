@@ -28,6 +28,18 @@ def prime(link, blob):
     link.load_model_end(timeout=load_end_timeout(len(blob)))
     link.load_input(b"")
 
+def stage0_window(pmu, tr):
+    """FI101 Stage 0 inference window (start seam -> CPM seam) from the trailing words of a 117-field record.
+    None for older images. PMCCNTR itself (npu_pmu_window_cycles) stays the runner window, staging copies included."""
+    if tr[7] is None:
+        return dict(start_seam_fired=None, infer_npu_cycles=None, infer_cpu_cycles=None, infer_sys_ticks=None,
+                    sys_cntcr=None)
+    start = tr[8] | (tr[9] << 32)
+    return dict(start_seam_fired=tr[7], infer_npu_cycles=pmu["npu_pmu_window_cycles"] - start,
+                infer_cpu_cycles=(tr[11] - tr[10]) & 0xFFFFFFFF, infer_sys_ticks=(tr[13] - tr[12]) & 0xFFFFFFFF,
+                sys_cntcr=tr[14])
+
+
 PORT = "/dev/serial/by-id/usb-FTDI_USB__-__Serial_Converter_00FT46259002B-if01-port0"
 ERR_UNSUPPORTED_NAMES = ("ERR_UNSUPPORTED",)
 PROV = dict(board_serial="FTDI-00FT46259002B", fpga_image="FI101-r1p0 (109762 v0100)",
@@ -64,11 +76,11 @@ def main():
     prov = dict(PROV, build_id=a.build_id, app_sha256=a.app_sha256, vectors_sha256=a.vectors_sha256, ddr_sha256=a.ddr_sha256,
                 host_boot_index=a.host_boot_index, captured_at_utc=datetime.datetime.now(datetime.timezone.utc).isoformat())
     names = reference.driver_ids(); trm = reference.trm_ids()
-    ids = None
+    ids, explicit = None, None
     if a.ids:
-        txt = pathlib.Path(a.ids[1:]).read_text() if a.ids.startswith("@") else a.ids
-        ids = [int(x) for x in txt.replace("\n", ",").split(",") if x.strip()]
-    sets = E.event_sets(ids)
+        txt = pathlib.Path(a.ids[1:]).read_text() if a.ids.startswith("@") else a.ids.replace(",", "\n")
+        ids, explicit = E.parse_ids_text(txt)
+    sets = E.event_sets(ids, sets=explicit)
     rows, raw, refusal = [], [], None
     link = RunnerLink(a.port, protocol=PROTO_MEASURE_V2)
     try:
@@ -108,10 +120,11 @@ def main():
                 if m is None or m.pmu is None: raise E.fail_rule("RULE_RECORD_SCHEMA", "no PMU block in record")
                 if m.pmu["record_schema_version"] != 1: raise E.fail_rule("RULE_RECORD_SCHEMA", str(m.pmu["record_schema_version"]))
                 seam = m.trailing[0] if len(m.trailing) >= 1 else None   # amendment 7: field 103
-                tr = list(m.trailing) + [None] * 7
+                tr = list(m.trailing) + [None] * 15
+                win = stage0_window(m.pmu, tr)
                 r = dict(run_rc=rc, required_flags_ok=m.required_flags_ok(), pmu=m.pmu, seam_fired=seam,
                          valid_flags=m.valid_flags, vendor_rc=tr[1], seam_npu_status=tr[2], seam_npu_qread=tr[3],
-                         cms_len=cms_len)
+                         cms_len=cms_len, start_seam_fired=tr[7])
                 ok, failed = E.run_validity(r, codes, a.validity)
                 if "codes_echo" in failed and ok is False and m.pmu["event_valid_mask"] == (1 << len(codes)) - 1:
                     raise E.fail_rule("RULE_CODES_ECHO", f"set {set_id}: {m.pmu['event_codes'][:len(codes)]} != {codes}")
@@ -121,7 +134,8 @@ def main():
                             "base_fields": list(m.fields),
                             "seam_npu_status": (m.trailing[2] if len(m.trailing) >= 3 else None),
                             "seam_npu_qread": (m.trailing[3] if len(m.trailing) >= 4 else None),
-                            "ofm_mismatch": (list(m.trailing[4:7]) if len(m.trailing) >= 7 else None)})
+                            "ofm_mismatch": (list(m.trailing[4:7]) if len(m.trailing) >= 7 else None),
+                            "host_run_s": link.last_run_host_s, **win})
                 for slot, ev in enumerate(codes):
                     rows.append(dict(set_id=set_id, rep=rep, slot=slot, ev_type=ev, name=names[ev], in_trm110=ev in trm,
                                      event_value=m.pmu["event_values"][slot] if ok else None,
@@ -129,7 +143,9 @@ def main():
                                      event_overflow=m.pmu["event_overflow"][slot], run_rc=rc, run_valid=ok,
                                      invalid_reasons=";".join(failed), window_cycles=m.pmu["npu_pmu_window_cycles"],
                                      cycle_valid=m.pmu["npu_pmu_cycle_valid"], valid_flags=m.valid_flags,
-                                     vendor_rc=tr[1], ofm_mismatch_count=tr[4], ofm_max_abs_diff=tr[5], **prov))
+                                     vendor_rc=tr[1], ofm_mismatch_count=tr[4], ofm_max_abs_diff=tr[5],
+                                     infer_npu_cycles=win["infer_npu_cycles"], infer_cpu_cycles=win["infer_cpu_cycles"],
+                                     infer_sys_ticks=win["infer_sys_ticks"], host_run_s=link.last_run_host_s, **prov))
                 vrc = m.trailing[1] if len(m.trailing) >= 2 else None
                 st = (hex(m.trailing[2]), m.trailing[3]) if len(m.trailing) >= 4 else None
                 mm = tuple(m.trailing[4:7]) if len(m.trailing) >= 7 else None
