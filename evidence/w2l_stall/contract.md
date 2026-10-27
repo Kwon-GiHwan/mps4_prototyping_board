@@ -36,3 +36,18 @@ Image `38ce118c` (staging `~/evsweep_x1c`), profile `mlek_r10` (10 RUNs), event 
 | `C1_REFUTED` | 10 RUNs complete, vendor_rc 0, OFM exact | the footprint (CPU copy range, NPU arena at the top) is not the cause → step 2 (C2/C3) |
 | `C1_SUPPORTED` | the RUN stalls like wav2letter (no RUN_COMPLETE in 120 s) | the footprint is enough to stall; locate it next (CPU copy vs NPU access) |
 | `C1_OTHER` | anything else (refusal, OFM mismatch, load failure) | recorded as is, no conclusion on C1 |
+
+### Step 1 result (boot 90, recorded 2026-10-28) — `C1_REFUTED`
+
+Deploy `~/evsweep/evidence_w2l_c1` (APP `38ce118c`, VECTORS `589f8b88`, DDR `81d37a21`, read back after deploy).
+Raw data `raw_c1/` (board root `~/evsweep/evidence_w2l_c1r`). **TA state: profile 1.**
+
+- 10/10 RUNs complete: `run_rc` 0, `vendor_rc` 0, `ofm_mismatch_count` 0, `run_valid` True in every RUN.
+- `mac_active` 56,450 in every RUN (= Stage 1 and the x1 control); `npu_active` 90,482–92,317, inside Stage 1's
+  range [89,884, 92,356].
+- PMCCNTR window 246.01 M cycles per RUN (the kws control: a few M): the 14.5 MB CPU copy into S DRAM
+  is inside the window and finishes every RUN.
+
+Reading: the CPU copy over wav2letter's whole S DRAM range and NPU arena traffic at `0x70ED_2B00` work. The
+footprint alone does not stall a RUN. NPU reads of constants above `0x7050_C100` are not covered by this step
+(kws reads its constants at their original low offsets). Next: step 2 (where the NPU stops, C2/C3).
