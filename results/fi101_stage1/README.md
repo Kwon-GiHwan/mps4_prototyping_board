@@ -65,5 +65,6 @@ their counters are used, their correctness is not claimed. Reserved-ID events ar
 | file | content |
 | --- | --- |
 | `stage1.csv` | all Stage 1 columns per model (`host/analysis/fi101_s013.py --stage1-only`) |
+| `events_pass_A.csv`, `events_pass_A_wide.csv` | every set-A event per model: name, TRM-documented or not, n = 8 measured RUNs, median, min, max, verdict (long and one-row-per-model forms; `host/analysis/fi101_events.py`) |
 | `vela_block_fill.csv`, `vela_block_fill_per_op.csv` | block / ublock fill per model and per operator |
 | `figures/` | unit activity, efficiency vs block fill, inference cycles and Vela ratio (`plot_stage1.py`) |
