@@ -168,6 +168,8 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("root"); ap.add_argument("out")
     ap.add_argument("--profile", default=str(REPO / "config/fi101_s013.json"))
+    ap.add_argument("--stage1-only", action="store_true",
+                    help="amendment 1: Stage 1 rows for every model, labelled PROVISIONAL (Stage 0 pending)")
     a = ap.parse_args()
     prof = json.load(open(a.profile)); warm = prof["warmup"]
     n_mac = {}
@@ -198,17 +200,22 @@ def main():
                                                  median=med(values(runs, e))))
         ok = all(s0[k] == "PASS" for k in ("S0-1", "S0-2", "S0-4"))
         status = "VALID" if ok else "UNRESOLVED (s013)"
-        if ok:
+        if a.stage1_only:
+            tables["stage1"].append(dict(model=m, status="PROVISIONAL (Stage 0 pending)", measured_runs=len(runs),
+                                         **stage1(runs, n_mac[m], vela)))
+        elif ok:
             tables["stage1"].append(dict(model=m, **stage1(runs, n_mac[m], vela)))
             tables["stage3"].append(dict(model=m, **stage3(runs, n_mac[m], vela)))
             tables["unit_stalls"].append(dict(model=m, **unit_stalls(runs)))
         tables["stage0"][-1]["status"] = status
+    if a.stage1_only:
+        tables = {"stage1": tables["stage1"]}
     for name, rows in tables.items():
         if rows:
             with open(out / f"{name}.csv", "w", newline="") as f:
                 w = csv.DictWriter(f, fieldnames=list(rows[0].keys()), lineterminator="\n"); w.writeheader(); w.writerows(rows)
     json.dump(tables, open(out / "summary.json", "w"), indent=1, default=str)
-    for r in tables["stage0"]:
+    for r in tables.get("stage0", tables["stage1"]):
         print(r)
     return 0
 
