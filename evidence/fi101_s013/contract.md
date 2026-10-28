@@ -155,3 +155,9 @@ Amendment 3 claimed "all seven models" for the per-channel boots but added only 
 ad_medium_int8 was never in `plan_chan.txt`, so boots 101–124 covered six models. Found after boot 124 while
 summarising. Under the owner's "all seven" decision: boots 125–128 = ad_medium_int8 × (rd_weights, rd_ifm, wr_ofm,
 rd_mem2mem), same image `2bb04bfa` (re-deployed), same blob rule (word 16 only), same set and rules, TA profile 1.
+
+## Channel results (recorded 2026-10-28, after boots 101–128) — `results/fi101_stage3_channels/`
+
+28/28 boots, 280/280 RUNs valid; `CHANNEL_FILTER_WORKS` for all seven models on the read side. Write side not
+interpretable (write beats 0 under any channel selection, transactions near unfiltered). Board restored to
+`evidence_m6` and postflight passed after boot 128.

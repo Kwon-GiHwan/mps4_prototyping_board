@@ -1,6 +1,11 @@
 {
  "channel_verdicts": [
   {
+   "model": "ad_medium_int8",
+   "channels": "rd_ifm,rd_mem2mem,rd_weights,wr_ofm",
+   "verdict": "CHANNEL_FILTER_WORKS"
+  },
+  {
    "model": "kws_micronet_m",
    "channels": "rd_ifm,rd_mem2mem,rd_weights,wr_ofm",
    "verdict": "CHANNEL_FILTER_WORKS"
@@ -21,12 +26,269 @@
    "verdict": "CHANNEL_FILTER_WORKS"
   },
   {
+   "model": "wav2letter_pruned_int8",
+   "channels": "rd_ifm,rd_mem2mem,rd_weights,wr_ofm",
+   "verdict": "CHANNEL_FILTER_WORKS"
+  },
+  {
    "model": "yolo-fastest_192_face_v4",
    "channels": "rd_ifm,rd_mem2mem,rd_weights,wr_ofm",
    "verdict": "CHANNEL_FILTER_WORKS"
   }
  ],
  "channels": [
+  {
+   "model": "ad_medium_int8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_ifm",
+   "ev_type": 128,
+   "channel_median": 4671.0,
+   "unfiltered_median": 4971.0,
+   "share": 0.9396499698249849
+  },
+  {
+   "model": "ad_medium_int8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_ifm",
+   "ev_type": 130,
+   "channel_median": 68690.0,
+   "unfiltered_median": 70538.0,
+   "share": 0.9738013552978536
+  },
+  {
+   "model": "ad_medium_int8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_ifm",
+   "ev_type": 132,
+   "channel_median": 0.0,
+   "unfiltered_median": 2972.0,
+   "share": 0.0
+  },
+  {
+   "model": "ad_medium_int8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_ifm",
+   "ev_type": 135,
+   "channel_median": 590.0,
+   "unfiltered_median": 41888.0,
+   "share": 0.014085179526355997
+  },
+  {
+   "model": "ad_medium_int8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_ifm",
+   "ev_type": 384,
+   "channel_median": 76.0,
+   "unfiltered_median": 3321.0,
+   "share": 0.022884673291177358
+  },
+  {
+   "model": "ad_medium_int8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_ifm",
+   "ev_type": 386,
+   "channel_median": 152.0,
+   "unfiltered_median": 44084.0,
+   "share": 0.0034479629797659014
+  },
+  {
+   "model": "ad_medium_int8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_ifm",
+   "ev_type": 391,
+   "channel_median": 0.0,
+   "unfiltered_median": 1.0,
+   "share": 0.0
+  },
+  {
+   "model": "ad_medium_int8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_mem2mem",
+   "ev_type": 128,
+   "channel_median": 0.0,
+   "unfiltered_median": 4971.0,
+   "share": 0.0
+  },
+  {
+   "model": "ad_medium_int8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_mem2mem",
+   "ev_type": 130,
+   "channel_median": 0.0,
+   "unfiltered_median": 70538.0,
+   "share": 0.0
+  },
+  {
+   "model": "ad_medium_int8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_mem2mem",
+   "ev_type": 132,
+   "channel_median": 0.0,
+   "unfiltered_median": 2972.0,
+   "share": 0.0
+  },
+  {
+   "model": "ad_medium_int8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_mem2mem",
+   "ev_type": 135,
+   "channel_median": 0.0,
+   "unfiltered_median": 41888.0,
+   "share": 0.0
+  },
+  {
+   "model": "ad_medium_int8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_mem2mem",
+   "ev_type": 384,
+   "channel_median": 39.0,
+   "unfiltered_median": 3321.0,
+   "share": 0.011743450767841012
+  },
+  {
+   "model": "ad_medium_int8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_mem2mem",
+   "ev_type": 386,
+   "channel_median": 590.0,
+   "unfiltered_median": 44084.0,
+   "share": 0.013383540513565013
+  },
+  {
+   "model": "ad_medium_int8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_mem2mem",
+   "ev_type": 391,
+   "channel_median": 0.0,
+   "unfiltered_median": 1.0,
+   "share": 0.0
+  },
+  {
+   "model": "ad_medium_int8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_weights",
+   "ev_type": 128,
+   "channel_median": 96.0,
+   "unfiltered_median": 4971.0,
+   "share": 0.01931200965600483
+  },
+  {
+   "model": "ad_medium_int8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_weights",
+   "ev_type": 130,
+   "channel_median": 1048.0,
+   "unfiltered_median": 70538.0,
+   "share": 0.014857240069182568
+  },
+  {
+   "model": "ad_medium_int8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_weights",
+   "ev_type": 132,
+   "channel_median": 0.0,
+   "unfiltered_median": 2972.0,
+   "share": 0.0
+  },
+  {
+   "model": "ad_medium_int8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_weights",
+   "ev_type": 135,
+   "channel_median": 0.0,
+   "unfiltered_median": 41888.0,
+   "share": 0.0
+  },
+  {
+   "model": "ad_medium_int8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_weights",
+   "ev_type": 384,
+   "channel_median": 2612.0,
+   "unfiltered_median": 3321.0,
+   "share": 0.7865100873230955
+  },
+  {
+   "model": "ad_medium_int8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_weights",
+   "ev_type": 386,
+   "channel_median": 41007.0,
+   "unfiltered_median": 44084.0,
+   "share": 0.9302014336267126
+  },
+  {
+   "model": "ad_medium_int8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_weights",
+   "ev_type": 391,
+   "channel_median": 0.0,
+   "unfiltered_median": 1.0,
+   "share": 0.0
+  },
+  {
+   "model": "ad_medium_int8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "wr_ofm",
+   "ev_type": 128,
+   "channel_median": 0.0,
+   "unfiltered_median": 4971.0,
+   "share": 0.0
+  },
+  {
+   "model": "ad_medium_int8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "wr_ofm",
+   "ev_type": 130,
+   "channel_median": 0.0,
+   "unfiltered_median": 70538.0,
+   "share": 0.0
+  },
+  {
+   "model": "ad_medium_int8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "wr_ofm",
+   "ev_type": 132,
+   "channel_median": 2934.0,
+   "unfiltered_median": 2972.0,
+   "share": 0.9872139973082099
+  },
+  {
+   "model": "ad_medium_int8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "wr_ofm",
+   "ev_type": 135,
+   "channel_median": 0.0,
+   "unfiltered_median": 41888.0,
+   "share": 0.0
+  },
+  {
+   "model": "ad_medium_int8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "wr_ofm",
+   "ev_type": 384,
+   "channel_median": 0.0,
+   "unfiltered_median": 3321.0,
+   "share": 0.0
+  },
+  {
+   "model": "ad_medium_int8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "wr_ofm",
+   "ev_type": 386,
+   "channel_median": 0.0,
+   "unfiltered_median": 44084.0,
+   "share": 0.0
+  },
+  {
+   "model": "ad_medium_int8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "wr_ofm",
+   "ev_type": 391,
+   "channel_median": 0.0,
+   "unfiltered_median": 1.0,
+   "share": 0.0
+  },
   {
    "model": "kws_micronet_m",
    "verdict": "CHANNEL_FILTER_WORKS",
@@ -1033,6 +1295,258 @@
    "ev_type": 391,
    "channel_median": 0.0,
    "unfiltered_median": 1.0,
+   "share": 0.0
+  },
+  {
+   "model": "wav2letter_pruned_int8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_ifm",
+   "ev_type": 128,
+   "channel_median": 34361.0,
+   "unfiltered_median": 34732.0,
+   "share": 0.9893182079926293
+  },
+  {
+   "model": "wav2letter_pruned_int8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_ifm",
+   "ev_type": 130,
+   "channel_median": 459463.0,
+   "unfiltered_median": 463085.0,
+   "share": 0.9921785417363983
+  },
+  {
+   "model": "wav2letter_pruned_int8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_ifm",
+   "ev_type": 132,
+   "channel_median": 0.0,
+   "unfiltered_median": 3560.0,
+   "share": 0.0
+  },
+  {
+   "model": "wav2letter_pruned_int8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_ifm",
+   "ev_type": 135,
+   "channel_median": 0.0,
+   "unfiltered_median": 40950.0,
+   "share": 0.0
+  },
+  {
+   "model": "wav2letter_pruned_int8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_ifm",
+   "ev_type": 384,
+   "channel_median": 5636.0,
+   "unfiltered_median": 120445.0,
+   "share": 0.046793142098053055
+  },
+  {
+   "model": "wav2letter_pruned_int8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_ifm",
+   "ev_type": 386,
+   "channel_median": 25688.0,
+   "unfiltered_median": 1836882.0,
+   "share": 0.013984567326589297
+  },
+  {
+   "model": "wav2letter_pruned_int8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_ifm",
+   "ev_type": 391,
+   "channel_median": 0.0,
+   "unfiltered_median": 19045.0,
+   "share": 0.0
+  },
+  {
+   "model": "wav2letter_pruned_int8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_mem2mem",
+   "ev_type": 128,
+   "channel_median": 0.0,
+   "unfiltered_median": 34732.0,
+   "share": 0.0
+  },
+  {
+   "model": "wav2letter_pruned_int8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_mem2mem",
+   "ev_type": 130,
+   "channel_median": 0.0,
+   "unfiltered_median": 463085.0,
+   "share": 0.0
+  },
+  {
+   "model": "wav2letter_pruned_int8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_mem2mem",
+   "ev_type": 132,
+   "channel_median": 0.0,
+   "unfiltered_median": 3560.0,
+   "share": 0.0
+  },
+  {
+   "model": "wav2letter_pruned_int8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_mem2mem",
+   "ev_type": 135,
+   "channel_median": 0.0,
+   "unfiltered_median": 40950.0,
+   "share": 0.0
+  },
+  {
+   "model": "wav2letter_pruned_int8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_mem2mem",
+   "ev_type": 384,
+   "channel_median": 25.0,
+   "unfiltered_median": 120445.0,
+   "share": 0.0002075636182489933
+  },
+  {
+   "model": "wav2letter_pruned_int8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_mem2mem",
+   "ev_type": 386,
+   "channel_median": 224.0,
+   "unfiltered_median": 1836882.0,
+   "share": 0.00012194577550436011
+  },
+  {
+   "model": "wav2letter_pruned_int8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_mem2mem",
+   "ev_type": 391,
+   "channel_median": 0.0,
+   "unfiltered_median": 19045.0,
+   "share": 0.0
+  },
+  {
+   "model": "wav2letter_pruned_int8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_weights",
+   "ev_type": 128,
+   "channel_median": 0.0,
+   "unfiltered_median": 34732.0,
+   "share": 0.0
+  },
+  {
+   "model": "wav2letter_pruned_int8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_weights",
+   "ev_type": 130,
+   "channel_median": 0.0,
+   "unfiltered_median": 463085.0,
+   "share": 0.0
+  },
+  {
+   "model": "wav2letter_pruned_int8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_weights",
+   "ev_type": 132,
+   "channel_median": 0.0,
+   "unfiltered_median": 3560.0,
+   "share": 0.0
+  },
+  {
+   "model": "wav2letter_pruned_int8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_weights",
+   "ev_type": 135,
+   "channel_median": 0.0,
+   "unfiltered_median": 40950.0,
+   "share": 0.0
+  },
+  {
+   "model": "wav2letter_pruned_int8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_weights",
+   "ev_type": 384,
+   "channel_median": 112770.0,
+   "unfiltered_median": 120445.0,
+   "share": 0.936277969197559
+  },
+  {
+   "model": "wav2letter_pruned_int8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_weights",
+   "ev_type": 386,
+   "channel_median": 1802978.0,
+   "unfiltered_median": 1836882.0,
+   "share": 0.9815426358361615
+  },
+  {
+   "model": "wav2letter_pruned_int8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "rd_weights",
+   "ev_type": 391,
+   "channel_median": 0.0,
+   "unfiltered_median": 19045.0,
+   "share": 0.0
+  },
+  {
+   "model": "wav2letter_pruned_int8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "wr_ofm",
+   "ev_type": 128,
+   "channel_median": 0.0,
+   "unfiltered_median": 34732.0,
+   "share": 0.0
+  },
+  {
+   "model": "wav2letter_pruned_int8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "wr_ofm",
+   "ev_type": 130,
+   "channel_median": 0.0,
+   "unfiltered_median": 463085.0,
+   "share": 0.0
+  },
+  {
+   "model": "wav2letter_pruned_int8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "wr_ofm",
+   "ev_type": 132,
+   "channel_median": 3560.0,
+   "unfiltered_median": 3560.0,
+   "share": 1.0
+  },
+  {
+   "model": "wav2letter_pruned_int8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "wr_ofm",
+   "ev_type": 135,
+   "channel_median": 0.0,
+   "unfiltered_median": 40950.0,
+   "share": 0.0
+  },
+  {
+   "model": "wav2letter_pruned_int8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "wr_ofm",
+   "ev_type": 384,
+   "channel_median": 0.0,
+   "unfiltered_median": 120445.0,
+   "share": 0.0
+  },
+  {
+   "model": "wav2letter_pruned_int8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "wr_ofm",
+   "ev_type": 386,
+   "channel_median": 0.0,
+   "unfiltered_median": 1836882.0,
+   "share": 0.0
+  },
+  {
+   "model": "wav2letter_pruned_int8",
+   "verdict": "CHANNEL_FILTER_WORKS",
+   "channel": "wr_ofm",
+   "ev_type": 391,
+   "channel_median": 0.0,
+   "unfiltered_median": 19045.0,
    "share": 0.0
   },
   {

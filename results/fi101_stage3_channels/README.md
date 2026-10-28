@@ -91,3 +91,50 @@ wr_ofm: SRAM wr beats 0 (unfiltered 401,443), SRAM wr trans 33,889 (unfiltered 3
 
 Reading: mobilenet reads weights from both ports (65 % of EXT, 27 % of SRAM reads) and IFM mostly from SRAM (66 %),
 plus a visible IFM share over EXT (20 %, the largest so far). Write side: beats 0, transactions 33,889 vs 35,664.
+
+## wav2letter_pruned_int8 (boots 121–124) — `CHANNEL_FILTER_WORKS`
+
+| channel | EXT rd beats | share | SRAM rd beats | share | EXT rd trans | SRAM rd trans |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| unfiltered | 1,836,882 | — | 463,085 | — | 120,445 | 34,732 |
+| rd_weights | 1,802,978 | 98.2 % | 0 | 0.0 % | 112,770 | 0 |
+| rd_ifm | 25,688 | 1.4 % | 459,463 | 99.2 % | 5,636 | 34,361 |
+| rd_mem2mem (DMA) | 224 | 0.0 % | 0 | 0.0 % | 25 | 0 |
+| sum of the three | 1,828,890 | 99.6 % | 459,463 | 99.2 % | | |
+
+wr_ofm: SRAM wr beats 0 (unfiltered 40,950), SRAM wr trans 3,560 (unfiltered 3,560).
+
+Reading: wav2letter is the clean case — EXT reads are weights (98.2 %, streamed directly from DRAM, no DMA staging),
+SRAM reads are IFM (99.2 %). The three channels cover 99.6 % / 99.2 % of the reads. Write side: beats 0, transactions
+3,560 = unfiltered.
+
+## ad_medium_int8 (boots 125–128) — `CHANNEL_FILTER_WORKS`
+
+| channel | EXT rd beats | share | SRAM rd beats | share | EXT rd trans | SRAM rd trans |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| unfiltered | 44,084 | — | 70,538 | — | 3,321 | 4,971 |
+| rd_weights | 41,007 | 93.0 % | 1,048 | 1.5 % | 2,612 | 96 |
+| rd_ifm | 152 | 0.3 % | 68,690 | 97.4 % | 76 | 4,671 |
+| rd_mem2mem (DMA) | 590 | 1.3 % | 0 | 0.0 % | 39 | 0 |
+| sum of the three | 41,749 | 94.7 % | 69,738 | 98.9 % | | |
+
+wr_ofm: SRAM wr beats 0 (unfiltered 41,888), SRAM wr trans 2,934 (unfiltered 2,972).
+
+Reading: ad reads weights from DRAM (93 % of EXT) and IFM from SRAM (97 %), with almost no DMA staging.
+
+## All seven models — read shares (EXT / SRAM)
+
+| model | weights | IFM | DMA | three channels |
+| --- | --- | --- | --- | --- |
+| rnnoise | 81.6 % / 0 % | 0.3 % / 37.1 % | 2.2 % / 0 % | 84.2 % / 37.1 % |
+| kws | 75.0 % / 24.5 % | 3.0 % / 71.5 % | 13.2 % / 0 % | 91.1 % / 96.0 % |
+| vww4 | 65.6 % / 8.8 % | 9.1 % / 78.5 % | 8.8 % / 0 % | 83.6 % / 87.4 % |
+| yolo-fastest | 48.7 % / 11.5 % | 12.0 % / 78.5 % | 24.0 % / 0 % | 84.7 % / 90.0 % |
+| mobilenet | 64.8 % / 26.5 % | 19.7 % / 65.9 % | 9.3 % / 0 % | 93.9 % / 92.4 % |
+| wav2letter | 98.2 % / 0 % | 1.4 % / 99.2 % | 0.0 % / 0 % | 99.6 % / 99.2 % |
+| ad_medium | 93.0 % / 1.5 % | 0.3 % / 97.4 % | 1.3 % / 0 % | 94.7 % / 98.9 % |
+
+**ad_medium_int8 was omitted** from amendment 3's "all seven" and found after boot 124; measured in boots 125–128
+(amendment 4, image re-deployed, same rules).
+
+28/28 channel boots, 280/280 RUNs valid; `CHANNEL_FILTER_WORKS` for all seven models (read side).
