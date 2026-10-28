@@ -1,0 +1,4 @@
+125 ad_medium_int8 rd_weights
+126 ad_medium_int8 rd_ifm
+127 ad_medium_int8 wr_ofm
+128 ad_medium_int8 rd_mem2mem

@@ -148,3 +148,10 @@ added to the results as soon as its boots finish.
 - S0-5 **FAIL** for kws, ad, rnnoise (anchor spread 2.0–3.4 %, per-set medians within 1.0 %): ±1.5 k cycles RUN jitter.
 - S0-6: 310 COUNTED_NONZERO / 36 COUNTED_ZERO / 4 INCONSISTENT, no overflow. S0-7: window events consistent
   (≤ 0.02 %). S0-8: system counter disabled → NOT_AVAILABLE; host time only a coarse check.
+
+## Amendment 4 (2026-10-28, before boot 125) — ad_medium_int8 per-channel boots
+
+Amendment 3 claimed "all seven models" for the per-channel boots but added only mobilenet and wav2letter;
+ad_medium_int8 was never in `plan_chan.txt`, so boots 101–124 covered six models. Found after boot 124 while
+summarising. Under the owner's "all seven" decision: boots 125–128 = ad_medium_int8 × (rd_weights, rd_ifm, wr_ofm,
+rd_mem2mem), same image `2bb04bfa` (re-deployed), same blob rule (word 16 only), same set and rules, TA profile 1.
