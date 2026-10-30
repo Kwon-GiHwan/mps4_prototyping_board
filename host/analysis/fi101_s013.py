@@ -66,8 +66,20 @@ def values(runs, ev):
     return [r["ev"][ev] for r in runs.values() if ev in r["ev"] and r["ev"][ev] is not None]
 
 
+def event_verdict(runs, ev):
+    return verdict(values(runs, ev), any(ev in r["ovf"] for r in runs.values()))
+
+
+def unusable(runs, *evs):
+    """Contract: an event that is not COUNTED_NONZERO is not used in a ratio -> its verdict, else None."""
+    return next((v for v in (event_verdict(runs, e) for e in evs) if v != "COUNTED_NONZERO"), None)
+
+
 def ratio(runs, num, den, scale=1.0):
-    """Median over RUNs that carry both events of num/(scale*den)."""
+    """Median over RUNs that carry both events of num/(scale*den); the verdict instead if either is unusable."""
+    bad = unusable(runs, num, den)
+    if bad:
+        return bad
     return med([r["ev"][num] / (scale * r["ev"][den]) for r in runs.values()
                 if num in r["ev"] and den in r["ev"] and r["ev"][den]])
 
@@ -127,7 +139,8 @@ def stage3(runs, n_mac, vela):
     a = med(values(runs, ACTIVE))
     by = {k: med(values(runs, e)) * BEAT_BYTES if values(runs, e) else None for k, e in {**BEATS, **PORTS}.items()}
     sram = (by["sram_rd"] or 0) + (by["sram_wr"] or 0); ext = (by["ext_rd"] or 0) + (by["ext_wr"] or 0)
-    imb = lambda x, y: abs(x - y) / (x + y) if x is not None and y is not None and (x + y) else None
+    def imb(p, q):
+        return unusable(runs, PORTS[p], PORTS[q]) or abs(by[p] - by[q]) / (by[p] + by[q])
     out = dict(sram_bytes=sram, ext_bytes=ext, total_bytes=sram + ext, bytes_per_mac=(sram + ext) / n_mac,
                sram_bw_bytes_per_cycle=sram / a, ext_bw_bytes_per_cycle=ext / a,
                sram_rd_burst=ratio(runs, 130, 128), ext_rd_burst=ratio(runs, 386, 384),
@@ -135,10 +148,10 @@ def stage3(runs, n_mac, vela):
                sram_wr_beat_stall=ratio(runs, 137, ACTIVE, 2), ext_wr_beat_stall=ratio(runs, 393, ACTIVE, 2),
                sram_rd_limit=ratio(runs, 142, ACTIVE, 2), sram_wr_limit=ratio(runs, 143, ACTIVE, 2),
                ext_rd_limit=ratio(runs, 398, ACTIVE, 2), ext_wr_limit=ratio(runs, 399, ACTIVE, 2),
-               sram_rd_port_imbalance=imb(by["sram0_rd"], by["sram1_rd"]),
-               ext_rd_port_imbalance=imb(by["ext0_rd"], by["ext1_rd"]),
-               sram_wr_port_imbalance=imb(by["sram0_wr"], by["sram1_wr"]),
-               ext_wr_port_imbalance=imb(by["ext0_wr"], by["ext1_wr"]),
+               sram_rd_port_imbalance=imb("sram0_rd", "sram1_rd"),
+               ext_rd_port_imbalance=imb("ext0_rd", "ext1_rd"),
+               sram_wr_port_imbalance=imb("sram0_wr", "sram1_wr"),
+               ext_wr_port_imbalance=imb("ext0_wr", "ext1_wr"),
                vela_sram_bytes=vela.get("sram_total_bytes"), vela_dram_bytes=vela.get("dram_total_bytes"))
     out.update({f"{k}_bytes": v for k, v in by.items() if k in PORTS})
     return out

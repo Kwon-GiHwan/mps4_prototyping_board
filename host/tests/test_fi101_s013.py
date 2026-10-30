@@ -40,6 +40,32 @@ class Stage0(unittest.TestCase):
         r = runs(run(active=100, mac=50), run(active=200, mac=50))
         self.assertEqual(S.ratio(r, 48, 35), (0.5 + 0.25) / 2)
 
+    def test_ratio_refuses_events_not_counted_nonzero(self):
+        """Contract: an event that is not COUNTED_NONZERO is not used in a ratio; the cell carries its verdict."""
+        r = runs(run(mac=0), run(mac=0))
+        self.assertEqual(S.ratio(r, 48, 35), "COUNTED_ZERO")
+        self.assertEqual(S.ratio(runs(run(mac=0), run(mac=5)), 48, 35), "INCONSISTENT")
+        self.assertEqual(S.ratio(runs(run(), run()), 48, 35, ), 0.5)
+        self.assertEqual(S.ratio(runs(run(), run()), 35, 48), 2.0)
+        self.assertEqual(S.ratio(runs(run(active=0), run(active=0)), 48, 35), "COUNTED_ZERO")   # denominator
+        ovf = run(); ovf["ovf"] = {48}
+        self.assertEqual(S.ratio(runs(run(), ovf), 48, 35), "OVERFLOW")
+        self.assertEqual(S.ratio(runs(run(), run()), 99, 35), "NOT_OBSERVED")
+
+    def test_stage3_cells_carry_verdicts(self):
+        def r3(ext0_wr):
+            x = run()
+            x["ev"].update({e: 4 for e in (128, 384, 131, 387, 137, 393, 142, 143, 398, 399, *S.PORTS.values())})
+            x["ev"].update({143: 0, 393: 0, 647: ext0_wr})
+            return x
+        out = S.stage3(runs(r3(0), r3(0)), 1000, {})
+        self.assertEqual(out["sram_wr_limit"], "COUNTED_ZERO")
+        self.assertEqual(out["ext_wr_beat_stall"], "COUNTED_ZERO")
+        self.assertEqual(out["ext_wr_port_imbalance"], "COUNTED_ZERO")
+        self.assertEqual(out["ext0_wr_bytes"], 0)                       # a byte count is not a ratio
+        self.assertEqual(out["sram_rd_port_imbalance"], 0.0)
+        self.assertEqual(S.stage3(runs(r3(0), r3(4)), 1000, {})["ext_wr_port_imbalance"], "INCONSISTENT")
+
 
 def brun(active=100, mac=50, beats=None, valid=True, set_id=2):
     ev = {35: active, 48: mac}
