@@ -39,6 +39,15 @@ All seven models pass every check: `mac_active + mac_stalled_by_ib ≤ npu_activ
 rnnoise's `w_or_acc` 0.227 vs `by_w` 0.228 passes only within it). The "or" events behave as unions of their parts.
 `dpu_over_mac` is 0.75–1.00, not 1.000 as on the single-operator Stage 2A (2026-10): it carries information on models.
 
+## RUN-to-RUN stability (`run_spread.csv`, step 2A-F1)
+
+Per indicator and model, the range over the 8 measured RUNs. Median relative range (max − min) / median: **1.5 %**
+(97 numeric cells). Wide only where the ratio is tiny (`mac_stalled_by_acc` kws 0.010–0.019, ad 0.001–0.005) and on
+rnnoise (stalls ±10 %, a 50k-cycle model). The model separations used below hold RUN by RUN: MAC stalled by IB
+0.271–0.342 (vww4, mobilenet, yolo) vs ≤ 0.155 (ad, kws, rnnoise, wav2letter); blockdep vww4 0.517–0.520 > rnnoise
+0.385–0.428 > yolo 0.346–0.348 > kws 0.247–0.267 > mobilenet, ad ≈ 0.125 > wav2letter 0.002. yolo vs mobilenet on IB
+(0.336–0.342 vs 0.333–0.334) do not overlap but differ by ~1 %: not a meaningful ranking.
+
 ## Reading — POST_HOC_DESCRIPTIVE
 
 1. **A stall ratio is not a bottleneck by itself.** Stalled cycles are counted while the unit is not active: rnnoise AO

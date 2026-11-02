@@ -50,8 +50,16 @@ def checks(runs, row):
     }
 
 
+def spread(runs, n, den):
+    """RUN-to-RUN range of one ratio: (min, max, (max - min) / median); None unless both events COUNTED_NONZERO."""
+    if S.unusable(runs, n, den):
+        return None
+    xs = [r["ev"][n] / r["ev"][den] for r in runs.values() if n in r["ev"] and den in r["ev"] and r["ev"][den]]
+    return min(xs), max(xs), (max(xs) - min(xs)) / S.med(xs)
+
+
 def main():
-    rows, chk = [], []
+    rows, chk, spr = [], [], []
     for d in sorted(RAW.glob("*/*")):
         runs = S.load_runs(d, 2)
         if not runs:
@@ -60,7 +68,11 @@ def main():
                    **{c: S.ratio(runs, n, den) for c, n, den in INDICATORS})
         rows.append(row)
         chk.append(dict(model=d.name, **checks(runs, row)))
-    for name, rs in (("stage2a_models", rows), ("consistency", chk)):
+        for c, n, den in INDICATORS:
+            sp = spread(runs, n, den)
+            if sp:
+                spr.append(dict(model=d.name, indicator=c, run_min=sp[0], run_max=sp[1], rel_range=sp[2]))
+    for name, rs in (("stage2a_models", rows), ("consistency", chk), ("run_spread", spr)):
         with open(HERE / f"{name}.csv", "w", newline="") as f:
             w = csv.DictWriter(f, fieldnames=list(rs[0]), lineterminator="\n"); w.writeheader(); w.writerows(rs)
     for r in rows:
