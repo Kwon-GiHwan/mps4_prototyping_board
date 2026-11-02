@@ -34,6 +34,9 @@ int __wrap_printf(const char *fmt, ...)
         seam_cycle_stable = st; seam_cycle_retries = rt;
         seam_end_dwt = read_timestamp();
         seam_end_sys = REG32(SYSCNT_READ_CNTCV_LO);
+        seam_ta_cnt_end[0] = ta_perfcnt(0U);  /* S0-3 2c: after the window's own reads */
+        seam_ta_cnt_end[1] = ta_perfcnt(1U);
+        seam_ta_perfctrl = ta_perfctrl_read();
         seam_ovf = npu_pmu_overflow_status();
         for (unsigned k = 0; k < instr_cfg.event_count; k++) {
             seam_ev[k] = pmu_reg_read(NPU_REG_PMEVCNTR_BASE + 4U * k);
@@ -63,7 +66,10 @@ int __wrap_printf(const char *fmt, ...)
     if (measurement_active && instr_cfg.mode == INSTRUMENTATION_EVENTS
         && strcmp(fmt, "Updating POWER_CTRL register with MAC_RAMP_VAR=%d \n") == 0) {
         uint32_t st = 0U, rt = 0U;
-        uint64_t cyc = npu_pmu_read_cycles(&st, &rt);
+        uint64_t cyc;
+        seam_ta_cnt_start[0] = ta_perfcnt(0U);  /* S0-3 2c: before the window's own reads */
+        seam_ta_cnt_start[1] = ta_perfcnt(1U);
+        cyc = npu_pmu_read_cycles(&st, &rt);
         seam_start_cyc_lo = (uint32_t)(cyc & 0xFFFFFFFFU);
         seam_start_cyc_hi = (uint32_t)(cyc >> 32);
         seam_start_dwt = read_timestamp();

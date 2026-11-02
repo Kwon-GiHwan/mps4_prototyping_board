@@ -57,13 +57,31 @@ class Knobs(unittest.TestCase):
 
     def test_ta_profile_is_word_27(self):
         self.assertEqual(pmwl.knobs()[11], pmwl.OFF)
-        for prof in (1, 2):
+        for prof in (1, 2, 3):
             k = pmwl.knobs(ta_profile=prof)
             self.assertEqual([i for i, w in enumerate(k) if w != pmwl.OFF], [11])
             b = pmwl.pack(INFO, b"\x02" * 4, b"\x03" * 2, k)
             self.assertEqual(struct.unpack("<I", b[64 + 11 * 4:64 + 12 * 4])[0], prof)   # header word 27
-        for bad in (0, 3):
+        for bad in (0, 4):
             with self.assertRaises(SystemExit): pmwl.knobs(ta_profile=bad)
+
+    def test_ta_profile_3_is_profile_1_without_dynamic_clocking(self):
+        # S0-3 step 2d: the one change is MODE bit 0 (core-platform timing_adapter.h: dynamic clocking) on both TAs
+        p1, p3 = pmwl.TA_PROFILES[1], pmwl.TA_PROFILES[3]
+        for port in ("sram", "ext"):
+            self.assertEqual(p1[port]["mode"], 1)
+            self.assertEqual(p3[port]["mode"], 0)
+            self.assertEqual({k: v for k, v in p3[port].items() if k != "mode"},
+                             {k: v for k, v in p1[port].items() if k != "mode"})
+
+    def test_ta_perfctrl_is_word_28(self):
+        # bits 5:0 = TA_SRAM PERFCTRL, bits 13:8 = TA_EXT PERFCTRL (MCLK_OFF 19, MCLK_ON 18, CYCLES 1)
+        self.assertEqual(pmwl.word("ta_perfctrl"), 28)
+        self.assertEqual(pmwl.ta_perfctrl_word(19, 19), 0x1313)
+        self.assertEqual(pmwl.ta_perfctrl_word(1, 18), 0x1201)
+        self.assertEqual(pmwl.TA_PERFCTRL_KNOB_MASK, 0x3F3F)
+        for bad in ((64, 0), (0, 64), (-1, 0)):
+            with self.assertRaises(SystemExit): pmwl.ta_perfctrl_word(*bad)
 
 
 

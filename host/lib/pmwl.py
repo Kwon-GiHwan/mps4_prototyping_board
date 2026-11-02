@@ -25,7 +25,7 @@ HEADER_FIELDS = ("magic", "version", "cms_off", "cms_len", "const_off", "const_l
                  "ifm_arena_off", "ifm_len", "ifm_data_off", "ofm_arena_off", "ofm_len", "golden_off",
                  "irq_mask", "total_len")
 KNOB_FIELDS = ("axi_chan", "regioncfg", "qconfig", "mem_attr0", "mem_attr1", "mem_attr2", "mem_attr3",
-               "axi_sram", "axi_ext", "power_ctrl", "fast_base", "ta_profile")   # words 16.., rest reserved
+               "axi_sram", "axi_ext", "power_ctrl", "fast_base", "ta_profile", "ta_perfctrl")   # words 16.., rest reserved
 V2_KNOBS = 7   # version 2 carries knob words 16..23 (axi_chan..mem_attr3 + word 23 reserved in v2)
 IO_WORD = HEADER_WORDS + KNOB_WORDS   # version 4 IO table starts here
 IO_MAX = 10                           # IFMs + OFMs per blob
@@ -60,12 +60,29 @@ TA_PROFILES = {
                      perfctrl=0, mode=1, histbin=0),
         "ext": dict(maxr=0, maxw=32, maxrw=0, rlatency=500, wlatency=250, pulse_on=4000, pulse_off=1000,
                     bwcap=3750, perfctrl=0, mode=1, histbin=0)},
-    2: {  # pass-through: no limits, no added latency, full speed
+    2: {  # "pass-through": no limits, no added latency, full speed; MODE bit 0 (dynamic clocking) still on
         "sram": dict(maxr=0, maxw=0, maxrw=0, rlatency=0, wlatency=0, pulse_on=0xFFFF, pulse_off=0, bwcap=0,
                      perfctrl=0, mode=1, histbin=0),
         "ext": dict(maxr=0, maxw=0, maxrw=0, rlatency=0, wlatency=0, pulse_on=0xFFFF, pulse_off=0, bwcap=0,
                     perfctrl=0, mode=1, histbin=0)},
+    3: {  # S0-3 step 2d: profile 1 with MODE bit 0 = 0 (core-platform timing_adapter.h: "dynamic clocking") off
+        "sram": dict(maxr=8, maxw=8, maxrw=0, rlatency=32, wlatency=32, pulse_on=3999, pulse_off=1, bwcap=4000,
+                     perfctrl=0, mode=0, histbin=0),
+        "ext": dict(maxr=0, maxw=32, maxrw=0, rlatency=500, wlatency=250, pulse_on=4000, pulse_off=1000,
+                    bwcap=3750, perfctrl=0, mode=0, histbin=0)},
 }
+# TA event counter (core-platform timing_adapter.h): PERFCTRL selects, PERFCNT counts (32 bit).
+TA_PERFCNT_OFF = 0x24
+TA_PERFCTRL_EVENTS = {"cycles": 1, "mclk_on": 18, "mclk_off": 19}   # root clock; DUT clock on; DUT clock off
+TA_PERFCTRL_KNOB_MASK = 0x3F3F   # knob word 28: bits 5:0 TA_SRAM PERFCTRL, bits 13:8 TA_EXT PERFCTRL
+
+
+def ta_perfctrl_word(sram: int, ext: int) -> int:
+    """Knob word 28 selecting each TA's event counter (6-bit PERFCTRL fields)."""
+    for v in (sram, ext):
+        if not 0 <= v <= 0x3F:
+            raise SystemExit(f"TA PERFCTRL {v}: outside the 6-bit field")
+    return sram | ext << 8
 
 
 def knobs(axi=None, ports=None, axi_limit=None, power_ctrl=None, fast_base=None, ta_profile=None) -> list[int]:

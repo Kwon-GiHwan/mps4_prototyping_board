@@ -132,7 +132,25 @@ class TimingAdapter(unittest.TestCase):
     def test_profile_values(self):
         want = [pmwl.TA_PROFILES[p][port][reg] for p in sorted(pmwl.TA_PROFILES)
                 for port in ("sram", "ext") for reg, _ in pmwl.TA_REGS]
-        self.assertEqual(c_array("ta_val[2][2][11]", TA), want)
+        self.assertEqual(c_array(f"ta_val[{len(pmwl.TA_PROFILES)}][2][11]", TA), want)
+
+    def test_perfctrl_knob(self):
+        # S0-3 step 2c: word 28 selects both TAs' event counter; refused outside the two 6-bit fields, read back
+        # after writing and again at the CPM seam (a mismatch is PMWL_KNOB_NOT_HONOURED)
+        w = W("ta_perfctrl")
+        self.assertIn(f"if (h[{w}] != PMWL_OFF) {{", BLK)
+        self.assertIn(f"if ((h[{w}] & ~TA_PERFCTRL_KNOB_MASK) != 0U) {{ return PMWL_REFUSED; }}", BLK)
+        self.assertIn(f"if (ta_perfctrl_apply(h[{w}]) != 0U) {{ pmwl_knob_bad = 1U; }}", BLK)
+        self.assertIn(f"if (h[{w}] != PMWL_OFF && seam_ta_perfctrl != h[{w}]) {{ pmwl_knob_bad = 1U; }}", BLK)
+        self.assertLess(BLK.index(f"if (ta_apply(h[{W('ta_profile')}]) != 0U)"), BLK.index("ta_perfctrl_apply(h["))
+        self.assertIn(f"#define TA_PERFCTRL_KNOB_MASK 0x{pmwl.TA_PERFCTRL_KNOB_MASK:04X}U", TA)
+        self.assertIn(f"#define TA_PERFCTRL_OFF 0x{dict(pmwl.TA_REGS)['perfctrl']:02X}U", TA)
+        self.assertIn(f"#define TA_PERFCNT_OFF 0x{pmwl.TA_PERFCNT_OFF:02X}U", TA)
+        # knob layout on the C side: adapter p (0 SRAM, 1 EXT) takes bits 8p+5..8p, the same packing read back
+        self.assertEqual(pmwl.ta_perfctrl_word(0x3F, 0), 0x3F)
+        self.assertIn("v = (knob >> (8U * p)) & 0x3FU;", TA)
+        self.assertIn("return (ta_reg(0U)[TA_PERFCTRL_OFF / 4U] & 0x3FU) | ((ta_reg(1U)[TA_PERFCTRL_OFF / 4U] & 0x3FU) << 8);",
+                      TA)
 
 
 if __name__ == "__main__":

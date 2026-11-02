@@ -182,6 +182,12 @@ typedef struct {
     uint32_t start_sys_cnt;                /* system counter CNTCV[31:0] */
     uint32_t end_sys_cnt;
     uint32_t sys_cntcr;                    /* counter control: enabled?  */
+    /* S0-3 step 2c: TA PERFCNT just outside the inference window (PMWL word 28 selects the events). */
+    uint32_t ta_sram_cnt_start;
+    uint32_t ta_sram_cnt_end;
+    uint32_t ta_ext_cnt_start;
+    uint32_t ta_ext_cnt_end;
+    uint32_t ta_perfctrl_at_seam;          /* both PERFCTRL, knob layout */
 } measurement_record_t;
 
 /* NOTE FOR THE HOST: this is 47, not the 42 it was, and not the "40" the
@@ -190,7 +196,7 @@ typedef struct {
  * The ABI header's total_payload_words is the authority -- never hardcode. */
 /* 47 + 55 appended for milestone 1. The ABI header's total_payload_words
  * remains the authority; hosts skip trailing words they do not know. */
-#define MEASUREMENT_FIELD_COUNT 117U
+#define MEASUREMENT_FIELD_COUNT 122U
 #define MEASUREMENT_PAYLOAD_SIZE (MEASUREMENT_FIELD_COUNT * 4U)
 
 /* ------------------------------------------------------------------------ */
@@ -288,6 +294,7 @@ extern volatile uint32_t ofm_mm_count, ofm_mm_max, ofm_mm_first;
 extern volatile uint32_t seam_power_ctrl;
 extern volatile uint32_t seam_start_fired, seam_start_cyc_lo, seam_start_cyc_hi, seam_start_dwt, seam_end_dwt,
                          seam_start_sys, seam_end_sys, seam_sys_cntcr;
+extern volatile uint32_t seam_ta_cnt_start[2], seam_ta_cnt_end[2], seam_ta_perfctrl;
 extern volatile uint32_t seam_fired, seam_cycle_lo, seam_cycle_hi, seam_cycle_stable,
                          seam_cycle_retries, seam_ovf, seam_ev[RUNNER_MAX_NPU_EVENT_COUNTERS];
 /* run result, read by GET_RESULT and cleared by RESET_RUNNER (proto.c) */

@@ -22,6 +22,7 @@ volatile uint32_t ofm_mm_count, ofm_mm_max, ofm_mm_first; /* model OFM vs refere
 volatile uint32_t seam_power_ctrl; /* POWER_CTRL at the CPM seam (runner-gap A/B) */
 volatile uint32_t seam_start_fired, seam_start_cyc_lo, seam_start_cyc_hi, seam_start_dwt, seam_end_dwt,
                   seam_start_sys, seam_end_sys, seam_sys_cntcr; /* Stage 0 inference window */
+volatile uint32_t seam_ta_cnt_start[2], seam_ta_cnt_end[2], seam_ta_perfctrl; /* S0-3 2c: TA PERFCNT SRAM, EXT */
 volatile uint32_t seam_fired, seam_cycle_lo, seam_cycle_hi, seam_cycle_stable,
                          seam_cycle_retries, seam_ovf, seam_ev[RUNNER_MAX_NPU_EVENT_COUNTERS];
 
@@ -538,6 +539,8 @@ void handle_run(uint32_t sequence)
     ofm_mm_count = 0U; ofm_mm_max = 0U; ofm_mm_first = 0xFFFFFFFFU; seam_power_ctrl = 0U;
     seam_start_fired = 0U; seam_start_cyc_lo = 0U; seam_start_cyc_hi = 0U; seam_start_dwt = 0U; seam_end_dwt = 0U;
     seam_start_sys = 0U; seam_end_sys = 0U; seam_sys_cntcr = 0U;
+    seam_ta_cnt_start[0] = 0U; seam_ta_cnt_start[1] = 0U; seam_ta_cnt_end[0] = 0U; seam_ta_cnt_end[1] = 0U;
+    seam_ta_perfctrl = 0U;
     for (unsigned k = 0; k < RUNNER_MAX_NPU_EVENT_COUNTERS; k++) { seam_ev[k] = 0U; }
     measurement_active = 1U;
     __DSB();
@@ -713,6 +716,11 @@ void handle_run(uint32_t sequence)
                 r.start_sys_cnt       = seam_start_sys;
                 r.end_sys_cnt         = seam_end_sys;
                 r.sys_cntcr           = seam_sys_cntcr;
+                r.ta_sram_cnt_start   = seam_ta_cnt_start[0];
+                r.ta_sram_cnt_end     = seam_ta_cnt_end[0];
+                r.ta_ext_cnt_start    = seam_ta_cnt_start[1];
+                r.ta_ext_cnt_end      = seam_ta_cnt_end[1];
+                r.ta_perfctrl_at_seam = seam_ta_perfctrl;
             } else {
                 /* END_ONLY, unchanged: no event slot is ever armed. */
                 r.event_valid_mask    = 0U;
@@ -1040,6 +1048,11 @@ static void build_measurement_payload(uint8_t *out)
     put32(&c, r->start_sys_cnt);
     put32(&c, r->end_sys_cnt);
     put32(&c, r->sys_cntcr);
+    put32(&c, r->ta_sram_cnt_start);
+    put32(&c, r->ta_sram_cnt_end);
+    put32(&c, r->ta_ext_cnt_start);
+    put32(&c, r->ta_ext_cnt_end);
+    put32(&c, r->ta_perfctrl_at_seam);
 }
 
 void handle_get_measurement(uint32_t sequence)

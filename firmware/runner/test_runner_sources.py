@@ -75,21 +75,38 @@ class ReadSeam(unittest.TestCase):
         for stmt in ("seam_fired = 0U;", "seam_power_ctrl = 0U;", "ofm_mm_count = 0U;", "ofm_mm_first = 0xFFFFFFFFU;",
                      "last_vendor_rc = -1;", "seam_ev[k] = 0U;", "seam_start_fired = 0U;",
                      "seam_start_cyc_lo = 0U;", "seam_start_dwt = 0U;", "seam_end_dwt = 0U;", "seam_start_sys = 0U;",
-                     "seam_end_sys = 0U;"):
+                     "seam_end_sys = 0U;", "seam_ta_cnt_start[0] = 0U;", "seam_ta_cnt_start[1] = 0U;",
+                     "seam_ta_cnt_end[0] = 0U;", "seam_ta_cnt_end[1] = 0U;", "seam_ta_perfctrl = 0U;"):
             self.assertIn(stmt, open_)
+
+    def test_ta_counters_bracket_the_inference_window(self):
+        # S0-3 step 2c: TA PERFCNT is read before the start-seam PMCCNTR read and after the CPM-seam DWT and system
+        # counter reads, so the TA window contains the NPU and CPU windows and the extra MMIO reads lie outside them
+        st = between(IO, "/* Stage 0 start seam", "seam_start_fired++;")
+        self.assertLess(st.index("seam_ta_cnt_start[0] = ta_perfcnt(0U);"), st.index("npu_pmu_read_cycles"))
+        self.assertLess(st.index("seam_ta_cnt_start[1] = ta_perfcnt(1U);"), st.index("npu_pmu_read_cycles"))
+        cpm = between(IO, 'strcmp(fmt, "Testing CPM signals\\n") == 0', "seam_fired++;")
+        end = cpm.index("seam_end_sys = REG32(SYSCNT_READ_CNTCV_LO);")
+        for stmt in ("seam_ta_cnt_end[0] = ta_perfcnt(0U);", "seam_ta_cnt_end[1] = ta_perfcnt(1U);",
+                     "seam_ta_perfctrl = ta_perfctrl_read();"):
+            self.assertLess(end, cpm.index(stmt))
+        self.assertIn("return ta_reg(p)[TA_PERFCNT_OFF / 4U];", TA)
 
 
 class Record(unittest.TestCase):
     def test_events_record_comes_from_the_seam(self):
         self.assertIn("r.npu_pmu_window_cycles_lo = seam_cycle_lo;", MEASURE)
         self.assertIn("r.event_values[i] = seam_ev[i];", MEASURE)
-        self.assertIn("#define MEASUREMENT_FIELD_COUNT 117U", MEASURE_H)
+        self.assertIn("#define MEASUREMENT_FIELD_COUNT 122U", MEASURE_H)
         tail = ("put32(&c, r->read_seam_fired);\n    put32(&c, r->vendor_rc);\n    put32(&c, r->seam_npu_status);\n"
                 "    put32(&c, r->seam_npu_qread);\n    put32(&c, r->ofm_mismatch_count);\n"
                 "    put32(&c, r->ofm_max_abs_diff);\n    put32(&c, r->ofm_first_mismatch);\n"
                 "    put32(&c, r->start_seam_fired);\n    put32(&c, r->start_npu_cycle_lo);\n"
                 "    put32(&c, r->start_npu_cycle_hi);\n    put32(&c, r->start_cpu_ts);\n    put32(&c, r->end_cpu_ts);\n"
-                "    put32(&c, r->start_sys_cnt);\n    put32(&c, r->end_sys_cnt);\n    put32(&c, r->sys_cntcr);\n}")
+                "    put32(&c, r->start_sys_cnt);\n    put32(&c, r->end_sys_cnt);\n    put32(&c, r->sys_cntcr);\n"
+                "    put32(&c, r->ta_sram_cnt_start);\n    put32(&c, r->ta_sram_cnt_end);\n"
+                "    put32(&c, r->ta_ext_cnt_start);\n    put32(&c, r->ta_ext_cnt_end);\n"
+                "    put32(&c, r->ta_perfctrl_at_seam);\n}")
         self.assertIn(tail, MEASURE)
         self.assertEqual(PMWL.count("last_vendor_rc = rc;"), 1)
 

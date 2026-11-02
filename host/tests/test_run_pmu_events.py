@@ -24,5 +24,18 @@ class Stage0Window(unittest.TestCase):
         self.assertEqual(w["infer_npu_cycles"], (1 << 32) + 0x10)
 
 
+class TaCounters(unittest.TestCase):
+    """S0-3 step 2c: TA PERFCNT differences over the inference window (record fields 118-122)."""
+    OLD = [1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1]
+
+    def test_older_record_has_none(self):
+        t = R.ta_window(self.OLD + [None] * 20)
+        self.assertEqual(t, dict(ta_perfctrl_seam=None, ta_sram_count=None, ta_ext_count=None))
+
+    def test_differences_wrap(self):
+        t = R.ta_window(self.OLD + [0xFFFFFFF0, 0x10, 100, 350, 0x1313] + [None] * 20)
+        self.assertEqual(t, dict(ta_perfctrl_seam=0x1313, ta_sram_count=0x20, ta_ext_count=250))
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -40,6 +40,15 @@ def stage0_window(pmu, tr):
                 sys_cntcr=tr[14])
 
 
+def ta_window(tr):
+    """S0-3 step 2c: TA PERFCNT counts over the inference window (record fields 118-122, read just outside the start
+    and CPM seams) and both PERFCTRL selects as read at the CPM seam. None for older images."""
+    if tr[15] is None:
+        return dict(ta_perfctrl_seam=None, ta_sram_count=None, ta_ext_count=None)
+    return dict(ta_perfctrl_seam=tr[19], ta_sram_count=(tr[16] - tr[15]) & 0xFFFFFFFF,
+                ta_ext_count=(tr[18] - tr[17]) & 0xFFFFFFFF)
+
+
 PORT = "/dev/serial/by-id/usb-FTDI_USB__-__Serial_Converter_00FT46259002B-if01-port0"
 ERR_UNSUPPORTED_NAMES = ("ERR_UNSUPPORTED",)
 PROV = dict(board_serial="FTDI-00FT46259002B", fpga_image="FI101-r1p0 (109762 v0100)",
@@ -120,7 +129,7 @@ def main():
                 if m is None or m.pmu is None: raise E.fail_rule("RULE_RECORD_SCHEMA", "no PMU block in record")
                 if m.pmu["record_schema_version"] != 1: raise E.fail_rule("RULE_RECORD_SCHEMA", str(m.pmu["record_schema_version"]))
                 seam = m.trailing[0] if len(m.trailing) >= 1 else None   # amendment 7: field 103
-                tr = list(m.trailing) + [None] * 15
+                tr = list(m.trailing) + [None] * 20
                 win = stage0_window(m.pmu, tr)
                 r = dict(run_rc=rc, required_flags_ok=m.required_flags_ok(), pmu=m.pmu, seam_fired=seam,
                          valid_flags=m.valid_flags, vendor_rc=tr[1], seam_npu_status=tr[2], seam_npu_qread=tr[3],
@@ -135,7 +144,7 @@ def main():
                             "seam_npu_status": (m.trailing[2] if len(m.trailing) >= 3 else None),
                             "seam_npu_qread": (m.trailing[3] if len(m.trailing) >= 4 else None),
                             "ofm_mismatch": (list(m.trailing[4:7]) if len(m.trailing) >= 7 else None),
-                            "host_run_s": link.last_run_host_s, **win})
+                            "host_run_s": link.last_run_host_s, **win, **ta_window(tr)})
                 for slot, ev in enumerate(codes):
                     rows.append(dict(set_id=set_id, rep=rep, slot=slot, ev_type=ev, name=names[ev], in_trm110=ev in trm,
                                      event_value=m.pmu["event_values"][slot] if ok else None,

@@ -110,6 +110,11 @@ int __wrap_test_u85(const u85_eTest eTest, const uint32_t irq_mask, const uint32
         if (h[27] < 1U || h[27] > TA_PROFILE_COUNT) { return PMWL_REFUSED; }
         if (ta_apply(h[27]) != 0U) { pmwl_knob_bad = 1U; }
     }
+    /* S0-3 step 2c: word 28 selects both TAs' event counters (after the profile, which writes PERFCTRL 0). */
+    if (h[28] != PMWL_OFF) {
+        if ((h[28] & ~TA_PERFCTRL_KNOB_MASK) != 0U) { return PMWL_REFUSED; }
+        if (ta_perfctrl_apply(h[28]) != 0U) { pmwl_knob_bad = 1U; }
+    }
     if (h[16] != PMWL_OFF) {
         pmu_reg_write(NPU_REG_PMCAXI_CHAN_ABS, h[16]);
         if (pmu_reg_read(NPU_REG_PMCAXI_CHAN_ABS) != h[16]) { pmwl_knob_bad = 1U; }
@@ -143,6 +148,7 @@ int __wrap_test_u85(const u85_eTest eTest, const uint32_t irq_mask, const uint32
     if (seam_power_ctrl != ((pmwl_power_ctrl == PMWL_OFF) ? PMWL_VENDOR_MAC_RAMP : pmwl_power_ctrl)) {
         pmwl_knob_bad = 1U;  /* POWER_CTRL at the seam is not the requested (or vendor) value */
     }
+    if (h[28] != PMWL_OFF && seam_ta_perfctrl != h[28]) { pmwl_knob_bad = 1U; }  /* select changed in the run */
     pmwl_knob_pending = 0U;
     last_vendor_rc = rc;
     memcpy(w->out_data_0, arena + h[11], (h[12] < out_size) ? h[12] : out_size);
