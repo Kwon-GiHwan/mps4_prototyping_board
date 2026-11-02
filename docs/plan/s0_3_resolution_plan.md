@@ -14,6 +14,7 @@ S0-8 NOT_AVAILABLE(system counter 꺼짐). Stage 2(그룹별 비용, Σgroup vs 
 | 1 | S0-3 상관 분석 | 7개 모델의 CPU−NPU 차이를 Vela 연산 수·명령 수, 채널별 트래픽, DMA(mem2mem), stall 지표와 대조해 가설 후보를 좁힌다. `POST_HOC_DESCRIPTIVE` | 없음 | **완료** |
 | 2 | S0-3 보드 진단 A/B | 1의 결과로 범위 확정 후 계약 고정. 후보: (2a) TA profile 1 ↔ 2 한 변수 비교 — mobilenet, yolo + 대조 rnnoise; (2b) U85 TRM에 클록 게이팅 강제 해제 레지스터가 있으면 on/off 비교(NPU 레지스터 쓰기 = 조건 변경, 별도 계약) | 있음 (2–3 h) | 2a **완료**: TA_NOT_EXPLAINS |
 | 2a′ | TA 레지스터 의미 확인 | 2a의 처리 조건(profile 2: `pulse_on` 0xFFFF, `pulse_off` 0, `bwcap` 0, 한도·지연 0, mode 1)이 실제로 "제한 없음"인지 timing adapter 소스·문서로 확인. 2b 계약 전에 끝낸다 | 없음 | **완료**: 한도 값은 문서대로지만 MODE bit 0(dynamic clocking)이 두 profile 모두 켜짐 |
+| 2c | TA `MCLK_OFF` 계수 (2a′에서 제안, 2b보다 먼저) | 두 TA PERFCTRL = 19, inference 구간의 NPU 클록 정지 사이클을 세어 CPU−NPU 차이와 비교. profile 1, 7개 모델. 펌웨어 knob·계약 필요 | 있음 | 제안, 승인 대기 |
 | 3 | CPU 클록 독립 확인 (선택) | system counter 활성화(시스템 레지스터 쓰기 → 승인 필요) 또는 긴 고정 루프 vs 호스트 시간. 초 단위 지연 보고에 필요 | 있음 | 대기 |
 | → | 다음 단계 | Stage 2 설계·계약 초안 (S0-3 결론에 따라 비용 시계 결정) | — | 대기 |
 
