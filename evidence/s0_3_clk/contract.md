@@ -86,3 +86,10 @@ both TA counts; `k`; `e`; c2 `MCLK_ON / k` against `infer_npu`; arm d clock-off 
   cycles; that is reported, never compared with MLEK.
 - `MCLK_OFF`'s exact definition on FI101 is taken from core-platform `timing_adapter.h`; no FI101 document was found.
 - The TA window exceeds the CPU window by the TA reads themselves; not corrected.
+
+## Results (recorded 2026-11-03, after boots 137–157) — `results/fi101_s0_3_clk/`
+
+21/21 boots, every measured RUN valid, drift `DRIFT_OK` for all seven models. kws, ad, vww4, yolo, mobilenet:
+`CLOCK_STOP_MATCHES` (e 0.995–1.000) and `MODE0_REMOVES_GAP` → **`CAUSE_CONFIRMED`**. Descriptive: in every c1 RUN both
+TAs' MCLK_OFF equals `infer_cpu − infer_npu` exactly. After the data, `main()` was changed to skip the descriptive
+`clock_off_over_gap` for models without a gap (division by zero on rnnoise); the rules were not changed.

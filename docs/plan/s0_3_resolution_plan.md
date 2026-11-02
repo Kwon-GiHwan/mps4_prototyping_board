@@ -14,7 +14,7 @@ S0-8 NOT_AVAILABLE(system counter 꺼짐). Stage 2(그룹별 비용, Σgroup vs 
 | 1 | S0-3 상관 분석 | 7개 모델의 CPU−NPU 차이를 Vela 연산 수·명령 수, 채널별 트래픽, DMA(mem2mem), stall 지표와 대조해 가설 후보를 좁힌다. `POST_HOC_DESCRIPTIVE` | 없음 | **완료** |
 | 2 | S0-3 보드 진단 A/B | 1의 결과로 범위 확정 후 계약 고정. 후보: (2a) TA profile 1 ↔ 2 한 변수 비교 — mobilenet, yolo + 대조 rnnoise; (2b) U85 TRM에 클록 게이팅 강제 해제 레지스터가 있으면 on/off 비교(NPU 레지스터 쓰기 = 조건 변경, 별도 계약) | 있음 (2–3 h) | 2a **완료**: TA_NOT_EXPLAINS |
 | 2a′ | TA 레지스터 의미 확인 | 2a의 처리 조건(profile 2: `pulse_on` 0xFFFF, `pulse_off` 0, `bwcap` 0, 한도·지연 0, mode 1)이 실제로 "제한 없음"인지 timing adapter 소스·문서로 확인. 2b 계약 전에 끝낸다 | 없음 | **완료**: 한도 값은 문서대로지만 MODE bit 0(dynamic clocking)이 두 profile 모두 켜짐 |
-| 2c | TA `MCLK_OFF` 계수 (2a′에서 제안, 2b보다 먼저) | 두 TA PERFCTRL = 19, inference 구간의 NPU 클록 정지 사이클을 세어 CPU−NPU 차이와 비교. profile 1, 7개 모델. 펌웨어 knob·계약 필요 | 있음 | 제안, 승인 대기 |
+| 2c | TA `MCLK_OFF` 계수 (2a′에서 제안, 2b보다 먼저) | 두 TA PERFCTRL = 19, inference 구간의 NPU 클록 정지 사이클을 세어 CPU−NPU 차이와 비교. profile 1, 7개 모델. 펌웨어 knob·계약 필요. 2d(dynamic clocking 끔) 같은 캠페인에 포함 | 있음 | **완료**: CAUSE_CONFIRMED → S0-3 해소 |
 | 3 | CPU 클록 독립 확인 (선택) | system counter 활성화(시스템 레지스터 쓰기 → 승인 필요) 또는 긴 고정 루프 vs 호스트 시간. 초 단위 지연 보고에 필요 | 있음 | 대기 |
 | → | 다음 단계 | Stage 2 설계·계약 초안 (S0-3 결론에 따라 비용 시계 결정) | — | 대기 |
 
@@ -94,3 +94,16 @@ S0-5는 해소 대상이 아니다: 원인(짧은 모델의 RUN 간 흔들림)�
 - 다음 단계 제안(2b 앞에 둠): **2c TA `MCLK_OFF` 계수** — 두 TA의 PERFCTRL = 19, start seam에서 PERFCNT 0, CPM seam에서
   읽기, profile 1, 7개 모델. 예측: `MCLK_OFF` ≈ `infer_cpu − infer_npu`. 펌웨어 knob·계약 필요. 계수기 선택이 TA 타이밍을
   바꾸지 않는다는 것은 가정이며 drift 확인으로 점검. 2b `CLKFORCE`(NPU 레지스터 쓰기 = 조건 변경)는 그 뒤.
+
+### 2c/2d. TA `MCLK_OFF` 계수 + dynamic clocking 끔 — 완료 2026-11-03 (`results/fi101_s0_3_clk/`)
+
+- Owner 2026-11-02 "원인 알아낼 때 까지 진행해". 펌웨어 `d76acbd`(word 28 TA 계수기 선택, TA profile 3), 이미지
+  `a7e9feeb`, 계약 `evidence/s0_3_clk/contract.md`(`3c71ef6`, boot 137 전 고정, 판정 코드 뮤테이션 23개 사망).
+- boots 137–157, 7개 모델 × (c1 profile 1 MCLK_OFF / c2 profile 1 CYCLES·MCLK_ON / d profile 3), 21/21 부팅 전 RUN 유효.
+- 판정 **CAUSE_CONFIRMED** (`1666fa1`): 5개 모델 모두 CLOCK_STOP_MATCHES(e 0.995–1.000) + MODE0_REMOVES_GAP, drift 7/7 OK.
+- 기술: c1의 56 RUN 전부에서 두 TA의 MCLK_OFF = CPU − NPU, 사이클 단위로 정확히 일치. d에서는 차이 0.
+- **S0-3 해소:** 차이는 TA가 에뮬레이션 지연을 맞추려고 NPU 클록을 멈춘 시간. NPU 사이클 = 에뮬레이션된 시스템(MLEK
+  기준)의 시계 → **Stage 2 비용 시계는 NPU 사이클**. 2b `CLKFORCE`는 불필요(원인 확정). 3(CPU 클록)은 c2에서 TA root
+  clock = CPU clock 관찰로 일부 답함(절대 주파수는 여전히 미확인).
+- 데이터 후 수정: 서술 열 계산의 0 나눗셈(rnnoise) — 판정 규칙 불변, 결과 README에 기록.
+- 다음: Stage 2 설계·계약 초안 (비용 시계 = NPU 사이클, TA profile 1).
