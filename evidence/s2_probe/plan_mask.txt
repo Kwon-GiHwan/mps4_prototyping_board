@@ -1,0 +1,10 @@
+166 kws_micronet_m ctl
+167 kws_micronet_m m_all
+168 kws_micronet_m m_none
+169 kws_micronet_m m_a
+170 kws_micronet_m m_b
+171 mobilenet_v2_1.0_224_INT8 ctl
+172 mobilenet_v2_1.0_224_INT8 m_all
+173 mobilenet_v2_1.0_224_INT8 m_none
+174 mobilenet_v2_1.0_224_INT8 m_a
+175 mobilenet_v2_1.0_224_INT8 m_b
