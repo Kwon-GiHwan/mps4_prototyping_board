@@ -25,7 +25,7 @@ HEADER_FIELDS = ("magic", "version", "cms_off", "cms_len", "const_off", "const_l
                  "ifm_arena_off", "ifm_len", "ifm_data_off", "ofm_arena_off", "ofm_len", "golden_off",
                  "irq_mask", "total_len")
 KNOB_FIELDS = ("axi_chan", "regioncfg", "qconfig", "mem_attr0", "mem_attr1", "mem_attr2", "mem_attr3",
-               "axi_sram", "axi_ext", "power_ctrl", "fast_base", "ta_profile", "ta_perfctrl")   # words 16.., rest reserved
+               "axi_sram", "axi_ext", "power_ctrl", "fast_base", "ta_profile", "ta_perfctrl", "pmclut", "pmu_mask_en")   # words 16.., rest reserved
 V2_KNOBS = 7   # version 2 carries knob words 16..23 (axi_chan..mem_attr3 + word 23 reserved in v2)
 IO_WORD = HEADER_WORDS + KNOB_WORDS   # version 4 IO table starts here
 IO_MAX = 10                           # IFMs + OFMs per blob
@@ -75,6 +75,17 @@ TA_PROFILES = {
 TA_PERFCNT_OFF = 0x24
 TA_PERFCTRL_EVENTS = {"cycles": 1, "mclk_on": 18, "mclk_off": 19}   # root clock; DUT clock on; DUT clock off
 TA_PERFCTRL_KNOB_MASK = 0x3F3F   # knob word 28: bits 5:0 TA_SRAM PERFCTRL, bits 13:8 TA_EXT PERFCTRL
+
+
+PMCLUT_KNOB_MASK = 0xFFFF0001   # knob word 29 = PMCLUT: PCM_LUT_EN_0 bit 0, PMC_LUT_0 bits 31:16 (TRM)
+
+
+def pmclut_word(lut: int) -> int:
+    """Knob word 29: counter 0 counts cycles where bit k of lut is set, k = 8*e3 + 4*e2 + 2*e1 + e0 (events of
+    PMEVTYPER0..3). Knob word 30 = 1 sets PMCR.mask_en (counting gated by NPU_OP_PMU_MASK in the command stream)."""
+    if not 0 <= lut <= 0xFFFF:
+        raise SystemExit(f"PMC_LUT_0 0x{lut:x}: outside the 16-bit field")
+    return lut << 16 | 1
 
 
 def ta_perfctrl_word(sram: int, ext: int) -> int:

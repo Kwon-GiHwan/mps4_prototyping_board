@@ -74,6 +74,15 @@ class Knobs(unittest.TestCase):
             self.assertEqual({k: v for k, v in p3[port].items() if k != "mode"},
                              {k: v for k, v in p1[port].items() if k != "mode"})
 
+    def test_pmclut_is_word_29_and_mask_en_word_30(self):
+        # Stage 2A-F2 / 2B-0: PMCLUT (PCM_LUT_EN_0 bit 0, PMC_LUT_0 bits 31:16) and PMCR.mask_en for NPU_OP_PMU_MASK
+        self.assertEqual((pmwl.word("pmclut"), pmwl.word("pmu_mask_en")), (29, 30))
+        self.assertEqual(pmwl.pmclut_word(0x8888), 0x88880001)
+        self.assertEqual(pmwl.pmclut_word(0xCCCC), 0xCCCC0001)
+        self.assertEqual(pmwl.PMCLUT_KNOB_MASK, 0xFFFF0001)
+        for bad in (-1, 0x10000):
+            with self.assertRaises(SystemExit): pmwl.pmclut_word(bad)
+
     def test_ta_perfctrl_is_word_28(self):
         # bits 5:0 = TA_SRAM PERFCTRL, bits 13:8 = TA_EXT PERFCTRL (MCLK_OFF 19, MCLK_ON 18, CYCLES 1)
         self.assertEqual(pmwl.word("ta_perfctrl"), 28)

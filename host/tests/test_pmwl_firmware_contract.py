@@ -134,6 +134,22 @@ class TimingAdapter(unittest.TestCase):
                 for port in ("sram", "ext") for reg, _ in pmwl.TA_REGS]
         self.assertEqual(c_array(f"ta_val[{len(pmwl.TA_PROFILES)}][2][11]", TA), want)
 
+    def test_pmclut_and_mask_en_knobs(self):
+        # written after the PMU is armed (PMCR.cnt_en = 1, TRM), read back; anything outside the fields is refused
+        c, m = W("pmclut"), W("pmu_mask_en")
+        self.assertIn(f"if (h[{c}] != PMWL_OFF) {{", BLK)
+        self.assertIn(f"if ((h[{c}] & ~PMWL_PMCLUT_MASK) != 0U) {{ return PMWL_REFUSED; }}", BLK)
+        self.assertIn(f"#define PMWL_PMCLUT_MASK 0x{pmwl.PMCLUT_KNOB_MASK:08X}U", BLK)
+        self.assertIn(f"pmu_reg_write(NPU_REG_PMCLUT, h[{c}]);", BLK)
+        self.assertIn(f"if (pmu_reg_read(NPU_REG_PMCLUT) != h[{c}]) {{ pmwl_knob_bad = 1U; }}", BLK)
+        self.assertIn(f"if (h[{m}] != PMWL_OFF) {{", BLK)
+        self.assertIn(f"if (h[{m}] != 1U) {{ return PMWL_REFUSED; }}", BLK)
+        self.assertIn("pmu_reg_write(NPU_REG_PMCR, pmu_reg_read(NPU_REG_PMCR) | NPU_PMCR_MASK_EN_MSK);", BLK)
+        self.assertIn("if ((pmu_reg_read(NPU_REG_PMCR) & NPU_PMCR_MASK_EN_MSK) == 0U) { pmwl_knob_bad = 1U; }", BLK)
+        self.assertIn(f"#define NPU_REG_PMCLUT 0x{0x11B0:04X}U", GEN)
+        self.assertLess(BLK.index(f"if (h[{W('axi_chan')}] != PMWL_OFF) {{"), BLK.index(f"if (h[{c}] != PMWL_OFF) {{"))
+        self.assertLess(BLK.index(f"if (h[{c}] != PMWL_OFF) {{"), BLK.index("rc = __real_test_u85("))
+
     def test_perfctrl_knob(self):
         # S0-3 step 2c: word 28 selects both TAs' event counter; refused outside the two 6-bit fields, read back
         # after writing and again at the CPM seam (a mismatch is PMWL_KNOB_NOT_HONOURED)

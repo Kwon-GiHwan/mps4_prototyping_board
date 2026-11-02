@@ -9,6 +9,7 @@
 #define NPU_PMU_ABI_EVENT_SLOTS NPU_PMU_EVENT_COUNTERS_MAX
 /* PMCAXI_CHAN, absolute offset: PMU block 0x1180 + 0x2C. */
 #define NPU_REG_PMCAXI_CHAN_ABS 0x11ACU
+#define NPU_REG_PMCLUT 0x11B0U /* TRM PMCLUT: PCM_LUT_EN_0 [0], PMC_LUT_0 [31:16] */
 
 extern volatile uint32_t pmu_mmio_read_count;
 extern volatile uint32_t pmu_mmio_write_count;

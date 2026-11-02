@@ -23,6 +23,7 @@ uint32_t pmwl_knob[8]; /* regioncfg qconfig mem_attr0..3 axi_sram axi_ext */
 #define PMWL_VENDOR_MAC_RAMP 2U /* u85.c MAC_RAMP_VAR */
 /* runner-gap: header word 26 = absolute base of fast scratch in on-chip SRAM (MLEK places its
  * .bss.NoInit.ethos_u_cache there). Must lie above the runner's own SRAM image and inside SRAM. */
+#define PMWL_PMCLUT_MASK 0xFFFF0001U /* Stage 2A-F2: header word 29 = PMCLUT */
 #define PMWL_SRAM_END 0x31400000U /* lnk.ld SRAM ORIGIN 0x31000000 + LENGTH 0x00400000 */
 extern char __StackTop[];
 static uint32_t pmwl_power_ctrl = PMWL_OFF;
@@ -118,6 +119,18 @@ int __wrap_test_u85(const u85_eTest eTest, const uint32_t irq_mask, const uint32
     if (h[16] != PMWL_OFF) {
         pmu_reg_write(NPU_REG_PMCAXI_CHAN_ABS, h[16]);
         if (pmu_reg_read(NPU_REG_PMCAXI_CHAN_ABS) != h[16]) { pmwl_knob_bad = 1U; }
+    }
+    /* Stage 2A-F2: counter 0 counts a lookup over events 0-3. Stage 2B-0: word 30 = 1 lets NPU_OP_PMU_MASK in the
+     * command stream gate counting. Both after the PMU is armed (writes need PMCR.cnt_en = 1, TRM). */
+    if (h[29] != PMWL_OFF) {
+        if ((h[29] & ~PMWL_PMCLUT_MASK) != 0U) { return PMWL_REFUSED; }
+        pmu_reg_write(NPU_REG_PMCLUT, h[29]);
+        if (pmu_reg_read(NPU_REG_PMCLUT) != h[29]) { pmwl_knob_bad = 1U; }
+    }
+    if (h[30] != PMWL_OFF) {
+        if (h[30] != 1U) { return PMWL_REFUSED; }
+        pmu_reg_write(NPU_REG_PMCR, pmu_reg_read(NPU_REG_PMCR) | NPU_PMCR_MASK_EN_MSK);
+        if ((pmu_reg_read(NPU_REG_PMCR) & NPU_PMCR_MASK_EN_MSK) == 0U) { pmwl_knob_bad = 1U; }
     }
     pmwl_knob_pending = 0U;
     for (i = 0U; i < 8U; i++) { if (pmwl_knob[i] != PMWL_OFF) { pmwl_knob_pending = 1U; } }
