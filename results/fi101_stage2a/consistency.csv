@@ -1,0 +1,8 @@
+model,mac_active+mac_stalled_by_ib<=npu_active (RUNs),dpu<=mac,"max(w,acc)<=w_or_acc<=w+acc",ob<=bs_or_ob,cb<=ab_or_cb,wd_buf<=wd_stalled
+ad_medium_int8,8/8,True,True,True,True,True
+kws_micronet_m,8/8,True,True,True,True,True
+mobilenet_v2_1.0_224_INT8,8/8,True,True,True,True,True
+rnnoise_INT8,8/8,True,True,True,True,True
+vww4_128_128_INT8,8/8,True,True,True,True,True
+wav2letter_pruned_int8,8/8,True,True,True,True,True
+yolo-fastest_192_face_v4,8/8,True,True,True,True,True
