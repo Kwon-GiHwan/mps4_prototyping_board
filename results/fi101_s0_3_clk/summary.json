@@ -1,0 +1,61 @@
+{
+ "overall": "CAUSE_CONFIRMED",
+ "models": [
+  {
+   "model": "ad_medium_int8",
+   "drift": "DRIFT_OK",
+   "clock_stop": "CLOCK_STOP_MATCHES",
+   "mode0": "MODE0_REMOVES_GAP",
+   "root_per_cpu_cycle": 1.0027848552266274,
+   "clock_off_over_gap": 0.9972228786542672
+  },
+  {
+   "model": "kws_micronet_m",
+   "drift": "DRIFT_OK",
+   "clock_stop": "CLOCK_STOP_MATCHES",
+   "mode0": "MODE0_REMOVES_GAP",
+   "root_per_cpu_cycle": 1.0045748287923635,
+   "clock_off_over_gap": 0.9954460049552873
+  },
+  {
+   "model": "mobilenet_v2_1.0_224_INT8",
+   "drift": "DRIFT_OK",
+   "clock_stop": "CLOCK_STOP_MATCHES",
+   "mode0": "MODE0_REMOVES_GAP",
+   "root_per_cpu_cycle": 1.0002621617943976,
+   "clock_off_over_gap": 0.9997379069163954
+  },
+  {
+   "model": "rnnoise_INT8",
+   "drift": "DRIFT_OK",
+   "clock_stop": "DESCRIPTIVE_ONLY",
+   "mode0": "DESCRIPTIVE_ONLY",
+   "root_per_cpu_cycle": 1.008849898759438,
+   "clock_off_over_gap": null
+  },
+  {
+   "model": "vww4_128_128_INT8",
+   "drift": "DRIFT_OK",
+   "clock_stop": "CLOCK_STOP_MATCHES",
+   "mode0": "MODE0_REMOVES_GAP",
+   "root_per_cpu_cycle": 1.00174217001631,
+   "clock_off_over_gap": 0.9982608598614934
+  },
+  {
+   "model": "wav2letter_pruned_int8",
+   "drift": "DRIFT_OK",
+   "clock_stop": "DESCRIPTIVE_ONLY",
+   "mode0": "DESCRIPTIVE_ONLY",
+   "root_per_cpu_cycle": 1.000113151319893,
+   "clock_off_over_gap": null
+  },
+  {
+   "model": "yolo-fastest_192_face_v4",
+   "drift": "DRIFT_OK",
+   "clock_stop": "CLOCK_STOP_MATCHES",
+   "mode0": "MODE0_REMOVES_GAP",
+   "root_per_cpu_cycle": 1.0007930428675877,
+   "clock_off_over_gap": 0.9992075855510392
+  }
+ ]
+}

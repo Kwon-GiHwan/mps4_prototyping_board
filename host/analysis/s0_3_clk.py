@@ -116,7 +116,8 @@ def main(s013_root, root, out):
         arms = {a: load(root / a / m) for a in ("c1", "c2", "d")}
         v2c, v2d, dr = model_verdicts(ref, arms["c1"], arms["c2"], arms["d"])
         k = clock_scale(arms["c2"])
-        e = explained(arms["c1"], k) if k and usable(arms["c1"], "c1") else None
+        gap_model = v2c not in (None, "UNPROVEN")   # e divides by the gap: models without one are descriptive
+        e = explained(arms["c1"], k) if gap_model and k and usable(arms["c1"], "c1") else None
         rows.append(dict(model=m, drift=dr, clock_stop=v2c or "DESCRIPTIVE_ONLY", mode0=v2d or "DESCRIPTIVE_ONLY",
                          root_per_cpu_cycle=k, clock_off_over_gap=e))
         desc.append(dict(model=m, arm="s013 (profile 1)", **describe(ref)))

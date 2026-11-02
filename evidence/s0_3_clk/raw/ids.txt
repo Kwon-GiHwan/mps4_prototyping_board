@@ -1,0 +1,2 @@
+# S0-3 steps 2c/2d: set B only (traffic). npu_active (35) is the drift anchor.
+35 128 130 132 135 384 386 391
