@@ -13,6 +13,7 @@ S0-8 NOT_AVAILABLE(system counter 꺼짐). Stage 2(그룹별 비용, Σgroup vs 
 | 0 | 결과표 규칙 위반 수정 | 계약 규칙 "`COUNTED_NONZERO`가 아닌 이벤트는 비율에 쓰지 않는다"를 어긴 칸(`stage3.csv`, `unit_stalls.csv`: stall 한도 142/143/398/399, 쓰기 stall 137/393, 54/69/72, EXT 쓰기 포트 647/663 불균형)을 판정 라벨로 바꾸고, 분석 코드에 규칙과 시험(뮤테이션 포함)을 넣는다 | 없음 | **완료** |
 | 1 | S0-3 상관 분석 | 7개 모델의 CPU−NPU 차이를 Vela 연산 수·명령 수, 채널별 트래픽, DMA(mem2mem), stall 지표와 대조해 가설 후보를 좁힌다. `POST_HOC_DESCRIPTIVE` | 없음 | **완료** |
 | 2 | S0-3 보드 진단 A/B | 1의 결과로 범위 확정 후 계약 고정. 후보: (2a) TA profile 1 ↔ 2 한 변수 비교 — mobilenet, yolo + 대조 rnnoise; (2b) U85 TRM에 클록 게이팅 강제 해제 레지스터가 있으면 on/off 비교(NPU 레지스터 쓰기 = 조건 변경, 별도 계약) | 있음 (2–3 h) | 2a **완료**: TA_NOT_EXPLAINS |
+| 2a′ | TA 레지스터 의미 확인 | 2a의 처리 조건(profile 2: `pulse_on` 0xFFFF, `pulse_off` 0, `bwcap` 0, 한도·지연 0, mode 1)이 실제로 "제한 없음"인지 timing adapter 소스·문서로 확인. 2b 계약 전에 끝낸다 | 없음 | 진행 중 |
 | 3 | CPU 클록 독립 확인 (선택) | system counter 활성화(시스템 레지스터 쓰기 → 승인 필요) 또는 긴 고정 루프 vs 호스트 시간. 초 단위 지연 보고에 필요 | 있음 | 대기 |
 | → | 다음 단계 | Stage 2 설계·계약 초안 (S0-3 결론에 따라 비용 시계 결정) | — | 대기 |
 
@@ -51,3 +52,23 @@ S0-5는 해소 대상이 아니다: 원인(짧은 모델의 RUN 간 흔들림)�
   커짐(NPU 구간의 48–160 %). NPU 사이클은 줄었는데 CPU 경과 시간은 6/7 모델에서 늘었다 → NPU 계수 사이클 ≠ 경과 시간.
 - 다음 후보: TA 레지스터 값(profile 2의 `pulse_off` 0, `bwcap` 0 등)의 의미를 문서로 확인(보드 없음),
   2b `CLKFORCE`. 보드 복원·postflight 완료.
+
+#### 2a 특이사항 (2026-11-02 기록, 후속 단계에서 다시 꺼낼 것)
+
+1. **방향이 예상과 반대.** profile 2에서 NPU 계수 사이클은 7개 모델 모두 줄었는데(−14 ~ −80 %) CPU DWT 경과 시간은
+   6/7 모델에서 늘었다(+18 ~ +44 %). rnnoise만 둘 다 줄었다(−80 % / −64 %). 차이(CPU − NPU)는 7개 모델 모두 커졌고,
+   profile 1에서 차이가 없던 rnnoise(0 % → 82 %)·wav2letter(0.3 % → 48 %)도 마찬가지.
+2. **트래픽은 같다.** SRAM·EXT 읽기·쓰기 beat 중앙값 4개가 7개 모델 모두 두 profile에서 동일. 바뀐 것은 시간뿐.
+3. **profile 1 rnnoise는 NPU·CPU 중앙값이 1 사이클 차이**(53,040.5 / 53,039.5, `describe.csv`). 두 계수기가 같은 클록으로 셀 수 있다는
+   방증이지만, 클록 주파수 자체(공칭 50 MHz)는 확인하지 않았다.
+4. **"pass-through"는 검증하지 않은 이름.** profile 2 값은 러너에서 정했고(`firmware/common/ta.c`, `host/lib/pmwl.py`),
+   `pulse_off` 0·`bwcap` 0·`pulse_on` 0xFFFF가 "제한 없음"인지 timing adapter 문서로 확인한 적이 없다 → 2a′.
+5. **해석 가설(시험 안 함):** NPU 계수기가 실행 중 일부 구간에서 멈춘다(클록 게이팅·정지). 멈추는 비율이 TA 설정에
+   따라 달라진다 → 2b `CLKFORCE`가 직접 시험.
+6. **이전 결론에 미치는 영향.** `evidence/ta_ab/`의 "TA 상태가 NPU 사이클을 3.7–7배 바꿈"과 "profile 2 = 최고 속도"는
+   NPU 계수 사이클 기준이다. 경과 시간 기준으로는 확인되지 않았다(이 실험에서는 오히려 느려짐). CLAUDE.md의 문장은
+   "NPU-active cycles"라 틀린 것은 아니지만, 속도로 읽으면 안 된다. CLAUDE.md는 승인 없이 고치지 않는다.
+7. **profile 1(MLEK 조건) 결과는 영향 없음.** 이 실험은 profile 1 데이터를 바꾸지 않았고 drift도 OK.
+8. **확인하지 않은 것:** profile 2 출력(OFM)의 정답 비교, CPU 클록 주파수, `CLKFORCE` 효과.
+9. **과정 오류:** README 표를 손으로 옮겨 최대 0.4 % 틀림 → CSV 값으로 교체(`3a435bc`). "트래픽 동일" 문장은 작성 후
+   CSV로 확인했다.
