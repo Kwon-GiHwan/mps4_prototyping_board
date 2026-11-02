@@ -1,0 +1,8 @@
+model,verdict,measured_runs_p2
+ad_medium_int8,TA_NO_EFFECT,16
+kws_micronet_m,TA_NO_EFFECT,16
+mobilenet_v2_1.0_224_INT8,TA_NO_EFFECT,16
+rnnoise_INT8,DESCRIPTIVE_ONLY,16
+vww4_128_128_INT8,TA_NO_EFFECT,16
+wav2letter_pruned_int8,DESCRIPTIVE_ONLY,16
+yolo-fastest_192_face_v4,TA_NO_EFFECT,16

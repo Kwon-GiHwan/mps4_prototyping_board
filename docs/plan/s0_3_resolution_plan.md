@@ -12,7 +12,7 @@ S0-8 NOT_AVAILABLE(system counter 꺼짐). Stage 2(그룹별 비용, Σgroup vs 
 | --- | --- | --- | --- | --- |
 | 0 | 결과표 규칙 위반 수정 | 계약 규칙 "`COUNTED_NONZERO`가 아닌 이벤트는 비율에 쓰지 않는다"를 어긴 칸(`stage3.csv`, `unit_stalls.csv`: stall 한도 142/143/398/399, 쓰기 stall 137/393, 54/69/72, EXT 쓰기 포트 647/663 불균형)을 판정 라벨로 바꾸고, 분석 코드에 규칙과 시험(뮤테이션 포함)을 넣는다 | 없음 | **완료** |
 | 1 | S0-3 상관 분석 | 7개 모델의 CPU−NPU 차이를 Vela 연산 수·명령 수, 채널별 트래픽, DMA(mem2mem), stall 지표와 대조해 가설 후보를 좁힌다. `POST_HOC_DESCRIPTIVE` | 없음 | **완료** |
-| 2 | S0-3 보드 진단 A/B | 1의 결과로 범위 확정 후 계약 고정. 후보: (2a) TA profile 1 ↔ 2 한 변수 비교 — mobilenet, yolo + 대조 rnnoise; (2b) U85 TRM에 클록 게이팅 강제 해제 레지스터가 있으면 on/off 비교(NPU 레지스터 쓰기 = 조건 변경, 별도 계약) | 있음 (2–3 h) | 다음 (범위 결정 필요) |
+| 2 | S0-3 보드 진단 A/B | 1의 결과로 범위 확정 후 계약 고정. 후보: (2a) TA profile 1 ↔ 2 한 변수 비교 — mobilenet, yolo + 대조 rnnoise; (2b) U85 TRM에 클록 게이팅 강제 해제 레지스터가 있으면 on/off 비교(NPU 레지스터 쓰기 = 조건 변경, 별도 계약) | 있음 (2–3 h) | 2a **완료**: TA_NOT_EXPLAINS |
 | 3 | CPU 클록 독립 확인 (선택) | system counter 활성화(시스템 레지스터 쓰기 → 승인 필요) 또는 긴 고정 루프 vs 호스트 시간. 초 단위 지연 보고에 필요 | 있음 | 대기 |
 | → | 다음 단계 | Stage 2 설계·계약 초안 (S0-3 결론에 따라 비용 시계 결정) | — | 대기 |
 
@@ -41,3 +41,13 @@ S0-5는 해소 대상이 아니다: 원인(짧은 모델의 RUN 간 흔들림)�
 - 2단계 후보(시험 안 함): (a) TA_SRAM — profile 1 ↔ 2, 기존 knob; (b) `CLKFORCE`(0x140, 드라이버 헤더에 "force clocks
   on for clock gating", 드라이버·러너 둘 다 쓰지 않음) — 펌웨어 knob 필요; (c) CPU와 on-chip SRAM 공유(러너는 캐시 끈
   채 on-chip SRAM에서 busy-poll) — 펌웨어 변경 필요.
+
+### 2a. TA profile 1 ↔ 2 — 완료 2026-11-02 (`results/fi101_s0_3_ta/`)
+
+- Owner 결정: 7개 모델 전부. 계약 `evidence/s0_3_ta/contract.md`(aadc143, boot 129 전 고정), 판정 코드
+  `host/analysis/s0_3_ta.py`(5619e79, 데이터 전 커밋; 뮤테이션 12개 중 1개 생존 → 시험 추가 후 사망).
+- 이미지 `2bb04bfa` 배포 확인(evidence_s03ta_deploy), boots 129(mobilenet profile 1 drift) + 130–136(profile 2).
+- 판정: drift OK, 5개 모델 모두 TA_NO_EFFECT → **TA_NOT_EXPLAINS**. 기술: profile 2에서 차이가 7개 모델 모두 크게
+  커짐(NPU 구간의 48–160 %). NPU 사이클은 줄었는데 CPU 경과 시간은 6/7 모델에서 늘었다 → NPU 계수 사이클 ≠ 경과 시간.
+- 다음 후보: TA 레지스터 값(profile 2의 `pulse_off` 0, `bwcap` 0 등)의 의미를 문서로 확인(보드 없음),
+  2b `CLKFORCE`. 보드 복원·postflight 완료.

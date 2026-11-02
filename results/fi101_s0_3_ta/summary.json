@@ -1,0 +1,41 @@
+{
+ "drift": "DRIFT_OK",
+ "overall": "TA_NOT_EXPLAINS",
+ "models": [
+  {
+   "model": "ad_medium_int8",
+   "verdict": "TA_NO_EFFECT",
+   "measured_runs_p2": 16
+  },
+  {
+   "model": "kws_micronet_m",
+   "verdict": "TA_NO_EFFECT",
+   "measured_runs_p2": 16
+  },
+  {
+   "model": "mobilenet_v2_1.0_224_INT8",
+   "verdict": "TA_NO_EFFECT",
+   "measured_runs_p2": 16
+  },
+  {
+   "model": "rnnoise_INT8",
+   "verdict": "DESCRIPTIVE_ONLY",
+   "measured_runs_p2": 16
+  },
+  {
+   "model": "vww4_128_128_INT8",
+   "verdict": "TA_NO_EFFECT",
+   "measured_runs_p2": 16
+  },
+  {
+   "model": "wav2letter_pruned_int8",
+   "verdict": "DESCRIPTIVE_ONLY",
+   "measured_runs_p2": 16
+  },
+  {
+   "model": "yolo-fastest_192_face_v4",
+   "verdict": "TA_NO_EFFECT",
+   "measured_runs_p2": 16
+  }
+ ]
+}

@@ -70,3 +70,9 @@ write and read beats (set B), gap per SRAM write beat.
   conditions (Vela options, knobs, seed, image) are unchanged.
 - Nothing here claims a cause beyond the TA state; the clock-gating (`CLKFORCE`) and CPU/SRAM-sharing candidates stay
   open whatever the outcome.
+
+## Results (recorded 2026-11-02, after boots 129–136) — `results/fi101_s0_3_ta/`
+
+8/8 boots, every measured RUN valid. Drift `DRIFT_OK`. kws, ad, vww4, yolo, mobilenet `TA_NO_EFFECT` → overall
+**`TA_NOT_EXPLAINS`**. Descriptive: under profile 2 the gap grows in all seven models (to 48–160 % of the NPU span) and
+the CPU span grows in 6/7 while the NPU span shrinks. Board restored to `evidence_m6`, postflight passed.
