@@ -39,3 +39,8 @@ Traffic (SRAM/EXT read and write beats) is identical under both profiles for eve
   about counted cycles, not elapsed time. Profile-1 conclusions (MLEK condition) are unaffected by this experiment.
 
 CPU cycles are DWT at a nominal, unverified 50 MHz (S0-8 NOT_AVAILABLE).
+
+## Limit found afterwards (2026-11-02, step 2a′, `ta_semantics.md`)
+
+Both profiles set TA MODE bit 0 ("enable dynamic clocking to avoid underrun", core-platform `timing_adapter.h`). This
+experiment varied only the limit and latency fields; `TA_NOT_EXPLAINS` does not cover the dynamic-clocking bit.

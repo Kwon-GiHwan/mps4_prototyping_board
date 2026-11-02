@@ -13,7 +13,7 @@ S0-8 NOT_AVAILABLE(system counter 꺼짐). Stage 2(그룹별 비용, Σgroup vs 
 | 0 | 결과표 규칙 위반 수정 | 계약 규칙 "`COUNTED_NONZERO`가 아닌 이벤트는 비율에 쓰지 않는다"를 어긴 칸(`stage3.csv`, `unit_stalls.csv`: stall 한도 142/143/398/399, 쓰기 stall 137/393, 54/69/72, EXT 쓰기 포트 647/663 불균형)을 판정 라벨로 바꾸고, 분석 코드에 규칙과 시험(뮤테이션 포함)을 넣는다 | 없음 | **완료** |
 | 1 | S0-3 상관 분석 | 7개 모델의 CPU−NPU 차이를 Vela 연산 수·명령 수, 채널별 트래픽, DMA(mem2mem), stall 지표와 대조해 가설 후보를 좁힌다. `POST_HOC_DESCRIPTIVE` | 없음 | **완료** |
 | 2 | S0-3 보드 진단 A/B | 1의 결과로 범위 확정 후 계약 고정. 후보: (2a) TA profile 1 ↔ 2 한 변수 비교 — mobilenet, yolo + 대조 rnnoise; (2b) U85 TRM에 클록 게이팅 강제 해제 레지스터가 있으면 on/off 비교(NPU 레지스터 쓰기 = 조건 변경, 별도 계약) | 있음 (2–3 h) | 2a **완료**: TA_NOT_EXPLAINS |
-| 2a′ | TA 레지스터 의미 확인 | 2a의 처리 조건(profile 2: `pulse_on` 0xFFFF, `pulse_off` 0, `bwcap` 0, 한도·지연 0, mode 1)이 실제로 "제한 없음"인지 timing adapter 소스·문서로 확인. 2b 계약 전에 끝낸다 | 없음 | 진행 중 |
+| 2a′ | TA 레지스터 의미 확인 | 2a의 처리 조건(profile 2: `pulse_on` 0xFFFF, `pulse_off` 0, `bwcap` 0, 한도·지연 0, mode 1)이 실제로 "제한 없음"인지 timing adapter 소스·문서로 확인. 2b 계약 전에 끝낸다 | 없음 | **완료**: 한도 값은 문서대로지만 MODE bit 0(dynamic clocking)이 두 profile 모두 켜짐 |
 | 3 | CPU 클록 독립 확인 (선택) | system counter 활성화(시스템 레지스터 쓰기 → 승인 필요) 또는 긴 고정 루프 vs 호스트 시간. 초 단위 지연 보고에 필요 | 있음 | 대기 |
 | → | 다음 단계 | Stage 2 설계·계약 초안 (S0-3 결론에 따라 비용 시계 결정) | — | 대기 |
 
@@ -72,3 +72,24 @@ S0-5는 해소 대상이 아니다: 원인(짧은 모델의 RUN 간 흔들림)�
 8. **확인하지 않은 것:** profile 2 출력(OFM)의 정답 비교, CPU 클록 주파수, `CLKFORCE` 효과.
 9. **과정 오류:** README 표를 손으로 옮겨 최대 0.4 % 틀림 → CSV 값으로 교체(`3a435bc`). "트래픽 동일" 문장은 작성 후
    CSV로 확인했다.
+
+### 2a′. TA 레지스터 의미 확인 — 완료 2026-11-02 (`results/fi101_s0_3_ta/ta_semantics.md`, 보드 없음)
+
+- 근거: MLEK core-platform `timing_adapter.h`/`.c`(02d02901842f), MLEK `docs/sections/timing_adapters.md`,
+  `ta_config_u85_sys_dram_mid.cmake`. FI101 application note는 찾지 못함.
+- profile 2의 한도 값(MAXR/W/RW 0 = 무한, latency 0 = 추가 최소 지연 없음, PULSE_OFF 0 = 차단 없음, BWCAP 0 = 무한,
+  MODE 주파수 배율 0 = 최고 속도)은 문서대로 "제한 없음"이 맞다.
+- **그러나 MODE bit 0 = 1 ("enable dynamic clocking to avoid underrun")이 두 profile 모두 켜져 있다.** TA 계수기 이벤트에
+  `MCLK_ON`(18)/`MCLK_OFF`(19) "DUT clock is on/off"가 있다 → TA가 NPU 클록을 멈출 수 있다. MLEK 문서는 같은 비트를
+  "QoS throttling"으로 다르게 설명한다(어느 쪽이 FI101에 맞는지 미확인).
+- **2a의 한계:** 2a는 한도·지연 값만 바꿨고 dynamic clocking 비트는 변수가 아니었다. `TA_NOT_EXPLAINS`는 "한도·지연 값이
+  차이를 없애지 못한다"까지만 뜻한다. 계약 문구 "one variable: the TA state"는 실제보다 넓게 썼다(계약은 수정하지 않고
+  여기와 결과 문서에 기록).
+- 가설(시험 안 함): 실제 FPGA 메모리가 에뮬레이션 지연을 못 맞추면 TA가 NPU 클록을 멈춘다 → NPU `PMCCNTR`은 멈춘 구간을
+  세지 않고 CPU DWT는 센다. SRAM 쓰기 beat와의 순위 일치, profile 2에서 차이 증가를 모두 설명. profile 2에서 CPU 경과
+  시간이 늘어나는 이유는 설명 못 함.
+- **원래 목적(Stage 2 비용 시계)과의 연결:** 가설이 맞으면 NPU `PMCCNTR` = MLEK가 보고하는 "에뮬레이션된 시스템"의 시계이고,
+  S0-3의 기대(NPU 구간 = CPU 구간)가 FI101에서는 틀린 기대가 된다.
+- 다음 단계 제안(2b 앞에 둠): **2c TA `MCLK_OFF` 계수** — 두 TA의 PERFCTRL = 19, start seam에서 PERFCNT 0, CPM seam에서
+  읽기, profile 1, 7개 모델. 예측: `MCLK_OFF` ≈ `infer_cpu − infer_npu`. 펌웨어 knob·계약 필요. 계수기 선택이 TA 타이밍을
+  바꾸지 않는다는 것은 가정이며 drift 확인으로 점검. 2b `CLKFORCE`(NPU 레지스터 쓰기 = 조건 변경)는 그 뒤.
