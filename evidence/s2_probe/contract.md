@@ -81,3 +81,10 @@ that boot's verdicts `UNPROVEN`.
   identity check would show it (CLOSE/FAILS) for event 1 of each set.
 - The `m_*` blobs add one to three command words; `passthrough` bounds their effect for `m_all` only.
 - vww4, yolo, wav2letter OFM correctness not claimed (MLEK goldens pending).
+
+## Amendment 1 (2026-11-03, during the MASK campaign, before any 2B-0 verdict was computed)
+
+Boot 170 (kws `m_b`) failed before any RUN: the runner did not answer the first PING after REBOOT
+(`ProtocolError: timed out waiting for a frame`; boot log shows DDR test PASSED and CPUWAIT cleared; the blob was never
+uploaded). It is re-run as **boot 176** with the same image and the same blob (`9e3841eaae36`), after boot 175, into
+the same evidence root (the failed boot's folder is kept as `m_b_boot170_failed/`). Rules unchanged.

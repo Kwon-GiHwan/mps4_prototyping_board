@@ -1,0 +1,8 @@
+158 kws_micronet_m lut_id
+159 kws_micronet_m lut
+160 ad_medium_int8 lut
+161 rnnoise_INT8 lut
+162 vww4_128_128_INT8 lut
+163 yolo-fastest_192_face_v4 lut
+164 mobilenet_v2_1.0_224_INT8 lut
+165 wav2letter_pruned_int8 lut

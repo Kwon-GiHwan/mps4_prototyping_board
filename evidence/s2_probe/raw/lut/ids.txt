@@ -1,0 +1,13 @@
+# Stage 2A-F2 PMCLUT sets: counter 0 (slot 0) counts the LUT over events 0-3; slot 1 is event 1 counted raw.
+# 1 mac_active AND mac_stalled_by_ib
+48 55 35 53
+# 2 mac_active AND mac_stalled_by_w
+48 53 35 55
+# 3 ao_active AND ao_stalled_by_bs_or_ob
+64 67 35 70
+# 4 wd_active AND wd_stalled
+80 81 35 83
+# 5 npu_active AND cc_stalled_on_blockdep
+35 33 48 64
+# 6 mac_active AND ao_active
+48 64 35 80
