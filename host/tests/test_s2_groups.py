@@ -54,6 +54,10 @@ class Partition(unittest.TestCase):
         self.assertEqual(G.partition(dict(g, CONV=same({35: 700})), TOTAL)[0], "UNPROVEN")           # event missing
         self.assertEqual(G.partition(g, same({}))[0], "UNPROVEN")                                   # nothing to judge
 
+    def test_of_set(self):
+        r = runs([{35: 1}]) | runs([{35: 2}, {35: 3}], s=2)
+        self.assertEqual(sorted(G.of_set(r, 2)), [(2, 3), (2, 4)])
+
     def test_width(self):
         self.assertAlmostEqual(G.width([990, 1000, 1010]), 0.02)
         self.assertEqual(G.width([0, 0]), 0.0)

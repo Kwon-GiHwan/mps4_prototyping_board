@@ -1,0 +1,4 @@
+# Stage 2B-2 group sets (config/fi101_passes.txt): A execution, C memory stall, D unit stall
+35 48 51 53 55 64 80 81
+35 131 137 142 143 387 393 398
+35 33 52 54 67 69 72 83

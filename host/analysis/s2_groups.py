@@ -44,7 +44,7 @@ def width(xs):
 
 
 def partition(groups, total):
-    """Per event key (NPU cycles excluded): sum of the groups' medians = the whole stream's median within max(1 %, the
+    """One PMU set. Per event key (NPU cycles excluded): sum of the groups' medians = the whole stream's median within max(1 %, the
     whole's own RUN width); keys with width > 5 % are not judged. -> (verdict, {key: (sum, total, judged, ok)})."""
     if not valid(total) or not groups or not all(valid(g) for g in groups.values()):
         return "UNPROVEN", {}
@@ -121,6 +121,10 @@ def dw_mac_share(vela_csv):
     return {m: dw[m] / tot[m] for m in tot if tot[m]}
 
 
+def of_set(runs, s):
+    return {k: r for k, r in runs.items() if k[0] == s}
+
+
 def load(d):
     return S.load_runs(d, WARMUP) if (d / "runs.csv").exists() else {}
 
@@ -138,10 +142,13 @@ def main(root, ids, vela_csv, out):
         m = d.name
         total = load(d)
         groups = {p.name[2:]: load(p / m) for p in sorted(root.glob("g_*")) if (p / m).is_dir()}
-        pv, rows = partition(groups, total)
-        v1 = gated(h1(groups, set_a), pv)
+        pv, rows = {}, {}
+        for s in sets:
+            pv[s], r = partition({g: of_set(x, s) for g, x in groups.items()}, of_set(total, s))
+            rows.update(r)
         v2, q = h2(groups, set_a, share.get(m))
-        res[m] = dict(partition=pv, h1=v1, h2=gated(v2, pv), dw_time_over_mac_share=q, groups=sorted(groups))
+        res[m] = dict(partition=pv, h1=gated(h1(groups, set_a), pv[set_a]), h2=gated(v2, pv[set_a]),
+                      dw_time_over_mac_share=q, groups=sorted(groups))
         for (s, e), (sm, tm, j, ok) in rows.items():
             part_rows.append(dict(model=m, set=s, event=e, sum_groups=sm, m_all=tm, judged=j, ok=ok))
         for g, r in [("m_all", total)] + sorted(groups.items()):
@@ -151,7 +158,7 @@ def main(root, ids, vela_csv, out):
                 row.update({f"ev{e}_per_active": ratio(r, s, e) for e in evs if e != NPU_ACTIVE})
                 grp_rows.append(row)
     summary = dict(h1=overall([x["h1"] for x in res.values()]), h2=overall([x["h2"] for x in res.values()]),
-                   partition=overall([x["partition"] for x in res.values()]), models=res)
+                   partition={s: overall([x["partition"][s] for x in res.values()]) for s in sets}, models=res)
     for name, rs in (("partition", part_rows), ("groups", grp_rows)):
         if rs:
             keys = list(dict.fromkeys(k for r in rs for k in r))
