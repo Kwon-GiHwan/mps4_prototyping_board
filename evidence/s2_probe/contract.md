@@ -88,3 +88,11 @@ Boot 170 (kws `m_b`) failed before any RUN: the runner did not answer the first 
 (`ProtocolError: timed out waiting for a frame`; boot log shows DDR test PASSED and CPUWAIT cleared; the blob was never
 uploaded). It is re-run as **boot 176** with the same image and the same blob (`9e3841eaae36`), after boot 175, into
 the same evidence root (the failed boot's folder is kept as `m_b_boot170_failed/`). Rules unchanged.
+
+## Results (recorded 2026-11-03, after boots 158–176) — `results/fi101_stage2_probe/`
+
+`LUT_IDENTITY_EXACT`; overlap: every unit stall ∧ its active = 0 in all seven models (`STALL_WHILE_IDLE`), blockdep ∧
+NPU active = 1.000 (`STALL_WHILE_ACTIVE`). Mask: kws `MASK_DISTURBS` (passthrough fails the 1 % band: npu_active −1.5 %,
+mac_stalled_by_ib +3.9 %, NPU cycles −1.9 %), mobilenet `MASK_WORKS` → overall **`MASK_DISTURBS`**; default state OFF in
+both. Recorded limit: the 1 % band is narrower than kws's own RUN-to-RUN spread; the control and treatment RUN ranges
+overlap for every kws event (descriptive).

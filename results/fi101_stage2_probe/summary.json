@@ -1,0 +1,20 @@
+{
+ "lut_identity": "LUT_IDENTITY_EXACT",
+ "mask_overall": "MASK_DISTURBS",
+ "mask": [
+  {
+   "model": "kws_micronet_m",
+   "passthrough": false,
+   "additive": false,
+   "verdict": "MASK_DISTURBS",
+   "default": "MASK_DEFAULT_OFF"
+  },
+  {
+   "model": "mobilenet_v2_1.0_224_INT8",
+   "passthrough": true,
+   "additive": true,
+   "verdict": "MASK_WORKS",
+   "default": "MASK_DEFAULT_OFF"
+  }
+ ]
+}

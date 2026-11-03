@@ -1,0 +1,2 @@
+# Stage 2B-0: set A (fi101_passes.txt)
+35 48 51 53 55 64 80 81

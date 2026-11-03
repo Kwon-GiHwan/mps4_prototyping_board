@@ -50,10 +50,14 @@ rnnoise (stalls ±10 %, a 50k-cycle model). The model separations used below hol
 
 ## Reading — POST_HOC_DESCRIPTIVE
 
-1. **A stall ratio is not a bottleneck by itself.** Stalled cycles are counted while the unit is not active: rnnoise AO
-   stalled 41–56 % with AO active 0.6 %; wav2letter WD stalled 72 % (WD_BUF 55 %) with WD active 27 % — in the model
-   whose MAC runs at 97 % efficiency. `wd_stalled` is 0.57–0.84 in every Conv model regardless of efficiency, so it does
-   not separate efficient from inefficient models.
+1. **A stall ratio is the unit's held non-active time, not a slowdown of its active work.** *(Corrected 2026-11-03.
+   The first version read "stalls counted while the unit is idle" as "not a bottleneck". PMCLUT (2A-F2,
+   `results/fi101_stage2_probe/`) shows stall and active cycles of a unit never coincide in any model, so this is
+   what a stall event measures: of the cycles a unit is not working, how many it was held for that reason.)*
+   rnnoise AO is held by BS/OB or AB/CB in 41–56 % of the inference while active 0.6 %; wav2letter's WD is held 72 %
+   (WD_BUF 55 %) while active 27 % — in the model whose MAC runs at 97 % efficiency. A held unit is a bottleneck only
+   if the MAC waits on it: `wd_stalled` is 0.57–0.84 in every Conv model regardless of efficiency, so a held WD does
+   not by itself separate efficient from inefficient models.
 2. **MAC input-buffer stall separates models:** 0.28–0.34 for mobilenet, yolo, vww4 (depthwise conv 25–34 % of Vela
    cycles), 0.10–0.15 for kws, ad, ≤ 0.07 for rnnoise and wav2letter.
 3. **Block dependency** (`cc_stalled_on_blockdep`, meaning undocumented) is highest for vww4 (0.52), rnnoise (0.41),
