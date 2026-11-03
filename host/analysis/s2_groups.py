@@ -3,6 +3,9 @@
 
   python3 host/analysis/s2_groups.py <root> <ids file> <vela per-op csv> <out dir>
 
+The mask leaves cycles at group boundaries uncounted when operators overlap (2B-0b): the unattributed share
+(`deficit`) is reported per model and gates H1/H2.
+
 <root>/<arm>/<model>: arm `m_all` (mask on for the whole stream) and one arm `g_<TYPE>` per kernel-op type present in
 the model (CONV, DEPTHWISE, POOL, ELEMENTWISE, RESIZE: only that type's ops counted). Sets from <ids file>, npu_active
 (35) in every set. Vela per-op csv: results/fi101_stage1/vela_block_fill_per_op.csv (MACs per Vela operator).
@@ -16,6 +19,7 @@ import fi101_s013 as S  # noqa: E402
 WARMUP = 2
 FLOOR, NOISY_MIN = 0.01, 0.05
 NPU_ACTIVE, MAC_ACTIVE = 35, 48
+MAX_DEFICIT = 0.05                # |unattributed share of npu_active| above which H1/H2 are not judged
 COSTLY = 2.0                      # time share / MAC share at or above which the depthwise group is "costly"
 VELA_DW = "DepthwiseConv2D"
 
@@ -106,8 +110,18 @@ def overall(vs):
     return vs[0] if len(set(vs)) == 1 else "MIXED"
 
 
-def gated(verdict, part):
-    return verdict if part == "PARTITION_HOLDS" else "UNPROVEN"
+def deficit(groups, total, set_a):
+    """Share of the whole stream's NPU-active cycles (set A) that no group counted: 1 - sum(groups) / whole."""
+    if not valid(total) or not groups or not all(valid(g) for g in groups.values()):
+        return None
+    t = npu_active(total, set_a)
+    if not t:
+        return None
+    return 1 - sum(npu_active(g, set_a) or 0 for g in groups.values()) / t
+
+
+def gated(verdict, d):
+    return verdict if d is not None and abs(d) <= MAX_DEFICIT else "UNPROVEN"
 
 
 def dw_mac_share(vela_csv):
@@ -147,7 +161,8 @@ def main(root, ids, vela_csv, out):
             pv[s], r = partition({g: of_set(x, s) for g, x in groups.items()}, of_set(total, s))
             rows.update(r)
         v2, q = h2(groups, set_a, share.get(m))
-        res[m] = dict(partition=pv, h1=gated(h1(groups, set_a), pv[set_a]), h2=gated(v2, pv[set_a]),
+        d = deficit(groups, total, set_a)
+        res[m] = dict(partition=pv, deficit=d, h1=gated(h1(groups, set_a), d), h2=gated(v2, d),
                       dw_time_over_mac_share=q, groups=sorted(groups))
         for (s, e), (sm, tm, j, ok) in rows.items():
             part_rows.append(dict(model=m, set=s, event=e, sum_groups=sm, m_all=tm, judged=j, ok=ok))

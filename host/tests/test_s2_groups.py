@@ -54,6 +54,16 @@ class Partition(unittest.TestCase):
         self.assertEqual(G.partition(dict(g, CONV=same({35: 700})), TOTAL)[0], "UNPROVEN")           # event missing
         self.assertEqual(G.partition(g, same({}))[0], "UNPROVEN")                                   # nothing to judge
 
+    def test_deficit(self):
+        g = dict(CONV=same({35: 600}), DEPTHWISE=same({35: 370}))
+        self.assertAlmostEqual(G.deficit(g, TOTAL, 1), 0.03)
+        self.assertAlmostEqual(G.deficit(dict(g, POOL=same({35: 60})), TOTAL, 1), -0.03)
+        self.assertIsNone(G.deficit(g, same({35: 0}), 1))
+        self.assertIsNone(G.deficit(g, {}, 1))
+        self.assertIsNone(G.deficit({}, TOTAL, 1))
+        self.assertIsNone(G.deficit(dict(g, POOL=same({35: 1}, valid=False)), TOTAL, 1))
+        self.assertIsNone(G.deficit(g, same({35: 1000}, valid=False), 1))
+
     def test_of_set(self):
         r = runs([{35: 1}]) | runs([{35: 2}, {35: 3}], s=2)
         self.assertEqual(sorted(G.of_set(r, 2)), [(2, 3), (2, 4)])
@@ -89,8 +99,11 @@ class Hypotheses(unittest.TestCase):
         self.assertEqual(G.h2(dict(CONV=same({35: 0}), DEPTHWISE=same({35: 0})), 1, 0.2), ("UNPROVEN", None))
 
     def test_gate_and_overall(self):
-        self.assertEqual(G.gated("DW_LOWER", "PARTITION_HOLDS"), "DW_LOWER")
-        self.assertEqual(G.gated("DW_LOWER", "PARTITION_LEAKS"), "UNPROVEN")
+        self.assertEqual(G.gated("DW_LOWER", 0.05), "DW_LOWER")
+        self.assertEqual(G.gated("DW_LOWER", -0.05), "DW_LOWER")
+        self.assertEqual(G.gated("DW_LOWER", 0.051), "UNPROVEN")
+        self.assertEqual(G.gated("DW_LOWER", -0.051), "UNPROVEN")
+        self.assertEqual(G.gated("DW_LOWER", None), "UNPROVEN")
         self.assertEqual(G.overall(["DW_LOWER", "NOT_APPLICABLE", "DW_LOWER"]), "DW_LOWER")
         self.assertEqual(G.overall(["DW_LOWER", "DW_NOT_LOWER"]), "MIXED")
         self.assertEqual(G.overall(["DW_LOWER", "UNPROVEN"]), "UNPROVEN")
