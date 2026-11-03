@@ -54,6 +54,22 @@ class Insert(unittest.TestCase):
         with self.assertRaises(ValueError): cms.gate(STREAM, 2, 2)
         with self.assertRaises(ValueError): cms.gate(STREAM, 0, 4)
 
+    def test_kernel_types(self):
+        self.assertEqual(cms.kernel_types(STREAM), ["CONV", "DEPTHWISE", "POOL"])
+        self.assertEqual(cms.kernel_types(w(0x4000 | 0x002, 0x0) + STREAM), ["CONV", "DEPTHWISE", "POOL"])  # cmd1 op 2
+
+    def test_gate_ops(self):
+        # ops 0 and 2: two separate windows; ops 1 and 2: one window
+        self.assertEqual(cms.gate_ops(STREAM, {0, 2}),
+                         w(0x10013, CMD1, 0xDEADBEEF, CONV, 0x13, BLOCKDEP, DW, 0x10013, CMD1, 0x1, POOL, 0x13, STOP))
+        self.assertEqual(cms.gate_ops(STREAM, {1, 2}), cms.gate(STREAM, 1, 3)[4:])   # gate() adds a leading disable
+        self.assertEqual(cms.gate_ops(STREAM, {0, 1, 2}),
+                         w(0x10013, CMD1, 0xDEADBEEF, CONV, BLOCKDEP, DW, CMD1, 0x1, POOL, 0x13, STOP))
+        self.assertEqual(cms.gate_ops(STREAM, {1}), w(CMD1, 0xDEADBEEF, CONV, 0x10013, BLOCKDEP, DW, 0x13, CMD1, 0x1,
+                                                      POOL, STOP))
+        for bad in (set(), {3}, {-1}):
+            with self.assertRaises(ValueError): cms.gate_ops(STREAM, bad)
+
 
 INFO = dict(cms=STREAM, const=b"\x01" * 32, arena_size=64, fast_size=16, ifm_off=0, ifm_len=4, ofm_off=8, ofm_len=2)
 INFO4 = dict(INFO, inputs=[(0, 4), (32, 3)], outputs=[(8, 2), (40, 5)])

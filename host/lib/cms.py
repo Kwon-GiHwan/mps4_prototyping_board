@@ -69,6 +69,26 @@ def gate(stream: bytes, first: int, end: int) -> bytes:
     return insert(stream, at)
 
 
+def kernel_types(stream: bytes) -> list[str]:
+    return [KERNEL_OPS[op] for _, _, c, op in instructions(stream) if c == 0 and op in KERNEL_OPS]
+
+
+def gate_ops(stream: bytes, ops: set[int]) -> bytes:
+    """Count only the given kernel ops (as parsed), each from its setup to its operation instruction; runs of
+    consecutive ops share one enable/disable pair. Same overlap caveat as gate()."""
+    b = boundaries(stream)
+    n = len(b) - 1
+    if not ops or not all(0 <= i < n for i in ops):
+        raise ValueError(f"ops {sorted(ops)}: stream has {n} kernel ops")
+    at = {}
+    for i in sorted(ops):
+        if i - 1 not in ops:
+            at[b[i]] = [pmu_mask(1)]
+        if i + 1 not in ops:
+            at[b[i + 1]] = [pmu_mask(0)]
+    return insert(stream, at)
+
+
 def with_cms(blob: bytes, stream: bytes) -> bytes:
     """The same blob (knobs, const, IFMs, goldens, arena layout) repacked around another command stream."""
     h = pmwl.parse_header(blob)
