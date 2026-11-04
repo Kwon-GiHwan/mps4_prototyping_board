@@ -1,0 +1,11 @@
+operator,optimised_ops,hl_commands,stream_ops
+Add,4,3,4
+Asr,2,1,2
+CLZ,1,1,1
+Conv2D,11,11,11
+MaxPool,1,1,1
+Mul,11,5,11
+ReduceSum,1,1,1
+SHL,1,0,1
+Sub,6,3,6
+Transpose,1,1,1

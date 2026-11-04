@@ -1,0 +1,7 @@
+operator,optimised_ops,hl_commands,stream_ops
+Add,12,9,12
+FullyConnected,9,9,9
+MemoryCopy,11,11,11
+Mul,9,3,9
+Quantize,4,4,4
+Sub,3,3,3

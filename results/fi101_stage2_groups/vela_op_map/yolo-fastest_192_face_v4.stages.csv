@@ -1,0 +1,7 @@
+operator,optimised_ops,hl_commands,stream_ops
+Add,18,1,18
+Conv2D,56,56,56
+DepthwiseConv2D,28,28,28
+MaxPool,3,3,3
+MemoryCopy,6,6,6
+Resize,1,1,1

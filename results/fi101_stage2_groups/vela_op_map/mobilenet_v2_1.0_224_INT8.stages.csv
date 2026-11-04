@@ -1,0 +1,12 @@
+operator,optimised_ops,hl_commands,stream_ops
+Add,14,3,14
+Asr,2,1,2
+AvgPool,1,1,1
+CLZ,1,1,1
+Conv2D,36,113,113
+DepthwiseConv2D,17,57,57
+MaxPool,1,1,1
+Mul,11,5,11
+ReduceSum,1,1,1
+SHL,1,0,1
+Sub,6,3,6

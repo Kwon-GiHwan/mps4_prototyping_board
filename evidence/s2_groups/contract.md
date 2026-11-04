@@ -71,3 +71,11 @@ affected verdicts `UNPROVEN`. Medians over measured RUNs.
   (NPU cycles) in a group run counts only while gated and is reported, not summed.
 - Type groups mix very different operators (e.g. POOL holds Vela MemoryCopy in rnnoise/vww4). Not Vela operators.
 - vww4, yolo, wav2letter OFM correctness not claimed (MLEK goldens pending).
+
+## Note 1 (2026-11-04, during the campaign; rules unchanged) — group composition
+
+The section "Groups (2B-1)" said the Vela→stream mapping "is not built" and quoted "mobilenet 69 → 208". The mapping
+was built afterwards from Vela's debug database (`results/fi101_stage2_groups/vela_op_map/`): mobilenet has 65 TFLite
+operators → 91 Vela optimised operators → 208 stream kernel ops (69 was the `--verbose-schedule` count). It describes
+what each group holds (e.g. ELEMENTWISE in wav2letter is entirely the Softmax decomposition); groups, blobs and rules
+are unchanged.
