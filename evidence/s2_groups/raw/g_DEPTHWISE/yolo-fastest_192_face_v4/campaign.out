@@ -1,0 +1,45 @@
+set  1 rep 1 rc=1 vendor_rc=2 seam_status/qread=('0xffff0020', 21280) ofm_mismatch(count,maxdiff,first)=(955, 7, 4) valid=True 
+set  1 rep 2 rc=1 vendor_rc=2 seam_status/qread=('0xffff0020', 21280) ofm_mismatch(count,maxdiff,first)=(955, 7, 4) valid=True 
+set  1 rep 3 rc=1 vendor_rc=2 seam_status/qread=('0xffff0020', 21280) ofm_mismatch(count,maxdiff,first)=(955, 7, 4) valid=True 
+set  1 rep 4 rc=1 vendor_rc=2 seam_status/qread=('0xffff0020', 21280) ofm_mismatch(count,maxdiff,first)=(955, 7, 4) valid=True 
+set  1 rep 5 rc=1 vendor_rc=2 seam_status/qread=('0xffff0020', 21280) ofm_mismatch(count,maxdiff,first)=(955, 7, 4) valid=True 
+set  1 rep 6 rc=1 vendor_rc=2 seam_status/qread=('0xffff0020', 21280) ofm_mismatch(count,maxdiff,first)=(955, 7, 4) valid=True 
+set  1 rep 7 rc=1 vendor_rc=2 seam_status/qread=('0xffff0020', 21280) ofm_mismatch(count,maxdiff,first)=(955, 7, 4) valid=True 
+set  1 rep 8 rc=1 vendor_rc=2 seam_status/qread=('0xffff0020', 21280) ofm_mismatch(count,maxdiff,first)=(955, 7, 4) valid=True 
+set  1 rep 9 rc=1 vendor_rc=2 seam_status/qread=('0xffff0020', 21280) ofm_mismatch(count,maxdiff,first)=(955, 7, 4) valid=True 
+set  1 rep 10 rc=1 vendor_rc=2 seam_status/qread=('0xffff0020', 21280) ofm_mismatch(count,maxdiff,first)=(955, 7, 4) valid=True 
+set  2 rep 1 rc=1 vendor_rc=2 seam_status/qread=('0xffff0020', 21280) ofm_mismatch(count,maxdiff,first)=(955, 7, 4) valid=True 
+set  2 rep 2 rc=1 vendor_rc=2 seam_status/qread=('0xffff0020', 21280) ofm_mismatch(count,maxdiff,first)=(955, 7, 4) valid=True 
+set  2 rep 3 rc=1 vendor_rc=2 seam_status/qread=('0xffff0020', 21280) ofm_mismatch(count,maxdiff,first)=(955, 7, 4) valid=True 
+set  2 rep 4 rc=1 vendor_rc=2 seam_status/qread=('0xffff0020', 21280) ofm_mismatch(count,maxdiff,first)=(955, 7, 4) valid=True 
+set  2 rep 5 rc=1 vendor_rc=2 seam_status/qread=('0xffff0020', 21280) ofm_mismatch(count,maxdiff,first)=(955, 7, 4) valid=True 
+set  2 rep 6 rc=1 vendor_rc=2 seam_status/qread=('0xffff0020', 21280) ofm_mismatch(count,maxdiff,first)=(955, 7, 4) valid=True 
+set  2 rep 7 rc=1 vendor_rc=2 seam_status/qread=('0xffff0020', 21280) ofm_mismatch(count,maxdiff,first)=(955, 7, 4) valid=True 
+set  2 rep 8 rc=1 vendor_rc=2 seam_status/qread=('0xffff0020', 21280) ofm_mismatch(count,maxdiff,first)=(955, 7, 4) valid=True 
+set  2 rep 9 rc=1 vendor_rc=2 seam_status/qread=('0xffff0020', 21280) ofm_mismatch(count,maxdiff,first)=(955, 7, 4) valid=True 
+set  2 rep 10 rc=1 vendor_rc=2 seam_status/qread=('0xffff0020', 21280) ofm_mismatch(count,maxdiff,first)=(955, 7, 4) valid=True 
+set  3 rep 1 rc=1 vendor_rc=2 seam_status/qread=('0xffff0020', 21280) ofm_mismatch(count,maxdiff,first)=(955, 7, 4) valid=True 
+set  3 rep 2 rc=1 vendor_rc=2 seam_status/qread=('0xffff0020', 21280) ofm_mismatch(count,maxdiff,first)=(955, 7, 4) valid=True 
+set  3 rep 3 rc=1 vendor_rc=2 seam_status/qread=('0xffff0020', 21280) ofm_mismatch(count,maxdiff,first)=(955, 7, 4) valid=True 
+set  3 rep 4 rc=1 vendor_rc=2 seam_status/qread=('0xffff0020', 21280) ofm_mismatch(count,maxdiff,first)=(955, 7, 4) valid=True 
+set  3 rep 5 rc=1 vendor_rc=2 seam_status/qread=('0xffff0020', 21280) ofm_mismatch(count,maxdiff,first)=(955, 7, 4) valid=True 
+set  3 rep 6 rc=1 vendor_rc=2 seam_status/qread=('0xffff0020', 21280) ofm_mismatch(count,maxdiff,first)=(955, 7, 4) valid=True 
+set  3 rep 7 rc=1 vendor_rc=2 seam_status/qread=('0xffff0020', 21280) ofm_mismatch(count,maxdiff,first)=(955, 7, 4) valid=True 
+set  3 rep 8 rc=1 vendor_rc=2 seam_status/qread=('0xffff0020', 21280) ofm_mismatch(count,maxdiff,first)=(955, 7, 4) valid=True 
+set  3 rep 9 rc=1 vendor_rc=2 seam_status/qread=('0xffff0020', 21280) ofm_mismatch(count,maxdiff,first)=(955, 7, 4) valid=True 
+set  3 rep 10 rc=1 vendor_rc=2 seam_status/qread=('0xffff0020', 21280) ofm_mismatch(count,maxdiff,first)=(955, 7, 4) valid=True 
+{
+ "runs": 30,
+ "coverage": "RULE_SET_COVERAGE: covered 22/171",
+ "consistency": {
+  "CYCLE_EVENT_VS_PMCCNTR": "UNPROVEN",
+  "NPU_ACTIVE_LE_CYCLE": "PASS"
+ },
+ "verdict_counts": {
+  "COUNTED_NONZERO": 17,
+  "COUNTED_ZERO": 4,
+  "INCONSISTENT": 1,
+  "NOT_OBSERVED": 0
+ },
+ "refusal": null
+}

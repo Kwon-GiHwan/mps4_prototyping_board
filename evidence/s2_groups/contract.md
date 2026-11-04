@@ -79,3 +79,11 @@ was built afterwards from Vela's debug database (`results/fi101_stage2_groups/ve
 operators → 91 Vela optimised operators → 208 stream kernel ops (69 was the `--verbose-schedule` count). It describes
 what each group holds (e.g. ELEMENTWISE in wav2letter is entirely the Softmax decomposition); groups, blobs and rules
 are unchanged.
+
+## Results (recorded 2026-11-05, after boots 212–243) — `results/fi101_stage2_groups/`
+
+960/960 RUNs valid. |deficit| ≤ 1.9 % in all seven. H1 `DW_NOT_LOWER` (5/5 applicable), H2 `MIXED` (`DW_COSTLY` kws,
+ad, vww4, mobilenet; `DW_NOT_COSTLY` yolo). Post-hoc attribution check: ad's CONV group shows a MAC efficiency of 2.85
+(> 1, impossible) while the set-A partition holds → counts are conserved but assigned to the wrong groups; the
+group windows do not follow the operators' execution. H1/H2 stand as computed but are not read as operator-type
+findings.

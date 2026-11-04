@@ -12,7 +12,7 @@ Owner 결정 2026-11-03: Stage 2A 문서(사용자 제공, "Pipeline 활동 및 
 | 2B-0 | 그룹 계측 가능성 | `PMCR.mask_en` + 명령 스트림에 `NPU_OP_PMU_MASK` 삽입(TRM "debug feature", 보드 미검증). 검사: 전체 enable = 마스크 없는 값, (앞 구간) + (뒤 구간) = 전체 | 있음 | **완료**: MASK_DISTURBS (kws, 1 % 기준 < kws 흔들림) / mobilenet MASK_WORKS → 재확인 필요 |
 | 2B-0b | 마스크 재확인 | 7개 모델, 대조 2회(A/A), 대조 자신의 RUN 폭 기준 (`evidence/s2_mask/`) | 있음 | **완료**: MASK_NOT_ADDITIVE (교란 없음 7/7, 합산 3/7) |
 | 2B-1 | 그룹 정의·도구 | 그룹 = 명령 스트림의 연산 유형(`cms.gate_ops`, `make_group_blobs.py`). Vela 연산 매핑(낮은 채움 conv, 작은 의존 블록 그룹)은 2B-2 그룹에 쓰지 않음. 매핑 자체는 2026-11-04 Vela 디버그 DB로 만듦(`results/fi101_stage2_groups/vela_op_map/`) | 없음 | **완료** (유형 그룹 + 그룹 구성표) |
-| 2B-2 | 그룹 측정 | 7개 모델, 그룹별 사이클·활동·stall, Σgroup vs 전체, 미귀속 몫(deficit) (`evidence/s2_groups/`, `da51566`) | 있음 | **진행 중** (boots 212–243) |
+| 2B-2 | 그룹 측정 | 7개 모델, 그룹별 사이클·활동·stall, Σgroup vs 전체, 미귀속 몫(deficit) (`evidence/s2_groups/`, `da51566`) | 있음 | **완료, 해석 보류**: H1 DW_NOT_LOWER, H2 MIXED — 그룹 창이 실행과 어긋남(ad CONV MAC 효율 2.85 > 1) |
 
 2A-F2와 2B-0은 같은 펌웨어 변경(PMCLUT·mask_en knob)을 쓰므로 한 이미지·한 캠페인으로 묶는다(계약은 각각 판정).
 
@@ -64,3 +64,12 @@ Owner 결정 2026-11-03: Stage 2A 문서(사용자 제공, "Pipeline 활동 및 
   rnnoise·vww4·yolo POOL = 대부분 MemoryCopy(데이터 이동).
 - 검증: 이 컴파일의 명령 스트림이 측정 blob과 바이트 동일(7/7), 디버그 DB queue offset = kernel offset, 설치된
   Vela 295개 파일이 wheel RECORD 해시와 일치(무수정).
+
+### 2B-2. 그룹 측정 — 완료 2026-11-05, 해석 보류 (`results/fi101_stage2_groups/`)
+
+- boots 212–243, TA profile 1, 960/960 RUN 유효. deficit ≤ 1.9 % (7/7). 사전 판정 H1 `DW_NOT_LOWER`, H2 `MIXED`.
+- **사후 검사에서 귀속 오류 발견:** ad CONV 그룹의 MAC 효율 2.85(물리적으로 1 초과 불가), 합계는 보존됨 → 계수가
+  다른 그룹으로 배정됨. 마스크 창은 명령 해석 위치 기준인데, 명령 처리기는 연산을 발행하고 다음 명령을 해석하는
+  동안 그 연산이 실행되므로 실행이 다음 창으로 넘어감. 단순 1연산 밀림으로도 안 맞음.
+- 따라서 그룹별 수치·H1/H2는 연산 유형에 대한 결론으로 읽지 않는다. 다음 결정 필요(사용자): 실행을 따라가는
+  창을 찾는 검증 실험(예: 단일 연산 창 + MAC 효율 ≤ 1 검사, 창 위치 이동 A/B) 또는 그룹 귀속 포기.

@@ -1,0 +1,127 @@
+{
+ "h1": "DW_NOT_LOWER",
+ "h2": "MIXED",
+ "partition": {
+  "1": "MIXED",
+  "2": "MIXED",
+  "3": "MIXED"
+ },
+ "models": {
+  "ad_medium_int8": {
+   "partition": {
+    "1": "PARTITION_HOLDS",
+    "2": "PARTITION_LEAKS",
+    "3": "PARTITION_HOLDS"
+   },
+   "deficit": 0.00597944887175339,
+   "h1": "DW_NOT_LOWER",
+   "h2": "DW_COSTLY",
+   "dw_time_over_mac_share": 19.667398077893782,
+   "groups": [
+    "CONV",
+    "DEPTHWISE",
+    "POOL"
+   ]
+  },
+  "kws_micronet_m": {
+   "partition": {
+    "1": "PARTITION_HOLDS",
+    "2": "PARTITION_LEAKS",
+    "3": "PARTITION_HOLDS"
+   },
+   "deficit": 0.008805742008373807,
+   "h1": "DW_NOT_LOWER",
+   "h2": "DW_COSTLY",
+   "dw_time_over_mac_share": 11.643347730003407,
+   "groups": [
+    "CONV",
+    "DEPTHWISE",
+    "POOL"
+   ]
+  },
+  "mobilenet_v2_1.0_224_INT8": {
+   "partition": {
+    "1": "PARTITION_HOLDS",
+    "2": "PARTITION_HOLDS",
+    "3": "PARTITION_LEAKS"
+   },
+   "deficit": 0.0027978246127730033,
+   "h1": "DW_NOT_LOWER",
+   "h2": "DW_COSTLY",
+   "dw_time_over_mac_share": 4.516716023331553,
+   "groups": [
+    "CONV",
+    "DEPTHWISE",
+    "ELEMENTWISE",
+    "POOL"
+   ]
+  },
+  "rnnoise_INT8": {
+   "partition": {
+    "1": "PARTITION_LEAKS",
+    "2": "PARTITION_LEAKS",
+    "3": "PARTITION_LEAKS"
+   },
+   "deficit": 0.018724341644137388,
+   "h1": "NOT_APPLICABLE",
+   "h2": "NOT_APPLICABLE",
+   "dw_time_over_mac_share": null,
+   "groups": [
+    "CONV",
+    "ELEMENTWISE",
+    "POOL"
+   ]
+  },
+  "vww4_128_128_INT8": {
+   "partition": {
+    "1": "PARTITION_LEAKS",
+    "2": "PARTITION_LEAKS",
+    "3": "PARTITION_LEAKS"
+   },
+   "deficit": 0.0030705502059463763,
+   "h1": "DW_NOT_LOWER",
+   "h2": "DW_COSTLY",
+   "dw_time_over_mac_share": 3.0304231527946808,
+   "groups": [
+    "CONV",
+    "DEPTHWISE",
+    "ELEMENTWISE",
+    "POOL"
+   ]
+  },
+  "wav2letter_pruned_int8": {
+   "partition": {
+    "1": "PARTITION_LEAKS",
+    "2": "PARTITION_LEAKS",
+    "3": "PARTITION_LEAKS"
+   },
+   "deficit": 0.0005968014348414208,
+   "h1": "NOT_APPLICABLE",
+   "h2": "NOT_APPLICABLE",
+   "dw_time_over_mac_share": null,
+   "groups": [
+    "CONV",
+    "ELEMENTWISE",
+    "POOL"
+   ]
+  },
+  "yolo-fastest_192_face_v4": {
+   "partition": {
+    "1": "PARTITION_LEAKS",
+    "2": "PARTITION_LEAKS",
+    "3": "PARTITION_LEAKS"
+   },
+   "deficit": -0.0024221068661560707,
+   "h1": "DW_NOT_LOWER",
+   "h2": "DW_NOT_COSTLY",
+   "dw_time_over_mac_share": 1.3836702867988764,
+   "groups": [
+    "CONV",
+    "DEPTHWISE",
+    "ELEMENTWISE",
+    "POOL",
+    "RESIZE"
+   ]
+  }
+ }
+}
