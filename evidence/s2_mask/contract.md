@@ -84,3 +84,20 @@ Validity: as fi101_s013 (model mode incl. `knobs_honoured`). Any invalid measure
 700/700 RUNs valid, no failed boot. A/A holds and passthrough holds in all seven models. Additive holds in ad, yolo,
 mobilenet (`MASK_WORKS`) and fails in kws, rnnoise, vww4, wav2letter (`MASK_NOT_ADDITIVE`) → overall
 **`MASK_NOT_ADDITIVE`**. Every failing difference is a deficit (m_a + m_b < m_all).
+
+## Amendment 1 (2026-11-04, after the Results; verdict unchanged) — the outcome's meaning for Stage 2B
+
+"What the outcomes mean" read `MASK_NOT_ADDITIVE` as "Stage 2B needs another path". Stage 2B-2 proceeds with the mask
+instead, **dropping additivity as a precondition**, for these reasons:
+
+1. The other paths (split command streams, STOP+IRQ between groups) serialise the operators at every group boundary,
+   i.e. remove the overlap the NPU uses (BLOCKDEP, parse-ahead). They change the execution being measured; the mask was
+   shown not to (passthrough and A/A hold in 7/7).
+2. The failure is one-sided and bounded: every miss is a deficit (counts lost at the split, never added), 12–1,980
+   cycles per split. That is a measurable quantity, not an unknown error.
+3. So 2B-2 measures the loss directly (deficit = unattributed share of NPU-active cycles) and judges group comparisons
+   only where |deficit| ≤ 5 % (`evidence/s2_groups/contract.md`, rule 5). Where the deficit is larger the group values
+   are lower bounds and the comparisons are `UNPROVEN`.
+
+What this does **not** claim: that a group's count equals the work of its operators, or that the mask partitions the
+stream exactly. Recorded by the owner's request ("왜 해당 조건을 빼는지도 기록해놔", 2026-11-04).
