@@ -1,0 +1,67 @@
+{
+ "overall": "MASK_NOT_ADDITIVE",
+ "models": {
+  "ad_medium_int8": {
+   "verdict": "MASK_WORKS",
+   "aa": true,
+   "passthrough": true,
+   "additive": true,
+   "noisy": [
+    53,
+    55
+   ]
+  },
+  "kws_micronet_m": {
+   "verdict": "MASK_NOT_ADDITIVE",
+   "aa": true,
+   "passthrough": true,
+   "additive": false,
+   "noisy": [
+    53,
+    55
+   ]
+  },
+  "mobilenet_v2_1.0_224_INT8": {
+   "verdict": "MASK_WORKS",
+   "aa": true,
+   "passthrough": true,
+   "additive": true,
+   "noisy": []
+  },
+  "rnnoise_INT8": {
+   "verdict": "MASK_NOT_ADDITIVE",
+   "aa": true,
+   "passthrough": true,
+   "additive": false,
+   "noisy": [
+    53,
+    55,
+    80,
+    81
+   ]
+  },
+  "vww4_128_128_INT8": {
+   "verdict": "MASK_NOT_ADDITIVE",
+   "aa": true,
+   "passthrough": true,
+   "additive": false,
+   "noisy": []
+  },
+  "wav2letter_pruned_int8": {
+   "verdict": "MASK_NOT_ADDITIVE",
+   "aa": true,
+   "passthrough": true,
+   "additive": false,
+   "noisy": []
+  },
+  "yolo-fastest_192_face_v4": {
+   "verdict": "MASK_WORKS",
+   "aa": true,
+   "passthrough": true,
+   "additive": true,
+   "noisy": [
+    53
+   ]
+  }
+ }
+}

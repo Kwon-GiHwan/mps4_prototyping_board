@@ -1,0 +1,58 @@
+{
+  "blob_sha256": "c2218c4bd52652d46c6c141ea36bc200949402a2936ea0eb39fbccb294237e14",
+  "blob_knobs": [
+    "0xffffffff",
+    "0x0000000a",
+    "0x00000002",
+    "0x00000000",
+    "0x00000000",
+    "0x00000004",
+    "0x00000004",
+    "0x00020f0b",
+    "0x00021f3f",
+    "0x00000000",
+    "0x31100000",
+    "0x00000001",
+    "0xffffffff",
+    "0xffffffff",
+    "0x00000001",
+    "0xffffffff"
+  ],
+  "cms_sha256": "3ea821d9ad2e72b33c996551ff6d9a86a90e4dc8fce950ebb6828d0d739013b9",
+  "ifm_sha256": "6c5409f4d3ead74ef4a473ef793e6d2e380feb0b0e0d7c3cac3c677bc2815483",
+  "golden_sha256": "416635484ed778e6da47ee47367d11cf368dab3a49509e8d3de4ade3e84b046d",
+  "keep_model": true,
+  "validity": "model",
+  "ofm_mismatch_observed": [
+    [
+      0,
+      0
+    ]
+  ],
+  "requested_ids": "all",
+  "provenance": {
+    "board_serial": "FTDI-00FT46259002B",
+    "fpga_image": "FI101-r1p0 (109762 v0100)",
+    "build_id": "0x504d574c",
+    "authorization": "owner-verbal-2026-09-23",
+    "app_sha256": "d0cd47756c0b2a2fdb76b7ad6e3b490a1082619d3687e3adcc264ef88df6c191",
+    "vectors_sha256": "4c11ff9874f31eb06b06d8b035b03e1419af3fd69ed1a0af196f6ae059f2bc8a",
+    "ddr_sha256": "81d37a219a6b4141d0b433796711ab8af2ee2c3c668a28143a3ffe6a574ade98",
+    "host_boot_index": 179,
+    "captured_at_utc": "2026-11-03T11:58:27.211973+00:00"
+  },
+  "runs": 20,
+  "rows": 160,
+  "refusal": null,
+  "consistency": {
+    "CYCLE_EVENT_VS_PMCCNTR": "UNPROVEN",
+    "NPU_ACTIVE_LE_CYCLE": "PASS"
+  },
+  "verdict_counts": {
+    "COUNTED_NONZERO": 8,
+    "COUNTED_ZERO": 0,
+    "INCONSISTENT": 0,
+    "NOT_OBSERVED": 0
+  },
+  "coverage": "RULE_SET_COVERAGE: covered 8/171"
+}

@@ -10,6 +10,7 @@ Owner 결정 2026-11-03: Stage 2A 문서(사용자 제공, "Pipeline 활동 및 
 | 2A-F1 | RUN 간 안정성 | 지표별 RUN 간 범위(min–max, 상대 폭) — 2A 표의 숫자가 모델 차이를 말할 만큼 안정적인가 | 없음 | **완료** |
 | 2A-F2 | stall이 처리부 활동 중인가 쉬는 중인가 | `PMCLUT` 복합 이벤트로 `unit_active AND stall` 직접 계수 → 2A 읽기 1("stall ≠ 병목")을 측정으로 확인. 먼저 같은 RUN 항등 검사(LUT가 단일 이벤트를 고르면 원 계수와 같아야 함)로 기능 검증 | 있음 | **완료**: LUT_IDENTITY_EXACT, stall∧active = 0 (7개 모델) |
 | 2B-0 | 그룹 계측 가능성 | `PMCR.mask_en` + 명령 스트림에 `NPU_OP_PMU_MASK` 삽입(TRM "debug feature", 보드 미검증). 검사: 전체 enable = 마스크 없는 값, (앞 구간) + (뒤 구간) = 전체 | 있음 | **완료**: MASK_DISTURBS (kws, 1 % 기준 < kws 흔들림) / mobilenet MASK_WORKS → 재확인 필요 |
+| 2B-0b | 마스크 재확인 | 7개 모델, 대조 2회(A/A), 대조 자신의 RUN 폭 기준 (`evidence/s2_mask/`) | 있음 | **완료**: MASK_NOT_ADDITIVE (교란 없음 7/7, 합산 3/7) |
 | 2B-1 | 그룹 정의·도구 | Vela 연산 ↔ 명령 스트림 경계 매핑, 그룹(depthwise / 작은 의존 블록 / 낮은 채움 conv / 기준 conv)별 마스크 blob 생성 | 없음 | 대기 |
 | 2B-2 | 그룹 측정 | 7개 모델, 그룹별 사이클·활동·stall, Σgroup vs 전체 | 있음 | 대기 |
 
@@ -34,3 +35,13 @@ Owner 결정 2026-11-03: Stage 2A 문서(사용자 제공, "Pipeline 활동 및 
   (mac_active 등)는 같고, 대조·처리 RUN 범위가 모든 이벤트에서 겹침 → kws 자체 흔들림(2.9 %)보다 좁은 기준이라는
   계약 설계 오류. mobilenet은 `MASK_WORKS`(mac_active 합 정확히 일치, PMCCNTR도 마스크됨, 기본 꺼짐).
 - 다음: 2B-0 재확인(흔들림을 고려한 기준, 짧은 모델 RUN 수 증가, 데이터 전 고정) 후 2B-1.
+
+### 2B-0b. 마스크 재확인 — 완료 2026-11-04 (`results/fi101_stage2_mask/`)
+
+- 계약 `evidence/s2_mask/contract.md`(`fbdeb69`), 이미지 `d0cd4775`, TA profile 1, boots 177–211, 700/700 RUN 유효.
+- 사전 판정 **`MASK_NOT_ADDITIVE`**. 마스크는 실행을 교란하지 않음(7/7 passthrough, A/A 7/7) → 2B-0의 kws 실패는
+  흔들림이었음. 합산은 ad·yolo·mobilenet만 통과, kws·rnnoise·vww4·wav2letter는 분할 경계에서 계수가 빠짐(항상 부족,
+  한 경계당 12–1,980 사이클, 최대 이벤트의 4 %).
+- 결정: 대안(스트림 분할, STOP+IRQ)은 연산 간 겹침을 없애 실행을 바꾼다. 마스크로 2B-2를 하되 **경계 손실을 미귀속
+  몫(deficit)으로 직접 재고**, |deficit| ≤ 5 %인 모델에서만 그룹 비교(H1/H2)를 판정한다. 그룹 = 명령 스트림의 연산 유형
+  (Vela 연산 ↔ 스트림 kernel op은 1:1이 아님: mobilenet 69 → 208).

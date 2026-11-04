@@ -78,3 +78,9 @@ Validity: as fi101_s013 (model mode incl. `knobs_honoured`). Any invalid measure
   "indistinguishable from the control's own variation", not "no effect".
 - `NOISY` keys are reported, not judged.
 - vww4, yolo, wav2letter OFM correctness not claimed (MLEK goldens pending).
+
+## Results (recorded 2026-11-04, after boots 177–211) — `results/fi101_stage2_mask/`
+
+700/700 RUNs valid, no failed boot. A/A holds and passthrough holds in all seven models. Additive holds in ad, yolo,
+mobilenet (`MASK_WORKS`) and fails in kws, rnnoise, vww4, wav2letter (`MASK_NOT_ADDITIVE`) → overall
+**`MASK_NOT_ADDITIVE`**. Every failing difference is a deficit (m_a + m_b < m_all).
