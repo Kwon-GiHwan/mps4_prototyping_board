@@ -103,6 +103,16 @@ class Model(unittest.TestCase):
         del a["u"]
         self.assertEqual(W.model_result(a, ofm(a), CYC)[0], "UNPROVEN")
 
+    def test_patterns(self):
+        a = arms(prev=100, a=600, b=300, nxt=0)
+        a["u"] = runs(800)
+        a["w_B_wait"] = runs(250)
+        r = {(x["set"], x["event"]): x for x in W.patterns(a)}[(1, 48)]
+        self.assertEqual((r["sum4"], r["u"], r["sum4_over_u"]), (1000, 800, 1.25))
+        self.assertEqual((r["share_w_prev"], r["share_w_A"], r["share_w_B"], r["share_w_next"]), (0.1, 0.6, 0.3, 0.0))
+        self.assertEqual(r["w_B_wait"], 250)
+        self.assertNotIn((1, "npu"), {(x["set"], x["event"]) for x in W.patterns(a)})
+
     def test_per_run_pairs_reps(self):
         a = arms(a={3: 1200, 4: 1300, 5: 1250})
         self.assertEqual(sorted(W.per_run(a)), [3, 4, 5])

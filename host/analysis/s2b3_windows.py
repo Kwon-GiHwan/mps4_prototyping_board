@@ -113,6 +113,29 @@ def model_result(arms, ofm, cycles):
     return d[0], d[1], dict(mac_active=med)
 
 
+def patterns(arms):
+    """Descriptive (contract: reported, not judged): per (set, event) of ctl, the four windows' medians, each one's
+    share of their sum, the sum over the union window u, and the wait variant's median."""
+    rows = []
+    for key in keys(arms["ctl"]):
+        if key[1] in (NPU, CPU) or not all(arms.get(a) for a in WINDOWS.values()):
+            continue
+        med = {k: S.med(series(arms[a], key)) for k, a in WINDOWS.items()}
+        if None in med.values():
+            continue
+        tot, u = sum(med.values()), S.med(series(arms.get("u", {}), key))
+        row = dict(set=key[0], event=key[1], ctl=S.med(series(arms["ctl"], key)), sum4=tot, u=u,
+                   sum4_over_u=tot / u if u else None)
+        for k, a in WINDOWS.items():
+            row[a] = med[k]
+            row[f"share_{a}"] = med[k] / tot if tot else None
+        for a in ("w_A_wait", "w_B_wait"):
+            if arms.get(a):
+                row[a] = S.med(series(arms[a], key))
+        rows.append(row)
+    return rows
+
+
 def ofm_signatures(folder):
     """{(set, rep): (mismatch count, max abs diff)} of measured RUNs -> set of distinct signatures."""
     out = {}
@@ -125,7 +148,7 @@ def ofm_signatures(folder):
 def main(root, timeline_dir, out):
     root, out = pathlib.Path(root), pathlib.Path(out)
     out.mkdir(parents=True, exist_ok=True)
-    res, rows = {}, []
+    res, rows, pat = {}, [], []
     for d in sorted((root / "ctl").glob("*")):
         m = d.name
         ops = list(csv.DictReader(open(pathlib.Path(timeline_dir) / f"{m}.csv")))
@@ -135,13 +158,18 @@ def main(root, timeline_dir, out):
         arms = {p.name: S.load_runs(p / m, WARMUP) for p in present}
         ofm = {p.name: ofm_signatures(p / m) for p in present}
         v, k, det = model_result(arms, ofm, cycles)
-        res[m] = dict(verdict=v, offset=k, A=a, B=a + 1, fewest_cycles=cycles, **det)
+        res[m] = dict(verdict=v, offset=k, A=a, B=a + 1, fewest_cycles=cycles, ofm=sorted(ofm.get("ctl", ())), **det)
+        pat += [dict(model=m, **r) for r in patterns(arms)]
         for arm, runs in arms.items():
             for key in keys(runs):
                 rows.append(dict(model=m, arm=arm, set=key[0], key=key[1], median=S.med(series(runs, key)),
                                  width=M.width(series(runs, key))))
     with open(out / "windows.csv", "w", newline="") as f:
         w = csv.DictWriter(f, fieldnames=list(rows[0]), lineterminator="\n"); w.writeheader(); w.writerows(rows)
+    if pat:
+        keys_ = list(dict.fromkeys(k for r in pat for k in r))
+        with open(out / "patterns.csv", "w", newline="") as f:
+            w = csv.DictWriter(f, fieldnames=keys_, lineterminator="\n"); w.writeheader(); w.writerows(pat)
     json.dump(res, open(out / "summary.json", "w"), indent=1, default=str)
     print(json.dumps(res, indent=1, default=str))
 
