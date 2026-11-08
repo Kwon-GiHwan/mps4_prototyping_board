@@ -13,7 +13,7 @@ Owner 결정 2026-11-03: Stage 2A 문서(사용자 제공, "Pipeline 활동 및 
 | 2B-0b | 마스크 재확인 | 7개 모델, 대조 2회(A/A), 대조 자신의 RUN 폭 기준 (`evidence/s2_mask/`) | 있음 | **완료**: MASK_NOT_ADDITIVE (교란 없음 7/7, 합산 3/7) |
 | 2B-1 | 그룹 정의·도구 | 그룹 = 명령 스트림의 연산 유형(`cms.gate_ops`, `make_group_blobs.py`). Vela 연산 매핑(낮은 채움 conv, 작은 의존 블록 그룹)은 2B-2 그룹에 쓰지 않음. 매핑 자체는 2026-11-04 Vela 디버그 DB로 만듦(`results/fi101_stage2_groups/vela_op_map/`) | 없음 | **완료** (유형 그룹 + 그룹 구성표) |
 | 2B-2 | 그룹 측정 | 7개 모델, 그룹별 사이클·활동·stall, Σgroup vs 전체, 미귀속 몫(deficit) (`evidence/s2_groups/`, `da51566`) | 있음 | **완료, 해석 보류**: H1 DW_NOT_LOWER, H2 MIXED — 그룹 창이 실행과 어긋남(ad CONV MAC 효율 2.85 > 1) |
-| 2B-3 | 명령 실행·그룹 귀속 진단 | 명령 발행/완료·겹침 정적 분석, 기존 데이터 재검토(지연 가설), 마스크 창 정렬 진단, 필요 시 장벽 비교 → 귀속 가능성 판정. 7개 모델 같은 규칙 (`docs/plan/stage2b3_plan.md`) | Phase 3부터 | **Phase 1·2 완료** (2026-11-08, `results/fi101_stage2b3/`), 3a 설계 owner 확인 대기 |
+| 2B-3 | 명령 실행·그룹 귀속 진단 | 명령 발행/완료·겹침 정적 분석, 기존 데이터 재검토(지연 가설), 마스크 창 정렬 진단, 필요 시 장벽 비교 → 귀속 가능성 판정. 7개 모델 같은 규칙 (`docs/plan/stage2b3_plan.md`) | Phase 3부터 | **Phase 1·2 완료** (2026-11-08, `results/fi101_stage2b3/`); **3a pilot 완료** (boots 244–273, 4개 모델, `results/fi101_stage2b3/pilot/`), 나머지 3개 모델·3b owner 결정 대기 |
 
 2A-F2와 2B-0은 같은 펌웨어 변경(PMCLUT·mask_en knob)을 쓰므로 한 이미지·한 캠페인으로 묶는다(계약은 각각 판정).
 

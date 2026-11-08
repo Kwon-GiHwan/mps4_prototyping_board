@@ -1,0 +1,93 @@
+{
+ "ad_medium_int8": {
+  "verdict": "NOT_IDENTIFIABLE",
+  "offset": null,
+  "A": 5,
+  "B": 6,
+  "fewest_cycles": {
+   "-1": 4968.0,
+   "0": 19044.0,
+   "1": 4968.0,
+   "2": 19044.0
+  },
+  "ofm": [
+   [
+    "0",
+    "0"
+   ]
+  ],
+  "reason": "static: A's fewest cycles not above its neighbours'"
+ },
+ "mobilenet_v2_1.0_224_INT8": {
+  "verdict": "WINDOW_AMBIGUOUS",
+  "offset": null,
+  "A": 164,
+  "B": 165,
+  "fewest_cycles": {
+   "-1": 0,
+   "0": 10584.0,
+   "1": 1984.5,
+   "2": 4410.0
+  },
+  "ofm": [
+   [
+    "0",
+    "0"
+   ]
+  ],
+  "mac_active": {
+   "-1": 1423.0,
+   "0": 10584.0,
+   "1": 10584.0,
+   "2": 3333.0
+  }
+ },
+ "rnnoise_INT8": {
+  "verdict": "WINDOW_LOCALIZED",
+  "offset": 2,
+  "A": 37,
+  "B": 38,
+  "fewest_cycles": {
+   "-1": 0,
+   "0": 32.0625,
+   "1": 0,
+   "2": 0
+  },
+  "ofm": [
+   [
+    "0",
+    "0"
+   ]
+  ],
+  "mac_active": {
+   "-1": 0.0,
+   "0": 8.0,
+   "1": 0.0,
+   "2": 144.0
+  }
+ },
+ "yolo-fastest_192_face_v4": {
+  "verdict": "WINDOW_AMBIGUOUS",
+  "offset": null,
+  "A": 99,
+  "B": 100,
+  "fewest_cycles": {
+   "-1": 0,
+   "0": 648.0,
+   "1": 0,
+   "2": 0
+  },
+  "ofm": [
+   [
+    "955",
+    "7"
+   ]
+  ],
+  "mac_active": {
+   "-1": 1512.0,
+   "0": 72.0,
+   "1": 648.0,
+   "2": 0.0
+  }
+ }
+}

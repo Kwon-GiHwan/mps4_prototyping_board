@@ -93,3 +93,19 @@ Validity as fi101_s013 (model mode incl. `knobs_honoured`). Medians over measure
 - Fewest cycles are lower bounds from the TRM's peak table; activity of other ops in a window is not bounded from above.
 - The mask's application time is not documented (TRM: "debug feature only"); this pilot observes it, it does not model it.
 - Four models only (owner's pilot). kws, vww4, wav2letter: same rules, later decision.
+
+## Results (appended after boots 244–273; rules above unchanged)
+
+Campaign 2026-11-08 15:36–18:29 UTC (board clock), 30/30 boots `campaign exit=0`, none re-run. TA profile 1.
+Analysis `host/analysis/s2b3_windows.py` as frozen; full report `results/fi101_stage2b3/pilot/README.md`.
+
+| model | M(−1) | M(0) | M(+1) | M(+2) | S | verdict |
+| --- | --- | --- | --- | --- | --- | --- |
+| ad_medium_int8 | 13,912 | 6,095 | 19,835 | 6,143 | 19,044 | NOT_IDENTIFIABLE (static; preconditions also hold) |
+| mobilenet_v2_1.0_224_INT8 | 1,423 | 10,584 | 10,584 | 3,333 | 10,584 | WINDOW_AMBIGUOUS |
+| rnnoise_INT8 | 0 | 8 | 0 | 144 | 32 | WINDOW_LOCALIZED(+2) |
+| yolo-fastest_192_face_v4 | 1,512 | 72 | 648 | 0 | 648 | WINDOW_AMBIGUOUS |
+
+Preconditions held for every model (all RUNs valid, A/A, no CPU disturbance, OFM = ctl in every arm and RUN; ad,
+mobilenet, rnnoise (0, 0) = MLEK golden; yolo (955, 7) = ctl). Per-RUN diagnoses equal the median diagnosis (no
+`UNSTABLE`). No shared offset. None of this attributes counts to an op.

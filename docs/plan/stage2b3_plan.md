@@ -191,6 +191,12 @@ Owner: 6.4 h 전체 대신 pilot 먼저 — ad, yolo, mobilenet, rnnoise. 선정
 검증. MAC 0 연산 창의 mac_active를 귀속 오류의 확정 증거로 쓰지 않는다. 계약 `evidence/s2b3_pilot/contract.md`
 (`dc9b795`, boots 244–273, 약 2.8 h). ad는 A+2(op 7)가 A와 같은 conv라 정적으로 `NOT_IDENTIFIABLE`(데이터 전 기록).
 
+**결과 (boots 244–273, 30/30 exit=0, TA profile 1, `results/fi101_stage2b3/pilot/README.md`)**: ad `NOT_IDENTIFIABLE`(정적),
+mobilenet `WINDOW_AMBIGUOUS`(W(A)=W(B)=10,584 = A의 최소 사이클), rnnoise `WINDOW_LOCALIZED(+2)`(W(A+2) 144 ≥ 32),
+yolo `WINDOW_AMBIGUOUS`(W(A−1) 1,512, W(B) 648 = A의 최소). 전제 조건 4/4 충족, RUN별 안정, 공통 오프셋 없음.
+mobilenet `w_A_wait`: W(A)의 mac_active 중 7,335가 op 164 발행 전(대기 완료 전)에 있음. 사후 기술: mobilenet A−2(op 162)는
+A와 MACs가 같은 conv — 고정 규칙은 A−1·A+1·A+2만 비교했다. 나머지 3개 모델·3b는 owner 결정 대기.
+
 ## Phase 3b 설계안 (owner 2026-11-09: 별도 설계, **보드 실험 미승인**)
 
 Owner: STOP으로 나눈 prefix 실행은 원래 연속 실행과 스케줄이 다를 수 있어 곧바로 ground truth로 쓰지 않는다. 원래 실행을

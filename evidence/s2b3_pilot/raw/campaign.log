@@ -1,0 +1,241 @@
+mcc boot log: 10366 bytes -> /home/gihwan/evsweep/evidence_s2b3_pilot/ctl/ad_medium_int8/mcc_boot.log
+Image loaded from \SOFTWARE\VECTORS.BIN
+Image loaded from \SOFTWARE\APP.BIN
+Image loaded from \SOFTWARE\DDR.BIN
+DDR memory test at 0x70000000: PASSED
+Clearing SCC CPUWAIT (0xFFFFFFFF80000000:0x00000000)
+--- boot244 ad_medium_int8 ctl campaign exit=0
+30
+mcc boot log: 10366 bytes -> /home/gihwan/evsweep/evidence_s2b3_pilot/w_prev/ad_medium_int8/mcc_boot.log
+Image loaded from \SOFTWARE\VECTORS.BIN
+Image loaded from \SOFTWARE\APP.BIN
+Image loaded from \SOFTWARE\DDR.BIN
+DDR memory test at 0x70000000: PASSED
+Clearing SCC CPUWAIT (0xFFFFFFFF80000000:0x00000000)
+--- boot245 ad_medium_int8 w_prev campaign exit=0
+30
+mcc boot log: 10366 bytes -> /home/gihwan/evsweep/evidence_s2b3_pilot/w_A/ad_medium_int8/mcc_boot.log
+Image loaded from \SOFTWARE\VECTORS.BIN
+Image loaded from \SOFTWARE\APP.BIN
+Image loaded from \SOFTWARE\DDR.BIN
+DDR memory test at 0x70000000: PASSED
+Clearing SCC CPUWAIT (0xFFFFFFFF80000000:0x00000000)
+--- boot246 ad_medium_int8 w_A campaign exit=0
+30
+mcc boot log: 10366 bytes -> /home/gihwan/evsweep/evidence_s2b3_pilot/w_B/ad_medium_int8/mcc_boot.log
+Image loaded from \SOFTWARE\VECTORS.BIN
+Image loaded from \SOFTWARE\APP.BIN
+Image loaded from \SOFTWARE\DDR.BIN
+DDR memory test at 0x70000000: PASSED
+Clearing SCC CPUWAIT (0xFFFFFFFF80000000:0x00000000)
+--- boot247 ad_medium_int8 w_B campaign exit=0
+30
+mcc boot log: 10366 bytes -> /home/gihwan/evsweep/evidence_s2b3_pilot/w_next/ad_medium_int8/mcc_boot.log
+Image loaded from \SOFTWARE\VECTORS.BIN
+Image loaded from \SOFTWARE\APP.BIN
+Image loaded from \SOFTWARE\DDR.BIN
+DDR memory test at 0x70000000: PASSED
+Clearing SCC CPUWAIT (0xFFFFFFFF80000000:0x00000000)
+--- boot248 ad_medium_int8 w_next campaign exit=0
+30
+mcc boot log: 10366 bytes -> /home/gihwan/evsweep/evidence_s2b3_pilot/u/ad_medium_int8/mcc_boot.log
+Image loaded from \SOFTWARE\VECTORS.BIN
+Image loaded from \SOFTWARE\APP.BIN
+Image loaded from \SOFTWARE\DDR.BIN
+DDR memory test at 0x70000000: PASSED
+Clearing SCC CPUWAIT (0xFFFFFFFF80000000:0x00000000)
+--- boot249 ad_medium_int8 u campaign exit=0
+30
+mcc boot log: 10366 bytes -> /home/gihwan/evsweep/evidence_s2b3_pilot/ctl2/ad_medium_int8/mcc_boot.log
+Image loaded from \SOFTWARE\VECTORS.BIN
+Image loaded from \SOFTWARE\APP.BIN
+Image loaded from \SOFTWARE\DDR.BIN
+DDR memory test at 0x70000000: PASSED
+Clearing SCC CPUWAIT (0xFFFFFFFF80000000:0x00000000)
+--- boot250 ad_medium_int8 ctl2 campaign exit=0
+30
+mcc boot log: 10366 bytes -> /home/gihwan/evsweep/evidence_s2b3_pilot/ctl/rnnoise_INT8/mcc_boot.log
+Image loaded from \SOFTWARE\VECTORS.BIN
+Image loaded from \SOFTWARE\APP.BIN
+Image loaded from \SOFTWARE\DDR.BIN
+DDR memory test at 0x70000000: PASSED
+Clearing SCC CPUWAIT (0xFFFFFFFF80000000:0x00000000)
+--- boot251 rnnoise_INT8 ctl campaign exit=0
+30
+mcc boot log: 10366 bytes -> /home/gihwan/evsweep/evidence_s2b3_pilot/w_prev/rnnoise_INT8/mcc_boot.log
+Image loaded from \SOFTWARE\VECTORS.BIN
+Image loaded from \SOFTWARE\APP.BIN
+Image loaded from \SOFTWARE\DDR.BIN
+DDR memory test at 0x70000000: PASSED
+Clearing SCC CPUWAIT (0xFFFFFFFF80000000:0x00000000)
+--- boot252 rnnoise_INT8 w_prev campaign exit=0
+30
+mcc boot log: 10366 bytes -> /home/gihwan/evsweep/evidence_s2b3_pilot/w_A/rnnoise_INT8/mcc_boot.log
+Image loaded from \SOFTWARE\VECTORS.BIN
+Image loaded from \SOFTWARE\APP.BIN
+Image loaded from \SOFTWARE\DDR.BIN
+DDR memory test at 0x70000000: PASSED
+Clearing SCC CPUWAIT (0xFFFFFFFF80000000:0x00000000)
+--- boot253 rnnoise_INT8 w_A campaign exit=0
+30
+mcc boot log: 10366 bytes -> /home/gihwan/evsweep/evidence_s2b3_pilot/w_B/rnnoise_INT8/mcc_boot.log
+Image loaded from \SOFTWARE\VECTORS.BIN
+Image loaded from \SOFTWARE\APP.BIN
+Image loaded from \SOFTWARE\DDR.BIN
+DDR memory test at 0x70000000: PASSED
+Clearing SCC CPUWAIT (0xFFFFFFFF80000000:0x00000000)
+--- boot254 rnnoise_INT8 w_B campaign exit=0
+30
+mcc boot log: 10366 bytes -> /home/gihwan/evsweep/evidence_s2b3_pilot/w_next/rnnoise_INT8/mcc_boot.log
+Image loaded from \SOFTWARE\VECTORS.BIN
+Image loaded from \SOFTWARE\APP.BIN
+Image loaded from \SOFTWARE\DDR.BIN
+DDR memory test at 0x70000000: PASSED
+Clearing SCC CPUWAIT (0xFFFFFFFF80000000:0x00000000)
+--- boot255 rnnoise_INT8 w_next campaign exit=0
+30
+mcc boot log: 10366 bytes -> /home/gihwan/evsweep/evidence_s2b3_pilot/u/rnnoise_INT8/mcc_boot.log
+Image loaded from \SOFTWARE\VECTORS.BIN
+Image loaded from \SOFTWARE\APP.BIN
+Image loaded from \SOFTWARE\DDR.BIN
+DDR memory test at 0x70000000: PASSED
+Clearing SCC CPUWAIT (0xFFFFFFFF80000000:0x00000000)
+--- boot256 rnnoise_INT8 u campaign exit=0
+30
+mcc boot log: 10366 bytes -> /home/gihwan/evsweep/evidence_s2b3_pilot/w_B_wait/rnnoise_INT8/mcc_boot.log
+Image loaded from \SOFTWARE\VECTORS.BIN
+Image loaded from \SOFTWARE\APP.BIN
+Image loaded from \SOFTWARE\DDR.BIN
+DDR memory test at 0x70000000: PASSED
+Clearing SCC CPUWAIT (0xFFFFFFFF80000000:0x00000000)
+--- boot257 rnnoise_INT8 w_B_wait campaign exit=0
+30
+mcc boot log: 10366 bytes -> /home/gihwan/evsweep/evidence_s2b3_pilot/ctl2/rnnoise_INT8/mcc_boot.log
+Image loaded from \SOFTWARE\VECTORS.BIN
+Image loaded from \SOFTWARE\APP.BIN
+Image loaded from \SOFTWARE\DDR.BIN
+DDR memory test at 0x70000000: PASSED
+Clearing SCC CPUWAIT (0xFFFFFFFF80000000:0x00000000)
+--- boot258 rnnoise_INT8 ctl2 campaign exit=0
+30
+mcc boot log: 10366 bytes -> /home/gihwan/evsweep/evidence_s2b3_pilot/ctl/yolo-fastest_192_face_v4/mcc_boot.log
+Image loaded from \SOFTWARE\VECTORS.BIN
+Image loaded from \SOFTWARE\APP.BIN
+Image loaded from \SOFTWARE\DDR.BIN
+DDR memory test at 0x70000000: PASSED
+Clearing SCC CPUWAIT (0xFFFFFFFF80000000:0x00000000)
+--- boot259 yolo-fastest_192_face_v4 ctl campaign exit=0
+30
+mcc boot log: 10366 bytes -> /home/gihwan/evsweep/evidence_s2b3_pilot/w_prev/yolo-fastest_192_face_v4/mcc_boot.log
+Image loaded from \SOFTWARE\VECTORS.BIN
+Image loaded from \SOFTWARE\APP.BIN
+Image loaded from \SOFTWARE\DDR.BIN
+DDR memory test at 0x70000000: PASSED
+Clearing SCC CPUWAIT (0xFFFFFFFF80000000:0x00000000)
+--- boot260 yolo-fastest_192_face_v4 w_prev campaign exit=0
+30
+mcc boot log: 10366 bytes -> /home/gihwan/evsweep/evidence_s2b3_pilot/w_A/yolo-fastest_192_face_v4/mcc_boot.log
+Image loaded from \SOFTWARE\VECTORS.BIN
+Image loaded from \SOFTWARE\APP.BIN
+Image loaded from \SOFTWARE\DDR.BIN
+DDR memory test at 0x70000000: PASSED
+Clearing SCC CPUWAIT (0xFFFFFFFF80000000:0x00000000)
+--- boot261 yolo-fastest_192_face_v4 w_A campaign exit=0
+30
+mcc boot log: 10366 bytes -> /home/gihwan/evsweep/evidence_s2b3_pilot/w_B/yolo-fastest_192_face_v4/mcc_boot.log
+Image loaded from \SOFTWARE\VECTORS.BIN
+Image loaded from \SOFTWARE\APP.BIN
+Image loaded from \SOFTWARE\DDR.BIN
+DDR memory test at 0x70000000: PASSED
+Clearing SCC CPUWAIT (0xFFFFFFFF80000000:0x00000000)
+--- boot262 yolo-fastest_192_face_v4 w_B campaign exit=0
+30
+mcc boot log: 10366 bytes -> /home/gihwan/evsweep/evidence_s2b3_pilot/w_next/yolo-fastest_192_face_v4/mcc_boot.log
+Image loaded from \SOFTWARE\VECTORS.BIN
+Image loaded from \SOFTWARE\APP.BIN
+Image loaded from \SOFTWARE\DDR.BIN
+DDR memory test at 0x70000000: PASSED
+Clearing SCC CPUWAIT (0xFFFFFFFF80000000:0x00000000)
+--- boot263 yolo-fastest_192_face_v4 w_next campaign exit=0
+30
+mcc boot log: 10366 bytes -> /home/gihwan/evsweep/evidence_s2b3_pilot/u/yolo-fastest_192_face_v4/mcc_boot.log
+Image loaded from \SOFTWARE\VECTORS.BIN
+Image loaded from \SOFTWARE\APP.BIN
+Image loaded from \SOFTWARE\DDR.BIN
+DDR memory test at 0x70000000: PASSED
+Clearing SCC CPUWAIT (0xFFFFFFFF80000000:0x00000000)
+--- boot264 yolo-fastest_192_face_v4 u campaign exit=0
+30
+mcc boot log: 10366 bytes -> /home/gihwan/evsweep/evidence_s2b3_pilot/ctl2/yolo-fastest_192_face_v4/mcc_boot.log
+Image loaded from \SOFTWARE\VECTORS.BIN
+Image loaded from \SOFTWARE\APP.BIN
+Image loaded from \SOFTWARE\DDR.BIN
+DDR memory test at 0x70000000: PASSED
+Clearing SCC CPUWAIT (0xFFFFFFFF80000000:0x00000000)
+--- boot265 yolo-fastest_192_face_v4 ctl2 campaign exit=0
+30
+mcc boot log: 10366 bytes -> /home/gihwan/evsweep/evidence_s2b3_pilot/ctl/mobilenet_v2_1.0_224_INT8/mcc_boot.log
+Image loaded from \SOFTWARE\VECTORS.BIN
+Image loaded from \SOFTWARE\APP.BIN
+Image loaded from \SOFTWARE\DDR.BIN
+DDR memory test at 0x70000000: PASSED
+Clearing SCC CPUWAIT (0xFFFFFFFF80000000:0x00000000)
+--- boot266 mobilenet_v2_1.0_224_INT8 ctl campaign exit=0
+30
+mcc boot log: 10366 bytes -> /home/gihwan/evsweep/evidence_s2b3_pilot/w_prev/mobilenet_v2_1.0_224_INT8/mcc_boot.log
+Image loaded from \SOFTWARE\VECTORS.BIN
+Image loaded from \SOFTWARE\APP.BIN
+Image loaded from \SOFTWARE\DDR.BIN
+DDR memory test at 0x70000000: PASSED
+Clearing SCC CPUWAIT (0xFFFFFFFF80000000:0x00000000)
+--- boot267 mobilenet_v2_1.0_224_INT8 w_prev campaign exit=0
+30
+mcc boot log: 10366 bytes -> /home/gihwan/evsweep/evidence_s2b3_pilot/w_A/mobilenet_v2_1.0_224_INT8/mcc_boot.log
+Image loaded from \SOFTWARE\VECTORS.BIN
+Image loaded from \SOFTWARE\APP.BIN
+Image loaded from \SOFTWARE\DDR.BIN
+DDR memory test at 0x70000000: PASSED
+Clearing SCC CPUWAIT (0xFFFFFFFF80000000:0x00000000)
+--- boot268 mobilenet_v2_1.0_224_INT8 w_A campaign exit=0
+30
+mcc boot log: 10366 bytes -> /home/gihwan/evsweep/evidence_s2b3_pilot/w_B/mobilenet_v2_1.0_224_INT8/mcc_boot.log
+Image loaded from \SOFTWARE\VECTORS.BIN
+Image loaded from \SOFTWARE\APP.BIN
+Image loaded from \SOFTWARE\DDR.BIN
+DDR memory test at 0x70000000: PASSED
+Clearing SCC CPUWAIT (0xFFFFFFFF80000000:0x00000000)
+--- boot269 mobilenet_v2_1.0_224_INT8 w_B campaign exit=0
+30
+mcc boot log: 10366 bytes -> /home/gihwan/evsweep/evidence_s2b3_pilot/w_next/mobilenet_v2_1.0_224_INT8/mcc_boot.log
+Image loaded from \SOFTWARE\VECTORS.BIN
+Image loaded from \SOFTWARE\APP.BIN
+Image loaded from \SOFTWARE\DDR.BIN
+DDR memory test at 0x70000000: PASSED
+Clearing SCC CPUWAIT (0xFFFFFFFF80000000:0x00000000)
+--- boot270 mobilenet_v2_1.0_224_INT8 w_next campaign exit=0
+30
+mcc boot log: 10366 bytes -> /home/gihwan/evsweep/evidence_s2b3_pilot/u/mobilenet_v2_1.0_224_INT8/mcc_boot.log
+Image loaded from \SOFTWARE\VECTORS.BIN
+Image loaded from \SOFTWARE\APP.BIN
+Image loaded from \SOFTWARE\DDR.BIN
+DDR memory test at 0x70000000: PASSED
+Clearing SCC CPUWAIT (0xFFFFFFFF80000000:0x00000000)
+--- boot271 mobilenet_v2_1.0_224_INT8 u campaign exit=0
+30
+mcc boot log: 10366 bytes -> /home/gihwan/evsweep/evidence_s2b3_pilot/w_A_wait/mobilenet_v2_1.0_224_INT8/mcc_boot.log
+Image loaded from \SOFTWARE\VECTORS.BIN
+Image loaded from \SOFTWARE\APP.BIN
+Image loaded from \SOFTWARE\DDR.BIN
+DDR memory test at 0x70000000: PASSED
+Clearing SCC CPUWAIT (0xFFFFFFFF80000000:0x00000000)
+--- boot272 mobilenet_v2_1.0_224_INT8 w_A_wait campaign exit=0
+30
+mcc boot log: 10366 bytes -> /home/gihwan/evsweep/evidence_s2b3_pilot/ctl2/mobilenet_v2_1.0_224_INT8/mcc_boot.log
+Image loaded from \SOFTWARE\VECTORS.BIN
+Image loaded from \SOFTWARE\APP.BIN
+Image loaded from \SOFTWARE\DDR.BIN
+DDR memory test at 0x70000000: PASSED
+Clearing SCC CPUWAIT (0xFFFFFFFF80000000:0x00000000)
+--- boot273 mobilenet_v2_1.0_224_INT8 ctl2 campaign exit=0
+30
+CAMPAIGN DONE
