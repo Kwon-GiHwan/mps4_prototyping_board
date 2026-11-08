@@ -1,0 +1,15 @@
+index,offset,type,blockdep,sync_before,ofm_hwc,kernel_hw,ifm_depth,macs,sparse,ifm_src,ifm2_src,dep_prev,optimised_id,optimised_op,source_op
+0,384,CONV,0,DMA_START DMA_WAIT k=0,32x32x16,3x3,1,147456,1,,,0,60,Conv2D,Conv2D
+1,516,CONV,7,DMA_START DMA_WAIT k=0,32x32x176,3x3,1,1622016,1,,,0,60,Conv2D,Conv2D
+2,756,DEPTHWISE,6,DMA_START DMA_WAIT k=0,16x16x192,3x3,192,442368,0,1,,1,58,DepthwiseConv2D,DepthwiseConv2D
+3,952,CONV,2,,16x16x276,1x1,192,13565952,0,2,,1,56,Conv2D,Conv2D
+4,1104,DEPTHWISE,4,,16x16x276,3x3,276,635904,0,3,,1,54,DepthwiseConv2D,DepthwiseConv2D
+5,1240,CONV,4,,16x16x276,1x1,276,19501056,0,4,,1,52,Conv2D,Conv2D
+6,1376,DEPTHWISE,4,,16x16x276,3x3,276,635904,0,5,,1,50,DepthwiseConv2D,DepthwiseConv2D
+7,1512,CONV,4,,16x16x276,1x1,276,19501056,0,6,,1,48,Conv2D,Conv2D
+8,1680,DEPTHWISE,4,,8x8x276,3x3,276,158976,0,7,,1,46,DepthwiseConv2D,DepthwiseConv2D
+9,1836,CONV,4,,8x8x276,1x1,276,4875264,0,8,,1,44,Conv2D,Conv2D
+10,2012,DEPTHWISE,2,,4x4x276,3x3,276,39744,0,9,,1,42,DepthwiseConv2D,DepthwiseConv2D
+11,2172,CONV,4,,4x4x276,1x1,276,1218816,0,10,,1,40,Conv2D,Conv2D
+12,2272,POOL,0,,1x1x276,4x4,276,4416,0,11,,1,38,AvgPool,AvgPool
+13,2476,CONV,1,,1x1x8,1x1,276,2208,0,12,,1,37,Conv2D,Conv2D

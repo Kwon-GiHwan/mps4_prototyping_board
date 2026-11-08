@@ -61,7 +61,7 @@ Owner 2026-11-08: "기록하고, 다음 세부 확인 단계로 넘어가자" + 
 계약을 데이터 전에 고정(판정 코드 + 변이 테스트). 이미지 `d0cd4775`(현재 카드에 있음) 그대로, 원래 스트림에
 PMU_MASK만 넣음(2B-0b에서 교란 없음 확인). set A, 10 RUN(2 warm-up).
 
-**연산 선택 규칙 (모든 모델 동일, 정적으로 결정):** 기준 연산(anchor) = Vela 연산 1개가 stream 연산 1개로만
+**연산 선택 규칙 (모든 모델 동일, 정적으로 결정) — 2026-11-08 owner 수정으로 대체됨, 아래 "Phase 3a 설계" 참조:** 기준 연산(anchor) = Vela 연산 1개가 stream 연산 1개로만
 나오고(스트라이프·분할·체이닝 아님) Vela MACs가 앞뒤 2개 연산 각각의 4배 이상인 연산 중 MACs가 가장 큰 것.
 - A1: CONV 유형 anchor
 - A2: CONV가 아닌 유형 anchor (DEPTHWISE가 있으면 DEPTHWISE, 없으면 MACs가 가장 큰 비-CONV 연산; rnnoise·
@@ -115,3 +115,71 @@ wav2letter가 절반 이상. 줄이는 방법은 펌웨어에 "한 부팅에서 
 3. 3b·Phase 4·이미지 변경·STOP 접두 스트림은 진단 계획과 예상 영향을 보고하고 승인 후.
 4. 단계마다 결과 폴더, 이 문서, `stage2_plan.md`, Obsidian에 기록. 정적/기존 데이터로 확인한 사실과 새 보드 실험의
    사실을 구분해 쓴다.
+
+## Phase 1·2 결과 (2026-11-08, `results/fi101_stage2b3/README.md`)
+
+- 정적: 커널 명령은 비차단(남은 커널 최대 2개), PMU_MASK는 차단 명령이고 앞 연산의 완료를 기다리지 않음, 연속 커널 사이
+  장벽 없음(BLOCKDEP 겹침) → 창 경계는 "앞 연산들의 완료"에 묶이고 연산 i 자신의 실행과 무관(TRM 원문 + 추론).
+- 기존 데이터: 연산별 최대 처리량(TRM Table 7: conv 1024, sparsity 2048, depthwise 128)으로 다시 보면 d=0은 ad·yolo에서
+  불가능하고, 7개 모델에 공통인 정수 지연은 없다. ad는 d=0–3 모두 불가능. MAC 0인 ELEMENTWISE·RESIZE 창에도 mac_active가
+  있다(원인 미구분).
+
+## Phase 3a 설계 (Phase 1·2 결과 반영, **owner 확인 전 — 보드 측정 안 함**)
+
+Owner 2026-11-08 수정: 선정 규칙은 연산 종류와 무관한 공통 기준. A = 인접 연산보다 MACs가 4배 이상 큰 연산 중 대비가 가장
+뚜렷한 것, B = A와 인접하고 MACs가 작거나 0인 연산. Vela 연산량·명령 스트림만 쓰고 2B-2 PMU 결과는 쓰지 않는다. 조건 불충족
+모델은 `NOT_AVAILABLE`(완화 없음). 선정·계측·사후 검증 규칙은 7개 모델 동일.
+
+구현 `host/analysis/s2b3_select.py`(변이 9개 RED): A = 양쪽 이웃이 있고 MACs > 0, MACs ≥ 4 × 각 이웃; 대비 = MACs /
+max(이웃 MACs, 1024)(1024 = MAC 배열 1사이클, 이웃이 0일 때 대비가 무한대가 되지 않게); 동점이면 MACs 큰 쪽, 그다음 앞
+연산. B = A 다음 연산(늦은 창이 A의 일을 담을 위치).
+
+| model | A (유형·Vela 연산) | A MACs | 앞 이웃 MACs | B (유형·Vela 연산) | B MACs | MAC 대비 | 최소 사이클 대비 |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| kws | 11 CONV Conv2D | 2,744,000 | 126,000 | 12 POOL AvgPool | 24,500 | 21.8 | 2.7 |
+| ad | 5 CONV Conv2D | 19,501,056 | 635,904 | 6 DEPTHWISE | 635,904 | 30.7 | 3.8 |
+| rnnoise | 37 CONV FullyConnected | 32,832 | 24 | 38 ELEMENTWISE Add | 0 | 32.1 | 32.1 |
+| vww4 | 66 CONV Conv2D | 1,253,376 | 0 | 67 DEPTHWISE | 41,472 | 30.2 | 3.8 |
+| yolo | 99 CONV Conv2D | 663,552 | 1,728 | 100 RESIZE | 0 | 384 | 648 |
+| mobilenet | 164 CONV Conv2D | 10,838,016 | 0 | 165 DEPTHWISE | 254,016 | 42.7 | 5.3 |
+| wav2letter | 8 CONV Conv2D | 2,368,000,000 | 64,750,000 | 9 CONV Conv2D | 592,000,000 | 4.0 | 4.0 |
+
+7/7 선정, `NOT_AVAILABLE` 없음. 규칙이 유형을 제한하지 않았지만 7개 모두 A가 CONV(FC 포함)로 나왔다.
+"최소 사이클 대비" = A의 최소 MAC 사이클 / 이웃의 최소 MAC 사이클(TRM 최대 처리량). depthwise는 128 MACs/cycle이라
+MAC 대비가 커도 사이클 대비는 작다(ad·vww4 3.8, kws 2.7). 실제 depthwise 사이클은 이 최소보다 클 수 있어, 이웃의
+mac_active가 A의 최소 사이클을 넘을 수 있다 → 이 모델들에서는 "A의 일이 어느 창에 있나"가 덜 선명하다. 규칙은 owner가 정한
+MAC 기준 그대로 두고 위험만 기록한다(사이클 기준으로 바꿀지는 owner 결정).
+
+**마스크 이동 방법.** 경계 b[k] = 연산 k−1의 kernel 명령 바로 뒤(연산 k의 레지스터 설정 앞). 단일 창 W(k) = b[k]에
+PMU_MASK(1), b[k+1]에 PMU_MASK(0). 원래 스트림에 이 두 명령만 넣는다(`cms.gate(stream, k, k+1)`). 이동 = 창을 kernel 경계
+하나씩 옮김.
+- 모든 모델: W(A−1), W(A), W(A+1) = W(B), W(A+2). +2까지 두는 이유: TRM "남은 커널 최대 2개"로는 경계가 2 연산까지 늦을 수 있음.
+- 차단 명령 변형(같은 규칙, 해당 모델만): A나 B의 설정에 DMA_WAIT/KERNEL_WAIT가 있으면, 처음 해당하는 창의 여는 위치를
+  그 차단 명령 바로 뒤로 옮긴 창 하나 추가 — mobilenet W(A)(KERNEL_WAIT n=1, DMA_WAIT), rnnoise W(B)(DMA_WAIT),
+  wav2letter W(A)(DMA_WAIT). 나머지 4개는 해당 없음(`NOT_APPLICABLE`).
+- 대조: 같은 캠페인에서 마스크 없는 `ctl` 1회(교란 확인: CPU 추론 사이클 `infer_cpu`가 ctl의 RUN 폭 안).
+
+**판정 기준(계약으로 고정할 안).** set A, 측정 RUN 중앙값. S_A = A의 최소 MAC 사이클(TRM 최대 처리량), M_k = W(k)의 mac_active.
+1. 유효성: 모든 RUN 유효(model 모드), 교란 없음(위 대조). 아니면 `UNPROVEN`.
+2. 위치: M_k ≥ S_A인 창이 정확히 하나 → `LOCATED(k−A)`(0 = 정렬, +1 = 한 칸 늦음 …); 없는데 ΣM ≥ S_A → `SPLIT`(A의 일이
+   여러 창에 나뉨); 둘 이상 → `AMBIGUOUS`. RUN별 값으로 다시 판정해 모든 RUN이 같아야 함(아니면 `UNSTABLE`).
+3. B(MAC 0 또는 작음): M_B > B의 최소 사이클이면 "B 창에 B 외의 MAC 활동" 기록(rnnoise·yolo: MAC 0인 연산의 mac_active 질문).
+4. 모델 간: 7개 모델이 같은 `LOCATED(d)`면 `COMMON_SHIFT_CANDIDATE`, 아니면 `NO_COMMON_SHIFT`.
+5. **3a만으로는 `EXACT_ATTRIBUTION`을 판정하지 않는다.** 위 판정은 필요조건이다. 정확성은 독립 기준(3b: 스트림을 연산 k 뒤에서
+   끊고 STOP을 붙인 접두 스트림 P(k)의 mac_active 차이 = 연산별 MAC 활동)과의 일치로만 인정한다.
+
+**예상 보드 비용 (2B-2 기록: 재부팅 153 s + 전송·RUN, set A만)**
+
+| model | 부팅 1회 | 창 4 + ctl 1 | 차단 변형 | 합 |
+| --- | --- | --- | --- | --- |
+| kws | 3.0분 | 15분 | — | 15분 |
+| ad | 3.8분 | 19분 | — | 19분 |
+| rnnoise | 2.9분 | 15분 | 3분 | 17분 |
+| vww4 | 3.5분 | 18분 | — | 18분 |
+| yolo | 3.8분 | 19분 | — | 19분 |
+| mobilenet | 11.7분 | 59분 | 12분 | 70분 |
+| wav2letter | 38분 | 190분 | 38분 | 228분 |
+| 합 | | | | **약 6.4시간** (wav2letter 3.8 h) |
+
+3b 독립 기준(접두 스트림 P(A−1)…P(A+2), 모델당 4 boot)은 약 +4.5시간이고 STOP 실행 변경이라 별도 승인. wav2letter를 줄이는
+유일한 방법은 펌웨어에 "한 부팅에서 스트림만 바꿔 여러 번 실행"을 넣는 것(이미지 변경, 별도 승인).

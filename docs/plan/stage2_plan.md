@@ -13,7 +13,7 @@ Owner 결정 2026-11-03: Stage 2A 문서(사용자 제공, "Pipeline 활동 및 
 | 2B-0b | 마스크 재확인 | 7개 모델, 대조 2회(A/A), 대조 자신의 RUN 폭 기준 (`evidence/s2_mask/`) | 있음 | **완료**: MASK_NOT_ADDITIVE (교란 없음 7/7, 합산 3/7) |
 | 2B-1 | 그룹 정의·도구 | 그룹 = 명령 스트림의 연산 유형(`cms.gate_ops`, `make_group_blobs.py`). Vela 연산 매핑(낮은 채움 conv, 작은 의존 블록 그룹)은 2B-2 그룹에 쓰지 않음. 매핑 자체는 2026-11-04 Vela 디버그 DB로 만듦(`results/fi101_stage2_groups/vela_op_map/`) | 없음 | **완료** (유형 그룹 + 그룹 구성표) |
 | 2B-2 | 그룹 측정 | 7개 모델, 그룹별 사이클·활동·stall, Σgroup vs 전체, 미귀속 몫(deficit) (`evidence/s2_groups/`, `da51566`) | 있음 | **완료, 해석 보류**: H1 DW_NOT_LOWER, H2 MIXED — 그룹 창이 실행과 어긋남(ad CONV MAC 효율 2.85 > 1) |
-| 2B-3 | 명령 실행·그룹 귀속 진단 | 명령 발행/완료·겹침 정적 분석, 기존 데이터 재검토(지연 가설), 마스크 창 정렬 진단, 필요 시 장벽 비교 → 귀속 가능성 판정. 7개 모델 같은 규칙 (`docs/plan/stage2b3_plan.md`) | Phase 3부터 | **계획** |
+| 2B-3 | 명령 실행·그룹 귀속 진단 | 명령 발행/완료·겹침 정적 분석, 기존 데이터 재검토(지연 가설), 마스크 창 정렬 진단, 필요 시 장벽 비교 → 귀속 가능성 판정. 7개 모델 같은 규칙 (`docs/plan/stage2b3_plan.md`) | Phase 3부터 | **Phase 1·2 완료** (2026-11-08, `results/fi101_stage2b3/`), 3a 설계 owner 확인 대기 |
 
 2A-F2와 2B-0은 같은 펌웨어 변경(PMCLUT·mask_en knob)을 쓰므로 한 이미지·한 캠페인으로 묶는다(계약은 각각 판정).
 
@@ -82,3 +82,6 @@ Owner 결정 2026-11-03: Stage 2A 문서(사용자 제공, "Pipeline 활동 및 
   "연속 실행에서 연산별 귀속이 가능한가"를 판정한다. 모든 단계에서 7개 모델에 같은 선택·판정 규칙.
 - 정적 사실: KERNEL_WAIT는 vww4(4)·yolo(11)·mobilenet(11)에만 있고 kws·ad·rnnoise·wav2letter에는 없다(순서는
   BLOCKDEP·DMA_WAIT만). 2B-2 창 = "앞 연산 발행 후 ~ 이 연산 발행 후".
+- Phase 1·2 완료 (2026-11-08, `results/fi101_stage2b3/README.md`): 창 경계는 앞 연산들의 완료에 묶임(TRM: 커널 비차단,
+  남은 커널 최대 2개, PMU_MASK 차단); 연산별 최대 처리량 기준으로 d=0은 ad·yolo에서 불가능, 7개 모델 공통 정수 지연 없음.
+  Owner 수정(공통 A/B 선정 규칙) 반영한 3a 설계·비용(약 6.4 h)은 `stage2b3_plan.md` — 보드 측정·펌웨어 변경은 owner 확인 후.
