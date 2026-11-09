@@ -5,7 +5,8 @@ output and TA profile 1. Judged per (model, metric); missing data is UNPROVEN, n
   python3 host/analysis/equiv_c.py <mlek root> <runner root> <out dir>
 
 <mlek root>/<model>/stock/B<n>/app_uart.raw and events/B<n>/app_uart.raw: stock MLEK and the instrumented build, one
-inference per boot (mlek_counters.py). <runner root>/<model>/: run_pmu_events.py output of the blob whose IFM and
+inference per boot (mlek_counters.py). Without stock captures, kws / ad / mobilenet use the stage-B stock boots B1-B3
+of docs/reference/mlek_board_reference.json (stock MLEK, its own input = the input the VERIFY dump shows). <runner root>/<model>/: run_pmu_events.py output of the blob whose IFM and
 golden are the MLEK dump (amendment-2 entry accepted), sets A and B, 10 RUNs, 2 warm-up.
 
   M1 output   every measured RUN valid with OFM mismatch 0 against the MLEK golden -> EQUIVALENT; a mismatch ->
@@ -39,6 +40,17 @@ def mlek_boots(d: pathlib.Path) -> list[dict[str, int]]:
     for f in sorted(d.glob("B*/app_uart.raw")):
         out.append(MC.counters(f.read_bytes().decode("ascii", "replace").replace("\r", "")))
     return out
+
+
+REF = pathlib.Path(__file__).resolve().parents[2] / "docs" / "reference" / "mlek_board_reference.json"
+
+
+def stock_boots(d: pathlib.Path, name: str) -> list[dict[str, int]]:
+    boots = mlek_boots(d / "stock")
+    if boots:
+        return boots
+    ref = json.loads(REF.read_text())["workloads"].get(name)
+    return [ref[b] for b in ("B1", "B2", "B3")] if ref else []
 
 
 def runner_rows(d: pathlib.Path) -> list[dict]:
@@ -95,7 +107,7 @@ def main(mlek_root: str, runner_root: str, out: str) -> dict:
             continue
         r = pathlib.Path(runner_root) / d.name
         rows = runner_rows(r) if (r / "runs.csv").exists() else []
-        res[d.name] = model(mlek_boots(d / "stock"), mlek_boots(d / "events"), rows)
+        res[d.name] = model(stock_boots(d, d.name), mlek_boots(d / "events"), rows)
     o = pathlib.Path(out)
     o.mkdir(parents=True, exist_ok=True)
     (o / "summary.json").write_text(json.dumps(res, indent=1))

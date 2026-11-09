@@ -21,6 +21,15 @@ def rows(active=(1003, 1005, 1007), mac=(500, 501, 502), beats=None, ofm="0", va
     return out
 
 
+class StockSource(unittest.TestCase):
+    def test_reference_boots_when_no_capture(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as d:
+            b = C.stock_boots(pathlib.Path(d), "kws_micronet_m")
+            self.assertEqual([x["ACTIVE"] for x in b], [91431, 90915, 91501])   # mlek_board_reference.json B1-B3
+            self.assertEqual(C.stock_boots(pathlib.Path(d), "rnnoise_INT8"), [])
+
+
 class Rules(unittest.TestCase):
     def test_all_equivalent(self):
         r = C.model(STOCK, EVENTS, rows())
