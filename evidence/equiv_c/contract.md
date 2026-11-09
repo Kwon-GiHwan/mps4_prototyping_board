@@ -27,7 +27,7 @@ Plan: `docs/plan/equivalence_plan.md` §8 (criteria R/M) and §9 (execution). Ow
 - A capture without exactly one profile block, or without the TA lines, is invalid. It is re-run once (amendment).
 - MLEK images, Vela outputs and digests are kept under `evidence/equiv_c/mlek/<model>/<build>/`.
 
-## Rules (`host/analysis/equiv_c.py`, tests `host/tests/test_equiv_c.py`; 13 mutations RED (three redundant guards removed, a fixture added))
+## Rules (`host/analysis/equiv_c.py`, tests `host/tests/test_equiv_c.py`; 14 mutations RED (three redundant guards removed, two fixtures added))
 
 | item | EQUIVALENT | NOT_EQUIVALENT | UNPROVEN |
 | --- | --- | --- | --- |

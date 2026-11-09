@@ -28,6 +28,10 @@ class StockSource(unittest.TestCase):
             b = C.stock_boots(pathlib.Path(d), "kws_micronet_m")
             self.assertEqual([x["ACTIVE"] for x in b], [91431, 90915, 91501])   # mlek_board_reference.json B1-B3
             self.assertEqual(C.stock_boots(pathlib.Path(d), "rnnoise_INT8"), [])
+            (pathlib.Path(d) / "stock" / "B1").mkdir(parents=True)
+            (pathlib.Path(d) / "stock" / "B1" / "app_uart.raw").write_bytes(
+                b"INFO - Profile for Inference:\r\nINFO - NPU ACTIVE: 7 cycles\r\n")
+            self.assertEqual(C.stock_boots(pathlib.Path(d), "kws_micronet_m"), [{"ACTIVE": 7}])   # captures win
 
 
 class Rules(unittest.TestCase):
