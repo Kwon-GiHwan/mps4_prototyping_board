@@ -124,7 +124,32 @@ Stage 0 S0-3: 같은 구간에서 PMCCNTR가 CPU DWT보다 0–31 % 적다(모�
 | J6 | 변형 command stream(PMU Mask 등, Phase 6)은 **같은 이미지의 direct 모드**: TFLM 실행에서 기록한 base address와 크기를 그대로 써서 `ethosu_invoke_v3`를 직접 호출 | flatbuffer를 다시 쓰지 않고, 주소는 TFLM 실행과 같게 유지 | tflite 재작성: 도구가 커지고 오류 지점이 늘어남 |
 | J7 | 와이어 프로토콜은 기존 프레임(magic NUR1, CRC32, 명령 id)을 그대로 쓰고, 측정 기록은 **새 스키마 v2**(필드 이름이 있는 고정 배열)로 한다. 펌웨어 쪽 프로토콜은 플랫폼과 무관한 새 모듈로 짠다 | 호스트 `RunnerLink`(프레임·재전송·텍스트 수집)를 재사용, runs.csv 형식을 같게 하면 기존 분석 스크립트를 그대로 씀. 기존 runner 소스는 고정(지시 1.3)이라 공유 리팩터를 하지 않음 | 기존 122필드 기록 재사용: seam 의미가 runner 고유라 억지 대응이 됨 |
 | J8 | 워크로드 형식 **DRWL**: Vela tflite + IFM들 + golden들 + 설정. 호스트 `host/lib/drwl.py`가 단일 출처, 펌웨어가 독립 선언, 계약 테스트로 묶음(기존 PMWL과 같은 방식). staging은 DDR4 블록 1(0x9000_0000대, 블록 0과 다른 물리 메모리 — `mem_regions.h`) | 모델 바이트를 MLEK과 똑같이(Vela 출력 파일 그대로) 둔다 | PMWL 확장: cms/const 분리 형식이라 tflite를 담기에 의미가 겹침 |
-| J9 | 로그: MLEK 로그 수준을 낮춰(ERROR) 프로토콜 UART에 텍스트가 섞이지 않게 함. 부팅 정보(TA·NPU 버전)는 runner가 레지스터 되읽기로 capability에 담는다 | 같은 UART0(0x59303000)을 프로토콜과 stdout이 공유 | — |
+| J9 | **(수정)** 로그 수준은 stock MLEK 그대로(INFO). 부팅 배너만 프로토콜 전에 나오고 호스트 `RunnerLink`가 프레임 밖 텍스트로 모은다. 플랫폼 상태(TA·NPU·PMU·캐시)는 capability에서 레지스터 되읽기로 준다 | 로그 수준을 바꾸면 MLEK 소스가 다르게 컴파일돼 stock과의 차이가 하나 늘어난다. use case는 실행 중 출력이 없음 | ERROR로 낮추기(처음 안) |
+| J10 | PMU는 `ETHOSU_PMU_*` 대신 TRM 오프셋 레지스터를 직접 쓴다(`firmware/common/npu_pmu_regs.h` 재사용) | 이 드라이버의 `ETHOSU_PMU_Enable/Disable`은 `ethosu_request_power/release_power`를 불러 power 참조 수(=작업마다 soft reset 여부)를 바꾼다(CODE_VERIFIED); `Set_EVTYPER`는 enum만 받아 하드웨어 id로 지정할 수 없다; `Get_CCNTR`는 LO→HI 한 번 읽어 찢어질 수 있다 | 공식 API: 부작용이 측정 조건을 바꿈 |
+| J11 | 카드의 ddr.bin은 빌드가 낸 빈 파일 대신 16 B 0 | runner는 DDR에 정적 객체가 없어 빌드가 빈 ddr.bin을 낸다. images.txt(stock과 같은 파일)가 ddr.bin을 읽으므로 MCC가 0 B 파일을 거부할 위험을 피함. 그 16 B는 모델 배치 때 덮어씀 | images.txt 수정: stock과 다른 파일이 됨 |
+| J12 | 실행 중 hook 연결을 빌드 게이트로 강제(`build_driver_runner.sh`): 우리 hook이 strong(`T`)인지, `ethosu_dev_run_command_stream`이 remap hook을 부르는지, MLEK profiler 심볼이 MLEK 것인지 | 첫 빌드에서 정적 라이브러리가 `hooks.o`를 끌어오지 않아 드라이버 기본(weak)이 링크됨 — 테스트가 아니라 ELF로만 드러나는 오류. `hooks_install()`로 끌어오고 게이트로 지킴 | — |
+
+### 2.7 Phase 1·2 중 확인한 사실 (CODE_VERIFIED, 보드 미확인)
+
+- **stock MLEK은 작업마다 soft reset을 하지 않는다.** MLEK `ethosu_pmu_init`(부팅 시 `hal_pmu_init`)이
+  `ETHOSU_PMU_Enable` → `ethosu_request_power`를 한 번 부르고 풀지 않는다. 그래서 power 참조 수가 1로 남고, 추론 때
+  `ethosu_request_power`는 2가 될 뿐 첫 요청이 아니라서 soft reset을 하지 않는다. 클록·전원 Q도 계속 켜진 채다.
+  soft reset은 부팅 때(`ethosu_dev_init`, 첫 power 요청)뿐이다. → `evidence/runner_gap/control_flow_diff.md`의 "작업마다
+  soft reset"은 고쳐야 할 기술이다(그 문서는 고정 기록이라 정정은 덧붙인다). Driver Runner capability의
+  `power_requests`(유휴 1, arm 시 2 예상)로 보드에서 확인한다.
+- MLEK·TFLM은 `ethosu_address_remap`, `ethosu_semaphore_*`, `ethosu_irq_handler`를 정의하지 않는다(호출만).
+- TFLM ethos-u op은 base address를 const, scratch, fast, 입력들, 출력들 순으로 최대 8개 넘긴다.
+
+### 2.8 구현 상태 (보드 실행 없음)
+
+| 항목 | 상태 |
+| --- | --- |
+| 펌웨어 | `firmware/driver_runner/use_case/pmu_runner/`: frame, workload, record, pmu_session, probe, runner(플랫폼 무관) + hooks, uart, platform.cc(MLEK/TFLM/드라이버) |
+| 빌드 | 컨테이너 MLEK cmake, rc 0, 게이트 PASS, runner 소스 경고 0. boot `8d0123f3…`, bram `964ced9c…`, images.txt `af688281…`(stock과 같음) |
+| 호스트 | `drwl.py`, `record_v2.py`, `driver_link.py`, `RunnerLink._decode` hook, `pack_vela_workload --format drwl`, `board/run_driver_events.py`, `board/run_driver_campaign.sh` |
+| 테스트 | 시뮬레이터(코어를 호스트용으로 컴파일, `DriverLink`가 파이프로 실제 프레임 교환, board 스크립트 끝까지), 계약(C X-macro ↔ Python), record_v2, DRWL, Phase 3 판정. 변이: 코어+호스트 35개, Phase 3 판정 15개 모두 RED |
+| 보드 | **미실행** — 이미지 교체 승인과 sudo 필요(지시 9.5). Phase 3 계약 `evidence/driver_p3/contract.md` 고정 |
+
 
 ### 2.2 모듈 구성 (펌웨어, `firmware/driver_runner/`)
 
