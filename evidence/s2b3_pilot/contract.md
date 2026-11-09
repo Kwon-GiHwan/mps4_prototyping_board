@@ -109,3 +109,21 @@ Analysis `host/analysis/s2b3_windows.py` as frozen; full report `results/fi101_s
 Preconditions held for every model (all RUNs valid, A/A, no CPU disturbance, OFM = ctl in every arm and RUN; ad,
 mobilenet, rnnoise (0, 0) = MLEK golden; yolo (955, 7) = ctl). Per-RUN diagnoses equal the median diagnosis (no
 `UNSTABLE`). No shared offset. None of this attributes counts to an op.
+
+## Amendment 1 — the other three models (owner 2026-11-09, before boot 274; rules unchanged)
+
+Owner, after the pilot report: "나머지 3개 모델(kws·vww4·wav2letter)의 3a 측정을 승인합니다. 기존 계약의 연산 선정·측정창·판정
+기준을 변경하지 않고 7개 모델 전체 결과를 완성". Still a diagnostic of window activity and identifiability, not a test of
+per-op attribution. Same image `d0cd4775`, **TA profile 1**, sets A, C, D (`ids.txt`), 10 RUNs, 2 warm-up.
+
+- Selection as in the table above (unchanged): kws 11/12, vww4 66/67, wav2letter 8/9; all statically identifiable.
+- Blobs: `make_window_blobs.py` (unchanged) from the 2B-0b `ctl` blobs, digests checked equal to
+  `evidence/s2_mask/contract.md` (kws `f11271cb6a2d`, vww4 `b7c15f01c4be`, wav2letter `5b8c9d06dea1`). Checked again:
+  stream minus PMU_MASK words byte-identical to `ctl`, constants identical, only knob word 30 set. Digests in
+  `blob_digests_a1.txt`.
+- Wait variant by the same rule: wav2letter `w_A_wait` (setup of op 8 holds a wait); kws and vww4: none in the setups of
+  A or B (`NOT_APPLICABLE`).
+- Boots 274–295 (`plan_a1.txt`): kws(7), vww4(7), wav2letter(8, incl. `w_A_wait`), into a new root
+  `evidence_s2b3_a1`; analysed by the same `s2b3_windows.py` with the pilot's raw and this root side by side.
+- Card: not re-inspected (no sudo step); the image digests recorded in every RUN row (`app_sha256`, `vectors_sha256`,
+  `ddr_sha256`) are checked against the values above after the campaign.

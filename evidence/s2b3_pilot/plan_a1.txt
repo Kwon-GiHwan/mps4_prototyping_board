@@ -1,0 +1,23 @@
+# Stage 2B-3 Phase 3a amendment 1: boots 274-295, TA profile 1, image d0cd4775; sets A, C, D, 10 RUNs (2 warm-up)
+274 kws_micronet_m ctl
+275 kws_micronet_m w_prev
+276 kws_micronet_m w_A
+277 kws_micronet_m w_B
+278 kws_micronet_m w_next
+279 kws_micronet_m u
+280 kws_micronet_m ctl2
+281 vww4_128_128_INT8 ctl
+282 vww4_128_128_INT8 w_prev
+283 vww4_128_128_INT8 w_A
+284 vww4_128_128_INT8 w_B
+285 vww4_128_128_INT8 w_next
+286 vww4_128_128_INT8 u
+287 vww4_128_128_INT8 ctl2
+288 wav2letter_pruned_int8 ctl
+289 wav2letter_pruned_int8 w_prev
+290 wav2letter_pruned_int8 w_A
+291 wav2letter_pruned_int8 w_B
+292 wav2letter_pruned_int8 w_next
+293 wav2letter_pruned_int8 u
+294 wav2letter_pruned_int8 w_A_wait
+295 wav2letter_pruned_int8 ctl2
