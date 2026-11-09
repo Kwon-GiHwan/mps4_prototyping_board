@@ -202,3 +202,44 @@ Stage 1·2A·3 측정값은 보존하고, 이번 검증에서 실제로 영향�
 - Stage 1·2A·3과 2B 결과는 그대로 둔다.
 - 재평가하는 것은 이번 검증에서 바뀐 판정이 걸린 항목뿐이다. 예: M1이 `UNPROVEN`에서 `EQUIVALENT`로 바뀐 모델의 "MLEK와 같은 출력" 문구, `EFFECTIVE` 차이가 걸린 지표의 적용 조건 표기.
 - 재평가는 원 결과 옆에 덧붙이는 표로 남긴다.
+
+## 9. C1·C2와 MLEK 계측 빌드 실행 설계 (2026-11-09, 계약은 MLEK 첫 실행 전에 고정)
+
+### 9.1 "같은 입력"을 만드는 방법 (기존 절차, `evidence/mobilenet_ofm/REPORT.md`)
+
+- MLEK에는 seed-1 입력을 넣을 수 없다. 넣으려면 DYNAMIC_MEM_LOAD를 써야 하는데, 그러면 모델 배치가 0x90000000으로 바뀐다.
+- 그래서 같은 입력은 **MLEK의 자체 입력(`std::rand`, 기본 seed — Obsidian A7: 결정적)**으로 만든다.
+  1. VERIFY_TEST_OUTPUT 빌드로 그 입력과 출력을 보드에서 덤프한다.
+  2. 덤프한 입력으로 runner blob을 다시 만든다(`pack_vela_workload.py --ifm/--golden`).
+- mobilenet과 Stage 1 a2 연산자들이 이미 이 방식으로 만들어졌다.
+- 이 입력은 stock MLEK B1–B3이 쓴 입력과 같은 코드 경로의 같은 `std::rand` 값이다. **가정**: VERIFY 빌드와 stock 빌드의 입력이 같다. 근거는 같은 소스, 같은 seed라는 것이다. G5(덤프 해시)로 VERIFY 쪽만 확인된다.
+
+### 9.2 단계 (모두 TA profile 1, 같은 Vela 산출물 — G2로 확인)
+
+| 단계 | 내용 | 보드 | 대상 |
+| --- | --- | --- | --- |
+| C-a | VERIFY 빌드: 입력·출력 덤프, `mlek_golden.py` G1–G5 → manifest | MLEK 배포 1번 + 부팅 1번 / 모델 | vww4, rnnoise, yolo, w2l(C1), kws, ad(C2) |
+| C-b | stock MLEK: profiler 카운터(ACTIVE, beat 4종), B1–B3처럼 3번 부팅(배포 1번에 reboot 3번) | 같음 | vww4, rnnoise, yolo, w2l(kws·ad·mobilenet은 기존 B1–B3이 같은 입력이라 재사용) |
+| C-c | MLEK 계측 빌드: `ethosu_profiler.c`의 이벤트 목록에 MAC_ACTIVE(48), MAC_DPU_ACTIVE(51), AO_ACTIVE(64)를 더함(8 카운터 이내). 임시로 수정해 빌드하고 소스는 digest로 복원(a2 `build.sh` 방식). 3번 부팅 | 같음 | 7개 모델 |
+| C-d | runner: MLEK 입력과 정답으로 다시 만든 blob(kws, ad, vww4, rnnoise, yolo, w2l; mobilenet은 기존 `0d51cf9e`), 이미지 `d0cd4775`, 세트 A·C·D, 10 RUN | runner 캠페인 | 6개 모델 |
+
+- **계측 빌드의 교란 확인(M4 전제):** 같은 입력에서 계측 빌드의 ACTIVE·beat가 stock MLEK와 같아야 한다. 기준은 §8.1 M2(beat 정확히 같음), M3(ACTIVE)다. 다르면 그 모델의 M4는 `UNPROVEN`이다.
+- **runner 쪽 판정:** C-d의 RUN이 R1(자기 정답과 OFM 일치)을 만족하면, 그 정답은 MLEK 출력이므로 M1(같은 입력에서 MLEK와 출력 일치)도 함께 판정된다.
+
+### 9.3 도구 변경 (보드 없이, MLEK 실행 전에)
+
+- **`pack_vela_workload.py`:** `--ifm`/`--golden`이 지금은 한 텐서만 받는다. rnnoise(입력 여러 개)와 yolo(출력 2개)용으로 텐서 목록을 받게 확장한다. IO 표 순서를 따른다.
+- **`ofm_compare.section`:** 여러 텐서의 덤프를 이어 붙여 돌려준다. 텐서 크기로 나누는 함수를 추가한다.
+- **`mlek_golden.py`:** G1(길이)을 텐서별로 확인한다.
+- **MLEK profiler 카운터 파서:** 기존 B1–B3 형식을 재사용한다.
+
+### 9.4 자원과 비용
+
+- **board host 디스크:** 여유 345 MB(2026-11-09). MLEK 빌드 하나가 약 60 MB다. 그래서 빌드는 한 번에 하나씩 하고, 이미지(boot/bram/ddr.bin, images.txt)와 로그만 남긴 뒤 내가 만든 빌드 디렉터리를 지운다. 2B-3 측정 중에는 빌드하지 않는다.
+- **보드 시간(추정):** MLEK 배포·부팅·캡처가 모델당 약 10분(w2l은 더 김)이다.
+  - C-a: 6개 모델, 약 1.2 h.
+  - C-b: 4개 모델 × 3번 부팅, 약 1 h.
+  - C-c: 7개 모델 × 3번, 약 1.8 h.
+  - C-d: runner 6번 부팅, 약 1 h. w2l 업로드에 약 17분이 든다.
+  - 합계 약 5 h. 원래 추정이었던 3–4 h는 C-c를 넣기 전 값이다.
+- **sudo:** MLEK 배포(`deploy_mlek.sh` / `restore_mlek.sh`)와 runner 이미지 배포(`deploy.sh`)는 sudo가 필요하다. 비밀번호는 실행할 때 받아 stdin으로만 쓴다.
