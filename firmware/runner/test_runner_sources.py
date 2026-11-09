@@ -97,7 +97,8 @@ class Record(unittest.TestCase):
     def test_events_record_comes_from_the_seam(self):
         self.assertIn("r.npu_pmu_window_cycles_lo = seam_cycle_lo;", MEASURE)
         self.assertIn("r.event_values[i] = seam_ev[i];", MEASURE)
-        self.assertIn("#define MEASUREMENT_FIELD_COUNT 122U", MEASURE_H)
+        self.assertIn("#define MEASUREMENT_FIELD_COUNT (122U + DIAG_EQUIV_FIELDS)", MEASURE_H)
+        self.assertIn("#define DIAG_EQUIV_FIELDS 0U", RD("runner", "diag_equiv.h"))   # measurement build: 122
         tail = ("put32(&c, r->read_seam_fired);\n    put32(&c, r->vendor_rc);\n    put32(&c, r->seam_npu_status);\n"
                 "    put32(&c, r->seam_npu_qread);\n    put32(&c, r->ofm_mismatch_count);\n"
                 "    put32(&c, r->ofm_max_abs_diff);\n    put32(&c, r->ofm_first_mismatch);\n"
@@ -106,7 +107,7 @@ class Record(unittest.TestCase):
                 "    put32(&c, r->start_sys_cnt);\n    put32(&c, r->end_sys_cnt);\n    put32(&c, r->sys_cntcr);\n"
                 "    put32(&c, r->ta_sram_cnt_start);\n    put32(&c, r->ta_sram_cnt_end);\n"
                 "    put32(&c, r->ta_ext_cnt_start);\n    put32(&c, r->ta_ext_cnt_end);\n"
-                "    put32(&c, r->ta_perfctrl_at_seam);\n}")
+                "    put32(&c, r->ta_perfctrl_at_seam);\n#ifdef RUNNER_DIAG_EQUIV\n")   # diagnostic fields only in that build
         self.assertIn(tail, MEASURE)
         self.assertEqual(PMWL.count("last_vendor_rc = rc;"), 1)
 

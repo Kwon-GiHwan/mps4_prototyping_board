@@ -1,0 +1,3 @@
+# Equivalence experiment A: boots 296-297, TA profile 1, diagnostic image a65cf112 (-DRUNNER_DIAG_EQUIV); sets A, C, D, 10 RUNs (2 warm-up)
+296 kws_micronet_m ctl
+297 ad_medium_int8 ctl

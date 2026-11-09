@@ -54,6 +54,7 @@ int __wrap_test_u85(const u85_eTest eTest, const uint32_t irq_mask, const uint32
     uint8_t *cmd, *cst, *arena, *fast;
     int rc;
     (void)irq_mask; (void)qsize;
+    diag_equiv_entry();   /* equivalence experiment A: before the vendor's CAP writes (diagnostic build only) */
     memcpy(h, s, 16U * 4U);
     if (h[0] != PMWL_MAGIC || h[1] < 1U || h[1] > 4U || h[15] != model_total_length) {
         return PMWL_REFUSED;  /* no blob: never fall back to test3 silently */
@@ -110,6 +111,7 @@ int __wrap_test_u85(const u85_eTest eTest, const uint32_t irq_mask, const uint32
     if (h[27] != PMWL_OFF) {
         if (h[27] < 1U || h[27] > TA_PROFILE_COUNT) { return PMWL_REFUSED; }
         if (ta_apply(h[27]) != 0U) { pmwl_knob_bad = 1U; }
+        diag_equiv_ta_probe(h[27]);
     }
     /* S0-3 step 2c: word 28 selects both TAs' event counters (after the profile, which writes PERFCTRL 0). */
     if (h[28] != PMWL_OFF) {

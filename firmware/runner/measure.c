@@ -721,6 +721,9 @@ void handle_run(uint32_t sequence)
                 r.ta_ext_cnt_start    = seam_ta_cnt_start[1];
                 r.ta_ext_cnt_end      = seam_ta_cnt_end[1];
                 r.ta_perfctrl_at_seam = seam_ta_perfctrl;
+#ifdef RUNNER_DIAG_EQUIV
+                memcpy(r.diag_equiv, diag_equiv, sizeof r.diag_equiv);
+#endif
             } else {
                 /* END_ONLY, unchanged: no event slot is ever armed. */
                 r.event_valid_mask    = 0U;
@@ -1053,6 +1056,11 @@ static void build_measurement_payload(uint8_t *out)
     put32(&c, r->ta_ext_cnt_start);
     put32(&c, r->ta_ext_cnt_end);
     put32(&c, r->ta_perfctrl_at_seam);
+#ifdef RUNNER_DIAG_EQUIV
+    for (unsigned k = 0; k < DIAG_EQUIV_FIELDS; k++) {
+        put32(&c, r->diag_equiv[k]);
+    }
+#endif
 }
 
 void handle_get_measurement(uint32_t sequence)

@@ -44,8 +44,14 @@ int __wrap_printf(const char *fmt, ...)
         seam_status = npu_read(NPU_OFF_STATUS);
         seam_qread  = npu_read(NPU_OFF_QREAD);
         seam_power_ctrl = npu_read(NPU_OFF_POWER_CTRL);
+        diag_equiv_end();
         seam_fired++;
     }
+#ifdef RUNNER_DIAG_EQUIV
+    if (measurement_active && strcmp(fmt, "Updating POWER_CTRL register with MAC_RAMP_VAR=%d \n") == 0) {
+        diag_equiv_seam();   /* equivalence experiment A: after the vendor's CAP writes (diagnostic build only) */
+    }
+#endif
     /* Tier C step 2 apply seam: right after the vendor wrote REGIONCFG/QCONFIG/MEM_ATTR,
      * right before it starts the NPU. Every override is read back. */
     if (measurement_active && pmwl_knob_pending

@@ -4,6 +4,7 @@
 #define RUNNER_MEASURE_H
 
 #include <stdint.h>
+#include "diag_equiv.h"
 
 /* ------------------------------------------------------------------------ */
 /* Build profile                                                             */
@@ -188,6 +189,9 @@ typedef struct {
     uint32_t ta_ext_cnt_start;
     uint32_t ta_ext_cnt_end;
     uint32_t ta_perfctrl_at_seam;          /* both PERFCTRL, knob layout */
+#ifdef RUNNER_DIAG_EQUIV
+    uint32_t diag_equiv[DIAG_EQUIV_FIELDS]; /* equivalence experiment A (diag_equiv.h), diagnostic build only */
+#endif
 } measurement_record_t;
 
 /* NOTE FOR THE HOST: this is 47, not the 42 it was, and not the "40" the
@@ -196,7 +200,7 @@ typedef struct {
  * The ABI header's total_payload_words is the authority -- never hardcode. */
 /* 47 + 55 appended for milestone 1. The ABI header's total_payload_words
  * remains the authority; hosts skip trailing words they do not know. */
-#define MEASUREMENT_FIELD_COUNT 122U
+#define MEASUREMENT_FIELD_COUNT (122U + DIAG_EQUIV_FIELDS)
 #define MEASUREMENT_PAYLOAD_SIZE (MEASUREMENT_FIELD_COUNT * 4U)
 
 /* ------------------------------------------------------------------------ */

@@ -50,5 +50,6 @@ static inline uint32_t sym_u32(const uint8_t *p)
 #include "proto.h"
 #include "measure.h"
 #include "pmwl.h"
+#include "diag_equiv.h"
 
 #endif
