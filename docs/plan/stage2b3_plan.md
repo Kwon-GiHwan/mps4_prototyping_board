@@ -222,3 +222,103 @@ Owner: STOP으로 나눈 prefix 실행은 원래 연속 실행과 스케줄이 �
 
 비용(3a pilot 4개 모델 기준): prefix 4 + 장벽 3(경계 A−1|A, A|B, B|A+2) + 장벽+마스크 4 ≈ 모델당 11 boot → 약 4.6 h
 (mobilenet 2.1 h). 펌웨어·이미지 변경 없음(blob만). 3a 결과를 본 뒤 범위를 줄여 다시 제안한다.
+
+## Phase 3b 검토 (owner 2026-11-09 2차: 3b 보드 실험 **미승인**, 검토와 pilot 설계만)
+
+Owner: STOP prefix와 KERNEL_WAIT는 원본 실행을 바꾼다. 각 방식의 완료 조건, 겹침·데이터 의존성에 미치는 영향, 원본과 비교해
+검증할 수 있는 것, 둘이 일치해도 정확한 귀속을 보장하지 못하는 조건, 최소 3b pilot을 검토. mobilenet 대기 명령 전후 차이와
+rnnoise `WINDOW_LOCALIZED(+2)`를 써서 **명령 창과 실제 처리부 활동의 시간 관계**를 검증할 방법. 해석 기준 유지:
+LOCALIZED ≠ 귀속, 공통 오프셋 가정 금지, 모델별 결과를 하나의 정렬 규칙으로 보정하지 않음, STOP·장벽 결과는 원본의 ground
+truth가 아님, yolo는 대조와 출력이 같을 뿐 독립 정답 검증은 미완.
+
+### 1. 각 방식이 보장하는 완료 조건 (TRM 102685 r0p0 인용, 그 밖은 추론으로 표시)
+
+| 명령 | 차단 | TRM이 보장하는 것 | 보장하지 않는 것 |
+| --- | --- | --- | --- |
+| `NPU_OP_STOP` | 예 | "Complete any outstanding operations and then transition to STOPPED state"; "The stop transition is complete only when all commands in the stream before the stop point are complete". 커널 완료 = "all result data has been written to memory" | STOP 뒤 명령은 실행되지 않으므로 원래 꼬리(다음 연산과의 겹침, 다음 연산 setup의 DMA)는 존재하지 않음 |
+| `NPU_OP_KERNEL_WAIT n=0` | 예 | "waits for all previous kernel operations be complete" — 그때까지 다음 명령이 시작하지 않음 | mem2mem DMA(DMA_START로 큐에 들어간 것)는 기다리지 않음(TRM: DMA_WAIT가 별도). 장벽 앞 연산들끼리의 겹침은 원래대로 |
+| `NPU_OP_KERNEL_WAIT n=1` (원본 mobilenet op 164 setup) | 예 | 직전 커널 연산(체인 포함) 하나만 남기고 완료 | 직전 연산은 계속 실행 중일 수 있음 |
+| `NPU_OP_PMU_MASK` | 예 | "NPU has updated the PMU mask" | 커널 완료를 기다린다는 서술 없음; 마스크가 언제 이벤트에 적용되는지 문서 없음("debug feature only") |
+
+추론(문서 아님): 커널 연산은 비차단이고 남은 커널은 최대 2개이므로, 마스크 명령이 파싱 시점에 적용된다면 창은 "명령이 지나간
+시간"이고 연산 실행은 그보다 늦게 끝난다. 3a에서 rnnoise W(A+2), mobilenet `w_A_wait`가 이 추론과 모순되지 않는다(증명 아님).
+
+### 2. 겹침과 데이터 의존성에 미치는 영향
+
+- **STOP prefix P(k)** (연산 0..k + STOP): 연산 k 뒤의 겹침이 사라진다(k+1의 BLOCKDEP 겹침, k+1 setup의 DMA_START 선반입,
+  메모리 경쟁). 0..k 사이 겹침은 원래대로. 데이터는 k까지의 결과만 메모리에 남는다. Δ_k = P(k) − P(k−1)은 "그 prefix 스케줄에서
+  연산 k를 더할 때의 증가분"이며, P(k−1)의 꼬리(k−1이 혼자 끝남)와 P(k)의 k−1 구간(k와 겹침)이 서로 달라 k의 몫과 k−1의 겹침
+  변화가 섞인다.
+- **장벽 KERNEL_WAIT n=0** (한 경계에만): 그 경계의 겹침 하나만 없앤다. 출력은 같아야 한다(대기만 추가). 장벽 뒤 연산의 시작이
+  늦어져 DMA·메모리 경쟁의 시점도 바뀐다. 장벽 앞에 큐된 mem2mem DMA는 계속 돌 수 있다.
+- 공통: 둘 다 연산을 "앞뒤가 비워진 상태"로 만든다. 원본에서 겹쳐 실행될 때의 stall·대기·메모리 경쟁은 재현하지 않는다.
+
+### 3. 원본 연속 실행과 비교해 검증할 수 있는 것
+
+| 항목 | STOP prefix | 장벽 |
+| --- | --- | --- |
+| 출력 | P(n) = 원본만(항등 검사). 중간 P(k)는 정답이 없어 판정 불가(같은 P(k)끼리 RUN 간 재현만) | 전체 OFM = ctl (필수 전제) |
+| 실행 교란 크기 | 마지막 연산 꼬리만 다름 — 크기는 측정 불가(원본에 대응 구간 없음) | 장벽만 넣은 실행 vs ctl: NPU·CPU 사이클과 이벤트별 합의 차이 = 그 경계 직렬화 비용 |
+| 이벤트별 스케줄 민감도 | Σ_k Δ_k = P(n) = 원본 합 (항등식이라 증거 아님) | 장벽 유무로 합이 안 변하는 이벤트 = "그 경계에서 스케줄 불변 후보"(예: mac_active 가설) |
+| 창과 실행의 시간 관계 | 없음(창을 쓰지 않음) | 장벽 + 마스크: 창을 열기 전/닫기 전에 비우면 창 값이 어떻게 바뀌는지 → 마스크 적용 시점과 in-flight 활동의 양 |
+| RUN 유효성 | **현재 규칙으로는 무효 예상**: runner가 출력 영역을 RUN마다 독(poison) 값으로 채우고 `OUTPUT_CHANGED`(output_crc ≠ poison_crc)를 요구하는데, 모델 출력은 마지막 연산이 쓴다. prefix를 쓰려면 사전 등록한 별도 유효성(`OUTPUT_CHANGED` 제외, `stream_completed`는 잘린 길이 기준)이 필요 — **분석 규칙 변경이라 owner 승인 사항** | 현재 model 모드 그대로 |
+
+### 4. 두 방식이 일치해도 정확한 귀속을 보장하지 못하는 조건
+
+1. **같은 방향의 편향**: 두 방식 모두 경계를 비워 연산을 고립시킨다. 둘이 같은 값을 주면 "고립된 연산의 양"이 일관된다는
+   뜻일 뿐, 원본에서 겹쳐 실행될 때 같은 양이라는 뜻이 아니다.
+2. **스케줄 민감 이벤트**: stall, `npu_active`, 메모리 대기(`*_stalled`), 일부 AO 이벤트는 겹침·경쟁에 따라 바뀐다. 이런
+   이벤트는 고립 값과 원본 값이 원리적으로 다를 수 있다.
+3. **mac_active 불변은 가설**: TRM 정의("block traversal, not stalled")에서 나온 가설일 뿐이다. 블록 크기·job 분할이 문맥에
+   따라 달라지면 깨진다.
+4. **마스크 적용 시점 미문서**: 장벽 + 마스크 창이 경계에서 정확히 나뉜다는 것도 마스크가 파싱 시점에 적용된다는 가정에 기댄다.
+   이 가정 자체를 아래 pilot에서 관찰한다.
+5. **KERNEL_WAIT 밖의 활동**: mem2mem DMA, 체인(한 연산으로 셈), 가중치 디코더 선반입처럼 커널 완료와 묶이지 않은 활동은
+   장벽으로 나뉘지 않는다.
+6. **합 보존은 증거가 아님**: Σ Δ = P(n), 창 합 = u는 항등식 성격이라 어느 쪽 배분이 맞는지 말하지 않는다.
+7. **작은 값**: rnnoise A의 최소 32사이클처럼 수십 사이클 규모는 마스크 전환 자체의 잔여 활동과 구분이 어렵다.
+
+### 5. 수정된 3b pilot 설계 안 (보드 미승인; 모델 2개·연산 1–2개)
+
+**목적: 명령 창과 실제 처리부 활동의 시간 관계를 관찰**한다. 연산별 귀속은 판정하지 않는다. 결과 라벨은 계약에서 사전 등록한다.
+
+- **모델과 연산** (3a와 같은 A, 선정 변경 없음):
+  - rnnoise A = 37: 3a 결과는 W(A)=8, W(A+2)=144. 작은 A가 두 창 뒤에 모이는 사례다.
+  - mobilenet A = 164: `w_A_wait`에서 W(A)의 7,335가 A 발행 전에 있었다. 원본 setup에 KERNEL_WAIT n=1이 있다.
+- **arm** (각각 3a `w_A` 또는 `ctl`에서 명령 하나만 다름):
+
+  | arm | 내용 | 무엇을 관찰 |
+  | --- | --- | --- |
+  | `ctl`, `ctl2` | 원본 (A/A) | 기준·드리프트 |
+  | `w_A` | 3a와 같은 창 (재현 확인) | 다른 날 같은 값인가 |
+  | `w_A_dopen` | W(A)를 여는 PMU_MASK(1) 바로 앞에 KERNEL_WAIT n=0 | 열 때 in-flight 활동 제거 → `w_A − w_A_dopen` = 열기 시점에 남아 있던 앞 연산들의 몫(이 스케줄 기준) |
+  | `w_A_dclose` | W(A)를 닫는 PMU_MASK(0) 바로 앞에 KERNEL_WAIT n=0 | 닫기 전에 A까지 완료 → `w_A_dclose − w_A` = 원래 창이 닫힌 뒤에 일어나던 활동 |
+  | `w_A_dboth` | 둘 다 | 앞뒤가 비워진 A 하나의 활동(고립 값) |
+  | `bar_open`, `bar_close` | 같은 위치 장벽만, 마스크 없음 | 출력 = ctl, 직렬화 비용, 장벽 arm의 교란 기준 |
+  | rnnoise만 `w_next`, `w_next_dopen` | W(A+2)와, 그 창을 열기 전에 비운 것 | 144가 열기 전에 발행된 작업의 in-flight 활동인가 |
+  | rnnoise만 `bar_next_open` | `w_next_dopen` 위치 장벽만, 마스크 없음 | 그 arm의 교란 기준 |
+
+- **시간 관계 판독** (사전 등록할 값; 어느 것도 "A의 것"이라는 판정 아님):
+  - 마스크가 파싱 시점에 적용된다면 다음이 함께 나와야 한다:
+    - `w_A_dopen`이 작다(A가 막 시작한 부분만).
+    - `w_A_dclose` ≥ S.
+    - `w_A_dboth` ≥ S.
+    - rnnoise `w_next_dopen` ≈ 0.
+  - 마스크 명령이 앞선 작업의 완료를 기다린다면 `w_A ≈ w_A_dclose`이고, `w_A_dopen`은 `w_A`에서 크게 줄지 않는다.
+  - 어느 쪽에도 맞지 않으면 `TIMING_UNRESOLVED`로 기록한다.
+  - mobilenet: `w_A_dopen` ≤ `w_A_wait`(3,249)여야 한다(원본 n=1 대기보다 더 비우므로). 아니면 그 자체를 보고한다.
+- **전제** (위반 시 `UNPROVEN`):
+  - 모든 RUN 유효, ctl2 = ctl.
+  - 장벽 arm의 출력 = ctl.
+  - 장벽 + 마스크 arm의 CPU 사이클 = 같은 위치 장벽만 arm의 CPU 사이클(교란 기준을 ctl이 아니라 짝 장벽 arm으로).
+- **STOP prefix**: 위 장벽 pilot과 분리한다. rnnoise P(A−1), P(A) 2 boot(약 6분)로 실행·유효성만 확인하며, `OUTPUT_CHANGED` 제외 유효성은 별도 승인을 받는다. 승인이 없으면 prefix는 3b pilot에서 뺀다.
+- **필요한 구현** (보드 없이, 승인 후):
+  - `cms`에 KERNEL_WAIT·STOP 삽입 helper를 추가하고 테스트와 변이 검사를 한다.
+  - blob 검증: 삽입 명령을 빼면 원본과 바이트가 같아야 한다.
+  - 판정 스크립트를 쓰고 변이 검사를 한다.
+  - 펌웨어·이미지 변경은 없다.
+- **비용** (파일럿 실측: rnnoise 3.0분/boot, mobilenet 11.9분/boot):
+  - rnnoise 11 boot ≈ 35분.
+  - mobilenet 8 boot ≈ 1.6 h.
+  - 합 ≈ 2.1 h. prefix 확인을 넣으면 +6분.
+  - 최소안은 rnnoise만 ≈ 35분.
