@@ -1,0 +1,17 @@
+mcc boot log: 10384 bytes -> /home/gihwan/evsweep/evidence_driver_p3_run/wfe/kws_micronet_m/mcc_boot.log
+Image loaded from \SOFTWARE\boot.bin
+Image loaded from \SOFTWARE\bram.bin
+Image loaded from \SOFTWARE\ddr.bin
+DDR memory test at 0x70000000: PASSED
+Clearing SCC CPUWAIT (0xFFFFFFFF80000000:0x00000000)
+--- boot298 kws_micronet_m wfe campaign exit=0
+30
+mcc boot log: 10384 bytes -> /home/gihwan/evsweep/evidence_driver_p3_run/wfe/ad_medium_int8/mcc_boot.log
+Image loaded from \SOFTWARE\boot.bin
+Image loaded from \SOFTWARE\bram.bin
+Image loaded from \SOFTWARE\ddr.bin
+DDR memory test at 0x70000000: PASSED
+Clearing SCC CPUWAIT (0xFFFFFFFF80000000:0x00000000)
+--- boot299 ad_medium_int8 wfe campaign exit=0
+30
+CAMPAIGN DONE

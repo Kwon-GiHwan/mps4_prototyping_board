@@ -1,0 +1,3 @@
+# Driver runner Phase 3 first validation: boots 298-299, driver runner image (bram 964ced9c), MLEK TA set-up (= profile 1), WFE wait
+298 kws_micronet_m wfe
+299 ad_medium_int8 wfe
