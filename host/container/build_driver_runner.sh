@@ -20,6 +20,17 @@ cmake -B "$B" -S "$M" -DCMAKE_TOOLCHAIN_FILE=$M/scripts/cmake/toolchains/bare-me
 cmake --build "$B" -j8 > "$OUT/build.log" 2>&1 || { echo "FAIL: build (see build.log)"; tail -30 "$OUT/build.log"; exit 1; }
 git diff --quiet -- source scripts && git -C dependencies/core-driver diff --quiet || { echo "FAIL: MLEK tree changed by the build"; exit 1; }
 cp "$B"/bin/mlek_pmu_runner.axf "$B"/bin/mlek_pmu_runner.map "$OUT/" || exit 1
+# Gate: the driver hooks must be ours (strong, T), not the driver's weak defaults (W), and the driver must call them.
+NM=/opt/arm/gcc-arm-none-eabi/bin/arm-none-eabi-nm; OD=/opt/arm/gcc-arm-none-eabi/bin/arm-none-eabi-objdump
+for s in ethosu_address_remap ethosu_irq_handler ethosu_semaphore_create ethosu_semaphore_take ethosu_semaphore_give \
+         hooks_install; do
+  "$NM" "$OUT/mlek_pmu_runner.axf" | grep -q " T $s\$" || { echo "FAIL gate: $s is not the runner's strong definition"; exit 1; }
+done
+"$OD" -d "$OUT/mlek_pmu_runner.axf" | awk '/<ethosu_dev_run_command_stream>:/,/^$/' | grep -q "bl.*<ethosu_address_remap>" \
+  || { echo "FAIL gate: ethosu_dev_run_command_stream does not call ethosu_address_remap"; exit 1; }
+"$NM" "$OUT/mlek_pmu_runner.axf" | grep -q " T ethosu_inference_begin\$" \
+  || { echo "FAIL gate: MLEK's profiler begin/end not linked (the platform is not stock)"; exit 1; }
+echo "GATE OK: driver hooks are the runner's, MLEK profiler hooks are MLEK's"
 mkdir -p "$OUT/image" && cp "$B"/bin/sectors/images.txt "$B"/bin/sectors/pmu_runner/* "$OUT/image/" || exit 1
 (cd "$OUT/image" && sha256sum * > image.sha256)
 rm -rf "$B"

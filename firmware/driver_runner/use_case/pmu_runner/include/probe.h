@@ -25,6 +25,10 @@ typedef struct {
     uint32_t base[PROBE_BASES], base_size[PROBE_BASES];
 } probe_t;
 
+/* Pulls the driver hooks (hooks.c) into the link. The driver defines the same names weakly, so a static library would
+ * otherwise never need hooks.o and the driver's defaults would run; build_driver_runner.sh checks the result. */
+void hooks_install(void);
+
 /* The probe of the RUN in progress; reset by probe_begin(). */
 extern volatile probe_t probe;
 void probe_begin(uint32_t wait_mode);

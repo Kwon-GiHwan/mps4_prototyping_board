@@ -3,6 +3,7 @@
  * what the platform and the driver set (caps.h). MainLoop() is MLEK's entry into the use case (Main.cc). */
 extern "C" {
 #include "caps.h"
+#include "probe.h"
 #include "ethosu_driver.h"
 #include "mmio.h"
 #include "pmu_session.h"
@@ -120,6 +121,7 @@ const frame_io_t uart_io = {uart_getc, uart_putc};
 void MainLoop()
 {
     (void)timestamp_source_ready();
+    hooks_install();
     pmu_session_bind(ethosu_drv.dev.reg);
     runner_init(&ports, &uart_io, DRV_BUILD_ID);
     for (;;) {

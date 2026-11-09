@@ -2,7 +2,7 @@
 with fake ports (firmware/driver_runner/tests/host_sim.c) and driven by the host's own DriverLink over a pipe: the same
 bytes as on the board. Expected values come from the simulator's documented fake model and from drwl.py, not from the
 module under test."""
-import os, shutil, struct, subprocess, sys, tempfile, threading, time, unittest, pathlib, zlib
+import csv, json, os, shutil, struct, subprocess, sys, tempfile, threading, time, unittest, pathlib, zlib
 REPO = pathlib.Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO / "host" / "lib"))
 import drwl
@@ -64,9 +64,13 @@ class PipeSerial:
         pass
 
     def close(self):
+        if self.p.stdin.closed:
+            return
         self.p.stdin.close()
         self.stderr = self.p.stderr.read().decode()
         self.p.wait(5)
+        self.p.stderr.close()
+        self.p.stdout.close()
 
 
 def link(**env):
@@ -128,6 +132,7 @@ class Session(unittest.TestCase):
         self.assertEqual(f["model_len"], len(simm([40], [30, 9])))
         self.assertEqual((f["n_base"], f["base0"], f["base_size2"]), (3, 0x70000010, 300))
         self.assertEqual(f["cnten_at_arm"], 0x80000007)                          # cycle counter + 3 slots
+        self.assertEqual([f[f"ev_irq{i}"] for i in range(3, 8)], [0] * 5)          # unarmed slots are not read
         self.assertEqual(f["pmcr_at_arm"], 0x2001)
         self.assertGreater(r.host_end_to_end(), r.npu_execution_dwt())
         self.assertEqual(l.run(), 0)                                            # a second RUN, same model
@@ -135,7 +140,6 @@ class Session(unittest.TestCase):
         l._ser.close()
         self.assertIn("evtyper=35,48 pmccntr_cfg=0x200023 cntenset=0x80000007", l._ser.stderr)
         self.assertIn("pmcr=0x2007", l._ser.stderr)                              # cnt_en kept, both resets set
-        l._ser.close = lambda: None
 
     def test_output_mismatch_is_reported_not_invalid(self):
         self.l = l = link()
@@ -152,6 +156,16 @@ class Session(unittest.TestCase):
         self.assertEqual(want_max, 103)                                          # 12 vs 12 ^ 0x7F = 115
         self.assertFalse(r.valid_flags & record_v2.OUTPUT_MATCH)
         self.assertEqual(record_v2.validity(r, [35]), (True, []))
+
+    def test_signed_difference(self):
+        self.l = l = link()
+        l.set_instrumentation_mode(2, [35], 1)
+        ifm = bytes([126]) + IFM[1:]                                             # output byte 0 = 127
+        gold = bytearray(expected_output(ifm, 0, 30)); gold[0] = 0x80            # -128: |127 - (-128)| = 255
+        load(l, drwl.pack(simm([40], [30]), [ifm], [bytes(gold)]))
+        l.load_input(b"")
+        l.run()
+        self.assertEqual((l.last_measurement.f["ofm_mismatch"], l.last_measurement.f["ofm_max_diff"]), (1, 255))
 
 
 class Failures(unittest.TestCase):
@@ -187,6 +201,9 @@ class Failures(unittest.TestCase):
             nack(lambda: l.request(0x05, b"\0" * 12), 3)                         # LENGTH
             nack(lambda: l.set_instrumentation_mode(1, [35]), 6)                 # END_ONLY is not offered
             nack(lambda: l.set_run_options(5), 6)                                # no such wait mode
+            nack(lambda: l.set_instrumentation_mode(0, [35]), 6)                 # OFF with events
+            nack(lambda: l.request(0x05, struct.pack("<11I", 2, 1, 9, *([35] * 8))), 6)   # 9 slots
+            nack(lambda: l.request(0x05, struct.pack("<11I", 2, 1, 1, 0x400, *([0] * 7))), 6)  # id > 10 bits
             nack(lambda: l.load_model_begin(1 << 30, 0), 6)                      # bigger than staging
             blob = drwl.pack(simm([40], [30]), [IFM], [expected_output(IFM, 0, 30)])
             l.load_model_begin(len(blob), zlib.crc32(blob) ^ 1)
@@ -201,6 +218,14 @@ class Failures(unittest.TestCase):
                     l.load_model_end()
                 self.assertEqual(c.exception.code, 9)
                 self.assertEqual(l.capabilities()["load_status"], status)
+            mis = bytearray(blob); struct.pack_into("<I", mis, 64, struct.unpack_from("<I", mis, 64)[0] + 4)
+            l.load_model_begin(len(mis), zlib.crc32(mis))                        # IFM offset off its 16-B grid
+            l.load_model_chunk(0, bytes(mis))
+            with self.assertRaises(rp.Nack):
+                l.load_model_end()
+            self.assertEqual(l.capabilities()["load_status"], 0x100 + 6)
+            l._ser.write(rp.build_frame(0x01, 99)[:-1] + b"\0")                  # a frame with a broken CRC
+            self.assertEqual(l.ping().bad_crc, 1)
             l.load_model_begin(len(blob), zlib.crc32(blob))
             nack(lambda: l.load_model_chunk(8, blob[8:16]), 7)                   # a gap
             nack(lambda: l.load_model_begin(len(blob), 0), 5)                    # not while loading
@@ -210,3 +235,42 @@ class Failures(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class BoardScript(unittest.TestCase):
+    """host/board/run_driver_events.py end to end against the simulator; the analyses' loader reads its output."""
+
+    def test_campaign_files(self):
+        sys.path.insert(0, str(REPO / "host" / "board")); sys.path.insert(0, str(REPO / "host" / "analysis"))
+        import run_driver_events as R
+        import fi101_s013 as S
+        links = []
+        R.DriverLink = lambda port: links.append(link()) or links[-1]
+        with tempfile.TemporaryDirectory() as d:
+            d = pathlib.Path(d)
+            (d / "w.drwl").write_bytes(drwl.pack(simm([40], [30]), [IFM], [expected_output(IFM, 0, 30)]))
+            (d / "ids.txt").write_text("35 48\n35 51 53\n")
+            argv = ["x", "--out", str(d / "out"), "--host-boot-index", "7", "--workload", str(d / "w.drwl"),
+                    "--ids", f"@{d / 'ids.txt'}", "--repeats", "3", "--wait-mode", "1",
+                    "--image-sha256", "b,r,d,i"]
+            old, sys.argv = sys.argv, argv
+            try:
+                self.assertEqual(R.main(), 0)
+            finally:
+                sys.argv = old
+            caps = json.loads((d / "out" / "capabilities.json").read_text())
+            self.assertEqual(caps["magic"], record_v2.CAPS_MAGIC)
+            runs = S.load_runs(d / "out", 1)                                     # reps 2, 3 of both sets
+            self.assertEqual(sorted(runs), [(1, 2), (1, 3), (2, 2), (2, 3)])
+            self.assertEqual(runs[(1, 2)]["ev"], {35: 350, 48: 481})
+            self.assertEqual(runs[(2, 3)]["ev"], {35: 350, 51: 511, 53: 532})
+            self.assertTrue(all(v["valid"] for v in runs.values()))
+            self.assertEqual({v["infer"] for v in runs.values()}, {(1 << 32) + 5000})
+            self.assertEqual({v["infer_cpu"] for v in runs.values()}, {777})
+            row = next(csv.DictReader(open(d / "out" / "runs.csv")))
+            self.assertEqual((row["wait_mode"], row["output_match"], row["boot_sha256"], row["runner"]),
+                             ("1", "1", "b", "driver_runner"))
+            raw = json.loads((d / "out" / "raw_runs.json").read_text())
+            self.assertEqual(len(raw), 1 + 2 * 3)
+        for l in links:
+            l._ser.close()

@@ -20,6 +20,11 @@
 extern struct ethosu_driver ethosu_drv;                                   /* MLEK ethosu_npu_init.c */
 bool ethosu_dev_handle_interrupt(struct ethosu_device *dev);             /* core driver ethosu_device.h */
 
+void hooks_install(void)
+{
+    probe_begin(WAIT_WFE);
+}
+
 static uint32_t npu_word(uint32_t off)
 {
     return *(volatile uint32_t *)((uintptr_t)ethosu_drv.dev.reg + off);

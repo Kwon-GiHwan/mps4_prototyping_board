@@ -96,12 +96,11 @@ static void set_mode(void)
     if (req.length != 12U + 4U * PMU_SLOTS) { nack(ERR_LENGTH, 0U); return; }
     mode = rd32(req.payload);
     count = rd32(req.payload + 8);
-    if ((mode != INSTRUMENTATION_EVENTS && mode != INSTRUMENTATION_OFF) || count > PMU_SLOTS
-        || (mode == INSTRUMENTATION_OFF && count != 0U)) {
+    if ((mode != INSTRUMENTATION_EVENTS && mode != INSTRUMENTATION_OFF) || (mode == INSTRUMENTATION_OFF && count != 0U)) {
         nack(ERR_RANGE, mode); return;
     }
-    c.count = count;
-    for (uint32_t i = 0; i < count; i++) { c.codes[i] = rd32(req.payload + 12U + 4U * i); }
+    c.count = count;   /* pmu_session_configure() owns the slot limit and the id range */
+    for (uint32_t i = 0; i < count && i < PMU_SLOTS; i++) { c.codes[i] = rd32(req.payload + 12U + 4U * i); }
     c.pmccntr_cfg = pmu_cfg.pmccntr_cfg;
     if (pmu_session_configure(&c) != 0U) { nack(ERR_RANGE, 1U); return; }
     pmu_cfg = c;
