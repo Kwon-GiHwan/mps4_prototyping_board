@@ -376,6 +376,10 @@ class RunnerLink:
                 self._buf.extend(chunk)
         raise ProtocolError("timed out waiting for a frame")
 
+    def _decode(self, payload: bytes):
+        """RUN_COMPLETE payload -> record object (has run_rc); the driver runner's link decodes record v2."""
+        return parse_measurement_payload(payload)
+
     # -- request/response --------------------------------------------------
 
     def send_raw(self, blob: bytes) -> None:
@@ -484,7 +488,7 @@ class RunnerLink:
                 # 0 -- word 0 is the magic. The run sequence here is the
                 # firmware's own run counter and is the value GET_RESULT wants;
                 # the protocol frame sequence is a different namespace.
-                self.last_measurement = parse_measurement_payload(frame.payload)
+                self.last_measurement = self._decode(frame.payload)
                 self.last_run_host_s = time.time() - t_sent
                 rc = self.last_measurement.run_rc
                 break

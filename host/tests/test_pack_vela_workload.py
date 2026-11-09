@@ -14,6 +14,15 @@ class T(unittest.TestCase):
         self.assertEqual(K.extract_cms(cop), raw)
 
 
+class GraphOrder(unittest.TestCase):
+    def test_op_order_to_graph_order(self):
+        e = [dict(name="b", len=2), dict(name="a", len=3)]
+        self.assertEqual(K.graph_order([b"BB", b"AAA"], e, ["a", "b"]), [b"AAA", b"BB"])
+        self.assertEqual(K.graph_order([b"BB", b"AAA"], e, ["b", "a"]), [b"BB", b"AAA"])
+        with self.assertRaises(SystemExit):
+            K.graph_order([b"BB", b"AAA"], e, ["a", "c"])
+
+
 class SplitDump(unittest.TestCase):
     E = [dict(name="b", len=2), dict(name="a", len=3)]          # Vela op order
 

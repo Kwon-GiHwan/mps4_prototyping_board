@@ -13,6 +13,7 @@ Blob layout, knob encoding and packing: host/lib/pmwl.py; profile -> knobs: host
 """
 import argparse, glob, hashlib, json, os, pathlib, struct, subprocess, sys, tempfile
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "lib"))
+import drwl
 import pmwl
 from mlek_profile import knob_args, parse_axi_limit, parse_ports
 
@@ -112,6 +113,14 @@ def reference(model, seed, ifm=None, in_names=None, out_names=None):
     return xs, [it.get_tensor(d["index"]).tobytes() for d in outs]
 
 
+def graph_order(parts, entries, graph_names):
+    """Bytes listed in the Vela op's order (entries carry the names) -> the model's graph order."""
+    by_name = {e["name"]: p for e, p in zip(entries, parts)}
+    if sorted(by_name) != sorted(graph_names):
+        raise SystemExit(f"op tensors {sorted(by_name)} != graph tensors {graph_names}")
+    return [by_name[n] for n in graph_names]
+
+
 def check_vela(prof, vela_version):
     """Refuse to pack under a profile whose Vela version or options differ from this packer's."""
     if vela_version != prof["vela"]["version"] or VELA_OPTIONS != prof["vela"]["options"]:
@@ -131,6 +140,8 @@ def main():
     ap.add_argument("--profile", help="frozen profile JSON: knobs, seed and Vela from it; no other knob flags")
     ap.add_argument("--ifm", help="raw IFM bytes to use instead of the seeded input; several IFMs = one after another in "
                                   "the model's graph input order (an MLEK VERIFY_TEST_OUTPUT dump)")
+    ap.add_argument("--format", choices=("pmwl", "drwl"), default="pmwl",
+                    help="pmwl: the runner's blob (default); drwl: the driver runner's (the Vela output file as it is)")
     ap.add_argument("--golden", help="raw OFM bytes the runner compares against instead of tflite_runtime's; several "
                                      "OFMs = one after another in the graph output order")
     a = ap.parse_args()
@@ -149,7 +160,8 @@ def main():
         subprocess.run(["vela", a.model, *VELA_OPTIONS, "--output-dir", d], check=True, capture_output=True)
         vela_out = glob.glob(os.path.join(d, "*_vela.tflite"))[0]
         info = inspect_vela(vela_out)
-        vela_sha = hashlib.sha256(open(vela_out, "rb").read()).hexdigest()
+        vela_bytes = open(vela_out, "rb").read()
+        vela_sha = hashlib.sha256(vela_bytes).hexdigest()
     given_ifm = pmwl.split_dump(open(a.ifm, "rb").read(), info["graph_inputs"], info["ifms"]) if a.ifm else None
     ifms, golds = reference(a.model, a.seed, given_ifm,
                             [e["name"] for e in info["ifms"]], [e["name"] for e in info["ofms"]])
@@ -159,7 +171,11 @@ def main():
         golds = pmwl.split_dump(open(a.golden, "rb").read(), info["graph_outputs"], info["ofms"])
     ifm, golden = b"".join(ifms), b"".join(golds)   # hashes below cover every IFM / OFM in IO-table order
     kw = pmwl.knobs(**kargs)
-    blob = pmwl.pack(info, ifms, golds, kw)
+    if a.format == "drwl":   # TFLM's tensors are in graph order; the packer's lists are in the Vela op's order
+        blob = drwl.pack(vela_bytes, graph_order(ifms, info["ifms"], info["graph_inputs"]),
+                         graph_order(golds, info["ofms"], info["graph_outputs"]))
+    else:
+        blob = pmwl.pack(info, ifms, golds, kw)
     open(a.out, "wb").write(blob)
     meta = dict(model=a.model, model_sha256=hashlib.sha256(open(a.model, "rb").read()).hexdigest(),
                 vela_sha256=vela_sha, accelerator="ethos-u85-1024",
@@ -171,7 +187,9 @@ def main():
                 **({} if len(ifms) == 1 and len(golds) == 1 else dict(
                     ifms=[dict(e, sha256=hashlib.sha256(x).hexdigest()) for e, x in zip(info["ifms"], ifms)],
                     ofms=[dict(e, sha256=hashlib.sha256(x).hexdigest()) for e, x in zip(info["ofms"], golds)])),
-                header_version=pmwl.parse_header(blob)["version"], knobs=[f"0x{w:08x}" for w in kw],
+                format=a.format, header_version=(pmwl.parse_header(blob)["version"] if a.format == "pmwl" else
+                                                 drwl.parse(blob)["version"]),
+                knobs=[f"0x{w:08x}" for w in kw] if a.format == "pmwl" else None,
                 cms_sha256=hashlib.sha256(info["cms"]).hexdigest(), profile=a.profile, profile_sha256=profile_sha,
                 graph_inputs=info["graph_inputs"], graph_outputs=info["graph_outputs"],
                 ifm_file=a.ifm, ifm_sha256=hashlib.sha256(ifm).hexdigest(), tflite_ofm_sha256=tflite_sha,
