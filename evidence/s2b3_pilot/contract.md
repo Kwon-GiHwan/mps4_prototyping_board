@@ -127,3 +127,10 @@ per-op attribution. Same image `d0cd4775`, **TA profile 1**, sets A, C, D (`ids.
   `evidence_s2b3_a1`; analysed by the same `s2b3_windows.py` with the pilot's raw and this root side by side.
 - Card: not re-inspected (no sudo step); the image digests recorded in every RUN row (`app_sha256`, `vectors_sha256`,
   `ddr_sha256`) are checked against the values above after the campaign.
+
+## Correction (2026-11-09, found in the runner–MLEK equivalence analysis; rules and results unchanged)
+
+The selection section and the descriptive list above say the golden of ad, mobilenet and rnnoise is "MLEK FI101".
+Only **mobilenet**'s is (amendment 1, MLEK input). ad (`55fa924c…`) and rnnoise (`5c3990a9…`) carry the
+**tflite_runtime OFM on the seed-1 IFM** (`evidence/stage1/contract.md` lines 39–41, `evidence/x1_mlek_models/
+manifest.x1.json`). The pilot's OFM results stand as measured: (0, 0) against each blob's own golden, equal to ctl.

@@ -30,9 +30,9 @@ M_k = median `mac_active` (event 48, set A, RUNs 3–10) of window W(A+k).
 
 | model | ctl NPU cycles | ctl2 | ctl `npu_active` | ctl CPU inference cycles | masked arms' CPU | OFM (mismatch, max diff), every arm and RUN |
 | --- | --- | --- | --- | --- | --- | --- |
-| ad | 148,357 | 148,082 | 145,838 | 169,462 | 168,521–169,789 | (0, 0) = MLEK golden |
-| mobilenet | 1,450,566 | 1,451,432 | 1,448,103 | 1,796,255 | 1,796,058–1,796,994 | (0, 0) = MLEK golden |
-| rnnoise | 53,175 | 53,329 | 50,670 | 53,175 | 52,487–53,248 | (0, 0) = MLEK golden |
+| ad | 148,357 | 148,082 | 145,838 | 169,462 | 168,521–169,789 | (0, 0) = tflite_runtime golden (seed-1 IFM) |
+| mobilenet | 1,450,566 | 1,451,432 | 1,448,103 | 1,796,255 | 1,796,058–1,796,994 | (0, 0) = MLEK FI101 golden (MLEK input) |
+| rnnoise | 53,175 | 53,329 | 50,670 | 53,175 | 52,487–53,248 | (0, 0) = tflite_runtime golden (seed-1 IFM) |
 | yolo | 449,939 | 450,828 | 447,457 | 593,667 | 593,253–594,161 | (955, 7) = ctl (MLEK golden pending) |
 
 - Every RUN of every arm valid (model mode incl. `knobs_honoured`); A/A ctl2 = ctl on every key of every set within
@@ -97,3 +97,5 @@ selection is unchanged.
   exactly (mobilenet, yolo), not separable (ad).
 - Does not show: which op the counts in any window belong to; a common window–op offset; any per-op exact attribution.
   The wait variant shows that in mobilenet MAC activity runs inside W(A) before op 164 is issued.
+
+Correction 2026-11-09: the golden column first said "MLEK golden" for ad and rnnoise; their goldens are tflite_runtime OFMs on the seed-1 IFM (only mobilenet's is MLEK FI101). See the correction at the end of `evidence/s2b3_pilot/contract.md`.
