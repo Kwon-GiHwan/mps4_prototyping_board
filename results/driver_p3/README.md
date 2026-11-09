@@ -25,5 +25,5 @@ POST_HOC_DESCRIPTIVE (P1, the window; set BASE medians):
 | kws_micronet_m | 91,140 | 91,666 (+526) | 111,198 | 2,626,583 |
 | ad_medium_int8 | 146,172 | 146,698 (+526) | 175,924 | 8,032,828 |
 
-The driver runner's NPU_EXECUTION exceeds NPU_ACTIVE by a constant 526 cycles on both models; the legacy window
+The driver runner's NPU_EXECUTION median exceeds the NPU_ACTIVE median by 526 cycles on both models (per-RUN spread not examined); the legacy window
 includes the CPU staging copies (29× and 55× NPU_ACTIVE). Neither claim says the driver runner equals MLEK (that is C).
