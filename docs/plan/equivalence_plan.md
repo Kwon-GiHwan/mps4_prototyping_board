@@ -148,3 +148,57 @@ firmware 변경이 필요하다: 판독 지점 추가, TA 표 한 줄. 이미지
   2. C1·C2 MLEK 실행 승인 여부.
   3. C3, 즉 MLEK profiler 이벤트 변경 허용 여부.
   4. B를 최소안으로 할지 전체로 할지.
+
+## 8. Owner 결정 (2026-11-09 2차)과 수정된 판정 기준 — §4를 대체한다(§4는 기록으로 남김)
+
+Owner 결정:
+- 자체 runner를 폐기하거나 Ethos-U 드라이버로 바꾸지 않는다.
+- runner의 계측 유효성과 MLEK 실행 동등성을 따로 검증한다.
+
+승인 범위:
+1. 2B-3 측정을 먼저 끝내고 원시 데이터와 보드 이미지를 보존한다.
+2. 실험 A(CAP, TA EXT MAXR 되읽기).
+3. C1·C2. MLEK 기준값이 없는 4개 모델(vww4·rnnoise·yolo·w2l)과 kws·ad를 같은 입력, 같은 Vela 산출물, TA profile 1로 돌려 출력과 PMU 값을 비교한다.
+4. MLEK 계측 빌드. 원본 MLEK 실행은 그대로 두고 MAC_ACTIVE 등을 세는 빌드를 추가하며, 그 빌드가 실행을 교란하는지 확인한다.
+5. 실험 B는 A와 기존 데이터의 결과를 보고 필요한 설정부터 하나씩 한다. D-cache를 바꾸면 캐시 일관성과 출력을 확인하고, WFI와 WFE는 구분한다.
+
+2B-4(QREAD)는 기존 runner의 레지스터 직접 접근 방식으로 계속 검토하며, 드라이버 전환은 필수 조건이 아니다.
+Stage 1·2A·3 측정값은 보존하고, 이번 검증에서 실제로 영향을 받는 항목만 따로 재평가한다.
+
+### 8.1 판정을 둘로 나눈다
+
+**(R) runner 계측 유효성** — runner가 자기 실행을 올바르게 재는가. MLEK와는 무관하다.
+
+| 항목 | 기준 | 판정 |
+| --- | --- | --- |
+| R1 실행 정확성 | 각 blob 자신의 golden과 OFM 바이트 일치, RUN 유효(model 모드) | `VALID` / `INVALID` |
+| R2 설정 적용 | knob·TA·AXI·MEM_ATTR·POWER_CTRL 되읽기 일치, CAP·TA EXT MAXR의 실제 적용값 기록(실험 A) | `APPLIED` / `NOT_APPLIED` / `UNPROVEN` |
+| R3 계측 창 | seam이 RUN마다 정확히 1번 발생, 카운터 overflow 없음, 측정 창 정의(E4) 기록 | `VALID` / `INVALID` |
+| R4 재현 | 같은 blob이 이미지 사이에서 mac_active·beat가 같고 npu_active가 범위 안(S0-4 방식) | `REPRODUCED` / `NOT_REPRODUCED` |
+
+**(M) MLEK 실행 동등성** — 같은 입력·같은 Vela 산출물·TA profile 1에서 runner의 값이 MLEK와 같은가.
+
+| 항목 | 기준 | 데이터가 없거나 조건이 다를 때 |
+| --- | --- | --- |
+| M1 출력 | 같은 IFM에서 runner OFM = MLEK FI101 OFM (바이트) | `UNPROVEN`. 다른 입력이나 tflite 일치는 근거로 쓰지 않는다 |
+| M2 beat | MLEK와 정확히 같음 | MLEK 값이 없으면 `UNPROVEN` |
+| M3 NPU_ACTIVE | \|runner 중앙값 − MLEK 중앙값\| ≤ max(MLEK 반복 범위, runner 측정 RUN 범위) | 같음 |
+| M4 처리부 이벤트(MAC_ACTIVE 등) | MLEK 계측 빌드 값과 M3과 같은 규칙. 단, 계측 빌드가 원본 MLEK를 교란하지 않을 때만(원본과 같은 입력에서 ACTIVE와 beat가 M2·M3 기준으로 같음) | 계측 빌드가 없거나 교란이 있으면 `UNPROVEN` |
+
+**입력 조건:** M 판정에는 같은 입력의 실행만 쓴다. 기존 MLEK B1–B3(MLEK 내장 샘플 입력)과 runner(seed-1 입력)의 비교(§3)는 **기술용**이며 M 판정의 근거가 아니다. mobilenet만 같은 입력이다.
+
+### 8.2 실행 환경 차이(E5, 실험 B)의 처리
+
+- 모든 차이가 `INERT`여야 연구를 진행할 수 있다고 가정하지 않는다.
+- 차이 하나에 대해 변형 arm과 기준 arm(같은 이미지)을 비교한다. 2B-0b 허용오차 안이면 `INERT`, 밖이면 `EFFECTIVE`다.
+- `EFFECTIVE`가 나오면:
+  1. 원인을 구분한다. 어떤 지표가 바뀌었는지(npu_active만인지, mac_active·beat까지인지), 어느 모델에서인지 본다.
+  2. 그 지표를 쓰는 결과에 **적용할 수 있는 실행 조건**을 명시한다. 예: "busy-poll·D-cache off 실행 기준", "WFE 실행에서는 X % 다름".
+  3. 결과를 폐기하지 않는다.
+- WFI(`__WFI`)와 WFE(`__WFE`, MLEK)는 다른 변형으로 둔다. D-cache 변형은 출력 영역의 clean/invalidate와 OFM 일치를 함께 확인한다.
+
+### 8.3 기존 결과의 재평가 범위
+
+- Stage 1·2A·3과 2B 결과는 그대로 둔다.
+- 재평가하는 것은 이번 검증에서 바뀐 판정이 걸린 항목뿐이다. 예: M1이 `UNPROVEN`에서 `EQUIVALENT`로 바뀐 모델의 "MLEK와 같은 출력" 문구, `EFFECTIVE` 차이가 걸린 지표의 적용 조건 표기.
+- 재평가는 원 결과 옆에 덧붙이는 표로 남긴다.
