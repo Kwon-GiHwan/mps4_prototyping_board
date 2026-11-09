@@ -17,7 +17,9 @@ import pathlib
 import sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
-from ofm_compare import IFM_MARK, OFM_MARK, compare, section
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "lib"))
+import pmwl  # noqa: E402
+from ofm_compare import IFM_MARK, OFM_MARK, compare, section  # noqa: E402
 
 TA_LINES = ("Configured TA_SRAM\t@0x51102000", "Configured TA_EXT\t@0x51102400")
 SOURCE = "MLEK b2c0bb2 inference_runner on FI101, VERIFY_TEST_OUTPUT dump (amendment 2)"
@@ -27,9 +29,28 @@ def sha(b: bytes) -> str:
     return hashlib.sha256(b).hexdigest()
 
 
+def op_order(dump: bytes, meta: dict, graph_key: str, entries_key: str) -> bytes | None:
+    """A dump of several tensors (MLEK's graph order) rearranged into the blob's Vela op order; a one-tensor blob's
+    meta has neither list and the dump is returned as is. None if the dump does not split into those tensors."""
+    if entries_key not in meta:
+        return dump
+    try:
+        return b"".join(pmwl.split_dump(dump, meta[graph_key], meta[entries_key]))
+    except SystemExit:
+        return None
+
+
+def dumps(text: str, meta: dict) -> tuple[bytes | None, bytes | None]:
+    return (op_order(section(text, IFM_MARK), meta, "graph_inputs", "ifms"),
+            op_order(section(text, OFM_MARK), meta, "graph_outputs", "ofms"))
+
+
 def validity(text: str, meta: dict, frozen: dict, mlek_vela_sha256: str) -> dict:
-    """G1-G5 for one MLEK capture (text = app UART, CR removed) against the packed blob's meta."""
-    ifm, ofm = section(text, IFM_MARK), section(text, OFM_MARK)
+    """G1-G5 for one MLEK capture (text = app UART, CR removed) against the packed blob's meta. Several IFMs / OFMs:
+    the dump is split by the meta's graph order and compared in the blob's op order."""
+    ifm, ofm = dumps(text, meta)
+    if ifm is None or ofm is None:
+        ifm, ofm = ifm or b"", ofm or b""
     return {
         "G1_lengths": len(ifm) == meta["ifm_len"] and len(ofm) == meta["ofm_len"],
         "G2_same_vela_output": mlek_vela_sha256 == meta["vela_sha256"],
@@ -47,7 +68,7 @@ def entry(text: str, meta: dict, frozen: dict, mlek_vela_sha256: str, tflite_ofm
         raise ValueError("golden rejected: " + ", ".join(k for k, ok in g.items() if not ok))
     if sha(tflite_ofm) != meta["tflite_ofm_sha256"]:
         raise ValueError("tflite_ofm.bin is not the packer's tflite_runtime OFM for this input")
-    ofm = section(text, OFM_MARK)
+    ofm = dumps(text, meta)[1]
     diag = compare(ofm, tflite_ofm)
     e = dict(frozen, blob_sha256=meta["blob_sha256"], golden={
         "source": SOURCE, "input_sha256": meta["ifm_sha256"], "ofm_sha256": meta["golden_sha256"]})

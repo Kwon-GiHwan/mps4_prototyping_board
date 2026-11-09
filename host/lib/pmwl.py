@@ -223,3 +223,17 @@ def parse_header(blob: bytes) -> dict:
     h["inputs"] = [dict(arena_off=a, len=ln, data_off=d) for a, ln, d in ents[:n_in]]
     h["outputs"] = [dict(arena_off=a, len=ln, golden_off=d) for a, ln, d in ents[n_in:]]
     return h
+
+
+def split_dump(raw: bytes, graph_names: list[str], entries: list[dict]) -> list[bytes]:
+    """Bytes dumped tensor after tensor in the model's graph order (MLEK's GetInputTensor/GetOutputTensor order) ->
+    one bytes object per entry in the Vela op's order (entries: dicts with name and len), matched by tensor name."""
+    size = {e["name"]: e["len"] for e in entries}
+    if sorted(graph_names) != sorted(size):
+        raise SystemExit(f"graph tensors {graph_names} != Vela op tensors {sorted(size)}")
+    if len(raw) != sum(size.values()):
+        raise SystemExit(f"dump holds {len(raw)} bytes; the tensors need {sum(size.values())}")
+    parts, at = {}, 0
+    for n in graph_names:
+        parts[n] = raw[at:at + size[n]]; at += size[n]
+    return [parts[e["name"]] for e in entries]

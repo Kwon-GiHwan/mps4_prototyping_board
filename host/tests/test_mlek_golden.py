@@ -15,7 +15,30 @@ VELA = "031fade0e9b7136e2ed55a23422efbcc7aba28a32c8ebd3e043afbcc2f44bb75"   # ML
 TFL = (E / "tflite_ofm.bin").read_bytes()
 
 
+def two_tensor_case():
+    """A two-OFM model whose MLEK graph order (b, a) differs from the Vela op order (a, b)."""
+    a, b, ifm = b"\x01\x02\x03", b"\x09\x08", b"\x05" * 4
+    hexes = lambda bs: "\n".join("0x%02x, " % x for x in bs)
+    text = ("Configured TA_SRAM\t@0x51102000\nConfigured TA_EXT\t@0x51102400\n" + G.IFM_MARK + "\n" + hexes(ifm)
+            + "\nnext\n" + G.OFM_MARK + "\n" + hexes(b + a) + "\nend\n")
+    sha = lambda x: hashlib.sha256(x).hexdigest()
+    meta = dict(ifm_len=4, ofm_len=5, vela_sha256="v", model_sha256="m", cms_sha256="c", ifm_sha256=sha(ifm),
+                golden_sha256=sha(a + b), graph_inputs=["i"], graph_outputs=["b", "a"],
+                ifms=[dict(name="i", len=4)], ofms=[dict(name="a", len=3), dict(name="b", len=2)])
+    return text, meta, dict(model_sha256="m", cms_sha256="c")
+
+
 class Validity(unittest.TestCase):
+    def test_several_tensors_compared_in_op_order(self):
+        text, meta, frozen = two_tensor_case()
+        self.assertTrue(all(G.validity(text, meta, frozen, "v").values()))
+        self.assertEqual(G.dumps(text, meta)[1], b"\x01\x02\x03\x09\x08")
+        bad = dict(meta, graph_outputs=["a", "b"])                    # wrong order -> the golden hash differs
+        self.assertFalse(G.validity(text, bad, frozen, "v")["G5_blob_holds_dump"])
+        short = dict(meta, ofms=[dict(name="a", len=3), dict(name="b", len=3)], ofm_len=6)
+        g = G.validity(text, short, frozen, "v")
+        self.assertFalse(g["G1_lengths"] or g["G5_blob_holds_dump"])
+
     def test_real_capture_passes(self):
         self.assertEqual(G.validity(TEXT, META, FROZEN, VELA),
                          dict.fromkeys(("G1_lengths", "G2_same_vela_output", "G3_ta_configured",

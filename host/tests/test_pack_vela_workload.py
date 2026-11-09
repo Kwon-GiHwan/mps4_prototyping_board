@@ -14,6 +14,23 @@ class T(unittest.TestCase):
         self.assertEqual(K.extract_cms(cop), raw)
 
 
+class SplitDump(unittest.TestCase):
+    E = [dict(name="b", len=2), dict(name="a", len=3)]          # Vela op order
+
+    def test_graph_order_to_op_order(self):
+        self.assertEqual(pmwl.split_dump(b"AAABB", ["a", "b"], self.E), [b"BB", b"AAA"])
+        self.assertEqual(pmwl.split_dump(b"BBAAA", ["b", "a"], self.E), [b"BB", b"AAA"])
+        self.assertEqual(pmwl.split_dump(b"xyz", ["t"], [dict(name="t", len=3)]), [b"xyz"])   # one tensor as before
+
+    def test_refusals(self):
+        with self.assertRaises(SystemExit):
+            pmwl.split_dump(b"AAAB", ["a", "b"], self.E)                 # length
+        with self.assertRaises(SystemExit):
+            pmwl.split_dump(b"AAABBC", ["a", "b"], self.E)
+        with self.assertRaises(SystemExit):
+            pmwl.split_dump(b"AAABB", ["a", "c"], self.E)                # names
+
+
 class Profile(unittest.TestCase):
     def test_baseline_profile_words(self):
         # words 16..27: axi_chan OFF, regioncfg (const/arena EXT, fast SRAM), qconfig (cmd EXT), MEM_ATTR 0/0/4/4,

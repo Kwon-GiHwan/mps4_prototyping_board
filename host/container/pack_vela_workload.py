@@ -77,14 +77,16 @@ def inspect_vela(path):
         raise SystemExit("OfflineMemoryAllocation lacks IFM/OFM offsets")
     io = lambda tis: [dict(name=sg.Tensors(ti).Name().decode(), off=offs[ti], len=size(sg.Tensors(ti))) for ti in tis]
     ins, outs = io(ifm_ts), io(ofm_ts)
+    graph = lambda n, at: [sg.Tensors(at(i)).Name().decode() for i in range(n)]
     return dict(cms=extract_cms(data(0)), const=data(1), arena_size=size(t(2)), fast_size=size(t(3)),
+                graph_inputs=graph(sg.InputsLength(), sg.Inputs), graph_outputs=graph(sg.OutputsLength(), sg.Outputs),
                 ifm_off=ins[0]["off"], ifm_len=ins[0]["len"], ofm_off=outs[0]["off"], ofm_len=outs[0]["len"],
                 ifms=ins, ofms=outs, inputs=[(e["off"], e["len"]) for e in ins],
                 outputs=[(e["off"], e["len"]) for e in outs])
 
 
 def reference(model, seed, ifm=None, in_names=None, out_names=None):
-    """IFMs (seeded, or the given raw bytes for a one-IFM model) and the tflite_runtime OFMs of the original model
+    """IFMs (seeded, or the given raw bytes, one per IFM in in_names order) and the tflite_runtime OFMs of the original model
     on them, as lists in the order of in_names / out_names (the Vela op's order; matched by tensor name). The seeded
     IFMs are drawn from one generator in that order, so a one-IFM model gets the same bytes as before."""
     import numpy as np
@@ -96,13 +98,13 @@ def reference(model, seed, ifm=None, in_names=None, out_names=None):
         ins, outs = by_name(ins, in_names), by_name(outs, out_names)
     except StopIteration:
         raise SystemExit(f"Vela IFM/OFM names {in_names}/{out_names} not all in the original model") from None
-    if ifm is not None and len(ins) != 1:
-        raise SystemExit(f"--ifm gives one IFM; the model has {len(ins)}")
+    if ifm is not None and len(ifm) != len(ins):
+        raise SystemExit(f"--ifm gives {len(ifm)} IFMs; the model has {len(ins)}")
     rng = np.random.default_rng(seed)
     xs = []
-    for d in ins:
+    for k, d in enumerate(ins):
         if ifm is not None:
-            x = np.frombuffer(ifm, dtype=d["dtype"]).reshape(d["shape"])
+            x = np.frombuffer(ifm[k], dtype=d["dtype"]).reshape(d["shape"])
         else:
             x = rng.integers(np.iinfo(d["dtype"]).min, np.iinfo(d["dtype"]).max + 1, size=d["shape"], dtype=d["dtype"])
         it.set_tensor(d["index"], x); xs.append(x.tobytes())
@@ -127,8 +129,10 @@ def main():
     ap.add_argument("--ta-profile", type=int, help="timing adapters: 1 = MLEK sys_dram_mid, 2 = pass-through (default OFF = untouched)")
     ap.add_argument("--ports", help="region ports, e.g. cmd=ext,const=ext,arena=sram,fast=sram (default OFF)")
     ap.add_argument("--profile", help="frozen profile JSON: knobs, seed and Vela from it; no other knob flags")
-    ap.add_argument("--ifm", help="raw IFM bytes to use instead of the seeded input (output verification only)")
-    ap.add_argument("--golden", help="raw OFM bytes the runner compares against instead of tflite_runtime's")
+    ap.add_argument("--ifm", help="raw IFM bytes to use instead of the seeded input; several IFMs = one after another in "
+                                  "the model's graph input order (an MLEK VERIFY_TEST_OUTPUT dump)")
+    ap.add_argument("--golden", help="raw OFM bytes the runner compares against instead of tflite_runtime's; several "
+                                     "OFMs = one after another in the graph output order")
     a = ap.parse_args()
     profile_sha = None
     if a.profile:
@@ -146,13 +150,13 @@ def main():
         vela_out = glob.glob(os.path.join(d, "*_vela.tflite"))[0]
         info = inspect_vela(vela_out)
         vela_sha = hashlib.sha256(open(vela_out, "rb").read()).hexdigest()
-    ifms, golds = reference(a.model, a.seed, open(a.ifm, "rb").read() if a.ifm else None,
+    given_ifm = pmwl.split_dump(open(a.ifm, "rb").read(), info["graph_inputs"], info["ifms"]) if a.ifm else None
+    ifms, golds = reference(a.model, a.seed, given_ifm,
                             [e["name"] for e in info["ifms"]], [e["name"] for e in info["ofms"]])
-    tflite_sha = hashlib.sha256(b"".join(golds)).hexdigest()
+    tflite_ofm = b"".join(golds)   # tflite_runtime on the same IFMs, Vela op order: the numerical-difference diagnostic
+    tflite_sha = hashlib.sha256(tflite_ofm).hexdigest()
     if a.golden:
-        if len(golds) != 1:
-            raise SystemExit(f"--golden gives one OFM; the model has {len(golds)}")
-        golds = [open(a.golden, "rb").read()]
+        golds = pmwl.split_dump(open(a.golden, "rb").read(), info["graph_outputs"], info["ofms"])
     ifm, golden = b"".join(ifms), b"".join(golds)   # hashes below cover every IFM / OFM in IO-table order
     kw = pmwl.knobs(**kargs)
     blob = pmwl.pack(info, ifms, golds, kw)
@@ -169,11 +173,13 @@ def main():
                     ofms=[dict(e, sha256=hashlib.sha256(x).hexdigest()) for e, x in zip(info["ofms"], golds)])),
                 header_version=pmwl.parse_header(blob)["version"], knobs=[f"0x{w:08x}" for w in kw],
                 cms_sha256=hashlib.sha256(info["cms"]).hexdigest(), profile=a.profile, profile_sha256=profile_sha,
+                graph_inputs=info["graph_inputs"], graph_outputs=info["graph_outputs"],
                 ifm_file=a.ifm, ifm_sha256=hashlib.sha256(ifm).hexdigest(), tflite_ofm_sha256=tflite_sha,
                 golden_file=a.golden, golden_sha256=hashlib.sha256(golden).hexdigest(),
                 axi=kargs["axi"], ports=kargs["ports"], axi_limit=kargs["axi_limit"], power_ctrl=kargs["power_ctrl"],
                 fast_base=kargs["fast_base"], ta_profile=kargs["ta_profile"])
     open(a.out + ".json", "w").write(json.dumps(meta, indent=2))
+    open(a.out + ".tflite_ofm.bin", "wb").write(tflite_ofm)
     print(json.dumps(meta, indent=1))
 
 
