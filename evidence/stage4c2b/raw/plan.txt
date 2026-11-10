@@ -1,0 +1,4 @@
+# Stage 4C-2b: Cin 40, 48, 64 (reference), Stage 4 image 83398c7, MLEK TA set-up (= TA profile 1), 5 RUNs (1 warm-up)
+348 s4c2_conv_cin40 @/home/gihwan/evsweep_stage4c2b/conditions.txt
+349 s4c2_conv_cin48 @/home/gihwan/evsweep_stage4c2b/conditions.txt
+350 s4c2_conv_cin64 @/home/gihwan/evsweep_stage4c2b/conditions.txt
