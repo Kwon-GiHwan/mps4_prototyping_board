@@ -1,0 +1,9 @@
+# Stage 4A/4B: one boot per isolated operator, driver runner + GET_OUTPUT, MLEK TA set-up (= TA profile 1), 5 RUNs (1 warm-up)
+330 s4_conv_base @/home/gihwan/evsweep_stage4/conditions.txt
+331 s4_conv_cin15 @/home/gihwan/evsweep_stage4/conditions.txt
+332 s4_conv_cout95 @/home/gihwan/evsweep_stage4/conditions.txt
+333 s4_dw_base @/home/gihwan/evsweep_stage4/conditions.txt
+334 s4_dw_c143 @/home/gihwan/evsweep_stage4/conditions.txt
+335 s4_fc_base @/home/gihwan/evsweep_stage4/conditions.txt
+336 s4_fc_in95 @/home/gihwan/evsweep_stage4/conditions.txt
+337 s4_fc_out287 @/home/gihwan/evsweep_stage4/conditions.txt
