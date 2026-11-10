@@ -39,7 +39,9 @@ These are observation levels. Nothing here is an operator's start/end cycle or a
 - **Around the boundaries (q06)**: QREAD stands at 18,820 (right after op 98's kernel instruction) for ≈ 2.5–3.4 k cycles
   before op 99 is seen passed; op 99 passed → op 100 passed ≈ 1.82–1.84 k cycles (one RUN 2.25 k); bracket widths ≈ 296
   or ≈ 725 cycles (one or two polls).
-- **Traffic** (q06 vs base, medians per set): `p12/summary.json` → `P1_descriptive.traffic`.
+- **Traffic and other events** (q06 vs base, medians per set, 18 event/set pairs; `p12/summary.json` →
+  `P1_descriptive.traffic`): all SRAM/EXT transfer and beat counters within 1 %; the only one beyond is event 53 (set 2,
+  +7.1 %; not in TRM 110, not interpreted).
 
 ## Judgement
 
