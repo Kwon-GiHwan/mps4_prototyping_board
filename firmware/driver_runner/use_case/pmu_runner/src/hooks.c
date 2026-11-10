@@ -15,7 +15,7 @@
 
 #define NPU_OFF_STATUS 0x04U
 #define NPU_OFF_QREAD  0x18U
-#define NPU_OFF_QSIZE  0x24U  /* TRM BASE.QSIZE */
+#define NPU_OFF_QSIZE  0x20U  /* core driver ethosu85_interface.h NPU_REG_QSIZE (0x24 is PROT) */
 
 extern struct ethosu_driver ethosu_drv;                                   /* MLEK ethosu_npu_init.c */
 bool ethosu_dev_handle_interrupt(struct ethosu_device *dev);             /* core driver ethosu_device.h */

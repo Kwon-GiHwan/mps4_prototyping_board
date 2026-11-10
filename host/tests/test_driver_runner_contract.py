@@ -109,6 +109,11 @@ class Commands(unittest.TestCase):
         p = INC["probe.h"]
         self.assertEqual((define("WAIT_WFE", p), define("WAIT_BUSY", p)), (driver_link.WAIT_WFE, driver_link.WAIT_BUSY))
 
+    def test_irq_snapshot_offsets_are_the_drivers(self):
+        # literals from MLEK b2c0bb2 core driver src/ethosu85_interface.h (NPU_REG_STATUS/QREAD/QSIZE; 0x24 is PROT)
+        h = SRC["hooks.c"]
+        self.assertEqual((define("NPU_OFF_QREAD", h), define("NPU_OFF_QSIZE", h)), (0x18, 0x20))
+
 
 if __name__ == "__main__":
     unittest.main()
