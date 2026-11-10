@@ -29,11 +29,17 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "lib"))
 import drwl  # noqa: E402
 import stage4 as S4  # noqa: E402
+from fi101_s013 import MANIFESTS  # noqa: E402  (the project's N_MAC source, Stage 1/3)
 
 REPO = pathlib.Path(__file__).resolve().parents[2]
 WORKLOADS = {"kws_micronet_m": ("model", ("base", "cache64k", "cache0")),
              "ad_medium_int8": ("model", ("base", "cache64k", "cache0")),
              "s4_dw_base": ("op", ("base", "cache0")), "s4_conv_base": ("op", ("base", "cache0"))}
+# Effective MACs = the project definition: N_MAC of the original tflite (host/container/workload_meta.py; CONV_2D,
+# DEPTHWISE_CONV_2D, FULLY_CONNECTED, BATCH_MATMUL), as used by Stage 1/3. An isolated operator has no manifest entry:
+# its base compile's count is used (one operator: Vela's count equals the formula, Stage 4 gate B).
+EFFECTIVE = {k: v["n_mac"] for f in MANIFESTS for k, v in json.loads((REPO / f).read_text())["workloads"].items()
+             if isinstance(v, dict) and v.get("n_mac")}
 EARLIER = {"kws_micronet_m": (REPO / "evidence/driver_m7/raw/wfe/kws_micronet_m", 2),
            "ad_medium_int8": (REPO / "evidence/driver_m7/raw/wfe/ad_medium_int8", 2),
            "s4_dw_base": (REPO / "evidence/stage4/raw/conds/s4_dw_base/wfe", 1),
@@ -85,7 +91,7 @@ def constant_by_set(runs: dict) -> dict:
 
 
 def comp_of(c50: dict, wl: pathlib.Path, name: str, n_mac: int) -> dict:
-    """n_mac = effective MACs of the operator definition (the base compile's); Vela's own count stays in vela_macs."""
+    """n_mac = effective MACs (EFFECTIVE); Vela's own count of this compile stays in vela_macs."""
     meta = json.loads((wl / f"{name}.drwl.json").read_text())
     return dict(n_mac=n_mac, vela_macs=c50["nn_macs"], ofm_block=c50["compute_sig"], ofm_ublock="", n_kernels=c50["kernels"],
                 vela_npu_cycles=c50["cycles_npu"], vela_sha256=meta["vela_sha256"])
@@ -101,7 +107,7 @@ def main(root: str, wl: str, s50: str, out: str, plan: str = "5-1") -> dict:
         for v in variants:
             name = f"{w}_{v}"
             folder = root / "conds" / name / "wfe"
-            comp = comp_of(c50[w][v], wl, name, c50[w]["base"]["nn_macs"])
+            comp = comp_of(c50[w][v], wl, name, EFFECTIVE.get(w, c50[w]["base"]["nn_macs"]))
             assert comp["vela_sha256"] == c50[w][v]["vela_sha256"], name   # the measured DRWL is the 5-0 artifact
             if not (folder / "runs.csv").exists() or not S4.load(folder, 1):   # a refused first RUN writes no runs.csv
                 res[name] = dict(verdict="NOT_EXECUTABLE", why="no completed RUN")

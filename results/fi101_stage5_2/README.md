@@ -22,13 +22,35 @@ Contract `evidence/stage5_2/contract.md` (frozen `caa7325`, before boot 361).
   - Each Size output equals its Performance output.
 - **Base reproduction 3/3:** commonly constant counters equal the earlier measurement of the same DRWL (kws 9, ad 9, Cin 64 10 compared; 0 differ). The references are kws / ad from 5-1 boots 351 / 354 and Cin 64 from 4C-2b boot 350.
 
-## Analysis fix before reporting (contract conformance; verdicts unchanged)
+## Effective MACs — two corrections (verdicts unchanged)
 
-- **Defect:** `stage5.py` took each variant's MAC count from that variant's Vela compile. For kws Size this is 15,580,852 instead of the operator definition's 14,208,852. The contract fixes effective MACs to the original definition.
-- **Affected:** only the derived fields of the kws pair (MAC change, cycles per MAC, the MAC-proportional expectation). Before the fix they read MAC +9.7 % and cycles per MAC −8.5 %.
-- **Not affected:** the verdict (`UNRESOLVED`; the tolerance test comes first). 5-1 is also unaffected, since all 5-1 variants have the base's count: re-running 5-1 gives the same summary apart from the new field.
-- **Fix:** effective MACs = the base compile's count. Vela's per-configuration count is kept in `vela_macs`.
-- **Tests:** a new test (RED before the fix) and an 8th mutation in `evidence/stage5/mutate_stage5.py`; **8/8 RED**, restored by digest.
+**1. Before reporting (`93f26a3`).**
+- `stage5.py` took each variant's MAC count from that variant's Vela compile (kws Size 15,580,852). The pair derived MAC +9.7 % from it.
+- The fix used the base compile's count instead.
+
+**2. After the owner review (2026-11-11).**
+- The base compile's count is also a Vela count: kws 14,208,852 and ad 61,466,400.
+- The project definition used by Stage 1/3 is the tflite N_MAC (`host/container/workload_meta.py`):
+  - kws **15,556,352**
+  - ad **62,346,720**
+- The contract's "kws 14,208,852 … = the model's" was wrong (amendment A in the contract).
+- `stage5.py` now takes effective MACs from the Stage 1 manifests (`EFFECTIVE`). An isolated operator uses its base compile's count, which equals the operator formula (Stage 4 gate B).
+- Vela's per-configuration count stays in `vela_macs`.
+
+**Checks.**
+- Tests: 2 new tests, each RED before its fix.
+- Mutation: 9 mutations in `evidence/stage5/mutate_stage5.py`, **9/9 RED**, restored by digest.
+- Verdicts: `evidence/stage5_2/verdicts_unchanged.py` compares against the summaries before the corrections (5-1 at `caa7325`, 5-2 at `93f26a3`). Config, output, base-reproduction and pair verdicts and every counter are equal. The check fails on each of 3 seeded changes (verdict, counter, output).
+
+**Only MAC-derived values changed.** Same definition as Stage 1:
+
+| config | MACs / (1024 × MAC_ACTIVE) | MACs / (1024 × NPU_ACTIVE) | bytes / MAC (pass B, SRAM + EXT) |
+| --- | ---: | ---: | ---: |
+| kws Performance / Size | 26.91 % / 26.63 % | 16.65 % / 16.59 % | 0.058 / 0.058 |
+| ad Performance / Size | 65.00 % / 65.00 % | 41.51 % / 41.84 % | 0.040 / 0.042 |
+| conv Cin 64 Performance / Size | 75.00 % / 75.00 % | 14.22 % / 14.16 % | 0.061 / 0.064 |
+
+Stage 1 gave kws 26.9 %, 16.7 %, 0.058 and ad 65.0 %, 41.7 %, 0.040.
 
 ## Results
 
@@ -43,7 +65,7 @@ The columns state the actual SRAM requirement and schedule, not the option name.
 | conv Cin 64 | Performance | 8.4 KiB | 8,576 / 92,160 | 2 | 24,310 (898) | — | base | 4,608 | 4,608 | 19.0 % | 16,709 | 3,538,944 |
 | conv Cin 64 | Size | 9.3 KiB | 9,536 / 92,160 | 2 | 24,400 (852) | +0.37 % / +0.48 % (898) | `UNRESOLVED` | 4,608 | 4,608 | 18.9 % | 16,822 | 3,538,944 |
 
-Effective MACs, the operator definition, are kws 14,208,852, ad 61,466,400 and Cin 64 3,538,944.
+Effective MACs (project definition, tflite N_MAC) are kws 15,556,352, ad 62,346,720 and Cin 64 3,538,944. The "Vela MACs" column is Vela's own count per compile.
 
 ### Transfers (pass B medians; "changed" = beyond the tolerance rule)
 

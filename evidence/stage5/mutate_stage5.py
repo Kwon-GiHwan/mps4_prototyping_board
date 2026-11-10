@@ -15,7 +15,8 @@ M = [
     (A, 'if not (folder / "runs.csv").exists() or not S4.load(folder, 1):', 'if not (folder / "runs.csv").exists():'),
     (A, 'x["same_output_as_base"] = x["output"]["npu_sha256"] == b["output"]["npu_sha256"]', 'x["same_output_as_base"] = True'),
     (A, '    if {r["crc"] for r in allr} != {zlib.crc32(npu)}:\n', '    if False:\n'),
-    (A, 'comp = comp_of(c50[w][v], wl, name, c50[w]["base"]["nn_macs"])', 'comp = comp_of(c50[w][v], wl, name, c50[w][v]["nn_macs"])'),
+    (A, 'comp = comp_of(c50[w][v], wl, name, EFFECTIVE.get(w, c50[w]["base"]["nn_macs"]))', 'comp = comp_of(c50[w][v], wl, name, c50[w][v]["nn_macs"])'),
+    (A, 'comp = comp_of(c50[w][v], wl, name, EFFECTIVE.get(w, c50[w]["base"]["nn_macs"]))', 'comp = comp_of(c50[w][v], wl, name, c50[w]["base"]["nn_macs"])'),
 ]
 
 

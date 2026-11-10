@@ -132,7 +132,7 @@
     "expected_by_macs": 146670.5,
     "mac_change_pct": 0.0,
     "npu_active_change_pct": -0.7905475197807377,
-    "cycles_per_mac_change_pct": -0.7905475197807266,
+    "cycles_per_mac_change_pct": -0.7905475197807377,
     "mac_active_ratio_base": 0.6386560351263546,
     "mac_active_ratio_variant": 0.6437451464150477,
     "vela_cycles_change_pct": 0.0,
@@ -337,7 +337,7 @@
     "npu_sha256": "e84363176941e46cf9754cff4d91f767775ad104539af7e02c4abb05c111f28b"
    },
    "comp": {
-    "n_mac": 14208852,
+    "n_mac": 15556352,
     "vela_macs": 14208852,
     "ofm_block": "5c4b4a82b3a3a8d7e07fdffb6c8145dd60dd2ff8feafdc61c72aec0f83ca0bb3",
     "ofm_ublock": "",
@@ -426,9 +426,9 @@
     "ao_active_per_npu_active": 0.19537363817707534,
     "wd_active_per_npu_active": 0.1247670926587606,
     "wd_stalled_per_npu_active": 0.703802143843574,
-    "macs_per_npu_active": 155.73392665336812,
-    "cycles_per_mac": 0.006421208412896411,
-    "macs_per_1024_mac_active": 0.24580747619574844
+    "macs_per_npu_active": 170.50299217431333,
+    "cycles_per_mac": 0.005864999712014745,
+    "macs_per_1024_mac_active": 0.269118689105403
    }
   },
   "kws_micronet_m_size": {
@@ -440,7 +440,7 @@
     "npu_sha256": "e84363176941e46cf9754cff4d91f767775ad104539af7e02c4abb05c111f28b"
    },
    "comp": {
-    "n_mac": 14208852,
+    "n_mac": 15556352,
     "vela_macs": 15580852,
     "ofm_block": "5c4b4a82b3a3a8d7e07fdffb6c8145dd60dd2ff8feafdc61c72aec0f83ca0bb3",
     "ofm_ublock": "",
@@ -529,9 +529,9 @@
     "ao_active_per_npu_active": 0.19411337566403328,
     "wd_active_per_npu_active": 0.12173989004209411,
     "wd_stalled_per_npu_active": 0.7100529042754735,
-    "macs_per_npu_active": 155.15150059237502,
-    "cycles_per_mac": 0.006445313104816631,
-    "macs_per_1024_mac_active": 0.2432009820567873
+    "macs_per_npu_active": 169.8653315935161,
+    "cycles_per_mac": 0.0058870164419010315,
+    "macs_per_1024_mac_active": 0.26626500744895276
    },
    "same_output_as_base": true
   },
@@ -544,7 +544,7 @@
     "npu_sha256": "3d431e23d776b6ac7b2a1b2bf9135a7d639a6f54c0b5963e2660d6fee0df4a48"
    },
    "comp": {
-    "n_mac": 61466400,
+    "n_mac": 62346720,
     "vela_macs": 61466400,
     "ofm_block": "1643d063a8ca8aca855fcef783985ba245473972f8b3bae133bbb95bfa576180",
     "ofm_ublock": "",
@@ -633,9 +633,9 @@
     "ao_active_per_npu_active": 0.28286874320330263,
     "wd_active_per_npu_active": 0.14576209939967477,
     "wd_stalled_per_npu_active": 0.8036789947535462,
-    "macs_per_npu_active": 419.0781377304911,
-    "cycles_per_mac": 0.0023861898533182354,
-    "macs_per_1024_mac_active": 0.6408081523827824
+    "macs_per_npu_active": 425.08016267756636,
+    "cycles_per_mac": 0.0023524974529534194,
+    "macs_per_1024_mac_active": 0.6499857881757622
    }
   },
   "ad_medium_int8_size": {
@@ -647,7 +647,7 @@
     "npu_sha256": "3d431e23d776b6ac7b2a1b2bf9135a7d639a6f54c0b5963e2660d6fee0df4a48"
    },
    "comp": {
-    "n_mac": 61466400,
+    "n_mac": 62346720,
     "vela_macs": 61466400,
     "ofm_block": "1643d063a8ca8aca855fcef783985ba245473972f8b3bae133bbb95bfa576180",
     "ofm_ublock": "",
@@ -736,9 +736,9 @@
     "ao_active_per_npu_active": 0.2857034863343665,
     "wd_active_per_npu_active": 0.1449581131323405,
     "wd_stalled_per_npu_active": 0.8010116073698895,
-    "macs_per_npu_active": 422.4175491887211,
-    "cycles_per_mac": 0.0023673258886155687,
-    "macs_per_1024_mac_active": 0.6408081523827824
+    "macs_per_npu_active": 428.467401089952,
+    "cycles_per_mac": 0.002333899842686191,
+    "macs_per_1024_mac_active": 0.6499857881757622
    },
    "same_output_as_base": true
   },

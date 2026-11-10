@@ -50,3 +50,16 @@ Owner decision 2026-11-11 (after the 5-1 report): minimal 5-2, at most 6 configs
 - No mobilenet and no other configs.
 - After 5-2 the board is restored to m6, postflight PING of the restored image, card withdrawn.
 - The Stage 1–5 synthesis follows without board runs.
+
+## Amendment A (2026-11-11, after boots 361–366; recorded, the text above is not edited)
+
+- **What was wrong:** line "Effective MACs stay the original operator definition (kws 14,208,852 from the 384 KiB / Performance compile, = the model's; ad 61,466,400 …)". Both numbers are Vela's `nn_macs` of the Performance compile, not the model's.
+- **The project definition** is the tflite N_MAC used by Stage 1/3 (`host/container/workload_meta.py`; `evidence/stage1/workload_manifest/manifest.json`):
+  - kws 15,556,352
+  - ad 62,346,720
+  - Cin 64 3,538,944 (operator formula = Vela's count)
+- **Effective MACs for every Stage 5 derived value** are these. Vela's per-configuration counts are kept apart (`vela_macs`).
+- **Rules and verdicts are unchanged:**
+  - The pair rule tests the NPU_ACTIVE change against the tolerance first.
+  - It uses only the MAC ratio of base and variant, which is 1 for every Stage 5 pair.
+  - Checked by `evidence/stage5_2/verdicts_unchanged.py`.

@@ -51,16 +51,18 @@ def setup(d, out=None, earlier_mac=250, na_b_variant=1100, model_out=None, varia
 
 
 class Stage5(unittest.TestCase):
-    def run_it(self, **kw):
+    def run_it(self, effective=None, **kw):
         self.tmp = tempfile.TemporaryDirectory()
         d = pathlib.Path(self.tmp.name)
         root, wl, earlier = setup(d, **kw)
-        old = dict(P.EARLIER)
+        old, old_eff = dict(P.EARLIER), dict(P.EFFECTIVE)
         P.EARLIER.update(earlier)
+        P.EFFECTIVE.clear(); P.EFFECTIVE.update(effective or {})
         try:
             return P.main(str(root), str(wl), str(d / "c50.json"), str(d / "out"))
         finally:
             P.EARLIER.clear(); P.EARLIER.update(old)
+            P.EFFECTIVE.clear(); P.EFFECTIVE.update(old_eff)
 
     def tearDown(self):
         self.tmp.cleanup()
@@ -80,6 +82,16 @@ class Stage5(unittest.TestCase):
         self.assertEqual(p["verdict"], "NOT_PROPORTIONAL_TO_MAC")
         self.assertEqual(p["pass_a"]["mac_change_pct"], 0.0)
         self.assertEqual(p["vela_macs"], (1000, 1100))
+
+    def test_effective_macs_from_the_project_definition(self):
+        # a model with a project N_MAC (2000) uses it for base and variant; an isolated operator without one
+        # falls back to its base compile's count (1000); Vela's own counts stay in vela_macs
+        r = self.run_it(variant_macs=1100, effective={"kws_micronet_m": 2000})
+        kws = r["configs"]["kws_micronet_m_base"]["metrics"]
+        self.assertEqual(kws["macs_per_npu_active"], 2.0)                       # 2000 MACs / NPU_ACTIVE 1000
+        self.assertEqual(r["configs"]["kws_micronet_m_cache0"]["metrics"]["macs_per_npu_active"], 2000 / 1100)
+        self.assertEqual(r["configs"]["s4_dw_base_base"]["metrics"]["macs_per_npu_active"], 1.0)
+        self.assertEqual(r["pairs"]["kws_micronet_m_base->kws_micronet_m_cache0"]["vela_macs"], (1000, 1100))
 
     def test_opposite_directions(self):
         r = self.run_it(na_b_variant=900)
