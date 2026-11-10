@@ -122,3 +122,8 @@ Stage 2B 그룹별 H1/H2 판정은 계속 무효다. 2B-3 3a 결과(창 위치 �
 - 파일럿 계약 초안: `evidence/qread_pilot/contract_draft.md`(승인 대기).
 - 방법 구분(§3 표의 "stream 변경" 열): 원본 실행을 바꾸지 않는 것 — M2 QREAD 폴링, M3 QREAD+PMU 샘플, M4 PMCCNTR_CFG, IRQ 시점
   판독; 바꾸는 것 — M1 PMU Mask, M5 STOP prefix, M6 KERNEL_WAIT 장벽, M7 중간 IRQ, M8 단독 실행. 파일럿은 앞쪽만 쓴다.
+- QREAD 파일럿(boots 325–326, `results/qread_pilot/`): trace 조건 전부 `TRACE_INVALID`, 연산별 귀속 `NOT_IDENTIFIABLE`.
+- Stage 2B operator-aware 파일럿(yolo op 99·100, `evidence/qread_op_pilot/contract.md`): P0에서 두 원인을 정적·원시 데이터로
+  확인 — 첫 샘플은 `ethosu_reserve_driver()`의 semaphore take에서 찍힌 계측 오류, 0xFFFF0001은 판독이 직전 NPU 레지스터
+  판독값을 돌려준 것(하드웨어 쪽 어느 부품인지 `UNVERIFIED`). Owner 선택 "검출 + 최대 2회 재판독": 검사 모드 3·4(ID 센티넬,
+  시도 전부 원시 기록, 샘플 checksum, job 플래그), 판정 VALID / RECOVERED / INVALID 구분, 재판독 값은 경계 판정에 쓰지 않는다.

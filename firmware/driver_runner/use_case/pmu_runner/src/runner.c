@@ -312,6 +312,7 @@ static void run(void)
         trace_stats_t t = trace_stats();
         r.trace_config = t.config; r.trace_words_per_sample = t.words_per_sample; r.samples = t.samples;
         r.sample_dropped = t.dropped; r.trace_polls = t.polls; r.trace_hook_calls = t.hook_calls;
+        r.trace_words = t.words; r.trace_rejected = t.rejected; r.trace_unaccepted = t.unaccepted; r.trace_id = t.id;
     }
     r.ccnt_post_lo = (uint32_t)post.ccnt; r.ccnt_post_hi = (uint32_t)(post.ccnt >> 32); r.ovf_post = post.ovf;
     r.ev_post0 = post.ev[0]; r.ev_post1 = post.ev[1]; r.ev_post2 = post.ev[2]; r.ev_post3 = post.ev[3];

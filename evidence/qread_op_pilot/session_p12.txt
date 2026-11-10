@@ -1,0 +1,6 @@
+# Owner sudo session 2026-11-10: operator-aware QREAD pilot boot 328 (contract evidence/qread_op_pilot/contract.md), TA profile 1; ends with postflight
+user python3 mcc.py USB_ON 4 && sleep 5 && test -e /dev/sdb1
+deploy_mlek /home/gihwan/evsweep_qread_op /home/gihwan/evsweep/evidence_qread_op
+user sh run_driver_campaign.sh /home/gihwan/evsweep_qread_op /home/gihwan/evsweep_qread_op_run /home/gihwan/evsweep_qread_op/ids.txt /home/gihwan/evsweep_qread_op/plan_p12.txt 5
+restore_mlek /home/gihwan/evsweep/evidence_qread_op /home/gihwan/evsweep_qread_op
+user sh postflight.sh

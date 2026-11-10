@@ -18,6 +18,8 @@ from dataclasses import dataclass
 
 OFF = 0xFFFFFFFF
 MODE_QREAD_ONLY, MODE_QREAD_PMU = 1, 2
+MODE_QREAD_CHECKED, MODE_QREAD_PMU_CHECKED = 3, 4
+CHECKED_MODES = (MODE_QREAD_CHECKED, MODE_QREAD_PMU_CHECKED)
 MODE_MASK, INTERVAL_SHIFT, STORE_SHIFT, FIELD_MASK = 0xF, 8, 16, 0xF
 CONFIG_MASK = MODE_MASK | FIELD_MASK << INTERVAL_SHIFT | FIELD_MASK << STORE_SHIFT
 BASE_SAMPLE_WORDS = 5          # t_before, qread_before, status, qread_after, t_after
@@ -28,6 +30,14 @@ CMD_GET_TRACE = 0x41
 RECORD_FIELDS = {"trace_config": "trace_config", "trace_words_per_sample": "trace_words_per_sample",
                  "samples": "trace_samples", "sample_dropped": "trace_dropped", "trace_polls": "trace_polls",
                  "trace_hook_calls": "trace_hook_calls"}
+# checked modes (record schema 3)
+CHECKED_RECORD_FIELDS = {"trace_words": "trace_words", "trace_rejected": "trace_rejected",
+                         "trace_unaccepted": "trace_unaccepted", "trace_id": "trace_id"}
+CHECKED_MAGIC = 0x5A
+CHECK_SEED = 0xA5A5A5A5
+MAX_ATTEMPTS = 3
+NPU_OFF_ID, NPU_OFF_STATUS, NPU_OFF_QREAD, NPU_OFF_QSIZE = 0x00, 0x04, 0x18, 0x20
+NPU_REG_PMEVCNTR_BASE = 0x1300
 U32 = 1 << 32
 
 
@@ -38,8 +48,8 @@ class TraceConfig:
     store_log2: int = 0
 
     def __post_init__(self) -> None:
-        if self.mode not in (MODE_QREAD_ONLY, MODE_QREAD_PMU):
-            raise ValueError(f"trace mode {self.mode}: 1 (QREAD_ONLY) or 2 (QREAD_PMU)")
+        if self.mode not in (MODE_QREAD_ONLY, MODE_QREAD_PMU) + CHECKED_MODES:
+            raise ValueError(f"trace mode {self.mode}: 1 (QREAD_ONLY), 2 (QREAD_PMU), 3/4 (the same, checked)")
         for name in ("interval_log2", "store_log2"):
             if not 0 <= getattr(self, name) <= FIELD_MASK:
                 raise ValueError(f"{name} {getattr(self, name)} outside 0..{FIELD_MASK}")
@@ -48,6 +58,9 @@ class TraceConfig:
         return self.mode | self.interval_log2 << INTERVAL_SHIFT | self.store_log2 << STORE_SHIFT
 
     def words_per_sample(self, n_events: int) -> int:
+        """Legacy modes: the fixed sample size; checked modes: the nominal one (every slot accepted at once)."""
+        if self.mode in CHECKED_MODES:
+            return 4 + (3 + (n_events if self.mode == MODE_QREAD_PMU_CHECKED else 0)) * 3
         return BASE_SAMPLE_WORDS + (n_events if self.mode == MODE_QREAD_PMU else 0)
 
 
@@ -80,8 +93,17 @@ class Trace:
 
 
 def header_from_record(fields: dict) -> dict:
-    """The trace header of one RUN from its record v2 fields (record_v2.Record.f)."""
-    return {key: fields[name] for name, key in RECORD_FIELDS.items()}
+    """The trace header of one RUN from its record v2 fields (record_v2.Record.f); schema 3 adds the checked fields."""
+    names = dict(RECORD_FIELDS, **{k: v for k, v in CHECKED_RECORD_FIELDS.items() if k in fields})
+    return {key: fields[name] for name, key in names.items()}
+
+
+def n_words(header: dict) -> int:
+    """Buffer words to fetch with GET_TRACE for this RUN."""
+    cfg = config_from_word(header["trace_config"])
+    if cfg is not None and cfg.mode in CHECKED_MODES:
+        return header["trace_words"]
+    return header["trace_words_per_sample"] * header["trace_samples"]
 
 
 def parse(words, header: dict) -> Trace:

@@ -14,8 +14,6 @@
 
 #include "RTE_Components.h"   /* CMSIS core: __WFE, __SEV */
 
-#define NPU_OFF_QSIZE  0x20U  /* core driver ethosu85_interface.h NPU_REG_QSIZE (0x24 is PROT) */
-
 extern struct ethosu_driver ethosu_drv;                                   /* MLEK ethosu_npu_init.c */
 bool ethosu_dev_handle_interrupt(struct ethosu_device *dev);             /* core driver ethosu_device.h */
 
@@ -92,7 +90,7 @@ int ethosu_semaphore_take(void *sem, uint64_t timeout)
     sem_t *s = sem;
     (void)timeout;
     if (probe.wait_mode == WAIT_TRACE) {
-        trace_wait(&s->count);
+        trace_wait(&s->count, sem == ethosu_drv.semaphore ? 1U : 0U);   /* 0: e.g. ethosu_reserve_driver's take */
     } else if (probe.wait_mode == WAIT_BUSY) {
         while (s->count == 0U) {
         }

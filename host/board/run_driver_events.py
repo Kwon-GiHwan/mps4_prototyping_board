@@ -131,7 +131,7 @@ def run_condition(link, cond, sets, ctx, d: pathlib.Path, raw: list, rows: list)
             if cond.trace_word != qread_trace.OFF:
                 h = qread_trace.header_from_record(r.f)
                 try:
-                    words = link.get_trace(h["trace_words_per_sample"] * h["trace_samples"])
+                    words = link.get_trace(qread_trace.n_words(h))
                 except (Nack, ProtocolError) as e:
                     raise E.fail_rule("RULE_RUN_TRANSPORT", f"trace {cond.name} set {set_id} rep {rep}: {e!r}")
                 (d / "traces").mkdir(parents=True, exist_ok=True)

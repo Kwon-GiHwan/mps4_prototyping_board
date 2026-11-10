@@ -5,7 +5,8 @@
  * Fake pieces: the NPU register block is an array (pmu_session writes into it; the fake "inference" then puts known
  * counter values there and takes the IRQ snapshot, as hooks.c does on target); the model is a tiny "SIMM" container
  * instead of a TFLM model: magic 'SIMM', n_in, n_out, input lengths, output lengths; output k byte j = (input 0 byte
- * (j mod len0)) + k + 1. Behaviour switches (environment): SIM_INVOKE_FAIL, SIM_NO_IRQ, SIM_TWO_IRQ, SIM_OVF. */
+ * (j mod len0)) + k + 1. Behaviour switches (environment): SIM_INVOKE_FAIL, SIM_NO_IRQ, SIM_TWO_IRQ, SIM_OVF, SIM_CMS_LEN,
+ * SIM_TRACE_SLOT0, SIM_STALE_AT, SIM_STALE_EVERY, SIM_QREAD_DIP, SIM_RESERVE. */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -99,6 +100,37 @@ static uint32_t sim_now(void)
     return clock_now;
 }
 
+/* Register reads of trace.c (built with -DTRACE_SIM_READ=sim_npu_read) can return the previous read's data, as the
+ * board's yolo traces showed (P0 of the operator-aware pilot); reads are counted from 1 over the process.
+ * SIM_STALE_AT=n[,k]: reads n .. n+k-1; SIM_STALE_EVERY=n[,k]: k reads from every n-th (k = 1 unless given). */
+static uint32_t sim_reads, sim_last;
+static void stale_spec(const char *name, uint32_t *n, uint32_t *k)
+{
+    const char *e = getenv(name);
+    char *end;
+    *n = *k = 0u;
+    if (e) {
+        *n = (uint32_t)strtoul(e, &end, 0);
+        *k = (*end == ',') ? (uint32_t)strtoul(end + 1, 0, 0) : 1u;
+    }
+}
+uint32_t sim_npu_read(uint32_t off)
+{
+    uint32_t v = REG(off), n, k;
+    sim_reads++;
+    stale_spec("SIM_STALE_AT", &n, &k);
+    if (n && sim_reads >= n && sim_reads < n + k) { v = sim_last; }
+    stale_spec("SIM_STALE_EVERY", &n, &k);
+    if (n && sim_reads % n < k) { v = sim_last; }
+    if (off == 0x18u) {                          /* SIM_QREAD_DIP=n: the n-th QREAD read is 16 B behind (plausible, low) */
+        static uint32_t qreads;
+        const char *e = getenv("SIM_QREAD_DIP");
+        if (++qreads == (e ? (uint32_t)strtoul(e, 0, 0) : 0u) && v >= 16u) { v -= 16u; }
+    }
+    sim_last = v;
+    return v;
+}
+
 static uint32_t invoke(void)
 {
     uint32_t cnten;
@@ -123,8 +155,11 @@ static uint32_t invoke(void)
         for (uint32_t j = 0; j < out_len[k]; j++) { out_buf[k][j] = (uint8_t)(in_buf[0][j % in_len[0]] + k + 1u); }
     }
     if (probe.wait_mode == WAIT_TRACE) {
-        sim_sem = 0u; trace_t0 = clock_now; REG(0x18u) = 0u;
-        trace_wait(&sim_sem);
+        static volatile uint8_t reserve;
+        reserve = 1u;
+        if (getenv("SIM_RESERVE")) { trace_wait(&reserve, 0u); }   /* ethosu_reserve_driver's take, as on target */
+        sim_sem = 0u; trace_t0 = clock_now; REG(0x18u) = 0u; REG(0x20u) = cms_len;
+        trace_wait(&sim_sem, 1u);
     } else {
         if (!getenv("SIM_NO_IRQ")) { sim_irq(); }
         if (getenv("SIM_TWO_IRQ")) { sim_irq(); }
@@ -163,6 +198,7 @@ int main(void)
     staging = calloc(SIM_STAGING, 1);
     ddr = calloc(SIM_DDR, 1);
     REG(NPU_REG_PMCR) = 0x2001u;     /* as MLEK leaves it: cnt_en, 4 event counters reported in num_event_cnt */
+    REG(0x00u) = 0x20007001u;        /* ID as the board's capabilities report it */
     if (getenv("SIM_CMS_LEN")) { cms_len = (uint32_t)strtoul(getenv("SIM_CMS_LEN"), 0, 0); }
     trace_bind(npu_regs, sim_now);
     const runner_ports_t ports = {staging, SIM_STAGING, (uintptr_t)ddr, (uintptr_t)ddr + SIM_DDR, SIM_ARENA,

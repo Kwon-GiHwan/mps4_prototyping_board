@@ -7,6 +7,7 @@ REPO = pathlib.Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO / "host" / "lib"))
 import drwl
 import driver_link
+import qread_checked as C
 import qread_trace as Q
 import record_v2
 import runner_proto as rp
@@ -24,7 +25,7 @@ def setUpModule():
         raise unittest.SkipTest("no C compiler")
     _tmp = tempfile.TemporaryDirectory()
     SIM = pathlib.Path(_tmp.name) / "host_sim"
-    subprocess.run([CC, "-std=c11", "-Wall", "-Wextra", "-Werror", "-I", str(UC / "include"), "-I", str(FW / "common"),
+    subprocess.run([CC, "-std=c11", "-Wall", "-Wextra", "-Werror", "-DTRACE_SIM_READ=sim_npu_read", "-I", str(UC / "include"), "-I", str(FW / "common"),
                     "-o", str(SIM), str(FW / "driver_runner" / "tests" / "host_sim.c"), *map(str, SRCS)], check=True)
 
 
@@ -109,7 +110,7 @@ class Session(unittest.TestCase):
         self.assertEqual(l.ping().state, 1)                                    # IDLE
         caps = l.capabilities()
         self.assertEqual((caps["magic"], caps["schema"], caps["record_fields"]),
-                         (record_v2.CAPS_MAGIC, 2, len(record_v2.FIELDS)))
+                         (record_v2.CAPS_MAGIC, 3, len(record_v2.FIELDS)))
         self.assertEqual(l.set_instrumentation_mode(2, [35, 48, 51], 7), (2, 2, 3, 1))
         self.assertEqual(l.set_run_options(driver_link.WAIT_BUSY, 0x00200023), (1, 0x00200023, driver_link.TRACE_OFF))
         golds = [expected_output(IFM, 0, 30), expected_output(IFM, 1, 9)]
@@ -189,6 +190,97 @@ class Session(unittest.TestCase):
         qs = [s.qread_after for s in t.samples]
         self.assertEqual(len(qs), len(set(qs)))                                 # every stored sample moved QREAD
 
+    def checked_run(self, cfg, codes, **env):
+        self.l = l = link(SIM_RESERVE="1", **env)
+        l.set_instrumentation_mode(2, codes, 1)
+        l.set_run_options(driver_link.WAIT_TRACE, 0, cfg.word())
+        load(l, drwl.pack(simm([40], [30]), [IFM], [expected_output(IFM, 0, 30)]))
+        l.load_input(b"")
+        self.assertEqual(l.run(), 0)
+        r = l.last_measurement
+        h = Q.header_from_record(r.f)
+        return r, C.parse(l.get_trace(Q.n_words(h)), h, len(codes))
+
+    def test_checked_qread_only(self):                                         # Stage 2B operator-aware pilot, P1
+        r, t = self.checked_run(Q.TraceConfig(Q.MODE_QREAD_CHECKED, 4, 12), [35])   # polls faster than QREAD moves
+        self.assertEqual(C.trace_class(t, 4096, 0x20007001), (C.VALID, []))
+        self.assertEqual((r.f["trace_id"], r.f["trace_rejected"], r.f["trace_unaccepted"]), (0x20007001, 0, 0))
+        self.assertEqual(r.f["trace_words"], sum(4 + 3 * len(x.slots) for x in t.samples))   # all first-read
+        # the reserve take's sample is kept, flagged, and outside the window; then the start sample (QSIZE)
+        self.assertEqual([(x.job, x.start) for x in t.samples[:2]], [(False, False), (True, True)])
+        self.assertTrue(t.samples[0].final)
+        self.assertEqual(t.qsize(), 4096)
+        job = t.job()
+        self.assertEqual(job[-1].qread_after.value, 4096)
+        self.assertTrue(job[-1].final)
+        self.assertTrue(all(sl.first_ok for x in t.samples for sl in x.slots))
+        self.assertEqual([sl.offset for sl in job[0].slots], [0x18, 0x04, 0x18])
+        # store policy: the sample right before every QREAD change is kept, so consecutive values are one poll apart
+        q = [x.qread_after.value for x in job]
+        changes = [i for i in range(1, len(job)) if q[i] != q[i - 1]]
+        self.assertGreater(len(changes), 50)
+        gaps = [Q.elapsed(job[i - 1].t_before, job[i].t_before) for i in changes]
+        self.assertLess(max(gaps), 40)                                         # one poll (~28 cycles here)
+        self.assertLess(r.f["samples"], r.f["trace_polls"])                     # unchanged polls are not kept
+
+    def test_checked_recovered_and_kept(self):
+        # trace.c read 20 = STATUS of the second job sample (2 ID reads at begin, 6 in the reserve sample, 2 for QSIZE,
+        # 6 in the first job sample): it returns the ID read's data, is rejected and re-read once
+        r, t = self.checked_run(Q.TraceConfig(Q.MODE_QREAD_CHECKED, 6, 12), [35], SIM_STALE_AT="20")
+        self.assertEqual(C.trace_class(t, 4096, 0x20007001), (C.RECOVERED, []))
+        self.assertEqual((r.f["trace_rejected"], r.f["trace_unaccepted"]), (1, 0))
+        rej = C.rejected_attempts(t)
+        self.assertEqual(len(rej), 1)
+        self.assertEqual((rej[0]["offset"], rej[0]["value"], rej[0]["value_is_id"], rej[0]["accepted_later"]),
+                         (0x04, 0x20007001, True, True))
+        st = t.job()[1].status
+        self.assertEqual((len(st.attempts), st.accepted, st.first_ok), (2, True, False))
+        self.assertEqual(st.attempts[0], (0x20007001, 0x20007001))             # the first read is in the raw data
+
+    def test_checked_stale_id_read(self):
+        # read 19 = the ID read before the second job sample's STATUS: it returns the QREAD just read; rejected, re-read
+        r, t = self.checked_run(Q.TraceConfig(Q.MODE_QREAD_CHECKED, 6, 12), [35], SIM_STALE_AT="19")
+        self.assertEqual(C.trace_class(t, 4096, 0x20007001), (C.RECOVERED, []))
+        rej = C.rejected_attempts(t)
+        self.assertEqual([(x["offset"], x["id_read_ok"], x["id_read_is_prev_value"]) for x in rej], [(0x04, False, True)])
+
+    def test_checked_qread_below_the_same_samples_first(self):
+        # QREAD read 6 = the second job sample's second QREAD, 16 B behind its first: rejected and re-read
+        r, t = self.checked_run(Q.TraceConfig(Q.MODE_QREAD_CHECKED, 6, 12), [35], SIM_QREAD_DIP="6")
+        self.assertEqual(C.trace_class(t, 4096, 0x20007001), (C.RECOVERED, []))
+        rej = C.rejected_attempts(t)
+        self.assertEqual([(x["offset"], x["value_is_id"], x["id_read_ok"]) for x in rej], [(0x18, False, True)])
+
+    def test_checked_unrecovered_is_invalid(self):
+        r, t = self.checked_run(Q.TraceConfig(Q.MODE_QREAD_CHECKED, 6, 12), [35], SIM_STALE_AT="17,6")
+        cls, why = C.trace_class(t, 4096, 0x20007001)
+        self.assertEqual(cls, C.INVALID)
+        self.assertIn("unaccepted_read", why)
+        self.assertEqual(r.f["trace_unaccepted"], 1)
+        self.assertEqual(len(t.job()[1].qread_before.attempts), 3)              # the first read and two re-reads
+
+    def test_checked_pmu(self):
+        r, t = self.checked_run(Q.TraceConfig(Q.MODE_QREAD_PMU_CHECKED, 6, 12), [35, 48], SIM_TRACE_SLOT0="1")
+        self.assertEqual(C.trace_class(t, 4096, 0x20007001), (C.VALID, []))
+        self.assertEqual([sl.offset for sl in t.job()[0].slots], [0x18, 0x04, 0x1300, 0x1304, 0x18])
+        ev = [[sl.value for sl in x.events] for x in t.job()]
+        self.assertTrue(all(b >= a for x, y in zip(ev, ev[1:]) for a, b in zip(x, y)))
+        self.assertGreater(ev[-1][1], ev[0][1])
+
+    def test_legacy_trace_shows_the_reserve_sample(self):
+        # the pilot of boots 325-326: in the legacy modes the reserve take's sample opens the trace (board: 40/40 RUNs)
+        self.l = l = link(SIM_RESERVE="1")
+        l.set_instrumentation_mode(2, [35], 1)
+        l.set_run_options(driver_link.WAIT_TRACE, 0, Q.TraceConfig(Q.MODE_QREAD_ONLY, 6).word())
+        load(l, drwl.pack(simm([40], [30]), [IFM], [expected_output(IFM, 0, 30)]))
+        l.load_input(b"")
+        for _ in range(2):
+            self.assertEqual(l.run(), 0)
+        h = Q.header_from_record(l.last_measurement.f)
+        t = Q.parse(l.get_trace(Q.n_words(h)), h)
+        self.assertEqual(t.samples[0].qread_after, 4096)                       # the previous RUN's stream end
+        self.assertIn("qread_decreasing", Q.integrity(t, 4096))
+
     def test_trace_option_refusals_and_state(self):
         self.l = l = link()
         def nack(fn, detail):
@@ -198,7 +290,7 @@ class Session(unittest.TestCase):
         nack(lambda: l.set_run_options(driver_link.WAIT_WFE, 0, Q.TraceConfig(1).word()), 4)   # trace without WAIT_TRACE
         nack(lambda: l.set_run_options(driver_link.WAIT_TRACE, 0, driver_link.TRACE_OFF), 4)   # WAIT_TRACE, no trace
         nack(lambda: l.set_run_options(driver_link.WAIT_TRACE, 0, 0x80000001), 3)               # reserved bits
-        nack(lambda: l.set_run_options(driver_link.WAIT_TRACE, 0, 3), 3)                        # unknown mode
+        nack(lambda: l.set_run_options(driver_link.WAIT_TRACE, 0, 5), 3)                        # unknown mode
         with self.assertRaises(rp.Nack) as c:
             l.request(Q.CMD_GET_TRACE, struct.pack("<II", 0, 10))                                # no RUN yet
         self.assertEqual(c.exception.code, 5)

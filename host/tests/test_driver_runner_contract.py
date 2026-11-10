@@ -135,10 +135,38 @@ class Commands(unittest.TestCase):
         self.assertEqual(pos, sorted(pos))
         self.assertTrue(set(Q.RECORD_FIELDS) <= set(record_v2.FIELDS))
 
+    def test_checked_trace_layout(self):
+        t, c = INC["trace.h"], SRC["trace.c"]
+        Q = qread_trace
+        self.assertEqual((define("TRACE_MODE_QREAD_CHECKED", t), define("TRACE_MODE_QREAD_PMU_CHECKED", t)),
+                         (Q.MODE_QREAD_CHECKED, Q.MODE_QREAD_PMU_CHECKED))
+        self.assertEqual((define("TRACE_CHECKED_MAGIC", t), define("TRACE_CHECK_SEED", t), define("TRACE_MAX_ATTEMPTS", t)),
+                         (Q.CHECKED_MAGIC, Q.CHECK_SEED, Q.MAX_ATTEMPTS))
+        regs = (REPO / "firmware" / "common" / "npu_pmu_regs.h").read_text()
+        self.assertEqual(define("NPU_REG_PMEVCNTR_BASE", regs), Q.NPU_REG_PMEVCNTR_BASE)
+        self.assertTrue(set(Q.CHECKED_RECORD_FIELDS) <= set(record_v2.FIELDS))
+        # header and descriptor bit positions as qread_checked.parse reads them
+        self.assertIn("(TRACE_CHECKED_MAGIC << 24) | (job << 23) | (final << 22) | (start << 21) | (s->slots << 8) "
+                      "| s->attempts", c)
+        self.assertIn("s->w[d] = (ok << 20) | (a << 16) | off;", c)
+        # an attempt: ID first, then the register (read_slot)
+        body = c[c.index("static uint32_t read_slot("):]
+        self.assertLess(body.index("npu_word(NPU_OFF_ID)"), body.index("v = npu_word(off)"))
+        # the job sample's slot order: QREAD, STATUS, counters, QREAD (sample_checked)
+        body = c[c.index("static void sample_checked("):]
+        order = ("NPU_OFF_QREAD", "NPU_OFF_STATUS", "NPU_REG_PMEVCNTR_BASE", "NPU_OFF_QREAD", "seal(")
+        pos, at = [], 0
+        for m in order:
+            at = body.index(m, at) + 1; pos.append(at)
+        self.assertEqual(pos, sorted(pos))
+        # the inference semaphore is the only job wait (hooks.c)
+        self.assertIn("trace_wait(&s->count, sem == ethosu_drv.semaphore ? 1U : 0U)", SRC["hooks.c"])
+
     def test_irq_snapshot_offsets_are_the_drivers(self):
-        # literals from MLEK b2c0bb2 core driver src/ethosu85_interface.h (NPU_REG_STATUS/QREAD/QSIZE; 0x24 is PROT)
-        self.assertEqual((define("NPU_OFF_STATUS", INC["trace.h"]), define("NPU_OFF_QREAD", INC["trace.h"]),
-                          define("NPU_OFF_QSIZE", SRC["hooks.c"])), (0x04, 0x18, 0x20))
+        # literals from MLEK b2c0bb2 core driver src/ethosu85_interface.h (NPU_REG_ID/STATUS/QREAD/QSIZE; 0x24 is PROT)
+        self.assertEqual((define("NPU_OFF_ID", INC["trace.h"]), define("NPU_OFF_STATUS", INC["trace.h"]),
+                          define("NPU_OFF_QREAD", INC["trace.h"]), define("NPU_OFF_QSIZE", INC["trace.h"])),
+                         (0x00, 0x04, 0x18, 0x20))
 
 
 if __name__ == "__main__":

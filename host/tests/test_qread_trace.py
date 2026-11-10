@@ -21,7 +21,7 @@ class Config(unittest.TestCase):
         self.assertIsNone(Q.config_from_word(0xFFFFFFFF))
 
     def test_refusals(self):
-        for w in (0x00000000, 0x00000003, 0x00001001 | 1 << 12, 0x00100001, 0x80000001):
+        for w in (0x00000000, 0x00000005, 0x0000000F, 0x00001001 | 1 << 12, 0x00100001, 0x80000001):
             with self.assertRaises(ValueError, msg=hex(w)):
                 Q.config_from_word(w)
         with self.assertRaises(ValueError):

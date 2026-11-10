@@ -5,7 +5,7 @@ import runner_proto as rp
 
 
 def payload(fields=None, flags=R.REQUIRED, rc=0, total=None, magic=R.MAGIC):
-    f = dict.fromkeys(R.FIELDS, 0); f.update(schema=2, event_count=2, event_code0=35, event_code1=48)
+    f = dict.fromkeys(R.FIELDS, 0); f.update(schema=3, event_count=2, event_code0=35, event_code1=48)
     f.update(fields or {})
     total = total or R.HEADER_WORDS + len(R.FIELDS)
     body = struct.pack(f"<{len(R.FIELDS)}I", *(f[k] for k in R.FIELDS))

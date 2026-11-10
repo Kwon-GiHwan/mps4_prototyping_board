@@ -32,7 +32,7 @@ class DriverLink(runner_proto.RunnerLink):
         return struct.unpack_from("<III", f.payload)
 
     def get_trace(self, n_words: int) -> list[int]:
-        """The last RUN's trace buffer (n_words = samples x words per sample from its record)."""
+        """The last RUN's trace buffer (n_words = qread_trace.n_words of its record's trace header)."""
         out: list[int] = []
         while len(out) < n_words:
             f = self.request(CMD_GET_TRACE, struct.pack("<II", len(out), min(TRACE_GET_MAX_WORDS, n_words - len(out))))
