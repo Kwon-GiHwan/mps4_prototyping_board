@@ -60,9 +60,9 @@ Observations (`OBSERVED`, these shapes only):
   MAC_ACTIVE or the schedule also changed. Which part of the time comes from transfers is not measured; the write-beat
   match is not evidence of a cause of the time increase.
 
-## 4. Closing analysis (owner, 2026-11-11: Stage 4C-1 adopted as complete; no board run, existing artifacts only)
+## 3. Closing analysis (owner, 2026-11-11: Stage 4C-1 adopted as complete; no board run, existing artifacts only)
 
-### 4.1 Output-write prediction — conclusion
+### 3.1 Output-write prediction — conclusion
 
 On the four new channel conditions (Conv 94, Conv 97, DW 142, DW 145; remainders 14 and 1) **rule A predicted the
 output-write beats before the measurement and was right in every measured RUN**. These four are the discriminating
@@ -70,7 +70,7 @@ cases (A differs from B, C, D). The two aligned bases (Conv 96, DW 144) are a **
 (same output, same constant counters, A = B = C = D there), not evidence for A. The real DMA/AXI implementation and any
 causal link from the write beats to the execution-time increase remain **unverified**.
 
-### 4.2 DWConv MAC_ACTIVE — a separate result (by source)
+### 3.2 DWConv MAC_ACTIVE — a separate result (by source)
 
 | C | source | MAC_ACTIVE cycles (RUN range) | C rounded up to a multiple of 16 |
 | ---: | --- | ---: | ---: |
@@ -84,7 +84,7 @@ causal link from the write beats to the execution-time increase remain **unverif
 universal processing unit of all operators, nor that invalid channels are actually computed. This channel boundary of
 the MAC work is kept apart from the 16-byte memory-access rule A of §1 (a different quantity and mechanism).
 
-### 4.3 Conv 96 → 97: schedule differences (artifacts: `evidence/stage4c1/conv_cout97.regs.txt` vs
+### 3.3 Conv 96 → 97: schedule differences (artifacts: `evidence/stage4c1/conv_cout97.regs.txt` vs
 `evidence/stage4/registers/conv_base.regs.txt`; Vela outputs equal the measured ones)
 
 | item | Conv 96 (base) | Conv 97 |
@@ -107,14 +107,14 @@ occupies 32-deep ublocks (144 ublocks for 16 channels); with Conv 97's 16-deep u
 this is a post-hoc description, not a prediction; why Vela chose a different ublock for 97 channels and what the NPU
 does per ublock are not established.
 
-### 4.4 Computation vs whole execution
+### 3.4 Computation vs whole execution
 
 Conv 97 raised the effective MACs per MAC-active cycle by ≈ 15.5 % (384 → 443.4) while its whole execution cost rose
 by 23.0 % (pass A) / 24.9 % (pass B) in NPU_ACTIVE, with EXT write beats ×2.1 and AO_ACTIVE +17 %. An improvement in the
 MAC unit's processing efficiency did not translate into a shorter run: the two must be reported separately. Which
 parts of the remaining time grew is not measured.
 
-### 4.5 Next questions (proposals only; no board run, no write-rule extension, no read model, no Stage 4D)
+### 3.5 Next questions (proposals only; no board run, no write-rule extension, no read model, no Stage 4D)
 
 Centred on MAC throughput by operator and shape (the original Stage 4 aim):
 1. Does MAC_ACTIVE = (cycles per ublock) × (ublocks) hold beyond the two shapes, and how does cycles-per-ublock depend
@@ -125,7 +125,7 @@ Centred on MAC throughput by operator and shape (the original Stage 4 aim):
 4. MAC-active share of NPU_ACTIVE for larger Conv shapes (the AD / Wav2Letter link) — computation and whole execution
    kept as separate outcomes.
 
-## 3. Status
+## 4. Status
 
 - Prediction verification: **extended** — rule A predicted the output-write beats for remainders 14 and 1 (4/4
   discriminating configs), `POST_HOC` hypothesis now with a pre-registered confirmation; mechanism `UNVERIFIED`.
