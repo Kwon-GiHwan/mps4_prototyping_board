@@ -1,0 +1,4 @@
+# QREAD pilot (DRAFT, not approved): trace image of c1b9b79, MLEK TA set-up (= TA profile 1), conditions.txt, 5 RUNs (1 warm-up)
+325 rnnoise_INT8 @/home/gihwan/evsweep_qread_pilot/conditions.txt
+326 yolo-fastest_192_face_v4 @/home/gihwan/evsweep_qread_pilot/conditions.txt
+327 wav2letter_pruned_int8 @/home/gihwan/evsweep_qread_pilot/conditions.txt

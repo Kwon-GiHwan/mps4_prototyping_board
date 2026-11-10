@@ -1,0 +1,7 @@
+# QREAD pilot conditions (contract_draft.md): name wait_mode pmccntr_cfg trace_word sets; sets = ids.txt line numbers
+wfe 0 0 off 1,2,3
+busy 1 0 off 1
+t06 2 0 0x000c0601 1
+t10 2 0 0x000c0a01 1
+t14 2 0 0x000c0e01 1
+p10 2 0 0x000c0a02 2
