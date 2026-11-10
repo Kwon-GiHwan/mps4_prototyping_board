@@ -1,0 +1,2529 @@
+{
+ "kws_micronet_m": {
+  "base": {
+   "rc": 0,
+   "arena_cache_size_kib": 384.0,
+   "sram_used_kib": 89.453125,
+   "dram_used_kib": 142.796875,
+   "cycles_npu": 86324,
+   "cycles_total": 102248,
+   "nn_macs": 14208852,
+   "sram_total_bytes": 1007632,
+   "dram_total_bytes": 319792,
+   "cpu_ops": [],
+   "npu_ops": 1,
+   "cms_sha256": "21564a54560c60a4053d495f26f162a88afbeb62242fb2b8da5deb3ddc5e38ea",
+   "const_sha256": "25161045fe3604a62f87ca5e9b18000e6f8a218c365982541f77f31c729f30db",
+   "fast_size": 91600,
+   "arena_size": 496,
+   "io": {
+    "ifms": [
+     [
+      0,
+      490
+     ]
+    ],
+    "ofms": [
+     [
+      0,
+      12
+     ]
+    ]
+   },
+   "kernels": 14,
+   "kernel_kinds": [
+    "CONV",
+    "DEPTHWISE",
+    "POOL"
+   ],
+   "compute_sig": "5c4b4a82b3a3a8d7e07fdffb6c8145dd60dd2ff8feafdc61c72aec0f83ca0bb3",
+   "memory_sig": "4a6b34a28299b7298729e25cdee5b3288a9841b444c0495981669e5d9477544d",
+   "weight_bytes": 152688,
+   "dma_bytes": 33392,
+   "vela_sha256": "f9575c36651efe0dc3798135f4bc8f9e3fd3614a75f7ad16377994616d18a069",
+   "class": "BASE"
+  },
+  "cache64k": {
+   "rc": 0,
+   "arena_cache_size_kib": 64.0,
+   "sram_used_kib": 58.765625,
+   "dram_used_kib": 160.28125,
+   "cycles_npu": 92095,
+   "cycles_total": 105195,
+   "nn_macs": 14208852,
+   "sram_total_bytes": 766384,
+   "dram_total_bytes": 400576,
+   "cpu_ops": [],
+   "npu_ops": 1,
+   "cms_sha256": "f16ab3855394e8ea5497603325a8ac53a5a762ea896d8d4899fd1c5024410946",
+   "const_sha256": "43edf04eb08cf802aaa31510fa899cba036fff4b8b1aa8fdb5b146ce7cd9e3d3",
+   "fast_size": 60176,
+   "arena_size": 18496,
+   "io": {
+    "ifms": [
+     [
+      18000,
+      490
+     ]
+    ],
+    "ofms": [
+     [
+      0,
+      12
+     ]
+    ]
+   },
+   "kernels": 19,
+   "kernel_kinds": [
+    "CONV",
+    "DEPTHWISE",
+    "POOL"
+   ],
+   "compute_sig": "4f9688c300317d5730ac41c7d641a804779f594bb5cddb342382ac6975a2dce1",
+   "memory_sig": "f9cb9e39db83b4b53d6d4b6410170dc1ce678b7fc299ad94c2e6b3811cb60ffa",
+   "weight_bytes": 186240,
+   "dma_bytes": 30256,
+   "vela_sha256": "ef4e944069ad36b8d686604867592c07b2111984cba7b70ed0cd9ed36b3b4a2d",
+   "class": "SCHEDULE_CHANGED"
+  },
+  "cache0": {
+   "rc": 0,
+   "arena_cache_size_kib": 0.0,
+   "sram_used_kib": 0.0,
+   "dram_used_kib": 228.703125,
+   "cycles_npu": 78730,
+   "cycles_total": 130003,
+   "nn_macs": 14208852,
+   "sram_total_bytes": 0,
+   "dram_total_bytes": 1338154,
+   "cpu_ops": [],
+   "npu_ops": 1,
+   "cms_sha256": "37f4273ba1b59d0889714be663dd2149f89fc3b3cad52d3d1fa5503a6c75352f",
+   "const_sha256": "43edf04eb08cf802aaa31510fa899cba036fff4b8b1aa8fdb5b146ce7cd9e3d3",
+   "fast_size": 0,
+   "arena_size": 88560,
+   "io": {
+    "ifms": [
+     [
+      70560,
+      490
+     ]
+    ],
+    "ofms": [
+     [
+      208,
+      12
+     ]
+    ]
+   },
+   "kernels": 13,
+   "kernel_kinds": [
+    "CONV",
+    "DEPTHWISE",
+    "POOL"
+   ],
+   "compute_sig": "4f7aa1850f5cbec2e363d741c11ec410bf11ac4c9ee67ab37734a3b16ba0f6c0",
+   "memory_sig": "4c97fb17c876a58c12fc9b62636215f1421dcfc81ebc8bede1d94e26688131e3",
+   "weight_bytes": 152592,
+   "dma_bytes": 0,
+   "vela_sha256": "80e68ec1d5885de9c3288e1c8df2f9f9b8107a7b5ee42311befc817dc05e59da",
+   "class": "SCHEDULE_CHANGED"
+  },
+  "size": {
+   "rc": 0,
+   "arena_cache_size_kib": 384.0,
+   "sram_used_kib": 89.453125,
+   "dram_used_kib": 142.625,
+   "cycles_npu": 89791,
+   "cycles_total": 105715,
+   "nn_macs": 15580852,
+   "sram_total_bytes": 1006928,
+   "dram_total_bytes": 319616,
+   "cpu_ops": [],
+   "npu_ops": 1,
+   "cms_sha256": "8a156d1e1282c2d50f2f27c1995e19bff0018c8508e64060c9181481f170e85e",
+   "const_sha256": "a3d3bbc1b6a70f7d8dfdb1083bb61d67c9132711db60e970daf47977cd83fa7a",
+   "fast_size": 91600,
+   "arena_size": 496,
+   "io": {
+    "ifms": [
+     [
+      0,
+      490
+     ]
+    ],
+    "ofms": [
+     [
+      0,
+      12
+     ]
+    ]
+   },
+   "kernels": 14,
+   "kernel_kinds": [
+    "CONV",
+    "DEPTHWISE",
+    "POOL"
+   ],
+   "compute_sig": "5c4b4a82b3a3a8d7e07fdffb6c8145dd60dd2ff8feafdc61c72aec0f83ca0bb3",
+   "memory_sig": "450f6eaace621157920ca025d7c9d5c58cff10a35631b8b40d5c8894345b9946",
+   "weight_bytes": 152512,
+   "dma_bytes": 33216,
+   "vela_sha256": "febca5862ae009f7ad0286f87aa7e1a5221b5b3b35904fe06fad5b5693510eb0",
+   "class": "MEMORY_ONLY"
+  },
+  "size_cache0": {
+   "rc": 0,
+   "arena_cache_size_kib": 0.0,
+   "sram_used_kib": 0.0,
+   "dram_used_kib": 228.484375,
+   "cycles_npu": 91530,
+   "cycles_total": 142803,
+   "nn_macs": 15580852,
+   "sram_total_bytes": 0,
+   "dram_total_bytes": 1337482,
+   "cpu_ops": [],
+   "npu_ops": 1,
+   "cms_sha256": "4d223407d57caa694e36cda7091147a46a006a529a9f73252133b16eb6e39492",
+   "const_sha256": "9d60fcda07a957362148e4e0b75308a10aafb82d71d10d56b6c9a21c9d42a74f",
+   "fast_size": 0,
+   "arena_size": 88560,
+   "io": {
+    "ifms": [
+     [
+      70560,
+      490
+     ]
+    ],
+    "ofms": [
+     [
+      208,
+      12
+     ]
+    ]
+   },
+   "kernels": 13,
+   "kernel_kinds": [
+    "CONV",
+    "DEPTHWISE",
+    "POOL"
+   ],
+   "compute_sig": "4f7aa1850f5cbec2e363d741c11ec410bf11ac4c9ee67ab37734a3b16ba0f6c0",
+   "memory_sig": "e947447b44a81c24a00ecf26b2d9a0fafa43e066f120c1dbe69a0de66198ffc6",
+   "weight_bytes": 152368,
+   "dma_bytes": 0,
+   "vela_sha256": "97b7b272b092753f908317610f7a6ac58bee6953c3705790b0ed6708ab630f1a",
+   "class": "SCHEDULE_CHANGED"
+  }
+ },
+ "ad_medium_int8": {
+  "base": {
+   "rc": 0,
+   "arena_cache_size_kib": 384.0,
+   "sram_used_kib": 244.0,
+   "dram_used_kib": 449.296875,
+   "cycles_npu": 140277,
+   "cycles_total": 148328,
+   "nn_macs": 61466400,
+   "sram_total_bytes": 2233280,
+   "dram_total_bytes": 761904,
+   "cpu_ops": [],
+   "npu_ops": 1,
+   "cms_sha256": "093dcda969be5b125e45b1dd04166c7eabe7bb1b70dd78f37934d1261bb163d1",
+   "const_sha256": "9cc4410e512ba602b36f890f588f45546a2f09153a58010d42b7f5d6d3a891bf",
+   "fast_size": 249856,
+   "arena_size": 1024,
+   "io": {
+    "ifms": [
+     [
+      0,
+      1024
+     ]
+    ],
+    "ofms": [
+     [
+      0,
+      8
+     ]
+    ]
+   },
+   "kernels": 14,
+   "kernel_kinds": [
+    "CONV",
+    "DEPTHWISE",
+    "POOL"
+   ],
+   "compute_sig": "1643d063a8ca8aca855fcef783985ba245473972f8b3bae133bbb95bfa576180",
+   "memory_sig": "5c90a8a7f95d88538b56f2e97969128bca6982f7fcd3f321d203d12d9e0c11c8",
+   "weight_bytes": 516000,
+   "dma_bytes": 9440,
+   "vela_sha256": "b83f28f2e5adc7fad13a41441578c95020c9c178e43d52dbf6b2bac2d789bb54",
+   "class": "BASE"
+  },
+  "cache64k": {
+   "rc": 0,
+   "arena_cache_size_kib": 64.0,
+   "sram_used_kib": 59.84375,
+   "dram_used_kib": 591.78125,
+   "cycles_npu": 345342,
+   "cycles_total": 443065,
+   "nn_macs": 61466400,
+   "sram_total_bytes": 1379888,
+   "dram_total_bytes": 2823264,
+   "cpu_ops": [],
+   "npu_ops": 1,
+   "cms_sha256": "2afb5613a8ceabd2ce147db6ffd1f388d87d858aa56c9432e0e18c461f849442",
+   "const_sha256": "a15ae93b22ff0509a1fe65b3acdd81d49849b25e62e91a9688e804123079d60a",
+   "fast_size": 61280,
+   "arena_size": 147456,
+   "io": {
+    "ifms": [
+     [
+      73728,
+      1024
+     ]
+    ],
+    "ofms": [
+     [
+      0,
+      8
+     ]
+    ]
+   },
+   "kernels": 66,
+   "kernel_kinds": [
+    "CONV",
+    "DEPTHWISE",
+    "POOL"
+   ],
+   "compute_sig": "8ed35dc302728d932f23db1c71e9b55a8b9fb8debd96c47bf6e4ac6cc302bbc0",
+   "memory_sig": "9c4d7a41324a9af2a66abdb9e16ddae01ccb046454d9399655af2a2bcd7d0bca",
+   "weight_bytes": 1823968,
+   "dma_bytes": 20880,
+   "vela_sha256": "220692370cf0486dd1c9b66cf6175a3f448137c067418a55baf138a411ec2f92",
+   "class": "SCHEDULE_CHANGED"
+  },
+  "cache0": {
+   "rc": 0,
+   "arena_cache_size_kib": 0.0,
+   "sram_used_kib": 0.0,
+   "dram_used_kib": 687.78125,
+   "cycles_npu": 139553,
+   "cycles_total": 269222,
+   "nn_macs": 61466400,
+   "sram_total_bytes": 0,
+   "dram_total_bytes": 2974768,
+   "cpu_ops": [],
+   "npu_ops": 1,
+   "cms_sha256": "f83612be9316351ef95e8c5e040f2c64745f4202cc8eb0f3807557bb63750a40",
+   "const_sha256": "aaad243a1d078fd289031d4c1634b6dd880b74ab2e86c266a7c51c0b17d38992",
+   "fast_size": 0,
+   "arena_size": 245760,
+   "io": {
+    "ifms": [
+     [
+      196608,
+      1024
+     ]
+    ],
+    "ofms": [
+     [
+      0,
+      8
+     ]
+    ]
+   },
+   "kernels": 13,
+   "kernel_kinds": [
+    "CONV",
+    "DEPTHWISE",
+    "POOL"
+   ],
+   "compute_sig": "fefd93591cb300fee32aecc640be9b6f43185f31bca471c43fcc612974c884c1",
+   "memory_sig": "5afc747ef170e1b3a9ff0a4d1ed6d85ba81c606d1ca18fd47454eb50dfcabb86",
+   "weight_bytes": 515792,
+   "dma_bytes": 0,
+   "vela_sha256": "638d2dba6cc43191ade9cc6acf6effd1ac558a60df77ec89399eb020d21bb9b6",
+   "class": "SCHEDULE_CHANGED"
+  },
+  "size": {
+   "rc": 0,
+   "arena_cache_size_kib": 384.0,
+   "sram_used_kib": 300.84375,
+   "dram_used_kib": 446.671875,
+   "cycles_npu": 140277,
+   "cycles_total": 148328,
+   "nn_macs": 61466400,
+   "sram_total_bytes": 2407904,
+   "dram_total_bytes": 698320,
+   "cpu_ops": [],
+   "npu_ops": 1,
+   "cms_sha256": "6947e8c9393de11aad2e3d33e695399540dc971008ec64b1001e62399c1567a5",
+   "const_sha256": "4f288cbdb7f25b037aa781fd059df498c0a46c9fc25c6b2447f3f8320a0167fd",
+   "fast_size": 308064,
+   "arena_size": 1024,
+   "io": {
+    "ifms": [
+     [
+      0,
+      1024
+     ]
+    ],
+    "ofms": [
+     [
+      0,
+      8
+     ]
+    ]
+   },
+   "kernels": 14,
+   "kernel_kinds": [
+    "CONV",
+    "DEPTHWISE",
+    "POOL"
+   ],
+   "compute_sig": "1643d063a8ca8aca855fcef783985ba245473972f8b3bae133bbb95bfa576180",
+   "memory_sig": "05df955125c79c25a02c28097695e8f72d5b8a632471a310f875cd14cf7ceac8",
+   "weight_bytes": 513312,
+   "dma_bytes": 67648,
+   "vela_sha256": "c6508a44d24d8f0fe5742a1783effee141136fd1ee402c34d757273451fc7bbb",
+   "class": "MEMORY_ONLY"
+  },
+  "size_cache0": {
+   "rc": 0,
+   "arena_cache_size_kib": 0.0,
+   "sram_used_kib": 0.0,
+   "dram_used_kib": 685.15625,
+   "cycles_npu": 139553,
+   "cycles_total": 269222,
+   "nn_macs": 61466400,
+   "sram_total_bytes": 0,
+   "dram_total_bytes": 2969392,
+   "cpu_ops": [],
+   "npu_ops": 1,
+   "cms_sha256": "9be7fab8c6053efb65768ff7bd6daf67ef45838aff4fecf69ffbdcd3d5ce5045",
+   "const_sha256": "622ac966f4586aabfbcce7a50a6c2a237982a2fb28505aac22c9dfc218b3c99c",
+   "fast_size": 0,
+   "arena_size": 245760,
+   "io": {
+    "ifms": [
+     [
+      196608,
+      1024
+     ]
+    ],
+    "ofms": [
+     [
+      0,
+      8
+     ]
+    ]
+   },
+   "kernels": 13,
+   "kernel_kinds": [
+    "CONV",
+    "DEPTHWISE",
+    "POOL"
+   ],
+   "compute_sig": "fefd93591cb300fee32aecc640be9b6f43185f31bca471c43fcc612974c884c1",
+   "memory_sig": "abcbc3f19b1b025a48e3cee108b3b04c36187e8aa1f0fcfd36e74513fc8acaba",
+   "weight_bytes": 513104,
+   "dma_bytes": 0,
+   "vela_sha256": "4b0ef2e47127fa64a55dafcacc85ebfbc86f73c3cf219afd1c020117fedc099e",
+   "class": "SCHEDULE_CHANGED"
+  }
+ },
+ "rnnoise_INT8": {
+  "base": {
+   "rc": 0,
+   "arena_cache_size_kib": 384.0,
+   "sram_used_kib": 0.6875,
+   "dram_used_kib": 114.65625,
+   "cycles_npu": 31334,
+   "cycles_total": 33040,
+   "nn_macs": 87510,
+   "sram_total_bytes": 4196,
+   "dram_total_bytes": 116500,
+   "cpu_ops": [],
+   "npu_ops": 1,
+   "cms_sha256": "6f1a31d4ddfc2ab502866ea702507f6400beb32d481beef9166bbb69b7f7fe15",
+   "const_sha256": "269fbc89731416b26a0466decb0d75ab7ffe4254adf29fda502ad8aa0732cac9",
+   "fast_size": 704,
+   "arena_size": 384,
+   "io": {
+    "ifms": [
+     [
+      96,
+      24
+     ],
+     [
+      192,
+      42
+     ],
+     [
+      144,
+      48
+     ],
+     [
+      0,
+      96
+     ]
+    ],
+    "ofms": [
+     [
+      96,
+      24
+     ],
+     [
+      128,
+      1
+     ],
+     [
+      144,
+      48
+     ],
+     [
+      0,
+      96
+     ],
+     [
+      192,
+      22
+     ]
+    ]
+   },
+   "kernels": 48,
+   "kernel_kinds": [
+    "CONV",
+    "ELEMENTWISE",
+    "POOL"
+   ],
+   "compute_sig": "1588599e405b3e029a3506c7410803cd3604597dd1ec5026f107a8cd4cd3169a",
+   "memory_sig": "7abdedabeff5de68e12a2a91d70c31419be5c0e4ea07c7335588c5b48f3ef59d",
+   "weight_bytes": 805824,
+   "dma_bytes": 2816,
+   "vela_sha256": "5bc1ee088fd731dbb9fed4a0d8ddcea92c11600e82b5041371149465510bee79",
+   "class": "BASE"
+  },
+  "cache64k": {
+   "rc": 0,
+   "arena_cache_size_kib": 64.0,
+   "sram_used_kib": 0.6875,
+   "dram_used_kib": 114.65625,
+   "cycles_npu": 31334,
+   "cycles_total": 33040,
+   "nn_macs": 87510,
+   "sram_total_bytes": 4196,
+   "dram_total_bytes": 116500,
+   "cpu_ops": [],
+   "npu_ops": 1,
+   "cms_sha256": "6f1a31d4ddfc2ab502866ea702507f6400beb32d481beef9166bbb69b7f7fe15",
+   "const_sha256": "269fbc89731416b26a0466decb0d75ab7ffe4254adf29fda502ad8aa0732cac9",
+   "fast_size": 704,
+   "arena_size": 384,
+   "io": {
+    "ifms": [
+     [
+      96,
+      24
+     ],
+     [
+      192,
+      42
+     ],
+     [
+      144,
+      48
+     ],
+     [
+      0,
+      96
+     ]
+    ],
+    "ofms": [
+     [
+      96,
+      24
+     ],
+     [
+      128,
+      1
+     ],
+     [
+      144,
+      48
+     ],
+     [
+      0,
+      96
+     ],
+     [
+      192,
+      22
+     ]
+    ]
+   },
+   "kernels": 48,
+   "kernel_kinds": [
+    "CONV",
+    "ELEMENTWISE",
+    "POOL"
+   ],
+   "compute_sig": "1588599e405b3e029a3506c7410803cd3604597dd1ec5026f107a8cd4cd3169a",
+   "memory_sig": "7abdedabeff5de68e12a2a91d70c31419be5c0e4ea07c7335588c5b48f3ef59d",
+   "weight_bytes": 805824,
+   "dma_bytes": 2816,
+   "vela_sha256": "5bc1ee088fd731dbb9fed4a0d8ddcea92c11600e82b5041371149465510bee79",
+   "class": "EXEC_IDENTICAL"
+  },
+  "cache0": {
+   "rc": 0,
+   "arena_cache_size_kib": 0.0,
+   "sram_used_kib": 0.0,
+   "dram_used_kib": 115.21875,
+   "cycles_npu": 36051,
+   "cycles_total": 37316,
+   "nn_macs": 87510,
+   "sram_total_bytes": 0,
+   "dram_total_bytes": 123252,
+   "cpu_ops": [],
+   "npu_ops": 1,
+   "cms_sha256": "04fffb6c2b25e7d9de42271195f44a77b24f5fe9c9982f76a8262443e6bfc199",
+   "const_sha256": "269fbc89731416b26a0466decb0d75ab7ffe4254adf29fda502ad8aa0732cac9",
+   "fast_size": 0,
+   "arena_size": 960,
+   "io": {
+    "ifms": [
+     [
+      96,
+      24
+     ],
+     [
+      272,
+      42
+     ],
+     [
+      144,
+      48
+     ],
+     [
+      0,
+      96
+     ]
+    ],
+    "ofms": [
+     [
+      96,
+      24
+     ],
+     [
+      128,
+      1
+     ],
+     [
+      144,
+      48
+     ],
+     [
+      0,
+      96
+     ],
+     [
+      192,
+      22
+     ]
+    ]
+   },
+   "kernels": 48,
+   "kernel_kinds": [
+    "CONV",
+    "ELEMENTWISE",
+    "POOL"
+   ],
+   "compute_sig": "1588599e405b3e029a3506c7410803cd3604597dd1ec5026f107a8cd4cd3169a",
+   "memory_sig": "d5a6dd97ff39b9c86e36988d64ab3a09d63da5c2b7b6f7c5f4cb761a5ed626a8",
+   "weight_bytes": 805824,
+   "dma_bytes": 2816,
+   "vela_sha256": "2e12ce4ac063742cb50d546f90ba11465bd2fb5cb42575a4ae128160a6274887",
+   "class": "MEMORY_ONLY"
+  },
+  "size": {
+   "rc": 0,
+   "arena_cache_size_kib": 384.0,
+   "sram_used_kib": 0.6875,
+   "dram_used_kib": 114.390625,
+   "cycles_npu": 31334,
+   "cycles_total": 33040,
+   "nn_macs": 87510,
+   "sram_total_bytes": 4196,
+   "dram_total_bytes": 116228,
+   "cpu_ops": [],
+   "npu_ops": 1,
+   "cms_sha256": "86c901774dd3e7d1526ebf23bf115b1a7ec63794598df30dca723be74c057cd9",
+   "const_sha256": "bcef4f70d80ea42c6a53d46ab5aa5998cb04951011d37e6d29fa8f6f0625d3e6",
+   "fast_size": 704,
+   "arena_size": 384,
+   "io": {
+    "ifms": [
+     [
+      96,
+      24
+     ],
+     [
+      192,
+      42
+     ],
+     [
+      144,
+      48
+     ],
+     [
+      0,
+      96
+     ]
+    ],
+    "ofms": [
+     [
+      96,
+      24
+     ],
+     [
+      128,
+      1
+     ],
+     [
+      144,
+      48
+     ],
+     [
+      0,
+      96
+     ],
+     [
+      192,
+      22
+     ]
+    ]
+   },
+   "kernels": 48,
+   "kernel_kinds": [
+    "CONV",
+    "ELEMENTWISE",
+    "POOL"
+   ],
+   "compute_sig": "1588599e405b3e029a3506c7410803cd3604597dd1ec5026f107a8cd4cd3169a",
+   "memory_sig": "26137ff39ebf49bc6a1637c7de301eaf047a1a657e2a77d5e0df3bdafc2622f3",
+   "weight_bytes": 803104,
+   "dma_bytes": 2816,
+   "vela_sha256": "620b51d9e7a4481f571e651b17a6f407c6372d5d08450bd70f5c5e9684b6bb7b",
+   "class": "MEMORY_ONLY"
+  },
+  "size_cache0": {
+   "rc": 0,
+   "arena_cache_size_kib": 0.0,
+   "sram_used_kib": 0.0,
+   "dram_used_kib": 114.953125,
+   "cycles_npu": 36051,
+   "cycles_total": 37316,
+   "nn_macs": 87510,
+   "sram_total_bytes": 0,
+   "dram_total_bytes": 122980,
+   "cpu_ops": [],
+   "npu_ops": 1,
+   "cms_sha256": "41b8ba9d7512f1c3adf16d6634de965c3b6beacb71efd808c565095402d4eb5d",
+   "const_sha256": "bcef4f70d80ea42c6a53d46ab5aa5998cb04951011d37e6d29fa8f6f0625d3e6",
+   "fast_size": 0,
+   "arena_size": 960,
+   "io": {
+    "ifms": [
+     [
+      96,
+      24
+     ],
+     [
+      272,
+      42
+     ],
+     [
+      144,
+      48
+     ],
+     [
+      0,
+      96
+     ]
+    ],
+    "ofms": [
+     [
+      96,
+      24
+     ],
+     [
+      128,
+      1
+     ],
+     [
+      144,
+      48
+     ],
+     [
+      0,
+      96
+     ],
+     [
+      192,
+      22
+     ]
+    ]
+   },
+   "kernels": 48,
+   "kernel_kinds": [
+    "CONV",
+    "ELEMENTWISE",
+    "POOL"
+   ],
+   "compute_sig": "1588599e405b3e029a3506c7410803cd3604597dd1ec5026f107a8cd4cd3169a",
+   "memory_sig": "6e24d16aa03ff84c2998ad14fbc3517b7b213bbd2d69b0fc369191826502b612",
+   "weight_bytes": 803104,
+   "dma_bytes": 2816,
+   "vela_sha256": "976e8a2cda6831eae5600c00a7963bddf7833660ef3e5b7b310f4df9c222e57a",
+   "class": "MEMORY_ONLY"
+  }
+ },
+ "vww4_128_128_INT8": {
+  "base": {
+   "rc": 0,
+   "arena_cache_size_kib": 384.0,
+   "sram_used_kib": 128.75,
+   "dram_used_kib": 348.390625,
+   "cycles_npu": 222478,
+   "cycles_total": 263411,
+   "nn_macs": 18763264,
+   "sram_total_bytes": 2496880,
+   "dram_total_bytes": 615832,
+   "cpu_ops": [],
+   "npu_ops": 1,
+   "cms_sha256": "11315c67b6b05364f7ad9e3e21ba81f0e48d8829448f918d5d5ae6f8fc6676d7",
+   "const_sha256": "6aa96e5afaacf141d0813e6d589fa9e50ef722738700904b910c324d58aeb838",
+   "fast_size": 131840,
+   "arena_size": 16384,
+   "io": {
+    "ifms": [
+     [
+      0,
+      16384
+     ]
+    ],
+    "ofms": [
+     [
+      0,
+      2
+     ]
+    ]
+   },
+   "kernels": 85,
+   "kernel_kinds": [
+    "CONV",
+    "DEPTHWISE",
+    "ELEMENTWISE",
+    "POOL"
+   ],
+   "compute_sig": "08c14f068de7d468c20cd97b1bc2b1e7e9c21682b48f1bbe0b968ad1c6e5b3d4",
+   "memory_sig": "969754be3264cdf5da657e0c5a206f77456379e4a4938688dea9369a23b365ab",
+   "weight_bytes": 475584,
+   "dma_bytes": 33616,
+   "vela_sha256": "637711c9bb5046bbf7f9010d1e1f1c25e9ea6cf643d74e8eb225c66b4ba6fed7",
+   "class": "BASE"
+  },
+  "cache64k": {
+   "rc": 0,
+   "arena_cache_size_kib": 64.0,
+   "sram_used_kib": 62.921875,
+   "dram_used_kib": 364.390625,
+   "cycles_npu": 224959,
+   "cycles_total": 280764,
+   "nn_macs": 18763264,
+   "sram_total_bytes": 2251280,
+   "dram_total_bytes": 943512,
+   "cpu_ops": [],
+   "npu_ops": 1,
+   "cms_sha256": "8bc3cd492ef9726f7eee4e917e98b13d42cdb9ff21eb664266d262f26a165514",
+   "const_sha256": "6aa96e5afaacf141d0813e6d589fa9e50ef722738700904b910c324d58aeb838",
+   "fast_size": 64432,
+   "arena_size": 32768,
+   "io": {
+    "ifms": [
+     [
+      16384,
+      16384
+     ]
+    ],
+    "ofms": [
+     [
+      0,
+      2
+     ]
+    ]
+   },
+   "kernels": 101,
+   "kernel_kinds": [
+    "CONV",
+    "DEPTHWISE",
+    "ELEMENTWISE",
+    "POOL"
+   ],
+   "compute_sig": "690fd42bc1fb45eaea2eda1554f5fe8b3dfe54f345be5914bca68230c7495718",
+   "memory_sig": "1b2beeed3ee2e58c01930508597c95dccfe7c7d3f1585bd2b204c50460e8c6d6",
+   "weight_bytes": 479520,
+   "dma_bytes": 33616,
+   "vela_sha256": "3152383c61a6bbe0e2a282b14721302bdc29b3cc465aa4841a92fba4e3512ac1",
+   "class": "SCHEDULE_CHANGED"
+  },
+  "cache0": {
+   "rc": 0,
+   "arena_cache_size_kib": 0.0,
+   "sram_used_kib": 0.0,
+   "dram_used_kib": 460.21875,
+   "cycles_npu": 239789,
+   "cycles_total": 376128,
+   "nn_macs": 18763264,
+   "sram_total_bytes": 0,
+   "dram_total_bytes": 3536744,
+   "cpu_ops": [],
+   "npu_ops": 1,
+   "cms_sha256": "d3b1e34c91cca97b2460b2345deab73bf3667e05ef2d5274faab61e617e4c07d",
+   "const_sha256": "18c5f15613635556aaa1df762ce13b120f337a380909e8da8804e1b200e88a4c",
+   "fast_size": 0,
+   "arena_size": 131072,
+   "io": {
+    "ifms": [
+     [
+      65536,
+      16384
+     ]
+    ],
+    "ofms": [
+     [
+      128,
+      2
+     ]
+    ]
+   },
+   "kernels": 83,
+   "kernel_kinds": [
+    "CONV",
+    "DEPTHWISE",
+    "ELEMENTWISE",
+    "POOL"
+   ],
+   "compute_sig": "45156c5b3febf26f2d3aef856267517340248ec68b75d8d17c767c7089eac54b",
+   "memory_sig": "707aa38f78bfdfe3aca0caba0ead149eb703e25b0e3057a481bcd24fbbd38e83",
+   "weight_bytes": 475408,
+   "dma_bytes": 0,
+   "vela_sha256": "80ba9857f50d5ae041a8af85d91fff268d8b64e1bca8b69821ba00bb332fcdf2",
+   "class": "SCHEDULE_CHANGED"
+  },
+  "size": {
+   "rc": 0,
+   "arena_cache_size_kib": 384.0,
+   "sram_used_kib": 128.75,
+   "dram_used_kib": 348.390625,
+   "cycles_npu": 222478,
+   "cycles_total": 263411,
+   "nn_macs": 18763264,
+   "sram_total_bytes": 2496880,
+   "dram_total_bytes": 615832,
+   "cpu_ops": [],
+   "npu_ops": 1,
+   "cms_sha256": "11315c67b6b05364f7ad9e3e21ba81f0e48d8829448f918d5d5ae6f8fc6676d7",
+   "const_sha256": "6aa96e5afaacf141d0813e6d589fa9e50ef722738700904b910c324d58aeb838",
+   "fast_size": 131840,
+   "arena_size": 16384,
+   "io": {
+    "ifms": [
+     [
+      0,
+      16384
+     ]
+    ],
+    "ofms": [
+     [
+      0,
+      2
+     ]
+    ]
+   },
+   "kernels": 85,
+   "kernel_kinds": [
+    "CONV",
+    "DEPTHWISE",
+    "ELEMENTWISE",
+    "POOL"
+   ],
+   "compute_sig": "08c14f068de7d468c20cd97b1bc2b1e7e9c21682b48f1bbe0b968ad1c6e5b3d4",
+   "memory_sig": "969754be3264cdf5da657e0c5a206f77456379e4a4938688dea9369a23b365ab",
+   "weight_bytes": 475584,
+   "dma_bytes": 33616,
+   "vela_sha256": "637711c9bb5046bbf7f9010d1e1f1c25e9ea6cf643d74e8eb225c66b4ba6fed7",
+   "class": "EXEC_IDENTICAL"
+  },
+  "size_cache0": {
+   "rc": 0,
+   "arena_cache_size_kib": 0.0,
+   "sram_used_kib": 0.0,
+   "dram_used_kib": 460.21875,
+   "cycles_npu": 239789,
+   "cycles_total": 376128,
+   "nn_macs": 18763264,
+   "sram_total_bytes": 0,
+   "dram_total_bytes": 3536744,
+   "cpu_ops": [],
+   "npu_ops": 1,
+   "cms_sha256": "d3b1e34c91cca97b2460b2345deab73bf3667e05ef2d5274faab61e617e4c07d",
+   "const_sha256": "18c5f15613635556aaa1df762ce13b120f337a380909e8da8804e1b200e88a4c",
+   "fast_size": 0,
+   "arena_size": 131072,
+   "io": {
+    "ifms": [
+     [
+      65536,
+      16384
+     ]
+    ],
+    "ofms": [
+     [
+      128,
+      2
+     ]
+    ]
+   },
+   "kernels": 83,
+   "kernel_kinds": [
+    "CONV",
+    "DEPTHWISE",
+    "ELEMENTWISE",
+    "POOL"
+   ],
+   "compute_sig": "45156c5b3febf26f2d3aef856267517340248ec68b75d8d17c767c7089eac54b",
+   "memory_sig": "707aa38f78bfdfe3aca0caba0ead149eb703e25b0e3057a481bcd24fbbd38e83",
+   "weight_bytes": 475408,
+   "dma_bytes": 0,
+   "vela_sha256": "80ba9857f50d5ae041a8af85d91fff268d8b64e1bca8b69821ba00bb332fcdf2",
+   "class": "SCHEDULE_CHANGED"
+  }
+ },
+ "yolo-fastest_192_face_v4": {
+  "base": {
+   "rc": 0,
+   "arena_cache_size_kib": 384.0,
+   "sram_used_kib": 361.4375,
+   "dram_used_kib": 419.0,
+   "cycles_npu": 478546,
+   "cycles_total": 584760,
+   "nn_macs": 38807136,
+   "sram_total_bytes": 7525472,
+   "dram_total_bytes": 792224,
+   "cpu_ops": [],
+   "npu_ops": 1,
+   "cms_sha256": "fa50d14e8b41f637afbe6f5da41fe752cb3558e7479928fbe8c0e233919328d3",
+   "const_sha256": "f174ef224e128db782689e12919dfae6e9b794c59858d75ebe95c7e21779476e",
+   "fast_size": 370112,
+   "arena_size": 36864,
+   "io": {
+    "ifms": [
+     [
+      0,
+      36864
+     ]
+    ],
+    "ofms": [
+     [
+      0,
+      2592
+     ],
+     [
+      2592,
+      648
+     ]
+    ]
+   },
+   "kernels": 112,
+   "kernel_kinds": [
+    "CONV",
+    "DEPTHWISE",
+    "ELEMENTWISE",
+    "POOL",
+    "RESIZE"
+   ],
+   "compute_sig": "ff3d820c76a480e96fdae37b3ff40a6f5539e579787f02055cb9e49348602bce",
+   "memory_sig": "49cc0ed349b14db8396bd38db57817d4adaf196bf39fb84b886d0b3af831e13d",
+   "weight_bytes": 529584,
+   "dma_bytes": 112832,
+   "vela_sha256": "aa143485cf3e64da4d46b58fe7cb2dbeab95193740ee0e13815ce3c0bdd1238b",
+   "class": "BASE"
+  },
+  "cache64k": {
+   "rc": 0,
+   "arena_cache_size_kib": 64.0,
+   "sram_used_kib": 63.71875,
+   "dram_used_kib": 527.0,
+   "cycles_npu": 476025,
+   "cycles_total": 678506,
+   "nn_macs": 38807136,
+   "sram_total_bytes": 5979968,
+   "dram_total_bytes": 3315968,
+   "cpu_ops": [],
+   "npu_ops": 1,
+   "cms_sha256": "2a1d1d35f40b38e632f9c0943c49d13a2bdd94ed1eaeb89d7b391ae37a84825f",
+   "const_sha256": "f174ef224e128db782689e12919dfae6e9b794c59858d75ebe95c7e21779476e",
+   "fast_size": 65248,
+   "arena_size": 147456,
+   "io": {
+    "ifms": [
+     [
+      36864,
+      36864
+     ]
+    ],
+    "ofms": [
+     [
+      0,
+      2592
+     ],
+     [
+      2592,
+      648
+     ]
+    ]
+   },
+   "kernels": 277,
+   "kernel_kinds": [
+    "CONV",
+    "DEPTHWISE",
+    "ELEMENTWISE",
+    "POOL",
+    "RESIZE"
+   ],
+   "compute_sig": "e7dc3184bc28bb9058194ddccc1de300984578e738625cf0dce0bb2c47493c22",
+   "memory_sig": "ad1deb0651e1d2398b5a682205584baf54953a1c22aeaf2b227e11797d5d7bd1",
+   "weight_bytes": 614096,
+   "dma_bytes": 112832,
+   "vela_sha256": "33af7a66ca4901b3f515d8024f1b1e17c0183441af6f107ad7989ccc00557a15",
+   "class": "SCHEDULE_CHANGED"
+  },
+  "cache0": {
+   "rc": 0,
+   "arena_cache_size_kib": 0.0,
+   "sram_used_kib": 0.0,
+   "dram_used_kib": 743.0,
+   "cycles_npu": 517627,
+   "cycles_total": 886923,
+   "nn_macs": 38807136,
+   "sram_total_bytes": 0,
+   "dram_total_bytes": 8720832,
+   "cpu_ops": [],
+   "npu_ops": 1,
+   "cms_sha256": "e4216dbf3dd9de8271319c848982df3977330fe1092f29cad9d1368d34b45f91",
+   "const_sha256": "f174ef224e128db782689e12919dfae6e9b794c59858d75ebe95c7e21779476e",
+   "fast_size": 0,
+   "arena_size": 368640,
+   "io": {
+    "ifms": [
+     [
+      147456,
+      36864
+     ]
+    ],
+    "ofms": [
+     [
+      21888,
+      2592
+     ],
+     [
+      0,
+      648
+     ]
+    ]
+   },
+   "kernels": 112,
+   "kernel_kinds": [
+    "CONV",
+    "DEPTHWISE",
+    "ELEMENTWISE",
+    "POOL",
+    "RESIZE"
+   ],
+   "compute_sig": "ff3d820c76a480e96fdae37b3ff40a6f5539e579787f02055cb9e49348602bce",
+   "memory_sig": "bb518aa8da9fb55007b1bb599754869812b47833f60e9822b37f3dfcb902706b",
+   "weight_bytes": 529584,
+   "dma_bytes": 0,
+   "vela_sha256": "9854d856ed2b774688b5085a67bb19097244e133538099f277ada22460bef6eb",
+   "class": "MEMORY_ONLY"
+  },
+  "size": {
+   "rc": 0,
+   "arena_cache_size_kib": 384.0,
+   "sram_used_kib": 361.4375,
+   "dram_used_kib": 419.0,
+   "cycles_npu": 478546,
+   "cycles_total": 584760,
+   "nn_macs": 38807136,
+   "sram_total_bytes": 7525472,
+   "dram_total_bytes": 792224,
+   "cpu_ops": [],
+   "npu_ops": 1,
+   "cms_sha256": "fa50d14e8b41f637afbe6f5da41fe752cb3558e7479928fbe8c0e233919328d3",
+   "const_sha256": "f174ef224e128db782689e12919dfae6e9b794c59858d75ebe95c7e21779476e",
+   "fast_size": 370112,
+   "arena_size": 36864,
+   "io": {
+    "ifms": [
+     [
+      0,
+      36864
+     ]
+    ],
+    "ofms": [
+     [
+      0,
+      2592
+     ],
+     [
+      2592,
+      648
+     ]
+    ]
+   },
+   "kernels": 112,
+   "kernel_kinds": [
+    "CONV",
+    "DEPTHWISE",
+    "ELEMENTWISE",
+    "POOL",
+    "RESIZE"
+   ],
+   "compute_sig": "ff3d820c76a480e96fdae37b3ff40a6f5539e579787f02055cb9e49348602bce",
+   "memory_sig": "49cc0ed349b14db8396bd38db57817d4adaf196bf39fb84b886d0b3af831e13d",
+   "weight_bytes": 529584,
+   "dma_bytes": 112832,
+   "vela_sha256": "aa143485cf3e64da4d46b58fe7cb2dbeab95193740ee0e13815ce3c0bdd1238b",
+   "class": "EXEC_IDENTICAL"
+  },
+  "size_cache0": {
+   "rc": 0,
+   "arena_cache_size_kib": 0.0,
+   "sram_used_kib": 0.0,
+   "dram_used_kib": 743.0,
+   "cycles_npu": 517627,
+   "cycles_total": 886923,
+   "nn_macs": 38807136,
+   "sram_total_bytes": 0,
+   "dram_total_bytes": 8720832,
+   "cpu_ops": [],
+   "npu_ops": 1,
+   "cms_sha256": "e4216dbf3dd9de8271319c848982df3977330fe1092f29cad9d1368d34b45f91",
+   "const_sha256": "f174ef224e128db782689e12919dfae6e9b794c59858d75ebe95c7e21779476e",
+   "fast_size": 0,
+   "arena_size": 368640,
+   "io": {
+    "ifms": [
+     [
+      147456,
+      36864
+     ]
+    ],
+    "ofms": [
+     [
+      21888,
+      2592
+     ],
+     [
+      0,
+      648
+     ]
+    ]
+   },
+   "kernels": 112,
+   "kernel_kinds": [
+    "CONV",
+    "DEPTHWISE",
+    "ELEMENTWISE",
+    "POOL",
+    "RESIZE"
+   ],
+   "compute_sig": "ff3d820c76a480e96fdae37b3ff40a6f5539e579787f02055cb9e49348602bce",
+   "memory_sig": "bb518aa8da9fb55007b1bb599754869812b47833f60e9822b37f3dfcb902706b",
+   "weight_bytes": 529584,
+   "dma_bytes": 0,
+   "vela_sha256": "9854d856ed2b774688b5085a67bb19097244e133538099f277ada22460bef6eb",
+   "class": "MEMORY_ONLY"
+  }
+ },
+ "mobilenet_v2_1.0_224_INT8": {
+  "base": {
+   "rc": 0,
+   "arena_cache_size_kib": 384.0,
+   "sram_used_kib": 376.921875,
+   "dram_used_kib": 4107.640625,
+   "cycles_npu": 1737984,
+   "cycles_total": 2358886,
+   "nn_macs": 300840274,
+   "sram_total_bytes": 19443134,
+   "dram_total_bytes": 6869120,
+   "cpu_ops": [],
+   "npu_ops": 1,
+   "cms_sha256": "884470be9f7997aee49998b20b363a597124e756f666990643f1d3d679c7fc3f",
+   "const_sha256": "d983b4d630a4ca57c5add932c255af6208edc88db18457eef6b37f4d4966c855",
+   "fast_size": 385968,
+   "arena_size": 652288,
+   "io": {
+    "ifms": [
+     [
+      100352,
+      150528
+     ]
+    ],
+    "ofms": [
+     [
+      0,
+      1001
+     ]
+    ]
+   },
+   "kernels": 208,
+   "kernel_kinds": [
+    "CONV",
+    "DEPTHWISE",
+    "ELEMENTWISE",
+    "POOL"
+   ],
+   "compute_sig": "ce37a7ced41d1111e289faf0f0befb4479eea31e988c3ed56d950b2563cf9152",
+   "memory_sig": "9cbeb2d6222401baf0ec60fd74bb29d64851c65aa05c1625ba3c91ebd1aa67e3",
+   "weight_bytes": 37129584,
+   "dma_bytes": 449952,
+   "vela_sha256": "031fade0e9b7136e2ed55a23422efbcc7aba28a32c8ebd3e043afbcc2f44bb75",
+   "class": "BASE"
+  },
+  "cache64k": {
+   "rc": 0,
+   "arena_cache_size_kib": 64.0,
+   "sram_used_kib": 63.0,
+   "dram_used_kib": 4810.578125,
+   "cycles_npu": 3169933,
+   "cycles_total": 4457055,
+   "nn_macs": 300840274,
+   "sram_total_bytes": 14965454,
+   "dram_total_bytes": 18669552,
+   "cpu_ops": [],
+   "npu_ops": 1,
+   "cms_sha256": "3246329e4528bf87d7c1bc5eaf11a74c7ddaef548c7e7bb3a6a6a983a6d78aef",
+   "const_sha256": "db303c90540164873528e5ee983fed6455e312cfe0dbc70d1d47ca7b03b07c56",
+   "fast_size": 64512,
+   "arena_size": 1354752,
+   "io": {
+    "ifms": [
+     [
+      1204224,
+      150528
+     ]
+    ],
+    "ofms": [
+     [
+      0,
+      1001
+     ]
+    ]
+   },
+   "kernels": 926,
+   "kernel_kinds": [
+    "CONV",
+    "DEPTHWISE",
+    "ELEMENTWISE",
+    "POOL"
+   ],
+   "compute_sig": "4132804de3836e5f5023652a8c3a8b5da4416650420587371f4e79b5160fa9a8",
+   "memory_sig": "61c3fd871aef7bc75d9f1ce765c036c4f2a6881e9441a440d3becc6aa055341f",
+   "weight_bytes": 43501248,
+   "dma_bytes": 296400,
+   "vela_sha256": "cea4ae1fa9ae89e7904e0009b41825a95f22252df0a4a5cf32224474af16d3e6",
+   "class": "SCHEDULE_CHANGED"
+  },
+  "cache0": {
+   "rc": 0,
+   "arena_cache_size_kib": 0.0,
+   "sram_used_kib": 0.0,
+   "dram_used_kib": 4939.765625,
+   "cycles_npu": 1660872,
+   "cycles_total": 2849970,
+   "nn_macs": 300840274,
+   "sram_total_bytes": 0,
+   "dram_total_bytes": 24657659,
+   "cpu_ops": [],
+   "npu_ops": 1,
+   "cms_sha256": "b1ecc4375beba0ea48650c120a8990f8c1b1f6c70085c0345e26d1c5475e2ff3",
+   "const_sha256": "63a8ca6f4d533ab23f5697cb8a411f93f5d1c523019b1a0654daa438e5a2b0e9",
+   "fast_size": 0,
+   "arena_size": 1505280,
+   "io": {
+    "ifms": [
+     [
+      401408,
+      150528
+     ]
+    ],
+    "ofms": [
+     [
+      4160,
+      1001
+     ]
+    ]
+   },
+   "kernels": 91,
+   "kernel_kinds": [
+    "CONV",
+    "DEPTHWISE",
+    "ELEMENTWISE",
+    "POOL"
+   ],
+   "compute_sig": "59fa95eb37dbe57fa2165861c3612a5bf5b31a803814bc2208d1c7cdad1fe15a",
+   "memory_sig": "3482325f55adbd89a143921e642c0316e0ffb8151b22d86ded0d42681318864f",
+   "weight_bytes": 36949296,
+   "dma_bytes": 1024,
+   "vela_sha256": "4a5b399d5cd61073158b8f7435d70b8bb1b40cac1e75fcd9c81512f9598e9669",
+   "class": "SCHEDULE_CHANGED"
+  },
+  "size": {
+   "rc": 0,
+   "arena_cache_size_kib": 384.0,
+   "sram_used_kib": 328.34375,
+   "dram_used_kib": 4647.15625,
+   "cycles_npu": 1644334,
+   "cycles_total": 2628198,
+   "nn_macs": 300840274,
+   "sram_total_bytes": 12074590,
+   "dram_total_bytes": 13541264,
+   "cpu_ops": [],
+   "npu_ops": 1,
+   "cms_sha256": "ff19cd9d890fe555b830865e0b2ea88438dbfab175b9694fdf8002235e6ce79c",
+   "const_sha256": "3d23705d1665085891cc0981652dc84114454566ad0df78a5956dd1d70a8905b",
+   "fast_size": 336224,
+   "arena_size": 1204224,
+   "io": {
+    "ifms": [
+     [
+      401408,
+      150528
+     ]
+    ],
+    "ofms": [
+     [
+      0,
+      1001
+     ]
+    ]
+   },
+   "kernels": 93,
+   "kernel_kinds": [
+    "CONV",
+    "DEPTHWISE",
+    "ELEMENTWISE",
+    "POOL"
+   ],
+   "compute_sig": "e6d17f50b9a6219d11b348a6dd473822c38fa4c2fab9bc12fc3b51754cba8fab",
+   "memory_sig": "ecfc5f9e547cdd73ad13928d2dcd01bcf74401a7b988c3cc7fe7b100c6f2f62a",
+   "weight_bytes": 36950080,
+   "dma_bytes": 450480,
+   "vela_sha256": "195d3f03b34ae1e62dee92fb0401b31e0db3c38b5adc99f2545d103adf6a8fbb",
+   "class": "SCHEDULE_CHANGED"
+  },
+  "size_cache0": {
+   "rc": 0,
+   "arena_cache_size_kib": 0.0,
+   "sram_used_kib": 0.0,
+   "dram_used_kib": 4939.765625,
+   "cycles_npu": 1660872,
+   "cycles_total": 2849970,
+   "nn_macs": 300840274,
+   "sram_total_bytes": 0,
+   "dram_total_bytes": 24657659,
+   "cpu_ops": [],
+   "npu_ops": 1,
+   "cms_sha256": "b1ecc4375beba0ea48650c120a8990f8c1b1f6c70085c0345e26d1c5475e2ff3",
+   "const_sha256": "63a8ca6f4d533ab23f5697cb8a411f93f5d1c523019b1a0654daa438e5a2b0e9",
+   "fast_size": 0,
+   "arena_size": 1505280,
+   "io": {
+    "ifms": [
+     [
+      401408,
+      150528
+     ]
+    ],
+    "ofms": [
+     [
+      4160,
+      1001
+     ]
+    ]
+   },
+   "kernels": 91,
+   "kernel_kinds": [
+    "CONV",
+    "DEPTHWISE",
+    "ELEMENTWISE",
+    "POOL"
+   ],
+   "compute_sig": "59fa95eb37dbe57fa2165861c3612a5bf5b31a803814bc2208d1c7cdad1fe15a",
+   "memory_sig": "3482325f55adbd89a143921e642c0316e0ffb8151b22d86ded0d42681318864f",
+   "weight_bytes": 36949296,
+   "dma_bytes": 1024,
+   "vela_sha256": "4a5b399d5cd61073158b8f7435d70b8bb1b40cac1e75fcd9c81512f9598e9669",
+   "class": "SCHEDULE_CHANGED"
+  }
+ },
+ "wav2letter_pruned_int8": {
+  "base": {
+   "rc": 0,
+   "arena_cache_size_kib": 384.0,
+   "sram_used_kib": 326.0625,
+   "dram_used_kib": 14438.125,
+   "cycles_npu": 5233545,
+   "cycles_total": 5761355,
+   "nn_macs": 3491110876,
+   "sram_total_bytes": 12143796,
+   "dram_total_bytes": 33403744,
+   "cpu_ops": [],
+   "npu_ops": 1,
+   "cms_sha256": "621a1592f5ed81402022915ab8032775ca824034c820e9ed83cc566e6589efbb",
+   "const_sha256": "eba3949af99ace280997535be30d07e569f86267d1e58e8775ad92ed23b2a835",
+   "fast_size": 333888,
+   "arena_size": 296000,
+   "io": {
+    "ifms": [
+     [
+      0,
+      11544
+     ]
+    ],
+    "ofms": [
+     [
+      0,
+      4292
+     ]
+    ]
+   },
+   "kernels": 39,
+   "kernel_kinds": [
+    "CONV",
+    "ELEMENTWISE",
+    "POOL"
+   ],
+   "compute_sig": "2d9e4d6d297edda0b624ed6d30865e981d1c1d9d040bac85c089d6952bb91f88",
+   "memory_sig": "8f9f5b8d678f973693c6adbed26329d93ad5e6074bb76241d2d99f33c371e55f",
+   "weight_bytes": 15358800,
+   "dma_bytes": 3584,
+   "vela_sha256": "4c5b640211f0aaa60eaf65ee5c9c4096a43022fd2c34127042e1304bf45def7b",
+   "class": "BASE"
+  },
+  "cache64k": {
+   "rc": 0,
+   "arena_cache_size_kib": 64.0,
+   "sram_used_kib": 46.828125,
+   "dram_used_kib": 14727.1875,
+   "cycles_npu": 5234533,
+   "cycles_total": 6135298,
+   "nn_macs": 3491110876,
+   "sram_total_bytes": 4746996,
+   "dram_total_bytes": 40800544,
+   "cpu_ops": [],
+   "npu_ops": 1,
+   "cms_sha256": "df5f7f2b86936d8836af4ff34e1dce1958e51f936eac89c2c1fd9a9bd876b237",
+   "const_sha256": "eba3949af99ace280997535be30d07e569f86267d1e58e8775ad92ed23b2a835",
+   "fast_size": 47952,
+   "arena_size": 592000,
+   "io": {
+    "ifms": [
+     [
+      0,
+      11544
+     ]
+    ],
+    "ofms": [
+     [
+      0,
+      4292
+     ]
+    ]
+   },
+   "kernels": 39,
+   "kernel_kinds": [
+    "CONV",
+    "ELEMENTWISE",
+    "POOL"
+   ],
+   "compute_sig": "2d9e4d6d297edda0b624ed6d30865e981d1c1d9d040bac85c089d6952bb91f88",
+   "memory_sig": "8bf998b2b711720bdc1e4ad70506470ca98fe69b00ded5a8086a8228f7fddc9f",
+   "weight_bytes": 15358800,
+   "dma_bytes": 3584,
+   "vela_sha256": "c9285cf76c8ca1730b80e247a43ad27039a32d109fb87ec4599f21c9e17f75d4",
+   "class": "MEMORY_ONLY"
+  },
+  "cache0": {
+   "rc": 0,
+   "arena_cache_size_kib": 0.0,
+   "sram_used_kib": 0.0,
+   "dram_used_kib": 14727.1875,
+   "cycles_npu": 5251873,
+   "cycles_total": 6159006,
+   "nn_macs": 3491110876,
+   "sram_total_bytes": 0,
+   "dram_total_bytes": 45577128,
+   "cpu_ops": [],
+   "npu_ops": 1,
+   "cms_sha256": "11660cb511534368689d69dcaac94c66f6012b2240407d7d779aa29b384a4ef3",
+   "const_sha256": "eba3949af99ace280997535be30d07e569f86267d1e58e8775ad92ed23b2a835",
+   "fast_size": 0,
+   "arena_size": 592000,
+   "io": {
+    "ifms": [
+     [
+      37888,
+      11544
+     ]
+    ],
+    "ofms": [
+     [
+      23680,
+      4292
+     ]
+    ]
+   },
+   "kernels": 39,
+   "kernel_kinds": [
+    "CONV",
+    "ELEMENTWISE",
+    "POOL"
+   ],
+   "compute_sig": "2d9e4d6d297edda0b624ed6d30865e981d1c1d9d040bac85c089d6952bb91f88",
+   "memory_sig": "bdb51c0746692aedc1af871e8bf4408bf1958b6894ba38cff31d773b104c0f29",
+   "weight_bytes": 15358800,
+   "dma_bytes": 3584,
+   "vela_sha256": "1ebe91bf9d48b5b325154e46416261984d41298c8f6ecc6eb6d9e14a61b05c7c",
+   "class": "MEMORY_ONLY"
+  },
+  "size": {
+   "rc": 0,
+   "arena_cache_size_kib": 384.0,
+   "sram_used_kib": 326.0625,
+   "dram_used_kib": 14438.125,
+   "cycles_npu": 5233545,
+   "cycles_total": 5761355,
+   "nn_macs": 3491110876,
+   "sram_total_bytes": 12143796,
+   "dram_total_bytes": 33403744,
+   "cpu_ops": [],
+   "npu_ops": 1,
+   "cms_sha256": "621a1592f5ed81402022915ab8032775ca824034c820e9ed83cc566e6589efbb",
+   "const_sha256": "eba3949af99ace280997535be30d07e569f86267d1e58e8775ad92ed23b2a835",
+   "fast_size": 333888,
+   "arena_size": 296000,
+   "io": {
+    "ifms": [
+     [
+      0,
+      11544
+     ]
+    ],
+    "ofms": [
+     [
+      0,
+      4292
+     ]
+    ]
+   },
+   "kernels": 39,
+   "kernel_kinds": [
+    "CONV",
+    "ELEMENTWISE",
+    "POOL"
+   ],
+   "compute_sig": "2d9e4d6d297edda0b624ed6d30865e981d1c1d9d040bac85c089d6952bb91f88",
+   "memory_sig": "8f9f5b8d678f973693c6adbed26329d93ad5e6074bb76241d2d99f33c371e55f",
+   "weight_bytes": 15358800,
+   "dma_bytes": 3584,
+   "vela_sha256": "4c5b640211f0aaa60eaf65ee5c9c4096a43022fd2c34127042e1304bf45def7b",
+   "class": "EXEC_IDENTICAL"
+  },
+  "size_cache0": {
+   "rc": 0,
+   "arena_cache_size_kib": 0.0,
+   "sram_used_kib": 0.0,
+   "dram_used_kib": 14727.1875,
+   "cycles_npu": 5251873,
+   "cycles_total": 6159006,
+   "nn_macs": 3491110876,
+   "sram_total_bytes": 0,
+   "dram_total_bytes": 45577128,
+   "cpu_ops": [],
+   "npu_ops": 1,
+   "cms_sha256": "11660cb511534368689d69dcaac94c66f6012b2240407d7d779aa29b384a4ef3",
+   "const_sha256": "eba3949af99ace280997535be30d07e569f86267d1e58e8775ad92ed23b2a835",
+   "fast_size": 0,
+   "arena_size": 592000,
+   "io": {
+    "ifms": [
+     [
+      37888,
+      11544
+     ]
+    ],
+    "ofms": [
+     [
+      23680,
+      4292
+     ]
+    ]
+   },
+   "kernels": 39,
+   "kernel_kinds": [
+    "CONV",
+    "ELEMENTWISE",
+    "POOL"
+   ],
+   "compute_sig": "2d9e4d6d297edda0b624ed6d30865e981d1c1d9d040bac85c089d6952bb91f88",
+   "memory_sig": "bdb51c0746692aedc1af871e8bf4408bf1958b6894ba38cff31d773b104c0f29",
+   "weight_bytes": 15358800,
+   "dma_bytes": 3584,
+   "vela_sha256": "1ebe91bf9d48b5b325154e46416261984d41298c8f6ecc6eb6d9e14a61b05c7c",
+   "class": "MEMORY_ONLY"
+  }
+ },
+ "s4_conv_base": {
+  "base": {
+   "rc": 0,
+   "arena_cache_size_kib": 384.0,
+   "sram_used_kib": 3.9375,
+   "dram_used_kib": 66.9375,
+   "cycles_npu": 16660,
+   "cycles_total": 24999,
+   "nn_macs": 884736,
+   "sram_total_bytes": 36288,
+   "dram_total_bytes": 123840,
+   "cpu_ops": [],
+   "npu_ops": 1,
+   "cms_sha256": "596fe964f9805a31fd0b8baa81ebdcd52c22b358eddfb1389be12c28e9f38e06",
+   "const_sha256": "1e3a9863530519644db7a725a9026db22d38a6bce9a718bc8827adef8f93dd63",
+   "fast_size": 4032,
+   "arena_size": 64512,
+   "io": {
+    "ifms": [
+     [
+      55296,
+      9216
+     ]
+    ],
+    "ofms": [
+     [
+      0,
+      55296
+     ]
+    ]
+   },
+   "kernels": 2,
+   "kernel_kinds": [
+    "CONV"
+   ],
+   "compute_sig": "1c3f6a09bd623e2673d0aa15cef0a4d58a9ec40f2a599b4ce43e09d5afca4466",
+   "memory_sig": "de5d905344c7482ecb8b3efb78ca8545365b08449fe00f4e24f449e9a46c32dd",
+   "weight_bytes": 2752,
+   "dma_bytes": 4032,
+   "vela_sha256": "fadf33d7ff3f46b21f8064d8de09f0ec8f2128ee0f777e3115fed4afd5e0c46d",
+   "class": "BASE"
+  },
+  "cache64k": {
+   "rc": 0,
+   "arena_cache_size_kib": 64.0,
+   "sram_used_kib": 3.9375,
+   "dram_used_kib": 66.9375,
+   "cycles_npu": 16660,
+   "cycles_total": 24999,
+   "nn_macs": 884736,
+   "sram_total_bytes": 36288,
+   "dram_total_bytes": 123840,
+   "cpu_ops": [],
+   "npu_ops": 1,
+   "cms_sha256": "596fe964f9805a31fd0b8baa81ebdcd52c22b358eddfb1389be12c28e9f38e06",
+   "const_sha256": "1e3a9863530519644db7a725a9026db22d38a6bce9a718bc8827adef8f93dd63",
+   "fast_size": 4032,
+   "arena_size": 64512,
+   "io": {
+    "ifms": [
+     [
+      55296,
+      9216
+     ]
+    ],
+    "ofms": [
+     [
+      0,
+      55296
+     ]
+    ]
+   },
+   "kernels": 2,
+   "kernel_kinds": [
+    "CONV"
+   ],
+   "compute_sig": "1c3f6a09bd623e2673d0aa15cef0a4d58a9ec40f2a599b4ce43e09d5afca4466",
+   "memory_sig": "de5d905344c7482ecb8b3efb78ca8545365b08449fe00f4e24f449e9a46c32dd",
+   "weight_bytes": 2752,
+   "dma_bytes": 4032,
+   "vela_sha256": "fadf33d7ff3f46b21f8064d8de09f0ec8f2128ee0f777e3115fed4afd5e0c46d",
+   "class": "EXEC_IDENTICAL"
+  },
+  "cache0": {
+   "rc": 0,
+   "arena_cache_size_kib": 0.0,
+   "sram_used_kib": 0.0,
+   "dram_used_kib": 66.234375,
+   "cycles_npu": 16004,
+   "cycles_total": 18750,
+   "nn_macs": 884736,
+   "sram_total_bytes": 0,
+   "dram_total_bytes": 146304,
+   "cpu_ops": [],
+   "npu_ops": 1,
+   "cms_sha256": "bf7abb02525c2b4f474bae7e7fa2c4c8129c6f40c85fc3c9e19184b6a54ff52d",
+   "const_sha256": "f17cce62135f5432918e21037e2cbcd61ae96ebc9b6420a288351f5e4cd0b73e",
+   "fast_size": 0,
+   "arena_size": 64512,
+   "io": {
+    "ifms": [
+     [
+      55296,
+      9216
+     ]
+    ],
+    "ofms": [
+     [
+      0,
+      55296
+     ]
+    ]
+   },
+   "kernels": 1,
+   "kernel_kinds": [
+    "CONV"
+   ],
+   "compute_sig": "616e31a186fe1a1fcf73bd7c2ea264703ca117315d195c2d96c869e222edee08",
+   "memory_sig": "67eb845535829e9fedb68ea92c42e5fcbee5718b8285866e8dce7771554fedfc",
+   "weight_bytes": 2352,
+   "dma_bytes": 0,
+   "vela_sha256": "6761eb94eea473569e27f6e3c480109306c9fe928a9f6501212668933047fbce",
+   "class": "SCHEDULE_CHANGED"
+  },
+  "size": {
+   "rc": 0,
+   "arena_cache_size_kib": 384.0,
+   "sram_used_kib": 3.9375,
+   "dram_used_kib": 66.9375,
+   "cycles_npu": 16660,
+   "cycles_total": 24999,
+   "nn_macs": 884736,
+   "sram_total_bytes": 36288,
+   "dram_total_bytes": 123840,
+   "cpu_ops": [],
+   "npu_ops": 1,
+   "cms_sha256": "596fe964f9805a31fd0b8baa81ebdcd52c22b358eddfb1389be12c28e9f38e06",
+   "const_sha256": "1e3a9863530519644db7a725a9026db22d38a6bce9a718bc8827adef8f93dd63",
+   "fast_size": 4032,
+   "arena_size": 64512,
+   "io": {
+    "ifms": [
+     [
+      55296,
+      9216
+     ]
+    ],
+    "ofms": [
+     [
+      0,
+      55296
+     ]
+    ]
+   },
+   "kernels": 2,
+   "kernel_kinds": [
+    "CONV"
+   ],
+   "compute_sig": "1c3f6a09bd623e2673d0aa15cef0a4d58a9ec40f2a599b4ce43e09d5afca4466",
+   "memory_sig": "de5d905344c7482ecb8b3efb78ca8545365b08449fe00f4e24f449e9a46c32dd",
+   "weight_bytes": 2752,
+   "dma_bytes": 4032,
+   "vela_sha256": "fadf33d7ff3f46b21f8064d8de09f0ec8f2128ee0f777e3115fed4afd5e0c46d",
+   "class": "EXEC_IDENTICAL"
+  },
+  "size_cache0": {
+   "rc": 0,
+   "arena_cache_size_kib": 0.0,
+   "sram_used_kib": 0.0,
+   "dram_used_kib": 66.234375,
+   "cycles_npu": 16004,
+   "cycles_total": 18750,
+   "nn_macs": 884736,
+   "sram_total_bytes": 0,
+   "dram_total_bytes": 146304,
+   "cpu_ops": [],
+   "npu_ops": 1,
+   "cms_sha256": "bf7abb02525c2b4f474bae7e7fa2c4c8129c6f40c85fc3c9e19184b6a54ff52d",
+   "const_sha256": "f17cce62135f5432918e21037e2cbcd61ae96ebc9b6420a288351f5e4cd0b73e",
+   "fast_size": 0,
+   "arena_size": 64512,
+   "io": {
+    "ifms": [
+     [
+      55296,
+      9216
+     ]
+    ],
+    "ofms": [
+     [
+      0,
+      55296
+     ]
+    ]
+   },
+   "kernels": 1,
+   "kernel_kinds": [
+    "CONV"
+   ],
+   "compute_sig": "616e31a186fe1a1fcf73bd7c2ea264703ca117315d195c2d96c869e222edee08",
+   "memory_sig": "67eb845535829e9fedb68ea92c42e5fcbee5718b8285866e8dce7771554fedfc",
+   "weight_bytes": 2352,
+   "dma_bytes": 0,
+   "vela_sha256": "6761eb94eea473569e27f6e3c480109306c9fe928a9f6501212668933047fbce",
+   "class": "SCHEDULE_CHANGED"
+  }
+ },
+ "s4c2_conv_cin64": {
+  "base": {
+   "rc": 0,
+   "arena_cache_size_kib": 384.0,
+   "sram_used_kib": 8.375,
+   "dram_used_kib": 98.375,
+   "cycles_npu": 16709,
+   "cycles_total": 24999,
+   "nn_macs": 3538944,
+   "sram_total_bytes": 77184,
+   "dram_total_bytes": 156032,
+   "cpu_ops": [],
+   "npu_ops": 1,
+   "cms_sha256": "7802057b476d28598420a3bfb731bc4878b9409d7b0d2c62dd673bf48df1f216",
+   "const_sha256": "ec30888cb65d244ba8fcbe97fbadc7a1255a6af8087fb1d8f452f99f5926225a",
+   "fast_size": 8576,
+   "arena_size": 92160,
+   "io": {
+    "ifms": [
+     [
+      55296,
+      36864
+     ]
+    ],
+    "ofms": [
+     [
+      0,
+      55296
+     ]
+    ]
+   },
+   "kernels": 2,
+   "kernel_kinds": [
+    "CONV"
+   ],
+   "compute_sig": "9b91f3b89263af3c595b3f93ab5732438affeca7727058fd5ace524a194531ae",
+   "memory_sig": "48bc02fd9af58de181ccb9f0d98b632f18a955f19112d820c720cf5fe45fcb33",
+   "weight_bytes": 7296,
+   "dma_bytes": 8576,
+   "vela_sha256": "f3229048fd27f030b474518ce81c3ab634c3f584d1252ba6405c03b72bb94d90",
+   "class": "BASE"
+  },
+  "cache64k": {
+   "rc": 0,
+   "arena_cache_size_kib": 64.0,
+   "sram_used_kib": 8.375,
+   "dram_used_kib": 98.375,
+   "cycles_npu": 16709,
+   "cycles_total": 24999,
+   "nn_macs": 3538944,
+   "sram_total_bytes": 77184,
+   "dram_total_bytes": 156032,
+   "cpu_ops": [],
+   "npu_ops": 1,
+   "cms_sha256": "7802057b476d28598420a3bfb731bc4878b9409d7b0d2c62dd673bf48df1f216",
+   "const_sha256": "ec30888cb65d244ba8fcbe97fbadc7a1255a6af8087fb1d8f452f99f5926225a",
+   "fast_size": 8576,
+   "arena_size": 92160,
+   "io": {
+    "ifms": [
+     [
+      55296,
+      36864
+     ]
+    ],
+    "ofms": [
+     [
+      0,
+      55296
+     ]
+    ]
+   },
+   "kernels": 2,
+   "kernel_kinds": [
+    "CONV"
+   ],
+   "compute_sig": "9b91f3b89263af3c595b3f93ab5732438affeca7727058fd5ace524a194531ae",
+   "memory_sig": "48bc02fd9af58de181ccb9f0d98b632f18a955f19112d820c720cf5fe45fcb33",
+   "weight_bytes": 7296,
+   "dma_bytes": 8576,
+   "vela_sha256": "f3229048fd27f030b474518ce81c3ab634c3f584d1252ba6405c03b72bb94d90",
+   "class": "EXEC_IDENTICAL"
+  },
+  "cache0": {
+   "rc": 0,
+   "arena_cache_size_kib": 0.0,
+   "sram_used_kib": 0.0,
+   "dram_used_kib": 97.0,
+   "cycles_npu": 15956,
+   "cycles_total": 18750,
+   "nn_macs": 3538944,
+   "sram_total_bytes": 0,
+   "dram_total_bytes": 204800,
+   "cpu_ops": [],
+   "npu_ops": 1,
+   "cms_sha256": "8e889c33117f1d9e99efa08d824aac9f91935634f2e96221b281d2c2269e24fc",
+   "const_sha256": "a8019e8a175fe4808a502054464dd2259eb43ffde325cf45be5ff926394545dc",
+   "fast_size": 0,
+   "arena_size": 92160,
+   "io": {
+    "ifms": [
+     [
+      55296,
+      36864
+     ]
+    ],
+    "ofms": [
+     [
+      0,
+      55296
+     ]
+    ]
+   },
+   "kernels": 1,
+   "kernel_kinds": [
+    "CONV"
+   ],
+   "compute_sig": "72a74e9b14b9a8de2b21227a108fd99c5bb30cb2d3e0f6e8f602ed9e5413723b",
+   "memory_sig": "06ace0867a58c626d00956d1f4ffaa31c24022721d62cb09006d91d1c37ca614",
+   "weight_bytes": 6208,
+   "dma_bytes": 0,
+   "vela_sha256": "1d48a3cb6da48fcb37805330b8c93507f76934ce3a24d61ce3eb11a9d4c53d99",
+   "class": "SCHEDULE_CHANGED"
+  },
+  "size": {
+   "rc": 0,
+   "arena_cache_size_kib": 384.0,
+   "sram_used_kib": 9.3125,
+   "dram_used_kib": 99.3125,
+   "cycles_npu": 16822,
+   "cycles_total": 24999,
+   "nn_macs": 3538944,
+   "sram_total_bytes": 85824,
+   "dram_total_bytes": 156992,
+   "cpu_ops": [],
+   "npu_ops": 1,
+   "cms_sha256": "aaa7cc6f96acab1ea35531c5fdaece7a77a34369a6b95c0c1fdb616157db963e",
+   "const_sha256": "607b9b4adbcb4b6b35978ae32164e6173aebec41c05c46b38fbe84854c937793",
+   "fast_size": 9536,
+   "arena_size": 92160,
+   "io": {
+    "ifms": [
+     [
+      55296,
+      36864
+     ]
+    ],
+    "ofms": [
+     [
+      0,
+      55296
+     ]
+    ]
+   },
+   "kernels": 2,
+   "kernel_kinds": [
+    "CONV"
+   ],
+   "compute_sig": "9b91f3b89263af3c595b3f93ab5732438affeca7727058fd5ace524a194531ae",
+   "memory_sig": "6c8fe153689146ea5c8aa6497f0de622d259d8a110947d9a95f540e76020f8ab",
+   "weight_bytes": 8256,
+   "dma_bytes": 9536,
+   "vela_sha256": "bfad9666bdac7d65c04ff150cd8a410fc97e286d79899d00be8cfb060227a075",
+   "class": "MEMORY_ONLY"
+  },
+  "size_cache0": {
+   "rc": 0,
+   "arena_cache_size_kib": 0.0,
+   "sram_used_kib": 0.0,
+   "dram_used_kib": 96.96875,
+   "cycles_npu": 15956,
+   "cycles_total": 18750,
+   "nn_macs": 3538944,
+   "sram_total_bytes": 0,
+   "dram_total_bytes": 204544,
+   "cpu_ops": [],
+   "npu_ops": 1,
+   "cms_sha256": "b0316db522a1b2e6b199d12f9d2b03bc191fa85a50594e982748381458d51471",
+   "const_sha256": "ed77e7caa1b8c61ff9a6ff3b50cc5edd358e3127b50691e9374505a063249c71",
+   "fast_size": 0,
+   "arena_size": 92160,
+   "io": {
+    "ifms": [
+     [
+      55296,
+      36864
+     ]
+    ],
+    "ofms": [
+     [
+      0,
+      55296
+     ]
+    ]
+   },
+   "kernels": 1,
+   "kernel_kinds": [
+    "CONV"
+   ],
+   "compute_sig": "72a74e9b14b9a8de2b21227a108fd99c5bb30cb2d3e0f6e8f602ed9e5413723b",
+   "memory_sig": "7f976314d034ce240a6ea13d59b20b9a2197599cf8de8d25a55b051f2ecb51e6",
+   "weight_bytes": 6176,
+   "dma_bytes": 0,
+   "vela_sha256": "43ad421b0a4477af08bf1d9774c3698e9363747ec0178a7272a7518833c65074",
+   "class": "SCHEDULE_CHANGED"
+  }
+ },
+ "s4_dw_base": {
+  "base": {
+   "rc": 0,
+   "arena_cache_size_kib": 384.0,
+   "sram_used_kib": 3.15625,
+   "dram_used_kib": 885.15625,
+   "cycles_npu": 112225,
+   "cycles_total": 944999,
+   "nn_macs": 4064256,
+   "sram_total_bytes": 22624,
+   "dram_total_bytes": 9809056,
+   "cpu_ops": [],
+   "npu_ops": 1,
+   "cms_sha256": "1731d1f3defe57dad3d9dd152b3f7ac3da4670270f4780b7d5e766201661c91a",
+   "const_sha256": "0e695050182d9ca8f2d3779824cb462a8a680392a2ef4bb0ce1239a5d489f495",
+   "fast_size": 3232,
+   "arena_size": 903168,
+   "io": {
+    "ifms": [
+     [
+      451584,
+      451584
+     ]
+    ],
+    "ofms": [
+     [
+      0,
+      451584
+     ]
+    ]
+   },
+   "kernels": 2,
+   "kernel_kinds": [
+    "DEPTHWISE"
+   ],
+   "compute_sig": "5ef78cf1e4d7d5ca685f3ed850ff2256d71d7e35a1408e6285507c43237d57c2",
+   "memory_sig": "d0bd0876f386f2231d5e4be86db8bbb4742cf5a1ba35c0d3dbe11e4fabdc15b9",
+   "weight_bytes": 1792,
+   "dma_bytes": 3232,
+   "vela_sha256": "7b546a4f645ebd937daec589e759daf03a82e66a5d0fd85df53e2df214537fcb",
+   "class": "BASE"
+  },
+  "cache64k": {
+   "rc": 0,
+   "arena_cache_size_kib": 64.0,
+   "sram_used_kib": 3.15625,
+   "dram_used_kib": 885.15625,
+   "cycles_npu": 112225,
+   "cycles_total": 944999,
+   "nn_macs": 4064256,
+   "sram_total_bytes": 22624,
+   "dram_total_bytes": 9809056,
+   "cpu_ops": [],
+   "npu_ops": 1,
+   "cms_sha256": "1731d1f3defe57dad3d9dd152b3f7ac3da4670270f4780b7d5e766201661c91a",
+   "const_sha256": "0e695050182d9ca8f2d3779824cb462a8a680392a2ef4bb0ce1239a5d489f495",
+   "fast_size": 3232,
+   "arena_size": 903168,
+   "io": {
+    "ifms": [
+     [
+      451584,
+      451584
+     ]
+    ],
+    "ofms": [
+     [
+      0,
+      451584
+     ]
+    ]
+   },
+   "kernels": 2,
+   "kernel_kinds": [
+    "DEPTHWISE"
+   ],
+   "compute_sig": "5ef78cf1e4d7d5ca685f3ed850ff2256d71d7e35a1408e6285507c43237d57c2",
+   "memory_sig": "d0bd0876f386f2231d5e4be86db8bbb4742cf5a1ba35c0d3dbe11e4fabdc15b9",
+   "weight_bytes": 1792,
+   "dma_bytes": 3232,
+   "vela_sha256": "7b546a4f645ebd937daec589e759daf03a82e66a5d0fd85df53e2df214537fcb",
+   "class": "EXEC_IDENTICAL"
+  },
+  "cache0": {
+   "rc": 0,
+   "arena_cache_size_kib": 0.0,
+   "sram_used_kib": 0.0,
+   "dram_used_kib": 885.015625,
+   "cycles_npu": 111652,
+   "cycles_total": 944999,
+   "nn_macs": 4064256,
+   "sram_total_bytes": 0,
+   "dram_total_bytes": 9824352,
+   "cpu_ops": [],
+   "npu_ops": 1,
+   "cms_sha256": "17a5c6517cf94ba7e863b1172076ec7931c12abb578c8bdbb288c8ad8805a594",
+   "const_sha256": "fdcc27fd86f379d58ebd9c8557bec3e890d87d429770ef93d583d0c337dbf549",
+   "fast_size": 0,
+   "arena_size": 903168,
+   "io": {
+    "ifms": [
+     [
+      451584,
+      451584
+     ]
+    ],
+    "ofms": [
+     [
+      0,
+      451584
+     ]
+    ]
+   },
+   "kernels": 1,
+   "kernel_kinds": [
+    "DEPTHWISE"
+   ],
+   "compute_sig": "4088afee7f4efdda70ba6adf8678a256aa6b688fce7b1ff96745b9843bf5de2b",
+   "memory_sig": "cd3c1d3060eee6f83c1d5bd0011dfa1b2852da8060d31fae9b6817195ddff2ec",
+   "weight_bytes": 1648,
+   "dma_bytes": 0,
+   "vela_sha256": "0616321b242c667db897c367437135a99a3b643618bfa041f7fdb23d5b427779",
+   "class": "SCHEDULE_CHANGED"
+  },
+  "size": {
+   "rc": 0,
+   "arena_cache_size_kib": 384.0,
+   "sram_used_kib": 3.15625,
+   "dram_used_kib": 885.15625,
+   "cycles_npu": 112225,
+   "cycles_total": 944999,
+   "nn_macs": 4064256,
+   "sram_total_bytes": 22624,
+   "dram_total_bytes": 9809056,
+   "cpu_ops": [],
+   "npu_ops": 1,
+   "cms_sha256": "1731d1f3defe57dad3d9dd152b3f7ac3da4670270f4780b7d5e766201661c91a",
+   "const_sha256": "0e695050182d9ca8f2d3779824cb462a8a680392a2ef4bb0ce1239a5d489f495",
+   "fast_size": 3232,
+   "arena_size": 903168,
+   "io": {
+    "ifms": [
+     [
+      451584,
+      451584
+     ]
+    ],
+    "ofms": [
+     [
+      0,
+      451584
+     ]
+    ]
+   },
+   "kernels": 2,
+   "kernel_kinds": [
+    "DEPTHWISE"
+   ],
+   "compute_sig": "5ef78cf1e4d7d5ca685f3ed850ff2256d71d7e35a1408e6285507c43237d57c2",
+   "memory_sig": "d0bd0876f386f2231d5e4be86db8bbb4742cf5a1ba35c0d3dbe11e4fabdc15b9",
+   "weight_bytes": 1792,
+   "dma_bytes": 3232,
+   "vela_sha256": "7b546a4f645ebd937daec589e759daf03a82e66a5d0fd85df53e2df214537fcb",
+   "class": "EXEC_IDENTICAL"
+  },
+  "size_cache0": {
+   "rc": 0,
+   "arena_cache_size_kib": 0.0,
+   "sram_used_kib": 0.0,
+   "dram_used_kib": 885.015625,
+   "cycles_npu": 111652,
+   "cycles_total": 944999,
+   "nn_macs": 4064256,
+   "sram_total_bytes": 0,
+   "dram_total_bytes": 9824352,
+   "cpu_ops": [],
+   "npu_ops": 1,
+   "cms_sha256": "17a5c6517cf94ba7e863b1172076ec7931c12abb578c8bdbb288c8ad8805a594",
+   "const_sha256": "fdcc27fd86f379d58ebd9c8557bec3e890d87d429770ef93d583d0c337dbf549",
+   "fast_size": 0,
+   "arena_size": 903168,
+   "io": {
+    "ifms": [
+     [
+      451584,
+      451584
+     ]
+    ],
+    "ofms": [
+     [
+      0,
+      451584
+     ]
+    ]
+   },
+   "kernels": 1,
+   "kernel_kinds": [
+    "DEPTHWISE"
+   ],
+   "compute_sig": "4088afee7f4efdda70ba6adf8678a256aa6b688fce7b1ff96745b9843bf5de2b",
+   "memory_sig": "cd3c1d3060eee6f83c1d5bd0011dfa1b2852da8060d31fae9b6817195ddff2ec",
+   "weight_bytes": 1648,
+   "dma_bytes": 0,
+   "vela_sha256": "0616321b242c667db897c367437135a99a3b643618bfa041f7fdb23d5b427779",
+   "class": "SCHEDULE_CHANGED"
+  }
+ },
+ "s4_fc_base": {
+  "base": {
+   "rc": 0,
+   "arena_cache_size_kib": 384.0,
+   "sram_used_kib": 0.0,
+   "dram_used_kib": 34.640625,
+   "cycles_npu": 7929,
+   "cycles_total": 7929,
+   "nn_macs": 27648,
+   "sram_total_bytes": 0,
+   "dram_total_bytes": 35856,
+   "cpu_ops": [],
+   "npu_ops": 1,
+   "cms_sha256": "f34d99cf42c6dab84f99fc3159d10482c8fa0f31cccb6e4ed3764ebc01113720",
+   "const_sha256": "c9ad45b2cce71d824d4993b05e7068bb2fc19eae9ed88a91de7d40fd788ea9b8",
+   "fast_size": 0,
+   "arena_size": 384,
+   "io": {
+    "ifms": [
+     [
+      288,
+      96
+     ]
+    ],
+    "ofms": [
+     [
+      0,
+      288
+     ]
+    ]
+   },
+   "kernels": 1,
+   "kernel_kinds": [
+    "CONV"
+   ],
+   "compute_sig": "fb23feebe907c107dc265e70c116d52ceeb17bae183dfd3070481008b7a5d5e5",
+   "memory_sig": "291aeef90b0627667bd0e8eef38f7987225a8ec24cba8e0d852c244139b87e2c",
+   "weight_bytes": 32208,
+   "dma_bytes": 0,
+   "vela_sha256": "4477e7ed7488e8b418cad2fa9369b2932a4aa193c0d9c67cd6a1abbeeebfebc8",
+   "class": "BASE"
+  },
+  "cache64k": {
+   "rc": 0,
+   "arena_cache_size_kib": 64.0,
+   "sram_used_kib": 0.0,
+   "dram_used_kib": 34.640625,
+   "cycles_npu": 7929,
+   "cycles_total": 7929,
+   "nn_macs": 27648,
+   "sram_total_bytes": 0,
+   "dram_total_bytes": 35856,
+   "cpu_ops": [],
+   "npu_ops": 1,
+   "cms_sha256": "f34d99cf42c6dab84f99fc3159d10482c8fa0f31cccb6e4ed3764ebc01113720",
+   "const_sha256": "c9ad45b2cce71d824d4993b05e7068bb2fc19eae9ed88a91de7d40fd788ea9b8",
+   "fast_size": 0,
+   "arena_size": 384,
+   "io": {
+    "ifms": [
+     [
+      288,
+      96
+     ]
+    ],
+    "ofms": [
+     [
+      0,
+      288
+     ]
+    ]
+   },
+   "kernels": 1,
+   "kernel_kinds": [
+    "CONV"
+   ],
+   "compute_sig": "fb23feebe907c107dc265e70c116d52ceeb17bae183dfd3070481008b7a5d5e5",
+   "memory_sig": "291aeef90b0627667bd0e8eef38f7987225a8ec24cba8e0d852c244139b87e2c",
+   "weight_bytes": 32208,
+   "dma_bytes": 0,
+   "vela_sha256": "4477e7ed7488e8b418cad2fa9369b2932a4aa193c0d9c67cd6a1abbeeebfebc8",
+   "class": "EXEC_IDENTICAL"
+  },
+  "cache0": {
+   "rc": 0,
+   "arena_cache_size_kib": 0.0,
+   "sram_used_kib": 0.0,
+   "dram_used_kib": 34.640625,
+   "cycles_npu": 7929,
+   "cycles_total": 7929,
+   "nn_macs": 27648,
+   "sram_total_bytes": 0,
+   "dram_total_bytes": 35856,
+   "cpu_ops": [],
+   "npu_ops": 1,
+   "cms_sha256": "f34d99cf42c6dab84f99fc3159d10482c8fa0f31cccb6e4ed3764ebc01113720",
+   "const_sha256": "c9ad45b2cce71d824d4993b05e7068bb2fc19eae9ed88a91de7d40fd788ea9b8",
+   "fast_size": 0,
+   "arena_size": 384,
+   "io": {
+    "ifms": [
+     [
+      288,
+      96
+     ]
+    ],
+    "ofms": [
+     [
+      0,
+      288
+     ]
+    ]
+   },
+   "kernels": 1,
+   "kernel_kinds": [
+    "CONV"
+   ],
+   "compute_sig": "fb23feebe907c107dc265e70c116d52ceeb17bae183dfd3070481008b7a5d5e5",
+   "memory_sig": "291aeef90b0627667bd0e8eef38f7987225a8ec24cba8e0d852c244139b87e2c",
+   "weight_bytes": 32208,
+   "dma_bytes": 0,
+   "vela_sha256": "4477e7ed7488e8b418cad2fa9369b2932a4aa193c0d9c67cd6a1abbeeebfebc8",
+   "class": "EXEC_IDENTICAL"
+  },
+  "size": {
+   "rc": 0,
+   "arena_cache_size_kib": 384.0,
+   "sram_used_kib": 0.0,
+   "dram_used_kib": 34.640625,
+   "cycles_npu": 7929,
+   "cycles_total": 7929,
+   "nn_macs": 27648,
+   "sram_total_bytes": 0,
+   "dram_total_bytes": 35856,
+   "cpu_ops": [],
+   "npu_ops": 1,
+   "cms_sha256": "f34d99cf42c6dab84f99fc3159d10482c8fa0f31cccb6e4ed3764ebc01113720",
+   "const_sha256": "c9ad45b2cce71d824d4993b05e7068bb2fc19eae9ed88a91de7d40fd788ea9b8",
+   "fast_size": 0,
+   "arena_size": 384,
+   "io": {
+    "ifms": [
+     [
+      288,
+      96
+     ]
+    ],
+    "ofms": [
+     [
+      0,
+      288
+     ]
+    ]
+   },
+   "kernels": 1,
+   "kernel_kinds": [
+    "CONV"
+   ],
+   "compute_sig": "fb23feebe907c107dc265e70c116d52ceeb17bae183dfd3070481008b7a5d5e5",
+   "memory_sig": "291aeef90b0627667bd0e8eef38f7987225a8ec24cba8e0d852c244139b87e2c",
+   "weight_bytes": 32208,
+   "dma_bytes": 0,
+   "vela_sha256": "4477e7ed7488e8b418cad2fa9369b2932a4aa193c0d9c67cd6a1abbeeebfebc8",
+   "class": "EXEC_IDENTICAL"
+  },
+  "size_cache0": {
+   "rc": 0,
+   "arena_cache_size_kib": 0.0,
+   "sram_used_kib": 0.0,
+   "dram_used_kib": 34.640625,
+   "cycles_npu": 7929,
+   "cycles_total": 7929,
+   "nn_macs": 27648,
+   "sram_total_bytes": 0,
+   "dram_total_bytes": 35856,
+   "cpu_ops": [],
+   "npu_ops": 1,
+   "cms_sha256": "f34d99cf42c6dab84f99fc3159d10482c8fa0f31cccb6e4ed3764ebc01113720",
+   "const_sha256": "c9ad45b2cce71d824d4993b05e7068bb2fc19eae9ed88a91de7d40fd788ea9b8",
+   "fast_size": 0,
+   "arena_size": 384,
+   "io": {
+    "ifms": [
+     [
+      288,
+      96
+     ]
+    ],
+    "ofms": [
+     [
+      0,
+      288
+     ]
+    ]
+   },
+   "kernels": 1,
+   "kernel_kinds": [
+    "CONV"
+   ],
+   "compute_sig": "fb23feebe907c107dc265e70c116d52ceeb17bae183dfd3070481008b7a5d5e5",
+   "memory_sig": "291aeef90b0627667bd0e8eef38f7987225a8ec24cba8e0d852c244139b87e2c",
+   "weight_bytes": 32208,
+   "dma_bytes": 0,
+   "vela_sha256": "4477e7ed7488e8b418cad2fa9369b2932a4aa193c0d9c67cd6a1abbeeebfebc8",
+   "class": "EXEC_IDENTICAL"
+  }
+ }
+}

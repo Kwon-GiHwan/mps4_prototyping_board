@@ -142,6 +142,9 @@ def main():
                                   "the model's graph input order (an MLEK VERIFY_TEST_OUTPUT dump)")
     ap.add_argument("--format", choices=("pmwl", "drwl"), default="pmwl",
                     help="pmwl: the runner's blob (default); drwl: the driver runner's (the Vela output file as it is)")
+    ap.add_argument("--vela-option", action="append", default=[],
+                    help="an extra Vela option after VELA_OPTIONS, e.g. --vela-option=--arena-cache-size=65536 (Stage 5; "
+                         "recorded in the meta as vela_extra)")
     ap.add_argument("--golden", help="raw OFM bytes the runner compares against instead of tflite_runtime's; several "
                                      "OFMs = one after another in the graph output order")
     a = ap.parse_args()
@@ -157,7 +160,8 @@ def main():
         kargs = dict(axi=a.axi, ports=parse_ports(a.ports), axi_limit=parse_axi_limit(a.axi_limit),
                      power_ctrl=a.power_ctrl, fast_base=a.fast_base, ta_profile=a.ta_profile)
     with tempfile.TemporaryDirectory() as d:
-        subprocess.run(["vela", a.model, *VELA_OPTIONS, "--output-dir", d], check=True, capture_output=True)
+        subprocess.run(["vela", a.model, *VELA_OPTIONS, *a.vela_option, "--output-dir", d], check=True,
+                       capture_output=True)
         vela_out = glob.glob(os.path.join(d, "*_vela.tflite"))[0]
         info = inspect_vela(vela_out)
         vela_bytes = open(vela_out, "rb").read()
@@ -180,7 +184,7 @@ def main():
     meta = dict(model=a.model, model_sha256=hashlib.sha256(open(a.model, "rb").read()).hexdigest(),
                 vela_sha256=vela_sha, accelerator="ethos-u85-1024",
                 system_config="Ethos_U85_SYS_DRAM_Mid_1024", memory_mode="Dedicated_Sram",
-                vela_options=VELA_OPTIONS, seed=a.seed, blob_sha256=hashlib.sha256(blob).hexdigest(),
+                vela_options=VELA_OPTIONS, vela_extra=a.vela_option, seed=a.seed, blob_sha256=hashlib.sha256(blob).hexdigest(),
                 cms_len=len(info["cms"]), const_len=len(info["const"]), arena_size=info["arena_size"],
                 fast_size=info["fast_size"], ifm_off=info["ifm_off"], ifm_len=len(ifm),
                 ofm_off=info["ofm_off"], ofm_len=len(golden), total=len(blob),

@@ -1,0 +1,65 @@
+{
+  "model": "/opt/arm/ml-embedded-evaluation-kit/resources_downloaded/ad/ad_medium_int8.tflite",
+  "model_sha256": "a8b1c9037c2a80e6ff770f0a550777cf744a52850bed6545b2bfc9bacf604c98",
+  "vela_sha256": "220692370cf0486dd1c9b66cf6175a3f448137c067418a55baf138a411ec2f92",
+  "accelerator": "ethos-u85-1024",
+  "system_config": "Ethos_U85_SYS_DRAM_Mid_1024",
+  "memory_mode": "Dedicated_Sram",
+  "vela_options": [
+    "--accelerator-config",
+    "ethos-u85-1024",
+    "--optimise",
+    "Performance",
+    "--config",
+    "/opt/arm/ml-embedded-evaluation-kit/scripts/vela/default_vela.ini",
+    "--memory-mode",
+    "Dedicated_Sram",
+    "--system-config",
+    "Ethos_U85_SYS_DRAM_Mid_1024"
+  ],
+  "vela_extra": [
+    "--arena-cache-size=65536"
+  ],
+  "seed": 1,
+  "blob_sha256": "01984784498ea1f9d4e6788c74e026c6e378e191f1c770893bdb55d6fcdd3457",
+  "cms_len": 13512,
+  "const_len": 458528,
+  "arena_size": 147456,
+  "fast_size": 61280,
+  "ifm_off": 73728,
+  "ifm_len": 1024,
+  "ofm_off": 0,
+  "ofm_len": 8,
+  "total": 474288,
+  "format": "drwl",
+  "header_version": 1,
+  "knobs": null,
+  "cms_sha256": "2afb5613a8ceabd2ce147db6ffd1f388d87d858aa56c9432e0e18c461f849442",
+  "profile": "config/fi101_s013.json",
+  "profile_sha256": "c80279ca43450872e62078215811ed1401c90a68e96f71f969493632dff29ada",
+  "graph_inputs": [
+    "input"
+  ],
+  "graph_outputs": [
+    "Identity"
+  ],
+  "ifm_file": "/work/s5_wl/ad_medium_int8.mlek_ifm.bin",
+  "ifm_sha256": "89ce99eb736e413e302d18227b4eaa23530b3f9d1524a5210b813851e759165b",
+  "tflite_ofm_sha256": "3d431e23d776b6ac7b2a1b2bf9135a7d639a6f54c0b5963e2660d6fee0df4a48",
+  "golden_file": "/work/s5_wl/ad_medium_int8.mlek_golden.bin",
+  "golden_sha256": "3d431e23d776b6ac7b2a1b2bf9135a7d639a6f54c0b5963e2660d6fee0df4a48",
+  "axi": null,
+  "ports": {
+    "cmd": "ext",
+    "const": "ext",
+    "arena": "ext",
+    "fast": "sram"
+  },
+  "axi_limit": {
+    "sram": 134923,
+    "ext": 139071
+  },
+  "power_ctrl": 0,
+  "fast_base": 823132160,
+  "ta_profile": 1
+}
