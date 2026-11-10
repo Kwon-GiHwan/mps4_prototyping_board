@@ -1,0 +1,7 @@
+ad_medium_int8 drwl_sha256=9d8b45ad198615aa96deba169fe510788149e24b8e117dbc792496c1b1ad8b0a n_in=1 n_out=1 vela/input/golden = manifest: (True, True, True) MATCH
+kws_micronet_m drwl_sha256=c77bf2b72079f012940af65028f49a0f77eeeca17706cd304077fe4a5e79f8f2 n_in=1 n_out=1 vela/input/golden = manifest: (True, True, True) MATCH
+mobilenet_v2_1.0_224_INT8 drwl_sha256=0a59534fdf0c4a8ce2583aef4dd8f5e5d091d8ec6d339a810b6c97e47d730529 n_in=1 n_out=1 vela/input/golden = manifest: (True, True, True) MATCH
+rnnoise_INT8 drwl_sha256=4e490cca98dd7a5dc2d62a90e442126615e45e38492be902e525d924daf4c391 n_in=4 n_out=5 vela/input/golden = manifest: (True, True, True) MATCH
+vww4_128_128_INT8 drwl_sha256=e5eb6a2b4308f164b8f023eeffa832314364c7fe2883018542728e74f6789b6b n_in=1 n_out=1 vela/input/golden = manifest: (True, True, True) MATCH
+wav2letter_pruned_int8 drwl_sha256=2d2a542ad7c3c4b4c19e35e08fc2a0af1a7cab03906a24c3e781e78f3d94493d n_in=1 n_out=1 vela/input/golden = manifest: (True, True, True) MATCH
+yolo-fastest_192_face_v4 drwl_sha256=9f3004368f3191da0ba4459d98966cdea2935cd20ca7ece1c6d087b7a595cfed n_in=1 n_out=2 vela/input/golden = manifest: (True, True, True) MATCH

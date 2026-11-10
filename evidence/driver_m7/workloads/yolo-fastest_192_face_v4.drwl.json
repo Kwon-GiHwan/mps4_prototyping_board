@@ -1,0 +1,85 @@
+{
+  "model": "/opt/arm/ml-embedded-evaluation-kit/resources_downloaded/object_detection/yolo-fastest_192_face_v4.tflite",
+  "model_sha256": "e94bcdb011784bead70ab0c0e9d2dae1a9ea5f103b43e1e6fac3019302cf71ab",
+  "vela_sha256": "aa143485cf3e64da4d46b58fe7cb2dbeab95193740ee0e13815ce3c0bdd1238b",
+  "accelerator": "ethos-u85-1024",
+  "system_config": "Ethos_U85_SYS_DRAM_Mid_1024",
+  "memory_mode": "Dedicated_Sram",
+  "vela_options": [
+    "--accelerator-config",
+    "ethos-u85-1024",
+    "--optimise",
+    "Performance",
+    "--config",
+    "/opt/arm/ml-embedded-evaluation-kit/scripts/vela/default_vela.ini",
+    "--memory-mode",
+    "Dedicated_Sram",
+    "--system-config",
+    "Ethos_U85_SYS_DRAM_Mid_1024"
+  ],
+  "seed": 1,
+  "blob_sha256": "9f3004368f3191da0ba4459d98966cdea2935cd20ca7ece1c6d087b7a595cfed",
+  "cms_len": 21056,
+  "const_len": 392192,
+  "arena_size": 36864,
+  "fast_size": 370112,
+  "ifm_off": 0,
+  "ifm_len": 36864,
+  "ofm_off": 0,
+  "ofm_len": 3240,
+  "total": 454672,
+  "ifms": [
+    {
+      "name": "image_input",
+      "off": 0,
+      "len": 36864,
+      "sha256": "a19a7a4708b338008d489e4faf15f5256b01c71b279634da7bd38ab3c76c7041"
+    }
+  ],
+  "ofms": [
+    {
+      "name": "Identity_1",
+      "off": 0,
+      "len": 2592,
+      "sha256": "28b519dcf266f683dae7c69d4fa9585fe97e1941b85fe99230e2d324ce26f559"
+    },
+    {
+      "name": "Identity",
+      "off": 2592,
+      "len": 648,
+      "sha256": "829ee9525cc465abd05c1bc7d1c986e0810cc5770690fbb66d893d86b80dcf22"
+    }
+  ],
+  "format": "drwl",
+  "header_version": 1,
+  "knobs": null,
+  "cms_sha256": "fa50d14e8b41f637afbe6f5da41fe752cb3558e7479928fbe8c0e233919328d3",
+  "profile": "config/fi101_s013.json",
+  "profile_sha256": "c80279ca43450872e62078215811ed1401c90a68e96f71f969493632dff29ada",
+  "graph_inputs": [
+    "image_input"
+  ],
+  "graph_outputs": [
+    "Identity",
+    "Identity_1"
+  ],
+  "ifm_file": "/work/equiv_c/yolo-fastest_192_face_v4/ifm.bin",
+  "ifm_sha256": "a19a7a4708b338008d489e4faf15f5256b01c71b279634da7bd38ab3c76c7041",
+  "tflite_ofm_sha256": "f23815efd04b1f20f5e4ea4b4eee28cee0452c1942de8cdd3f7a5181f4cc9f0c",
+  "golden_file": "/work/equiv_c/yolo-fastest_192_face_v4/mlek_ofm.bin",
+  "golden_sha256": "b4f4823ea886280886fe194b8d28bb849e0183cd28ed3f701e462ff167486ebf",
+  "axi": null,
+  "ports": {
+    "cmd": "ext",
+    "const": "ext",
+    "arena": "ext",
+    "fast": "sram"
+  },
+  "axi_limit": {
+    "sram": 134923,
+    "ext": 139071
+  },
+  "power_ctrl": 0,
+  "fast_base": 823132160,
+  "ta_profile": 1
+}

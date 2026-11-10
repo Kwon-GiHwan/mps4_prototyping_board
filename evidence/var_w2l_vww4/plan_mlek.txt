@@ -1,0 +1,10 @@
+# W: wav2letter MLEK stock vs instrumented ("events") build, interleaved S E E S E S S E; boots 317-324; one inference per boot; TA profile 1 (MLEK's own set-up)
+# images: evidence/equiv_c/mlek/wav2letter_pruned_int8/{stock,events} (branch refactor/firmware-modules 993b077) - digests re-checked on the board host before deploy
+317 W1_stock
+318 W2_events
+319 W3_events
+320 W4_stock
+321 W5_events
+322 W6_stock
+323 W7_stock
+324 W8_events

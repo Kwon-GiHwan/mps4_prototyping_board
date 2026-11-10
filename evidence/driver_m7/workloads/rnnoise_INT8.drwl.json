@@ -1,0 +1,127 @@
+{
+  "model": "/opt/arm/ml-embedded-evaluation-kit/resources_downloaded/noise_reduction/rnnoise_INT8.tflite",
+  "model_sha256": "9c582545b7c13af44616c44b654f4fe721aa2585630b0ca173ca3589f6f11c2c",
+  "vela_sha256": "5bc1ee088fd731dbb9fed4a0d8ddcea92c11600e82b5041371149465510bee79",
+  "accelerator": "ethos-u85-1024",
+  "system_config": "Ethos_U85_SYS_DRAM_Mid_1024",
+  "memory_mode": "Dedicated_Sram",
+  "vela_options": [
+    "--accelerator-config",
+    "ethos-u85-1024",
+    "--optimise",
+    "Performance",
+    "--config",
+    "/opt/arm/ml-embedded-evaluation-kit/scripts/vela/default_vela.ini",
+    "--memory-mode",
+    "Dedicated_Sram",
+    "--system-config",
+    "Ethos_U85_SYS_DRAM_Mid_1024"
+  ],
+  "seed": 1,
+  "blob_sha256": "4e490cca98dd7a5dc2d62a90e442126615e45e38492be902e525d924daf4c391",
+  "cms_len": 7296,
+  "const_len": 117024,
+  "arena_size": 384,
+  "fast_size": 704,
+  "ifm_off": 96,
+  "ifm_len": 210,
+  "ofm_off": 96,
+  "ofm_len": 191,
+  "total": 127008,
+  "ifms": [
+    {
+      "name": "vad_gru_prev_state_int8",
+      "off": 96,
+      "len": 24,
+      "sha256": "39ceb00f15d9ae8ddbf7d728a72973f9cce1dbe9552df2e0b1cc09d87a9e8e6b"
+    },
+    {
+      "name": "main_input_int8",
+      "off": 192,
+      "len": 42,
+      "sha256": "b4350970fcf6426de784320d2e2048b4354bf30ca71b8ffd479e1da09bf93a16"
+    },
+    {
+      "name": "noise_gru_prev_state_int8",
+      "off": 144,
+      "len": 48,
+      "sha256": "edfecdf0ebca0fefa726e8fef0edeab634875fc4360a84c5b589410b459146d3"
+    },
+    {
+      "name": "denoise_gru_prev_state_int8",
+      "off": 0,
+      "len": 96,
+      "sha256": "ea5100c7f074c8d896f425c0b80e7f56939c96dd9eec8159618f7a8b8e08edf6"
+    }
+  ],
+  "ofms": [
+    {
+      "name": "Identity_3_int8",
+      "off": 96,
+      "len": 24,
+      "sha256": "5154285f0b218a989bb1aef974e7beccaa20507d75b6b68a177a51a1f483e357"
+    },
+    {
+      "name": "Identity_4_int8",
+      "off": 128,
+      "len": 1,
+      "sha256": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b"
+    },
+    {
+      "name": "Identity_2_int8",
+      "off": 144,
+      "len": 48,
+      "sha256": "fcca7e33915351fbc05abdd76c7859a5f50727178cedcc955605f1612afcc41d"
+    },
+    {
+      "name": "Identity_int8",
+      "off": 0,
+      "len": 96,
+      "sha256": "c145f83fca9384c3810804d270dd6387760faa35fef15eff62900d8bd2687a66"
+    },
+    {
+      "name": "Identity_1_int8",
+      "off": 192,
+      "len": 22,
+      "sha256": "db323f2cb3b40017e99946e4633c9752fd19b071bf293f6a71c44bb13422b748"
+    }
+  ],
+  "format": "drwl",
+  "header_version": 1,
+  "knobs": null,
+  "cms_sha256": "6f1a31d4ddfc2ab502866ea702507f6400beb32d481beef9166bbb69b7f7fe15",
+  "profile": "config/fi101_s013.json",
+  "profile_sha256": "c80279ca43450872e62078215811ed1401c90a68e96f71f969493632dff29ada",
+  "graph_inputs": [
+    "main_input_int8",
+    "vad_gru_prev_state_int8",
+    "noise_gru_prev_state_int8",
+    "denoise_gru_prev_state_int8"
+  ],
+  "graph_outputs": [
+    "Identity_int8",
+    "Identity_1_int8",
+    "Identity_2_int8",
+    "Identity_3_int8",
+    "Identity_4_int8"
+  ],
+  "ifm_file": "/work/equiv_c/rnnoise_INT8/ifm.bin",
+  "ifm_sha256": "76517870df5505eb050388d8fdf8b269608516e69872247577fc506996a0e638",
+  "tflite_ofm_sha256": "24b7dd1d1cfb3542b80dc204c8b46576432eb93fd99569b0e58f5115479082fb",
+  "golden_file": "/work/equiv_c/rnnoise_INT8/mlek_ofm.bin",
+  "golden_sha256": "24b7dd1d1cfb3542b80dc204c8b46576432eb93fd99569b0e58f5115479082fb",
+  "axi": null,
+  "ports": {
+    "cmd": "ext",
+    "const": "ext",
+    "arena": "ext",
+    "fast": "sram"
+  },
+  "axi_limit": {
+    "sram": 134923,
+    "ext": 139071
+  },
+  "power_ctrl": 0,
+  "fast_base": 823132160,
+  "ta_profile": 1
+}

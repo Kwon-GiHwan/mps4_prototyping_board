@@ -1,0 +1,8 @@
+# Driver runner m7: boots 308-314 (root raw/), driver runner image of commit 65cf963 (image.sha256), MLEK TA set-up (= TA profile 1), WFE, MLEK-input DRWLs (workloads_check.txt), sets ids.txt, 10 RUNs (2 warm-up)
+308 kws_micronet_m wfe
+309 ad_medium_int8 wfe
+310 vww4_128_128_INT8 wfe
+311 rnnoise_INT8 wfe
+312 yolo-fastest_192_face_v4 wfe
+313 mobilenet_v2_1.0_224_INT8 wfe
+314 wav2letter_pruned_int8 wfe
