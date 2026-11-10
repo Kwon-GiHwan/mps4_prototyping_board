@@ -1,4 +1,4 @@
-# Stage 4A/4B — operator type and channel alignment (boots 330–337, 2026-11-10 UTC board clock) — completed
+# Stage 4A/4B — operator type and channel alignment (boots 330–337, 2026-11-10 UTC board clock) — closed
 
 Contract `evidence/stage4/contract.md` (frozen `448c4c3`, before boot 330). **TA profile 1** (MLEK sys_dram_mid),
 FI101 Ethos-U85 1024 MAC, official driver (driver runner), WAIT_WFE, Vela 5.0.0 with MLEK's options, INT8 isolated
@@ -6,8 +6,8 @@ operators, IFM seed 1. One boot per config; pass A (Stage 1 set A) and pass B (S
 RUNs each = 80 RUNs. All boots `campaign exit=0`; board restored to m6 (`RESTORE VERIFIED`), postflight done.
 Analysis: `python3 host/analysis/stage4.py evidence/stage4/raw evidence/stage4/workloads <out>` →
 `stage4_summary.csv`, `stage4_output_checks.csv`, `stage4_summary.json`. Owner (2026-11-10): 8/8 PASS_EXACT and Gate C
-adopted; the experiment is closed; this revision adds the interpretation limits and the artifact cross-check (§6) — no
-new board run.
+adopted; the experiment is closed; later revisions add the interpretation limits, the artifact cross-check (§6) and the
+output-write beat hypothesis (§6.1, adopted as post-hoc) — no new board run. Stage 4C/4D: proposals only.
 
 **Image.** All 80 RUNs (boots 330–337, both passes, every config) ran on the same image: driver runner `83398c7`
 (adds `GET_OUTPUT`; RUN path unchanged), boot `1b5c0adb`, bram `4f592f24`, ddr `374708ff`, images.txt `af688281`
@@ -159,7 +159,14 @@ factor is fitted to the measurement.
 - Sensitivity: for 95- and 143-byte strides rule A gives the same count for any base address mod 16 (6,660; 54,488);
   for 96- and 144-byte strides it gives the measured count only with a 16-byte-aligned base (actual bases are 16-byte
   aligned; a misaligned base would double it under the rule).
-- Status: a quantitative candidate that matches the **output writes** of these four configs, `POST_HOC_DESCRIPTIVE`.
+- Discriminating cases: in the aligned base configs (96, 144 channels) rules A–D all give the measured count, so only
+  Cout 95 and DW 143 tell the rules apart. Both have C mod 16 = 15 (95 = 5·16 + 15, 143 = 8·16 + 15); other remainders
+  were not measured, so rule A is tested on one remainder only.
+- The address sensitivity above is a property of the rule computed for shifted addresses, not a board measurement with
+  moved buffers.
+- Status (owner, 2026-11-10: adopted as the post-hoc quantitative hypothesis for Stage 4's output-write traffic): a
+  quantitative candidate that matches the **output writes** of these four configs, `POST_HOC_DESCRIPTIVE`. The internal
+  access pattern, the input-read increase and any causal link to the NPU_ACTIVE increase stay `UNVERIFIED`.
   It is not evidence about the input reads (not computed here) or about the NPU_ACTIVE increase; the actual DMA/AXI
   mechanism stays `UNVERIFIED`. Cin 15 is used only as a reason why a plain "unaligned rows" explanation is insufficient
   (its schedule also changed, so it is not a clean test of rule A).
