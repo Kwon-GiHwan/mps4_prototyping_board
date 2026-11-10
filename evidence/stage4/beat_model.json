@@ -1,0 +1,34 @@
+{
+ "conv_base": {
+  "ofm_address": "0x700015c0",
+  "A_16B_chunks": 3456,
+  "B_whole_pixel": 3456,
+  "C_kernel_slices": 3456,
+  "D_contiguous": 3456,
+  "measured": 3456
+ },
+ "conv_cout95": {
+  "ofm_address": "0x700015b0",
+  "A_16B_chunks": 6660,
+  "B_whole_pixel": 3960,
+  "C_kernel_slices": 4500,
+  "D_contiguous": 3420,
+  "measured": 6660
+ },
+ "dw_base": {
+  "ofm_address": "0x700012b0",
+  "A_16B_chunks": 28224,
+  "B_whole_pixel": 28224,
+  "C_kernel_slices": 28224,
+  "D_contiguous": 28224,
+  "measured": 28224
+ },
+ "dw_c143": {
+  "ofm_address": "0x700012a0",
+  "A_16B_chunks": 54488,
+  "B_whole_pixel": 30968,
+  "C_kernel_slices": 33908,
+  "D_contiguous": 28028,
+  "measured": 54488
+ }
+}

@@ -138,6 +138,32 @@ What the cross-check shows (`OBSERVED` in the artifacts; the link to the beats i
   candidate "NHWC rows not 16-byte aligned" alone does not fit Cin 15. The beat counts have not been derived from this
   candidate quantitatively, and the DMA/AXI behaviour behind them is `UNVERIFIED`.
 
+### 6.1 Output-write beats — quantitative candidate (POST_HOC_DESCRIPTIVE, owner request; no board run)
+
+`evidence/stage4/beat_model.py` → `beat_model.json`. Inputs: OFM absolute address (record `base1` + the OFM offset in the
+register stream), H, W, C, OFM stride X / Y from the register stream (dense NHWC: stride X = C, Y = W·C, asserted). No
+factor is fitted to the measurement.
+
+| rule (one access = …) | conv_base | conv_cout95 | dw_base | dw_c143 |
+| --- | ---: | ---: | ---: | ---: |
+| **A: ≤ 16-byte channel chunks per pixel** (from channel 0), each costing the 16-B segments it touches, no merging | **3,456** | **6,660** | **28,224** | **54,488** |
+| B: the whole channel vector of a pixel | 3,456 | 3,960 | 28,224 | 30,968 |
+| C: the kernel's channel slices per pixel (16 + 80 / 16 + 79 / 16 + 128 / 16 + 127) | 3,456 | 4,500 | 28,224 | 33,908 |
+| D: the tensor as one contiguous stream (bytes / 16) | 3,456 | 3,420 | 28,224 | 28,028 |
+| measured EXT write beats (event 391; identical in all 5 pass-B RUNs) | 3,456 | 6,660 | 28,224 | 54,488 |
+
+- Rule A reproduces all four measured output-write beat counts exactly; B, C and D do not reproduce the two −1 configs.
+- Rule A's access unit (≤ 16 bytes of one pixel) is smaller than the kernel's channel slices (16 + 79, 16 + 127), which
+  rule C tests separately; here A's chunk boundaries fall on the slice boundary at channel 16, so the 16-channel first
+  slice is one A-chunk and the second slice is split further.
+- Sensitivity: for 95- and 143-byte strides rule A gives the same count for any base address mod 16 (6,660; 54,488);
+  for 96- and 144-byte strides it gives the measured count only with a 16-byte-aligned base (actual bases are 16-byte
+  aligned; a misaligned base would double it under the rule).
+- Status: a quantitative candidate that matches the **output writes** of these four configs, `POST_HOC_DESCRIPTIVE`.
+  It is not evidence about the input reads (not computed here) or about the NPU_ACTIVE increase; the actual DMA/AXI
+  mechanism stays `UNVERIFIED`. Cin 15 is used only as a reason why a plain "unaligned rows" explanation is insufficient
+  (its schedule also changed, so it is not a clean test of rule A).
+
 ## 7. Link to the seven models (Stage 1/3 values are `REVALIDATED` ratios; legacy windows not used)
 
 | model / phenomenon (Stage 1/3) | Stage 4 evidence | level |
