@@ -63,6 +63,73 @@ Descriptive (supporting, not modelled): EXT read beats grew with the IFM and wei
 EXT write beats stayed 3,456 (same OFM); EXT read transactions were 171 / 2,339 / 429 / 2,952 — higher under PartKernel
 at Cin 32 than under DepthFirst at Cin 64 — reported, not explained.
 
+## Supplement (owner, 2026-11-11: Stage 4C-2 adopted; no board run)
+
+### DPU-based normalisation (recomputed from the raw pass-A counters and MACs = 24·24·Cin·96 = Vela's count)
+
+| Cin | MACs / MAC_ACTIVE | MACs / MAC_DPU_ACTIVE | MAC_DPU_ACTIVE / MAC_ACTIVE (every measured RUN) |
+| ---: | ---: | ---: | ---: |
+| 16 | 384 | 768 | 0.5 |
+| 32 | 384 | 768 | 0.5 |
+| 64 | 768 | 768 | 1.0 |
+| 128 | 768 | 768 | 1.0 |
+
+The effective MACs per DPU-active cycle were constant (768) in all four configs, while the ratio of the MAC and DPU
+activity counters changed (0.5 → 1.0) together with the change of processing configuration. This is a relation between
+two activity counters; it is not a measured MAC-circuit occupancy nor a direct measurement of idle time.
+
+### Conclusion (scope as fixed by the owner)
+
+- In the tested ranges with one processing configuration (Cin 16→32 PartKernel; 64→128 DepthFirst) MAC_ACTIVE was
+  proportional to the MACs.
+- From Cin 32 to 64 the traversal (PartKernel → DepthFirst), the IFM block depth (16 → 64) and the weight order changed
+  together, and the effective MACs per MAC-active cycle changed (384 → 768).
+- Which of these settings is the cause was not separated.
+- The output-ublock count alone did not explain MAC_ACTIVE (576 ublocks in every config, MAC_ACTIVE 2,304 … 9,216).
+- Changes of the whole NPU execution time must be read together with conditions other than MAC activity (transfers,
+  other units, schedule); they were not attributed here.
+
+### Compile-only sweep Cin 40 / 48 / 56 (`cin_sweep_static.csv`; artifacts `evidence/stage4c2/sweep/`, no board run)
+
+Same data rule (first Cin channels of the 128-channel extension, base bias and OFM scale) and Vela options; no schedule
+forced. Gate B 7/7 (one Ethos-U op, no CPU fallback); the existing Cin 16/32/64/128 DRWLs were rebuilt byte-identical.
+
+| Cin | traversal / weight order | OFM block / IFM block / ublock (microblock) | kernels, OFM slices, IFM depth | OFM ublocks | IFM steps | weight bytes (streams) | weight DMA | IFM / OFM pixel·row stride | Vela MAC cycles |
+| ---: | --- | --- | --- | ---: | --- | --- | --- | --- | ---: |
+| 32 | PartKernel / part-kernel-first | 6×12×96 / 6×12×16 / 2×2×32 (U2X2) | 2, 16 + 80, 32 | 576 | 2 / 2 | 4,928 (224·256 \| 992) | 1,280 + 4,928 | 32·768 / 96·2,304 | 14,163 |
+| **40** | **DepthFirst / depth-first** | 6×12×96 / **6×12×64** / 2×2×32 (U2X2) | 2, 16 + 80, 40 | 576 | 1 / 1 | 4,992 (240 \| 1,008) | 1,280 + 4,992 | 40·960 / 96·2,304 | 4,947 |
+| 48 | DepthFirst / depth-first | same | 2, 16 + 80, 48 | 576 | 1 / 1 | 5,760 (272 \| 1,168) | 1,408 + 5,632 | 48·1,152 / 96·2,304 | 4,947 |
+| 56 | DepthFirst / depth-first | same | 2, 16 + 80, 56 | 576 | 1 / 1 | 6,528 (304 \| 1,328) | 1,536 + 6,272 | 56·1,344 / 96·2,304 | 4,947 |
+| 64 | DepthFirst / depth-first | same | 2, 16 + 80, 64 | 576 | 1 / 1 | 7,296 (336 \| 1,488) | 1,664 + 6,912 | 64·1,536 / 96·2,304 | 5,331 |
+
+- **Where the configuration changes:** between Cin 32 and Cin 40. Traversal, IFM block depth (16 → 64) and weight order
+  switch together at that step; from 40 to 64 they stay the same.
+- **Unchanged from 32 to 64:** OFM block, ublock/microblock, kernel count, OFM slices, ACC_INPUT_RESET, memory areas
+  (IFM/OFM DRAM), NHWC format, OFM stride, IFM/OFM region offsets (0xd800 / 0x0). The arena moves with the model length.
+- **Additional differences:** the IFM pixel stride equals Cin, so Cin 40 and 56 have IFM pixel strides that are not
+  multiples of 16 (40 and 56 bytes). IFM depth steps are 1 for Cin 40–64 against 2 at Cin 32. Weight encoding grows with
+  Cin. Vela's own MAC-cycle estimate drops at the switch (14,163 → 4,947).
+- **What cannot be separated by these configs:** Vela fixes the schedule by Cin. There is no Cin between 33 and 63 with
+  PartKernel and none ≤ 32 with DepthFirst under these options, so Cin and schedule stay confounded at the step. Traversal,
+  IFM block depth and weight order also always switch together, so a board run cannot attribute the rate to one of them.
+
+### Minimal board comparison (proposal only; needs its own contract and approval)
+
+Cin 40 and Cin 48, plus Cin 64 as an in-session reference: 3 configs × 2 passes × 5 RUNs = 30 RUNs, same image, TA
+profile 1. Three alternatives give different MAC_ACTIVE values and could be frozen before the run (all derived from the
+4C-2 measurements, so they are hypotheses to discriminate, not established models):
+
+| hypothesis | Cin 40 | Cin 48 |
+| --- | ---: | ---: |
+| rate follows the configuration (768 MACs per active cycle under DepthFirst) | 2,880 | 3,456 |
+| MAC activity quantized by the IFM block depth (64): as Cin 64 | 4,608 | 4,608 |
+| rate follows Cin as before the switch (384 per active cycle below 64) | 5,760 | 6,912 |
+
+This could separate "the switch happened with Vela's configuration change (between 32 and 40)" from "the switch
+happened at Cin 64", and proportional from block-quantized MAC activity. It would still not separate traversal, IFM
+block depth and weight order from each other, nor Cin from schedule. The IFM pixel stride of Cin 40 (40 bytes) also
+changes the input read pattern, so EXT read beats would not be comparable one-to-one.
+
 ## Limits and next question (proposal only)
 
 One shape family (1×1, 24×24, Cout 96), four Cin values, one boot each, graph I/O in DRAM; schedule and Cin not separated

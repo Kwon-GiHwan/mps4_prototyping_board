@@ -28,7 +28,9 @@ VARIANTS = {   # name: (base op in make_op_model.OPS, channels)
 # to CIN_MAX input channels from CIN_SEED (base channels first, unchanged) and every config takes the first Cin of them,
 # so channels shared by two configs carry the same values; bias and the OFM scale are the base's (Cout stays 96).
 CIN_SEED, CIN_MAX = 20261111, 128
-CIN_VARIANTS = {"s4c2_conv_cin16": 16, "s4c2_conv_cin32": 32, "s4c2_conv_cin64": 64, "s4c2_conv_cin128": 128}
+CIN_VARIANTS = {"s4c2_conv_cin16": 16, "s4c2_conv_cin32": 32, "s4c2_conv_cin64": 64, "s4c2_conv_cin128": 128,
+                # compile-only sweep (owner 2026-11-11): where Vela's schedule changes between Cin 32 and 64
+                "s4c2_conv_cin40": 40, "s4c2_conv_cin48": 48, "s4c2_conv_cin56": 56}
 
 
 def fit(a: np.ndarray, n: int, axis: int, rng, lo: int, hi: int) -> np.ndarray:
