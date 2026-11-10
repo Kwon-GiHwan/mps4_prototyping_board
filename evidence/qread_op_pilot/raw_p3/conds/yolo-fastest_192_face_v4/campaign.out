@@ -1,0 +1,11 @@
+pbase set  4 rep 1 rc=0 flags=0x3f npu_exec=446747 ofm_mismatch=0 valid=True 
+pbase set  4 rep 2 rc=0 flags=0x3f npu_exec=448604 ofm_mismatch=0 valid=True 
+pbase set  4 rep 3 rc=0 flags=0x3f npu_exec=450272 ofm_mismatch=0 valid=True 
+pbase set  4 rep 4 rc=0 flags=0x3f npu_exec=446595 ofm_mismatch=0 valid=True 
+pbase set  4 rep 5 rc=0 flags=0x3f npu_exec=449960 ofm_mismatch=0 valid=True 
+p06 set  4 rep 1 rc=0 flags=0x3f npu_exec=448780 ofm_mismatch=0 valid=True 
+p06 set  4 rep 2 rc=0 flags=0x3f npu_exec=448732 ofm_mismatch=0 valid=True 
+p06 set  4 rep 3 rc=0 flags=0x3f npu_exec=449604 ofm_mismatch=0 valid=True 
+p06 set  4 rep 4 rc=0 flags=0x3f npu_exec=450590 ofm_mismatch=0 valid=True 
+p06 set  4 rep 5 rc=0 flags=0x3f npu_exec=446337 ofm_mismatch=0 valid=True 
+{"runs": 10, "conditions": 2, "refusal": null}

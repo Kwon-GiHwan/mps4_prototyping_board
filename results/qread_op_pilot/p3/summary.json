@@ -1,0 +1,135 @@
+{
+ "P3": "NOT_ASSOCIATED",
+ "terms": {
+  "trace": "TRACE_RECOVERED",
+  "boundaries": true,
+  "resolution_kept": false
+ },
+ "perturbation": {
+  "4": {
+   "median": 448595.5,
+   "base_median": 448704.0,
+   "diff_pct": -0.024180751675939582
+  }
+ },
+ "runs": {
+  "set4_rep2": [
+   "TRACE_RECOVERED",
+   []
+  ],
+  "set4_rep3": [
+   "TRACE_RECOVERED",
+   []
+  ],
+  "set4_rep4": [
+   "TRACE_RECOVERED",
+   []
+  ],
+  "set4_rep5": [
+   "TRACE_RECOVERED",
+   []
+  ]
+ },
+ "bracket_width": {
+  "99": 637.5,
+  "100": 1039.5
+ },
+ "bracket_width_q06": {
+  "99": 296.5,
+  "100": 512.5
+ },
+ "P3_runs": {
+  "set4_rep2": {
+   "brackets": {
+    "99": {
+     "observed": true,
+     "why": "",
+     "lo": 21614939,
+     "hi": 21615575,
+     "width": 636,
+     "lo_index": 217,
+     "hi_index": 217
+    },
+    "100": {
+     "observed": true,
+     "why": "",
+     "lo": 21616634,
+     "hi": 21618099,
+     "width": 1465,
+     "lo_index": 218,
+     "hi_index": 219
+    }
+   },
+   "separated": true
+  },
+  "set4_rep3": {
+   "brackets": {
+    "99": {
+     "observed": true,
+     "why": "",
+     "lo": 186379859,
+     "hi": 186381279,
+     "width": 1420,
+     "lo_index": 215,
+     "hi_index": 216
+    },
+    "100": {
+     "observed": true,
+     "why": "",
+     "lo": 186381567,
+     "hi": 186383005,
+     "width": 1438,
+     "lo_index": 217,
+     "hi_index": 218
+    }
+   },
+   "separated": true
+  },
+  "set4_rep4": {
+   "brackets": {
+    "99": {
+     "observed": true,
+     "why": "",
+     "lo": 351174408,
+     "hi": 351175047,
+     "width": 639,
+     "lo_index": 212,
+     "hi_index": 212
+    },
+    "100": {
+     "observed": true,
+     "why": "",
+     "lo": 351176110,
+     "hi": 351176746,
+     "width": 636,
+     "lo_index": 214,
+     "hi_index": 214
+    }
+   },
+   "separated": true
+  },
+  "set4_rep5": {
+   "brackets": {
+    "99": {
+     "observed": true,
+     "why": "",
+     "lo": 515951239,
+     "hi": 515951875,
+     "width": 636,
+     "lo_index": 216,
+     "hi_index": 216
+    },
+    "100": {
+     "observed": true,
+     "why": "",
+     "lo": 515952936,
+     "hi": 515953577,
+     "width": 641,
+     "lo_index": 218,
+     "hi_index": 218
+    }
+   },
+   "separated": true
+  }
+ }
+}

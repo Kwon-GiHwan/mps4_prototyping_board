@@ -1,0 +1,2 @@
+# Operator-aware QREAD pilot P3 (only after P2 = BOUNDARY_OBSERVED): same image, TA profile 1, 5 RUNs (1 warm-up)
+329 yolo-fastest_192_face_v4 @/home/gihwan/evsweep_qread_op/conditions_p3.txt
