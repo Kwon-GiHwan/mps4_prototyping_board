@@ -6,6 +6,7 @@ REPO = pathlib.Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO / "host" / "lib"))
 import driver_link
 import drwl
+import qread_trace
 import record_v2
 import runner_proto
 
@@ -109,10 +110,35 @@ class Commands(unittest.TestCase):
         p = INC["probe.h"]
         self.assertEqual((define("WAIT_WFE", p), define("WAIT_BUSY", p)), (driver_link.WAIT_WFE, driver_link.WAIT_BUSY))
 
+    def test_trace_layout(self):
+        t = INC["trace.h"]
+        Q = qread_trace
+        self.assertEqual(define("TRACE_OFF", t), Q.OFF)
+        self.assertEqual((define("TRACE_MODE_QREAD_ONLY", t), define("TRACE_MODE_QREAD_PMU", t)),
+                         (Q.MODE_QREAD_ONLY, Q.MODE_QREAD_PMU))
+        self.assertEqual((define("TRACE_MODE_MASK", t), define("TRACE_INTERVAL_SHIFT", t), define("TRACE_STORE_SHIFT", t),
+                          define("TRACE_FIELD_MASK", t)), (Q.MODE_MASK, Q.INTERVAL_SHIFT, Q.STORE_SHIFT, Q.FIELD_MASK))
+        self.assertEqual(define("TRACE_BASE_SAMPLE_WORDS", t), Q.BASE_SAMPLE_WORDS)
+        self.assertEqual(define("TRACE_BUFFER_WORDS", t), Q.BUFFER_WORDS)
+        self.assertEqual(define("TRACE_GET_MAX_WORDS", t), Q.GET_TRACE_MAX_WORDS)
+        self.assertEqual(define("TRACE_GET_MAX_WORDS", t), driver_link.TRACE_GET_MAX_WORDS)
+        self.assertEqual(define("CMD_GET_TRACE", t), Q.CMD_GET_TRACE)
+        self.assertEqual(define("CMD_GET_TRACE", t), driver_link.CMD_GET_TRACE)
+        self.assertEqual(define("WAIT_TRACE", INC["probe.h"]), driver_link.WAIT_TRACE)
+        self.assertEqual(Q.OFF, driver_link.TRACE_OFF)
+        # the sample order: the firmware writes t, QREAD, STATUS, events, QREAD, t (trace.c sample())
+        body = SRC["trace.c"][SRC["trace.c"].index("static void sample("):]
+        order = [m for m in ("clock_now()", "NPU_OFF_QREAD", "NPU_OFF_STATUS", "ev[i]", "NPU_OFF_QREAD", "clock_now()")]
+        pos, at = [], 0
+        for m in order:
+            at = body.index(m, at) + 1; pos.append(at)
+        self.assertEqual(pos, sorted(pos))
+        self.assertTrue(set(Q.RECORD_FIELDS) <= set(record_v2.FIELDS))
+
     def test_irq_snapshot_offsets_are_the_drivers(self):
         # literals from MLEK b2c0bb2 core driver src/ethosu85_interface.h (NPU_REG_STATUS/QREAD/QSIZE; 0x24 is PROT)
-        h = SRC["hooks.c"]
-        self.assertEqual((define("NPU_OFF_QREAD", h), define("NPU_OFF_QSIZE", h)), (0x18, 0x20))
+        self.assertEqual((define("NPU_OFF_STATUS", INC["trace.h"]), define("NPU_OFF_QREAD", INC["trace.h"]),
+                          define("NPU_OFF_QSIZE", SRC["hooks.c"])), (0x04, 0x18, 0x20))
 
 
 if __name__ == "__main__":

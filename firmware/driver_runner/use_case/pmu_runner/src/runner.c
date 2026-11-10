@@ -6,6 +6,7 @@
 #include "pmu_session.h"
 #include "probe.h"
 #include "record.h"
+#include "trace.h"
 #include "workload.h"
 
 static const runner_ports_t *P;
@@ -21,7 +22,7 @@ static uint32_t total_len, expected_crc, staged, load_status;
 static drwl_t wl;
 static uintptr_t arena_base;
 static pmu_config_t pmu_cfg;
-static uint32_t instr_mode, event_set_id, config_seq, wait_mode = WAIT_WFE, run_seq;
+static uint32_t instr_mode, event_set_id, config_seq, wait_mode = WAIT_WFE, trace_word = TRACE_OFF, run_seq;
 
 static int count_getc(uint8_t *b) { int r = raw_io->getc(b); rx_bytes += (uint32_t)r; return r; }
 static void count_putc(uint8_t b) { tx_bytes++; raw_io->putc(b); }
@@ -52,7 +53,8 @@ static int known(uint8_t cmd)
 {
     return cmd == CMD_PING || cmd == CMD_GET_STATE || cmd == CMD_GET_CAPABILITIES || cmd == CMD_SET_INSTRUMENTATION_MODE
            || cmd == CMD_SET_RUN_OPTIONS || cmd == CMD_LOAD_MODEL_BEGIN || cmd == CMD_LOAD_MODEL_CHUNK
-           || cmd == CMD_LOAD_MODEL_END || cmd == CMD_LOAD_INPUT || cmd == CMD_RUN || cmd == CMD_RESET_RUNNER;
+           || cmd == CMD_LOAD_MODEL_END || cmd == CMD_LOAD_INPUT || cmd == CMD_RUN || cmd == CMD_RESET_RUNNER
+           || cmd == CMD_GET_TRACE;
 }
 
 /* Which requests each state accepts (the legacy runner's table, plus SET_RUN_OPTIONS where SET_MODE is accepted). */
@@ -66,9 +68,10 @@ static int allowed(uint8_t cmd)
                                   || cmd == CMD_RESET_RUNNER;
     case ST_MODEL_READY:   return always || config || cmd == CMD_LOAD_INPUT || cmd == CMD_LOAD_MODEL_BEGIN
                                   || cmd == CMD_RESET_RUNNER;
-    case ST_INPUT_READY:
-    case ST_RESULT_READY:  return always || config || cmd == CMD_RUN || cmd == CMD_LOAD_INPUT
+    case ST_INPUT_READY:   return always || config || cmd == CMD_RUN || cmd == CMD_LOAD_INPUT
                                   || cmd == CMD_LOAD_MODEL_BEGIN || cmd == CMD_RESET_RUNNER;
+    case ST_RESULT_READY:  return always || config || cmd == CMD_RUN || cmd == CMD_LOAD_INPUT
+                                  || cmd == CMD_LOAD_MODEL_BEGIN || cmd == CMD_RESET_RUNNER || cmd == CMD_GET_TRACE;
     default:               return 0;
     }
 }
@@ -111,18 +114,39 @@ static void set_mode(void)
     ack(out, sizeof out);
 }
 
+/* Payload: wait mode, PMCCNTR_CFG, trace word (TRACE_OFF unless the wait mode is WAIT_TRACE). */
 static void set_run_options(void)
 {
-    uint8_t out[8];
+    uint8_t out[12];
     pmu_config_t c = pmu_cfg;
+    uint32_t w, tw;
     if (req.length != 12U) { nack(ERR_LENGTH, 0U); return; }
-    if (rd32(req.payload) >= WAIT_MODES) { nack(ERR_RANGE, rd32(req.payload)); return; }
+    w = rd32(req.payload);
+    tw = rd32(req.payload + 8);
+    if (w >= WAIT_MODES) { nack(ERR_RANGE, w); return; }
+    if (trace_check(tw) != 0U) { nack(ERR_RANGE, 3U); return; }
+    if ((w == WAIT_TRACE) != (tw != TRACE_OFF)) { nack(ERR_RANGE, 4U); return; }
     c.pmccntr_cfg = rd32(req.payload + 4);
     if (pmu_session_configure(&c) != 0U) { nack(ERR_RANGE, 2U); return; }
     pmu_cfg = c;
-    wait_mode = rd32(req.payload);
-    wr32(out, wait_mode); wr32(out + 4, pmu_cfg.pmccntr_cfg);
+    wait_mode = w;
+    trace_word = tw;
+    wr32(out, wait_mode); wr32(out + 4, pmu_cfg.pmccntr_cfg); wr32(out + 8, trace_word);
     ack(out, sizeof out);
+}
+
+/* Payload: first word, word count; reply: up to TRACE_GET_MAX_WORDS words of the last RUN's trace buffer. */
+static void get_trace(void)
+{
+    static uint32_t words[TRACE_GET_MAX_WORDS];
+    static uint8_t out[TRACE_GET_MAX_WORDS * 4U];
+    uint32_t n;
+    if (req.length != 8U) { nack(ERR_LENGTH, 0U); return; }
+    n = rd32(req.payload + 4);
+    if (n > TRACE_GET_MAX_WORDS) { n = TRACE_GET_MAX_WORDS; }
+    n = trace_words(rd32(req.payload), n, words);
+    for (uint32_t i = 0; i < n; i++) { wr32(out + 4U * i, words[i]); }
+    ack(out, 4U * n);
 }
 
 static void load_begin(void)
@@ -277,12 +301,18 @@ static void run(void)
     }
     r.dcache_on = P->dcache_on();
     probe_begin(wait_mode);
+    trace_begin(trace_word, pmu_cfg.count);
     r.dwt_invoke = P->dwt();
     r.invoke_ok = P->invoke();
     r.dwt_return = P->dwt();
     pmu_session_snapshot(&post);
     memcpy(&seen, (const void *)&probe, sizeof seen);
     fill_from_probe(&r, &seen);
+    {
+        trace_stats_t t = trace_stats();
+        r.trace_config = t.config; r.trace_words_per_sample = t.words_per_sample; r.samples = t.samples;
+        r.sample_dropped = t.dropped; r.trace_polls = t.polls; r.trace_hook_calls = t.hook_calls;
+    }
     r.ccnt_post_lo = (uint32_t)post.ccnt; r.ccnt_post_hi = (uint32_t)(post.ccnt >> 32); r.ovf_post = post.ovf;
     r.ev_post0 = post.ev[0]; r.ev_post1 = post.ev[1]; r.ev_post2 = post.ev[2]; r.ev_post3 = post.ev[3];
     r.ev_post4 = post.ev[4]; r.ev_post5 = post.ev[5]; r.ev_post6 = post.ev[6]; r.ev_post7 = post.ev[7];
@@ -328,6 +358,7 @@ int runner_poll(void)
     case CMD_LOAD_INPUT:               load_input(); break;
     case CMD_RUN:                      run(); break;
     case CMD_RESET_RUNNER:             reset_runner(); break;
+    case CMD_GET_TRACE:                get_trace(); break;
     default:                           nack(ERR_BAD_COMMAND, 0U); break;
     }
     return 1;

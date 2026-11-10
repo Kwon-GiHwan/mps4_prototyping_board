@@ -15,6 +15,7 @@
 #include "npu_pmu_regs.h"
 #include "pmu_session.h"
 #include "probe.h"
+#include "trace.h"
 #include "record.h"
 #include "runner.h"
 
@@ -76,6 +77,24 @@ static void sim_irq(void)
     probe.irq_count++;
 }
 
+/* WAIT_TRACE: the driver waits in trace_wait() while the "NPU" moves QREAD over a 4096-byte stream in 16-byte steps,
+ * one step per 64 clock cycles, counts events, and raises the completion IRQ at the stream end. The clock advances 7
+ * cycles per read, so every poll is real progress. */
+static volatile uint8_t sim_sem;
+static uint32_t trace_t0;
+static uint32_t sim_now(void)
+{
+    uint32_t q;
+    clock_now += 7u;
+    q = ((clock_now - trace_t0) / 64u) * 16u;
+    if (q > 4096u) { q = 4096u; }
+    REG(0x18u) = q;
+    REG(0x04u) = (q < 4096u) ? 0x1u : 0x0u;
+    for (uint32_t i = 0; i < PMU_SLOTS; i++) { REG(NPU_REG_PMEVCNTR_BASE + 4 * i) += i + 1u; }
+    if (q == 4096u && sim_sem == 0u) { sim_irq(); sim_sem = 1u; }
+    return clock_now;
+}
+
 static uint32_t invoke(void)
 {
     uint32_t cnten;
@@ -99,8 +118,13 @@ static uint32_t invoke(void)
     for (uint32_t k = 0; k < n_out; k++) {
         for (uint32_t j = 0; j < out_len[k]; j++) { out_buf[k][j] = (uint8_t)(in_buf[0][j % in_len[0]] + k + 1u); }
     }
-    if (!getenv("SIM_NO_IRQ")) { sim_irq(); }
-    if (getenv("SIM_TWO_IRQ")) { sim_irq(); }
+    if (probe.wait_mode == WAIT_TRACE) {
+        sim_sem = 0u; trace_t0 = clock_now; REG(0x18u) = 0u;
+        trace_wait(&sim_sem);
+    } else {
+        if (!getenv("SIM_NO_IRQ")) { sim_irq(); }
+        if (getenv("SIM_TWO_IRQ")) { sim_irq(); }
+    }
     clock_now += 100u;
     return 1u;
 }
@@ -135,6 +159,7 @@ int main(void)
     staging = calloc(SIM_STAGING, 1);
     ddr = calloc(SIM_DDR, 1);
     REG(NPU_REG_PMCR) = 0x2001u;     /* as MLEK leaves it: cnt_en, 4 event counters reported in num_event_cnt */
+    trace_bind(npu_regs, sim_now);
     const runner_ports_t ports = {staging, SIM_STAGING, (uintptr_t)ddr, (uintptr_t)ddr + SIM_DDR, SIM_ARENA,
                                   place_model, model_load, model_counts, model_io, invoke, dwt, one, zero,
                                   capabilities};

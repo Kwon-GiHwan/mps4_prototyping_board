@@ -62,3 +62,11 @@ void pmu_session_snapshot(pmu_snapshot_t *s)
     }
     s->ovf = *reg(NPU_REG_PMOVSSET);
 }
+
+uint32_t pmu_session_read_events(uint32_t ev[PMU_SLOTS])
+{
+    for (uint32_t i = 0; i < cfg.count; i++) {
+        ev[i] = *reg(NPU_REG_PMEVCNTR_BASE + 4U * i);
+    }
+    return cfg.count;
+}

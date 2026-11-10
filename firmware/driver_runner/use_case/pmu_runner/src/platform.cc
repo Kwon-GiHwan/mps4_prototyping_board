@@ -10,6 +10,7 @@ extern "C" {
 #include "record.h"
 #include "runner.h"
 #include "timing.h"
+#include "trace.h"
 #include "uart.h"
 }
 
@@ -123,6 +124,7 @@ void MainLoop()
     (void)timestamp_source_ready();
     hooks_install();
     pmu_session_bind(ethosu_drv.dev.reg);
+    trace_bind(ethosu_drv.dev.reg, dwt);
     runner_init(&ports, &uart_io, DRV_BUILD_ID);
     for (;;) {
         (void)runner_poll();

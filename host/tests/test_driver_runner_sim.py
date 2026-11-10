@@ -7,12 +7,13 @@ REPO = pathlib.Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO / "host" / "lib"))
 import drwl
 import driver_link
+import qread_trace as Q
 import record_v2
 import runner_proto as rp
 
 FW = REPO / "firmware"
 UC = FW / "driver_runner" / "use_case" / "pmu_runner"
-SRCS = [UC / "src" / f for f in ("frame.c", "workload.c", "record.c", "pmu_session.c", "runner.c", "probe.c")]
+SRCS = [UC / "src" / f for f in ("frame.c", "workload.c", "record.c", "pmu_session.c", "runner.c", "probe.c", "trace.c")]
 SIM = None
 CC = shutil.which("cc") or shutil.which("clang") or shutil.which("gcc")
 
@@ -110,7 +111,7 @@ class Session(unittest.TestCase):
         self.assertEqual((caps["magic"], caps["schema"], caps["record_fields"]),
                          (record_v2.CAPS_MAGIC, 2, len(record_v2.FIELDS)))
         self.assertEqual(l.set_instrumentation_mode(2, [35, 48, 51], 7), (2, 2, 3, 1))
-        self.assertEqual(l.set_run_options(driver_link.WAIT_BUSY, 0x00200023), (1, 0x00200023))
+        self.assertEqual(l.set_run_options(driver_link.WAIT_BUSY, 0x00200023), (1, 0x00200023, driver_link.TRACE_OFF))
         golds = [expected_output(IFM, 0, 30), expected_output(IFM, 1, 9)]
         blob = drwl.pack(simm([40], [30, 9]), [IFM], golds)
         computed, expected, total = load(l, blob)
@@ -150,6 +151,62 @@ class Session(unittest.TestCase):
         l.load_input(b"")
         self.assertEqual(l.run(), 0)
         self.assertEqual(l.last_measurement.f["ofm_mismatch"], 0)
+
+    def trace_run(self, cfg, codes):
+        self.l = l = link()
+        l.set_instrumentation_mode(2, codes, 1)
+        self.assertEqual(l.set_run_options(driver_link.WAIT_TRACE, 0, cfg.word()), (2, 0, cfg.word()))
+        load(l, drwl.pack(simm([40], [30]), [IFM], [expected_output(IFM, 0, 30)]))
+        l.load_input(b"")
+        self.assertEqual(l.run(), 0)
+        r = l.last_measurement
+        h = Q.header_from_record(r.f)
+        t = Q.parse(l.get_trace(h["trace_words_per_sample"] * h["trace_samples"]), h)
+        return r, t
+
+    def test_trace_qread_only(self):                                           # sim stream: 4096 B, 16 B / 64 cycles
+        r, t = self.trace_run(Q.TraceConfig(Q.MODE_QREAD_ONLY, 6), [35])
+        self.assertEqual(Q.integrity(t, 4096), [])
+        self.assertEqual(r.f["wait_mode"], driver_link.WAIT_TRACE)
+        self.assertEqual(t.samples[-1].qread_after, 4096)                      # the final sample, after the IRQ
+        self.assertGreater(len({s.qread_after for s in t.samples}), 50)        # progress observed, not just the end
+        self.assertTrue(all(s.events == () for s in t.samples))
+        self.assertLess(r.f["trace_polls"], r.f["trace_hook_calls"] // 2)        # 2^6-cycle interval, not every pass
+        total = r.f["samples"] * r.f["trace_words_per_sample"]
+        tail = self.l.request(Q.CMD_GET_TRACE, struct.pack("<II", total - 2, 10)).payload
+        self.assertEqual(len(tail), 8)                                         # clipped to what is stored
+        self.assertEqual(self.l.request(Q.CMD_GET_TRACE, struct.pack("<II", total, 10)).payload, b"")
+        self.assertEqual(self.l.get_trace(7), self.l.get_trace(total)[:7])          # exactly what was asked
+        self.assertEqual(r.f["irq_count"], 1)
+        self.assertEqual(record_v2.validity(r, [35]), (True, []))
+
+    def test_trace_pmu_and_store_policy(self):
+        r, t = self.trace_run(Q.TraceConfig(Q.MODE_QREAD_PMU, 4, 12), [35, 48])
+        self.assertEqual(Q.integrity(t, 4096), [])
+        self.assertEqual(r.f["trace_words_per_sample"], 7)                      # 5 + 2 events
+        self.assertTrue(all(len(s.events) == 2 for s in t.samples))
+        self.assertLess(r.f["samples"], r.f["trace_polls"])                     # store only on QREAD change
+        qs = [s.qread_after for s in t.samples]
+        self.assertEqual(len(qs), len(set(qs)))                                 # every stored sample moved QREAD
+
+    def test_trace_option_refusals_and_state(self):
+        self.l = l = link()
+        def nack(fn, detail):
+            with self.assertRaises(rp.Nack) as c:
+                fn()
+            self.assertEqual(c.exception.code, 6, detail)                      # RANGE (detail 3/4 not on the host side)
+        nack(lambda: l.set_run_options(driver_link.WAIT_WFE, 0, Q.TraceConfig(1).word()), 4)   # trace without WAIT_TRACE
+        nack(lambda: l.set_run_options(driver_link.WAIT_TRACE, 0, driver_link.TRACE_OFF), 4)   # WAIT_TRACE, no trace
+        nack(lambda: l.set_run_options(driver_link.WAIT_TRACE, 0, 0x80000001), 3)               # reserved bits
+        nack(lambda: l.set_run_options(driver_link.WAIT_TRACE, 0, 3), 3)                        # unknown mode
+        with self.assertRaises(rp.Nack) as c:
+            l.request(Q.CMD_GET_TRACE, struct.pack("<II", 0, 10))                                # no RUN yet
+        self.assertEqual(c.exception.code, 5)
+        load(l, drwl.pack(simm([40], [30]), [IFM], [expected_output(IFM, 0, 30)]))
+        l.load_input(b"")
+        with self.assertRaises(rp.Nack) as c:
+            l.request(Q.CMD_GET_TRACE, struct.pack("<II", 0, 10))                                # input ready, no RUN
+        self.assertEqual(c.exception.code, 5)
 
     def test_output_mismatch_is_reported_not_invalid(self):
         self.l = l = link()
@@ -249,6 +306,40 @@ if __name__ == "__main__":
 
 class BoardScript(unittest.TestCase):
     """host/board/run_driver_events.py end to end against the simulator; the analyses' loader reads its output."""
+
+    def test_campaign_traces(self):
+        sys.path.insert(0, str(REPO / "host" / "board"))
+        import run_driver_events as R
+        links = []
+        R.DriverLink = lambda port: links.append(link()) or links[-1]
+        word = Q.TraceConfig(Q.MODE_QREAD_PMU, 6).word()
+        with tempfile.TemporaryDirectory() as d:
+            d = pathlib.Path(d)
+            (d / "w.drwl").write_bytes(drwl.pack(simm([40], [30]), [IFM], [expected_output(IFM, 0, 30)]))
+            (d / "ids.txt").write_text("35 48\n")
+            argv = ["x", "--out", str(d / "out"), "--host-boot-index", "7", "--workload", str(d / "w.drwl"),
+                    "--ids", f"@{d / 'ids.txt'}", "--repeats", "2", "--wait-mode", "2", "--trace-word", hex(word),
+                    "--image-sha256", "b,r,d,i"]
+            old, sys.argv = sys.argv, argv
+            try:
+                self.assertEqual(R.main(), 0)
+            finally:
+                sys.argv = old
+            raw = json.loads((d / "out" / "raw_runs.json").read_text())
+            for x in raw[1:]:
+                b = (d / "out" / "traces" / f"set{x['set_id']}_rep{x['rep']}.bin").read_bytes()
+                t = Q.parse(list(struct.unpack(f"<{len(b) // 4}I", b)), Q.header_from_record(x["record"]))
+                self.assertEqual(Q.integrity(t, 4096), [])
+            self.assertEqual(json.loads((d / "out" / "summary.json").read_text())["trace_word"], word)
+            argv[argv.index("2", argv.index("--wait-mode"))] = "0"                 # trace word without WAIT_TRACE
+            sys.argv = argv
+            try:
+                with self.assertRaises(SystemExit):
+                    R.main()
+            finally:
+                sys.argv = old
+        for l in links:
+            l._ser.close()
 
     def test_campaign_files(self):
         sys.path.insert(0, str(REPO / "host" / "board")); sys.path.insert(0, str(REPO / "host" / "analysis"))

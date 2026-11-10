@@ -9,7 +9,8 @@
 
 #define WAIT_WFE  0U   /* the driver's own baremetal semaphore wait: while (count == 0) __WFE(); (MLEK) */
 #define WAIT_BUSY 1U   /* the same loop without __WFE (the legacy runner's kind of wait) */
-#define WAIT_MODES 2U
+#define WAIT_TRACE 2U  /* the busy loop sampling QREAD (and events) on an interval: trace.c */
+#define WAIT_MODES 3U
 #define PROBE_BASES 8U
 
 typedef struct {

@@ -5,16 +5,15 @@
  *                         right before REGIONCFG and CMD start) the PMU is armed and the job's base addresses recorded
  *   ethosu_irq_handler    reads the PMU, STATUS and QREAD first, then does exactly what the driver's default does
  *   ethosu_semaphore_*    the driver's baremetal semaphore, same semantics; take() waits with __WFE (WAIT_WFE, as the
- *                         default) or spins without it (WAIT_BUSY)
+ *                         default), spins without it (WAIT_BUSY) or spins sampling QREAD (WAIT_TRACE, trace.c)
  * Nothing else of the driver or of MLEK is replaced. */
 #include "ethosu_driver.h"
 #include "probe.h"
 #include "timing.h"
+#include "trace.h"
 
 #include "RTE_Components.h"   /* CMSIS core: __WFE, __SEV */
 
-#define NPU_OFF_STATUS 0x04U
-#define NPU_OFF_QREAD  0x18U
 #define NPU_OFF_QSIZE  0x20U  /* core driver ethosu85_interface.h NPU_REG_QSIZE (0x24 is PROT) */
 
 extern struct ethosu_driver ethosu_drv;                                   /* MLEK ethosu_npu_init.c */
@@ -92,7 +91,9 @@ int ethosu_semaphore_take(void *sem, uint64_t timeout)
 {
     sem_t *s = sem;
     (void)timeout;
-    if (probe.wait_mode == WAIT_BUSY) {
+    if (probe.wait_mode == WAIT_TRACE) {
+        trace_wait(&s->count);
+    } else if (probe.wait_mode == WAIT_BUSY) {
         while (s->count == 0U) {
         }
     } else {

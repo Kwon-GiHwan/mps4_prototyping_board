@@ -35,6 +35,9 @@ uint32_t pmu_session_configure(const pmu_config_t *cfg);
  * cycle counter, keep PMCR.cnt_en set. Returns PMCR as read before the arm (the record keeps it). */
 uint32_t pmu_session_arm(uint32_t *cnten_after);
 void pmu_session_snapshot(pmu_snapshot_t *s);
+/* The armed event counters only (slots 0..count-1, no cycle counter, no overflow): the QREAD sampler's read while the
+ * NPU runs (trace.c). Returns the slot count. */
+uint32_t pmu_session_read_events(uint32_t ev[PMU_SLOTS]);
 /* Mask of armed slots plus the cycle counter: the overflow bits that make a snapshot unusable. */
 uint32_t pmu_session_armed_mask(void);
 

@@ -27,7 +27,7 @@
     X(dwt_invoke) X(dwt_arm) X(dwt_irq) X(dwt_return) \
     X(ofm_mismatch) X(ofm_max_diff) X(ofm_first) \
     X(model_base) X(model_len) X(arena_base) X(arena_len) X(n_base) DRV_EV8(X, base) DRV_EV8(X, base_size) \
-    X(samples) X(sample_dropped)
+    X(samples) X(sample_dropped) X(trace_config) X(trace_words_per_sample) X(trace_polls) X(trace_hook_calls)
 
 #define DRV_FIELD_DECL(name) uint32_t name;
 typedef struct { DRV_RECORD_FIELDS(DRV_FIELD_DECL) } drv_record_t;

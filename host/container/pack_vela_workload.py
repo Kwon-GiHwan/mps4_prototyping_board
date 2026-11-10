@@ -198,6 +198,8 @@ def main():
                 fast_base=kargs["fast_base"], ta_profile=kargs["ta_profile"])
     open(a.out + ".json", "w").write(json.dumps(meta, indent=2))
     open(a.out + ".tflite_ofm.bin", "wb").write(tflite_ofm)
+    if a.format == "drwl":   # the command stream on its own (meta cms_sha256): the host maps QREAD offsets to ops
+        open(a.out + ".cms.bin", "wb").write(info["cms"])
     print(json.dumps(meta, indent=1))
 
 

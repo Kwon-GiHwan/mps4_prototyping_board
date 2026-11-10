@@ -28,7 +28,7 @@ FIELDS = (["schema", "build_id", "instr_mode", "event_set_id", "event_count"] + 
           + ["ovf_irq", "ccnt_post_lo", "ccnt_post_hi"] + _eight("ev_post")
           + ["ovf_post", "dwt_invoke", "dwt_arm", "dwt_irq", "dwt_return", "ofm_mismatch", "ofm_max_diff", "ofm_first",
              "model_base", "model_len", "arena_base", "arena_len", "n_base"] + _eight("base") + _eight("base_size")
-          + ["samples", "sample_dropped"])
+          + ["samples", "sample_dropped", "trace_config", "trace_words_per_sample", "trace_polls", "trace_hook_calls"])
 
 TA11 = ("maxr", "maxw", "maxrw", "rlatency", "wlatency", "pulse_on", "pulse_off", "bwcap", "perfctrl", "mode",
         "histbin")

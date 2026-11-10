@@ -6,12 +6,13 @@ window_cycles = infer_npu_cycles = NPU_EXECUTION_CYCLES (PMCCNTR, arm -> complet
 span in CPU DWT cycles; the driver runner's own columns follow.
 
   python3 run_driver_events.py --out <dir> --host-boot-index N --workload <x.drwl> --ids @<ids file> --repeats 10 \
-      [--wait-mode 0|1] [--pmccntr-cfg 0x..] --image-sha256 <boot>,<bram>,<ddr>,<images.txt>
+      [--wait-mode 0|1|2] [--pmccntr-cfg 0x..] [--trace-word 0x..] --image-sha256 <boot>,<bram>,<ddr>,<images.txt>
 """
 import argparse, csv, datetime, hashlib, json, pathlib, sys, zlib
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "lib"))
 import drwl
 import pmu_events_parse as E
+import qread_trace
 import record_v2
 import reference
 from driver_link import DriverLink
@@ -61,9 +62,14 @@ def main():
     ap.add_argument("--repeats", type=int, default=10)
     ap.add_argument("--wait-mode", type=int, default=0, help="0 = WFE (the driver's own wait, MLEK), 1 = busy loop")
     ap.add_argument("--pmccntr-cfg", type=lambda x: int(x, 0), default=0)
+    ap.add_argument("--trace-word", type=lambda x: int(x, 0), default=qread_trace.OFF,
+                    help="QREAD trace word (qread_trace.TraceConfig); needs --wait-mode 2; traces/set<S>_rep<R>.bin")
     ap.add_argument("--run-timeout", type=float, default=120.0)
     ap.add_argument("--image-sha256", required=True, help="boot.bin,bram.bin,ddr.bin,images.txt digests")
     a = ap.parse_args()
+    if (a.wait_mode == 2) != (a.trace_word != qread_trace.OFF):
+        ap.error("--wait-mode 2 (WAIT_TRACE) and --trace-word go together")
+    qread_trace.config_from_word(a.trace_word)   # refuses a malformed word before touching the board
     out = pathlib.Path(a.out); out.mkdir(parents=True, exist_ok=True)
     blob = pathlib.Path(a.workload).read_bytes()
     h = drwl.parse(blob)   # refuses a malformed workload before touching the board
@@ -87,7 +93,7 @@ def main():
             raise E.fail_rule("RULE_PING", f"state={c.state}")
         caps = link.capabilities()
         (out / "capabilities.json").write_text(json.dumps(caps, indent=1))
-        link.set_run_options(a.wait_mode, a.pmccntr_cfg)
+        link.set_run_options(a.wait_mode, a.pmccntr_cfg, a.trace_word)
         for set_id, codes in sets:
             first = set_id == sets[0][0]
             try:
@@ -110,6 +116,15 @@ def main():
                 ok, failed = record_v2.validity(r, codes)
                 raw.append(dict(set_id=set_id, rep=rep, run_sequence=r.run_sequence, valid_flags=r.valid_flags,
                                 run_rc=r.run_rc, record=r.f, host_run_s=link.last_run_host_s))
+                if a.trace_word != qread_trace.OFF:
+                    h = qread_trace.header_from_record(r.f)
+                    try:
+                        words = link.get_trace(h["trace_words_per_sample"] * h["trace_samples"])
+                    except (Nack, ProtocolError) as e:
+                        raise E.fail_rule("RULE_RUN_TRANSPORT", f"trace set {set_id} rep {rep}: {e!r}")
+                    (out / "traces").mkdir(exist_ok=True)
+                    (out / "traces" / f"set{set_id}_rep{rep}.bin").write_bytes(
+                        b"".join(w.to_bytes(4, "little") for w in words))
                 rows += rows_of(r, codes, ok, failed, names, trm,
                                 dict(set_id=set_id, rep=rep, host_run_s=link.last_run_host_s, **prov))
                 print(f"set {set_id:2d} rep {rep} rc={r.run_rc} flags=0x{r.valid_flags:02x} "
@@ -125,7 +140,7 @@ def main():
         cols = list(dict.fromkeys(k for r in rows for k in r))
         with (out / "runs.csv").open("w", newline="") as f:
             w = csv.DictWriter(f, fieldnames=cols); w.writeheader(); w.writerows(rows)
-    summ = dict(provenance=prov, wait_mode=a.wait_mode, pmccntr_cfg=a.pmccntr_cfg, runs=len(raw) - 1, rows=len(rows),
+    summ = dict(provenance=prov, wait_mode=a.wait_mode, pmccntr_cfg=a.pmccntr_cfg, trace_word=a.trace_word, runs=len(raw) - 1, rows=len(rows),
                 refusal=refusal, text_log_lines=len(link.text_log), text_log_tail=link.text_log[-40:])
     (out / "summary.json").write_text(json.dumps(summ, indent=2, default=str))
     print(json.dumps({k: summ[k] for k in ("runs", "rows", "refusal")}))
