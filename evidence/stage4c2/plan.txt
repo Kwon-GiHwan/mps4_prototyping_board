@@ -1,0 +1,5 @@
+# Stage 4C-2: one boot per Cin, Stage 4 image 83398c7, MLEK TA set-up (= TA profile 1), 5 RUNs (1 warm-up)
+344 s4_conv_base @/home/gihwan/evsweep_stage4c2/conditions.txt
+345 s4c2_conv_cin32 @/home/gihwan/evsweep_stage4c2/conditions.txt
+346 s4c2_conv_cin64 @/home/gihwan/evsweep_stage4c2/conditions.txt
+347 s4c2_conv_cin128 @/home/gihwan/evsweep_stage4c2/conditions.txt
