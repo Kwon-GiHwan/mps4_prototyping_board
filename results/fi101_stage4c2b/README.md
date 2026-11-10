@@ -49,6 +49,19 @@ at 768 effective MACs per active cycle for the rounded amount, in the tested ran
 - Cin 40's IFM pixel stride (40 B) is not a multiple of 16; its traffic and time are not compared as a MAC effect.
 - RELU6-cap saturation 116 / 244 / 637 elements (base OFM scale kept).
 
+## Final record (owner, 2026-11-11: adopted as pre-registered; Stage 4 channel experiments end here)
+
+1. **Discriminating case: Cin 40** (the four hypotheses give four different values; only H4 matched). Cin 48: H1 and H4
+   coincide (3,456) — not a discriminating case. Cin 64: reference reproduction (MAC = DPU = 4,608, output and constant
+   counters as 4C-2 boot 346).
+2. **768 effective MACs per DPU-active cycle** holds only for the conditions in which it was measured (4C-2: Cin 16, 32,
+   64, 128; here Cin 48 and 64). At Cin 40 it was 640 although MAC_DPU_ACTIVE / MAC_ACTIVE = 1.0: a DPU/MAC ratio of 1
+   does not imply the same effective throughput.
+3. **MAC/DPU activity and whole-run cost are separate results.** MAC_ACTIVE and MAC_DPU_ACTIVE are the primary result
+   above; NPU_ACTIVE is secondary, and its 40 → 48 change stays `UNRESOLVED` (pass A and B in opposite directions).
+4. **Not established:** the internal processing unit, computation of invalid channels, circuit occupancy. The
+   rounding-to-16 consistency of the MAC activity is kept separate from the 16-byte memory-write rule A (Stage 4C-1).
+
 ## Status
 
 Stage 4C-2b closed (owner): no further channels, DW, FC, spatial size or placement experiments started. Remaining
