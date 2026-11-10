@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Driver runner Phase 3 first validation (evidence/driver_p3/contract.md). TA profile 1 (MLEK's own TA set-up).
 
-  python3 host/analysis/driver_p3.py <driver root> <legacy root> <out dir>
+  python3 host/analysis/driver_p3.py <driver root> <legacy root> <out dir> [warm-up RUNs, default 2]
 
 <driver root>/wfe/<model>/: run_driver_events.py output (runs.csv, capabilities.json); sets: BASE = (35 17), A, B.
 <legacy root>/<model>/: the legacy runner on the same seed-1 input (Stage 0 ctl, passes A-G).
@@ -54,9 +54,9 @@ def platform(caps: dict | None) -> tuple[str, dict]:
     return ("PLATFORM_AS_MLEK" if not off else "PLATFORM_DIFFERS"), det
 
 
-def rows(folder: pathlib.Path) -> list[dict]:
+def rows(folder: pathlib.Path, warmup: int = WARMUP) -> list[dict]:
     with (folder / "runs.csv").open() as f:
-        return [r for r in csv.DictReader(f) if int(r["rep"]) > WARMUP]
+        return [r for r in csv.DictReader(f) if int(r["rep"]) > warmup]
 
 
 def execution(rs: list[dict]) -> str:
@@ -66,8 +66,8 @@ def execution(rs: list[dict]) -> str:
     return "EXEC_OK" if ok else "EXEC_INVALID"
 
 
-def window(raw: list[dict]) -> str:
-    runs = [x for x in raw if "record" in x and x["rep"] > WARMUP]
+def window(raw: list[dict], warmup: int = WARMUP) -> str:
+    runs = [x for x in raw if "record" in x and x["rep"] > warmup]
     if not runs:
         return UP
     for x in runs:
@@ -137,17 +137,18 @@ def pmu_load(rs: list[dict]) -> tuple[str, dict]:
     return ("PMU_INERT" if not off else "PMU_EFFECTIVE"), det
 
 
-def main(root: str, legacy_root: str, out: str) -> dict:
+def main(root: str, legacy_root: str, out: str, warmup: int = WARMUP) -> dict:
+    """warmup applies to the driver data; the legacy reference keeps its own contract's 2 warm-up RUNs."""
     res = {}
     for d in sorted((pathlib.Path(root) / "wfe").iterdir()):
         if not (d / "runs.csv").exists():
             continue
         caps = json.loads((d / "capabilities.json").read_text()) if (d / "capabilities.json").exists() else None
-        rs, raw = rows(d), json.loads((d / "raw_runs.json").read_text())
-        runs = S.load_runs(d, WARMUP)
+        rs, raw = rows(d, warmup), json.loads((d / "raw_runs.json").read_text())
+        runs = S.load_runs(d, warmup)
         ref_dir = pathlib.Path(legacy_root) / d.name
         ref = S.load_runs(ref_dir, WARMUP) if (ref_dir / "runs.csv").exists() else {}
-        res[d.name] = dict(zip(("D1", "D1_detail"), platform(caps))) | {"D2": execution(rs), "D3": window(raw),
+        res[d.name] = dict(zip(("D1", "D1_detail"), platform(caps))) | {"D2": execution(rs), "D3": window(raw, warmup),
                                                                          "D4": repeat(runs)} \
             | dict(zip(("D5", "D5_detail"), legacy(runs, ref))) | dict(zip(("D6", "D6_detail"), pmu_load(rs)))
     o = pathlib.Path(out)
@@ -157,4 +158,4 @@ def main(root: str, legacy_root: str, out: str) -> dict:
 
 
 if __name__ == "__main__":
-    print(json.dumps(main(*sys.argv[1:4]), indent=1))
+    print(json.dumps(main(*sys.argv[1:4], *(int(x) for x in sys.argv[4:5])), indent=1))

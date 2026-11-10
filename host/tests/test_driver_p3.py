@@ -79,6 +79,25 @@ class Checks(unittest.TestCase):
         self.assertEqual(self.run_main(ofm_by_set={3: "1"})["D6"], "PMU_EFFECTIVE")      # output changes with set B
         self.assertEqual(self.run_main(drop_set=3)["D6"], "UNPROVEN")
 
+    def test_warmup_parameter(self):
+        write_boot(self.d / "drv" / "wfe" / "kws", active=100000)
+        write_boot(self.d / "leg" / "kws", legacy=True)
+        # rep 2 is far off: excluded with the default 2 warm-up RUNs, included (and then not STABLE in MAC) with 1
+        import csv as _c
+        f = self.d / "drv" / "wfe" / "kws" / "runs.csv"
+        rows = list(_c.DictReader(f.open()))
+        for r in rows:
+            if r["rep"] == "2" and r["ev_type"] == "48":
+                r["event_value"] = "1"
+            if r["rep"] == "2" and r["set_id"] == "2":
+                r["run_valid"] = "False"
+        with f.open("w", newline="") as fh:
+            w = _c.DictWriter(fh, fieldnames=list(rows[0])); w.writeheader(); w.writerows(rows)
+        self.assertEqual(D.main(str(self.d / "drv"), str(self.d / "leg"), str(self.d / "o2"))["kws"]["D4"], "STABLE")
+        r1 = D.main(str(self.d / "drv"), str(self.d / "leg"), str(self.d / "o1"), 1)["kws"]
+        self.assertEqual((r1["D4"], r1["D2"]), ("UNSTABLE", "EXEC_INVALID"))
+        self.assertEqual(D.main(str(self.d / "drv"), str(self.d / "leg"), str(self.d / "o3"))["kws"]["D2"], "EXEC_OK")
+
     def test_platform(self):
         self.assertEqual(D.platform(caps())[0], "PLATFORM_AS_MLEK")
         self.assertEqual(D.platform(caps(ta_ext_maxr=64)), ("PLATFORM_AS_MLEK", D.platform(caps(ta_ext_maxr=64))[1]))

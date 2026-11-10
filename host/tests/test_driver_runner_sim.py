@@ -341,6 +341,42 @@ class BoardScript(unittest.TestCase):
         for l in links:
             l._ser.close()
 
+    def test_campaign_conditions(self):
+        sys.path.insert(0, str(REPO / "host" / "board"))
+        import run_driver_events as R
+        links = []
+        R.DriverLink = lambda port: links.append(link()) or links[-1]
+        word = Q.TraceConfig(Q.MODE_QREAD_ONLY, 6).word()
+        with tempfile.TemporaryDirectory() as d:
+            d = pathlib.Path(d)
+            (d / "w.drwl").write_bytes(drwl.pack(simm([40], [30]), [IFM], [expected_output(IFM, 0, 30)]))
+            (d / "ids.txt").write_text("35 17\n35 48\n")
+            (d / "cond.txt").write_text(f"# c\nwfe 0 0 off all\nbusy 1 0 off 1\ntrace 2 0 {word:#x} 2\n")
+            argv = ["x", "--out", str(d / "out"), "--host-boot-index", "7", "--workload", str(d / "w.drwl"),
+                    "--ids", f"@{d / 'ids.txt'}", "--repeats", "2", "--conditions", f"@{d / 'cond.txt'}",
+                    "--image-sha256", "b,r,d,i"]
+            old, sys.argv = sys.argv, argv
+            try:
+                self.assertEqual(R.main(), 0)
+            finally:
+                sys.argv = old
+            o = d / "out"
+            sets = {c: sorted({(x["set_id"], x["record"]["wait_mode"]) for x in json.loads((o / c / "raw_runs.json")
+                                                                                         .read_text())[1:]})
+                    for c in ("wfe", "busy", "trace")}
+            self.assertEqual(sets, {"wfe": [(1, 0), (2, 0)], "busy": [(1, 1)], "trace": [(2, 2)]})
+            self.assertEqual(sorted(p.name for p in (o / "trace" / "traces").iterdir()), ["set2_rep1.bin", "set2_rep2.bin"])
+            self.assertFalse((o / "wfe" / "traces").exists())
+            self.assertEqual(links[0].last_measurement.run_sequence, 2 * 2 + 2 + 2)  # one load, 8 RUNs, one boot
+            row = next(csv.DictReader(open(o / "busy" / "runs.csv")))
+            self.assertEqual(row["condition"], "busy")
+        for l in links:
+            l._ser.close()
+        for bad in ("a 0 0 off\n", "a 2 0 off all\n", "a 0 0 0x1 all\n", "a 0 0 off all\na 1 0 off all\n",
+                    "a/b 0 0 off all\n", "a 3 0 off all\n"):
+            with self.assertRaises(ValueError, msg=bad):
+                R.parse_conditions(bad)
+
     def test_campaign_files(self):
         sys.path.insert(0, str(REPO / "host" / "board")); sys.path.insert(0, str(REPO / "host" / "analysis"))
         import run_driver_events as R

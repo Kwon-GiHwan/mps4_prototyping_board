@@ -77,21 +77,25 @@ static void sim_irq(void)
     probe.irq_count++;
 }
 
-/* WAIT_TRACE: the driver waits in trace_wait() while the "NPU" moves QREAD over a 4096-byte stream in 16-byte steps,
+/* WAIT_TRACE: the driver waits in trace_wait() while the "NPU" moves QREAD over a 4096-byte stream (SIM_CMS_LEN) in 16-byte steps,
  * one step per 64 clock cycles, counts events, and raises the completion IRQ at the stream end. The clock advances 7
  * cycles per read, so every poll is real progress. */
 static volatile uint8_t sim_sem;
-static uint32_t trace_t0;
+static uint32_t trace_t0, cms_len = 4096u;
 static uint32_t sim_now(void)
 {
     uint32_t q;
     clock_now += 7u;
     q = ((clock_now - trace_t0) / 64u) * 16u;
-    if (q > 4096u) { q = 4096u; }
+    if (q > cms_len) { q = cms_len; }
     REG(0x18u) = q;
-    REG(0x04u) = (q < 4096u) ? 0x1u : 0x0u;
-    for (uint32_t i = 0; i < PMU_SLOTS; i++) { REG(NPU_REG_PMEVCNTR_BASE + 4 * i) += i + 1u; }
-    if (q == 4096u && sim_sem == 0u) { sim_irq(); sim_sem = 1u; }
+    REG(0x04u) = (q < cms_len) ? 0x1u : 0x0u;
+    if (q < cms_len) {
+        for (uint32_t i = getenv("SIM_TRACE_SLOT0") ? 0u : 1u; i < PMU_SLOTS; i++) {   /* slot 0 fixed unless asked */
+            REG(NPU_REG_PMEVCNTR_BASE + 4 * i) += i + 1u;
+        }
+    }
+    if (q == cms_len && sim_sem == 0u) { sim_irq(); sim_sem = 1u; }
     return clock_now;
 }
 
@@ -159,6 +163,7 @@ int main(void)
     staging = calloc(SIM_STAGING, 1);
     ddr = calloc(SIM_DDR, 1);
     REG(NPU_REG_PMCR) = 0x2001u;     /* as MLEK leaves it: cnt_en, 4 event counters reported in num_event_cnt */
+    if (getenv("SIM_CMS_LEN")) { cms_len = (uint32_t)strtoul(getenv("SIM_CMS_LEN"), 0, 0); }
     trace_bind(npu_regs, sim_now);
     const runner_ports_t ports = {staging, SIM_STAGING, (uintptr_t)ddr, (uintptr_t)ddr + SIM_DDR, SIM_ARENA,
                                   place_model, model_load, model_counts, model_io, invoke, dwt, one, zero,
