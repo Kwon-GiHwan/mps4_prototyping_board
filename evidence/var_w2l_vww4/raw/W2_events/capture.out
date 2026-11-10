@@ -1,0 +1,2 @@
+mcc boot log: 11195 bytes -> /home/gihwan/evsweep_w2l_ab_run/W2_events/mcc_boot.log
+app uart: 2536 bytes -> /home/gihwan/evsweep_w2l_ab_run/W2_events/app_uart.raw; marker NOT seen; listener opened before REBOOT

@@ -1,0 +1,122 @@
+{
+ "W": {
+  "W1": "NO_SHIFT",
+  "W2": "BEATS_FIXED",
+  "new_stock_active": [
+   4134401,
+   4133924,
+   4131584,
+   4132531
+  ],
+  "new_events_active": [
+   4133856,
+   4130833,
+   4133675,
+   4132286
+  ],
+  "old_stock_active": [
+   4132211,
+   4133890,
+   4133959
+  ],
+  "old_events_active": [
+   4130708,
+   4131099,
+   4131728
+  ],
+  "W3_supplementary_M4_all_boots": {
+   "legacy_cd": {
+    "M1_output": "EQUIVALENT",
+    "M2_SRAM_RD_DATA_BEAT_RECEIVED": "EQUIVALENT",
+    "M2_SRAM_WR_DATA_BEAT_WRITTEN": "EQUIVALENT",
+    "M2_EXT_RD_DATA_BEAT_RECEIVED": "EQUIVALENT",
+    "M2_EXT_WR_DATA_BEAT_WRITTEN": "EQUIVALENT",
+    "M3_ACTIVE": "EQUIVALENT",
+    "instrumented_build_inert": true,
+    "M4_MAC_ACTIVE": "EQUIVALENT",
+    "M4_MAC_DPU_ACTIVE": "EQUIVALENT",
+    "M4_AO_ACTIVE": "EQUIVALENT"
+   },
+   "driver_m7": {
+    "M1_output": "EQUIVALENT",
+    "M2_SRAM_RD_DATA_BEAT_RECEIVED": "EQUIVALENT",
+    "M2_SRAM_WR_DATA_BEAT_WRITTEN": "EQUIVALENT",
+    "M2_EXT_RD_DATA_BEAT_RECEIVED": "EQUIVALENT",
+    "M2_EXT_WR_DATA_BEAT_WRITTEN": "EQUIVALENT",
+    "M3_ACTIVE": "EQUIVALENT",
+    "instrumented_build_inert": true,
+    "M4_MAC_ACTIVE": "EQUIVALENT",
+    "M4_MAC_DPU_ACTIVE": "EQUIVALENT",
+    "M4_AO_ACTIVE": "EQUIVALENT"
+   }
+  }
+ },
+ "V": {
+  "V2": "DRIVER_WITHIN_MLEK_RANGE",
+  "V3_post_hoc": "LEGACY_WITHIN_MLEK_RANGE",
+  "V1_V4_descriptive": {
+   "mlek_boots": {
+    "boot_medians": [
+     233394,
+     234749,
+     232761,
+     232991,
+     236774,
+     233762
+    ],
+    "between_boot_range": 4013,
+    "within_boot_ranges": null
+   },
+   "mlek_stock_only": {
+    "boot_medians": [
+     233394,
+     234749,
+     232761
+    ],
+    "between_boot_range": 1988,
+    "within_boot_ranges": null
+   },
+   "driver": {
+    "boot_medians": [
+     234489.0,
+     234157.5,
+     233979.0
+    ],
+    "between_boot_range": 510.0,
+    "within_boot_ranges": [
+     4205,
+     4278,
+     4207
+    ]
+   },
+   "legacy_seed1": {
+    "boot_medians": [
+     235703.5,
+     235659.5,
+     235758.5,
+     235265.0,
+     235837.0
+    ],
+    "between_boot_range": 572.0,
+    "within_boot_ranges": [
+     3144,
+     3558,
+     3351,
+     3422,
+     3280
+    ]
+   },
+   "legacy_mlek_input": {
+    "median": 235892.5,
+    "within_boot_range": 3525
+   },
+   "driver_first_run": [
+    235157,
+    233605,
+    234854
+   ],
+   "driver_minus_mlek_pct": 0.24809699543622,
+   "legacy_mlek_input_minus_mlek_pct": 0.990889552954477
+  }
+ }
+}

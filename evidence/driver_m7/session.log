@@ -1,0 +1,265 @@
+=== 2026-11-10T05:50:02Z step 3: user python3 mcc.py USB_ON 4 && sleep 5 && test -e /dev/sdb1
+USB_ON
+Enabling debug USB...
+
+Cmd> 
+=== 2026-11-10T05:50:12Z step 4: deploy_mlek /home/gihwan/evsweep_driver_m7 /home/gihwan/evsweep/evidence_driver_m7
+images.txt: OK
+APP.BIN: OK
+VECTORS.BIN: OK
+DDR.BIN: OK
+DEPLOY VERIFIED: source == destination
+82ab24391e9dc9a7ad5132f5519dfdf252266b668466400b4e33072060a8fb95  boot.bin
+967c65e5e7ebb5d95d750eafdbcbd3c829283a5d71943733896d843603679f68  bram.bin
+374708fff7719dd5979ec875d56cd2286f6d3cf7ec317a3b25632aab28ec37bb  ddr.bin
+af688281435a73dda3b2247845149817ecc7a9bbdff5a3ccd2e4dfa52875423f  images.txt
+DEPLOY DONE: unmounted, safe to REBOOT
+=== 2026-11-10T05:50:13Z step 5: user sh run_driver_campaign.sh /home/gihwan/evsweep_driver_m7 /home/gihwan/evsweep_driver_m7_run/raw /home/gihwan/evsweep_driver_m7/ids.txt /home/gihwan/evsweep_driver_m7/plan.txt 10
+mcc boot log: 10545 bytes -> /home/gihwan/evsweep_driver_m7_run/raw/wfe/kws_micronet_m/mcc_boot.log
+Image loaded from \SOFTWARE\boot.bin
+Image loaded from \SOFTWARE\bram.bin
+Image loaded from \SOFTWARE\ddr.bin
+DDR memory test at 0x70000000: PASSED
+Clearing SCC CPUWAIT (0xFFFFFFFF80000000:0x00000000)
+--- boot308 kws_micronet_m wfe campaign exit=0
+80
+mcc boot log: 10384 bytes -> /home/gihwan/evsweep_driver_m7_run/raw/wfe/ad_medium_int8/mcc_boot.log
+Image loaded from \SOFTWARE\boot.bin
+Image loaded from \SOFTWARE\bram.bin
+Image loaded from \SOFTWARE\ddr.bin
+DDR memory test at 0x70000000: PASSED
+Clearing SCC CPUWAIT (0xFFFFFFFF80000000:0x00000000)
+--- boot309 ad_medium_int8 wfe campaign exit=0
+80
+mcc boot log: 10384 bytes -> /home/gihwan/evsweep_driver_m7_run/raw/wfe/vww4_128_128_INT8/mcc_boot.log
+Image loaded from \SOFTWARE\boot.bin
+Image loaded from \SOFTWARE\bram.bin
+Image loaded from \SOFTWARE\ddr.bin
+DDR memory test at 0x70000000: PASSED
+Clearing SCC CPUWAIT (0xFFFFFFFF80000000:0x00000000)
+--- boot310 vww4_128_128_INT8 wfe campaign exit=0
+80
+mcc boot log: 10384 bytes -> /home/gihwan/evsweep_driver_m7_run/raw/wfe/rnnoise_INT8/mcc_boot.log
+Image loaded from \SOFTWARE\boot.bin
+Image loaded from \SOFTWARE\bram.bin
+Image loaded from \SOFTWARE\ddr.bin
+DDR memory test at 0x70000000: PASSED
+Clearing SCC CPUWAIT (0xFFFFFFFF80000000:0x00000000)
+--- boot311 rnnoise_INT8 wfe campaign exit=0
+80
+mcc boot log: 10384 bytes -> /home/gihwan/evsweep_driver_m7_run/raw/wfe/yolo-fastest_192_face_v4/mcc_boot.log
+Image loaded from \SOFTWARE\boot.bin
+Image loaded from \SOFTWARE\bram.bin
+Image loaded from \SOFTWARE\ddr.bin
+DDR memory test at 0x70000000: PASSED
+Clearing SCC CPUWAIT (0xFFFFFFFF80000000:0x00000000)
+--- boot312 yolo-fastest_192_face_v4 wfe campaign exit=0
+80
+mcc boot log: 10384 bytes -> /home/gihwan/evsweep_driver_m7_run/raw/wfe/mobilenet_v2_1.0_224_INT8/mcc_boot.log
+Image loaded from \SOFTWARE\boot.bin
+Image loaded from \SOFTWARE\bram.bin
+Image loaded from \SOFTWARE\ddr.bin
+DDR memory test at 0x70000000: PASSED
+Clearing SCC CPUWAIT (0xFFFFFFFF80000000:0x00000000)
+--- boot313 mobilenet_v2_1.0_224_INT8 wfe campaign exit=0
+80
+mcc boot log: 10384 bytes -> /home/gihwan/evsweep_driver_m7_run/raw/wfe/wav2letter_pruned_int8/mcc_boot.log
+Image loaded from \SOFTWARE\boot.bin
+Image loaded from \SOFTWARE\bram.bin
+Image loaded from \SOFTWARE\ddr.bin
+DDR memory test at 0x70000000: PASSED
+Clearing SCC CPUWAIT (0xFFFFFFFF80000000:0x00000000)
+--- boot314 wav2letter_pruned_int8 wfe campaign exit=0
+80
+CAMPAIGN DONE
+=== 2026-11-10T06:56:00Z step 6: user sh run_driver_campaign.sh /home/gihwan/evsweep_driver_m7 /home/gihwan/evsweep_driver_m7_run/raw_r2 /home/gihwan/evsweep_driver_m7/ids.txt /home/gihwan/evsweep_driver_m7/plan_r2.txt 10
+mcc boot log: 10384 bytes -> /home/gihwan/evsweep_driver_m7_run/raw_r2/wfe/vww4_128_128_INT8/mcc_boot.log
+Image loaded from \SOFTWARE\boot.bin
+Image loaded from \SOFTWARE\bram.bin
+Image loaded from \SOFTWARE\ddr.bin
+DDR memory test at 0x70000000: PASSED
+Clearing SCC CPUWAIT (0xFFFFFFFF80000000:0x00000000)
+--- boot315 vww4_128_128_INT8 wfe campaign exit=0
+80
+CAMPAIGN DONE
+=== 2026-11-10T06:59:46Z step 7: user sh run_driver_campaign.sh /home/gihwan/evsweep_driver_m7 /home/gihwan/evsweep_driver_m7_run/raw_r3 /home/gihwan/evsweep_driver_m7/ids.txt /home/gihwan/evsweep_driver_m7/plan_r3.txt 10
+mcc boot log: 10425 bytes -> /home/gihwan/evsweep_driver_m7_run/raw_r3/wfe/vww4_128_128_INT8/mcc_boot.log
+Image loaded from \SOFTWARE\boot.bin
+Image loaded from \SOFTWARE\bram.bin
+Image loaded from \SOFTWARE\ddr.bin
+DDR memory test at 0x70000000: PASSED
+Clearing SCC CPUWAIT (0xFFFFFFFF80000000:0x00000000)
+--- boot316 vww4_128_128_INT8 wfe campaign exit=0
+80
+CAMPAIGN DONE
+=== 2026-11-10T07:03:31Z step 8: restore_mlek /home/gihwan/evsweep/evidence_driver_m7 /home/gihwan/evsweep_driver_m7
+RESTORE VERIFIED
+cb78a12efd33fa72555b94ee4b8ca6faef4d9504c971c52c6cb47c75096673de  images.txt
+ffa3e5bd0363f791d61f9673074c625865f1e6a8f24e53ee303372c64ef3597d  APP.BIN
+45e943c577e3744104d53cf57c7d0afb369ff68a99e5e6906971d71503f06c92  VECTORS.BIN
+81d37a219a6b4141d0b433796711ab8af2ee2c3c668a28143a3ffe6a574ade98  DDR.BIN
+RESTORE DONE: unmounted, safe to REBOOT then USB_OFF
+=== 2026-11-10T07:03:32Z step 9: deploy_mlek /home/gihwan/evsweep_w2l_ab/stock /home/gihwan/evsweep/evidence_w2l_ab_W1_stock
+images.txt: OK
+APP.BIN: OK
+VECTORS.BIN: OK
+DDR.BIN: OK
+DEPLOY VERIFIED: source == destination
+9dc61053ad9f4dd799c0bb4c5031caaa5224b97d074398927ff2ab83b925837f  boot.bin
+4e112520087434dd99e8cb66cb18aa9197b04760b255735bf0a9231f420dee5e  bram.bin
+e57a6546fbb30c67e5f3b448addffd9ae83be4e1b67913a793b4596bb48c2ed2  ddr.bin
+af688281435a73dda3b2247845149817ecc7a9bbdff5a3ccd2e4dfa52875423f  images.txt
+DEPLOY DONE: unmounted, safe to REBOOT
+=== 2026-11-10T07:03:36Z step 10: user mkdir -p /home/gihwan/evsweep_w2l_ab_run/W1_stock && python3 mlek_app_capture.py /home/gihwan/evsweep_w2l_ab_run/W1_stock/app_uart.raw /home/gihwan/evsweep_w2l_ab_run/W1_stock/mcc_boot.log 240 > /home/gihwan/evsweep_w2l_ab_run/W1_stock/capture.out 2>&1; test -s /home/gihwan/evsweep_w2l_ab_run/W1_stock/app_uart.raw
+=== 2026-11-10T07:07:36Z step 11: restore_mlek /home/gihwan/evsweep/evidence_w2l_ab_W1_stock /home/gihwan/evsweep_w2l_ab/stock
+RESTORE VERIFIED
+cb78a12efd33fa72555b94ee4b8ca6faef4d9504c971c52c6cb47c75096673de  images.txt
+ffa3e5bd0363f791d61f9673074c625865f1e6a8f24e53ee303372c64ef3597d  APP.BIN
+45e943c577e3744104d53cf57c7d0afb369ff68a99e5e6906971d71503f06c92  VECTORS.BIN
+81d37a219a6b4141d0b433796711ab8af2ee2c3c668a28143a3ffe6a574ade98  DDR.BIN
+RESTORE DONE: unmounted, safe to REBOOT then USB_OFF
+=== 2026-11-10T07:07:37Z step 12: deploy_mlek /home/gihwan/evsweep_w2l_ab/events /home/gihwan/evsweep/evidence_w2l_ab_W2_events
+images.txt: OK
+APP.BIN: OK
+VECTORS.BIN: OK
+DDR.BIN: OK
+DEPLOY VERIFIED: source == destination
+5dc56b13d90adf4e4c371fc6c0d775bad58745f5bb1d5b08d88ae8494cc15471  boot.bin
+5c5728c0463e38c348e9e78a65665afcdf64c348a571af88cfd47bd1234e80c8  bram.bin
+e57a6546fbb30c67e5f3b448addffd9ae83be4e1b67913a793b4596bb48c2ed2  ddr.bin
+af688281435a73dda3b2247845149817ecc7a9bbdff5a3ccd2e4dfa52875423f  images.txt
+DEPLOY DONE: unmounted, safe to REBOOT
+=== 2026-11-10T07:07:40Z step 13: user mkdir -p /home/gihwan/evsweep_w2l_ab_run/W2_events && python3 mlek_app_capture.py /home/gihwan/evsweep_w2l_ab_run/W2_events/app_uart.raw /home/gihwan/evsweep_w2l_ab_run/W2_events/mcc_boot.log 240 > /home/gihwan/evsweep_w2l_ab_run/W2_events/capture.out 2>&1; test -s /home/gihwan/evsweep_w2l_ab_run/W2_events/app_uart.raw
+=== 2026-11-10T07:11:41Z step 14: restore_mlek /home/gihwan/evsweep/evidence_w2l_ab_W2_events /home/gihwan/evsweep_w2l_ab/events
+RESTORE VERIFIED
+cb78a12efd33fa72555b94ee4b8ca6faef4d9504c971c52c6cb47c75096673de  images.txt
+ffa3e5bd0363f791d61f9673074c625865f1e6a8f24e53ee303372c64ef3597d  APP.BIN
+45e943c577e3744104d53cf57c7d0afb369ff68a99e5e6906971d71503f06c92  VECTORS.BIN
+81d37a219a6b4141d0b433796711ab8af2ee2c3c668a28143a3ffe6a574ade98  DDR.BIN
+RESTORE DONE: unmounted, safe to REBOOT then USB_OFF
+=== 2026-11-10T07:11:41Z step 15: deploy_mlek /home/gihwan/evsweep_w2l_ab/events /home/gihwan/evsweep/evidence_w2l_ab_W3_events
+images.txt: OK
+APP.BIN: OK
+VECTORS.BIN: OK
+DDR.BIN: OK
+DEPLOY VERIFIED: source == destination
+5dc56b13d90adf4e4c371fc6c0d775bad58745f5bb1d5b08d88ae8494cc15471  boot.bin
+5c5728c0463e38c348e9e78a65665afcdf64c348a571af88cfd47bd1234e80c8  bram.bin
+e57a6546fbb30c67e5f3b448addffd9ae83be4e1b67913a793b4596bb48c2ed2  ddr.bin
+af688281435a73dda3b2247845149817ecc7a9bbdff5a3ccd2e4dfa52875423f  images.txt
+DEPLOY DONE: unmounted, safe to REBOOT
+=== 2026-11-10T07:11:45Z step 16: user mkdir -p /home/gihwan/evsweep_w2l_ab_run/W3_events && python3 mlek_app_capture.py /home/gihwan/evsweep_w2l_ab_run/W3_events/app_uart.raw /home/gihwan/evsweep_w2l_ab_run/W3_events/mcc_boot.log 240 > /home/gihwan/evsweep_w2l_ab_run/W3_events/capture.out 2>&1; test -s /home/gihwan/evsweep_w2l_ab_run/W3_events/app_uart.raw
+=== 2026-11-10T07:15:46Z step 17: restore_mlek /home/gihwan/evsweep/evidence_w2l_ab_W3_events /home/gihwan/evsweep_w2l_ab/events
+RESTORE VERIFIED
+cb78a12efd33fa72555b94ee4b8ca6faef4d9504c971c52c6cb47c75096673de  images.txt
+ffa3e5bd0363f791d61f9673074c625865f1e6a8f24e53ee303372c64ef3597d  APP.BIN
+45e943c577e3744104d53cf57c7d0afb369ff68a99e5e6906971d71503f06c92  VECTORS.BIN
+81d37a219a6b4141d0b433796711ab8af2ee2c3c668a28143a3ffe6a574ade98  DDR.BIN
+RESTORE DONE: unmounted, safe to REBOOT then USB_OFF
+=== 2026-11-10T07:15:46Z step 18: deploy_mlek /home/gihwan/evsweep_w2l_ab/stock /home/gihwan/evsweep/evidence_w2l_ab_W4_stock
+images.txt: OK
+APP.BIN: OK
+VECTORS.BIN: OK
+DDR.BIN: OK
+DEPLOY VERIFIED: source == destination
+9dc61053ad9f4dd799c0bb4c5031caaa5224b97d074398927ff2ab83b925837f  boot.bin
+4e112520087434dd99e8cb66cb18aa9197b04760b255735bf0a9231f420dee5e  bram.bin
+e57a6546fbb30c67e5f3b448addffd9ae83be4e1b67913a793b4596bb48c2ed2  ddr.bin
+af688281435a73dda3b2247845149817ecc7a9bbdff5a3ccd2e4dfa52875423f  images.txt
+DEPLOY DONE: unmounted, safe to REBOOT
+=== 2026-11-10T07:15:50Z step 19: user mkdir -p /home/gihwan/evsweep_w2l_ab_run/W4_stock && python3 mlek_app_capture.py /home/gihwan/evsweep_w2l_ab_run/W4_stock/app_uart.raw /home/gihwan/evsweep_w2l_ab_run/W4_stock/mcc_boot.log 240 > /home/gihwan/evsweep_w2l_ab_run/W4_stock/capture.out 2>&1; test -s /home/gihwan/evsweep_w2l_ab_run/W4_stock/app_uart.raw
+=== 2026-11-10T07:19:50Z step 20: restore_mlek /home/gihwan/evsweep/evidence_w2l_ab_W4_stock /home/gihwan/evsweep_w2l_ab/stock
+RESTORE VERIFIED
+cb78a12efd33fa72555b94ee4b8ca6faef4d9504c971c52c6cb47c75096673de  images.txt
+ffa3e5bd0363f791d61f9673074c625865f1e6a8f24e53ee303372c64ef3597d  APP.BIN
+45e943c577e3744104d53cf57c7d0afb369ff68a99e5e6906971d71503f06c92  VECTORS.BIN
+81d37a219a6b4141d0b433796711ab8af2ee2c3c668a28143a3ffe6a574ade98  DDR.BIN
+RESTORE DONE: unmounted, safe to REBOOT then USB_OFF
+=== 2026-11-10T07:19:51Z step 21: deploy_mlek /home/gihwan/evsweep_w2l_ab/events /home/gihwan/evsweep/evidence_w2l_ab_W5_events
+images.txt: OK
+APP.BIN: OK
+VECTORS.BIN: OK
+DDR.BIN: OK
+DEPLOY VERIFIED: source == destination
+5dc56b13d90adf4e4c371fc6c0d775bad58745f5bb1d5b08d88ae8494cc15471  boot.bin
+5c5728c0463e38c348e9e78a65665afcdf64c348a571af88cfd47bd1234e80c8  bram.bin
+e57a6546fbb30c67e5f3b448addffd9ae83be4e1b67913a793b4596bb48c2ed2  ddr.bin
+af688281435a73dda3b2247845149817ecc7a9bbdff5a3ccd2e4dfa52875423f  images.txt
+DEPLOY DONE: unmounted, safe to REBOOT
+=== 2026-11-10T07:19:54Z step 22: user mkdir -p /home/gihwan/evsweep_w2l_ab_run/W5_events && python3 mlek_app_capture.py /home/gihwan/evsweep_w2l_ab_run/W5_events/app_uart.raw /home/gihwan/evsweep_w2l_ab_run/W5_events/mcc_boot.log 240 > /home/gihwan/evsweep_w2l_ab_run/W5_events/capture.out 2>&1; test -s /home/gihwan/evsweep_w2l_ab_run/W5_events/app_uart.raw
+=== 2026-11-10T07:23:55Z step 23: restore_mlek /home/gihwan/evsweep/evidence_w2l_ab_W5_events /home/gihwan/evsweep_w2l_ab/events
+RESTORE VERIFIED
+cb78a12efd33fa72555b94ee4b8ca6faef4d9504c971c52c6cb47c75096673de  images.txt
+ffa3e5bd0363f791d61f9673074c625865f1e6a8f24e53ee303372c64ef3597d  APP.BIN
+45e943c577e3744104d53cf57c7d0afb369ff68a99e5e6906971d71503f06c92  VECTORS.BIN
+81d37a219a6b4141d0b433796711ab8af2ee2c3c668a28143a3ffe6a574ade98  DDR.BIN
+RESTORE DONE: unmounted, safe to REBOOT then USB_OFF
+=== 2026-11-10T07:23:55Z step 24: deploy_mlek /home/gihwan/evsweep_w2l_ab/stock /home/gihwan/evsweep/evidence_w2l_ab_W6_stock
+images.txt: OK
+APP.BIN: OK
+VECTORS.BIN: OK
+DDR.BIN: OK
+DEPLOY VERIFIED: source == destination
+9dc61053ad9f4dd799c0bb4c5031caaa5224b97d074398927ff2ab83b925837f  boot.bin
+4e112520087434dd99e8cb66cb18aa9197b04760b255735bf0a9231f420dee5e  bram.bin
+e57a6546fbb30c67e5f3b448addffd9ae83be4e1b67913a793b4596bb48c2ed2  ddr.bin
+af688281435a73dda3b2247845149817ecc7a9bbdff5a3ccd2e4dfa52875423f  images.txt
+DEPLOY DONE: unmounted, safe to REBOOT
+=== 2026-11-10T07:23:59Z step 25: user mkdir -p /home/gihwan/evsweep_w2l_ab_run/W6_stock && python3 mlek_app_capture.py /home/gihwan/evsweep_w2l_ab_run/W6_stock/app_uart.raw /home/gihwan/evsweep_w2l_ab_run/W6_stock/mcc_boot.log 240 > /home/gihwan/evsweep_w2l_ab_run/W6_stock/capture.out 2>&1; test -s /home/gihwan/evsweep_w2l_ab_run/W6_stock/app_uart.raw
+=== 2026-11-10T07:27:59Z step 26: restore_mlek /home/gihwan/evsweep/evidence_w2l_ab_W6_stock /home/gihwan/evsweep_w2l_ab/stock
+RESTORE VERIFIED
+cb78a12efd33fa72555b94ee4b8ca6faef4d9504c971c52c6cb47c75096673de  images.txt
+ffa3e5bd0363f791d61f9673074c625865f1e6a8f24e53ee303372c64ef3597d  APP.BIN
+45e943c577e3744104d53cf57c7d0afb369ff68a99e5e6906971d71503f06c92  VECTORS.BIN
+81d37a219a6b4141d0b433796711ab8af2ee2c3c668a28143a3ffe6a574ade98  DDR.BIN
+RESTORE DONE: unmounted, safe to REBOOT then USB_OFF
+=== 2026-11-10T07:28:00Z step 27: deploy_mlek /home/gihwan/evsweep_w2l_ab/stock /home/gihwan/evsweep/evidence_w2l_ab_W7_stock
+images.txt: OK
+APP.BIN: OK
+VECTORS.BIN: OK
+DDR.BIN: OK
+DEPLOY VERIFIED: source == destination
+9dc61053ad9f4dd799c0bb4c5031caaa5224b97d074398927ff2ab83b925837f  boot.bin
+4e112520087434dd99e8cb66cb18aa9197b04760b255735bf0a9231f420dee5e  bram.bin
+e57a6546fbb30c67e5f3b448addffd9ae83be4e1b67913a793b4596bb48c2ed2  ddr.bin
+af688281435a73dda3b2247845149817ecc7a9bbdff5a3ccd2e4dfa52875423f  images.txt
+DEPLOY DONE: unmounted, safe to REBOOT
+=== 2026-11-10T07:28:04Z step 28: user mkdir -p /home/gihwan/evsweep_w2l_ab_run/W7_stock && python3 mlek_app_capture.py /home/gihwan/evsweep_w2l_ab_run/W7_stock/app_uart.raw /home/gihwan/evsweep_w2l_ab_run/W7_stock/mcc_boot.log 240 > /home/gihwan/evsweep_w2l_ab_run/W7_stock/capture.out 2>&1; test -s /home/gihwan/evsweep_w2l_ab_run/W7_stock/app_uart.raw
+=== 2026-11-10T07:32:04Z step 29: restore_mlek /home/gihwan/evsweep/evidence_w2l_ab_W7_stock /home/gihwan/evsweep_w2l_ab/stock
+RESTORE VERIFIED
+cb78a12efd33fa72555b94ee4b8ca6faef4d9504c971c52c6cb47c75096673de  images.txt
+ffa3e5bd0363f791d61f9673074c625865f1e6a8f24e53ee303372c64ef3597d  APP.BIN
+45e943c577e3744104d53cf57c7d0afb369ff68a99e5e6906971d71503f06c92  VECTORS.BIN
+81d37a219a6b4141d0b433796711ab8af2ee2c3c668a28143a3ffe6a574ade98  DDR.BIN
+RESTORE DONE: unmounted, safe to REBOOT then USB_OFF
+=== 2026-11-10T07:32:04Z step 30: deploy_mlek /home/gihwan/evsweep_w2l_ab/events /home/gihwan/evsweep/evidence_w2l_ab_W8_events
+images.txt: OK
+APP.BIN: OK
+VECTORS.BIN: OK
+DDR.BIN: OK
+DEPLOY VERIFIED: source == destination
+5dc56b13d90adf4e4c371fc6c0d775bad58745f5bb1d5b08d88ae8494cc15471  boot.bin
+5c5728c0463e38c348e9e78a65665afcdf64c348a571af88cfd47bd1234e80c8  bram.bin
+e57a6546fbb30c67e5f3b448addffd9ae83be4e1b67913a793b4596bb48c2ed2  ddr.bin
+af688281435a73dda3b2247845149817ecc7a9bbdff5a3ccd2e4dfa52875423f  images.txt
+DEPLOY DONE: unmounted, safe to REBOOT
+=== 2026-11-10T07:32:08Z step 31: user mkdir -p /home/gihwan/evsweep_w2l_ab_run/W8_events && python3 mlek_app_capture.py /home/gihwan/evsweep_w2l_ab_run/W8_events/app_uart.raw /home/gihwan/evsweep_w2l_ab_run/W8_events/mcc_boot.log 240 > /home/gihwan/evsweep_w2l_ab_run/W8_events/capture.out 2>&1; test -s /home/gihwan/evsweep_w2l_ab_run/W8_events/app_uart.raw
+=== 2026-11-10T07:36:09Z step 32: restore_mlek /home/gihwan/evsweep/evidence_w2l_ab_W8_events /home/gihwan/evsweep_w2l_ab/events
+RESTORE VERIFIED
+cb78a12efd33fa72555b94ee4b8ca6faef4d9504c971c52c6cb47c75096673de  images.txt
+ffa3e5bd0363f791d61f9673074c625865f1e6a8f24e53ee303372c64ef3597d  APP.BIN
+45e943c577e3744104d53cf57c7d0afb369ff68a99e5e6906971d71503f06c92  VECTORS.BIN
+81d37a219a6b4141d0b433796711ab8af2ee2c3c668a28143a3ffe6a574ade98  DDR.BIN
+RESTORE DONE: unmounted, safe to REBOOT then USB_OFF
+=== 2026-11-10T07:36:09Z step 33: user sh postflight.sh
+mcc boot log: 10527 bytes -> /home/gihwan/evsweep/evidence/postflight/mcc_boot.log
+Image loaded from \SOFTWARE\VECTORS.BIN
+Image loaded from \SOFTWARE\APP.BIN
+Image loaded from \SOFTWARE\DDR.BIN
+DDR memory test at 0x70000000: PASSED
+Clearing SCC CPUWAIT (0xFFFFFFFF80000000:0x00000000)
+[functional-v1] PING -> Counters(state=1, version=1, rx_bytes=20, tx_bytes=0, rx_overrun=0, bad_magic=0, bad_version=0, bad_crc=0, length_error=0, sequence_error=0, parser_resync=0)
+
+Cmd> 
+POSTFLIGHT DONE: card withdrawn, board on restored image
+=== 2026-11-10T07:38:51Z SESSION DONE
