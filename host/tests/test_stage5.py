@@ -12,7 +12,7 @@ from test_stage4c2 import add_mac
 GOLD = b"\x01\x02\x03\x04"
 
 
-def setup(d, out=None, earlier_mac=250, na_b_variant=1100, model_out=None):
+def setup(d, out=None, earlier_mac=250, na_b_variant=1100, model_out=None, variant_macs=1000):
     """Every workload/variant: a DRWL with GOLD, RUNs with NPU_ACTIVE 1000 (base) / 1100 (variants, pass A)."""
     wl, root, c50 = d / "wl", d / "root", {}
     wl.mkdir()
@@ -24,7 +24,7 @@ def setup(d, out=None, earlier_mac=250, na_b_variant=1100, model_out=None):
             sha = f"{name}-sha"
             (wl / f"{name}.drwl").write_bytes(drwl.pack(b"MODEL", [b"\x00" * 8], [GOLD]))
             (wl / f"{name}.drwl.json").write_text(json.dumps(dict(vela_sha256=sha)))
-            c50[w][v] = dict(nn_macs=1000, compute_sig=f"sig-{v}", kernels=2, cycles_npu=500, vela_sha256=sha,
+            c50[w][v] = dict(nn_macs=1000 if v == "base" else variant_macs, compute_sig=f"sig-{v}", kernels=2, cycles_npu=500, vela_sha256=sha,
                              sram_used_kib=8.0, fast_size=100, arena_size=200, **{"class": "BASE" if v == "base" else "SCHEDULE_CHANGED"})
             o = (out or {}).get(name, GOLD)
             na = [1000] * 4 if v == "base" else [1100] * 4
@@ -72,6 +72,14 @@ class Stage5(unittest.TestCase):
         self.assertEqual((p["verdict"], p["class_5_0"], p["same_output_as_base"]),
                          ("NOT_PROPORTIONAL_TO_MAC", "SCHEDULE_CHANGED", True))
         self.assertEqual(p["mac_dpu_exact"], {"mac_active": (250, 250), "mac_dpu_active": (250, 250)})
+
+    def test_effective_macs_are_the_base_definition(self):
+        # Vela counts 10 % more MACs for the variant; NPU_ACTIVE +10 % must still be judged against unchanged MACs
+        r = self.run_it(variant_macs=1100)
+        p = r["pairs"]["kws_micronet_m_base->kws_micronet_m_cache0"]
+        self.assertEqual(p["verdict"], "NOT_PROPORTIONAL_TO_MAC")
+        self.assertEqual(p["pass_a"]["mac_change_pct"], 0.0)
+        self.assertEqual(p["vela_macs"], (1000, 1100))
 
     def test_opposite_directions(self):
         r = self.run_it(na_b_variant=900)

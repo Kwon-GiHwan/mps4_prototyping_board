@@ -84,9 +84,10 @@ def constant_by_set(runs: dict) -> dict:
     return out
 
 
-def comp_of(c50: dict, wl: pathlib.Path, name: str) -> dict:
+def comp_of(c50: dict, wl: pathlib.Path, name: str, n_mac: int) -> dict:
+    """n_mac = effective MACs of the operator definition (the base compile's); Vela's own count stays in vela_macs."""
     meta = json.loads((wl / f"{name}.drwl.json").read_text())
-    return dict(n_mac=c50["nn_macs"], ofm_block=c50["compute_sig"], ofm_ublock="", n_kernels=c50["kernels"],
+    return dict(n_mac=n_mac, vela_macs=c50["nn_macs"], ofm_block=c50["compute_sig"], ofm_ublock="", n_kernels=c50["kernels"],
                 vela_npu_cycles=c50["cycles_npu"], vela_sha256=meta["vela_sha256"])
 
 
@@ -100,7 +101,7 @@ def main(root: str, wl: str, s50: str, out: str, plan: str = "5-1") -> dict:
         for v in variants:
             name = f"{w}_{v}"
             folder = root / "conds" / name / "wfe"
-            comp = comp_of(c50[w][v], wl, name)
+            comp = comp_of(c50[w][v], wl, name, c50[w]["base"]["nn_macs"])
             assert comp["vela_sha256"] == c50[w][v]["vela_sha256"], name   # the measured DRWL is the 5-0 artifact
             if not (folder / "runs.csv").exists() or not S4.load(folder, 1):   # a refused first RUN writes no runs.csv
                 res[name] = dict(verdict="NOT_EXECUTABLE", why="no completed RUN")
@@ -152,7 +153,8 @@ def main(root: str, wl: str, s50: str, out: str, plan: str = "5-1") -> dict:
                               sram_used_kib=(b["c50"]["sram_used_kib"], x["c50"]["sram_used_kib"]),
                               fast_size=(b["c50"]["fast_size"], x["c50"]["fast_size"]),
                               arena_size=(b["c50"]["arena_size"], x["c50"]["arena_size"]),
-                              kernels=(b["c50"]["kernels"], x["c50"]["kernels"]))
+                              kernels=(b["c50"]["kernels"], x["c50"]["kernels"]),
+                              vela_macs=(b["comp"]["vela_macs"], x["comp"]["vela_macs"]))
     summary = dict(base_check=base_check, pairs=pairs,
                    configs={c: {k: v for k, v in r.items() if k not in ("runs", "constant")} for c, r in res.items()})
     o.mkdir(parents=True, exist_ok=True)

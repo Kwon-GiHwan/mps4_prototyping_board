@@ -122,6 +122,10 @@
    "kernels": [
     14,
     19
+   ],
+   "vela_macs": [
+    14208852,
+    14208852
    ]
   },
   "kws_micronet_m_base->kws_micronet_m_cache0": {
@@ -220,6 +224,10 @@
    "kernels": [
     14,
     13
+   ],
+   "vela_macs": [
+    14208852,
+    14208852
    ]
   },
   "ad_medium_int8_base->ad_medium_int8_cache64k": {
@@ -318,6 +326,10 @@
    "kernels": [
     14,
     66
+   ],
+   "vela_macs": [
+    61466400,
+    61466400
    ]
   },
   "ad_medium_int8_base->ad_medium_int8_cache0": {
@@ -416,6 +428,10 @@
    "kernels": [
     14,
     13
+   ],
+   "vela_macs": [
+    61466400,
+    61466400
    ]
   },
   "s4_dw_base_base->s4_dw_base_cache0": {
@@ -514,6 +530,10 @@
    "kernels": [
     2,
     1
+   ],
+   "vela_macs": [
+    4064256,
+    4064256
    ]
   },
   "s4_conv_base_base->s4_conv_base_cache0": {
@@ -612,6 +632,10 @@
    "kernels": [
     2,
     1
+   ],
+   "vela_macs": [
+    884736,
+    884736
    ]
   }
  },
@@ -626,6 +650,7 @@
    },
    "comp": {
     "n_mac": 14208852,
+    "vela_macs": 14208852,
     "ofm_block": "5c4b4a82b3a3a8d7e07fdffb6c8145dd60dd2ff8feafdc61c72aec0f83ca0bb3",
     "ofm_ublock": "",
     "n_kernels": 14,
@@ -728,6 +753,7 @@
    },
    "comp": {
     "n_mac": 14208852,
+    "vela_macs": 14208852,
     "ofm_block": "4f9688c300317d5730ac41c7d641a804779f594bb5cddb342382ac6975a2dce1",
     "ofm_ublock": "",
     "n_kernels": 19,
@@ -831,6 +857,7 @@
    },
    "comp": {
     "n_mac": 14208852,
+    "vela_macs": 14208852,
     "ofm_block": "4f7aa1850f5cbec2e363d741c11ec410bf11ac4c9ee67ab37734a3b16ba0f6c0",
     "ofm_ublock": "",
     "n_kernels": 13,
@@ -934,6 +961,7 @@
    },
    "comp": {
     "n_mac": 61466400,
+    "vela_macs": 61466400,
     "ofm_block": "1643d063a8ca8aca855fcef783985ba245473972f8b3bae133bbb95bfa576180",
     "ofm_ublock": "",
     "n_kernels": 14,
@@ -1036,6 +1064,7 @@
    },
    "comp": {
     "n_mac": 61466400,
+    "vela_macs": 61466400,
     "ofm_block": "8ed35dc302728d932f23db1c71e9b55a8b9fb8debd96c47bf6e4ac6cc302bbc0",
     "ofm_ublock": "",
     "n_kernels": 66,
@@ -1139,6 +1168,7 @@
    },
    "comp": {
     "n_mac": 61466400,
+    "vela_macs": 61466400,
     "ofm_block": "fefd93591cb300fee32aecc640be9b6f43185f31bca471c43fcc612974c884c1",
     "ofm_ublock": "",
     "n_kernels": 13,
@@ -1242,6 +1272,7 @@
    },
    "comp": {
     "n_mac": 4064256,
+    "vela_macs": 4064256,
     "ofm_block": "5ef78cf1e4d7d5ca685f3ed850ff2256d71d7e35a1408e6285507c43237d57c2",
     "ofm_ublock": "",
     "n_kernels": 2,
@@ -1342,6 +1373,7 @@
    },
    "comp": {
     "n_mac": 4064256,
+    "vela_macs": 4064256,
     "ofm_block": "4088afee7f4efdda70ba6adf8678a256aa6b688fce7b1ff96745b9843bf5de2b",
     "ofm_ublock": "",
     "n_kernels": 1,
@@ -1443,6 +1475,7 @@
    },
    "comp": {
     "n_mac": 884736,
+    "vela_macs": 884736,
     "ofm_block": "1c3f6a09bd623e2673d0aa15cef0a4d58a9ec40f2a599b4ce43e09d5afca4466",
     "ofm_ublock": "",
     "n_kernels": 2,
@@ -1543,6 +1576,7 @@
    },
    "comp": {
     "n_mac": 884736,
+    "vela_macs": 884736,
     "ofm_block": "616e31a186fe1a1fcf73bd7c2ea264703ca117315d195c2d96c869e222edee08",
     "ofm_ublock": "",
     "n_kernels": 1,
