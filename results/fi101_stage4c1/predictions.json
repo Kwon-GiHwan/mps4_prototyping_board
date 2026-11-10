@@ -1,0 +1,582 @@
+{
+ "s4_conv_base": {
+  "config": "s4_conv_base",
+  "ofm_shape": [
+   1,
+   24,
+   24,
+   96
+  ],
+  "ifm_shape": [
+   1,
+   24,
+   24,
+   16
+  ],
+  "model_len": 5568,
+  "arena": "0x700015c0",
+  "ofm_address": "0x700015c0",
+  "ofm_address_mod16": 0,
+  "ofm_address_alignment": 64,
+  "dense_nhwc": true,
+  "kernels": [
+   {
+    "kind": "CONV",
+    "ifm_depth": 16,
+    "ofm_depth": 16,
+    "ifm_stride_x": 16,
+    "ifm_stride_y": 384,
+    "ofm_stride_x": 96,
+    "ofm_stride_y": 2304,
+    "ifm_base0": "0xd800",
+    "ofm_base0": "0x0",
+    "ifm_region": 1,
+    "ofm_region": 1,
+    "ifm_precision": 1,
+    "ofm_precision": 1,
+    "block": "6x12x96",
+    "weight_lengths": [
+     176,
+     176,
+     176,
+     176
+    ],
+    "dma_before": [
+     1024
+    ]
+   },
+   {
+    "kind": "CONV",
+    "ifm_depth": 16,
+    "ofm_depth": 80,
+    "ifm_stride_x": 16,
+    "ifm_stride_y": 384,
+    "ofm_stride_x": 96,
+    "ofm_stride_y": 2304,
+    "ifm_base0": "0xd800",
+    "ofm_base0": "0x10",
+    "ifm_region": 1,
+    "ofm_region": 1,
+    "ifm_precision": 1,
+    "ofm_precision": 1,
+    "block": "6x12x96",
+    "weight_lengths": [
+     512,
+     512,
+     512,
+     512
+    ],
+    "dma_before": [
+     3008
+    ]
+   }
+  ],
+  "ofm_block": "6x12x96",
+  "ofm_ublock": "2x2x32",
+  "n_kernels": 2,
+  "weight_bytes": "2752",
+  "n_mac": 884736,
+  "vela_npu_cycles": "16660",
+  "vela_op_cycles": "24999",
+  "gate_b": true,
+  "vela_ops": [
+   "CUSTOM:ethos-u"
+  ],
+  "model_sha256": "3f0a3645f13313ae65e5bfe94f0d1f80272cab9453e9d8d178c01af33255ad25",
+  "vela_sha256": "fadf33d7ff3f46b21f8064d8de09f0ec8f2128ee0f777e3115fed4afd5e0c46d",
+  "cms_sha256": "596fe964f9805a31fd0b8baa81ebdcd52c22b358eddfb1389be12c28e9f38e06",
+  "drwl_sha256": "2681c566729ce568f4041df6a69d1b5c5c558d2172bb76b6d75ad64ca2b4f267",
+  "predicted_write_beats": {
+   "A": 3456,
+   "B": 3456,
+   "C": 3456,
+   "D": 3456
+  },
+  "discriminating": false,
+  "not_comparable": false
+ },
+ "s4c_conv_cout94": {
+  "config": "s4c_conv_cout94",
+  "ofm_shape": [
+   1,
+   24,
+   24,
+   94
+  ],
+  "ifm_shape": [
+   1,
+   24,
+   24,
+   16
+  ],
+  "model_len": 5536,
+  "arena": "0x700015a0",
+  "ofm_address": "0x700015a0",
+  "ofm_address_mod16": 0,
+  "ofm_address_alignment": 32,
+  "dense_nhwc": true,
+  "kernels": [
+   {
+    "kind": "CONV",
+    "ifm_depth": 16,
+    "ofm_depth": 16,
+    "ifm_stride_x": 16,
+    "ifm_stride_y": 384,
+    "ofm_stride_x": 94,
+    "ofm_stride_y": 2256,
+    "ifm_base0": "0xd380",
+    "ofm_base0": "0x0",
+    "ifm_region": 1,
+    "ofm_region": 1,
+    "ifm_precision": 1,
+    "ofm_precision": 1,
+    "block": "6x12x96",
+    "weight_lengths": [
+     176,
+     176,
+     176,
+     176
+    ],
+    "dma_before": [
+     1024
+    ]
+   },
+   {
+    "kind": "CONV",
+    "ifm_depth": 16,
+    "ofm_depth": 78,
+    "ifm_stride_x": 16,
+    "ifm_stride_y": 384,
+    "ofm_stride_x": 94,
+    "ofm_stride_y": 2256,
+    "ifm_base0": "0xd380",
+    "ofm_base0": "0x10",
+    "ifm_region": 1,
+    "ofm_region": 1,
+    "ifm_precision": 1,
+    "ofm_precision": 1,
+    "block": "6x12x96",
+    "weight_lengths": [
+     512,
+     512,
+     512,
+     480
+    ],
+    "dma_before": [
+     2976
+    ]
+   }
+  ],
+  "ofm_block": "6x12x96",
+  "ofm_ublock": "2x2x32",
+  "n_kernels": 2,
+  "weight_bytes": "2720",
+  "n_mac": 866304,
+  "vela_npu_cycles": "16334",
+  "vela_op_cycles": "24999",
+  "gate_b": true,
+  "vela_ops": [
+   "CUSTOM:ethos-u"
+  ],
+  "model_sha256": "b6a684888493bcace0d7b91227b2a0688bc925a81534678d3ff3dad267711493",
+  "vela_sha256": "d1e3feb9fff40559fa48267c83db1732d9e1894d7284c202f146f0ed229a9bef",
+  "cms_sha256": "d8f3f9ab6af80bfaabb3026e3c149e991402018ade3af3cfb74ee02dfbdcc094",
+  "drwl_sha256": "2b990611a3a4e54b8a0eb0227ac0619a1f6eda20f5dd47f01108e21fb5c1a3cb",
+  "predicted_write_beats": {
+   "A": 6408,
+   "B": 3888,
+   "C": 4392,
+   "D": 3384
+  },
+  "discriminating": true,
+  "not_comparable": false
+ },
+ "s4c_conv_cout97": {
+  "config": "s4c_conv_cout97",
+  "ofm_shape": [
+   1,
+   24,
+   24,
+   97
+  ],
+  "ifm_shape": [
+   1,
+   24,
+   24,
+   16
+  ],
+  "model_len": 5296,
+  "arena": "0x700014b0",
+  "ofm_address": "0x700014b0",
+  "ofm_address_mod16": 0,
+  "ofm_address_alignment": 16,
+  "dense_nhwc": true,
+  "kernels": [
+   {
+    "kind": "CONV",
+    "ifm_depth": 16,
+    "ofm_depth": 16,
+    "ifm_stride_x": 16,
+    "ifm_stride_y": 384,
+    "ofm_stride_x": 97,
+    "ofm_stride_y": 2328,
+    "ifm_base0": "0xda40",
+    "ofm_base0": "0x0",
+    "ifm_region": 1,
+    "ofm_region": 1,
+    "ifm_precision": 1,
+    "ofm_precision": 1,
+    "block": "6x12x112",
+    "weight_lengths": [
+     144,
+     144,
+     144,
+     144
+    ],
+    "dma_before": [
+     736
+    ]
+   },
+   {
+    "kind": "CONV",
+    "ifm_depth": 16,
+    "ofm_depth": 81,
+    "ifm_stride_x": 16,
+    "ifm_stride_y": 384,
+    "ofm_stride_x": 97,
+    "ofm_stride_y": 2328,
+    "ifm_base0": "0xda40",
+    "ofm_base0": "0x10",
+    "ifm_region": 1,
+    "ofm_region": 1,
+    "ifm_precision": 1,
+    "ofm_precision": 1,
+    "block": "6x12x112",
+    "weight_lengths": [
+     528,
+     512,
+     512,
+     512
+    ],
+    "dma_before": [
+     3024
+    ]
+   }
+  ],
+  "ofm_block": "6x12x112",
+  "ofm_ublock": "2x4x16",
+  "n_kernels": 2,
+  "weight_bytes": "2640",
+  "n_mac": 893952,
+  "vela_npu_cycles": "16810",
+  "vela_op_cycles": "21874",
+  "gate_b": true,
+  "vela_ops": [
+   "CUSTOM:ethos-u"
+  ],
+  "model_sha256": "99d1f618dfc1ed4fe15e4c5f465ebbe1fe3aa8ddf3e7a9a14cd1c3bb808b3c8f",
+  "vela_sha256": "321bb4c67c587255f914acf2beb85f0ce37aa01b3c2e2a7563e8bea792198749",
+  "cms_sha256": "7017b3833f6900964ffd4e95d956c7b417d51ea0b55ebd9f28b2a2598ebe8b86",
+  "drwl_sha256": "b283cb0cd8e1d5093277f9f767de6efc35ea45c279df16fb461b26d44be6e629",
+  "predicted_write_beats": {
+   "A": 7272,
+   "B": 4032,
+   "C": 4572,
+   "D": 3492
+  },
+  "discriminating": true,
+  "not_comparable": false
+ },
+ "s4_dw_base": {
+  "config": "s4_dw_base",
+  "ofm_shape": [
+   1,
+   56,
+   56,
+   144
+  ],
+  "ifm_shape": [
+   1,
+   56,
+   56,
+   144
+  ],
+  "model_len": 4784,
+  "arena": "0x700012b0",
+  "ofm_address": "0x700012b0",
+  "ofm_address_mod16": 0,
+  "ofm_address_alignment": 16,
+  "dense_nhwc": true,
+  "kernels": [
+   {
+    "kind": "DEPTHWISE",
+    "ifm_depth": 16,
+    "ofm_depth": 16,
+    "ifm_stride_x": 144,
+    "ifm_stride_y": 8064,
+    "ofm_stride_x": 144,
+    "ofm_stride_y": 8064,
+    "ifm_base0": "0x6e400",
+    "ofm_base0": "0x0",
+    "ifm_region": 1,
+    "ofm_region": 1,
+    "ifm_precision": 1,
+    "ofm_precision": 1,
+    "block": "26x28x16",
+    "weight_lengths": [
+     80,
+     80,
+     80,
+     80
+    ],
+    "dma_before": [
+     480
+    ]
+   },
+   {
+    "kind": "DEPTHWISE",
+    "ifm_depth": 128,
+    "ofm_depth": 128,
+    "ifm_stride_x": 144,
+    "ifm_stride_y": 8064,
+    "ofm_stride_x": 144,
+    "ofm_stride_y": 8064,
+    "ifm_base0": "0x6e410",
+    "ofm_base0": "0x10",
+    "ifm_region": 1,
+    "ofm_region": 1,
+    "ifm_precision": 1,
+    "ofm_precision": 1,
+    "block": "26x28x16",
+    "weight_lengths": [
+     368,
+     368,
+     368,
+     368
+    ],
+    "dma_before": [
+     2752
+    ]
+   }
+  ],
+  "ofm_block": "26x28x16",
+  "ofm_ublock": "2x4x16",
+  "n_kernels": 2,
+  "weight_bytes": "1792",
+  "n_mac": 4064256,
+  "vela_npu_cycles": "112225",
+  "vela_op_cycles": "944999",
+  "gate_b": true,
+  "vela_ops": [
+   "CUSTOM:ethos-u"
+  ],
+  "model_sha256": "33681a0faf5027f810a00d501efbde5a226e0d97c28d40c71dc0f5b4bd95f1c9",
+  "vela_sha256": "7b546a4f645ebd937daec589e759daf03a82e66a5d0fd85df53e2df214537fcb",
+  "cms_sha256": "1731d1f3defe57dad3d9dd152b3f7ac3da4670270f4780b7d5e766201661c91a",
+  "drwl_sha256": "156e1fe360a56126c7880d60ead0872ba35b4ccfed143c154f286fa1fcfd58ec",
+  "predicted_write_beats": {
+   "A": 28224,
+   "B": 28224,
+   "C": 28224,
+   "D": 28224
+  },
+  "discriminating": false,
+  "not_comparable": false
+ },
+ "s4c_dw_c142": {
+  "config": "s4c_dw_c142",
+  "ofm_shape": [
+   1,
+   56,
+   56,
+   142
+  ],
+  "ifm_shape": [
+   1,
+   56,
+   56,
+   142
+  ],
+  "model_len": 4768,
+  "arena": "0x700012a0",
+  "ofm_address": "0x700012a0",
+  "ofm_address_mod16": 0,
+  "ofm_address_alignment": 32,
+  "dense_nhwc": true,
+  "kernels": [
+   {
+    "kind": "DEPTHWISE",
+    "ifm_depth": 16,
+    "ofm_depth": 16,
+    "ifm_stride_x": 142,
+    "ifm_stride_y": 7952,
+    "ofm_stride_x": 142,
+    "ofm_stride_y": 7952,
+    "ifm_base0": "0x6cb80",
+    "ofm_base0": "0x0",
+    "ifm_region": 1,
+    "ofm_region": 1,
+    "ifm_precision": 1,
+    "ofm_precision": 1,
+    "block": "26x28x16",
+    "weight_lengths": [
+     80,
+     80,
+     80,
+     80
+    ],
+    "dma_before": [
+     480
+    ]
+   },
+   {
+    "kind": "DEPTHWISE",
+    "ifm_depth": 126,
+    "ofm_depth": 126,
+    "ifm_stride_x": 142,
+    "ifm_stride_y": 7952,
+    "ofm_stride_x": 142,
+    "ofm_stride_y": 7952,
+    "ifm_base0": "0x6cb90",
+    "ofm_base0": "0x10",
+    "ifm_region": 1,
+    "ofm_region": 1,
+    "ifm_precision": 1,
+    "ofm_precision": 1,
+    "block": "26x28x16",
+    "weight_lengths": [
+     368,
+     368,
+     368,
+     352
+    ],
+    "dma_before": [
+     2736
+    ]
+   }
+  ],
+  "ofm_block": "26x28x16",
+  "ofm_ublock": "2x4x16",
+  "n_kernels": 2,
+  "weight_bytes": "1776",
+  "n_mac": 4007808,
+  "vela_npu_cycles": "112225",
+  "vela_op_cycles": "931874",
+  "gate_b": true,
+  "vela_ops": [
+   "CUSTOM:ethos-u"
+  ],
+  "model_sha256": "3af8bf6cc5ebaca0a232f704dd1a16bdb55f33cd0135716c27a15446471116bc",
+  "vela_sha256": "bb3bbede90b9d7801cb271e4add26c37fd1413da3e2b1cb6588c8245ec1bb603",
+  "cms_sha256": "79cc63ca88cced852751287f07ce8d93aaa1cdfec0bab35ed925bd5fcafd287d",
+  "drwl_sha256": "cdf46c6bff6989954ddb8c5da9834b7ab4b492b80ba8367bde76ae684de2293e",
+  "predicted_write_beats": {
+   "A": 52528,
+   "B": 30576,
+   "C": 33320,
+   "D": 27832
+  },
+  "discriminating": true,
+  "not_comparable": false
+ },
+ "s4c_dw_c145": {
+  "config": "s4c_dw_c145",
+  "ofm_shape": [
+   1,
+   56,
+   56,
+   145
+  ],
+  "ifm_shape": [
+   1,
+   56,
+   56,
+   145
+  ],
+  "model_len": 4960,
+  "arena": "0x70001360",
+  "ofm_address": "0x70001360",
+  "ofm_address_mod16": 0,
+  "ofm_address_alignment": 32,
+  "dense_nhwc": true,
+  "kernels": [
+   {
+    "kind": "DEPTHWISE",
+    "ifm_depth": 16,
+    "ofm_depth": 16,
+    "ifm_stride_x": 145,
+    "ifm_stride_y": 8120,
+    "ofm_stride_x": 145,
+    "ofm_stride_y": 8120,
+    "ifm_base0": "0x6f040",
+    "ofm_base0": "0x0",
+    "ifm_region": 1,
+    "ofm_region": 1,
+    "ifm_precision": 1,
+    "ofm_precision": 1,
+    "block": "26x28x16",
+    "weight_lengths": [
+     80,
+     80,
+     80,
+     80
+    ],
+    "dma_before": [
+     480
+    ]
+   },
+   {
+    "kind": "DEPTHWISE",
+    "ifm_depth": 129,
+    "ofm_depth": 129,
+    "ifm_stride_x": 145,
+    "ifm_stride_y": 8120,
+    "ofm_stride_x": 145,
+    "ofm_stride_y": 8120,
+    "ifm_base0": "0x6f050",
+    "ofm_base0": "0x10",
+    "ifm_region": 1,
+    "ofm_region": 1,
+    "ifm_precision": 1,
+    "ofm_precision": 1,
+    "block": "26x28x16",
+    "weight_lengths": [
+     384,
+     368,
+     368,
+     368
+    ],
+    "dma_before": [
+     2928
+    ]
+   }
+  ],
+  "ofm_block": "26x28x16",
+  "ofm_ublock": "2x4x16",
+  "n_kernels": 2,
+  "weight_bytes": "1808",
+  "n_mac": 4092480,
+  "vela_npu_cycles": "124318",
+  "vela_op_cycles": "951562",
+  "gate_b": true,
+  "vela_ops": [
+   "CUSTOM:ethos-u"
+  ],
+  "model_sha256": "ca3ee5f90cc76ece40974c7d3e3db3a12823d5f22e9eec28347f3fb75a76b07d",
+  "vela_sha256": "eec15e6cf4bf3107a0d8695a37d8e84b5579a7b7dd4e1d84541813d38c55e5cb",
+  "cms_sha256": "51879b1b3b14e8e52c3d69be6d6f36c13ca851d15cd980e43043a93596d89147",
+  "drwl_sha256": "4e7209a395b566c18e3e50d00f83b5d4428956947c088554600a4f24aa9250a7",
+  "predicted_write_beats": {
+   "A": 57820,
+   "B": 31360,
+   "C": 34300,
+   "D": 28420
+  },
+  "discriminating": true,
+  "not_comparable": false
+ },
+ "_inputs": {
+  "beat_model_sha256": "ab211e889c896dcaf8eb68d51a895d146bc1df9b6c5693c619c601953c8b22fd",
+  "rule": "beat_model.count_at with the predicted OFM address and dense NHWC strides"
+ }
+}

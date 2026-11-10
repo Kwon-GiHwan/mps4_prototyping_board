@@ -28,11 +28,14 @@ PROFILE = HERE.parents[1] / "config" / "fi101_s013.json"
 EXPECT = {"conv": ("Conv2D", {"CONV"}), "dw": ("DepthwiseConv2D", {"DEPTHWISE"}), "fc": ("FullyConnected", None)}
 
 
-def check(cfg: str, out: pathlib.Path) -> dict:
-    model, meta = M.build(cfg)
+def check(cfg: str, out: pathlib.Path, built: tuple | None = None, kind: str | None = None) -> dict:
+    """built: (model, meta, IFM bytes) made elsewhere (Stage 4C-1 variants, packed with --ifm); default M.build(cfg)."""
+    model, meta, ifm = built if built is not None else (*M.build(cfg), None)
     (out / f"{cfg}.tflite").write_bytes(model)
     (out / f"{cfg}.json").write_text(json.dumps(meta, indent=1))
-    kind = M.OPS[cfg]["kind"]
+    if ifm is not None:
+        (out / f"{cfg}.ifm.bin").write_bytes(ifm)
+    kind = kind or M.OPS[cfg]["kind"]
     npu_op, kernel_kinds = EXPECT[kind]
     with tempfile.TemporaryDirectory() as d:
         subprocess.run(["vela", str(out / f"{cfg}.tflite"), *VELA_OPTIONS, "--output-dir", d, "--enable-debug-db"],
@@ -50,7 +53,8 @@ def check(cfg: str, out: pathlib.Path) -> dict:
     dq = next((r for r in t["perf_debug"] if r["id"] == w.get("id")), {})
     mq = next((r for r in t["perf_debug_main"] if r["id"] == w.get("id")), {})
     subprocess.run([sys.executable, str(HERE / "pack_vela_workload.py"), "--model", str(out / f"{cfg}.tflite"),
-                    "--profile", str(PROFILE), "--format", "drwl", "--out", str(out / f"{cfg}.drwl")],
+                    "--profile", str(PROFILE), "--format", "drwl", "--out", str(out / f"{cfg}.drwl"),
+                    *(["--ifm", str(out / f"{cfg}.ifm.bin")] if ifm is not None else [])],
                    check=True, capture_output=True)
     packed = json.loads((out / f"{cfg}.drwl.json").read_text())
     checks = dict(

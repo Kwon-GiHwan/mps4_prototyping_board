@@ -1,0 +1,6 @@
+# Owner sudo session 2026-11-10: Stage 4C-1 boots 338-343 (contract evidence/stage4c1/contract.md), TA profile 1; ends with postflight
+user python3 mcc.py USB_ON 4 && sleep 5 && test -e /dev/sdb1
+deploy_mlek /home/gihwan/evsweep_stage4c1 /home/gihwan/evsweep/evidence_stage4c1
+user OUTPUTS=1 sh run_driver_campaign.sh /home/gihwan/evsweep_stage4c1 /home/gihwan/evsweep_stage4c1_run /home/gihwan/evsweep_stage4c1/ids.txt /home/gihwan/evsweep_stage4c1/plan.txt 5
+restore_mlek /home/gihwan/evsweep/evidence_stage4c1 /home/gihwan/evsweep_stage4c1
+user sh postflight.sh

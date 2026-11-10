@@ -1,0 +1,7 @@
+# Stage 4C-1: one boot per config, Stage 4 image 83398c7, MLEK TA set-up (= TA profile 1), 5 RUNs (1 warm-up)
+338 s4_conv_base @/home/gihwan/evsweep_stage4c1/conditions.txt
+339 s4c_conv_cout94 @/home/gihwan/evsweep_stage4c1/conditions.txt
+340 s4c_conv_cout97 @/home/gihwan/evsweep_stage4c1/conditions.txt
+341 s4_dw_base @/home/gihwan/evsweep_stage4c1/conditions.txt
+342 s4c_dw_c142 @/home/gihwan/evsweep_stage4c1/conditions.txt
+343 s4c_dw_c145 @/home/gihwan/evsweep_stage4c1/conditions.txt

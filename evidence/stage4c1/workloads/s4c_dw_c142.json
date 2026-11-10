@@ -1,0 +1,48 @@
+{
+ "op": "s4c_dw_c142",
+ "operator_type": "DEPTHWISE_CONV_2D",
+ "input_shape": [
+  1,
+  56,
+  56,
+  142
+ ],
+ "output_shape": [
+  1,
+  56,
+  56,
+  142
+ ],
+ "kernel_shape": [
+  3,
+  3
+ ],
+ "weight_shape": [
+  1,
+  3,
+  3,
+  142
+ ],
+ "stride": [
+  1,
+  1
+ ],
+ "padding": "SAME",
+ "groups": 142,
+ "activation": "RELU6",
+ "n_mac": 4007808,
+ "weight_seed": 20261014,
+ "ifm_seed": 1,
+ "quant": {
+  "ifm_scale": 0.0078125,
+  "weight_scale": 0.0078125,
+  "ofm_scale": 0.03806286909448819,
+  "zero_points": 0
+ },
+ "acc_abs_max": 79200,
+ "model_sha256": "3af8bf6cc5ebaca0a232f704dd1a16bdb55f33cd0135716c27a15446471116bc",
+ "base": "s4_dw_base",
+ "extra_seed": 20261110,
+ "ofm_scale_from": "s4_dw_base",
+ "acc_abs_max_note": "of this variant; the OFM scale is the base's, so values beyond it saturate"
+}

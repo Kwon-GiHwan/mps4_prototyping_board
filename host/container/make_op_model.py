@@ -123,7 +123,8 @@ def _buffer(b, data: bytes | None):
     return Buffer.BufferEnd(b)
 
 
-def build(op: str) -> tuple[bytes, dict]:
+def arrays(op: str) -> tuple:
+    """The seeded IFM, weights and bias of an OPS entry, and its data-derived OFM scale (Stage 1 policy)."""
     spec = OPS[op]; g = geometry(spec)
     rng = np.random.default_rng(WEIGHT_SEED)
     wt = rng.integers(-127, 128, size=g["weights"], dtype=np.int8)
@@ -131,8 +132,18 @@ def build(op: str) -> tuple[bytes, dict]:
     bias = rng.integers(-1024, 1025, size=(cout,), dtype=np.int32)
     x = np.random.default_rng(IFM_SEED).integers(-128, 128, size=spec["ifm"], dtype=np.int8)
     acc = accumulators(spec, x, wt, bias)
-    s_out = float(np.abs(acc).max()) * S_IN * S_W / 127
+    return x, wt, bias, float(np.abs(acc).max()) * S_IN * S_W / 127, int(np.abs(acc).max())
 
+
+def build(op: str) -> tuple[bytes, dict]:
+    _, wt, bias, s_out, acc_max = arrays(op)
+    return serialize(op, OPS[op], wt, bias, s_out, acc_max)
+
+
+def serialize(op: str, spec: dict, wt: np.ndarray, bias: np.ndarray, s_out: float, acc_max: int) -> tuple[bytes, dict]:
+    """The tflite flatbuffer of one operator from given tensors (quantization: the module's policy, OFM scale given)."""
+    g = geometry(spec)
+    cout = g["ofm"][-1]
     b = flatbuffers.Builder(1 << 20)
     bufs = [_buffer(b, None), _buffer(b, None), _buffer(b, wt.tobytes()), _buffer(b, bias.astype("<i4").tobytes()),
             _buffer(b, None)]
@@ -195,7 +206,7 @@ def build(op: str) -> tuple[bytes, dict]:
     codes = _vec(b, Model.ModelStartOperatorCodesVector, [oc], b.PrependUOffsetTRelative)
     sgs = _vec(b, Model.ModelStartSubgraphsVector, [sg], b.PrependUOffsetTRelative)
     bvec = _vec(b, Model.ModelStartBuffersVector, bufs, b.PrependUOffsetTRelative)
-    desc = b.CreateString(("stage4" if op.startswith("s4_") else "stage1") + " isolated operator " + op)
+    desc = b.CreateString(("stage4" if op.startswith("s4") else "stage1") + " isolated operator " + op)
     Model.ModelStart(b)
     Model.ModelAddVersion(b, 3); Model.ModelAddOperatorCodes(b, codes); Model.ModelAddSubgraphs(b, sgs)
     Model.ModelAddDescription(b, desc); Model.ModelAddBuffers(b, bvec)
@@ -208,7 +219,7 @@ def build(op: str) -> tuple[bytes, dict]:
                 groups=g["groups"], activation=spec.get("act", "NONE"), n_mac=g["n_mac"], weight_seed=WEIGHT_SEED,
                 ifm_seed=IFM_SEED,
                 quant=dict(ifm_scale=S_IN, weight_scale=S_W, ofm_scale=s_out, zero_points=0),
-                acc_abs_max=int(np.abs(acc).max()), model_sha256=hashlib.sha256(model).hexdigest())
+                acc_abs_max=acc_max, model_sha256=hashlib.sha256(model).hexdigest())
     return model, meta
 
 

@@ -29,23 +29,32 @@ def region1(cfg):
     return bases.pop()
 
 
+def count_at(base, h, w, c, sx, sy, chunks_of):
+    """The rule's count for an OFM at base with the given shape and strides (no reference to any measurement)."""
+    return sum(segs(base + y * sy + x * sx + s, n) for y in range(h) for x in range(w) for s, n in chunks_of(c))
+
+
 def count(cfg, chunks_of):
     off, h, w, c, sx, sy, _ = CFG[cfg]
-    base = region1(cfg) + off
-    return sum(segs(base + y * sy + x * sx + s, n) for y in range(h) for x in range(w) for s, n in chunks_of(c))
+    return count_at(region1(cfg) + off, h, w, c, sx, sy, chunks_of)
 
 
 def rule_a(c):
     return [(s, min(16, c - s)) for s in range(0, c, 16)]
 
 
-out = {}
-for cfg in CFG:
-    off, h, w, c, sx, sy, sl = CFG[cfg]
-    assert sx == c and sy == w * c, cfg                      # dense NHWC as the strides state
-    rule_c = lambda cc, sl=sl: [(0, sl[0]), (sl[0], sl[1])]
-    out[cfg] = dict(ofm_address=hex(region1(cfg) + off), A_16B_chunks=count(cfg, rule_a),
-                    B_whole_pixel=count(cfg, lambda cc: [(0, cc)]), C_kernel_slices=count(cfg, rule_c),
-                    D_contiguous=-(-h * w * c // 16), measured=MEASURED[cfg])
-    print(cfg, out[cfg])
-(HERE / "beat_model.json").write_text(json.dumps(out, indent=1))
+def main():
+    out = {}
+    for cfg in CFG:
+        off, h, w, c, sx, sy, sl = CFG[cfg]
+        assert sx == c and sy == w * c, cfg                      # dense NHWC as the strides state
+        rule_c = lambda cc, sl=sl: [(0, sl[0]), (sl[0], sl[1])]
+        out[cfg] = dict(ofm_address=hex(region1(cfg) + off), A_16B_chunks=count(cfg, rule_a),
+                        B_whole_pixel=count(cfg, lambda cc: [(0, cc)]), C_kernel_slices=count(cfg, rule_c),
+                        D_contiguous=-(-h * w * c // 16), measured=MEASURED[cfg])
+        print(cfg, out[cfg])
+    (HERE / "beat_model.json").write_text(json.dumps(out, indent=1))
+
+
+if __name__ == "__main__":
+    main()
