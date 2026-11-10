@@ -109,3 +109,16 @@ Stage 2B 그룹별 H1/H2 판정은 계속 무효다. 2B-3 3a 결과(창 위치 �
    바뀜 — 리뷰 지적 3), (b) **호스트 모듈 2개와 테스트만 `feat/driver-runner`로 옮기고 기존 runner 펌웨어 쪽은 병합하지 않음(추천)**.
 2. P0–P5 계약 작성과 보드 실행 승인(대규모 측정).
 3. M5/M6(STOP·KERNEL_WAIT) 실행 여부 — 지금은 설계만.
+
+## 7. 진행 상태 (2026-11-10, owner 결정 반영)
+
+- Owner 결정: QREAD 분석은 Driver Runner로 통합, QREAD 브랜치에서는 호스트 모듈만 검토·재사용(펌웨어·실행 경로 전체 병합 안 함),
+  정적 검증·비보드 테스트 먼저, 그다음 최소 파일럿. §6-1은 (b)로 결정됨.
+- 구현(`c1b9b79`, `4361e42`): 펌웨어 `trace.c`(WAIT_TRACE, 마지막 샘플은 IRQ 뒤 일반 흐름에서), GET_TRACE, 기록 칸; 호스트
+  `qread_trace.py`·`qread_timeline.py`(브랜치 `65d3f8b`에서 이식, 판정 로직 그대로), 한 부팅 여러 조건(`--conditions`),
+  `qread_pilot.py`(P1–P3). 브랜치에는 시각화 모듈이 없어 가져올 것이 없었다(분석은 CSV 출력).
+- 검증: 시뮬레이터(펌웨어 C를 호스트로 빌드)로 끝까지, C↔Python 계약 테스트, 변이 27개 RED, 대상 빌드 rc 0·GATE OK.
+  보드 실행 없음.
+- 파일럿 계약 초안: `evidence/qread_pilot/contract_draft.md`(승인 대기).
+- 방법 구분(§3 표의 "stream 변경" 열): 원본 실행을 바꾸지 않는 것 — M2 QREAD 폴링, M3 QREAD+PMU 샘플, M4 PMCCNTR_CFG, IRQ 시점
+  판독; 바꾸는 것 — M1 PMU Mask, M5 STOP prefix, M6 KERNEL_WAIT 장벽, M7 중간 IRQ, M8 단독 실행. 파일럿은 앞쪽만 쓴다.
