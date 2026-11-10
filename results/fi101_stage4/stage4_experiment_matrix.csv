@@ -1,0 +1,9 @@
+config,operator,varied,source,ifm,ofm,kernel,stride,padding,activation,cin,cout,depth_multiplier,weights,mac_count,mac_change_pct,shape_origin
+conv_base,Conv2D,-,yolo-fastest_192_face_v4 TFLite op 36,1x24x24x16,1x24x24x96,1x1,1x1,VALID,RELU6,16,96,,96x1x1x16,884736,0.0,original model shape
+conv_cin15,Conv2D,Cin 16->15,yolo-fastest_192_face_v4 TFLite op 36,1x24x24x15,1x24x24x96,1x1,1x1,VALID,RELU6,15,96,,96x1x1x15,829440,-6.25,derived from the original by one channel
+conv_cout95,Conv2D,Cout 96->95,yolo-fastest_192_face_v4 TFLite op 36,1x24x24x16,1x24x24x95,1x1,1x1,VALID,RELU6,16,95,,95x1x1x16,875520,-1.042,derived from the original by one channel
+dw_base,DepthwiseConv2D,-,mobilenet_v2_1.0_224_INT8 TFLite op 7,1x56x56x144,1x56x56x144,3x3,1x1,SAME,RELU6,144,144,1,1x3x3x144,4064256,0.0,original model shape
+dw_c143,DepthwiseConv2D,C 144->143,mobilenet_v2_1.0_224_INT8 TFLite op 7,1x56x56x143,1x56x56x143,3x3,1x1,SAME,RELU6,143,143,1,1x3x3x143,4036032,-0.694,derived from the original by one channel
+fc_base,FullyConnected,-,rnnoise_INT8 TFLite op 0,1x96,1x288,,,,NONE,96,288,,288x96,27648,0.0,original model shape
+fc_in95,FullyConnected,in 96->95,rnnoise_INT8 TFLite op 0,1x95,1x288,,,,NONE,95,288,,288x95,27360,-1.042,derived from the original by one channel
+fc_out287,FullyConnected,out 288->287,rnnoise_INT8 TFLite op 0,1x96,1x287,,,,NONE,96,287,,287x96,27552,-0.347,derived from the original by one channel
