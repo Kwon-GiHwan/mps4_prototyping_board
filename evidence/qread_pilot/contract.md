@@ -1,4 +1,4 @@
-# QREAD pilot on the driver runner — DRAFT (2026-11-10, not approved, no board run)
+# QREAD pilot on the driver runner (frozen 2026-11-10, before boot 325)
 
 Owner decision 2026-11-10 (item 4): integrate the 2B-4 QREAD analysis into the driver runner; static checks and
 off-board tests first, then a minimal pilot for QREAD resolution and measurement disturbance; report the contract and
@@ -75,3 +75,13 @@ between samples during QREAD stalls — reported as observations, never as per-o
 | **total, three models** | **≈ 55 min**; without wav2letter ≈ 16 min |
 
 Disk: about 15 MB of staging and < 20 MB of raw output (2.9 GB free).
+
+## Approval and amendment 1 (owner, 2026-11-10, before boot 325)
+
+Approved with one change: **rnnoise and yolo only; wav2letter (boot 327) is not run in this pilot** (time). Everything
+above stays as written (P0–P3 rules, thresholds, conditions, 5 RUNs = 1 warm-up + 4 measured, TA profile 1, original
+command stream; no STOP, KERNEL_WAIT or mid-stream IRQ). The cost line becomes ≈ 16 min. Owner's question for the
+report: does QREAD give enough information for per-operator profiling — kernel-boundary observation, per-interval
+misses / time uncertainty / overhead, PMU activity vs completion progress, whether per-operator time and event
+attribution is possible, and if not, why. No correction, no extension of repeats, no wav2letter, no other method is
+added automatically after the result.
