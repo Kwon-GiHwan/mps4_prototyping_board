@@ -1,0 +1,33 @@
+# Owner sudo session 2026-11-10 (one sudo): driver m7 boots 308-316, then MLEK wav2letter W boots 317-324. TA profile 1.
+# Contracts: evidence/driver_m7/contract.md, evidence/var_w2l_vww4/contract.md (feat/driver-runner 26c59b0). Ends with postflight (m6 restored, card withdrawn).
+user python3 mcc.py USB_ON 4 && sleep 5 && test -e /dev/sdb1
+deploy_mlek /home/gihwan/evsweep_driver_m7 /home/gihwan/evsweep/evidence_driver_m7
+user sh run_driver_campaign.sh /home/gihwan/evsweep_driver_m7 /home/gihwan/evsweep_driver_m7_run/raw /home/gihwan/evsweep_driver_m7/ids.txt /home/gihwan/evsweep_driver_m7/plan.txt 10
+user sh run_driver_campaign.sh /home/gihwan/evsweep_driver_m7 /home/gihwan/evsweep_driver_m7_run/raw_r2 /home/gihwan/evsweep_driver_m7/ids.txt /home/gihwan/evsweep_driver_m7/plan_r2.txt 10
+user sh run_driver_campaign.sh /home/gihwan/evsweep_driver_m7 /home/gihwan/evsweep_driver_m7_run/raw_r3 /home/gihwan/evsweep_driver_m7/ids.txt /home/gihwan/evsweep_driver_m7/plan_r3.txt 10
+restore_mlek /home/gihwan/evsweep/evidence_driver_m7 /home/gihwan/evsweep_driver_m7
+deploy_mlek /home/gihwan/evsweep_w2l_ab/stock /home/gihwan/evsweep/evidence_w2l_ab_W1_stock
+user mkdir -p /home/gihwan/evsweep_w2l_ab_run/W1_stock && python3 mlek_app_capture.py /home/gihwan/evsweep_w2l_ab_run/W1_stock/app_uart.raw /home/gihwan/evsweep_w2l_ab_run/W1_stock/mcc_boot.log 240 > /home/gihwan/evsweep_w2l_ab_run/W1_stock/capture.out 2>&1; test -s /home/gihwan/evsweep_w2l_ab_run/W1_stock/app_uart.raw
+restore_mlek /home/gihwan/evsweep/evidence_w2l_ab_W1_stock /home/gihwan/evsweep_w2l_ab/stock
+deploy_mlek /home/gihwan/evsweep_w2l_ab/events /home/gihwan/evsweep/evidence_w2l_ab_W2_events
+user mkdir -p /home/gihwan/evsweep_w2l_ab_run/W2_events && python3 mlek_app_capture.py /home/gihwan/evsweep_w2l_ab_run/W2_events/app_uart.raw /home/gihwan/evsweep_w2l_ab_run/W2_events/mcc_boot.log 240 > /home/gihwan/evsweep_w2l_ab_run/W2_events/capture.out 2>&1; test -s /home/gihwan/evsweep_w2l_ab_run/W2_events/app_uart.raw
+restore_mlek /home/gihwan/evsweep/evidence_w2l_ab_W2_events /home/gihwan/evsweep_w2l_ab/events
+deploy_mlek /home/gihwan/evsweep_w2l_ab/events /home/gihwan/evsweep/evidence_w2l_ab_W3_events
+user mkdir -p /home/gihwan/evsweep_w2l_ab_run/W3_events && python3 mlek_app_capture.py /home/gihwan/evsweep_w2l_ab_run/W3_events/app_uart.raw /home/gihwan/evsweep_w2l_ab_run/W3_events/mcc_boot.log 240 > /home/gihwan/evsweep_w2l_ab_run/W3_events/capture.out 2>&1; test -s /home/gihwan/evsweep_w2l_ab_run/W3_events/app_uart.raw
+restore_mlek /home/gihwan/evsweep/evidence_w2l_ab_W3_events /home/gihwan/evsweep_w2l_ab/events
+deploy_mlek /home/gihwan/evsweep_w2l_ab/stock /home/gihwan/evsweep/evidence_w2l_ab_W4_stock
+user mkdir -p /home/gihwan/evsweep_w2l_ab_run/W4_stock && python3 mlek_app_capture.py /home/gihwan/evsweep_w2l_ab_run/W4_stock/app_uart.raw /home/gihwan/evsweep_w2l_ab_run/W4_stock/mcc_boot.log 240 > /home/gihwan/evsweep_w2l_ab_run/W4_stock/capture.out 2>&1; test -s /home/gihwan/evsweep_w2l_ab_run/W4_stock/app_uart.raw
+restore_mlek /home/gihwan/evsweep/evidence_w2l_ab_W4_stock /home/gihwan/evsweep_w2l_ab/stock
+deploy_mlek /home/gihwan/evsweep_w2l_ab/events /home/gihwan/evsweep/evidence_w2l_ab_W5_events
+user mkdir -p /home/gihwan/evsweep_w2l_ab_run/W5_events && python3 mlek_app_capture.py /home/gihwan/evsweep_w2l_ab_run/W5_events/app_uart.raw /home/gihwan/evsweep_w2l_ab_run/W5_events/mcc_boot.log 240 > /home/gihwan/evsweep_w2l_ab_run/W5_events/capture.out 2>&1; test -s /home/gihwan/evsweep_w2l_ab_run/W5_events/app_uart.raw
+restore_mlek /home/gihwan/evsweep/evidence_w2l_ab_W5_events /home/gihwan/evsweep_w2l_ab/events
+deploy_mlek /home/gihwan/evsweep_w2l_ab/stock /home/gihwan/evsweep/evidence_w2l_ab_W6_stock
+user mkdir -p /home/gihwan/evsweep_w2l_ab_run/W6_stock && python3 mlek_app_capture.py /home/gihwan/evsweep_w2l_ab_run/W6_stock/app_uart.raw /home/gihwan/evsweep_w2l_ab_run/W6_stock/mcc_boot.log 240 > /home/gihwan/evsweep_w2l_ab_run/W6_stock/capture.out 2>&1; test -s /home/gihwan/evsweep_w2l_ab_run/W6_stock/app_uart.raw
+restore_mlek /home/gihwan/evsweep/evidence_w2l_ab_W6_stock /home/gihwan/evsweep_w2l_ab/stock
+deploy_mlek /home/gihwan/evsweep_w2l_ab/stock /home/gihwan/evsweep/evidence_w2l_ab_W7_stock
+user mkdir -p /home/gihwan/evsweep_w2l_ab_run/W7_stock && python3 mlek_app_capture.py /home/gihwan/evsweep_w2l_ab_run/W7_stock/app_uart.raw /home/gihwan/evsweep_w2l_ab_run/W7_stock/mcc_boot.log 240 > /home/gihwan/evsweep_w2l_ab_run/W7_stock/capture.out 2>&1; test -s /home/gihwan/evsweep_w2l_ab_run/W7_stock/app_uart.raw
+restore_mlek /home/gihwan/evsweep/evidence_w2l_ab_W7_stock /home/gihwan/evsweep_w2l_ab/stock
+deploy_mlek /home/gihwan/evsweep_w2l_ab/events /home/gihwan/evsweep/evidence_w2l_ab_W8_events
+user mkdir -p /home/gihwan/evsweep_w2l_ab_run/W8_events && python3 mlek_app_capture.py /home/gihwan/evsweep_w2l_ab_run/W8_events/app_uart.raw /home/gihwan/evsweep_w2l_ab_run/W8_events/mcc_boot.log 240 > /home/gihwan/evsweep_w2l_ab_run/W8_events/capture.out 2>&1; test -s /home/gihwan/evsweep_w2l_ab_run/W8_events/app_uart.raw
+restore_mlek /home/gihwan/evsweep/evidence_w2l_ab_W8_events /home/gihwan/evsweep_w2l_ab/events
+user sh postflight.sh
