@@ -150,8 +150,16 @@ mutation means a missing fixture — add the fixture, do not delete the mutation
 
 - Pushing to `origin/main` — **HOLD**. Feature branches may be pushed.
 - Never patch MLEK's `inference_runner` to obtain a metric. MLEK runs need a fresh authorization.
-- Board access is granted per named step. The owner runs every `sudo` (deploy/restore) via
-  `! ssh -t gihwan 'sudo …'`; credentials are never written to documents, evidence, commits, env vars or files.
+- Board access is granted per named step. The owner runs every `sudo` (deploy/restore): one approved session file
+  run once with `ssh -t gihwan 'sudo sh /home/gihwan/evsweep/sudo_session.sh <session file>'` (`board/sudo_session.sh`:
+  checks the file, runs detached, restores an image left on the card after a failure), or one step via
+  `! ssh -t gihwan 'sudo …'`.
+- **The agent never handles the sudo password** (owner rule 2026-11-10, after it appeared twice in tool output): it does
+  not ask for it, and if one is pasted into the chat it is not used — say so and recommend changing it. A password typed
+  into any agent command (`printf … | sudo -S`, a shell or env variable, a heredoc, a script argument) lands in the
+  session transcript and in tool output even when the remote side reads it from stdin; the transcript is a log.
+  Credentials are never written to documents, evidence, commits, memory, env vars, files or command lines. If one shows
+  up in any output: stop, report where, recommend rotation.
 - Never issue `USB_OFF` while the card is mounted.
 
 ## Reporting
