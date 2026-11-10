@@ -103,6 +103,14 @@ def kernels(cfg: str) -> list[dict]:
     for what, a, b in checks:
         if a != b:
             raise SystemExit(f"{cfg}: {what} differ")
+    return describe(d, cfg)
+
+
+def describe(d: pathlib.Path, cfg: str) -> list[dict]:
+    """Per kernel of one op-map compile directory (stream bytes must equal its own recorded sha256)."""
+    stream = (d / "ad_medium_int8.cms.bin").read_bytes()
+    if sha(stream) != (d / "ad_medium_int8.cms.sha256").read_text().strip():
+        raise SystemExit(f"{cfg}: cms.bin != cms.sha256")
     rows = list(csv.DictReader(open(d / "ad_medium_int8.op_map.csv")))
     regs = cms_regs.kernels(stream)
     log = (d / "ad_medium_int8.hlcs.txt").read_text()
@@ -130,7 +138,9 @@ def kernels(cfg: str) -> list[dict]:
         out.append(dict(config=cfg, index=i, offset=k["offset"], source_id=int(r["source_id"]), source_op=r["source_op"],
                         kind=k["kind"], ofm_rows=f"{c['ofm'][0]}-{c['ofm'][3]}", ofm_ch=f"{c['ofm'][2]}-{c['ofm'][5]}",
                         ofm_elems=volume(c["ofm"]), ifm_elems=volume(c["ifm"]), cascaded=c["cascaded"],
-                        buffered=c["buffered"],
+                        buffered=c["buffered"], ifm_stride=f"{k['ifm_stride_x']}/{k['ifm_stride_y']}/{k['ifm_stride_c']}",
+                        ofm_stride=f"{k['ofm_stride_x']}/{k['ofm_stride_y']}/{k['ofm_stride_c']}",
+                        precision=f"{k['ifm_precision']}/{k['ofm_precision']}",
                         block=f"{k['blk_height_m1'] + 1}x{k['blk_width_m1'] + 1}x{k['blk_depth_m1'] + 1}",
                         microblock=ub, ofm_ublock="x".join(map(str, ub_dims)), ofm_ublocks=ublocks(c["ofm"], ub_dims),
                         acc_input=acc_in, kernel=f"{(k['kernel_height_m1'] or 0) + 1}x{(k['kernel_width_m1'] or 0) + 1}",
@@ -144,14 +154,17 @@ def kernels(cfg: str) -> list[dict]:
     return out
 
 
-def per_source(rows: list[dict]) -> list[dict]:
+def per_source(rows: list[dict], configs=CONFIGS) -> list[dict]:
     out = []
-    for cfg in CONFIGS:
+    for cfg in configs:
         for sid in sorted({r["source_id"] for r in rows if r["config"] == cfg}):
             g = [r for r in rows if r["config"] == cfg and r["source_id"] == sid]
             j = lambda f: "/".join(sorted({str(r[f]) for r in g}))
             out.append(dict(config=cfg, source_id=sid, source_op=g[0]["source_op"], kernels=len(g),
                             ofm_rows_per_kernel=j("ofm_rows") if len(g) <= 3 else f"{len(g)} stripes",
+                            stripes=" ".join(f"{r['ofm_rows']}:{r['ofm_ch']}" for r in g),
+                            ifm_stride=j("ifm_stride"), ofm_stride=j("ofm_stride"), precision=j("precision"),
+                            weight_streams_from_dram=sum(r["weight_region"] == REGION[0] for r in g),
                             cascaded=any(r["cascaded"] for r in g), block=j("block"), microblock=j("microblock"),
                             ofm_ublock=j("ofm_ublock"), ofm_ublocks=sum(r["ofm_ublocks"] for r in g),
                             acc_input=j("acc_input"),
@@ -168,12 +181,22 @@ def write(path: pathlib.Path, rows: list[dict]) -> None:
         w = csv.DictWriter(f, fieldnames=list(rows[0]), lineterminator="\n"); w.writeheader(); w.writerows(rows)
 
 
+SCAN = REPO / "evidence/ad64k_static/scan"
+SCAN_CONFIGS = ("64k", "80k", "96k", "112k", "128k")   # owner 2026-11-11: compile-only, these budgets only
+
+
 def main(out: str) -> list[dict]:
     o = pathlib.Path(out); o.mkdir(parents=True, exist_ok=True)
     rows = [r for cfg in CONFIGS for r in kernels(cfg)]
     src = per_source(rows)
     write(o / "per_kernel.csv", rows)
     write(o / "per_source_op.csv", src)
+    scan = [r for cfg in SCAN_CONFIGS for r in describe(SCAN / cfg, cfg)]
+    write(o / "scan_per_kernel.csv", scan)
+    write(o / "scan_per_source_op.csv", per_source(scan, SCAN_CONFIGS))
+    write(o / "scan_sizes.csv", [dict(config=c, **{k: v for k, v in json.loads((SCAN / c / "ad_medium_int8.sizes.json").read_text()).items()
+                                                  if k != "io"}, vela_sha256=(SCAN / c / "ad_medium_int8.vela.sha256").read_text().strip())
+                                 for c in SCAN_CONFIGS])
     return src
 
 

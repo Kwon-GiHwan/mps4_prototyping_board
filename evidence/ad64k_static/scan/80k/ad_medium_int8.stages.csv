@@ -1,0 +1,4 @@
+operator,optimised_ops,hl_commands,stream_ops
+AvgPool,1,1,1
+Conv2D,7,35,35
+DepthwiseConv2D,5,41,41

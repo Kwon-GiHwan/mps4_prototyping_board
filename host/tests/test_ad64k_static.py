@@ -102,5 +102,18 @@ class Refusals(unittest.TestCase):
             A.kernels("cache64k")
 
 
+class ScanRefusal(unittest.TestCase):
+    def test_compile_only_stream_must_match_its_hash(self):
+        with tempfile.TemporaryDirectory() as d:
+            c = pathlib.Path(d) / "80k"
+            shutil.copytree(A.SCAN / "80k", c)
+            self.assertEqual(len(A.describe(c, "80k")), 77)
+            f = c / "ad_medium_int8.cms.bin"
+            b = bytearray(f.read_bytes()); b[-1] ^= 1; f.write_bytes(bytes(b))
+            with self.assertRaises(SystemExit):
+                A.describe(c, "80k")
+
+
 if __name__ == "__main__":
     unittest.main()
+

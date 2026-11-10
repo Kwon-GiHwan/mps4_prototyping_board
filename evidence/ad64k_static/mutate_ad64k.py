@@ -6,6 +6,7 @@ REPO = pathlib.Path(__file__).resolve().parents[2]
 A = REPO / "host/analysis/ad64k_static.py"
 M = [
     ("        if a != b:\n", "        if False:\n"),
+    ('    if sha(stream) != (d / "ad_medium_int8.cms.sha256").read_text().strip():', '    if False:'),
     ('    if [int(r["offset"]) for r in rows] != [k["offset"] for k in regs] or len(hl) != len(regs):',
      '    if len(hl) != len(regs):'),
     ('        if c["op"] != r["optimised_op"]:', '        if False:'),

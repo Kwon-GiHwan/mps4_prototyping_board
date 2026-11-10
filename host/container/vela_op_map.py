@@ -9,14 +9,14 @@ Runs in the benchmark-runner container (vela, tflite):
 Per model: <out dir>/<model>.op_map.csv (one row per command-stream kernel op) and <model>.cms.sha256 (the command
 stream of this compile, to compare with the measured blob). Vela options = pack_vela_workload.VELA_OPTIONS, plus any
 `--vela-option=OPT` (e.g. `--vela-option=--arena-cache-size=65536`, as packed with pack_vela_workload.py).
-Also written: <model>.cms.bin (the stream itself), <model>.const.sha256 and <model>.vela.sha256 (the compiled file), <model>.source.csv (debug-db `source`
+Also written: <model>.cms.bin (the stream itself), <model>.const.sha256 and <model>.vela.sha256 (the compiled file), <model>.sizes.json (fast scratch, arena, stream and constant lengths, IO), <model>.source.csv (debug-db `source`
 table as-is) and <model>.hlcs.txt (Vela's high-level command stream log).
 <model>.stages.csv counts kernel work at each Vela stage per operator name: optimised operators (graph optimiser),
 high-level kernel commands (scheduler; `--verbose-high-level-command-stream`, non-DMA lines) and command-stream kernel
 ops (register command stream generator). Debug-db tables used: `queue` (command-stream byte offset -> optimised_id), `optimised` (id -> source_id, operator),
 `source` (id -> TFLite operator).
 """
-import csv, glob, hashlib, os, pathlib, subprocess, sys, tempfile
+import csv, glob, hashlib, json, os, pathlib, subprocess, sys, tempfile
 import re
 import xml.etree.ElementTree as ET
 
@@ -89,6 +89,10 @@ def main(out, *args):
         (out / f"{name}.cms.bin").write_bytes(stream)
         (out / f"{name}.const.sha256").write_text(hashlib.sha256(info["const"]).hexdigest() + "\n")
         (out / f"{name}.vela.sha256").write_text(vela_sha + "\n")
+        (out / f"{name}.sizes.json").write_text(json.dumps(dict(
+            fast_size=info["fast_size"], arena_size=info["arena_size"], cms_len=len(stream), const_len=len(info["const"]),
+            io=dict(ifms=[(e["off"], e["len"]) for e in info["ifms"]], ofms=[(e["off"], e["len"]) for e in info["ofms"]]),
+            extra=extra)) + "\n")
         (out / f"{name}.hlcs.txt").write_text(log)
         print(name, len(rows), "kernel ops", "extra", extra)
 

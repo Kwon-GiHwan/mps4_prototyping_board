@@ -1,0 +1,1 @@
+{"fast_size": 119504, "arena_size": 122880, "cms_len": 12840, "const_len": 458528, "io": {"ifms": [[49152, 1024]], "ofms": [[0, 8]]}, "extra": ["--arena-cache-size=131072"]}

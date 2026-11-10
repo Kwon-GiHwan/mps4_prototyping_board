@@ -1,0 +1,172 @@
+High level NPU operations:
+0 Conv2D , subOps:[  Relu6 ], size=3,3 stride=1,1, dilation=1,1 padding=[t:1,l:1,b:1,r:1,n:0,f:0] OFM Block=[1, 8, 32, 32], IFM Block=[1, 10, 36, 16], OFM UBlock=[2, 2, 32] Traversal=PartKernel, AccType=Acc32
+  IFM: input, [1, 32, 32, 1], format: 1, Dram:FeatureMap, address: 0xc000
+  OFM: Relu6;StatefulPartitionedCall/StatefulPartitionedCall/PartitionedCall_3/PartitionedCall/Relu6;FusedBatchNormV3;StatefulPartitionedCall/StatefulPartitionedCall/StatefulPartitionedCall_1/StatefulPartitionedCall/FusedBatchNormV3;FusedBatchNormV3;StatefulPartitionedCall/StatefulPartitionedCall/StatefulPartitionedCall_3/StatefulPartitionedCall/FusedBatchNormV3;depthwise;StatefulPartitionedCall/StatefulPartitionedCall/PartitionedCall_4/PartitionedCall/depthwise;Conv2D;StatefulPartitionedCall/StatefulPartitionedCall/PartitionedCall_2/PartitionedCall/Conv2D, [1, 18, 32, 192], format: 2, Sram:Staging, address: 0x0
+  Weights: Conv2D;StatefulPartitionedCall/StatefulPartitionedCall/PartitionedCall_2/PartitionedCall/Conv2D, 4 ranges, buffering: 1, Sram:Staging, address: 0x1b000, format: Default|Sparse2_4
+1 DepthwiseConv2D , subOps:[  Relu6 ], size=3,3 stride=2,2, dilation=1,1 padding=[t:0,l:0,b:1,r:1,n:0,f:0] OFM Block=[2, 16, 32], IFM Block=[1, 6, 34, 32], OFM UBlock=[2, 4, 16] Traversal=Depthwise, AccType=Acc32
+  IFM: Relu6;StatefulPartitionedCall/StatefulPartitionedCall/PartitionedCall_3/PartitionedCall/Relu6;FusedBatchNormV3;StatefulPartitionedCall/StatefulPartitionedCall/StatefulPartitionedCall_1/StatefulPartitionedCall/FusedBatchNormV3;FusedBatchNormV3;StatefulPartitionedCall/StatefulPartitionedCall/StatefulPartitionedCall_3/StatefulPartitionedCall/FusedBatchNormV3;depthwise;StatefulPartitionedCall/StatefulPartitionedCall/PartitionedCall_4/PartitionedCall/depthwise;Conv2D;StatefulPartitionedCall/StatefulPartitionedCall/PartitionedCall_2/PartitionedCall/Conv2D, [1, 18, 32, 192], format: 2, Sram:Staging, address: 0x0
+  OFM: Relu6;StatefulPartitionedCall/StatefulPartitionedCall/PartitionedCall_5/PartitionedCall/Relu6;FusedBatchNormV3;StatefulPartitionedCall/StatefulPartitionedCall/StatefulPartitionedCall_3/StatefulPartitionedCall/FusedBatchNormV3;depthwise;StatefulPartitionedCall/StatefulPartitionedCall/PartitionedCall_4/PartitionedCall/depthwise, [1, 16, 16, 192], format: 2, Dram:FeatureMap, address: 0x0
+  Weights: FusedBatchNormV3;StatefulPartitionedCall/StatefulPartitionedCall/StatefulPartitionedCall_3/StatefulPartitionedCall/FusedBatchNormV3;depthwise;StatefulPartitionedCall/StatefulPartitionedCall/PartitionedCall_4/PartitionedCall/depthwise, 4 ranges, buffering: 1, Sram:Staging, address: 0x1c2d0, format: Default
+2 Conv2D , subOps:[  Relu6 ], size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0] OFM Block=[1, 1, 16, 288], IFM Block=[1, 1, 16, 64], OFM UBlock=[1, 4, 32] Traversal=DepthFirst, AccType=Acc32
+  IFM: Relu6;StatefulPartitionedCall/StatefulPartitionedCall/PartitionedCall_5/PartitionedCall/Relu6;FusedBatchNormV3;StatefulPartitionedCall/StatefulPartitionedCall/StatefulPartitionedCall_3/StatefulPartitionedCall/FusedBatchNormV3;depthwise;StatefulPartitionedCall/StatefulPartitionedCall/PartitionedCall_4/PartitionedCall/depthwise, [1, 16, 16, 192], format: 2, Dram:FeatureMap, address: 0x0
+  OFM: Relu6;StatefulPartitionedCall/StatefulPartitionedCall/PartitionedCall_7/PartitionedCall/Relu6;FusedBatchNormV3;StatefulPartitionedCall/StatefulPartitionedCall/StatefulPartitionedCall_5/StatefulPartitionedCall/FusedBatchNormV3;FusedBatchNormV3;StatefulPartitionedCall/StatefulPartitionedCall/StatefulPartitionedCall_19/StatefulPartitionedCall/FusedBatchNormV3;depthwise;StatefulPartitionedCall/StatefulPartitionedCall/PartitionedCall_20/PartitionedCall/depthwise;Conv2D;StatefulPartitionedCall/StatefulPartitionedCall/PartitionedCall_22/PartitionedCall/Conv2D;Conv2D;StatefulPartitionedCall/StatefulPartitionedCall/PartitionedCall_6/PartitionedCall/Conv2D, [1, 6, 16, 288], format: 2, Sram:Staging, address: 0x0
+  Weights: Conv2D;StatefulPartitionedCall/StatefulPartitionedCall/PartitionedCall_6/PartitionedCall/Conv2D, 4 ranges, buffering: 0, Dram:ReadOnly, address: 0x22d0, format: Default
+3 DepthwiseConv2D , subOps:[  Relu6 ], size=3,3 stride=1,1, dilation=1,1 padding=[t:1,l:1,b:1,r:1,n:0,f:0] OFM Block=[2, 16, 64], IFM Block=[1, 4, 18, 64], OFM UBlock=[2, 4, 16] Traversal=Depthwise, AccType=Acc32
+  IFM: Relu6;StatefulPartitionedCall/StatefulPartitionedCall/PartitionedCall_7/PartitionedCall/Relu6;FusedBatchNormV3;StatefulPartitionedCall/StatefulPartitionedCall/StatefulPartitionedCall_5/StatefulPartitionedCall/FusedBatchNormV3;FusedBatchNormV3;StatefulPartitionedCall/StatefulPartitionedCall/StatefulPartitionedCall_19/StatefulPartitionedCall/FusedBatchNormV3;depthwise;StatefulPartitionedCall/StatefulPartitionedCall/PartitionedCall_20/PartitionedCall/depthwise;Conv2D;StatefulPartitionedCall/StatefulPartitionedCall/PartitionedCall_22/PartitionedCall/Conv2D;Conv2D;StatefulPartitionedCall/StatefulPartitionedCall/PartitionedCall_6/PartitionedCall/Conv2D, [1, 6, 16, 288], format: 2, Sram:Staging, address: 0x0
+  OFM: Relu6;StatefulPartitionedCall/StatefulPartitionedCall/PartitionedCall_9/PartitionedCall/Relu6;FusedBatchNormV3;StatefulPartitionedCall/StatefulPartitionedCall/StatefulPartitionedCall_7/StatefulPartitionedCall/FusedBatchNormV3;FusedBatchNormV3;StatefulPartitionedCall/StatefulPartitionedCall/StatefulPartitionedCall_19/StatefulPartitionedCall/FusedBatchNormV3;depthwise;StatefulPartitionedCall/StatefulPartitionedCall/PartitionedCall_20/PartitionedCall/depthwise;Conv2D;StatefulPartitionedCall/StatefulPartitionedCall/PartitionedCall_22/PartitionedCall/Conv2D;depthwise;StatefulPartitionedCall/StatefulPartitionedCall/PartitionedCall_8/PartitionedCall/depthwise, [1, 2, 16, 288], format: 2, Sram:Staging, address: 0x12000
+  Weights: FusedBatchNormV3;StatefulPartitionedCall/StatefulPartitionedCall/StatefulPartitionedCall_7/StatefulPartitionedCall/FusedBatchNormV3;depthwise;StatefulPartitionedCall/StatefulPartitionedCall/PartitionedCall_8/PartitionedCall/depthwise;Conv2D;StatefulPartitionedCall/StatefulPartitionedCall/PartitionedCall_22/PartitionedCall/Conv2D, 4 ranges, buffering: 0, Dram:ReadOnly, address: 0x110b0, format: Default
+4 Conv2D , subOps:[  Relu6 ], size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0] OFM Block=[1, 1, 16, 288], IFM Block=[1, 1, 16, 64], OFM UBlock=[1, 4, 32] Traversal=DepthFirst, AccType=Acc32
+  IFM: Relu6;StatefulPartitionedCall/StatefulPartitionedCall/PartitionedCall_9/PartitionedCall/Relu6;FusedBatchNormV3;StatefulPartitionedCall/StatefulPartitionedCall/StatefulPartitionedCall_7/StatefulPartitionedCall/FusedBatchNormV3;FusedBatchNormV3;StatefulPartitionedCall/StatefulPartitionedCall/StatefulPartitionedCall_19/StatefulPartitionedCall/FusedBatchNormV3;depthwise;StatefulPartitionedCall/StatefulPartitionedCall/PartitionedCall_20/PartitionedCall/depthwise;Conv2D;StatefulPartitionedCall/StatefulPartitionedCall/PartitionedCall_22/PartitionedCall/Conv2D;depthwise;StatefulPartitionedCall/StatefulPartitionedCall/PartitionedCall_8/PartitionedCall/depthwise, [1, 2, 16, 288], format: 2, Sram:Staging, address: 0x12000
+  OFM: Relu6;StatefulPartitionedCall/StatefulPartitionedCall/PartitionedCall_11/PartitionedCall/Relu6;FusedBatchNormV3;StatefulPartitionedCall/StatefulPartitionedCall/StatefulPartitionedCall_9/StatefulPartitionedCall/FusedBatchNormV3;FusedBatchNormV3;StatefulPartitionedCall/StatefulPartitionedCall/StatefulPartitionedCall_19/StatefulPartitionedCall/FusedBatchNormV3;depthwise;StatefulPartitionedCall/StatefulPartitionedCall/PartitionedCall_20/PartitionedCall/depthwise;Conv2D;StatefulPartitionedCall/StatefulPartitionedCall/PartitionedCall_22/PartitionedCall/Conv2D;Conv2D;StatefulPartitionedCall/StatefulPartitionedCall/PartitionedCall_10/PartitionedCall/Conv2D, [1, 6, 16, 288], format: 2, Sram:Staging, address: 0x6c00
+  Weights: Conv2D;StatefulPartitionedCall/StatefulPartitionedCall/PartitionedCall_10/PartitionedCall/Conv2D, 4 ranges, buffering: 0, Dram:ReadOnly, address: 0x12810, format: Default
+5 DepthwiseConv2D , subOps:[  Relu6 ], size=3,3 stride=1,1, dilation=1,1 padding=[t:1,l:1,b:1,r:1,n:0,f:0] OFM Block=[2, 16, 64], IFM Block=[1, 4, 18, 64], OFM UBlock=[2, 4, 16] Traversal=Depthwise, AccType=Acc32
+  IFM: Relu6;StatefulPartitionedCall/StatefulPartitionedCall/PartitionedCall_11/PartitionedCall/Relu6;FusedBatchNormV3;StatefulPartitionedCall/StatefulPartitionedCall/StatefulPartitionedCall_9/StatefulPartitionedCall/FusedBatchNormV3;FusedBatchNormV3;StatefulPartitionedCall/StatefulPartitionedCall/StatefulPartitionedCall_19/StatefulPartitionedCall/FusedBatchNormV3;depthwise;StatefulPartitionedCall/StatefulPartitionedCall/PartitionedCall_20/PartitionedCall/depthwise;Conv2D;StatefulPartitionedCall/StatefulPartitionedCall/PartitionedCall_22/PartitionedCall/Conv2D;Conv2D;StatefulPartitionedCall/StatefulPartitionedCall/PartitionedCall_10/PartitionedCall/Conv2D, [1, 6, 16, 288], format: 2, Sram:Staging, address: 0x6c00
+  OFM: Relu6;StatefulPartitionedCall/StatefulPartitionedCall/PartitionedCall_13/PartitionedCall/Relu6;FusedBatchNormV3;StatefulPartitionedCall/StatefulPartitionedCall/StatefulPartitionedCall_11/StatefulPartitionedCall/FusedBatchNormV3;FusedBatchNormV3;StatefulPartitionedCall/StatefulPartitionedCall/StatefulPartitionedCall_19/StatefulPartitionedCall/FusedBatchNormV3;depthwise;StatefulPartitionedCall/StatefulPartitionedCall/PartitionedCall_20/PartitionedCall/depthwise;Conv2D;StatefulPartitionedCall/StatefulPartitionedCall/PartitionedCall_22/PartitionedCall/Conv2D;depthwise;StatefulPartitionedCall/StatefulPartitionedCall/PartitionedCall_12/PartitionedCall/depthwise, [1, 4, 16, 288], format: 2, Sram:Staging, address: 0xd800
+  Weights: FusedBatchNormV3;StatefulPartitionedCall/StatefulPartitionedCall/StatefulPartitionedCall_11/StatefulPartitionedCall/FusedBatchNormV3;depthwise;StatefulPartitionedCall/StatefulPartitionedCall/PartitionedCall_12/PartitionedCall/depthwise;Conv2D;StatefulPartitionedCall/StatefulPartitionedCall/PartitionedCall_22/PartitionedCall/Conv2D, 4 ranges, buffering: 0, Dram:ReadOnly, address: 0x288a0, format: Default
+6 Conv2D , subOps:[  Relu6 ], size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0] OFM Block=[1, 2, 16, 160], IFM Block=[1, 2, 16, 64], OFM UBlock=[2, 2, 32] Traversal=DepthFirst, AccType=Acc32
+  IFM: Relu6;StatefulPartitionedCall/StatefulPartitionedCall/PartitionedCall_13/PartitionedCall/Relu6;FusedBatchNormV3;StatefulPartitionedCall/StatefulPartitionedCall/StatefulPartitionedCall_11/StatefulPartitionedCall/FusedBatchNormV3;FusedBatchNormV3;StatefulPartitionedCall/StatefulPartitionedCall/StatefulPartitionedCall_19/StatefulPartitionedCall/FusedBatchNormV3;depthwise;StatefulPartitionedCall/StatefulPartitionedCall/PartitionedCall_20/PartitionedCall/depthwise;Conv2D;StatefulPartitionedCall/StatefulPartitionedCall/PartitionedCall_22/PartitionedCall/Conv2D;depthwise;StatefulPartitionedCall/StatefulPartitionedCall/PartitionedCall_12/PartitionedCall/depthwise, [1, 4, 16, 288], format: 2, Sram:Staging, address: 0xd800
+  OFM: Relu6;StatefulPartitionedCall/StatefulPartitionedCall/PartitionedCall_15/PartitionedCall/Relu6;FusedBatchNormV3;StatefulPartitionedCall/StatefulPartitionedCall/StatefulPartitionedCall_13/StatefulPartitionedCall/FusedBatchNormV3;FusedBatchNormV3;StatefulPartitionedCall/StatefulPartitionedCall/StatefulPartitionedCall_19/StatefulPartitionedCall/FusedBatchNormV3;depthwise;StatefulPartitionedCall/StatefulPartitionedCall/PartitionedCall_20/PartitionedCall/depthwise;Conv2D;StatefulPartitionedCall/StatefulPartitionedCall/PartitionedCall_22/PartitionedCall/Conv2D;Conv2D;StatefulPartitionedCall/StatefulPartitionedCall/PartitionedCall_14/PartitionedCall/Conv2D, [1, 16, 16, 276], format: 2, Dram:FeatureMap, address: 0xc000
+  Weights: Conv2D;StatefulPartitionedCall/StatefulPartitionedCall/PartitionedCall_14/PartitionedCall/Conv2D, 4 ranges, buffering: 0, Dram:ReadOnly, address: 0x2a000, format: Default
+7 DepthwiseConv2D , subOps:[  Relu6 ], size=3,3 stride=2,2, dilation=1,1 padding=[t:0,l:0,b:1,r:1,n:0,f:0] OFM Block=[8, 8, 32], IFM Block=[1, 18, 18, 32], OFM UBlock=[2, 4, 16] Traversal=Depthwise, AccType=Acc32
+  IFM: Relu6;StatefulPartitionedCall/StatefulPartitionedCall/PartitionedCall_15/PartitionedCall/Relu6;FusedBatchNormV3;StatefulPartitionedCall/StatefulPartitionedCall/StatefulPartitionedCall_13/StatefulPartitionedCall/FusedBatchNormV3;FusedBatchNormV3;StatefulPartitionedCall/StatefulPartitionedCall/StatefulPartitionedCall_19/StatefulPartitionedCall/FusedBatchNormV3;depthwise;StatefulPartitionedCall/StatefulPartitionedCall/PartitionedCall_20/PartitionedCall/depthwise;Conv2D;StatefulPartitionedCall/StatefulPartitionedCall/PartitionedCall_22/PartitionedCall/Conv2D;Conv2D;StatefulPartitionedCall/StatefulPartitionedCall/PartitionedCall_14/PartitionedCall/Conv2D, [1, 16, 16, 276], format: 2, Dram:FeatureMap, address: 0xc000
+  OFM: Relu6;StatefulPartitionedCall/StatefulPartitionedCall/PartitionedCall_17/PartitionedCall/Relu6;FusedBatchNormV3;StatefulPartitionedCall/StatefulPartitionedCall/StatefulPartitionedCall_15/StatefulPartitionedCall/FusedBatchNormV3;FusedBatchNormV3;StatefulPartitionedCall/StatefulPartitionedCall/StatefulPartitionedCall_19/StatefulPartitionedCall/FusedBatchNormV3;depthwise;StatefulPartitionedCall/StatefulPartitionedCall/PartitionedCall_20/PartitionedCall/depthwise;Conv2D;StatefulPartitionedCall/StatefulPartitionedCall/PartitionedCall_22/PartitionedCall/Conv2D;depthwise;StatefulPartitionedCall/StatefulPartitionedCall/PartitionedCall_16/PartitionedCall/depthwise, [1, 8, 8, 276], format: 2, Sram:Staging, address: 0x0
+  Weights: FusedBatchNormV3;StatefulPartitionedCall/StatefulPartitionedCall/StatefulPartitionedCall_15/StatefulPartitionedCall/FusedBatchNormV3;depthwise;StatefulPartitionedCall/StatefulPartitionedCall/PartitionedCall_16/PartitionedCall/depthwise;Conv2D;StatefulPartitionedCall/StatefulPartitionedCall/PartitionedCall_22/PartitionedCall/Conv2D, 4 ranges, buffering: 0, Dram:ReadOnly, address: 0x40070, format: Default
+8 Conv2D , subOps:[  Relu6 ], size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0] OFM Block=[1, 8, 8, 96], IFM Block=[1, 8, 8, 64], OFM UBlock=[2, 2, 32] Traversal=DepthFirst, AccType=Acc32
+  IFM: Relu6;StatefulPartitionedCall/StatefulPartitionedCall/PartitionedCall_17/PartitionedCall/Relu6;FusedBatchNormV3;StatefulPartitionedCall/StatefulPartitionedCall/StatefulPartitionedCall_15/StatefulPartitionedCall/FusedBatchNormV3;FusedBatchNormV3;StatefulPartitionedCall/StatefulPartitionedCall/StatefulPartitionedCall_19/StatefulPartitionedCall/FusedBatchNormV3;depthwise;StatefulPartitionedCall/StatefulPartitionedCall/PartitionedCall_20/PartitionedCall/depthwise;Conv2D;StatefulPartitionedCall/StatefulPartitionedCall/PartitionedCall_22/PartitionedCall/Conv2D;depthwise;StatefulPartitionedCall/StatefulPartitionedCall/PartitionedCall_16/PartitionedCall/depthwise, [1, 8, 8, 276], format: 2, Sram:Staging, address: 0x0
+  OFM: Relu6;StatefulPartitionedCall/StatefulPartitionedCall/PartitionedCall_19/PartitionedCall/Relu6;FusedBatchNormV3;StatefulPartitionedCall/StatefulPartitionedCall/StatefulPartitionedCall_17/StatefulPartitionedCall/FusedBatchNormV3;FusedBatchNormV3;StatefulPartitionedCall/StatefulPartitionedCall/StatefulPartitionedCall_19/StatefulPartitionedCall/FusedBatchNormV3;depthwise;StatefulPartitionedCall/StatefulPartitionedCall/PartitionedCall_20/PartitionedCall/depthwise;Conv2D;StatefulPartitionedCall/StatefulPartitionedCall/PartitionedCall_22/PartitionedCall/Conv2D;Conv2D;StatefulPartitionedCall/StatefulPartitionedCall/PartitionedCall_18/PartitionedCall/Conv2D, [1, 8, 8, 276], format: 2, Sram:Staging, address: 0x4800
+  Weights: Conv2D;StatefulPartitionedCall/StatefulPartitionedCall/PartitionedCall_18/PartitionedCall/Conv2D, 4 ranges, buffering: 0, Dram:ReadOnly, address: 0x417d0, format: Default
+9 DepthwiseConv2D , subOps:[  Relu6 ], size=3,3 stride=2,2, dilation=1,1 padding=[t:0,l:0,b:1,r:1,n:0,f:0] OFM Block=[4, 4, 64], IFM Block=[1, 9, 10, 64], OFM UBlock=[2, 4, 16] Traversal=Depthwise, AccType=Acc32
+  IFM: Relu6;StatefulPartitionedCall/StatefulPartitionedCall/PartitionedCall_19/PartitionedCall/Relu6;FusedBatchNormV3;StatefulPartitionedCall/StatefulPartitionedCall/StatefulPartitionedCall_17/StatefulPartitionedCall/FusedBatchNormV3;FusedBatchNormV3;StatefulPartitionedCall/StatefulPartitionedCall/StatefulPartitionedCall_19/StatefulPartitionedCall/FusedBatchNormV3;depthwise;StatefulPartitionedCall/StatefulPartitionedCall/PartitionedCall_20/PartitionedCall/depthwise;Conv2D;StatefulPartitionedCall/StatefulPartitionedCall/PartitionedCall_22/PartitionedCall/Conv2D;Conv2D;StatefulPartitionedCall/StatefulPartitionedCall/PartitionedCall_18/PartitionedCall/Conv2D, [1, 8, 8, 276], format: 2, Sram:Staging, address: 0x4800
+  OFM: Relu6;StatefulPartitionedCall/StatefulPartitionedCall/PartitionedCall_21/PartitionedCall/Relu6;FusedBatchNormV3;StatefulPartitionedCall/StatefulPartitionedCall/StatefulPartitionedCall_19/StatefulPartitionedCall/FusedBatchNormV3;depthwise;StatefulPartitionedCall/StatefulPartitionedCall/PartitionedCall_20/PartitionedCall/depthwise;Conv2D;StatefulPartitionedCall/StatefulPartitionedCall/PartitionedCall_22/PartitionedCall/Conv2D, [1, 4, 4, 276], format: 2, Sram:Staging, address: 0x0
+  Weights: FusedBatchNormV3;StatefulPartitionedCall/StatefulPartitionedCall/StatefulPartitionedCall_19/StatefulPartitionedCall/FusedBatchNormV3;depthwise;StatefulPartitionedCall/StatefulPartitionedCall/PartitionedCall_20/PartitionedCall/depthwise;Conv2D;StatefulPartitionedCall/StatefulPartitionedCall/PartitionedCall_22/PartitionedCall/Conv2D, 4 ranges, buffering: 0, Dram:ReadOnly, address: 0x57850, format: Default
+10 Conv2D , subOps:[  Relu6 ], size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0] OFM Block=[1, 4, 4, 288], IFM Block=[1, 4, 4, 64], OFM UBlock=[2, 2, 32] Traversal=DepthFirst, AccType=Acc32
+  IFM: Relu6;StatefulPartitionedCall/StatefulPartitionedCall/PartitionedCall_21/PartitionedCall/Relu6;FusedBatchNormV3;StatefulPartitionedCall/StatefulPartitionedCall/StatefulPartitionedCall_19/StatefulPartitionedCall/FusedBatchNormV3;depthwise;StatefulPartitionedCall/StatefulPartitionedCall/PartitionedCall_20/PartitionedCall/depthwise;Conv2D;StatefulPartitionedCall/StatefulPartitionedCall/PartitionedCall_22/PartitionedCall/Conv2D, [1, 4, 4, 276], format: 2, Sram:Staging, address: 0x0
+  OFM: Relu6;StatefulPartitionedCall/StatefulPartitionedCall/PartitionedCall_23/PartitionedCall/Relu6;FusedBatchNormV3;StatefulPartitionedCall/StatefulPartitionedCall/StatefulPartitionedCall_21/StatefulPartitionedCall/FusedBatchNormV3;FusedBatchNormV3;StatefulPartitionedCall/StatefulPartitionedCall/StatefulPartitionedCall_19/StatefulPartitionedCall/FusedBatchNormV3;depthwise;StatefulPartitionedCall/StatefulPartitionedCall/PartitionedCall_20/PartitionedCall/depthwise;Conv2D;StatefulPartitionedCall/StatefulPartitionedCall/PartitionedCall_22/PartitionedCall/Conv2D, [1, 4, 4, 276], format: 2, Sram:Staging, address: 0x1200
+  Weights: Conv2D;StatefulPartitionedCall/StatefulPartitionedCall/PartitionedCall_22/PartitionedCall/Conv2D, 4 ranges, buffering: 0, Dram:ReadOnly, address: 0x58fb0, format: Default
+11 AvgPool , subOps:[  - ], size=4,4 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0] OFM Block=[2, 4, 192], IFM Block=[1, 5, 8, 192], OFM UBlock=[2, 4, 16] Traversal=DepthFirst, AccType=Acc32
+  IFM: Relu6;StatefulPartitionedCall/StatefulPartitionedCall/PartitionedCall_23/PartitionedCall/Relu6;FusedBatchNormV3;StatefulPartitionedCall/StatefulPartitionedCall/StatefulPartitionedCall_21/StatefulPartitionedCall/FusedBatchNormV3;FusedBatchNormV3;StatefulPartitionedCall/StatefulPartitionedCall/StatefulPartitionedCall_19/StatefulPartitionedCall/FusedBatchNormV3;depthwise;StatefulPartitionedCall/StatefulPartitionedCall/PartitionedCall_20/PartitionedCall/depthwise;Conv2D;StatefulPartitionedCall/StatefulPartitionedCall/PartitionedCall_22/PartitionedCall/Conv2D, [1, 4, 4, 276], format: 2, Sram:Staging, address: 0x1200
+  OFM: AvgPool;StatefulPartitionedCall/StatefulPartitionedCall/PartitionedCall_24/PartitionedCall/AvgPool, [1, 1, 1, 276], format: 2, Sram:Staging, address: 0x0
+12 Conv2D , subOps:[  - ], size=1,1 stride=1,1, dilation=1,1 padding=[t:0,l:0,b:0,r:0,n:0,f:0] OFM Block=[1, 2, 2, 32], IFM Block=[1, 2, 2, 64], OFM UBlock=[2, 2, 32] Traversal=DepthFirst, AccType=Acc32
+  IFM: AvgPool;StatefulPartitionedCall/StatefulPartitionedCall/PartitionedCall_24/PartitionedCall/AvgPool, [1, 1, 1, 276], format: 2, Sram:Staging, address: 0x0
+  OFM: Identity, [1, 1, 1, 8], format: 1, Dram:FeatureMap, address: 0x0
+  Weights: Conv2D;StatefulPartitionedCall/StatefulPartitionedCall/PartitionedCall_25/PartitionedCall/Conv2D, 4 ranges, buffering: 0, Dram:ReadOnly, address: 0x6f020, format: Default
+High level command stream:
+0 DMA src: Dram:ReadOnly, address: 0x0, dest: Sram:Staging, address: 0x1b000, sizes: (N/A), length: 4816
+1 Conv2D OFM area [0, 0, 0, 0 - 1, 8, 32, 192], IFM [0, 0, 0, 0 - 1, 10, 32, 1], IFM2 [ - ], padding: [top:1,left:1,bottom:0,right:1], cascaded
+2 Conv2D OFM area [0, 8, 0, 0 - 1, 16, 32, 192], IFM [0, 7, 0, 0 - 1, 18, 32, 1], IFM2 [ - ], padding: [top:0,left:1,bottom:0,right:1], cascaded
+3 DMA src: Dram:ReadOnly, address: 0x12d0, dest: Sram:Staging, address: 0x1c2d0, sizes: (N/A), length: 4096
+4 DepthwiseConv2D OFM area [0, 0, 0, 0 - 1, 4, 16, 192], IFM [0, 0, 0, 0 - 1, 10, 32, 192], IFM2 [ - ], padding: [top:0,left:0,bottom:0,right:1], cascaded
+5 Conv2D OFM area [0, 16, 0, 0 - 1, 24, 32, 192], IFM [0, 15, 0, 0 - 1, 26, 32, 1], IFM2 [ - ], padding: [top:0,left:1,bottom:0,right:1], cascaded
+6 DepthwiseConv2D OFM area [0, 4, 0, 0 - 1, 8, 16, 192], IFM [0, 8, 0, 0 - 1, 18, 32, 192], IFM2 [ - ], padding: [top:0,left:0,bottom:0,right:1], cascaded
+7 Conv2D OFM area [0, 24, 0, 0 - 1, 32, 32, 192], IFM [0, 23, 0, 0 - 1, 32, 32, 1], IFM2 [ - ], padding: [top:0,left:1,bottom:1,right:1], cascaded
+8 DepthwiseConv2D OFM area [0, 8, 0, 0 - 1, 12, 16, 192], IFM [0, 16, 0, 0 - 1, 26, 32, 192], IFM2 [ - ], padding: [top:0,left:0,bottom:0,right:1], cascaded
+9 DepthwiseConv2D OFM area [0, 12, 0, 0 - 1, 16, 16, 192], IFM [0, 24, 0, 0 - 1, 32, 32, 192], IFM2 [ - ], padding: [top:0,left:0,bottom:1,right:1], cascaded
+10 Conv2D OFM area [0, 0, 0, 0 - 1, 1, 16, 276], IFM [0, 0, 0, 0 - 1, 1, 16, 192], IFM2 [ - ], cascaded
+11 Conv2D OFM area [0, 1, 0, 0 - 1, 2, 16, 276], IFM [0, 1, 0, 0 - 1, 2, 16, 192], IFM2 [ - ], cascaded
+12 Conv2D OFM area [0, 2, 0, 0 - 1, 3, 16, 276], IFM [0, 2, 0, 0 - 1, 3, 16, 192], IFM2 [ - ], cascaded
+13 DepthwiseConv2D OFM area [0, 0, 0, 0 - 1, 1, 16, 276], IFM [0, 0, 0, 0 - 1, 3, 16, 276], IFM2 [ - ], padding: [top:1,left:1,bottom:0,right:1], cascaded
+14 Conv2D OFM area [0, 0, 0, 0 - 1, 1, 16, 276], IFM [0, 0, 0, 0 - 1, 1, 16, 276], IFM2 [ - ], cascaded
+15 Conv2D OFM area [0, 3, 0, 0 - 1, 4, 16, 276], IFM [0, 3, 0, 0 - 1, 4, 16, 192], IFM2 [ - ], cascaded
+16 DepthwiseConv2D OFM area [0, 1, 0, 0 - 1, 2, 16, 276], IFM [0, 0, 0, 0 - 1, 4, 16, 276], IFM2 [ - ], padding: [top:0,left:1,bottom:0,right:1], cascaded
+17 Conv2D OFM area [0, 1, 0, 0 - 1, 2, 16, 276], IFM [0, 1, 0, 0 - 1, 2, 16, 276], IFM2 [ - ], cascaded
+18 Conv2D OFM area [0, 4, 0, 0 - 1, 5, 16, 276], IFM [0, 4, 0, 0 - 1, 5, 16, 192], IFM2 [ - ], cascaded
+19 DepthwiseConv2D OFM area [0, 2, 0, 0 - 1, 3, 16, 276], IFM [0, 1, 0, 0 - 1, 5, 16, 276], IFM2 [ - ], padding: [top:0,left:1,bottom:0,right:1], cascaded
+20 Conv2D OFM area [0, 2, 0, 0 - 1, 3, 16, 276], IFM [0, 2, 0, 0 - 1, 3, 16, 276], IFM2 [ - ], cascaded
+21 DepthwiseConv2D OFM area [0, 0, 0, 0 - 1, 1, 16, 276], IFM [0, 0, 0, 0 - 1, 3, 16, 276], IFM2 [ - ], padding: [top:1,left:1,bottom:0,right:1], cascaded
+22 Conv2D OFM area [0, 5, 0, 0 - 1, 6, 16, 276], IFM [0, 5, 0, 0 - 1, 6, 16, 192], IFM2 [ - ], cascaded
+23 DepthwiseConv2D OFM area [0, 3, 0, 0 - 1, 4, 16, 276], IFM [0, 2, 0, 0 - 1, 6, 16, 276], IFM2 [ - ], padding: [top:0,left:1,bottom:0,right:1], cascaded
+24 Conv2D OFM area [0, 3, 0, 0 - 1, 4, 16, 276], IFM [0, 3, 0, 0 - 1, 4, 16, 276], IFM2 [ - ], cascaded
+25 DepthwiseConv2D OFM area [0, 1, 0, 0 - 1, 2, 16, 276], IFM [0, 0, 0, 0 - 1, 4, 16, 276], IFM2 [ - ], padding: [top:0,left:1,bottom:0,right:1], cascaded
+26 Conv2D OFM area [0, 0, 0, 0 - 1, 2, 16, 276], IFM [0, 0, 0, 0 - 1, 2, 16, 276], IFM2 [ - ], cascaded
+27 Conv2D OFM area [0, 6, 0, 0 - 1, 7, 16, 276], IFM [0, 6, 0, 0 - 1, 7, 16, 192], IFM2 [ - ], cascaded
+28 DepthwiseConv2D OFM area [0, 4, 0, 0 - 1, 5, 16, 276], IFM [0, 3, 0, 0 - 1, 7, 16, 276], IFM2 [ - ], padding: [top:0,left:1,bottom:0,right:1], cascaded
+29 Conv2D OFM area [0, 4, 0, 0 - 1, 5, 16, 276], IFM [0, 4, 0, 0 - 1, 5, 16, 276], IFM2 [ - ], cascaded
+30 DepthwiseConv2D OFM area [0, 2, 0, 0 - 1, 3, 16, 276], IFM [0, 1, 0, 0 - 1, 5, 16, 276], IFM2 [ - ], padding: [top:0,left:1,bottom:0,right:1], cascaded
+31 Conv2D OFM area [0, 7, 0, 0 - 1, 8, 16, 276], IFM [0, 7, 0, 0 - 1, 8, 16, 192], IFM2 [ - ], cascaded
+32 DepthwiseConv2D OFM area [0, 5, 0, 0 - 1, 6, 16, 276], IFM [0, 4, 0, 0 - 1, 8, 16, 276], IFM2 [ - ], padding: [top:0,left:1,bottom:0,right:1], cascaded
+33 Conv2D OFM area [0, 5, 0, 0 - 1, 6, 16, 276], IFM [0, 5, 0, 0 - 1, 6, 16, 276], IFM2 [ - ], cascaded
+34 DepthwiseConv2D OFM area [0, 3, 0, 0 - 1, 4, 16, 276], IFM [0, 2, 0, 0 - 1, 6, 16, 276], IFM2 [ - ], padding: [top:0,left:1,bottom:0,right:1], cascaded
+35 Conv2D OFM area [0, 2, 0, 0 - 1, 4, 16, 276], IFM [0, 2, 0, 0 - 1, 4, 16, 276], IFM2 [ - ], cascaded
+36 Conv2D OFM area [0, 8, 0, 0 - 1, 9, 16, 276], IFM [0, 8, 0, 0 - 1, 9, 16, 192], IFM2 [ - ], cascaded
+37 DepthwiseConv2D OFM area [0, 6, 0, 0 - 1, 7, 16, 276], IFM [0, 5, 0, 0 - 1, 9, 16, 276], IFM2 [ - ], padding: [top:0,left:1,bottom:0,right:1], cascaded
+38 Conv2D OFM area [0, 6, 0, 0 - 1, 7, 16, 276], IFM [0, 6, 0, 0 - 1, 7, 16, 276], IFM2 [ - ], cascaded
+39 DepthwiseConv2D OFM area [0, 4, 0, 0 - 1, 5, 16, 276], IFM [0, 3, 0, 0 - 1, 7, 16, 276], IFM2 [ - ], padding: [top:0,left:1,bottom:0,right:1], cascaded
+40 Conv2D OFM area [0, 9, 0, 0 - 1, 10, 16, 276], IFM [0, 9, 0, 0 - 1, 10, 16, 192], IFM2 [ - ], cascaded
+41 DepthwiseConv2D OFM area [0, 7, 0, 0 - 1, 8, 16, 276], IFM [0, 6, 0, 0 - 1, 10, 16, 276], IFM2 [ - ], padding: [top:0,left:1,bottom:0,right:1], cascaded
+42 Conv2D OFM area [0, 7, 0, 0 - 1, 8, 16, 276], IFM [0, 7, 0, 0 - 1, 8, 16, 276], IFM2 [ - ], cascaded
+43 DepthwiseConv2D OFM area [0, 5, 0, 0 - 1, 6, 16, 276], IFM [0, 4, 0, 0 - 1, 8, 16, 276], IFM2 [ - ], padding: [top:0,left:1,bottom:0,right:1], cascaded
+44 Conv2D OFM area [0, 4, 0, 0 - 1, 6, 16, 276], IFM [0, 4, 0, 0 - 1, 6, 16, 276], IFM2 [ - ], cascaded
+45 Conv2D OFM area [0, 10, 0, 0 - 1, 11, 16, 276], IFM [0, 10, 0, 0 - 1, 11, 16, 192], IFM2 [ - ], cascaded
+46 DepthwiseConv2D OFM area [0, 8, 0, 0 - 1, 9, 16, 276], IFM [0, 7, 0, 0 - 1, 11, 16, 276], IFM2 [ - ], padding: [top:0,left:1,bottom:0,right:1], cascaded
+47 Conv2D OFM area [0, 8, 0, 0 - 1, 9, 16, 276], IFM [0, 8, 0, 0 - 1, 9, 16, 276], IFM2 [ - ], cascaded
+48 DepthwiseConv2D OFM area [0, 6, 0, 0 - 1, 7, 16, 276], IFM [0, 5, 0, 0 - 1, 9, 16, 276], IFM2 [ - ], padding: [top:0,left:1,bottom:0,right:1], cascaded
+49 Conv2D OFM area [0, 11, 0, 0 - 1, 12, 16, 276], IFM [0, 11, 0, 0 - 1, 12, 16, 192], IFM2 [ - ], cascaded
+50 DepthwiseConv2D OFM area [0, 9, 0, 0 - 1, 10, 16, 276], IFM [0, 8, 0, 0 - 1, 12, 16, 276], IFM2 [ - ], padding: [top:0,left:1,bottom:0,right:1], cascaded
+51 Conv2D OFM area [0, 9, 0, 0 - 1, 10, 16, 276], IFM [0, 9, 0, 0 - 1, 10, 16, 276], IFM2 [ - ], cascaded
+52 DepthwiseConv2D OFM area [0, 7, 0, 0 - 1, 8, 16, 276], IFM [0, 6, 0, 0 - 1, 10, 16, 276], IFM2 [ - ], padding: [top:0,left:1,bottom:0,right:1], cascaded
+53 Conv2D OFM area [0, 6, 0, 0 - 1, 8, 16, 276], IFM [0, 6, 0, 0 - 1, 8, 16, 276], IFM2 [ - ], cascaded
+54 Conv2D OFM area [0, 12, 0, 0 - 1, 13, 16, 276], IFM [0, 12, 0, 0 - 1, 13, 16, 192], IFM2 [ - ], cascaded
+55 DepthwiseConv2D OFM area [0, 10, 0, 0 - 1, 11, 16, 276], IFM [0, 9, 0, 0 - 1, 13, 16, 276], IFM2 [ - ], padding: [top:0,left:1,bottom:0,right:1], cascaded
+56 Conv2D OFM area [0, 10, 0, 0 - 1, 11, 16, 276], IFM [0, 10, 0, 0 - 1, 11, 16, 276], IFM2 [ - ], cascaded
+57 DepthwiseConv2D OFM area [0, 8, 0, 0 - 1, 9, 16, 276], IFM [0, 7, 0, 0 - 1, 11, 16, 276], IFM2 [ - ], padding: [top:0,left:1,bottom:0,right:1], cascaded
+58 Conv2D OFM area [0, 13, 0, 0 - 1, 14, 16, 276], IFM [0, 13, 0, 0 - 1, 14, 16, 192], IFM2 [ - ], cascaded
+59 DepthwiseConv2D OFM area [0, 11, 0, 0 - 1, 12, 16, 276], IFM [0, 10, 0, 0 - 1, 14, 16, 276], IFM2 [ - ], padding: [top:0,left:1,bottom:0,right:1], cascaded
+60 Conv2D OFM area [0, 11, 0, 0 - 1, 12, 16, 276], IFM [0, 11, 0, 0 - 1, 12, 16, 276], IFM2 [ - ], cascaded
+61 DepthwiseConv2D OFM area [0, 9, 0, 0 - 1, 10, 16, 276], IFM [0, 8, 0, 0 - 1, 12, 16, 276], IFM2 [ - ], padding: [top:0,left:1,bottom:0,right:1], cascaded
+62 Conv2D OFM area [0, 8, 0, 0 - 1, 10, 16, 276], IFM [0, 8, 0, 0 - 1, 10, 16, 276], IFM2 [ - ], cascaded
+63 Conv2D OFM area [0, 14, 0, 0 - 1, 15, 16, 276], IFM [0, 14, 0, 0 - 1, 15, 16, 192], IFM2 [ - ], cascaded
+64 DepthwiseConv2D OFM area [0, 12, 0, 0 - 1, 13, 16, 276], IFM [0, 11, 0, 0 - 1, 15, 16, 276], IFM2 [ - ], padding: [top:0,left:1,bottom:0,right:1], cascaded
+65 Conv2D OFM area [0, 12, 0, 0 - 1, 13, 16, 276], IFM [0, 12, 0, 0 - 1, 13, 16, 276], IFM2 [ - ], cascaded
+66 DepthwiseConv2D OFM area [0, 10, 0, 0 - 1, 11, 16, 276], IFM [0, 9, 0, 0 - 1, 13, 16, 276], IFM2 [ - ], padding: [top:0,left:1,bottom:0,right:1], cascaded
+67 Conv2D OFM area [0, 15, 0, 0 - 1, 16, 16, 276], IFM [0, 15, 0, 0 - 1, 16, 16, 192], IFM2 [ - ], cascaded
+68 DepthwiseConv2D OFM area [0, 13, 0, 0 - 1, 14, 16, 276], IFM [0, 12, 0, 0 - 1, 16, 16, 276], IFM2 [ - ], padding: [top:0,left:1,bottom:0,right:1], cascaded
+69 Conv2D OFM area [0, 13, 0, 0 - 1, 14, 16, 276], IFM [0, 13, 0, 0 - 1, 14, 16, 276], IFM2 [ - ], cascaded
+70 DepthwiseConv2D OFM area [0, 11, 0, 0 - 1, 12, 16, 276], IFM [0, 10, 0, 0 - 1, 14, 16, 276], IFM2 [ - ], padding: [top:0,left:1,bottom:0,right:1], cascaded
+71 Conv2D OFM area [0, 10, 0, 0 - 1, 12, 16, 276], IFM [0, 10, 0, 0 - 1, 12, 16, 276], IFM2 [ - ], cascaded
+72 DepthwiseConv2D OFM area [0, 14, 0, 0 - 1, 15, 16, 276], IFM [0, 13, 0, 0 - 1, 16, 16, 276], IFM2 [ - ], padding: [top:0,left:1,bottom:0,right:1], cascaded
+73 Conv2D OFM area [0, 14, 0, 0 - 1, 15, 16, 276], IFM [0, 14, 0, 0 - 1, 15, 16, 276], IFM2 [ - ], cascaded
+74 DepthwiseConv2D OFM area [0, 12, 0, 0 - 1, 13, 16, 276], IFM [0, 11, 0, 0 - 1, 15, 16, 276], IFM2 [ - ], padding: [top:0,left:1,bottom:0,right:1], cascaded
+75 DepthwiseConv2D OFM area [0, 15, 0, 0 - 1, 16, 16, 276], IFM [0, 14, 0, 0 - 1, 16, 16, 276], IFM2 [ - ], padding: [top:0,left:1,bottom:1,right:1], cascaded
+76 Conv2D OFM area [0, 15, 0, 0 - 1, 16, 16, 276], IFM [0, 15, 0, 0 - 1, 16, 16, 276], IFM2 [ - ], cascaded
+77 DepthwiseConv2D OFM area [0, 13, 0, 0 - 1, 14, 16, 276], IFM [0, 12, 0, 0 - 1, 16, 16, 276], IFM2 [ - ], padding: [top:0,left:1,bottom:0,right:1], cascaded
+78 Conv2D OFM area [0, 12, 0, 0 - 1, 14, 16, 276], IFM [0, 12, 0, 0 - 1, 14, 16, 276], IFM2 [ - ], cascaded
+79 DepthwiseConv2D OFM area [0, 14, 0, 0 - 1, 15, 16, 276], IFM [0, 13, 0, 0 - 1, 16, 16, 276], IFM2 [ - ], padding: [top:0,left:1,bottom:0,right:1], cascaded
+80 DepthwiseConv2D OFM area [0, 15, 0, 0 - 1, 16, 16, 276], IFM [0, 14, 0, 0 - 1, 16, 16, 276], IFM2 [ - ], padding: [top:0,left:1,bottom:1,right:1], cascaded
+81 Conv2D OFM area [0, 14, 0, 0 - 1, 16, 16, 276], IFM [0, 14, 0, 0 - 1, 16, 16, 276], IFM2 [ - ], cascaded
+82 DepthwiseConv2D OFM area [0, 0, 0, 0 - 1, 8, 8, 276], IFM [0, 0, 0, 0 - 1, 16, 16, 276], IFM2 [ - ], padding: [top:0,left:0,bottom:1,right:1]
+83 Conv2D OFM area [0, 0, 0, 0 - 1, 8, 8, 276], IFM [0, 0, 0, 0 - 1, 8, 8, 276], IFM2 [ - ]
+84 DepthwiseConv2D OFM area [0, 0, 0, 0 - 1, 4, 4, 276], IFM [0, 0, 0, 0 - 1, 8, 8, 276], IFM2 [ - ], padding: [top:0,left:0,bottom:1,right:1]
+85 Conv2D OFM area [0, 0, 0, 0 - 1, 4, 4, 276], IFM [0, 0, 0, 0 - 1, 4, 4, 276], IFM2 [ - ]
+86 AvgPool OFM area [0, 0, 0, 0 - 1, 1, 1, 276], IFM [0, 0, 0, 0 - 1, 4, 4, 276], IFM2 [ - ]
+87 Conv2D OFM area [0, 0, 0, 0 - 1, 1, 1, 8], IFM [0, 0, 0, 0 - 1, 1, 1, 276], IFM2 [ - ]
+
+Network summary for ad_medium_int8
+Accelerator configuration              Ethos_U85_1024
+System configuration             Ethos_U85_SYS_DRAM_Mid_1024
+Memory mode                            Dedicated_Sram
+Accelerator clock                                1000 MHz
+Design peak SRAM bandwidth                      29.80 GB/s
+Design peak DRAM bandwidth                      22.35 GB/s
+
+Total SRAM used                                116.70 KiB
+Total DRAM used                                567.78 KiB
+
+CPU operators = 0 (0.0%)
+NPU operators = 13 (100.0%)
+
+Average SRAM bandwidth                           2.75 GB/s
+Input   SRAM bandwidth                           0.85 MB/batch
+Weight  SRAM bandwidth                           0.04 MB/batch
+Output  SRAM bandwidth                           0.51 MB/batch
+Total   SRAM bandwidth                           1.42 MB/batch
+Total   SRAM bandwidth            per input      1.42 MB/inference (batch size 1)
+
+Average DRAM bandwidth                           6.90 GB/s
+Input   DRAM bandwidth                           0.18 MB/batch
+Weight  DRAM bandwidth                           3.12 MB/batch
+Output  DRAM bandwidth                           0.12 MB/batch
+Total   DRAM bandwidth                           3.57 MB/batch
+Total   DRAM bandwidth            per input      3.57 MB/inference (batch size 1)
+
+Neural network macs                          61466400 MACs/batch
+
