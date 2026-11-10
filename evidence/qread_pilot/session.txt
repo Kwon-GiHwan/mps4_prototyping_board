@@ -1,0 +1,6 @@
+# Owner sudo session 2026-11-10: QREAD pilot boots 325-326 (contract evidence/qread_pilot/contract.md 67eb2e5), TA profile 1; ends with postflight
+user python3 mcc.py USB_ON 4 && sleep 5 && test -e /dev/sdb1
+deploy_mlek /home/gihwan/evsweep_qread_pilot /home/gihwan/evsweep/evidence_qread_pilot
+user sh run_driver_campaign.sh /home/gihwan/evsweep_qread_pilot /home/gihwan/evsweep_qread_pilot_run /home/gihwan/evsweep_qread_pilot/ids.txt /home/gihwan/evsweep_qread_pilot/plan.txt 5
+restore_mlek /home/gihwan/evsweep/evidence_qread_pilot /home/gihwan/evsweep_qread_pilot
+user sh postflight.sh
