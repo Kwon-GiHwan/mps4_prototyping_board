@@ -1,0 +1,5 @@
+pair,verdict,mac_change_pct,mac_active,npu_active_pass_a,npu_active_change_pct_a,npu_active_change_pct_b,pass_b_verdict,tolerance,ext_read_beats,ext_write_beats,vela_npu_cycles_change_pct,schedule_changed,block,ublock
+s4_conv_base->s4c_conv_cout94,NOT_PROPORTIONAL_TO_MAC,-2.083,2304.0 -> 2304.0,21124.5 -> 22192.0,5.05,7.36,NOT_PROPORTIONAL_TO_MAC,1047,1437.0 -> 1435.0,3456.0 -> 6408.0,-1.96,False,6x12x96 -> 6x12x96,2x2x32 -> 2x2x32
+s4_conv_base->s4c_conv_cout97,NOT_PROPORTIONAL_TO_MAC,1.042,2304.0 -> 2016.0,21124.5 -> 25977.0,22.97,24.89,NOT_PROPORTIONAL_TO_MAC,1047,1437.0 -> 1420.0,3456.0 -> 7272.0,0.9,True,6x12x96 -> 6x12x112,2x2x32 -> 2x4x16
+s4_dw_base->s4c_dw_c142,NOT_PROPORTIONAL_TO_MAC,-1.389,31752.0 -> 31752.0,159759.5 -> 168400.5,5.41,5.67,NOT_PROPORTIONAL_TO_MAC,1597.595,31556.0 -> 58675.0,28224.0 -> 52528.0,0.0,False,26x28x16 -> 26x28x16,2x4x16 -> 2x4x16
+s4_dw_base->s4c_dw_c145,NOT_PROPORTIONAL_TO_MAC,0.694,31752.0 -> 35280.0,159759.5 -> 187345.5,17.27,17.49,NOT_PROPORTIONAL_TO_MAC,1597.595,31556.0 -> 64477.0,28224.0 -> 57820.0,10.78,False,26x28x16 -> 26x28x16,2x4x16 -> 2x4x16
