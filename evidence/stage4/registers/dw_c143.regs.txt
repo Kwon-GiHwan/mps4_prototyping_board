@@ -1,0 +1,137 @@
+High level NPU operations:
+0 DepthwiseConv2D , subOps:[  Relu6 ], size=3,3 stride=1,1, dilation=1,1 padding=[t:1,l:1,b:1,r:1,n:0,f:0] OFM Block=[26, 28, 16], IFM Block=[1, 28, 32, 16], OFM UBlock=[2, 4, 16] Traversal=Depthwise, AccType=Acc32
+  IFM: ifm, [1, 56, 56, 143], format: 1, Dram:FeatureMap, address: 0x6d7c0
+  OFM: ofm, [1, 56, 56, 143], format: 1, Dram:FeatureMap, address: 0x0
+  Weights: weights, 8 ranges, buffering: 2, Sram:Staging, address: 0x0, format: Default
+High level command stream:
+0 DMA src: Dram:ReadOnly, address: 0x0, dest: Sram:Staging, address: 0x0, sizes: (N/A), length: 480
+1 DepthwiseConv2D OFM area [0, 0, 0, 0 - 1, 56, 56, 16], IFM [0, 0, 0, 0 - 1, 56, 56, 16], IFM2 [ - ], padding: [top:1,left:1,bottom:1,right:1], buffered
+2 DMA src: Dram:ReadOnly, address: 0x1e0, dest: Sram:Staging, address: 0x1e0, sizes: (N/A), length: 2736
+3 DepthwiseConv2D OFM area [0, 0, 0, 16 - 1, 56, 56, 143], IFM [0, 0, 0, 16 - 1, 56, 56, 143], IFM2 [ - ], padding: [top:1,left:1,bottom:1,right:1], buffered
+Register command stream: 133 words
+  Offset: Payload Param Code - Command                        Param, Fields
+// DMA src: Dram:ReadOnly, address: 0x0, dest: Sram:Staging, address: 0x0, sizes: (N/A), length: 480
+0x000000:          0000 0130 - NPU_SET_DMA0_SRC_REGION            0, region = 0, region_mode = DMA_REGION_MODE_EXTERNAL, stride_mode = DMA_STRIDE_MODE_D1, idx_mode = DMA_IDX_MODE_DISABLED
+0x000004: 00000000 0000 4030 - NPU_SET_DMA0_SRC                   0, addr = 0x0
+0x00000c:          0002 0131 - NPU_SET_DMA0_DST_REGION            2, region = 2, region_mode = DMA_REGION_MODE_EXTERNAL, idx_mode = DMA_IDX_MODE_DISABLED
+0x000010: 00000000 0000 4031 - NPU_SET_DMA0_DST                   0, addr = 0x0
+0x000018: 000001e0 0000 4032 - NPU_SET_DMA0_LEN                   0, addr = 0x1e0
+0x000020:          0000 0010 - NPU_OP_DMA_START                   0
+// DepthwiseConv2D , subOps:[  Relu6 ], size=3,3 stride=1,1, dilation=1,1 padding=[t:1,l:1,b:1,r:1,n:0,f:0] OFM Block=[26, 28, 16], IFM Block=[1, 28, 32, 16], OFM UBlock=[2, 4, 16] Traversal=Depthwise, AccType=Acc32
+0x000024: 7370825f 0028 4024 - NPU_SET_OFM_SCALE                 40, shift = 40, dbl_rnd = 0, round_mode = ROUND_MODE_OFM_DOUBLE_SYMMETRIC, scale = 1936753247
+0x00002c:          0001 0105 - NPU_SET_IFM_PRECISION              1, activation_type = ACTIVATION_TYPE_SIGNED, activation_precision = ACTIVATION_PRECISION_B8, activation_format = ACTIVATION_FORMAT_NHWC, activation_storage = ACTIVATION_STORAGE_TILE2X2
+0x000030:          0001 010f - NPU_SET_IFM_REGION                 1, region = 1
+0x000034: 0006d7c0 0000 4000 - NPU_SET_IFM_BASE0                  0, addr = 0x6d7c0
+0x00003c: 00000000 0000 4001 - NPU_SET_IFM_BASE1                  0, addr = 0x0
+0x000044: 00000000 0000 4002 - NPU_SET_IFM_BASE2                  0, addr = 0x0
+0x00004c: 00000000 0000 4003 - NPU_SET_IFM_BASE3                  0, addr = 0x0
+0x000054:          0037 010b - NPU_SET_IFM_HEIGHT0_M1            55, height_m1 = 55
+0x000058:          0037 010c - NPU_SET_IFM_HEIGHT1_M1            55, height_m1 = 55
+0x00005c:          0037 010a - NPU_SET_IFM_WIDTH0_M1             55, width_m1 = 55
+0x000060:          000f 0104 - NPU_SET_IFM_DEPTH_M1              15, depth_m1 = 15
+0x000064: 00001f48 0000 4005 - NPU_SET_IFM_STRIDE_Y               0, addr = 0x1f48
+0x00006c: 0000008f 0000 4004 - NPU_SET_IFM_STRIDE_X               0, addr = 0x8f
+0x000074: 00000001 0000 4006 - NPU_SET_IFM_STRIDE_C               0, addr = 0x1
+0x00007c:          0000 0109 - NPU_SET_IFM_ZERO_POINT             0, zero_point = 0
+0x000080:          0000 0107 - NPU_SET_IFM_UPSCALE                0, mode = IFM_UPSCALE_MODE_NONE
+0x000084:          0001 0100 - NPU_SET_IFM_PAD_TOP                1, pad = 1
+0x000088:          0001 0101 - NPU_SET_IFM_PAD_LEFT               1, pad = 1
+0x00008c:          0001 0103 - NPU_SET_IFM_PAD_BOTTOM             1, pad = 1
+0x000090:          0001 0102 - NPU_SET_IFM_PAD_RIGHT              1, pad = 1
+0x000094:          0001 0114 - NPU_SET_OFM_PRECISION              1, activation_type = ACTIVATION_TYPE_SIGNED, activation_precision = ACTIVATION_PRECISION_B8, activation_format = ACTIVATION_FORMAT_NHWC, scale_mode = OFM_SCALE_MODE_PER_CHANNEL, activation_reverse = ACTIVATION_REVERSE_NONE, activation_transpose = ACTIVATION_TRANSPOSE_HWC, activation_storage = ACTIVATION_STORAGE_TILE2X2
+0x000098:          0001 011f - NPU_SET_OFM_REGION                 1, region = 1
+0x00009c: 00000000 0000 4010 - NPU_SET_OFM_BASE0                  0, addr = 0x0
+0x0000a4: 00000000 0000 4011 - NPU_SET_OFM_BASE1                  0, addr = 0x0
+0x0000ac: 00000000 0000 4012 - NPU_SET_OFM_BASE2                  0, addr = 0x0
+0x0000b4: 00000000 0000 4013 - NPU_SET_OFM_BASE3                  0, addr = 0x0
+0x0000bc:          0037 0112 - NPU_SET_OFM_HEIGHT_M1             55, height_m1 = 55
+0x0000c0:          0037 0111 - NPU_SET_OFM_WIDTH_M1              55, width_m1 = 55
+0x0000c4:          000f 0113 - NPU_SET_OFM_DEPTH_M1              15, depth_m1 = 15
+0x0000c8:          0037 011b - NPU_SET_OFM_HEIGHT0_M1            55, height_m1 = 55
+0x0000cc:          0037 011c - NPU_SET_OFM_HEIGHT1_M1            55, height_m1 = 55
+0x0000d0:          0037 011a - NPU_SET_OFM_WIDTH0_M1             55, width_m1 = 55
+0x0000d4: 00001f48 0000 4015 - NPU_SET_OFM_STRIDE_Y               0, addr = 0x1f48
+0x0000dc: 0000008f 0000 4014 - NPU_SET_OFM_STRIDE_X               0, addr = 0x8f
+0x0000e4: 00000001 0000 4016 - NPU_SET_OFM_STRIDE_C               0, addr = 0x1
+0x0000ec:          0000 0118 - NPU_SET_OFM_ZERO_POINT             0, zero_point = 0
+0x0000f0:          0002 0121 - NPU_SET_KERNEL_HEIGHT_M1           2, height_m1 = 2
+0x0000f4:          0002 0120 - NPU_SET_KERNEL_WIDTH_M1            2, width_m1 = 2
+0x0000f8:          0000 0122 - NPU_SET_KERNEL_STRIDE              0, stride_x_lsb = 0, stride_y_lsb = 0, weight_order = WEIGHT_ORDER_DEPTH_FIRST, dilation_x = KERNEL_DILATION_NONE, dilation_y = KERNEL_DILATION_NONE, decomposition = KERNEL_DECOMPOSITION_D8X8, stride_x_msb = 0, stride_y_msb = 0
+0x0000fc:          0000 012e - NPU_SET_WEIGHT_FORMAT              0, weight_format = WEIGHT_FORMAT_SWD, weight_sparsity = WEIGHT_SPARSITY_NONE
+0x000100:          0002 0128 - NPU_SET_WEIGHT_REGION              2, region = 2
+0x000104: 000000a0 0000 4020 - NPU_SET_WEIGHT_BASE                0, addr = 0xa0
+0x00010c: 00000050 0000 4021 - NPU_SET_WEIGHT_LENGTH              0, length = 80
+0x000114: 000000f0 0000 4090 - NPU_SET_WEIGHT1_BASE               0, addr = 0xf0
+0x00011c: 00000050 0000 4091 - NPU_SET_WEIGHT1_LENGTH             0, length = 80
+0x000124: 00000140 0000 4092 - NPU_SET_WEIGHT2_BASE               0, addr = 0x140
+0x00012c: 00000050 0000 4093 - NPU_SET_WEIGHT2_LENGTH             0, length = 80
+0x000134: 00000190 0000 4094 - NPU_SET_WEIGHT3_BASE               0, addr = 0x190
+0x00013c: 00000050 0000 4095 - NPU_SET_WEIGHT3_LENGTH             0, length = 80
+0x000144:          0002 0129 - NPU_SET_SCALE_REGION               2, region = 2
+0x000148: 00000000 0000 4022 - NPU_SET_SCALE_BASE                 0, addr = 0x0
+0x000150: 000000a0 0000 4023 - NPU_SET_SCALE_LENGTH               0, length = 160
+0x000158:          0000 0125 - NPU_SET_ACTIVATION                 0, activation_function = ACTIVATION_FUNCTION_LUT_NONE, table = 0, activation_clip_range = ACTIVATION_CLIP_RANGE_B16
+0x00015c:          0000 0126 - NPU_SET_ACTIVATION_MIN             0, clip_boundary = 0
+0x000160:          007f 0127 - NPU_SET_ACTIVATION_MAX           127, clip_boundary = 127
+0x000164:          0019 0116 - NPU_SET_OFM_BLK_HEIGHT_M1         25, height_m1 = 25
+0x000168:          001b 0115 - NPU_SET_OFM_BLK_WIDTH_M1          27, width_m1 = 27
+0x00016c:          000f 0117 - NPU_SET_OFM_BLK_DEPTH_M1          15, depth_m1 = 15
+0x000170:          0400 0124 - NPU_SET_ACC_FORMAT              1024, acc_format = ACC_FORMAT_I32, acc_input = ACC_INPUT_RESET, acc_output = ACC_OUTPUT_ENABLE, microblock = MICROBLOCK_U2X4
+0x000174:          0000 012f - NPU_SET_BLOCKDEP                   0, blockdep = 0
+0x000178:          0000 0011 - NPU_OP_DMA_WAIT                    0, k = 0
+0x00017c:          0000 0003 - NPU_OP_DEPTHWISE                   0
+// DMA src: Dram:ReadOnly, address: 0x1e0, dest: Sram:Staging, address: 0x1e0, sizes: (N/A), length: 2736
+0x000180: 000001e0 0000 4030 - NPU_SET_DMA0_SRC                   0, addr = 0x1e0
+0x000188: 000001e0 0000 4031 - NPU_SET_DMA0_DST                   0, addr = 0x1e0
+0x000190: 00000ab0 0000 4032 - NPU_SET_DMA0_LEN                   0, addr = 0xab0
+0x000198:          0000 0010 - NPU_OP_DMA_START                   0
+// DepthwiseConv2D , subOps:[  Relu6 ], size=3,3 stride=1,1, dilation=1,1 padding=[t:1,l:1,b:1,r:1,n:0,f:0] OFM Block=[26, 28, 16], IFM Block=[1, 28, 32, 16], OFM UBlock=[2, 4, 16] Traversal=Depthwise, AccType=Acc32
+0x00019c: 0006d7d0 0000 4000 - NPU_SET_IFM_BASE0                  0, addr = 0x6d7d0
+0x0001a4:          007e 0104 - NPU_SET_IFM_DEPTH_M1             126, depth_m1 = 126
+0x0001a8: 00000010 0000 4010 - NPU_SET_OFM_BASE0                  0, addr = 0x10
+0x0001b0:          007e 0113 - NPU_SET_OFM_DEPTH_M1             126, depth_m1 = 126
+0x0001b4: 000006e0 0000 4020 - NPU_SET_WEIGHT_BASE                0, addr = 0x6e0
+0x0001bc: 00000170 0000 4021 - NPU_SET_WEIGHT_LENGTH              0, length = 368
+0x0001c4: 00000850 0000 4090 - NPU_SET_WEIGHT1_BASE               0, addr = 0x850
+0x0001cc: 00000170 0000 4091 - NPU_SET_WEIGHT1_LENGTH             0, length = 368
+0x0001d4: 000009c0 0000 4092 - NPU_SET_WEIGHT2_BASE               0, addr = 0x9c0
+0x0001dc: 00000170 0000 4093 - NPU_SET_WEIGHT2_LENGTH             0, length = 368
+0x0001e4: 00000b30 0000 4094 - NPU_SET_WEIGHT3_BASE               0, addr = 0xb30
+0x0001ec: 00000160 0000 4095 - NPU_SET_WEIGHT3_LENGTH             0, length = 352
+0x0001f4: 000001e0 0000 4022 - NPU_SET_SCALE_BASE                 0, addr = 0x1e0
+0x0001fc: 00000500 0000 4023 - NPU_SET_SCALE_LENGTH               0, length = 1280
+0x000204:          0007 012f - NPU_SET_BLOCKDEP                   7, blockdep = 7
+0x000208:          0000 0011 - NPU_OP_DMA_WAIT                    0, k = 0
+0x00020c:          0000 0003 - NPU_OP_DEPTHWISE                   0
+0x000210:          ffff 0000 - NPU_OP_STOP                    65535, mask = 65535
+
+Network summary for s4_dw_c143
+Accelerator configuration              Ethos_U85_1024
+System configuration             Ethos_U85_SYS_DRAM_Mid_1024
+Memory mode                            Dedicated_Sram
+Accelerator clock                                1000 MHz
+Design peak SRAM bandwidth                      29.80 GB/s
+Design peak DRAM bandwidth                      22.35 GB/s
+
+Total SRAM used                                  3.14 KiB
+Total DRAM used                                879.02 KiB
+
+CPU operators = 0 (0.0%)
+NPU operators = 1 (100.0%)
+
+Average SRAM bandwidth                           0.02 GB/s
+Input   SRAM bandwidth                           0.00 MB/batch
+Weight  SRAM bandwidth                           0.01 MB/batch
+Output  SRAM bandwidth                           0.00 MB/batch
+Total   SRAM bandwidth                           0.02 MB/batch
+Total   SRAM bandwidth            per input      0.02 MB/inference (batch size 1)
+
+Average DRAM bandwidth                           9.90 GB/s
+Input   DRAM bandwidth                           5.87 MB/batch
+Weight  DRAM bandwidth                           0.00 MB/batch
+Output  DRAM bandwidth                           3.42 MB/batch
+Total   DRAM bandwidth                           9.29 MB/batch
+Total   DRAM bandwidth            per input      9.29 MB/inference (batch size 1)
+
+Neural network macs                           4036032 MACs/batch
+

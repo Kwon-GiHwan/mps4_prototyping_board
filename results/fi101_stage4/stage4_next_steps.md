@@ -6,7 +6,7 @@ From Stage 4A/4B (`stage4_analysis.md`, TA profile 1). Proposals and open hypoth
 
 | id | hypothesis | why open |
 | --- | --- | --- |
-| H4-a | Channel counts that are not a multiple of 16 make NHWC rows in DRAM cost about twice the beats (seen: Cout 95 writes, DW 143 reads and writes) | one shape each; mechanism `UNVERIFIED`; Cin 15 did not show it |
+| H4-a | A DRAM tensor whose pixel stride is not a multiple of 16 bytes, accessed in channel slices narrower than its depth, costs about twice the beats (seen: Cout 95 OFM, DW 143 IFM/OFM; not seen: Cin 15 IFM read at full depth) | candidate from `stage4_analysis.md` §6; beat counts not derived from it; mechanism `UNVERIFIED` |
 | H4-b | The penalty belongs to DRAM-resident feature maps and disappears when the maps are in SRAM (as inside the models) | Stage 4 placed every IFM/OFM in DRAM |
 | H4-c | MAC time is quantized by a channel granularity (≥ 16), so per-MAC cost rises step-wise below a boundary | only −1 steps from 16/96/144/288 measured |
 | H4-d | DWConv's fixed 128 MACs per active cycle contributes to low MAC-cycle efficiency in yolo/vww4/mobilenet | shown in isolation only |
@@ -16,7 +16,8 @@ From Stage 4A/4B (`stage4_analysis.md`, TA profile 1). Proposals and open hypoth
 ## Stage 4C — scaling (priority order)
 
 1. **Channel sweep across boundaries** (H4-a, H4-c): Conv 1×1 and DW 3×3 at one H×W with C ∈ {128, 136, 143, 144, 152, 160}
-   (and Cout for Conv); look for the beat doubling and MAC_ACTIVE steps at 8- vs 16-channel granularity.
+   (and Cout for Conv); look for the beat increase and MAC_ACTIVE steps, and record each kernel's channel slicing so
+   sliced and full-depth access can be told apart.
 2. **Cin scaling for Conv** (H4-e): Cin ∈ {16, 32, 64, 128} at fixed Cout and H×W — MACs per MAC_ACTIVE cycle (384 at
    Cin 16) and MAC activity share.
 3. **Spatial scaling** (H4-e): H×W ∈ {12², 24², 48²} for the Conv base and DW base — fixed vs size-proportional costs.
