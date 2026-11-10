@@ -1,0 +1,15 @@
+index,offset,stream_op,optimised_id,optimised_op,ofm_hwc,source_id,source_op
+0,380,CONV,60,Conv2D,32x32x192,1,Conv2D
+1,512,CONV,60,Conv2D,32x32x192,1,Conv2D
+2,752,DEPTHWISE,58,DepthwiseConv2D,16x16x192,2,DepthwiseConv2D
+3,948,CONV,56,Conv2D,16x16x276,3,Conv2D
+4,1100,DEPTHWISE,54,DepthwiseConv2D,16x16x276,4,DepthwiseConv2D
+5,1236,CONV,52,Conv2D,16x16x276,5,Conv2D
+6,1372,DEPTHWISE,50,DepthwiseConv2D,16x16x276,6,DepthwiseConv2D
+7,1508,CONV,48,Conv2D,16x16x276,7,Conv2D
+8,1676,DEPTHWISE,46,DepthwiseConv2D,8x8x276,8,DepthwiseConv2D
+9,1832,CONV,44,Conv2D,8x8x276,9,Conv2D
+10,2008,DEPTHWISE,42,DepthwiseConv2D,4x4x276,10,DepthwiseConv2D
+11,2168,CONV,40,Conv2D,4x4x276,11,Conv2D
+12,2268,POOL,38,AvgPool,1x1x276,12,AvgPool
+13,2472,CONV,37,Conv2D,1x1x8,13,Conv2D

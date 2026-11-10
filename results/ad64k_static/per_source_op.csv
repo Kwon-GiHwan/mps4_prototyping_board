@@ -1,0 +1,40 @@
+config,source_id,source_op,kernels,ofm_rows_per_kernel,cascaded,block,microblock,ofm_ublock,ofm_ublocks,acc_input,kernel,ifm_region,ofm_region,weight_region,ofm_elems,ifm_elems,weight_stream_bytes,dma_bytes
+base,1,Conv2D,2,0-32,False,8x32x32,U2X2,2x2x32,1792,0,3x3,DRAM(arena),SRAM(fast),SRAM(fast),196608,2048,3104,5344
+base,2,DepthwiseConv2D,1,0-16,False,20x8x16,U2X4,2x4x16,384,0,3x3,SRAM(fast),SRAM(fast),SRAM(fast),49152,196608,2176,4096
+base,3,Conv2D,1,0-16,False,8x16x64,U2X2,2x2x32,576,0,1x1,SRAM(fast),SRAM(fast),DRAM(const),70656,49152,58016,0
+base,4,DepthwiseConv2D,1,0-16,False,16x16x32,U2X4,2x4x16,576,0,3x3,SRAM(fast),SRAM(fast),DRAM(const),70656,70656,3104,0
+base,5,Conv2D,1,0-16,False,8x16x64,U2X2,2x2x32,576,0,1x1,SRAM(fast),SRAM(fast),DRAM(const),70656,70656,87376,0
+base,6,DepthwiseConv2D,1,0-16,False,16x16x32,U2X4,2x4x16,576,0,3x3,SRAM(fast),SRAM(fast),DRAM(const),70656,70656,3104,0
+base,7,Conv2D,1,0-16,False,8x16x64,U2X2,2x2x32,576,0,1x1,SRAM(fast),SRAM(fast),DRAM(const),70656,70656,87344,0
+base,8,DepthwiseConv2D,1,0-8,False,8x8x32,U2X4,2x4x16,144,0,3x3,SRAM(fast),SRAM(fast),DRAM(const),17664,70656,3104,0
+base,9,Conv2D,1,0-8,False,8x8x96,U2X2,2x2x32,144,0,1x1,SRAM(fast),SRAM(fast),DRAM(const),17664,17664,87360,0
+base,10,DepthwiseConv2D,1,0-4,False,4x4x64,U2X4,2x4x16,36,0,3x3,SRAM(fast),SRAM(fast),DRAM(const),4416,17664,3104,0
+base,11,Conv2D,1,0-4,False,4x4x288,U2X2,2x2x32,36,0,1x1,SRAM(fast),SRAM(fast),DRAM(const),4416,4416,87344,0
+base,12,AvgPool,1,0-1,False,2x4x192,U2X4,2x4x16,18,0,4x4,SRAM(fast),SRAM(fast),,276,4416,0,0
+base,13,Conv2D,1,0-1,False,2x2x32,U2X2,2x2x32,1,0,1x1,SRAM(fast),DRAM(arena),DRAM(const),8,276,3520,0
+cache64k,1,Conv2D,16,16 stripes,True,2x32x96,U2X2,2x2x32,1536,0,3x3,DRAM(arena),SRAM(fast),SRAM(fast),196608,2464,46336,4816
+cache64k,2,DepthwiseConv2D,16,16 stripes,True,2x8x64,U2X4,2x4x16,768,0,3x3,SRAM(fast),SRAM(fast),SRAM(fast),49152,380928,34816,4096
+cache64k,3,Conv2D,16,16 stripes,True,1x16x288,U1X4,1x4x32,576,0,1x1,SRAM(fast),DRAM(arena),DRAM(const),70656,49152,928256,0
+cache64k,4,DepthwiseConv2D,3,0-6/12-16/6-12,True,6x16x64,U2X4,2x4x16,576,0,3x3,DRAM(arena),SRAM(fast),SRAM(fast),70656,97152,9312,5984
+cache64k,5,Conv2D,3,0-6/12-16/6-12,True,6x8x160,U2X2,2x2x32,576,0,1x1,SRAM(fast),DRAM(arena),DRAM(const),70656,70656,262128,0
+cache64k,6,DepthwiseConv2D,3,0-6/12-16/6-12,True,6x16x64,U2X4,2x4x16,576,0,3x3,DRAM(arena),SRAM(fast),SRAM(fast),70656,97152,9312,5984
+cache64k,7,Conv2D,3,0-6/12-16/6-12,True,6x8x160,U2X2,2x2x32,576,0,1x1,SRAM(fast),DRAM(arena),DRAM(const),70656,70656,262032,0
+cache64k,8,DepthwiseConv2D,1,0-8,False,8x8x32,U2X4,2x4x16,144,0,3x3,DRAM(arena),SRAM(fast),DRAM(const),17664,70656,3104,0
+cache64k,9,Conv2D,1,0-8,False,8x8x96,U2X2,2x2x32,144,0,1x1,SRAM(fast),SRAM(fast),DRAM(const),17664,17664,87360,0
+cache64k,10,DepthwiseConv2D,1,0-4,False,4x4x64,U2X4,2x4x16,36,0,3x3,SRAM(fast),SRAM(fast),DRAM(const),4416,17664,3104,0
+cache64k,11,Conv2D,1,0-4,False,4x4x288,U2X2,2x2x32,36,0,1x1,SRAM(fast),SRAM(fast),DRAM(const),4416,4416,87344,0
+cache64k,12,AvgPool,1,0-1,False,2x4x192,U2X4,2x4x16,18,0,4x4,SRAM(fast),SRAM(fast),,276,4416,0,0
+cache64k,13,Conv2D,1,0-1,False,2x2x32,U2X2,2x2x32,1,0,1x1,SRAM(fast),DRAM(arena),DRAM(const),8,276,3520,0
+cache0,1,Conv2D,1,0-32,False,8x32x32,U2X2,2x2x32,1536,0,3x3,DRAM(arena),DRAM(arena),DRAM(const),196608,1024,2896,0
+cache0,2,DepthwiseConv2D,1,0-16,False,20x8x16,U2X4,2x4x16,384,0,3x3,DRAM(arena),DRAM(arena),DRAM(const),49152,196608,2176,0
+cache0,3,Conv2D,1,0-16,False,8x16x64,U2X2,2x2x32,576,0,1x1,DRAM(arena),DRAM(arena),DRAM(const),70656,49152,58016,0
+cache0,4,DepthwiseConv2D,1,0-16,False,16x16x32,U2X4,2x4x16,576,0,3x3,DRAM(arena),DRAM(arena),DRAM(const),70656,70656,3104,0
+cache0,5,Conv2D,1,0-16,False,8x16x64,U2X2,2x2x32,576,0,1x1,DRAM(arena),DRAM(arena),DRAM(const),70656,70656,87376,0
+cache0,6,DepthwiseConv2D,1,0-16,False,16x16x32,U2X4,2x4x16,576,0,3x3,DRAM(arena),DRAM(arena),DRAM(const),70656,70656,3104,0
+cache0,7,Conv2D,1,0-16,False,8x16x64,U2X2,2x2x32,576,0,1x1,DRAM(arena),DRAM(arena),DRAM(const),70656,70656,87344,0
+cache0,8,DepthwiseConv2D,1,0-8,False,8x8x32,U2X4,2x4x16,144,0,3x3,DRAM(arena),DRAM(arena),DRAM(const),17664,70656,3104,0
+cache0,9,Conv2D,1,0-8,False,8x8x96,U2X2,2x2x32,144,0,1x1,DRAM(arena),DRAM(arena),DRAM(const),17664,17664,87360,0
+cache0,10,DepthwiseConv2D,1,0-4,False,4x4x64,U2X4,2x4x16,36,0,3x3,DRAM(arena),DRAM(arena),DRAM(const),4416,17664,3104,0
+cache0,11,Conv2D,1,0-4,False,4x4x288,U2X2,2x2x32,36,0,1x1,DRAM(arena),DRAM(arena),DRAM(const),4416,4416,87344,0
+cache0,12,AvgPool,1,0-1,False,2x4x192,U2X4,2x4x16,18,0,4x4,DRAM(arena),DRAM(arena),,276,4416,0,0
+cache0,13,Conv2D,1,0-1,False,2x2x32,U2X2,2x2x32,1,0,1x1,DRAM(arena),DRAM(arena),DRAM(const),8,276,3520,0

@@ -4,10 +4,13 @@ operator, from Vela's debug database (`--enable-debug-db`). POST_HOC_DESCRIPTIVE
 
 Runs in the benchmark-runner container (vela, tflite):
 
-  python3 vela_op_map.py <out dir> <model.tflite>...
+  python3 vela_op_map.py <out dir> [--vela-option=OPT ...] <model.tflite>...
 
 Per model: <out dir>/<model>.op_map.csv (one row per command-stream kernel op) and <model>.cms.sha256 (the command
-stream of this compile, to compare with the measured blob). Vela options = pack_vela_workload.VELA_OPTIONS.
+stream of this compile, to compare with the measured blob). Vela options = pack_vela_workload.VELA_OPTIONS, plus any
+`--vela-option=OPT` (e.g. `--vela-option=--arena-cache-size=65536`, as packed with pack_vela_workload.py).
+Also written: <model>.cms.bin (the stream itself), <model>.const.sha256 and <model>.vela.sha256 (the compiled file), <model>.source.csv (debug-db `source`
+table as-is) and <model>.hlcs.txt (Vela's high-level command stream log).
 <model>.stages.csv counts kernel work at each Vela stage per operator name: optimised operators (graph optimiser),
 high-level kernel commands (scheduler; `--verbose-high-level-command-stream`, non-DMA lines) and command-stream kernel
 ops (register command stream generator). Debug-db tables used: `queue` (command-stream byte offset -> optimised_id), `optimised` (id -> source_id, operator),
@@ -65,20 +68,29 @@ def op_map(stream, t):
     return rows
 
 
-def main(out, *models):
+def main(out, *args):
     out = pathlib.Path(out); out.mkdir(parents=True, exist_ok=True)
-    for model in models:
+    extra = [a.split("=", 1)[1] for a in args if a.startswith("--vela-option=")]
+    for model in (a for a in args if not a.startswith("--vela-option=")):
         name = pathlib.Path(model).stem
         with tempfile.TemporaryDirectory() as d:
-            log = subprocess.run(["vela", model, *VELA_OPTIONS, "--output-dir", d, "--enable-debug-db",
+            log = subprocess.run(["vela", model, *VELA_OPTIONS, *extra, "--output-dir", d, "--enable-debug-db",
                                   "--verbose-high-level-command-stream"], check=True, capture_output=True, text=True).stdout
-            stream = inspect_vela(glob.glob(os.path.join(d, "*_vela.tflite"))[0])["cms"]
-            rows = op_map(stream, tables(glob.glob(os.path.join(d, "*_debug.xml"))[0]))
-        for kind, rs in (("op_map", rows), ("stages", stages(rows, hlc_ops(log)))):
+            vela_out = glob.glob(os.path.join(d, "*_vela.tflite"))[0]
+            info = inspect_vela(vela_out)
+            stream = info["cms"]
+            t = tables(glob.glob(os.path.join(d, "*_debug.xml"))[0])
+            rows = op_map(stream, t)
+            vela_sha = hashlib.sha256(open(vela_out, "rb").read()).hexdigest()
+        for kind, rs in (("op_map", rows), ("stages", stages(rows, hlc_ops(log))), ("source", t["source"])):
             with open(out / f"{name}.{kind}.csv", "w", newline="") as f:
                 w = csv.DictWriter(f, fieldnames=list(rs[0]), lineterminator="\n"); w.writeheader(); w.writerows(rs)
         (out / f"{name}.cms.sha256").write_text(hashlib.sha256(stream).hexdigest() + "\n")
-        print(name, len(rows), "kernel ops")
+        (out / f"{name}.cms.bin").write_bytes(stream)
+        (out / f"{name}.const.sha256").write_text(hashlib.sha256(info["const"]).hexdigest() + "\n")
+        (out / f"{name}.vela.sha256").write_text(vela_sha + "\n")
+        (out / f"{name}.hlcs.txt").write_text(log)
+        print(name, len(rows), "kernel ops", "extra", extra)
 
 
 if __name__ == "__main__":
