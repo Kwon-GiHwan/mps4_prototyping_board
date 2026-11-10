@@ -109,8 +109,10 @@ forced. Gate B 7/7 (one Ethos-U op, no CPU fallback); the existing Cin 16/32/64/
 - **Additional differences:** the IFM pixel stride equals Cin, so Cin 40 and 56 have IFM pixel strides that are not
   multiples of 16 (40 and 56 bytes). IFM depth steps are 1 for Cin 40–64 against 2 at Cin 32. Weight encoding grows with
   Cin. Vela's own MAC-cycle estimate drops at the switch (14,163 → 4,947).
-- **What cannot be separated by these configs:** Vela fixes the schedule by Cin. There is no Cin between 33 and 63 with
-  PartKernel and none ≤ 32 with DepthFirst under these options, so Cin and schedule stay confounded at the step. Traversal,
+- **What cannot be separated by these configs:** Vela chose the schedule from Cin. Among the compiled Cin values (16, 32,
+  40, 48, 56, 64, 128) every value ≤ 32 got PartKernel and every value ≥ 40 got DepthFirst; Cin 33–39 and the values
+  between the compiled ones were not compiled, and Vela's selection logic was not analysed from its source, so no
+  statement is made about them. In the compiled set Cin and schedule are confounded at the step. Traversal,
   IFM block depth and weight order also always switch together, so a board run cannot attribute the rate to one of them.
 
 ### Minimal board comparison (proposal only; needs its own contract and approval)

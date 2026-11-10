@@ -1,0 +1,125 @@
+{
+ "s4c2_conv_cin40": {
+  "cin": 40,
+  "n_mac": 2211840,
+  "hypotheses": {
+   "H1": 2880.0,
+   "H2": 4608,
+   "H3": 5760.0,
+   "H4": 3456.0
+  },
+  "distinct": {
+   "H1": true,
+   "H2": true,
+   "H3": true,
+   "H4": true
+  },
+  "static": {
+   "traversal": "DepthFirst",
+   "ofm_block": "6x12x96",
+   "ifm_block": "6x12x64",
+   "ofm_ublock": "2x2x32",
+   "ofm_ublocks": 576,
+   "ublock_x_steps": 576,
+   "n_kernels": 2,
+   "weight_bytes": "4992",
+   "drwl_sha256": "9f26fefd207d40a21bb1c801729b5ea1b7e03aee45c307f31d08fe909cd05519"
+  },
+  "kernels": [
+   {
+    "ofm_slice": 16,
+    "ifm_depth": 40,
+    "ofm_ublocks": 144,
+    "ifm_depth_steps": 1
+   },
+   {
+    "ofm_slice": 80,
+    "ifm_depth": 40,
+    "ofm_ublocks": 432,
+    "ifm_depth_steps": 1
+   }
+  ]
+ },
+ "s4c2_conv_cin48": {
+  "cin": 48,
+  "n_mac": 2654208,
+  "hypotheses": {
+   "H1": 3456.0,
+   "H2": 4608,
+   "H3": 6912.0,
+   "H4": 3456.0
+  },
+  "distinct": {
+   "H1": false,
+   "H2": true,
+   "H3": true,
+   "H4": false
+  },
+  "static": {
+   "traversal": "DepthFirst",
+   "ofm_block": "6x12x96",
+   "ifm_block": "6x12x64",
+   "ofm_ublock": "2x2x32",
+   "ofm_ublocks": 576,
+   "ublock_x_steps": 576,
+   "n_kernels": 2,
+   "weight_bytes": "5760",
+   "drwl_sha256": "6eb390be2874088b53970ab4f859962d5bb0b16b4e060e2e460d86840f4339d7"
+  },
+  "kernels": [
+   {
+    "ofm_slice": 16,
+    "ifm_depth": 48,
+    "ofm_ublocks": 144,
+    "ifm_depth_steps": 1
+   },
+   {
+    "ofm_slice": 80,
+    "ifm_depth": 48,
+    "ofm_ublocks": 432,
+    "ifm_depth_steps": 1
+   }
+  ]
+ },
+ "s4c2_conv_cin64": {
+  "cin": 64,
+  "n_mac": 3538944,
+  "hypotheses": {
+   "H1": 4608.0,
+   "H2": 4608,
+   "H3": 9216.0,
+   "H4": 4608.0
+  },
+  "distinct": {
+   "H1": false,
+   "H2": false,
+   "H3": true,
+   "H4": false
+  },
+  "static": {
+   "traversal": "DepthFirst",
+   "ofm_block": "6x12x96",
+   "ifm_block": "6x12x64",
+   "ofm_ublock": "2x2x32",
+   "ofm_ublocks": 576,
+   "ublock_x_steps": 576,
+   "n_kernels": 2,
+   "weight_bytes": "7296",
+   "drwl_sha256": "46a875322f77a623d8310f8f6b14447335e3c63523aac07b1bc6e06c8276f623"
+  },
+  "kernels": [
+   {
+    "ofm_slice": 16,
+    "ifm_depth": 64,
+    "ofm_ublocks": 144,
+    "ifm_depth_steps": 1
+   },
+   {
+    "ofm_slice": 80,
+    "ifm_depth": 64,
+    "ofm_ublocks": 432,
+    "ifm_depth_steps": 1
+   }
+  ]
+ }
+}
