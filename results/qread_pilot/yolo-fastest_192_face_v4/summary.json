@@ -1,0 +1,186 @@
+{
+ "P1": "UNRESOLVED",
+ "P1_detail": {
+  "active": {
+   "median": 446003.5,
+   "ref_median": 446755.5,
+   "diff_pct": -0.1683247324319459,
+   "tol": 4467.555
+  },
+  "exec": {
+   "median": 446571.5,
+   "ref_median": 447325.5,
+   "diff_pct": -0.16855734806086042,
+   "tol": 4473.255
+  }
+ },
+ "t06": {
+  "perturbation": "UNRESOLVED",
+  "perturbation_detail": {
+   "active": {
+    "median": 447419.0,
+    "ref_median": 446003.5,
+    "diff_pct": 0.31737419100972275,
+    "tol": 4460.035
+   },
+   "exec": {
+    "median": 447991.0,
+    "ref_median": 446571.5,
+    "diff_pct": 0.31786623194718366,
+    "tol": 4465.715
+   }
+  },
+  "verdict": "TRACE_INVALID",
+  "run_verdicts": [
+   "TRACE_INVALID",
+   "TRACE_INVALID",
+   "TRACE_INVALID",
+   "TRACE_INVALID"
+  ],
+  "resolved_ratio": [
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "samples": [
+   184,
+   182,
+   188,
+   190
+  ],
+  "read_cycles_max": [
+   134,
+   134,
+   136,
+   124
+  ]
+ },
+ "t10": {
+  "perturbation": "UNRESOLVED",
+  "perturbation_detail": {
+   "active": {
+    "median": 448715.5,
+    "ref_median": 446003.5,
+    "diff_pct": 0.6080669770528679,
+    "tol": 4460.035
+   },
+   "exec": {
+    "median": 449288.0,
+    "ref_median": 446571.5,
+    "diff_pct": 0.608301246273002,
+    "tol": 4465.715
+   }
+  },
+  "verdict": "TRACE_INVALID",
+  "run_verdicts": [
+   "TRACE_INVALID",
+   "TRACE_INVALID",
+   "TRACE_INVALID",
+   "TRACE_INVALID"
+  ],
+  "resolved_ratio": [
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "samples": [
+   175,
+   171,
+   174,
+   172
+  ],
+  "read_cycles_max": [
+   135,
+   134,
+   132,
+   138
+  ]
+ },
+ "t14": {
+  "perturbation": "UNRESOLVED",
+  "perturbation_detail": {
+   "active": {
+    "median": 448134.5,
+    "ref_median": 446003.5,
+    "diff_pct": 0.47779894103969767,
+    "tol": 4460.035
+   },
+   "exec": {
+    "median": 448707.0,
+    "ref_median": 446571.5,
+    "diff_pct": 0.4781988998402209,
+    "tol": 4465.715
+   }
+  },
+  "verdict": "TRACE_INVALID",
+  "run_verdicts": [
+   "TRACE_INVALID",
+   "TRACE_INVALID",
+   "TRACE_INVALID",
+   "TRACE_INVALID"
+  ],
+  "resolved_ratio": [
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "samples": [
+   36,
+   36,
+   36,
+   36
+  ],
+  "read_cycles_max": [
+   124,
+   157,
+   123,
+   118
+  ]
+ },
+ "p10": {
+  "perturbation": "UNRESOLVED",
+  "perturbation_detail": {
+   "active": {
+    "median": 446423.0,
+    "ref_median": 446003.5,
+    "diff_pct": 0.09405755784428482,
+    "tol": 4460.035
+   },
+   "exec": {
+    "median": 446995.5,
+    "ref_median": 446571.5,
+    "diff_pct": 0.09494560221599002,
+    "tol": 4465.715
+   }
+  },
+  "verdict": "TRACE_INVALID",
+  "run_verdicts": [
+   "TRACE_INVALID",
+   "TRACE_INVALID",
+   "TRACE_INVALID",
+   "TRACE_INVALID"
+  ],
+  "resolved_ratio": [
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "samples": [
+   170,
+   173,
+   169,
+   170
+  ],
+  "read_cycles_max": [
+   488,
+   432,
+   424,
+   432
+  ]
+ },
+ "P3_events": "EVENTS_AT_END"
+}

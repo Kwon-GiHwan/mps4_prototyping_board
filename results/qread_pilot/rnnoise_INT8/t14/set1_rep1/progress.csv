@@ -1,0 +1,7 @@
+sample,t_before,t_after,qread,moved_during_read,kernels_complete,newly_complete,status
+0,0,95,7296,0,48,48,0xffff0020
+1,8858,8953,0,0,0,-48,0xffff0001
+2,25270,25365,2656,0,15,15,0xffff0001
+3,41690,41785,5136,0,33,18,0xffff0001
+4,58279,58374,7296,0,48,15,0xffff0020
+5,58461,58556,7296,0,48,0,0xffff0020

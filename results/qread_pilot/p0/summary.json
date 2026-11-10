@@ -1,0 +1,42 @@
+{
+ "rnnoise_INT8": {
+  "D1": "UNPROVEN",
+  "D1_detail": {
+   "reason": "no capabilities"
+  },
+  "D2": "EXEC_OK",
+  "D3": "WINDOW_OK",
+  "D4": "STABLE",
+  "D5": "REPRODUCES_LEGACY",
+  "D5_detail": {
+   "outside": [],
+   "npu_active_driver": 50060.0,
+   "npu_active_legacy": 50436.5,
+   "npu_active_diff_pct": -0.746483201649599
+  },
+  "D6": "PMU_INERT",
+  "D6_detail": {
+   "outside": []
+  }
+ },
+ "yolo-fastest_192_face_v4": {
+  "D1": "UNPROVEN",
+  "D1_detail": {
+   "reason": "no capabilities"
+  },
+  "D2": "EXEC_OK",
+  "D3": "WINDOW_OK",
+  "D4": "STABLE",
+  "D5": "REPRODUCES_LEGACY",
+  "D5_detail": {
+   "outside": [],
+   "npu_active_driver": 446755.5,
+   "npu_active_legacy": 447982.5,
+   "npu_active_diff_pct": -0.27389462758031846
+  },
+  "D6": "PMU_INERT",
+  "D6_detail": {
+   "outside": []
+  }
+ }
+}
