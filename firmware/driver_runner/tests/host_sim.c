@@ -42,7 +42,7 @@ static uint32_t model_load(uintptr_t base, uint32_t len, uintptr_t arena, uint32
     uint32_t at = 0;
     if (len < 12 || rd32(m) != SIMM_MAGIC) { return 1u; }
     n_in = rd32(m + 4); n_out = rd32(m + 8);
-    if (n_in < 1 || n_out < 1 || n_in + n_out > 8 || len < 12 + 4 * (n_in + n_out)) { return 2u; }
+    if (n_in < 1 || n_out < 1 || n_in > 8 || n_out > 8 || len < 12 + 4 * (n_in + n_out)) { return 2u; }
     for (uint32_t i = 0; i < n_in + n_out; i++) {
         uint32_t n = rd32(m + 12 + 4 * i);
         uint8_t *p = (uint8_t *)arena + at;

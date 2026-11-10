@@ -22,7 +22,7 @@ uint32_t drwl_parse(const uint8_t *blob, uint32_t len, drwl_t *w)
     w->n_in = rd32(blob + 20);
     w->n_out = rd32(blob + 24);
     n = w->n_in + w->n_out;
-    if (w->n_in < 1U || w->n_out < 1U || w->n_in > DRWL_IO_MAX || w->n_out > DRWL_IO_MAX || n > DRWL_IO_MAX) {
+    if (w->n_in < 1U || w->n_out < 1U || w->n_in > DRWL_IO_MAX || w->n_out > DRWL_IO_MAX) {
         return 4U;
     }
     table_end = 4U * (DRWL_IO_WORD + 2U * n);

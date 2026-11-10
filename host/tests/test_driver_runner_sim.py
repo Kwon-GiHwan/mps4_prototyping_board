@@ -141,6 +141,16 @@ class Session(unittest.TestCase):
         self.assertIn("evtyper=35,48 pmccntr_cfg=0x200023 cntenset=0x80000007", l._ser.stderr)
         self.assertIn("pmcr=0x2007", l._ser.stderr)                              # cnt_en kept, both resets set
 
+    def test_four_inputs_five_outputs(self):                                     # rnnoise's IO shape
+        self.l = l = link()
+        l.set_instrumentation_mode(2, [35], 1)
+        ins = [IFM, b"a" * 24, b"b" * 48, b"c" * 96]
+        outs = [expected_output(IFM, k, n) for k, n in enumerate((4, 1, 24, 48, 96))]
+        load(l, drwl.pack(simm([len(b) for b in ins], [len(b) for b in outs]), ins, outs))
+        l.load_input(b"")
+        self.assertEqual(l.run(), 0)
+        self.assertEqual(l.last_measurement.f["ofm_mismatch"], 0)
+
     def test_output_mismatch_is_reported_not_invalid(self):
         self.l = l = link()
         l.set_instrumentation_mode(2, [35], 1)

@@ -1,4 +1,5 @@
 import struct, sys, unittest, pathlib
+from unittest import mock
 REPO = pathlib.Path(__file__).resolve().parents[2]; sys.path.insert(0, str(REPO / "host" / "lib"))
 import drwl as D
 
@@ -18,10 +19,11 @@ class Pack(unittest.TestCase):
 
     def test_pack_refusals(self):
         for args in ((b"", [b"i"], [b"g"]), (b"m", [], [b"g"]), (b"m", [b"i"], []),
-                     (b"m", [b"i"] * 5, [b"g"] * 4)):
+                     (b"m", [b"i"] * 9, [b"g"]), (b"m", [b"i"], [b"g"] * 9)):
             with self.assertRaises(ValueError):
                 D.pack(*args)
-        D.pack(b"m", [b"i"] * 4, [b"g"] * 4)       # 8 is allowed
+        D.pack(b"m", [b"i"] * 4, [b"g"] * 5)       # rnnoise: 4 inputs, 5 outputs
+        D.pack(b"m", [b"i"] * 8, [b"g"] * 8)       # 8 per side is allowed
 
 
 class Parse(unittest.TestCase):
@@ -34,7 +36,8 @@ class Parse(unittest.TestCase):
         x = bytearray(self.b); struct.pack_into("<I", x, 4, 2); bad.append(x)             # version
         x = bytearray(self.b); struct.pack_into("<I", x, 8, len(x) + 16); bad.append(x)   # total_len
         x = bytearray(self.b); struct.pack_into("<I", x, 20, 0); bad.append(x)            # no inputs
-        x = bytearray(self.b); struct.pack_into("<I", x, 24, 8); bad.append(x)            # 1 + 8 > 8
+        x = bytearray(self.b); struct.pack_into("<I", x, 24, 9); bad.append(x)            # 9 outputs > 8
+        x = bytearray(self.b); struct.pack_into("<I", x, 20, 9); bad.append(x)            # 9 inputs > 8
         x = bytearray(self.b); struct.pack_into("<I", x, 64, 8); bad.append(x)            # IFM inside the table
         x = bytearray(self.b); struct.pack_into("<I", x, 64, 104); bad.append(x)          # misaligned
         x = bytearray(self.b); struct.pack_into("<I", x, 68, 10_000); bad.append(x)       # past the end
@@ -44,6 +47,13 @@ class Parse(unittest.TestCase):
             with self.assertRaises(ValueError, msg=i):
                 D.parse(bytes(x))
 
+
+    def test_nine_on_one_side_refused_even_when_well_formed(self):
+        for ins, outs in ((1, 9), (9, 1)):
+            with mock.patch.object(D, "IO_MAX", 9):                               # build a well-formed 9-entry side
+                b = D.pack(b"M" * 20, [b"i"] * ins, [b"g"] * outs)
+            with self.assertRaises(ValueError, msg=(ins, outs)):
+                D.parse(b)
 
 if __name__ == "__main__":
     unittest.main()

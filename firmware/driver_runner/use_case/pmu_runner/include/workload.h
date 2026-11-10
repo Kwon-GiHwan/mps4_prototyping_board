@@ -11,7 +11,7 @@
 #define DRWL_VERSION      1U
 #define DRWL_HEADER_WORDS 16U
 #define DRWL_IO_WORD      16U
-#define DRWL_IO_MAX       8U
+#define DRWL_IO_MAX       8U      /* per side: inputs and outputs each */
 #define DRWL_ALIGN        16U
 
 typedef struct {

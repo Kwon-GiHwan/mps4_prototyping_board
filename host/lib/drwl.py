@@ -18,7 +18,7 @@ MAGIC = 0x4C575244   # 'DRWL'
 VERSION = 1
 HEADER_WORDS = 16
 IO_WORD = HEADER_WORDS
-IO_MAX = 8           # inputs + outputs; TFLM's ethos-u op passes at most 8 base addresses
+IO_MAX = 8           # per side: up to 8 inputs and up to 8 outputs (rnnoise has 4 and 5)
 ALIGN = 16
 HEADER_FIELDS = ("magic", "version", "total_len", "model_off", "model_len", "n_in", "n_out")
 
@@ -30,8 +30,8 @@ def align(n: int, a: int = ALIGN) -> int:
 def pack(model: bytes, ifms: list[bytes], goldens: list[bytes]) -> bytes:
     if not model or not ifms or not goldens:
         raise ValueError("a model, at least one IFM and one golden are needed")
-    if len(ifms) + len(goldens) > IO_MAX:
-        raise ValueError(f"{len(ifms)} IFMs + {len(goldens)} OFMs > {IO_MAX}")
+    if len(ifms) > IO_MAX or len(goldens) > IO_MAX:
+        raise ValueError(f"{len(ifms)} IFMs / {len(goldens)} OFMs: at most {IO_MAX} each")
     off = align(4 * (HEADER_WORDS + 2 * (len(ifms) + len(goldens))))
     places = []
     for b in [model] + ifms + goldens:
@@ -58,7 +58,7 @@ def parse(blob: bytes) -> dict:
     if h["total_len"] != len(blob):
         raise ValueError(f"total_len {h['total_len']} != {len(blob)} bytes")
     n = h["n_in"] + h["n_out"]
-    if h["n_in"] < 1 or h["n_out"] < 1 or n > IO_MAX:
+    if not 1 <= h["n_in"] <= IO_MAX or not 1 <= h["n_out"] <= IO_MAX:
         raise ValueError(f"{h['n_in']} inputs / {h['n_out']} outputs")
     t = struct.unpack_from(f"<{2 * n}I", blob, 4 * IO_WORD)
     ents = [(h["model_off"], h["model_len"])] + [(t[2 * i], t[2 * i + 1]) for i in range(n)]
