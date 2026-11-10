@@ -1,0 +1,45 @@
+=== 2026-11-10T10:45:28Z step 2: user python3 mcc.py USB_ON 4 && sleep 5 && test -e /dev/sdb1
+USB_ON
+Enabling debug USB...
+
+Cmd> 
+=== 2026-11-10T10:45:38Z step 3: deploy_mlek /home/gihwan/evsweep_qread_op /home/gihwan/evsweep/evidence_qread_op
+images.txt: OK
+APP.BIN: OK
+VECTORS.BIN: OK
+DDR.BIN: OK
+DEPLOY VERIFIED: source == destination
+dfee86499134c1d1cbf53a7098fbbca86a91b88bd24bc5b587254daed5343473  boot.bin
+178f6c4522de74ab50ffd88f4cb6a71a2b2db0f55b6cc7a79e7c143cfb932fc2  bram.bin
+374708fff7719dd5979ec875d56cd2286f6d3cf7ec317a3b25632aab28ec37bb  ddr.bin
+af688281435a73dda3b2247845149817ecc7a9bbdff5a3ccd2e4dfa52875423f  images.txt
+DEPLOY DONE: unmounted, safe to REBOOT
+=== 2026-11-10T10:45:38Z step 4: user sh run_driver_campaign.sh /home/gihwan/evsweep_qread_op /home/gihwan/evsweep_qread_op_run /home/gihwan/evsweep_qread_op/ids.txt /home/gihwan/evsweep_qread_op/plan_p12.txt 5
+mcc boot log: 10551 bytes -> /home/gihwan/evsweep_qread_op_run/conds/yolo-fastest_192_face_v4/mcc_boot.log
+Image loaded from \SOFTWARE\boot.bin
+Image loaded from \SOFTWARE\bram.bin
+Image loaded from \SOFTWARE\ddr.bin
+DDR memory test at 0x70000000: PASSED
+Clearing SCC CPUWAIT (0xFFFFFFFF80000000:0x00000000)
+--- boot328 yolo-fastest_192_face_v4 @/home/gihwan/evsweep_qread_op/conditions_p12.txt campaign exit=0
+30
+CAMPAIGN DONE
+=== 2026-11-10T10:49:51Z step 5: restore_mlek /home/gihwan/evsweep/evidence_qread_op /home/gihwan/evsweep_qread_op
+RESTORE VERIFIED
+cb78a12efd33fa72555b94ee4b8ca6faef4d9504c971c52c6cb47c75096673de  images.txt
+ffa3e5bd0363f791d61f9673074c625865f1e6a8f24e53ee303372c64ef3597d  APP.BIN
+45e943c577e3744104d53cf57c7d0afb369ff68a99e5e6906971d71503f06c92  VECTORS.BIN
+81d37a219a6b4141d0b433796711ab8af2ee2c3c668a28143a3ffe6a574ade98  DDR.BIN
+RESTORE DONE: unmounted, safe to REBOOT then USB_OFF
+=== 2026-11-10T10:49:52Z step 6: user sh postflight.sh
+mcc boot log: 10527 bytes -> /home/gihwan/evsweep/evidence/postflight/mcc_boot.log
+Image loaded from \SOFTWARE\VECTORS.BIN
+Image loaded from \SOFTWARE\APP.BIN
+Image loaded from \SOFTWARE\DDR.BIN
+DDR memory test at 0x70000000: PASSED
+Clearing SCC CPUWAIT (0xFFFFFFFF80000000:0x00000000)
+[functional-v1] PING -> Counters(state=1, version=1, rx_bytes=20, tx_bytes=0, rx_overrun=0, bad_magic=0, bad_version=0, bad_crc=0, length_error=0, sequence_error=0, parser_resync=0)
+
+Cmd> 
+POSTFLIGHT DONE: card withdrawn, board on restored image
+=== 2026-11-10T10:52:33Z SESSION DONE

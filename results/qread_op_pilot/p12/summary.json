@@ -1,0 +1,1539 @@
+{
+ "P1": "TRACE_RECOVERED",
+ "P1_perturbation": {
+  "1": {
+   "median": 447015.5,
+   "base_median": 447286.0,
+   "diff_pct": -0.06047584766794012
+  },
+  "2": {
+   "median": 448538.5,
+   "base_median": 446766.0,
+   "diff_pct": 0.396740127941686
+  },
+  "3": {
+   "median": 447400.5,
+   "base_median": 447946.5,
+   "diff_pct": -0.1218895560072486
+  }
+ },
+ "P1_runs": {
+  "set1_rep2": [
+   "TRACE_RECOVERED",
+   []
+  ],
+  "set1_rep3": [
+   "TRACE_RECOVERED",
+   []
+  ],
+  "set1_rep4": [
+   "TRACE_RECOVERED",
+   []
+  ],
+  "set1_rep5": [
+   "TRACE_RECOVERED",
+   []
+  ],
+  "set2_rep2": [
+   "TRACE_RECOVERED",
+   []
+  ],
+  "set2_rep3": [
+   "TRACE_RECOVERED",
+   []
+  ],
+  "set2_rep4": [
+   "TRACE_RECOVERED",
+   []
+  ],
+  "set2_rep5": [
+   "TRACE_RECOVERED",
+   []
+  ],
+  "set3_rep2": [
+   "TRACE_RECOVERED",
+   []
+  ],
+  "set3_rep3": [
+   "TRACE_RECOVERED",
+   []
+  ],
+  "set3_rep4": [
+   "TRACE_RECOVERED",
+   []
+  ],
+  "set3_rep5": [
+   "TRACE_RECOVERED",
+   []
+  ]
+ },
+ "kernel_offsets": {
+  "99": 18980,
+  "100": 19136
+ },
+ "P1_descriptive": {
+  "samples_with_qread_0": 2,
+  "of_them_status_running": 2,
+  "commands_completed_between_samples": {
+   "median": 0.0,
+   "max": 85,
+   "zero": 1993,
+   "n": 3128
+  },
+  "read_cycles": {
+   "median": 297.0,
+   "max": 992
+  },
+  "rejected_attempts": [
+   {
+    "sample": 33,
+    "job": true,
+    "slot": 2,
+    "offset": 24,
+    "attempt": 0,
+    "id_read": 536899585,
+    "value": 536899585,
+    "value_is_id": true,
+    "id_read_ok": true,
+    "id_read_is_prev_value": false,
+    "accepted_later": true,
+    "run": "set1_rep2"
+   },
+   {
+    "sample": 36,
+    "job": true,
+    "slot": 0,
+    "offset": 24,
+    "attempt": 0,
+    "id_read": 536899585,
+    "value": 536899585,
+    "value_is_id": true,
+    "id_read_ok": true,
+    "id_read_is_prev_value": false,
+    "accepted_later": true,
+    "run": "set1_rep2"
+   },
+   {
+    "sample": 54,
+    "job": true,
+    "slot": 2,
+    "offset": 24,
+    "attempt": 0,
+    "id_read": 536899585,
+    "value": 536899585,
+    "value_is_id": true,
+    "id_read_ok": true,
+    "id_read_is_prev_value": false,
+    "accepted_later": true,
+    "run": "set1_rep2"
+   },
+   {
+    "sample": 66,
+    "job": true,
+    "slot": 2,
+    "offset": 24,
+    "attempt": 0,
+    "id_read": 536899585,
+    "value": 536899585,
+    "value_is_id": true,
+    "id_read_ok": true,
+    "id_read_is_prev_value": false,
+    "accepted_later": true,
+    "run": "set1_rep2"
+   },
+   {
+    "sample": 70,
+    "job": true,
+    "slot": 1,
+    "offset": 4,
+    "attempt": 0,
+    "id_read": 536899585,
+    "value": 536899585,
+    "value_is_id": true,
+    "id_read_ok": true,
+    "id_read_is_prev_value": false,
+    "accepted_later": true,
+    "run": "set1_rep2"
+   },
+   {
+    "sample": 91,
+    "job": true,
+    "slot": 1,
+    "offset": 4,
+    "attempt": 0,
+    "id_read": 536899585,
+    "value": 536899585,
+    "value_is_id": true,
+    "id_read_ok": true,
+    "id_read_is_prev_value": false,
+    "accepted_later": true,
+    "run": "set1_rep2"
+   },
+   {
+    "sample": 120,
+    "job": true,
+    "slot": 2,
+    "offset": 24,
+    "attempt": 0,
+    "id_read": 536899585,
+    "value": 536899585,
+    "value_is_id": true,
+    "id_read_ok": true,
+    "id_read_is_prev_value": false,
+    "accepted_later": true,
+    "run": "set1_rep2"
+   },
+   {
+    "sample": 153,
+    "job": true,
+    "slot": 2,
+    "offset": 24,
+    "attempt": 0,
+    "id_read": 536899585,
+    "value": 536899585,
+    "value_is_id": true,
+    "id_read_ok": true,
+    "id_read_is_prev_value": false,
+    "accepted_later": true,
+    "run": "set1_rep2"
+   },
+   {
+    "sample": 245,
+    "job": true,
+    "slot": 1,
+    "offset": 4,
+    "attempt": 0,
+    "id_read": 536899585,
+    "value": 536899585,
+    "value_is_id": true,
+    "id_read_ok": true,
+    "id_read_is_prev_value": false,
+    "accepted_later": true,
+    "run": "set1_rep2"
+   },
+   {
+    "sample": 52,
+    "job": true,
+    "slot": 2,
+    "offset": 24,
+    "attempt": 0,
+    "id_read": 536899585,
+    "value": 536899585,
+    "value_is_id": true,
+    "id_read_ok": true,
+    "id_read_is_prev_value": false,
+    "accepted_later": true,
+    "run": "set1_rep3"
+   },
+   {
+    "sample": 69,
+    "job": true,
+    "slot": 0,
+    "offset": 24,
+    "attempt": 0,
+    "id_read": 536899585,
+    "value": 536899585,
+    "value_is_id": true,
+    "id_read_ok": true,
+    "id_read_is_prev_value": false,
+    "accepted_later": true,
+    "run": "set1_rep3"
+   },
+   {
+    "sample": 96,
+    "job": true,
+    "slot": 2,
+    "offset": 24,
+    "attempt": 0,
+    "id_read": 536899585,
+    "value": 536899585,
+    "value_is_id": true,
+    "id_read_ok": true,
+    "id_read_is_prev_value": false,
+    "accepted_later": true,
+    "run": "set1_rep3"
+   },
+   {
+    "sample": 131,
+    "job": true,
+    "slot": 1,
+    "offset": 4,
+    "attempt": 0,
+    "id_read": 536899585,
+    "value": 536899585,
+    "value_is_id": true,
+    "id_read_ok": true,
+    "id_read_is_prev_value": false,
+    "accepted_later": true,
+    "run": "set1_rep3"
+   },
+   {
+    "sample": 69,
+    "job": true,
+    "slot": 0,
+    "offset": 24,
+    "attempt": 0,
+    "id_read": 536899585,
+    "value": 536899585,
+    "value_is_id": true,
+    "id_read_ok": true,
+    "id_read_is_prev_value": false,
+    "accepted_later": true,
+    "run": "set1_rep4"
+   },
+   {
+    "sample": 72,
+    "job": true,
+    "slot": 0,
+    "offset": 24,
+    "attempt": 0,
+    "id_read": 536899585,
+    "value": 536899585,
+    "value_is_id": true,
+    "id_read_ok": true,
+    "id_read_is_prev_value": false,
+    "accepted_later": true,
+    "run": "set1_rep4"
+   },
+   {
+    "sample": 114,
+    "job": true,
+    "slot": 0,
+    "offset": 24,
+    "attempt": 0,
+    "id_read": 536899585,
+    "value": 536899585,
+    "value_is_id": true,
+    "id_read_ok": true,
+    "id_read_is_prev_value": false,
+    "accepted_later": true,
+    "run": "set1_rep4"
+   },
+   {
+    "sample": 137,
+    "job": true,
+    "slot": 2,
+    "offset": 24,
+    "attempt": 0,
+    "id_read": 536899585,
+    "value": 536899585,
+    "value_is_id": true,
+    "id_read_ok": true,
+    "id_read_is_prev_value": false,
+    "accepted_later": true,
+    "run": "set1_rep4"
+   },
+   {
+    "sample": 247,
+    "job": true,
+    "slot": 2,
+    "offset": 24,
+    "attempt": 0,
+    "id_read": 536899585,
+    "value": 536899585,
+    "value_is_id": true,
+    "id_read_ok": true,
+    "id_read_is_prev_value": false,
+    "accepted_later": true,
+    "run": "set1_rep4"
+   },
+   {
+    "sample": 39,
+    "job": true,
+    "slot": 0,
+    "offset": 24,
+    "attempt": 0,
+    "id_read": 536899585,
+    "value": 536899585,
+    "value_is_id": true,
+    "id_read_ok": true,
+    "id_read_is_prev_value": false,
+    "accepted_later": true,
+    "run": "set1_rep5"
+   },
+   {
+    "sample": 49,
+    "job": true,
+    "slot": 0,
+    "offset": 24,
+    "attempt": 0,
+    "id_read": 536899585,
+    "value": 536899585,
+    "value_is_id": true,
+    "id_read_ok": true,
+    "id_read_is_prev_value": false,
+    "accepted_later": true,
+    "run": "set1_rep5"
+   },
+   {
+    "sample": 94,
+    "job": true,
+    "slot": 2,
+    "offset": 24,
+    "attempt": 0,
+    "id_read": 536899585,
+    "value": 536899585,
+    "value_is_id": true,
+    "id_read_ok": true,
+    "id_read_is_prev_value": false,
+    "accepted_later": true,
+    "run": "set1_rep5"
+   },
+   {
+    "sample": 137,
+    "job": true,
+    "slot": 2,
+    "offset": 24,
+    "attempt": 0,
+    "id_read": 536899585,
+    "value": 536899585,
+    "value_is_id": true,
+    "id_read_ok": true,
+    "id_read_is_prev_value": false,
+    "accepted_later": true,
+    "run": "set1_rep5"
+   },
+   {
+    "sample": 146,
+    "job": true,
+    "slot": 2,
+    "offset": 24,
+    "attempt": 0,
+    "id_read": 536899585,
+    "value": 536899585,
+    "value_is_id": true,
+    "id_read_ok": true,
+    "id_read_is_prev_value": false,
+    "accepted_later": true,
+    "run": "set1_rep5"
+   },
+   {
+    "sample": 246,
+    "job": true,
+    "slot": 2,
+    "offset": 24,
+    "attempt": 0,
+    "id_read": 536899585,
+    "value": 536899585,
+    "value_is_id": true,
+    "id_read_ok": true,
+    "id_read_is_prev_value": false,
+    "accepted_later": true,
+    "run": "set1_rep5"
+   },
+   {
+    "sample": 19,
+    "job": true,
+    "slot": 2,
+    "offset": 24,
+    "attempt": 0,
+    "id_read": 536899585,
+    "value": 536899585,
+    "value_is_id": true,
+    "id_read_ok": true,
+    "id_read_is_prev_value": false,
+    "accepted_later": true,
+    "run": "set2_rep2"
+   },
+   {
+    "sample": 49,
+    "job": true,
+    "slot": 0,
+    "offset": 24,
+    "attempt": 0,
+    "id_read": 536899585,
+    "value": 536899585,
+    "value_is_id": true,
+    "id_read_ok": true,
+    "id_read_is_prev_value": false,
+    "accepted_later": true,
+    "run": "set2_rep2"
+   },
+   {
+    "sample": 55,
+    "job": true,
+    "slot": 2,
+    "offset": 24,
+    "attempt": 0,
+    "id_read": 536899585,
+    "value": 536899585,
+    "value_is_id": true,
+    "id_read_ok": true,
+    "id_read_is_prev_value": false,
+    "accepted_later": true,
+    "run": "set2_rep2"
+   },
+   {
+    "sample": 71,
+    "job": true,
+    "slot": 0,
+    "offset": 24,
+    "attempt": 0,
+    "id_read": 536899585,
+    "value": 536899585,
+    "value_is_id": true,
+    "id_read_ok": true,
+    "id_read_is_prev_value": false,
+    "accepted_later": true,
+    "run": "set2_rep2"
+   },
+   {
+    "sample": 97,
+    "job": true,
+    "slot": 2,
+    "offset": 24,
+    "attempt": 0,
+    "id_read": 536899585,
+    "value": 536899585,
+    "value_is_id": true,
+    "id_read_ok": true,
+    "id_read_is_prev_value": false,
+    "accepted_later": true,
+    "run": "set2_rep2"
+   },
+   {
+    "sample": 101,
+    "job": true,
+    "slot": 2,
+    "offset": 24,
+    "attempt": 0,
+    "id_read": 536899585,
+    "value": 536899585,
+    "value_is_id": true,
+    "id_read_ok": true,
+    "id_read_is_prev_value": false,
+    "accepted_later": true,
+    "run": "set2_rep2"
+   },
+   {
+    "sample": 141,
+    "job": true,
+    "slot": 0,
+    "offset": 24,
+    "attempt": 0,
+    "id_read": 536899585,
+    "value": 536899585,
+    "value_is_id": true,
+    "id_read_ok": true,
+    "id_read_is_prev_value": false,
+    "accepted_later": true,
+    "run": "set2_rep2"
+   },
+   {
+    "sample": 242,
+    "job": true,
+    "slot": 0,
+    "offset": 24,
+    "attempt": 0,
+    "id_read": 536899585,
+    "value": 536899585,
+    "value_is_id": true,
+    "id_read_ok": true,
+    "id_read_is_prev_value": false,
+    "accepted_later": true,
+    "run": "set2_rep2"
+   },
+   {
+    "sample": 48,
+    "job": true,
+    "slot": 0,
+    "offset": 24,
+    "attempt": 0,
+    "id_read": 536899585,
+    "value": 536899585,
+    "value_is_id": true,
+    "id_read_ok": true,
+    "id_read_is_prev_value": false,
+    "accepted_later": true,
+    "run": "set2_rep3"
+   },
+   {
+    "sample": 49,
+    "job": true,
+    "slot": 1,
+    "offset": 4,
+    "attempt": 0,
+    "id_read": 536899585,
+    "value": 536899585,
+    "value_is_id": true,
+    "id_read_ok": true,
+    "id_read_is_prev_value": false,
+    "accepted_later": true,
+    "run": "set2_rep3"
+   },
+   {
+    "sample": 54,
+    "job": true,
+    "slot": 2,
+    "offset": 24,
+    "attempt": 0,
+    "id_read": 536899585,
+    "value": 536899585,
+    "value_is_id": true,
+    "id_read_ok": true,
+    "id_read_is_prev_value": false,
+    "accepted_later": true,
+    "run": "set2_rep3"
+   },
+   {
+    "sample": 63,
+    "job": true,
+    "slot": 2,
+    "offset": 24,
+    "attempt": 0,
+    "id_read": 536899585,
+    "value": 536899585,
+    "value_is_id": true,
+    "id_read_ok": true,
+    "id_read_is_prev_value": false,
+    "accepted_later": true,
+    "run": "set2_rep3"
+   },
+   {
+    "sample": 77,
+    "job": true,
+    "slot": 0,
+    "offset": 24,
+    "attempt": 0,
+    "id_read": 536899585,
+    "value": 536899585,
+    "value_is_id": true,
+    "id_read_ok": true,
+    "id_read_is_prev_value": false,
+    "accepted_later": true,
+    "run": "set2_rep3"
+   },
+   {
+    "sample": 99,
+    "job": true,
+    "slot": 2,
+    "offset": 24,
+    "attempt": 0,
+    "id_read": 536899585,
+    "value": 536899585,
+    "value_is_id": true,
+    "id_read_ok": true,
+    "id_read_is_prev_value": false,
+    "accepted_later": true,
+    "run": "set2_rep3"
+   },
+   {
+    "sample": 139,
+    "job": true,
+    "slot": 2,
+    "offset": 24,
+    "attempt": 0,
+    "id_read": 536899585,
+    "value": 536899585,
+    "value_is_id": true,
+    "id_read_ok": true,
+    "id_read_is_prev_value": false,
+    "accepted_later": true,
+    "run": "set2_rep3"
+   },
+   {
+    "sample": 148,
+    "job": true,
+    "slot": 2,
+    "offset": 24,
+    "attempt": 0,
+    "id_read": 536899585,
+    "value": 536899585,
+    "value_is_id": true,
+    "id_read_ok": true,
+    "id_read_is_prev_value": false,
+    "accepted_later": true,
+    "run": "set2_rep3"
+   },
+   {
+    "sample": 62,
+    "job": true,
+    "slot": 2,
+    "offset": 24,
+    "attempt": 0,
+    "id_read": 536899585,
+    "value": 536899585,
+    "value_is_id": true,
+    "id_read_ok": true,
+    "id_read_is_prev_value": false,
+    "accepted_later": true,
+    "run": "set2_rep4"
+   },
+   {
+    "sample": 64,
+    "job": true,
+    "slot": 2,
+    "offset": 24,
+    "attempt": 0,
+    "id_read": 536899585,
+    "value": 536899585,
+    "value_is_id": true,
+    "id_read_ok": true,
+    "id_read_is_prev_value": false,
+    "accepted_later": true,
+    "run": "set2_rep4"
+   },
+   {
+    "sample": 250,
+    "job": true,
+    "slot": 2,
+    "offset": 24,
+    "attempt": 0,
+    "id_read": 536899585,
+    "value": 536899585,
+    "value_is_id": true,
+    "id_read_ok": true,
+    "id_read_is_prev_value": false,
+    "accepted_later": true,
+    "run": "set2_rep4"
+   },
+   {
+    "sample": 20,
+    "job": true,
+    "slot": 0,
+    "offset": 24,
+    "attempt": 0,
+    "id_read": 536899585,
+    "value": 536899585,
+    "value_is_id": true,
+    "id_read_ok": true,
+    "id_read_is_prev_value": false,
+    "accepted_later": true,
+    "run": "set2_rep5"
+   },
+   {
+    "sample": 21,
+    "job": true,
+    "slot": 1,
+    "offset": 4,
+    "attempt": 0,
+    "id_read": 536899585,
+    "value": 536899585,
+    "value_is_id": true,
+    "id_read_ok": true,
+    "id_read_is_prev_value": false,
+    "accepted_later": true,
+    "run": "set2_rep5"
+   },
+   {
+    "sample": 21,
+    "job": true,
+    "slot": 1,
+    "offset": 4,
+    "attempt": 1,
+    "id_read": 536899585,
+    "value": 536899585,
+    "value_is_id": true,
+    "id_read_ok": true,
+    "id_read_is_prev_value": false,
+    "accepted_later": true,
+    "run": "set2_rep5"
+   },
+   {
+    "sample": 39,
+    "job": true,
+    "slot": 0,
+    "offset": 24,
+    "attempt": 0,
+    "id_read": 536899585,
+    "value": 536899585,
+    "value_is_id": true,
+    "id_read_ok": true,
+    "id_read_is_prev_value": false,
+    "accepted_later": true,
+    "run": "set2_rep5"
+   },
+   {
+    "sample": 71,
+    "job": true,
+    "slot": 1,
+    "offset": 4,
+    "attempt": 0,
+    "id_read": 536899585,
+    "value": 536899585,
+    "value_is_id": true,
+    "id_read_ok": true,
+    "id_read_is_prev_value": false,
+    "accepted_later": true,
+    "run": "set2_rep5"
+   },
+   {
+    "sample": 75,
+    "job": true,
+    "slot": 2,
+    "offset": 24,
+    "attempt": 0,
+    "id_read": 536899585,
+    "value": 536899585,
+    "value_is_id": true,
+    "id_read_ok": true,
+    "id_read_is_prev_value": false,
+    "accepted_later": true,
+    "run": "set2_rep5"
+   },
+   {
+    "sample": 95,
+    "job": true,
+    "slot": 2,
+    "offset": 24,
+    "attempt": 0,
+    "id_read": 536899585,
+    "value": 536899585,
+    "value_is_id": true,
+    "id_read_ok": true,
+    "id_read_is_prev_value": false,
+    "accepted_later": true,
+    "run": "set2_rep5"
+   },
+   {
+    "sample": 99,
+    "job": true,
+    "slot": 2,
+    "offset": 24,
+    "attempt": 0,
+    "id_read": 536899585,
+    "value": 536899585,
+    "value_is_id": true,
+    "id_read_ok": true,
+    "id_read_is_prev_value": false,
+    "accepted_later": true,
+    "run": "set2_rep5"
+   },
+   {
+    "sample": 112,
+    "job": true,
+    "slot": 0,
+    "offset": 24,
+    "attempt": 0,
+    "id_read": 536899585,
+    "value": 536899585,
+    "value_is_id": true,
+    "id_read_ok": true,
+    "id_read_is_prev_value": false,
+    "accepted_later": true,
+    "run": "set2_rep5"
+   },
+   {
+    "sample": 138,
+    "job": true,
+    "slot": 0,
+    "offset": 24,
+    "attempt": 0,
+    "id_read": 536899585,
+    "value": 536899585,
+    "value_is_id": true,
+    "id_read_ok": true,
+    "id_read_is_prev_value": false,
+    "accepted_later": true,
+    "run": "set2_rep5"
+   },
+   {
+    "sample": 139,
+    "job": true,
+    "slot": 2,
+    "offset": 24,
+    "attempt": 0,
+    "id_read": 536899585,
+    "value": 536899585,
+    "value_is_id": true,
+    "id_read_ok": true,
+    "id_read_is_prev_value": false,
+    "accepted_later": true,
+    "run": "set2_rep5"
+   },
+   {
+    "sample": 143,
+    "job": true,
+    "slot": 0,
+    "offset": 24,
+    "attempt": 0,
+    "id_read": 536899585,
+    "value": 536899585,
+    "value_is_id": true,
+    "id_read_ok": true,
+    "id_read_is_prev_value": false,
+    "accepted_later": true,
+    "run": "set2_rep5"
+   },
+   {
+    "sample": 71,
+    "job": true,
+    "slot": 0,
+    "offset": 24,
+    "attempt": 0,
+    "id_read": 536899585,
+    "value": 536899585,
+    "value_is_id": true,
+    "id_read_ok": true,
+    "id_read_is_prev_value": false,
+    "accepted_later": true,
+    "run": "set3_rep2"
+   },
+   {
+    "sample": 94,
+    "job": true,
+    "slot": 2,
+    "offset": 24,
+    "attempt": 0,
+    "id_read": 536899585,
+    "value": 536899585,
+    "value_is_id": true,
+    "id_read_ok": true,
+    "id_read_is_prev_value": false,
+    "accepted_later": true,
+    "run": "set3_rep2"
+   },
+   {
+    "sample": 138,
+    "job": true,
+    "slot": 0,
+    "offset": 24,
+    "attempt": 0,
+    "id_read": 536899585,
+    "value": 536899585,
+    "value_is_id": true,
+    "id_read_ok": true,
+    "id_read_is_prev_value": false,
+    "accepted_later": true,
+    "run": "set3_rep2"
+   },
+   {
+    "sample": 248,
+    "job": true,
+    "slot": 1,
+    "offset": 4,
+    "attempt": 0,
+    "id_read": 536899585,
+    "value": 536899585,
+    "value_is_id": true,
+    "id_read_ok": true,
+    "id_read_is_prev_value": false,
+    "accepted_later": true,
+    "run": "set3_rep2"
+   },
+   {
+    "sample": 20,
+    "job": true,
+    "slot": 1,
+    "offset": 4,
+    "attempt": 0,
+    "id_read": 536899585,
+    "value": 536899585,
+    "value_is_id": true,
+    "id_read_ok": true,
+    "id_read_is_prev_value": false,
+    "accepted_later": true,
+    "run": "set3_rep3"
+   },
+   {
+    "sample": 55,
+    "job": true,
+    "slot": 2,
+    "offset": 24,
+    "attempt": 0,
+    "id_read": 536899585,
+    "value": 536899585,
+    "value_is_id": true,
+    "id_read_ok": true,
+    "id_read_is_prev_value": false,
+    "accepted_later": true,
+    "run": "set3_rep3"
+   },
+   {
+    "sample": 77,
+    "job": true,
+    "slot": 0,
+    "offset": 24,
+    "attempt": 0,
+    "id_read": 536899585,
+    "value": 536899585,
+    "value_is_id": true,
+    "id_read_ok": true,
+    "id_read_is_prev_value": false,
+    "accepted_later": true,
+    "run": "set3_rep3"
+   },
+   {
+    "sample": 83,
+    "job": true,
+    "slot": 0,
+    "offset": 24,
+    "attempt": 0,
+    "id_read": 536899585,
+    "value": 536899585,
+    "value_is_id": true,
+    "id_read_ok": true,
+    "id_read_is_prev_value": false,
+    "accepted_later": true,
+    "run": "set3_rep3"
+   },
+   {
+    "sample": 108,
+    "job": true,
+    "slot": 0,
+    "offset": 24,
+    "attempt": 0,
+    "id_read": 536899585,
+    "value": 536899585,
+    "value_is_id": true,
+    "id_read_ok": true,
+    "id_read_is_prev_value": false,
+    "accepted_later": true,
+    "run": "set3_rep3"
+   },
+   {
+    "sample": 179,
+    "job": true,
+    "slot": 0,
+    "offset": 24,
+    "attempt": 0,
+    "id_read": 536899585,
+    "value": 536899585,
+    "value_is_id": true,
+    "id_read_ok": true,
+    "id_read_is_prev_value": false,
+    "accepted_later": true,
+    "run": "set3_rep3"
+   },
+   {
+    "sample": 25,
+    "job": true,
+    "slot": 2,
+    "offset": 24,
+    "attempt": 0,
+    "id_read": 536899585,
+    "value": 536899585,
+    "value_is_id": true,
+    "id_read_ok": true,
+    "id_read_is_prev_value": false,
+    "accepted_later": true,
+    "run": "set3_rep4"
+   },
+   {
+    "sample": 137,
+    "job": true,
+    "slot": 0,
+    "offset": 24,
+    "attempt": 0,
+    "id_read": 536899585,
+    "value": 536899585,
+    "value_is_id": true,
+    "id_read_ok": true,
+    "id_read_is_prev_value": false,
+    "accepted_later": true,
+    "run": "set3_rep4"
+   },
+   {
+    "sample": 138,
+    "job": true,
+    "slot": 2,
+    "offset": 24,
+    "attempt": 0,
+    "id_read": 536899585,
+    "value": 536899585,
+    "value_is_id": true,
+    "id_read_ok": true,
+    "id_read_is_prev_value": false,
+    "accepted_later": true,
+    "run": "set3_rep4"
+   },
+   {
+    "sample": 247,
+    "job": true,
+    "slot": 2,
+    "offset": 24,
+    "attempt": 0,
+    "id_read": 536899585,
+    "value": 536899585,
+    "value_is_id": true,
+    "id_read_ok": true,
+    "id_read_is_prev_value": false,
+    "accepted_later": true,
+    "run": "set3_rep4"
+   },
+   {
+    "sample": 24,
+    "job": true,
+    "slot": 2,
+    "offset": 24,
+    "attempt": 0,
+    "id_read": 536899585,
+    "value": 536899585,
+    "value_is_id": true,
+    "id_read_ok": true,
+    "id_read_is_prev_value": false,
+    "accepted_later": true,
+    "run": "set3_rep5"
+   },
+   {
+    "sample": 49,
+    "job": true,
+    "slot": 2,
+    "offset": 24,
+    "attempt": 0,
+    "id_read": 536899585,
+    "value": 536899585,
+    "value_is_id": true,
+    "id_read_ok": true,
+    "id_read_is_prev_value": false,
+    "accepted_later": true,
+    "run": "set3_rep5"
+   },
+   {
+    "sample": 51,
+    "job": true,
+    "slot": 2,
+    "offset": 24,
+    "attempt": 0,
+    "id_read": 536899585,
+    "value": 536899585,
+    "value_is_id": true,
+    "id_read_ok": true,
+    "id_read_is_prev_value": false,
+    "accepted_later": true,
+    "run": "set3_rep5"
+   },
+   {
+    "sample": 58,
+    "job": true,
+    "slot": 0,
+    "offset": 24,
+    "attempt": 0,
+    "id_read": 536899585,
+    "value": 536899585,
+    "value_is_id": true,
+    "id_read_ok": true,
+    "id_read_is_prev_value": false,
+    "accepted_later": true,
+    "run": "set3_rep5"
+   },
+   {
+    "sample": 76,
+    "job": true,
+    "slot": 2,
+    "offset": 24,
+    "attempt": 0,
+    "id_read": 536899585,
+    "value": 536899585,
+    "value_is_id": true,
+    "id_read_ok": true,
+    "id_read_is_prev_value": false,
+    "accepted_later": true,
+    "run": "set3_rep5"
+   },
+   {
+    "sample": 96,
+    "job": true,
+    "slot": 2,
+    "offset": 24,
+    "attempt": 0,
+    "id_read": 536899585,
+    "value": 536899585,
+    "value_is_id": true,
+    "id_read_ok": true,
+    "id_read_is_prev_value": false,
+    "accepted_later": true,
+    "run": "set3_rep5"
+   },
+   {
+    "sample": 149,
+    "job": true,
+    "slot": 2,
+    "offset": 24,
+    "attempt": 0,
+    "id_read": 536899585,
+    "value": 536899585,
+    "value_is_id": true,
+    "id_read_ok": true,
+    "id_read_is_prev_value": false,
+    "accepted_later": true,
+    "run": "set3_rep5"
+   },
+   {
+    "sample": 239,
+    "job": true,
+    "slot": 1,
+    "offset": 4,
+    "attempt": 0,
+    "id_read": 536899585,
+    "value": 536899585,
+    "value_is_id": true,
+    "id_read_ok": true,
+    "id_read_is_prev_value": false,
+    "accepted_later": true,
+    "run": "set3_rep5"
+   }
+  ],
+  "traffic": {
+   "set1_ev17": {
+    "median": 447687.5,
+    "base_median": 447951.5,
+    "diff_pct": -0.05893495166329199
+   },
+   "set1_ev35": {
+    "median": 447015.5,
+    "base_median": 447286.0,
+    "diff_pct": -0.06047584766794012
+   },
+   "set2_ev35": {
+    "median": 448538.5,
+    "base_median": 446766.0,
+    "diff_pct": 0.396740127941686
+   },
+   "set2_ev48": {
+    "median": 171576.0,
+    "base_median": 171576.0,
+    "diff_pct": 0.0
+   },
+   "set2_ev51": {
+    "median": 128487.0,
+    "base_median": 128487.0,
+    "diff_pct": 0.0
+   },
+   "set2_ev53": {
+    "median": 30434.5,
+    "base_median": 28425.5,
+    "diff_pct": 7.067597755536403
+   },
+   "set2_ev55": {
+    "median": 151192.5,
+    "base_median": 151758.0,
+    "diff_pct": -0.37263274423753323
+   },
+   "set2_ev64": {
+    "median": 206980.5,
+    "base_median": 206990.5,
+    "diff_pct": -0.004831139593364231
+   },
+   "set2_ev80": {
+    "median": 27272.0,
+    "base_median": 27442.5,
+    "diff_pct": -0.6212990798943219
+   },
+   "set2_ev81": {
+    "median": 324290.5,
+    "base_median": 322566.0,
+    "diff_pct": 0.5346192717149423
+   },
+   "set3_ev35": {
+    "median": 447400.5,
+    "base_median": 447946.5,
+    "diff_pct": -0.1218895560072486
+   },
+   "set3_ev128": {
+    "median": 22757.0,
+    "base_median": 22757.0,
+    "diff_pct": 0.0
+   },
+   "set3_ev130": {
+    "median": 236070.0,
+    "base_median": 236070.0,
+    "diff_pct": 0.0
+   },
+   "set3_ev132": {
+    "median": 18108.0,
+    "base_median": 18108.0,
+    "diff_pct": 0.0
+   },
+   "set3_ev135": {
+    "median": 188708.0,
+    "base_median": 188708.0,
+    "diff_pct": 0.0
+   },
+   "set3_ev384": {
+    "median": 4016.0,
+    "base_median": 4016.0,
+    "diff_pct": 0.0
+   },
+   "set3_ev386": {
+    "median": 29347.0,
+    "base_median": 29347.0,
+    "diff_pct": 0.0
+   },
+   "set3_ev391": {
+    "median": 517.0,
+    "base_median": 517.0,
+    "diff_pct": 0.0
+   }
+  }
+ },
+ "P2": "BOUNDARY_OBSERVED",
+ "P2_runs": {
+  "set1_rep2": {
+   "brackets": {
+    "99": {
+     "observed": true,
+     "why": "",
+     "lo": 78062308,
+     "hi": 78062605,
+     "width": 297,
+     "lo_index": 238,
+     "hi_index": 238
+    },
+    "100": {
+     "observed": true,
+     "why": "",
+     "lo": 78064137,
+     "hi": 78064435,
+     "width": 298,
+     "lo_index": 240,
+     "hi_index": 240
+    }
+   },
+   "separated": true
+  },
+  "set1_rep3": {
+   "brackets": {
+    "99": {
+     "observed": true,
+     "why": "",
+     "lo": 179646598,
+     "hi": 179647323,
+     "width": 725,
+     "lo_index": 233,
+     "hi_index": 234
+    },
+    "100": {
+     "observed": true,
+     "why": "",
+     "lo": 179648420,
+     "hi": 179649145,
+     "width": 725,
+     "lo_index": 235,
+     "hi_index": 236
+    }
+   },
+   "separated": true
+  },
+  "set1_rep4": {
+   "brackets": {
+    "99": {
+     "observed": true,
+     "why": "",
+     "lo": 277241116,
+     "hi": 277241412,
+     "width": 296,
+     "lo_index": 231,
+     "hi_index": 231
+    },
+    "100": {
+     "observed": true,
+     "why": "",
+     "lo": 277242944,
+     "hi": 277243241,
+     "width": 297,
+     "lo_index": 233,
+     "hi_index": 233
+    }
+   },
+   "separated": true
+  },
+  "set1_rep5": {
+   "brackets": {
+    "99": {
+     "observed": true,
+     "why": "",
+     "lo": 374846772,
+     "hi": 374847068,
+     "width": 296,
+     "lo_index": 230,
+     "hi_index": 230
+    },
+    "100": {
+     "observed": true,
+     "why": "",
+     "lo": 374848612,
+     "hi": 374848908,
+     "width": 296,
+     "lo_index": 232,
+     "hi_index": 232
+    }
+   },
+   "separated": true
+  },
+  "set2_rep2": {
+   "brackets": {
+    "99": {
+     "observed": true,
+     "why": "",
+     "lo": 580423043,
+     "hi": 580423768,
+     "width": 725,
+     "lo_index": 232,
+     "hi_index": 233
+    },
+    "100": {
+     "observed": true,
+     "why": "",
+     "lo": 580424873,
+     "hi": 580425602,
+     "width": 729,
+     "lo_index": 234,
+     "hi_index": 235
+    }
+   },
+   "separated": true
+  },
+  "set2_rep3": {
+   "brackets": {
+    "99": {
+     "observed": true,
+     "why": "",
+     "lo": 678003614,
+     "hi": 678004343,
+     "width": 729,
+     "lo_index": 230,
+     "hi_index": 231
+    },
+    "100": {
+     "observed": true,
+     "why": "",
+     "lo": 678005446,
+     "hi": 678006174,
+     "width": 728,
+     "lo_index": 232,
+     "hi_index": 233
+    }
+   },
+   "separated": true
+  },
+  "set2_rep4": {
+   "brackets": {
+    "99": {
+     "observed": true,
+     "why": "",
+     "lo": 775628082,
+     "hi": 775628378,
+     "width": 296,
+     "lo_index": 234,
+     "hi_index": 234
+    },
+    "100": {
+     "observed": true,
+     "why": "",
+     "lo": 775629908,
+     "hi": 775630632,
+     "width": 724,
+     "lo_index": 235,
+     "hi_index": 236
+    }
+   },
+   "separated": true
+  },
+  "set2_rep5": {
+   "brackets": {
+    "99": {
+     "observed": true,
+     "why": "",
+     "lo": 873222826,
+     "hi": 873223550,
+     "width": 724,
+     "lo_index": 232,
+     "hi_index": 233
+    },
+    "100": {
+     "observed": true,
+     "why": "",
+     "lo": 873224649,
+     "hi": 873225385,
+     "width": 736,
+     "lo_index": 234,
+     "hi_index": 235
+    }
+   },
+   "separated": true
+  },
+  "set3_rep2": {
+   "brackets": {
+    "99": {
+     "observed": true,
+     "why": "",
+     "lo": 1078805852,
+     "hi": 1078806148,
+     "width": 296,
+     "lo_index": 233,
+     "hi_index": 233
+    },
+    "100": {
+     "observed": true,
+     "why": "",
+     "lo": 1078807680,
+     "hi": 1078807976,
+     "width": 296,
+     "lo_index": 235,
+     "hi_index": 235
+    }
+   },
+   "separated": true
+  },
+  "set3_rep3": {
+   "brackets": {
+    "99": {
+     "observed": true,
+     "why": "",
+     "lo": 1176411254,
+     "hi": 1176411979,
+     "width": 725,
+     "lo_index": 231,
+     "hi_index": 232
+    },
+    "100": {
+     "observed": true,
+     "why": "",
+     "lo": 1176413084,
+     "hi": 1176413815,
+     "width": 731,
+     "lo_index": 233,
+     "hi_index": 234
+    }
+   },
+   "separated": true
+  },
+  "set3_rep4": {
+   "brackets": {
+    "99": {
+     "observed": true,
+     "why": "",
+     "lo": 1273991491,
+     "hi": 1273991787,
+     "width": 296,
+     "lo_index": 231,
+     "hi_index": 231
+    },
+    "100": {
+     "observed": true,
+     "why": "",
+     "lo": 1273993318,
+     "hi": 1273993619,
+     "width": 301,
+     "lo_index": 233,
+     "hi_index": 233
+    }
+   },
+   "separated": true
+  },
+  "set3_rep5": {
+   "brackets": {
+    "99": {
+     "observed": true,
+     "why": "",
+     "lo": 1371588173,
+     "hi": 1371588469,
+     "width": 296,
+     "lo_index": 232,
+     "hi_index": 232
+    },
+    "100": {
+     "observed": true,
+     "why": "",
+     "lo": 1371590002,
+     "hi": 1371590302,
+     "width": 300,
+     "lo_index": 234,
+     "hi_index": 234
+    }
+   },
+   "separated": true
+  }
+ }
+}

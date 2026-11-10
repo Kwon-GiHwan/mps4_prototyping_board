@@ -1,0 +1,2 @@
+# Operator-aware QREAD pilot P1/P2: checked trace image, MLEK TA set-up (= TA profile 1), 5 RUNs (1 warm-up)
+328 yolo-fastest_192_face_v4 @/home/gihwan/evsweep_qread_op/conditions_p12.txt
