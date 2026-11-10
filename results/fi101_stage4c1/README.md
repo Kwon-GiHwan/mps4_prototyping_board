@@ -42,6 +42,9 @@ B–D; the bases do not count. The internal DMA/AXI implementation is not claime
 | DW 144 → 142 | −1.4 % | 31,752 → 31,752 | +5.4 % / +5.7 % | `NOT_PROPORTIONAL_TO_MAC` | 31,556 → 58,675 | 28,224 → 52,528 | same |
 | DW 144 → 145 | +0.7 % | 31,752 → **35,280** | **+17.3 % / +17.5 %** | `NOT_PROPORTIONAL_TO_MAC` | 31,556 → 64,477 | 28,224 → 57,820 | same |
 
+Vela `npu_cycles` (compute estimate) changed −2.0 % (Conv 94), +0.9 % (Conv 97), 0 % (DW 142), +10.8 % (DW 145); in this
+setting it did not reproduce the measured increases (`stage4c1_changes.csv`).
+
 Both passes moved in the same direction in every pair (no `UNRESOLVED`). Four measured RUNs per pass; the tolerances
 (1,047 conv, 1,598 DW) are the RUN ranges/1 % floor, so only the sign and approximate size are claimed.
 
