@@ -1,5 +1,7 @@
 # Stage 5 설계 — 지원되는 메모리 배치·컴파일 조건 비교 (2026-11-11, 설계만, 보드 측정 없음)
 
+**정정(owner 2026-11-11):** 5-1은 Dedicated_Sram에서 **컴파일러의 SRAM 작업공간 예산(`--arena-cache-size`)을 바꾸는 실험**이다. 물리 SRAM 용량이나 메모리 모드를 바꾸지 않는다. Shared_Sram·Sram_Only·포트 재매핑은 이번 범위에서 제외한다.
+
 Owner 지시(2026-11-11): 같은 워크로드에서 지원되는 메모리 배치와 컴파일 조건을 바꿨을 때 실행 비용·MAC 활동·전송량이
 어떻게 달라지는지 확인한다.
 
@@ -10,7 +12,7 @@ Owner 지시(2026-11-11): 같은 워크로드에서 지원되는 메모리 배�
 
 | 항목 | 현재 상태 (근거) | Stage 5에서의 지위 |
 | --- | --- | --- |
-| 메모리 모드 (Dedicated_Sram / Shared_Sram / Sram_Only) | **이미지 빌드 설정이다.** MLEK `source/hal/source/components/npu/CMakeLists.txt`가 `ETHOS_U_NPU_MEMORY_MODE`로 region→AXI 매핑과 cache arena를 정한다. 현재 이미지 `83398c7`은 Dedicated_Sram(QCONFIG=3, region 0·1 → AXI1/EXT, region 2–7 → AXI0/SRAM; `ethosu_config_select` 기계어로 확인). Shared_Sram은 region 1(arena)을 SRAM 포트로 보내고 arena가 SRAM에 있다고 가정하지만, 러너는 arena를 DDR(0x70000000 + 모델 길이)에 둔다. Sram_Only는 모델까지 SRAM에 둔다. | **Dedicated_Sram만 지원.** 다른 모드로 컴파일한 모델을 현재 이미지에서 실행하면 그 모드를 측정한 것이 아니므로 하지 않는다. 다른 모드는 이미지 재빌드와 러너의 arena·모델 배치 변경(펌웨어 변경), SRAM 용량 검증이 필요하다 → **승인 전 범위 밖** (`NOT_SUPPORTED_WITHOUT_IMAGE_CHANGE`). |
+| 메모리 모드 (Dedicated_Sram / Shared_Sram / Sram_Only) | **Vela 컴파일 설정(`--memory-mode`)이면서, 런타임·펌웨어의 메모리 구성과 일치해야 하는 설정이다.** 펌웨어 쪽은 MLEK `source/hal/source/components/npu/CMakeLists.txt`가 `ETHOS_U_NPU_MEMORY_MODE`로 region→AXI 매핑과 cache arena를 정한다. 현재 이미지 `83398c7`은 Dedicated_Sram(QCONFIG=3, region 0·1 → AXI1/EXT, region 2–7 → AXI0/SRAM; `ethosu_config_select` 기계어로 확인). Shared_Sram은 region 1(arena)을 SRAM 포트로 보내고 arena가 SRAM에 있다고 가정하지만, 러너는 arena를 DDR(0x70000000 + 모델 길이)에 둔다. Sram_Only는 모델까지 SRAM에 둔다. | **현재 이미지에서 실행 구성이 검증된 것은 Dedicated_Sram뿐이다.** 다른 모드로 컴파일한 모델을 현재 이미지에서 실행하면 그 모드를 측정한 것이 아니므로 하지 않는다. 다른 모드는 이미지 재빌드와 러너의 arena·모델 배치 변경(펌웨어 변경), SRAM 용량 검증이 필요하다 → **승인 전 범위 밖** (`NOT_SUPPORTED_WITHOUT_IMAGE_CHANGE`). |
 | NPU fast cache (region 2) | SRAM 0x31000000, 0x60000 = 384 KiB, 이미지에 고정(`ETHOS_U_NPU_CACHE_SIZE`; capabilities `fast_base`/`fast_size`). | Vela `--arena-cache-size` ≤ 384 KiB로 **사용량을 줄이는 것만** 가능. 384 KiB보다 크게 요구하는 컴파일은 이미지가 제공하지 못한다 → 쓰지 않음. 768 KiB 컴파일은 조사한 6개 워크로드에서 384 KiB와 같은 산출물이었다. |
 | region→AXI 포트 재배치 | `ethosu_config_select`는 core driver의 weak hook이다. 러너는 이를 덮어쓰지 않으며, 기존 runner의 REGIONCFG knob은 driver runner에 없다. | 펌웨어 기능 추가가 필요하다 → **범위 밖** (제안만). |
 | arena·IO 텐서 위치(DDR 안) | 러너가 arena를 모델 바로 뒤(16 B 올림)에 둔다(`drwl_arena_after`, Stage 4 기록 8/8로 확인). | 런타임 배치는 바꾸지 않는다. Vela의 텐서 할당(`--tensor-allocator`, `--cpu-tensor-alignment`)은 arena 안 오프셋을 바꾸지만, 정렬 효과가 Stage 4C의 쓰기 규칙과 얽히므로 **이번 최소안에서 제외**한다. |
