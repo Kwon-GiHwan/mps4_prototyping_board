@@ -1,0 +1,105 @@
+{
+ "regions_used": {
+  "DMA0_DST": [
+   2
+  ],
+  "DMA0_SRC": [
+   0
+  ],
+  "IFM": [
+   1
+  ],
+  "OFM": [
+   1
+  ],
+  "SCALE": [
+   2
+  ],
+  "WEIGHT": [
+   2
+  ]
+ },
+ "ifm_base_offsets": [
+  "0xd800"
+ ],
+ "ofm_base_offsets": [
+  "0x0",
+  "0x10"
+ ],
+ "n_conv_kernels": 2,
+ "arena_size_vela": 64512,
+ "ifm": [
+  55296,
+  9216
+ ],
+ "ofm": [
+  0,
+  55296
+ ],
+ "fast_size_used_by_payload": 4032,
+ "record": {
+  "model_base": "0x70000000",
+  "model_len": "0x15c0",
+  "arena_base": "0x700015c0",
+  "arena_len": "0x200000",
+  "n_base": "0x5",
+  "base0": "0x700003b0",
+  "base1": "0x700015c0",
+  "base2": "0x31000000",
+  "base3": "0x7000edc0",
+  "base4": "0x700015c0",
+  "base_size0": "0xfc0",
+  "base_size1": "0xfc00",
+  "base_size2": "0xfc0",
+  "base_size3": "0x2400",
+  "base_size4": "0xd800"
+ },
+ "fast_memory": [
+  "0x31000000",
+  "0x60000"
+ ],
+ "sram_free_after_cache_arena": [
+  "0x31060000",
+  "0x31400000",
+  3801088
+ ],
+ "b_arena_base": "0x310615c0",
+ "b_arena_end": "0x312615c0",
+ "b_region1_end": "0x310711c0",
+ "regioncfg_expected": {
+  "A": "0x15f",
+  "B": "0x153"
+ },
+ "qconfig_expected": 3,
+ "traffic_stage4_passB_median": {
+  "B_130": 2016.0,
+  "B_135": 252.0,
+  "B_386": 1437.0,
+  "B_391": 3456.0
+ },
+ "traffic_shift_if_ifm_ofm_follow_region1": {
+  "ext_rd_beats_minus": 1152,
+  "ext_wr_beats_minus": 3456,
+  "sram_rd_beats_plus": 1152,
+  "sram_wr_beats_plus": 3456
+ },
+ "checks": {
+  "ifm_ofm_region_is_1": true,
+  "weights_scale_region_is_2": true,
+  "dma_region0_to_region2_only": true,
+  "no_other_region_used": true,
+  "ifm_ofm_offsets_match_drwl": true,
+  "region1_holds_only_ifm_ofm": true,
+  "records_identical_over_runs": true,
+  "base1_is_arena_head": true,
+  "base3_base4_are_ifm_ofm": true,
+  "base2_is_fast_memory": true,
+  "base0_base1_in_ddr": true,
+  "fast_memory_is_whole_cache_arena": true,
+  "b_arena_fits_sram": true,
+  "b_region1_in_isram0": true,
+  "b_keeps_low_16_bits": true,
+  "ext_wr_beats_equal_ofm": true,
+  "ta_profile_1": true
+ }
+}

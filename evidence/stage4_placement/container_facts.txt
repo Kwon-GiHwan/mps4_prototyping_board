@@ -1,0 +1,255 @@
+# container facts, benchmark-runner, read-only, captured 2026-11-10T23:23:07Z
+## sha256
+a5dfa2fd3f0458ef2a0c3fede568d175b8438c7c3071636289cd18a143aedd42  /work/driver_s4_img/mlek_pmu_runner.axf
+d67babcb3461a34dd1069b3a67aa6ff66fe83b480cc2d808127272142b6770a1  /work/driver_s4_img/mlek_pmu_runner.map
+d531766eb63a41756319748448763d47a2a1637d8c1263411e5c1ffbf6931024  /opt/arm/ml-embedded-evaluation-kit/scripts/cmake/platforms/mps4/sse-320/mps4-sse-320.gnu.ld
+c5bf6731488e4fcd555bade4e381fe1f1975744d84d5fc7db759f18f98e63a59  /opt/arm/ml-embedded-evaluation-kit/source/hal/source/components/npu/CMakeLists.txt
+25beac5685186101caa2c3ab7b934009ff6ec380b12ab9f3de6ed8d8c9b685ca  /opt/arm/ml-embedded-evaluation-kit/source/hal/source/components/npu/ethosu_cpu_cache.c
+ab00e047ae21160da6dd1d213a0e3663d292dc168a198be9275c0cfc84459fd7  /opt/arm/ml-embedded-evaluation-kit/source/hal/source/platform/mps4/include/sse-320/mem_regions.h
+4cc662add26a0ff1ff2a017c0fa7081fb549642910e93bd5760d4c111ec69314  /opt/arm/ml-embedded-evaluation-kit/dependencies/core-driver/src/ethosu_device_u85.c
+0d2896b3278264a0757c54214ea2758d0300d4057f52b1e6a03355ed04ff40f0  /opt/arm/ml-embedded-evaluation-kit/dependencies/core-driver/src/ethosu_config_u85.h
+## MLEK git
+b2c0bb2 MLCE-1807: Add resource variable support
+0356707 Clear interrupt properly in timeout case
+## map: Memory Configuration
+Memory Configuration
+
+Name             Origin             Length             Attributes
+ITCM             0x10000000         0x00008000         xr
+BOOT             0x11000000         0x00010000         xr
+BRAM             0x12000000         0x00200000         xrw
+DTCM             0x30000000         0x00008000         xrw
+SRAM             0x31000000         0x00400000         xrw
+DDR              0x70000000         0x02000000         xrw
+DDR_dynamic_model 0x90000000         0x02000000         xr
+DDR_dynamic_ifm  0x92000000         0x01000000         xr
+DDR_dynamic_ofm  0x93000000         0x01000000         xr
+*default*        0x00000000         0xffffffff
+
+Linker script and memory map
+## objdump -h (ALLOC sections)
+Idx Name          Size      VMA       LMA       File off  Algn
+  0 .text.at_boot 000007c0  11000000  11000000  00001000  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, DATA
+  1 .data.vtable_rw 000007c0  10000000  10000000  00001000  2**2
+                  ALLOC
+  2 .text.at_bram 0009df18  12000000  12000000  00002000  2**3
+                  CONTENTS, ALLOC, LOAD, CODE
+  3 .ARM.exidx.at_bram 000001f8  1209df18  1209df18  0009ff18  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, DATA
+  4 .got.at_bram  00000000  1209e110  1209e110  000c6bcc  2**0
+                  CONTENTS
+  5 .sram         00060000  31000000  31000000  000c7000  2**4
+                  ALLOC
+  6 .bss          00026ab4  1209e110  1209e110  000a0110  2**4
+                  ALLOC
+  7 .zero.table.at_bram 00000008  120c4bc4  120c4bc4  000c6bc4  2**0
+                  CONTENTS, ALLOC, LOAD, DATA
+  8 .heap         000c0004  120c4bcc  120c4bcc  000c6bcc  2**0
+                  CONTENTS
+  9 .stack        00008000  30000000  30000000  00186bd0  2**0
+                  CONTENTS
+ 10 .ddr.at_ddr   00000000  70000000  70000000  0018ebd0  2**0
+                  CONTENTS
+ 11 .ARM.attributes 0000003e  00000000  00000000  0018ebd0  2**0
+                  CONTENTS, READONLY
+ 12 .comment      00000045  00000000  00000000  0018ec0e  2**0
+## nm: cache_arena
+31000000 00060000 b cache_arena
+## nm: symbols with VMA in SRAM 0x31000000-0x313fffff
+31000000 00060000 b cache_arena
+## nm: config_select / address_remap
+12003044 T ethosu_address_remap
+12076f78 W ethosu_config_select
+120003fc T ethosu_flush_dcache
+12000474 T ethosu_invalidate_dcache
+## ethosu_config_select disassembly
+12076f78 <ethosu_config_select>:
+12076f78:	3a02      	subs	r2, #2
+12076f7a:	2a06      	cmp	r2, #6
+12076f7c:	bf34      	ite	cc
+12076f7e:	2001      	movcc	r0, #1
+12076f80:	2003      	movcs	r0, #3
+12076f82:	4770      	bx	lr
+
+## MLEK npu CMakeLists region mapping
+# Traditionally they have been used as:
+#
+# Region 0: Weights and biases (and const tensors)
+# Region 1: IFM/OFM/Calculation buffers (tensor arena)
+# Region 2: Ethos-U'd dedicated cache region (fast cache memory)
+#
+# NOTE: The above scheme is completely dependent on Vela and could potentially
+#       change.
+#
+# Common definitions:
+# For Ethos-U55/U65/U85, region configs are set as:
+#   0 or 1 = AXI0 set
+#   2 or 3 = AXI1 set
+target_compile_definitions(ethosu_core_driver PRIVATE
+    NPU_REGIONCFG_2=1   # AXI0=M0
+    NPU_REGIONCFG_3=1   # AXI0=M0
+    NPU_REGIONCFG_4=1   # AXI0=M0
+    NPU_REGIONCFG_5=1   # AXI0=M0
+    NPU_REGIONCFG_6=1   # AXI0=M0
+    NPU_REGIONCFG_7=1)  # AXI0=M0
+
+# Definitions relevant for all NPUs but depend on memory mode
+if (ETHOS_U_NPU_MEMORY_MODE STREQUAL Dedicated_Sram)
+    target_compile_definitions(ethosu_core_driver PRIVATE
+        NPU_QCONFIG=3       # AXI1=M1
+        NPU_REGIONCFG_0=3   # AXI1=M1
+        NPU_REGIONCFG_1=3)  # AXI1=M1
+elseif (ETHOS_U_NPU_MEMORY_MODE STREQUAL Shared_Sram)
+    target_compile_definitions(ethosu_core_driver PRIVATE
+        NPU_QCONFIG=3       # AXI1=M1
+        NPU_REGIONCFG_0=3   # AXI1=M1
+        NPU_REGIONCFG_1=0)  # AXI0=M0
+else()
+    target_compile_definitions(ethosu_core_driver PRIVATE
+        NPU_QCONFIG=0       # AXI0=M0
+        NPU_REGIONCFG_0=0   # AXI0=M0
+        NPU_REGIONCFG_1=0)  # AXI0=M0
+endif()
+## linker .sram and .ddr
+  ITCM  (rx)  : ORIGIN = 0x10000000, LENGTH = 0x00008000
+  BOOT  (rx)  : ORIGIN = 0x11000000, LENGTH = 0x00010000
+  BRAM  (rwx) : ORIGIN = 0x12000000, LENGTH = 0x00200000
+  DTCM  (rwx) : ORIGIN = 0x30000000, LENGTH = 0x00008000
+  SRAM  (rwx) : ORIGIN = 0x31000000, LENGTH = 0x00400000
+  DDR   (rwx) : ORIGIN = 0x70000000, LENGTH = 0x02000000
+
+  /* Dynamic load regions declared for use by FVP only
+   * These regions are mentioned in the CMake subsystem profile.
+   * Do not change the addresses here in isolation. */
+  DDR_dynamic_model (rx) : ORIGIN = 0x90000000, LENGTH = 0x02000000
+  DDR_dynamic_ifm   (rx) : ORIGIN = 0x92000000, LENGTH = 0x01000000
+  DDR_dynamic_ofm   (rx) : ORIGIN = 0x93000000, LENGTH = 0x01000000
+}
+
+/* Linker script to place sections and symbol values. Should be used together
+  .sram :
+  {
+    . = ALIGN(16);
+    /* Cache area (if used) */
+    *(.bss.NoInit.ethos_u_cache)
+    . = ALIGN (16);
+    /* activation buffers a.k.a tensor arena when memory mode sram only or shared sram */
+    *(.bss.NoInit.activation_buf_sram)
+    . = ALIGN(16);
+  } > SRAM AT > SRAM
+
+## mem_regions ISRAM
+26:#define ISRAM0_SIZE           (0x00200000)     /* ISRAM0 size */
+27:#define ISRAM1_SIZE           (0x00200000)     /* ISRAM1 size */
+38:#define ISRAM0_BASE_NS        (0x21000000)     /* Internal SRAM Area Non-Secure base address */
+39:#define ISRAM1_BASE_NS        (0x21200000)     /* Internal SRAM Area Non-Secure base address */
+53:#define ISRAM0_BASE_S         (0x31000000)     /* Internal SRAM Area Secure base address */
+54:#define ISRAM1_BASE_S         (0x31200000)     /* Internal SRAM Area Secure base address */
+61:#define SRAM_MPC_BLK_SIZE    (0x4000)     /* 16 kB */
+82:/** ISRAM0 -- 2 MB*/
+83:#define MPC_ISRAM0_RANGE_BASE_NS   (ISRAM0_BASE_NS)
+84:#define MPC_ISRAM0_RANGE_LIMIT_NS  (ISRAM0_BASE_NS + ISRAM0_SIZE-1)
+85:#define MPC_ISRAM0_RANGE_OFFSET_NS (0x0)
+86:#define MPC_ISRAM0_RANGE_BASE_S    (ISRAM0_BASE_S)
+87:#define MPC_ISRAM0_RANGE_LIMIT_S   (ISRAM0_BASE_S + ISRAM0_SIZE-1)
+88:#define MPC_ISRAM0_RANGE_OFFSET_S  (0x0)
+90:/** ISRAM1 -- 2 MB */
+91:#define MPC_ISRAM1_RANGE_BASE_NS   (ISRAM1_BASE_NS)
+92:#define MPC_ISRAM1_RANGE_LIMIT_NS  (ISRAM1_BASE_NS + ISRAM1_SIZE-1)
+93:#define MPC_ISRAM1_RANGE_OFFSET_NS (0x0)
+94:#define MPC_ISRAM1_RANGE_BASE_S    (ISRAM1_BASE_S)
+95:#define MPC_ISRAM1_RANGE_LIMIT_S   (ISRAM1_BASE_S + ISRAM1_SIZE-1)
+96:#define MPC_ISRAM1_RANGE_OFFSET_S  (0x0)
+## driver config defaults
+/* Default MEM_ATTR entries */
+#ifndef NPU_MEM_ATTR_0
+#define NPU_MEM_ATTR_0 0 /* SRAM AXI port, non_sharable, device_non_bufferable */
+#endif
+
+#ifndef NPU_MEM_ATTR_1
+#define NPU_MEM_ATTR_1 0 /* SRAM AXI port, non_sharable, device_non_bufferable */
+#endif
+
+#ifndef NPU_MEM_ATTR_2
+#define NPU_MEM_ATTR_2 (1 << 2) /* EXT AXI port, non_sharable, device_non_bufferable */
+#endif
+
+#ifndef NPU_MEM_ATTR_3
+#define NPU_MEM_ATTR_3 (1 << 2) /* EXT AXI port, non_sharable, device_non_bufferable */
+#endif
+
+/* Default MEM_ATTR index to use for command stream */
+#ifndef NPU_QCONFIG
+#define NPU_QCONFIG 2
+#endif
+
+/* Default MEM_ATTR index to use for regions 0-7 */
+#ifndef NPU_REGIONCFG_0
+#define NPU_REGIONCFG_0 3
+#endif
+
+#ifndef NPU_REGIONCFG_1
+#define NPU_REGIONCFG_1 0
+#endif
+
+#ifndef NPU_REGIONCFG_2
+#define NPU_REGIONCFG_2 1
+#endif
+
+#ifndef NPU_REGIONCFG_3
+#define NPU_REGIONCFG_3 1
+#endif
+
+#ifndef NPU_REGIONCFG_4
+#define NPU_REGIONCFG_4 1
+#endif
+
+#ifndef NPU_REGIONCFG_5
+#define NPU_REGIONCFG_5 1
+#endif
+
+#ifndef NPU_REGIONCFG_6
+#define NPU_REGIONCFG_6 1
+#endif
+
+## driver run_command_stream
+                                   uint32_t cms_length,
+                                   const uint64_t *base_addr,
+                                   int num_base_addr)
+{
+    assert(num_base_addr <= NPU_REG_BASEP_ARRLEN);
+
+    struct cmd_r cmd;
+    struct regioncfg_r rcfg = {0};
+    uint64_t qbase          = ethosu_address_remap((uintptr_t)cmd_stream_ptr, -1);
+    assert(qbase <= ADDRESS_MASK);
+    LOG_DEBUG("QBASE=0x%016llx, QSIZE=%" PRIu32 ", cmd_stream_ptr=%p", qbase, cms_length, cmd_stream_ptr);
+
+    dev->reg->QBASE.word[0] = qbase & 0xffffffff;
+    dev->reg->QBASE.word[1] = qbase >> 32;
+    dev->reg->QSIZE.word    = cms_length;
+    dev->reg->QCONFIG.word  = ethosu_config_select(qbase, -1);
+
+    for (int i = 0; i < num_base_addr; i++)
+    {
+        uint64_t addr = ethosu_address_remap(base_addr[i], i);
+        assert(addr <= ADDRESS_MASK);
+        LOG_DEBUG("BASEP%d=0x%016llx", i, addr);
+        dev->reg->BASEP[i].word[0] = addr & 0xffffffff;
+        dev->reg->BASEP[i].word[1] = addr >> 32;
+        rcfg.word |= ethosu_config_select(addr, i) << (i * 2);
+    }
+
+    dev->reg->REGIONCFG.word = rcfg.word;
+
+    cmd.word                        = dev->reg->CMD.word & NPU_CMD_PWR_CLK_MASK;
+    cmd.transition_to_running_state = 1;
+
+    dev->reg->CMD.word = cmd.word;
+    LOG_DEBUG("CMD=0x%08" PRIx32, cmd.word);
+}
+
+void ethosu_dev_print_err_status(struct ethosu_device *dev)
+## MPU configuration in MLEK sources
+(end of MPU grep)
