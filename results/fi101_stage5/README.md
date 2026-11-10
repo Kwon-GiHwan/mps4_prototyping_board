@@ -57,6 +57,16 @@ Contract `evidence/stage5/contract.md` (frozen `f89c672`, before boot 351); plan
   - The dw/conv estimates moved without a resolved board change.
   - Ratios are described, not read as estimation errors.
 
+## Final record (owner, 2026-11-11: Stage 5-1 adopted)
+
+All comparisons are `SCHEDULE_CHANGED`. They are whole-configuration effects of the SRAM workspace budget, not effects of SRAM placement alone.
+
+- **kws and ad:** MAC_ACTIVE changed little, but NPU_ACTIVE rose.
+- **ad at 64 KiB:** 2.58× the base, and slower than ad at 0. SRAM budget and execution cost were not in a simple proportional relation.
+- **Recorded but not attributed:** the higher kernel count, the higher EXT transfers and the time increase occurred together. Their causal contributions are not established.
+- **conv and dw:** the whole-run effect stays `UNRESOLVED`. This means no difference was resolved in these configs; it does not mean SRAM is not needed.
+- **ad at 64 KiB is a candidate for deep analysis after the overall synthesis.** No further budget, shape or event experiment is started now.
+
 ## Not generalised
 
 - **Changed in 5-0 but not measured (scope):** effect `UNMEASURED`, not generalised from kws/ad.

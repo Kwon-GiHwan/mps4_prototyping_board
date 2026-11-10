@@ -1,0 +1,345 @@
+{
+ "kws_micronet_m": {
+  "cms_len": [
+   2572,
+   2568
+  ],
+  "const_len": [
+   145728,
+   145552
+  ],
+  "const_same": false,
+  "fast": [
+   91600,
+   91600
+  ],
+  "arena": [
+   496,
+   496
+  ],
+  "kernels": [
+   14,
+   14
+  ],
+  "kernel_diffs": [
+   [
+    0,
+    "CONV",
+    {
+     "weight_length": [
+      336,
+      320
+     ],
+     "weight2_length": [
+      352,
+      336
+     ],
+     "weight3_length": [
+      352,
+      336
+     ],
+     "dma_len": [
+      1712,
+      1664
+     ],
+     "dma_before": [
+      [
+       1712
+      ],
+      [
+       1664
+      ]
+     ]
+    }
+   ],
+   [
+    1,
+    "CONV",
+    {
+     "weight_length": [
+      2080,
+      2048
+     ],
+     "weight1_length": [
+      2144,
+      2112
+     ],
+     "weight2_length": [
+      2160,
+      2128
+     ],
+     "weight3_length": [
+      1936,
+      1904
+     ],
+     "dma_len": [
+      9600,
+      9472
+     ],
+     "dma_before": [
+      [
+       9600
+      ],
+      [
+       9472
+      ]
+     ]
+    }
+   ]
+  ]
+ },
+ "ad_medium_int8": {
+  "cms_len": [
+   2480,
+   2496
+  ],
+  "const_len": [
+   459056,
+   456368
+  ],
+  "const_same": false,
+  "fast": [
+   249856,
+   308064
+  ],
+  "arena": [
+   1024,
+   1024
+  ],
+  "kernels": [
+   14,
+   14
+  ],
+  "kernel_diffs": [
+   [
+    3,
+    "CONV",
+    {
+     "weight_region": [
+      0,
+      2
+     ],
+     "weight_length": [
+      13840,
+      55328
+     ],
+     "weight1_length": [
+      14736,
+      0
+     ],
+     "weight2_length": [
+      14704,
+      0
+     ],
+     "weight3_length": [
+      14736,
+      0
+     ],
+     "dma_len": [
+      4096,
+      58208
+     ],
+     "dma_before": [
+      [],
+      [
+       58208
+      ]
+     ]
+    }
+   ],
+   [
+    4,
+    "DEPTHWISE",
+    {
+     "dma_len": [
+      4096,
+      58208
+     ]
+    }
+   ],
+   [
+    5,
+    "CONV",
+    {
+     "dma_len": [
+      4096,
+      58208
+     ]
+    }
+   ],
+   [
+    6,
+    "DEPTHWISE",
+    {
+     "dma_len": [
+      4096,
+      58208
+     ]
+    }
+   ],
+   [
+    7,
+    "CONV",
+    {
+     "dma_len": [
+      4096,
+      58208
+     ]
+    }
+   ],
+   [
+    8,
+    "DEPTHWISE",
+    {
+     "dma_len": [
+      4096,
+      58208
+     ]
+    }
+   ],
+   [
+    9,
+    "CONV",
+    {
+     "dma_len": [
+      4096,
+      58208
+     ]
+    }
+   ],
+   [
+    10,
+    "DEPTHWISE",
+    {
+     "dma_len": [
+      4096,
+      58208
+     ]
+    }
+   ],
+   [
+    11,
+    "CONV",
+    {
+     "dma_len": [
+      4096,
+      58208
+     ]
+    }
+   ],
+   [
+    12,
+    "POOL",
+    {
+     "dma_len": [
+      4096,
+      58208
+     ]
+    }
+   ],
+   [
+    13,
+    "CONV",
+    {
+     "dma_len": [
+      4096,
+      58208
+     ]
+    }
+   ]
+  ]
+ },
+ "s4c2_conv_cin64": {
+  "cms_len": [
+   520,
+   448
+  ],
+  "const_len": [
+   8576,
+   9536
+  ],
+  "const_same": false,
+  "fast": [
+   8576,
+   9536
+  ],
+  "arena": [
+   92160,
+   92160
+  ],
+  "kernels": [
+   2,
+   2
+  ],
+  "kernel_diffs": [
+   [
+    0,
+    "CONV",
+    {
+     "weight_length": [
+      336,
+      2080
+     ],
+     "weight1_length": [
+      336,
+      0
+     ],
+     "weight2_length": [
+      336,
+      0
+     ],
+     "weight3_length": [
+      336,
+      0
+     ],
+     "dma_len": [
+      1664,
+      2400
+     ],
+     "dma_before": [
+      [
+       1664
+      ],
+      [
+       2400
+      ]
+     ]
+    }
+   ],
+   [
+    1,
+    "CONV",
+    {
+     "weight_length": [
+      1488,
+      6176
+     ],
+     "weight1_length": [
+      1488,
+      0
+     ],
+     "weight2_length": [
+      1488,
+      0
+     ],
+     "weight3_length": [
+      1488,
+      0
+     ],
+     "dma_len": [
+      6912,
+      7136
+     ],
+     "dma_before": [
+      [
+       6912
+      ],
+      [
+       7136
+      ]
+     ]
+    }
+   ]
+  ]
+ }
+}

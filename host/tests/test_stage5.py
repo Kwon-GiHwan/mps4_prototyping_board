@@ -128,5 +128,15 @@ class Stage5(unittest.TestCase):
         self.assertEqual(r["configs"]["kws_micronet_m_cache64k"]["output"]["verdict"], "INVALID")
 
 
+class Plans(unittest.TestCase):
+    def test_5_2_configs(self):
+        w, e = P.PLANS["5-2"]
+        self.assertEqual({k: v[1] for k, v in w.items()}, {"kws_micronet_m": ("base", "size"),
+                                                           "ad_medium_int8": ("base", "size"),
+                                                           "s4c2_conv_cin64": ("base", "size")})
+        self.assertEqual(set(e), set(w))
+        self.assertEqual(P.PLANS["5-1"][0], P.WORKLOADS)
+
+
 if __name__ == "__main__":
     unittest.main()

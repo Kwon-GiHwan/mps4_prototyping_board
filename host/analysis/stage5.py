@@ -2,7 +2,7 @@
 """Stage 5-1 (evidence/stage5/contract.md): SRAM workspace budget (Vela --arena-cache-size) in Dedicated_Sram on the
 driver runner image 83398c7, TA profile 1, pass A + pass B, 1 warm-up + 4 measured RUNs.
 
-  python3 host/analysis/stage5.py <campaign root> <workloads dir> <stage5_0.json> <out dir>
+  python3 host/analysis/stage5.py <campaign root> <workloads dir> <stage5_0.json> <out dir> [5-1 | 5-2]
 
 Per config (conds/<workload>_<variant>/wfe):
   output   NPU output (output.bin) vs the DRWL golden: MLEK models byte-exact (amendment 2) -> PASS_EXACT / FAIL;
@@ -38,6 +38,14 @@ EARLIER = {"kws_micronet_m": (REPO / "evidence/driver_m7/raw/wfe/kws_micronet_m"
            "ad_medium_int8": (REPO / "evidence/driver_m7/raw/wfe/ad_medium_int8", 2),
            "s4_dw_base": (REPO / "evidence/stage4/raw/conds/s4_dw_base/wfe", 1),
            "s4_conv_base": (REPO / "evidence/stage4/raw/conds/s4_conv_base/wfe", 1)}
+# Stage 5-2 (evidence/stage5_2/contract.md): Size vs Performance at the same budget (384 KiB); bases re-measured in the
+# session and checked against their latest measurement on the same image (5-1 boots 351/354, 4C-2b boot 350)
+WORKLOADS_52 = {"kws_micronet_m": ("model", ("base", "size")), "ad_medium_int8": ("model", ("base", "size")),
+                "s4c2_conv_cin64": ("op", ("base", "size"))}
+EARLIER_52 = {"kws_micronet_m": (REPO / "evidence/stage5/raw/conds/kws_micronet_m_base/wfe", 1),
+              "ad_medium_int8": (REPO / "evidence/stage5/raw/conds/ad_medium_int8_base/wfe", 1),
+              "s4c2_conv_cin64": (REPO / "evidence/stage4c2b/raw/conds/s4c2_conv_cin64/wfe", 1)}
+PLANS = {"5-1": (WORKLOADS, EARLIER), "5-2": (WORKLOADS_52, EARLIER_52)}
 
 
 def golden(wl: pathlib.Path, name: str) -> bytes:
@@ -82,11 +90,12 @@ def comp_of(c50: dict, wl: pathlib.Path, name: str) -> dict:
                 vela_npu_cycles=c50["cycles_npu"], vela_sha256=meta["vela_sha256"])
 
 
-def main(root: str, wl: str, s50: str, out: str) -> dict:
+def main(root: str, wl: str, s50: str, out: str, plan: str = "5-1") -> dict:
     root, wl, o = pathlib.Path(root), pathlib.Path(wl), pathlib.Path(out)
+    workloads, earlier_dirs = PLANS[plan]
     c50 = json.loads(pathlib.Path(s50).read_text())
     res, base_check, pairs = {}, {}, {}
-    for w, (kind, variants) in WORKLOADS.items():
+    for w, (kind, variants) in workloads.items():
         gold = golden(wl, f"{w}_base")
         for v in variants:
             name = f"{w}_{v}"
@@ -110,7 +119,7 @@ def main(root: str, wl: str, s50: str, out: str) -> dict:
                 x = res[f"{w}_{v}"]
                 if x.get("verdict") == "VALID":
                     x["same_output_as_base"] = x["output"]["npu_sha256"] == b["output"]["npu_sha256"]
-        e_dir, e_warm = EARLIER[w]
+        e_dir, e_warm = earlier_dirs[w]
         earlier = S4.load(e_dir, e_warm) if (e_dir / "runs.csv").exists() else {}
         if b.get("verdict") != "VALID" or not earlier:
             base_check[w] = dict(ok=False, why="base not VALID or earlier data missing")
@@ -152,4 +161,4 @@ def main(root: str, wl: str, s50: str, out: str) -> dict:
 
 
 if __name__ == "__main__":
-    print(json.dumps(main(*sys.argv[1:5]), indent=1, default=str)[:3000])
+    print(json.dumps(main(*sys.argv[1:6]), indent=1, default=str)[:3000])

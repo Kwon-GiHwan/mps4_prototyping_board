@@ -1,0 +1,7 @@
+# Stage 5-2: Size vs Performance at 384 KiB, Stage 4 image 83398c7, MLEK TA set-up (= TA profile 1), 5 RUNs (1 warm-up)
+361 kws_micronet_m_base @/home/gihwan/evsweep_stage5_2/conditions.txt
+362 kws_micronet_m_size @/home/gihwan/evsweep_stage5_2/conditions.txt
+363 ad_medium_int8_base @/home/gihwan/evsweep_stage5_2/conditions.txt
+364 ad_medium_int8_size @/home/gihwan/evsweep_stage5_2/conditions.txt
+365 s4c2_conv_cin64_base @/home/gihwan/evsweep_stage5_2/conditions.txt
+366 s4c2_conv_cin64_size @/home/gihwan/evsweep_stage5_2/conditions.txt

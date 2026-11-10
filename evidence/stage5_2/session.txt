@@ -1,0 +1,6 @@
+# Owner sudo session 2026-11-11: Stage 5-2 boots 361-366 (contract evidence/stage5_2/contract.md), TA profile 1; ends with postflight
+user python3 mcc.py USB_ON 4 && sleep 5 && test -e /dev/sdb1
+deploy_mlek /home/gihwan/evsweep_stage5_2 /home/gihwan/evsweep/evidence_stage5_2
+user OUTPUTS=1 sh run_driver_campaign.sh /home/gihwan/evsweep_stage5_2 /home/gihwan/evsweep_stage5_2_run /home/gihwan/evsweep_stage5_2/ids.txt /home/gihwan/evsweep_stage5_2/plan.txt 5
+restore_mlek /home/gihwan/evsweep/evidence_stage5_2 /home/gihwan/evsweep_stage5_2
+user sh postflight.sh
