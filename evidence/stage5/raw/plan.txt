@@ -1,0 +1,11 @@
+# Stage 5-1: SRAM workspace budget, Dedicated_Sram, Stage 4 image 83398c7, MLEK TA set-up (= TA profile 1), 5 RUNs (1 warm-up)
+351 kws_micronet_m_base @/home/gihwan/evsweep_stage5/conditions.txt
+352 kws_micronet_m_cache64k @/home/gihwan/evsweep_stage5/conditions.txt
+353 kws_micronet_m_cache0 @/home/gihwan/evsweep_stage5/conditions.txt
+354 ad_medium_int8_base @/home/gihwan/evsweep_stage5/conditions.txt
+355 ad_medium_int8_cache64k @/home/gihwan/evsweep_stage5/conditions.txt
+356 ad_medium_int8_cache0 @/home/gihwan/evsweep_stage5/conditions.txt
+357 s4_dw_base_base @/home/gihwan/evsweep_stage5/conditions.txt
+358 s4_dw_base_cache0 @/home/gihwan/evsweep_stage5/conditions.txt
+359 s4_conv_base_base @/home/gihwan/evsweep_stage5/conditions.txt
+360 s4_conv_base_cache0 @/home/gihwan/evsweep_stage5/conditions.txt
