@@ -186,6 +186,31 @@ NPU_ACTIVE는 Driver Runner m7의 중앙값(64 RUN)이고, 나머지는 Stage 1�
 - 예산이 줄면 전송이 EXT로 옮겨 갔다. kernel 수, EXT 전송, 시간의 증가는 함께 일어났지만 각각의 인과적 기여는 확정하지 않았다.
 - Conv·DW의 `UNRESOLVED`는 SRAM이 필요 없다는 뜻이 아니다.
 
+### 2.4a AD 64 KiB 사례 — 정적 분석 (보드 없음, `results/ad64k_static/README.md`)
+
+**상태: 실행 구성 변화와 성능 차이는 확인했으나, 개별 요인의 인과적 기여는 분리하지 못했다** (owner 채택 2026-11-11, AD 분석 종료).
+
+- **실측 사실 (5-1, TA profile 1).**
+  - NPU_ACTIVE: 384 KiB 145,991, 64 KiB 376,999(×2.58), 0 234,881(×1.61).
+  - MAC_ACTIVE: 93,672 / 94,824 / 91,368(+1.2 %, −2.5 %). AO_ACTIVE 변화는 1 % 미만이다.
+  - WD_ACTIVE: 64 KiB에서만 ×2.15(0은 기준과 같음).
+  - EXT 읽기: 0.71 / 2.55 / 1.82 MB. EXT 쓰기: 0 / 0.22 / 0.66 MB.
+  - EXT 총량은 64 KiB가 0보다 11.6 % 많지만, NPU_ACTIVE는 60.5 % 많다(보조 관측; 메모리 병목의 증명·배제 근거로 쓰지 않음).
+- **정적 근거** (측정한 Vela 출력·command stream과 해시로 연결):
+  - 64 KiB의 kernel 66개 = 원본 연산 1–7이 60개 + 8–13이 6개다. 늘어난 52개는 모두 연산 1–7의 cascade stripe 분할에서 나왔다(연산 1–3은 16 stripe, 4–5·6–7은 3 stripe).
+  - 원본 연산 3(Conv 1×1 192→276)의 가중치 58,016 B가 stripe마다 DRAM에서 다시 stream된다(16회). 연산 5·7은 3회다.
+  - DRAM 가중치 stream은 423 KB → 1,637 KB로 늘었다. 연산 3·5·7의 출력과 4·6·8의 입력은 DRAM을 거친다.
+  - 0은 가중치를 한 번씩만 읽고, feature map을 모두 DRAM에 둔다.
+  - MAC_ACTIVE 변화는 연산 1·2의 ublock 수 변화와 산술적으로 맞는다(사후).
+- **탐색 결과 (컴파일만):**
+  - 80·96·112·128 KiB에서는 작업 분할·block·중간 데이터 배치가 함께 바뀌었다. 다른 주요 조건을 유지한 채 가중치 반복 이동만 다른 비교 구성은 찾지 못했다.
+  - 연산 3의 가중치를 SRAM에 버퍼하는 구성도 없었다.
+- **결론의 한계.**
+  - 반복 가중치 이동은 64 KiB가 0보다 느린 것의 유력한 원인 후보다.
+  - 반복 읽기·작업 분할·데이터 배치 각각의 시간 기여는 분리하지 못했다.
+- **추가 관측 (실행 성능 미측정).** kernel 수(66·77·40·43·86)와 정적 DRAM 가중치 stream(1.64·2.09·1.26·1.18·3.31 MB)은 예산(64 → 128 KiB)에 따라 단조롭게 줄지 않았다. 새 예산의 실행 비용은 측정하지 않았다.
+- **의미.** Stage 4는 독립 연산이라 원본 모델의 연산 비용으로 옮기지 않았다. 이 사례는 실제 모델에서 관측한 큰 성능 차이를 그 모델의 컴파일 구성과 연결했다.
+
 ### 2.5 최적화 전략 Performance vs Size @384 KiB (Stage 5-2)
 
 5-0에서 세 workload 모두 `MEMORY_ONLY`였다(kernel별 계산 구성은 같고, 가중치 stream·배치가 다름).
@@ -302,14 +327,14 @@ NPU_ACTIVE는 Driver Runner m7의 중앙값(64 RUN)이고, 나머지는 Stage 1�
 
 | 우선 | 질문 | 근거 | 가장 작은 다음 단계 |
 | --- | --- | --- | --- |
-| **1 (우선 후보)** | 같은 계산인데 ad 64 KiB가 왜 0보다 느린가 (×2.58) | 5-1, `SCHEDULE_CHANGED`, kernel 14 → 66, MAC 변화 작음 | 기존 컴파일 산출물에서 kernel별 구성·전송 대조까지만(보드 없음) |
+| ~~1~~ **종료** | 같은 계산인데 ad 64 KiB가 왜 0보다 느린가 (×2.58) | 5-1 | 정적 분석·컴파일 탐색 완료(§2.4a). 실행 구성 변화와 성능 차이는 확인, 개별 요인의 인과적 기여는 미분리. 추가 탐색·보드 측정 없음 |
 | 2 | MAC 활동이 같거나 좋아졌는데 전체 비용이 늘어나는 부분 | Conv 97, Cout 95, DW 143, kws·ad 예산 | 계약 필요 |
 | 3 | 모델의 낮은 MAC 활성 사이클 효율을 채널 올림·ublock padding이 얼마나 설명하는가 | Stage 1 kws·yolo·vww4, 4C | Vela 산출물로 정적 계산(보드 없음) |
 | 4 | depthwise 비중 모델의 MAC stalled by IB | Stage 3 | Reserved-ID 의미 확인이 먼저 |
 | 5 | rnnoise 보드 ÷ Vela 1.62 | Stage 1 | 구성 확인(보드 없음) |
 | 6 | 계산 레지스터가 같은데 MAC_ACTIVE가 바뀐 이유 (kws Size +605) | 5-2 | 가중치 stream 차이를 산출물로 비교(보드 없음) |
 
-- 여섯 후보를 동시에 시작하지 않는다. 1번도 승인 전에는 시작하지 않는다.
+- 남은 후보 2–6은 목록으로만 유지하며, 자동으로 착수하지 않는다.
 - 연산별 시간 귀속(2B H1/H2의 재구성)은 새 방법 없이는 후보에서 뺀다.
 
 ---
@@ -325,4 +350,6 @@ NPU_ACTIVE는 Driver Runner m7의 중앙값(64 RUN)이고, 나머지는 Stage 1�
 | Stage 2B | `results/fi101_stage2_groups/README.md`, `results/fi101_stage2b3/README.md`, `results/qread_op_pilot/FINAL.md` |
 | Stage 4 | `results/fi101_stage4/stage4_analysis.md`, `results/fi101_stage4c1/README.md`, `results/fi101_stage4c2/README.md`, `results/fi101_stage4c2b/README.md` |
 | Stage 5 | `results/fi101_stage5/README.md`, `results/fi101_stage5_2/README.md`, `evidence/stage5/stage5_0.json` |
+| AD 64 KiB 정적 분석 | `results/ad64k_static/README.md`, `evidence/ad64k_static/` (컴파일 산출물, 예산 탐색) |
+| 요약본 | `results/fi101_synthesis/SUMMARY.md` |
 | MAC 정의 | `host/container/workload_meta.py`, `evidence/stage1/workload_manifest/manifest.json`, `evidence/x1_mlek_models/manifest.x1.json` |
