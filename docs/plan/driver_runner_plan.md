@@ -149,6 +149,7 @@ Stage 0 S0-3: 같은 구간에서 PMCCNTR가 CPU DWT보다 0–31 % 적다(모�
 | 호스트 | `drwl.py`, `record_v2.py`, `driver_link.py`, `RunnerLink._decode` hook, `pack_vela_workload --format drwl`, `board/run_driver_events.py`, `board/run_driver_campaign.sh` |
 | 테스트 | 시뮬레이터(코어를 호스트용으로 컴파일, `DriverLink`가 파이프로 실제 프레임 교환, board 스크립트 끝까지), 계약(C X-macro ↔ Python), record_v2, DRWL, Phase 3 판정. 변이: 코어+호스트 35개, Phase 3 판정 15개 모두 RED |
 | 보드 | **미실행** — 이미지 교체 승인과 sudo 필요(지시 9.5). Phase 3 계약 `evidence/driver_p3/contract.md` 고정 |
+| 보드 (2026-11-10 추가) | P3 kws·ad(boots 298–299, `results/driver_p3`) D1–D6 통과; m7 7개 모델 MLEK 입력(boots 308–316, `results/driver_m7`) D1–D6 전부 통과, MLEK 대비 M1–M3 7개·M4 6개 EQUIVALENT. 기록의 `qsize` 칸은 PROT(0x24)였음 → `afceaa8`에서 수정 |
 
 
 ### 2.2 모듈 구성 (펌웨어, `firmware/driver_runner/`)
