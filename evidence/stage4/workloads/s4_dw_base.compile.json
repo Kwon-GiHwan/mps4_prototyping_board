@@ -1,0 +1,94 @@
+{
+ "config": "s4_dw_base",
+ "checks": {
+  "placement": true,
+  "schedule": true,
+  "kernels": true,
+  "macs": true,
+  "same_vela": true
+ },
+ "gate_b": true,
+ "n_mac": 4064256,
+ "vela_ops": [
+  "CUSTOM:ethos-u"
+ ],
+ "scheduled": [
+  [
+   "DepthwiseConv2D",
+   "112225"
+  ],
+  [
+   "Relu6",
+   "0"
+  ]
+ ],
+ "kernel_kinds": [
+  "DEPTHWISE",
+  "DEPTHWISE"
+ ],
+ "n_kernels": 2,
+ "vela_op_cycles": "944999",
+ "vela_npu_cycles": "112225",
+ "vela_mac_cycles": "43064",
+ "vela_ao_cycles": "29315",
+ "vela_cmd_cycles": "2807",
+ "ofm_block": "26x28x16",
+ "ifm_block": "28x32x16",
+ "ofm_ublock": "2x4x16",
+ "traversal": "Depthwise",
+ "ifm_memory": "Dram",
+ "ofm_memory": "Dram",
+ "ifm_format": "NHWC",
+ "ofm_format": "NHWC",
+ "weight_bytes": "1792",
+ "cascade": "0",
+ "sram_ac": "525",
+ "dram_ac": "944999",
+ "staging_usage": "3232",
+ "model_sha256": "33681a0faf5027f810a00d501efbde5a226e0d97c28d40c71dc0f5b4bd95f1c9",
+ "vela_sha256": "7b546a4f645ebd937daec589e759daf03a82e66a5d0fd85df53e2df214537fcb",
+ "cms_sha256": "1731d1f3defe57dad3d9dd152b3f7ac3da4670270f4780b7d5e766201661c91a",
+ "cms_len": 532,
+ "drwl_sha256": "156e1fe360a56126c7880d60ead0872ba35b4ccfed143c154f286fa1fcfd58ec",
+ "ifm_sha256": "0da7078c2728981c2d076fba50ff2c4889acb6c2c9bb4d6ddc331e9b6d413d0e",
+ "cpu_ofm_sha256": "c3f9984d8826414bfa66879052324de1e9d7399f0dcd8e8b90cb1868f8bafecc",
+ "arena_size": 903168,
+ "vela_version": "5.0.0",
+ "vela_options": [
+  "--accelerator-config",
+  "ethos-u85-1024",
+  "--optimise",
+  "Performance",
+  "--config",
+  "/opt/arm/ml-embedded-evaluation-kit/scripts/vela/default_vela.ini",
+  "--memory-mode",
+  "Dedicated_Sram",
+  "--system-config",
+  "Ethos_U85_SYS_DRAM_Mid_1024"
+ ],
+ "quant": {
+  "ifm_scale": 0.0078125,
+  "weight_scale": 0.0078125,
+  "ofm_scale": 0.03806286909448819,
+  "zero_points": 0
+ },
+ "activation": "RELU6",
+ "ifm_shape": [
+  1,
+  56,
+  56,
+  144
+ ],
+ "ofm_shape": [
+  1,
+  56,
+  56,
+  144
+ ],
+ "weight_shape": [
+  1,
+  3,
+  3,
+  144
+ ]
+}

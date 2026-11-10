@@ -135,6 +135,12 @@ class Commands(unittest.TestCase):
         self.assertEqual(pos, sorted(pos))
         self.assertTrue(set(Q.RECORD_FIELDS) <= set(record_v2.FIELDS))
 
+    def test_get_output(self):
+        r = INC["runner.h"]
+        self.assertEqual((define("CMD_GET_OUTPUT", r), define("OUTPUT_GET_MAX_BYTES", r)),
+                         (driver_link.CMD_GET_OUTPUT, driver_link.OUTPUT_GET_MAX_BYTES))
+        self.assertLessEqual(driver_link.OUTPUT_GET_MAX_BYTES, runner_proto.MAX_PAYLOAD)
+
     def test_checked_trace_layout(self):
         t, c = INC["trace.h"], SRC["trace.c"]
         Q = qread_trace

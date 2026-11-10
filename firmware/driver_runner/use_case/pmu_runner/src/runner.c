@@ -54,7 +54,7 @@ static int known(uint8_t cmd)
     return cmd == CMD_PING || cmd == CMD_GET_STATE || cmd == CMD_GET_CAPABILITIES || cmd == CMD_SET_INSTRUMENTATION_MODE
            || cmd == CMD_SET_RUN_OPTIONS || cmd == CMD_LOAD_MODEL_BEGIN || cmd == CMD_LOAD_MODEL_CHUNK
            || cmd == CMD_LOAD_MODEL_END || cmd == CMD_LOAD_INPUT || cmd == CMD_RUN || cmd == CMD_RESET_RUNNER
-           || cmd == CMD_GET_TRACE;
+           || cmd == CMD_GET_TRACE || cmd == CMD_GET_OUTPUT;
 }
 
 /* Which requests each state accepts (the legacy runner's table, plus SET_RUN_OPTIONS where SET_MODE is accepted). */
@@ -71,7 +71,8 @@ static int allowed(uint8_t cmd)
     case ST_INPUT_READY:   return always || config || cmd == CMD_RUN || cmd == CMD_LOAD_INPUT
                                   || cmd == CMD_LOAD_MODEL_BEGIN || cmd == CMD_RESET_RUNNER;
     case ST_RESULT_READY:  return always || config || cmd == CMD_RUN || cmd == CMD_LOAD_INPUT
-                                  || cmd == CMD_LOAD_MODEL_BEGIN || cmd == CMD_RESET_RUNNER || cmd == CMD_GET_TRACE;
+                                  || cmd == CMD_LOAD_MODEL_BEGIN || cmd == CMD_RESET_RUNNER || cmd == CMD_GET_TRACE
+                                  || cmd == CMD_GET_OUTPUT;
     default:               return 0;
     }
 }
@@ -147,6 +148,38 @@ static void get_trace(void)
     n = trace_words(rd32(req.payload), n, words);
     for (uint32_t i = 0; i < n; i++) { wr32(out + 4U * i, words[i]); }
     ack(out, 4U * n);
+}
+
+/* Payload: first byte, byte count over the output tensors one after another (model order). Count 0: reply the zlib CRC-32
+ * of all of them and their total length; else up to OUTPUT_GET_MAX_BYTES bytes from first (clipped to the end). */
+static void get_output(void)
+{
+    static uint8_t out[OUTPUT_GET_MAX_BYTES];
+    uint32_t first, n, at = 0U, got = 0U, crc = 0xFFFFFFFFU;
+    if (req.length != 8U) { nack(ERR_LENGTH, 0U); return; }
+    first = rd32(req.payload);
+    n = rd32(req.payload + 4);
+    if (n > OUTPUT_GET_MAX_BYTES) { n = OUTPUT_GET_MAX_BYTES; }
+    for (uint32_t i = 0; i < wl.n_out; i++) {
+        uint8_t *o;
+        uint32_t len;
+        (void)P->model_io(1U, i, &o, &len);
+        if (n == 0U) {
+            crc = crc32_update(crc, o, len);
+        } else {
+            for (uint32_t k = 0; k < len && got < n; k++) {
+                if (at + k >= first) { out[got++] = o[k]; }
+            }
+        }
+        at += len;
+    }
+    if (n == 0U) {
+        uint8_t r[8];
+        wr32(r, crc ^ 0xFFFFFFFFU); wr32(r + 4, at);
+        ack(r, sizeof r);
+    } else {
+        ack(out, got);
+    }
 }
 
 static void load_begin(void)
@@ -360,6 +393,7 @@ int runner_poll(void)
     case CMD_RUN:                      run(); break;
     case CMD_RESET_RUNNER:             reset_runner(); break;
     case CMD_GET_TRACE:                get_trace(); break;
+    case CMD_GET_OUTPUT:               get_output(); break;
     default:                           nack(ERR_BAD_COMMAND, 0U); break;
     }
     return 1;

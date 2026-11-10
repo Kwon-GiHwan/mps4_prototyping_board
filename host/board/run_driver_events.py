@@ -128,6 +128,11 @@ def run_condition(link, cond, sets, ctx, d: pathlib.Path, raw: list, rows: list)
             ok, failed = record_v2.validity(r, codes)
             raw.append(dict(set_id=set_id, rep=rep, run_sequence=r.run_sequence, valid_flags=r.valid_flags,
                             run_rc=r.run_rc, record=r.f, host_run_s=link.last_run_host_s))
+            if ctx["outputs"]:
+                try:
+                    raw[-1]["output_crc32"], raw[-1]["output_len"] = link.output_crc()
+                except (Nack, ProtocolError) as e:
+                    raise E.fail_rule("RULE_RUN_TRANSPORT", f"output crc {cond.name} set {set_id} rep {rep}: {e!r}")
             if cond.trace_word != qread_trace.OFF:
                 h = qread_trace.header_from_record(r.f)
                 try:
@@ -143,6 +148,15 @@ def run_condition(link, cond, sets, ctx, d: pathlib.Path, raw: list, rows: list)
             print(f"{cond.name} set {set_id:2d} rep {rep} rc={r.run_rc} flags=0x{r.valid_flags:02x} "
                   f"npu_exec={r.npu_execution_cycles()} ofm_mismatch={r.f['ofm_mismatch']} valid={ok} "
                   f"{failed or ''}", flush=True)
+    if ctx["outputs"] and len(raw) > 1:   # the last RUN's outputs, once per condition; its CRC must match
+        try:
+            data = link.get_output(raw[-1]["output_len"])
+        except (Nack, ProtocolError) as e:
+            raise E.fail_rule("RULE_RUN_TRANSPORT", f"output {cond.name}: {e!r}")
+        if zlib.crc32(data) != raw[-1]["output_crc32"]:
+            raise E.fail_rule("RULE_RUN_TRANSPORT", f"output {cond.name}: CRC differs from the RUN's")
+        d.mkdir(parents=True, exist_ok=True)
+        (d / "output.bin").write_bytes(data)
 
 
 def main():
@@ -160,6 +174,8 @@ def main():
     ap.add_argument("--conditions", help="@file of conditions (parse_conditions), run in order in this boot; each "
                                          "writes <out>/<name>/; replaces --wait-mode/--pmccntr-cfg/--trace-word")
     ap.add_argument("--run-timeout", type=float, default=120.0)
+    ap.add_argument("--outputs", action="store_true", help="CRC of the outputs after every RUN (raw_runs.json) and the "
+                                                            "last RUN's outputs per condition (output.bin)")
     ap.add_argument("--image-sha256", required=True, help="boot.bin,bram.bin,ddr.bin,images.txt digests")
     a = ap.parse_args()
     try:
@@ -182,7 +198,7 @@ def main():
     txt = pathlib.Path(a.ids[1:]).read_text() if a.ids.startswith("@") else a.ids.replace(",", "\n")
     ids, explicit = E.parse_ids_text(txt)
     sets = E.event_sets(ids, sets=explicit)
-    ctx = dict(blob=blob, primed=False, repeats=a.repeats, run_timeout=a.run_timeout, prov=prov,
+    ctx = dict(blob=blob, primed=False, repeats=a.repeats, run_timeout=a.run_timeout, prov=prov, outputs=a.outputs,
                names=reference.driver_ids(), trm=reference.trm_ids())
     done, refusal, ping = [], None, None
     link = DriverLink(a.port)

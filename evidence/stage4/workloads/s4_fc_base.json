@@ -1,0 +1,32 @@
+{
+ "op": "s4_fc_base",
+ "operator_type": "FULLY_CONNECTED",
+ "input_shape": [
+  1,
+  96
+ ],
+ "output_shape": [
+  1,
+  288
+ ],
+ "kernel_shape": null,
+ "weight_shape": [
+  288,
+  96
+ ],
+ "stride": null,
+ "padding": null,
+ "groups": 1,
+ "activation": "NONE",
+ "n_mac": 27648,
+ "weight_seed": 20261014,
+ "ifm_seed": 1,
+ "quant": {
+  "ifm_scale": 0.0078125,
+  "weight_scale": 0.0078125,
+  "ofm_scale": 0.07908666415477363,
+  "zero_points": 0
+ },
+ "acc_abs_max": 164561,
+ "model_sha256": "8b0d7a5b5f60b7a64d88f23bf7f1371cbe860bf8cdbb1abd461c8b8fa0325692"
+}

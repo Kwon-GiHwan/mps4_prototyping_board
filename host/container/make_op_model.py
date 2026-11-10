@@ -44,21 +44,35 @@ OPS = {
     "dw3x3": dict(kind="dw", ifm=(1, 56, 56, 128), k=3),
     "pw1x1": dict(kind="conv", ifm=(1, 56, 56, 64), cout=128, k=1),
     "fc1024": dict(kind="fc", ifm=(1, 1024), cout=1024),
+    # Stage 4A/4B (evidence/stage4/contract.md): the original layer's shape, padding and fused activation, then one
+    # channel dimension minus 1. Same quantization policy as above.
+    "s4_conv_base": dict(kind="conv", ifm=(1, 24, 24, 16), cout=96, k=1, padding="VALID", act="RELU6"),
+    "s4_conv_cin15": dict(kind="conv", ifm=(1, 24, 24, 15), cout=96, k=1, padding="VALID", act="RELU6"),
+    "s4_conv_cout95": dict(kind="conv", ifm=(1, 24, 24, 16), cout=95, k=1, padding="VALID", act="RELU6"),
+    "s4_dw_base": dict(kind="dw", ifm=(1, 56, 56, 144), k=3, act="RELU6"),
+    "s4_dw_c143": dict(kind="dw", ifm=(1, 56, 56, 143), k=3, act="RELU6"),
+    "s4_fc_base": dict(kind="fc", ifm=(1, 96), cout=288),
+    "s4_fc_in95": dict(kind="fc", ifm=(1, 95), cout=288),
+    "s4_fc_out287": dict(kind="fc", ifm=(1, 96), cout=287),
 }
+ACT = {"NONE": ActivationFunctionType.NONE, "RELU6": ActivationFunctionType.RELU6}
 
 
 def geometry(spec: dict) -> dict:
-    """Shapes and N_MAC by the Stage 1 formulas (stride 1, SAME padding, so spatial size is kept)."""
+    """Shapes and N_MAC by the Stage 1 formulas (stride 1, SAME padding, so spatial size is kept; VALID only for 1x1,
+    where it is the same)."""
     if spec["kind"] == "fc":
         cin, cout = spec["ifm"][1], spec["cout"]
         return dict(ofm=(1, cout), kernel=None, stride=None, padding=None, groups=1, weights=(cout, cin),
                     n_mac=cout * cin)
-    n, h, w, cin = spec["ifm"]; k = spec["k"]
+    n, h, w, cin = spec["ifm"]; k = spec["k"]; pad = spec.get("padding", "SAME")
+    if pad != "SAME" and k != 1:
+        raise ValueError("VALID padding only for 1x1 kernels")
     if spec["kind"] == "dw":
-        return dict(ofm=(n, h, w, cin), kernel=(k, k), stride=(1, 1), padding="SAME", groups=cin,
+        return dict(ofm=(n, h, w, cin), kernel=(k, k), stride=(1, 1), padding=pad, groups=cin,
                     weights=(1, k, k, cin), n_mac=h * w * cin * k * k)
     cout = spec["cout"]
-    return dict(ofm=(n, h, w, cout), kernel=(k, k), stride=(1, 1), padding="SAME", groups=1,
+    return dict(ofm=(n, h, w, cout), kernel=(k, k), stride=(1, 1), padding=pad, groups=1,
                 weights=(cout, k, k, cin), n_mac=h * w * cout * k * k * cin)
 
 
@@ -135,10 +149,10 @@ def build(op: str) -> tuple[bytes, dict]:
     if spec["kind"] == "conv":
         code, otype = BuiltinOperator.CONV_2D, BuiltinOptions.Conv2DOptions
         Conv2DOptions.Conv2DOptionsStart(b)
-        Conv2DOptions.Conv2DOptionsAddPadding(b, Padding.SAME)
+        Conv2DOptions.Conv2DOptionsAddPadding(b, Padding.SAME if g["padding"] == "SAME" else Padding.VALID)
         Conv2DOptions.Conv2DOptionsAddStrideH(b, 1); Conv2DOptions.Conv2DOptionsAddStrideW(b, 1)
         Conv2DOptions.Conv2DOptionsAddDilationHFactor(b, 1); Conv2DOptions.Conv2DOptionsAddDilationWFactor(b, 1)
-        Conv2DOptions.Conv2DOptionsAddFusedActivationFunction(b, ActivationFunctionType.NONE)
+        Conv2DOptions.Conv2DOptionsAddFusedActivationFunction(b, ACT[spec.get("act", "NONE")])
         opts = Conv2DOptions.Conv2DOptionsEnd(b)
     elif spec["kind"] == "dw":
         code, otype = BuiltinOperator.DEPTHWISE_CONV_2D, BuiltinOptions.DepthwiseConv2DOptions
@@ -149,12 +163,12 @@ def build(op: str) -> tuple[bytes, dict]:
         DepthwiseConv2DOptions.DepthwiseConv2DOptionsAddDepthMultiplier(b, 1)
         DepthwiseConv2DOptions.DepthwiseConv2DOptionsAddDilationHFactor(b, 1)
         DepthwiseConv2DOptions.DepthwiseConv2DOptionsAddDilationWFactor(b, 1)
-        DepthwiseConv2DOptions.DepthwiseConv2DOptionsAddFusedActivationFunction(b, ActivationFunctionType.NONE)
+        DepthwiseConv2DOptions.DepthwiseConv2DOptionsAddFusedActivationFunction(b, ACT[spec.get("act", "NONE")])
         opts = DepthwiseConv2DOptions.DepthwiseConv2DOptionsEnd(b)
     else:
         code, otype = BuiltinOperator.FULLY_CONNECTED, BuiltinOptions.FullyConnectedOptions
         FullyConnectedOptions.FullyConnectedOptionsStart(b)
-        FullyConnectedOptions.FullyConnectedOptionsAddFusedActivationFunction(b, ActivationFunctionType.NONE)
+        FullyConnectedOptions.FullyConnectedOptionsAddFusedActivationFunction(b, ACT[spec.get("act", "NONE")])
         opts = FullyConnectedOptions.FullyConnectedOptionsEnd(b)
     ins = _vec(b, Operator.OperatorStartInputsVector, [0, 1, 2], b.PrependInt32)
     outs = _vec(b, Operator.OperatorStartOutputsVector, [3], b.PrependInt32)
@@ -181,7 +195,7 @@ def build(op: str) -> tuple[bytes, dict]:
     codes = _vec(b, Model.ModelStartOperatorCodesVector, [oc], b.PrependUOffsetTRelative)
     sgs = _vec(b, Model.ModelStartSubgraphsVector, [sg], b.PrependUOffsetTRelative)
     bvec = _vec(b, Model.ModelStartBuffersVector, bufs, b.PrependUOffsetTRelative)
-    desc = b.CreateString("stage1 isolated operator " + op)
+    desc = b.CreateString(("stage4" if op.startswith("s4_") else "stage1") + " isolated operator " + op)
     Model.ModelStart(b)
     Model.ModelAddVersion(b, 3); Model.ModelAddOperatorCodes(b, codes); Model.ModelAddSubgraphs(b, sgs)
     Model.ModelAddDescription(b, desc); Model.ModelAddBuffers(b, bvec)
@@ -191,7 +205,8 @@ def build(op: str) -> tuple[bytes, dict]:
     meta = dict(op=op, operator_type={"conv": "CONV_2D", "dw": "DEPTHWISE_CONV_2D", "fc": "FULLY_CONNECTED"}[spec["kind"]],
                 input_shape=list(spec["ifm"]), output_shape=list(g["ofm"]), kernel_shape=g["kernel"] and list(g["kernel"]),
                 weight_shape=list(g["weights"]), stride=g["stride"] and list(g["stride"]), padding=g["padding"],
-                groups=g["groups"], n_mac=g["n_mac"], weight_seed=WEIGHT_SEED, ifm_seed=IFM_SEED,
+                groups=g["groups"], activation=spec.get("act", "NONE"), n_mac=g["n_mac"], weight_seed=WEIGHT_SEED,
+                ifm_seed=IFM_SEED,
                 quant=dict(ifm_scale=S_IN, weight_scale=S_W, ofm_scale=s_out, zero_points=0),
                 acc_abs_max=int(np.abs(acc).max()), model_sha256=hashlib.sha256(model).hexdigest())
     return model, meta

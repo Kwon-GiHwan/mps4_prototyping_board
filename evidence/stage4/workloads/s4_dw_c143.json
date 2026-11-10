@@ -1,0 +1,44 @@
+{
+ "op": "s4_dw_c143",
+ "operator_type": "DEPTHWISE_CONV_2D",
+ "input_shape": [
+  1,
+  56,
+  56,
+  143
+ ],
+ "output_shape": [
+  1,
+  56,
+  56,
+  143
+ ],
+ "kernel_shape": [
+  3,
+  3
+ ],
+ "weight_shape": [
+  1,
+  3,
+  3,
+  143
+ ],
+ "stride": [
+  1,
+  1
+ ],
+ "padding": "SAME",
+ "groups": 143,
+ "activation": "RELU6",
+ "n_mac": 4036032,
+ "weight_seed": 20261014,
+ "ifm_seed": 1,
+ "quant": {
+  "ifm_scale": 0.0078125,
+  "weight_scale": 0.0078125,
+  "ofm_scale": 0.03465018685408464,
+  "zero_points": 0
+ },
+ "acc_abs_max": 72099,
+ "model_sha256": "42e40cde93b324e29f076ab9fa5fca886882702eb223dcc7f38bbb4de6abb25f"
+}

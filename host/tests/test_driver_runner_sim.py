@@ -153,6 +153,26 @@ class Session(unittest.TestCase):
         self.assertEqual(l.run(), 0)
         self.assertEqual(l.last_measurement.f["ofm_mismatch"], 0)
 
+    def test_get_output(self):                                                # Stage 4 output check
+        self.l = l = link()
+        l.set_instrumentation_mode(2, [35], 1)
+        ins = [IFM, b"a" * 24]
+        outs = [expected_output(IFM, k, n) for k, n in enumerate((4000, 30, 1500))]
+        load(l, drwl.pack(simm([len(b) for b in ins], [len(b) for b in outs]), ins, outs))
+        l.load_input(b"")
+        with self.assertRaises(rp.Nack) as c:
+            l.output_crc()                                                     # no RUN yet
+        self.assertEqual(c.exception.code, 5)
+        self.assertEqual(l.run(), 0)
+        whole = b"".join(outs)
+        self.assertEqual(l.output_crc(), (zlib.crc32(whole), len(whole)))
+        self.assertEqual(l.get_output(len(whole)), whole)                      # two replies across tensor borders
+        self.assertEqual(l.request(driver_link.CMD_GET_OUTPUT, struct.pack("<II", 3990, 25)).payload, whole[3990:4015])
+        self.assertEqual(l.request(driver_link.CMD_GET_OUTPUT, struct.pack("<II", len(whole) - 3, 10)).payload,
+                         whole[-3:])                                           # clipped to the end
+        self.assertEqual(len(l.request(driver_link.CMD_GET_OUTPUT, struct.pack("<II", 0, 9999)).payload),
+                         driver_link.OUTPUT_GET_MAX_BYTES)
+
     def trace_run(self, cfg, codes):
         self.l = l = link()
         l.set_instrumentation_mode(2, codes, 1)
@@ -433,6 +453,30 @@ class BoardScript(unittest.TestCase):
         for l in links:
             l._ser.close()
 
+    def test_campaign_outputs(self):
+        sys.path.insert(0, str(REPO / "host" / "board"))
+        import run_driver_events as R
+        links = []
+        R.DriverLink = lambda port: links.append(link()) or links[-1]
+        with tempfile.TemporaryDirectory() as d:
+            d = pathlib.Path(d)
+            want = expected_output(IFM, 0, 30)
+            (d / "w.drwl").write_bytes(drwl.pack(simm([40], [30]), [IFM], [want]))
+            (d / "cond.txt").write_text("wfe 0 0 off all\n")
+            argv = ["x", "--out", str(d / "out"), "--host-boot-index", "7", "--workload", str(d / "w.drwl"),
+                    "--ids", "35,48", "--repeats", "2", "--conditions", f"@{d / 'cond.txt'}", "--outputs",
+                    "--image-sha256", "b,r,d,i"]
+            old, sys.argv = sys.argv, argv
+            try:
+                self.assertEqual(R.main(), 0)
+            finally:
+                sys.argv = old
+            raw = json.loads((d / "out" / "wfe" / "raw_runs.json").read_text())[1:]
+            self.assertEqual({(x["output_crc32"], x["output_len"]) for x in raw}, {(zlib.crc32(want), 30)})
+            self.assertEqual((d / "out" / "wfe" / "output.bin").read_bytes(), want)
+        for l in links:
+            l._ser.close()
+
     def test_campaign_conditions(self):
         sys.path.insert(0, str(REPO / "host" / "board"))
         import run_driver_events as R
@@ -460,6 +504,7 @@ class BoardScript(unittest.TestCase):
             self.assertEqual(sorted(p.name for p in (o / "trace" / "traces").iterdir()), ["set2_rep1.bin", "set2_rep2.bin"])
             self.assertFalse((o / "wfe" / "traces").exists())
             self.assertEqual(links[0].last_measurement.run_sequence, 2 * 2 + 2 + 2)  # one load, 8 RUNs, one boot
+            self.assertFalse((o / "wfe" / "output.bin").exists())                # outputs only with --outputs
             row = next(csv.DictReader(open(o / "busy" / "runs.csv")))
             self.assertEqual(row["condition"], "busy")
         for l in links:

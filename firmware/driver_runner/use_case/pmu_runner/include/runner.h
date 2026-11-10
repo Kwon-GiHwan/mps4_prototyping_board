@@ -20,6 +20,8 @@
 #define CMD_RUN               0x30U
 #define CMD_RUN_COMPLETE      0x31U
 #define CMD_RESET_RUNNER      0x50U
+#define CMD_GET_OUTPUT        0x42U   /* driver runner only: the last RUN's output tensors (Stage 4 output check) */
+#define OUTPUT_GET_MAX_BYTES  4000U   /* bytes per GET_OUTPUT reply (4096-byte payload cap) */
 
 /* NACK codes (the legacy runner's numbering) */
 #define ERR_BAD_COMMAND    0x0002U

@@ -1,0 +1,44 @@
+{
+ "op": "s4_conv_cout95",
+ "operator_type": "CONV_2D",
+ "input_shape": [
+  1,
+  24,
+  24,
+  16
+ ],
+ "output_shape": [
+  1,
+  24,
+  24,
+  95
+ ],
+ "kernel_shape": [
+  1,
+  1
+ ],
+ "weight_shape": [
+  95,
+  1,
+  1,
+  16
+ ],
+ "stride": [
+  1,
+  1
+ ],
+ "padding": "VALID",
+ "groups": 1,
+ "activation": "RELU6",
+ "n_mac": 875520,
+ "weight_seed": 20261014,
+ "ifm_seed": 1,
+ "quant": {
+  "ifm_scale": 0.0078125,
+  "weight_scale": 0.0078125,
+  "ofm_scale": 0.05012283925935039,
+  "zero_points": 0
+ },
+ "acc_abs_max": 104294,
+ "model_sha256": "53fb16a1af061fc69768fd98b56f8919fa1d38eda78ea3251d3599a7222d2057"
+}

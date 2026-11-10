@@ -10,6 +10,8 @@ import runner_proto
 CMD_GET_CAPABILITIES = 0x03
 CMD_SET_RUN_OPTIONS = 0x06
 CMD_GET_TRACE = 0x41
+CMD_GET_OUTPUT = 0x42
+OUTPUT_GET_MAX_BYTES = 4000
 WAIT_WFE, WAIT_BUSY, WAIT_TRACE = 0, 1, 2
 TRACE_OFF = 0xFFFFFFFF
 TRACE_GET_MAX_WORDS = 1000
@@ -30,6 +32,20 @@ class DriverLink(runner_proto.RunnerLink):
         """trace_word: a qread_trace.TraceConfig word with WAIT_TRACE, TRACE_OFF otherwise (the runner refuses a mix)."""
         f = self.request(CMD_SET_RUN_OPTIONS, struct.pack("<III", wait_mode, pmccntr_cfg, trace_word))
         return struct.unpack_from("<III", f.payload)
+
+    def output_crc(self) -> tuple[int, int]:
+        """(zlib CRC-32, total length) of the last RUN's output tensors, one after another in model order."""
+        return struct.unpack_from("<II", self.request(CMD_GET_OUTPUT, struct.pack("<II", 0, 0)).payload)
+
+    def get_output(self, n_bytes: int) -> bytes:
+        """The last RUN's output tensors (n_bytes = output_crc()'s length)."""
+        out = bytearray()
+        while len(out) < n_bytes:
+            f = self.request(CMD_GET_OUTPUT, struct.pack("<II", len(out), min(OUTPUT_GET_MAX_BYTES, n_bytes - len(out))))
+            if not f.payload:
+                raise runner_proto.ProtocolError(f"GET_OUTPUT stopped at byte {len(out)} of {n_bytes}")
+            out += f.payload
+        return bytes(out)
 
     def get_trace(self, n_words: int) -> list[int]:
         """The last RUN's trace buffer (n_words = qread_trace.n_words of its record's trace header)."""
