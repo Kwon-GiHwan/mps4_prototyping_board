@@ -1,0 +1,32 @@
+{
+  "name": "driver_r5",
+  "what": "Default run profile for new PMU experiments on the driver runner (owner decisions 2026-11-10: the driver runner is the reference measurement environment; 5 RUNs per event set = 1 warm-up + 4 measured). Existing contracts keep their own RUN counts and rules.",
+  "runner": "driver_runner (firmware/driver_runner, MLEK b2c0bb2 platform + out-of-tree use case pmu_runner)",
+  "ta_profile": 1,
+  "ta_state": "MLEK's own ta_config_u85_sys_dram_mid at boot (= TA profile 1), read back in the capabilities of every boot",
+  "input": "MLEK's own input and the MLEK FI101 OFM as golden (amendment 2), accepted through host/analysis/mlek_golden.py / the equivalence-C manifest",
+  "vela": {
+    "version": "5.0.0",
+    "options": [
+      "--accelerator-config",
+      "ethos-u85-1024",
+      "--optimise",
+      "Performance",
+      "--config",
+      "/opt/arm/ml-embedded-evaluation-kit/scripts/vela/default_vela.ini",
+      "--memory-mode",
+      "Dedicated_Sram",
+      "--system-config",
+      "Ethos_U85_SYS_DRAM_Mid_1024"
+    ]
+  },
+  "image": "named with its digests by each contract (build_driver_runner.sh, gate OK)",
+  "wait_mode": "WFE",
+  "repeats": 5,
+  "warmup": 1,
+  "extra_repeats": {
+    "runs": 5,
+    "rule": "only for the condition (event set / model) that a trigger fixed in the contract before the data names: an invalid RUN, a deterministic counter that differs between RUNs, NPU_ACTIVE range > 1 % of its median, or a comparison that is UNRESOLVED; never chosen by looking at results"
+  },
+  "unresolved_rule": "a performance difference between two conditions that lies inside the measurement spread (the larger of the two RUN ranges, at least 1 % of the median) is not claimed as a difference: that comparison is UNRESOLVED. Existing equivalence rules (M3, D5, D6) keep their own definitions."
+}

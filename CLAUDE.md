@@ -49,6 +49,21 @@ purpose:** the runner firmware declares the PMWL layout and TA tables independen
 import the other — a copy agrees with itself and proves nothing. Tests must not read their expected values back
 from the module under test.
 
+## Reference measurement environment — the driver runner (owner decision 2026-11-10)
+
+New PMU experiments run on the **driver runner** (`firmware/driver_runner`, branch `feat/driver-runner`): the official
+Ethos-U core driver on MLEK `b2c0bb2`'s platform. Basis: D1–D6 on all seven models and MLEK equivalence
+(`results/driver_m7`, `results/var_w2l_vww4`); scope, exceptions and metric-use rules in
+`docs/plan/reference_environment.md` (on that branch). The legacy runner and its data are kept, not replaced.
+- Default run profile `config/driver_r5.json`: 5 RUNs per event set (1 warm-up + 4 measured); 5 more only for a
+  condition a trigger fixed in the contract names. A performance difference inside the measurement spread is
+  `UNRESOLVED`, never claimed. Existing contracts keep their own RUN counts and rules.
+- wav2letter M4 stays `UNPROVEN` (equivalence C, frozen); the interleaved re-check (`NO_SHIFT`) is recorded apart and
+  never merged into that verdict.
+- Stage 1/2A/3: `REVALIDATED` metrics stand; the legacy PMCCNTR window with CPU staging is not used; path-dependent
+  values (EXT port split, EXT read burst, the legacy seam window) are marked `CONDITION_SPECIFIC`. Stage 2B group H1/H2
+  stay invalid.
+
 ## NPU timing adapters — CRITICAL measurement condition
 
 FI101 has an NPU timing adapter in front of each NPU AXI port (`TA_SRAM` at `0x51102000`, `TA_EXT` at
@@ -76,7 +91,8 @@ Owner decision (2026-10-27): a measurement campaign covers **all seven MLEK use-
 - Exception: a targeted experiment that asks a specific question (isolated operators, a one-variable A/B, an event
   audit) may use a subset. Its contract names the subset and why.
 - A model that cannot be measured is recorded as `NOT_EXECUTABLE` with the reason, never silently dropped.
-- Measure under the current profile (`config/mlek_r10.json`: 10 RUNs, TA profile 1) unless the contract says otherwise.
+- New measurements: the driver runner under `config/driver_r5.json` (TA profile 1) unless the contract says otherwise;
+  legacy-runner measurements kept `config/mlek_r10.json` (10 RUNs).
 
 ## Pipeline
 
