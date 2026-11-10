@@ -1,0 +1,9 @@
+Preregistered descriptive (contract driver_m7: NPU_EXECUTION - NPU_ACTIVE, HOST_END_TO_END, legacy-window ratio, power reference count); TA profile 1; boots 308-314; set-1..8 measured RUNs (rep > 2)
+model | NPU_ACTIVE med [range] (64 RUNs) | MLEK stock med (3 boots) | diff | EXEC-ACTIVE med [range] | HOST_E2E med | legacy PMCCNTR window / ACTIVE | power_requests at RUN
+ad_medium_int8 | 146,040 [144,830-147,434] | 145,976 | +0.04 % | 534 [534-534] | 176,318 | 55.1x | 2
+kws_micronet_m | 91,262 [89,955-92,493] | 91,431 | -0.19 % | 534 [534-573] | 111,412 | 28.9x | 2
+mobilenet_v2_1.0_224_INT8 | 1,449,070 [1,446,309-1,451,010] | 1,448,049 | +0.07 % | 542 [535-542] | 1,722,840 | 44.8x | 2
+rnnoise_INT8 | 50,436 [48,578-51,009] | 50,603 | -0.33 % | 666 [666-666] | 66,634 | 43.1x | 2
+vww4_128_128_INT8 | 234,489 [232,624-236,829] | 233,394 | +0.47 % | 534 [534-541] | 272,632 | 27.8x | 2
+wav2letter_pruned_int8 | 4,132,806 [4,130,328-4,135,086] | 4,133,890 | -0.03 % | 534 [534-573] | 4,152,280 | 60.6x | 2
+yolo-fastest_192_face_v4 | 447,982 [445,596-449,997] | 446,355 | +0.36 % | 585 [574-586] | 570,808 | 18.2x | 2

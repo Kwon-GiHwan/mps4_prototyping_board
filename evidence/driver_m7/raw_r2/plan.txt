@@ -1,0 +1,2 @@
+# vww4 repeat 2 (evidence/var_w2l_vww4/contract.md V): same image, workload, sets, RUNs as plan.txt; root raw_r2/
+315 vww4_128_128_INT8 wfe

@@ -1,0 +1,177 @@
+{
+ "ad_medium_int8": {
+  "D1": "PLATFORM_AS_MLEK",
+  "D1_detail": {
+   "outside": [],
+   "ta_ext_maxr": 0,
+   "e2": "E2_SAME",
+   "cfg_sram_cap": "0x00020f0b",
+   "cfg_ext_cap": "0x00021f3f",
+   "power_requests_idle": 1
+  },
+  "D2": "EXEC_OK",
+  "D3": "WINDOW_OK",
+  "D4": "STABLE",
+  "D5": "REPRODUCES_LEGACY",
+  "D5_detail": {
+   "outside": [],
+   "npu_active_driver": 146039.5,
+   "npu_active_legacy": 145821.0,
+   "npu_active_diff_pct": 0.14984124371661148
+  },
+  "D6": "PMU_INERT",
+  "D6_detail": {
+   "outside": []
+  }
+ },
+ "kws_micronet_m": {
+  "D1": "PLATFORM_AS_MLEK",
+  "D1_detail": {
+   "outside": [],
+   "ta_ext_maxr": 0,
+   "e2": "E2_SAME",
+   "cfg_sram_cap": "0x00020f0b",
+   "cfg_ext_cap": "0x00021f3f",
+   "power_requests_idle": 1
+  },
+  "D2": "EXEC_OK",
+  "D3": "WINDOW_OK",
+  "D4": "STABLE",
+  "D5": "REPRODUCES_LEGACY",
+  "D5_detail": {
+   "outside": [],
+   "npu_active_driver": 91261.5,
+   "npu_active_legacy": 90934.0,
+   "npu_active_diff_pct": 0.3601513185387204
+  },
+  "D6": "PMU_INERT",
+  "D6_detail": {
+   "outside": []
+  }
+ },
+ "mobilenet_v2_1.0_224_INT8": {
+  "D1": "PLATFORM_AS_MLEK",
+  "D1_detail": {
+   "outside": [],
+   "ta_ext_maxr": 0,
+   "e2": "E2_SAME",
+   "cfg_sram_cap": "0x00020f0b",
+   "cfg_ext_cap": "0x00021f3f",
+   "power_requests_idle": 1
+  },
+  "D2": "EXEC_OK",
+  "D3": "WINDOW_OK",
+  "D4": "STABLE",
+  "D5": "REPRODUCES_LEGACY",
+  "D5_detail": {
+   "outside": [],
+   "npu_active_driver": 1449069.5,
+   "npu_active_legacy": 1448379.5,
+   "npu_active_diff_pct": 0.04763944808663752
+  },
+  "D6": "PMU_INERT",
+  "D6_detail": {
+   "outside": []
+  }
+ },
+ "rnnoise_INT8": {
+  "D1": "PLATFORM_AS_MLEK",
+  "D1_detail": {
+   "outside": [],
+   "ta_ext_maxr": 0,
+   "e2": "E2_SAME",
+   "cfg_sram_cap": "0x00020f0b",
+   "cfg_ext_cap": "0x00021f3f",
+   "power_requests_idle": 1
+  },
+  "D2": "EXEC_OK",
+  "D3": "WINDOW_OK",
+  "D4": "STABLE",
+  "D5": "REPRODUCES_LEGACY",
+  "D5_detail": {
+   "outside": [],
+   "npu_active_driver": 50436.5,
+   "npu_active_legacy": 50652.0,
+   "npu_active_diff_pct": -0.42545210455658217
+  },
+  "D6": "PMU_INERT",
+  "D6_detail": {
+   "outside": []
+  }
+ },
+ "vww4_128_128_INT8": {
+  "D1": "PLATFORM_AS_MLEK",
+  "D1_detail": {
+   "outside": [],
+   "ta_ext_maxr": 0,
+   "e2": "E2_SAME",
+   "cfg_sram_cap": "0x00020f0b",
+   "cfg_ext_cap": "0x00021f3f",
+   "power_requests_idle": 1
+  },
+  "D2": "EXEC_OK",
+  "D3": "WINDOW_OK",
+  "D4": "STABLE",
+  "D5": "REPRODUCES_LEGACY",
+  "D5_detail": {
+   "outside": [],
+   "npu_active_driver": 234489.0,
+   "npu_active_legacy": 235892.5,
+   "npu_active_diff_pct": -0.5949744057144675
+  },
+  "D6": "PMU_INERT",
+  "D6_detail": {
+   "outside": []
+  }
+ },
+ "wav2letter_pruned_int8": {
+  "D1": "PLATFORM_AS_MLEK",
+  "D1_detail": {
+   "outside": [],
+   "ta_ext_maxr": 0,
+   "e2": "E2_SAME",
+   "cfg_sram_cap": "0x00020f0b",
+   "cfg_ext_cap": "0x00021f3f",
+   "power_requests_idle": 1
+  },
+  "D2": "EXEC_OK",
+  "D3": "WINDOW_OK",
+  "D4": "STABLE",
+  "D5": "REPRODUCES_LEGACY",
+  "D5_detail": {
+   "outside": [],
+   "npu_active_driver": 4132806.5,
+   "npu_active_legacy": 4131141.5,
+   "npu_active_diff_pct": 0.04030363036463408
+  },
+  "D6": "PMU_INERT",
+  "D6_detail": {
+   "outside": []
+  }
+ },
+ "yolo-fastest_192_face_v4": {
+  "D1": "PLATFORM_AS_MLEK",
+  "D1_detail": {
+   "outside": [],
+   "ta_ext_maxr": 0,
+   "e2": "E2_SAME",
+   "cfg_sram_cap": "0x00020f0b",
+   "cfg_ext_cap": "0x00021f3f",
+   "power_requests_idle": 1
+  },
+  "D2": "EXEC_OK",
+  "D3": "WINDOW_OK",
+  "D4": "STABLE",
+  "D5": "REPRODUCES_LEGACY",
+  "D5_detail": {
+   "outside": [],
+   "npu_active_driver": 447982.5,
+   "npu_active_legacy": 448565.5,
+   "npu_active_diff_pct": -0.12996987062090154
+  },
+  "D6": "PMU_INERT",
+  "D6_detail": {
+   "outside": []
+  }
+ }
+}

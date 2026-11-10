@@ -1,0 +1,28 @@
+{
+ "stage1": {
+  "CONDITION_SPECIFIC": 15,
+  "INVALID": 7,
+  "REVALIDATED": 76,
+  "RETAINED": 14
+ },
+ "stage3": {
+  "REVALIDATED": 63,
+  "CONDITION_SPECIFIC": 13,
+  "REMEASURE_REQUIRED": 41,
+  "RETAINED": 93
+ },
+ "unit_stalls": {
+  "REVALIDATED": 22,
+  "RETAINED": 43,
+  "REMEASURE_REQUIRED": 5
+ },
+ "stage2a": {
+  "REVALIDATED": 56,
+  "RETAINED": 43,
+  "REMEASURE_REQUIRED": 5,
+  "CONDITION_SPECIFIC": 1
+ },
+ "stage3_channels": {
+  "RETAINED": 7
+ }
+}

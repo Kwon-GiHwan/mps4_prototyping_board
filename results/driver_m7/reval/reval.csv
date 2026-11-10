@@ -1,0 +1,505 @@
+stage,model,metric,cls,stage_value,driver_value,input_basis,verdict,reason
+stage1,ad_medium_int8,infer_cycles,WINDOW,148432.5,,-,CONDITION_SPECIFIC,defined by the legacy runner's own seam window
+stage1,ad_medium_int8,active_over_infer,WINDOW,0.9838518050054674,,-,CONDITION_SPECIFIC,defined by the legacy runner's own seam window
+stage1,ad_medium_int8,runner_window,POLLUTED,8032827.5,,-,INVALID,window includes the CPU staging copies (P1)
+stage1,ad_medium_int8,active,JITTER,146033.5,146157.0,SAME_INPUT,REVALIDATED,"same input, driver agrees"
+stage1,ad_medium_int8,mac_active_ratio,JITTER,0.6421520526932987,0.6428048618918774,SAME_INPUT,REVALIDATED,"same input, driver agrees"
+stage1,ad_medium_int8,dpu_active_ratio,JITTER,0.6421520526932987,0.6428048618918774,SAME_INPUT,REVALIDATED,"same input, driver agrees"
+stage1,ad_medium_int8,dpu_over_mac,DET,1.0,1.0,SAME_INPUT,REVALIDATED,"same input, driver agrees"
+stage1,ad_medium_int8,ao_active_ratio,JITTER,0.28464066655945136,0.28461028900821483,SAME_INPUT,REVALIDATED,"same input, driver agrees"
+stage1,ad_medium_int8,wd_active_ratio,JITTER,0.14737943748163249,0.14811080299599322,SAME_INPUT,REVALIDATED,"same input, driver agrees"
+stage1,ad_medium_int8,wd_stalled_ratio,JITTER,0.7979710849799828,0.8024003565853076,SAME_INPUT,REVALIDATED,"same input, driver agrees"
+stage1,ad_medium_int8,n_mac,STATIC,62346720.0,,-,RETAINED,"compile-time quantity, not measured"
+stage1,ad_medium_int8,vela_cycles_npu,STATIC,140277.0,,-,RETAINED,"compile-time quantity, not measured"
+stage1,ad_medium_int8,mac_per_cycle,JITTER,426.93436779916937,426.57361604302224,SAME_INPUT,REVALIDATED,"same input, driver agrees"
+stage1,ad_medium_int8,peak_mac_eff,JITTER,0.41692809355387633,0.4165757969170139,SAME_INPUT,REVALIDATED,"same input, driver agrees"
+stage1,ad_medium_int8,mac_active_cycle_eff,DET,0.6499857881757622,0.6499857881757622,SAME_INPUT,REVALIDATED,"same input, driver agrees"
+stage1,ad_medium_int8,active_over_vela,JITTER,1.041036663173578,1.0419170640946127,SAME_INPUT,REVALIDATED,"same input, driver agrees"
+stage3,ad_medium_int8,sram_bytes,DET,1798816.0,1798816.0,SAME_INPUT,REVALIDATED,"same input, driver agrees"
+stage3,ad_medium_int8,ext_bytes,DET,705360.0,705360.0,SAME_INPUT,REVALIDATED,"same input, driver agrees"
+stage3,ad_medium_int8,total_bytes,DET,2504176.0,2504176.0,SAME_INPUT,REVALIDATED,"same input, driver agrees"
+stage3,ad_medium_int8,bytes_per_mac,DET,0.04016532064557687,0.04016532064557687,SAME_INPUT,REVALIDATED,"same input, driver agrees"
+stage3,ad_medium_int8,sram_bw_bytes_per_cycle,JITTER,12.317831182571123,12.30742283982293,SAME_INPUT,REVALIDATED,"same input, driver agrees"
+stage3,ad_medium_int8,ext_bw_bytes_per_cycle,JITTER,4.8301245946991616,4.826043227488249,SAME_INPUT,REVALIDATED,"same input, driver agrees"
+stage3,ad_medium_int8,sram_rd_burst,DET,14.189901428284047,14.189901428284047,SAME_INPUT,REVALIDATED,"same input, driver agrees"
+stage3,ad_medium_int8,ext_rd_burst,DET,13.274314965371875,13.282313949984935,SAME_INPUT,CONDITION_SPECIFIC,"same input, execution path changes it"
+stage3,ad_medium_int8,sram_rd_req_stall,JITTER,0.000215319643330709,0.00022684622455649298,CROSS_INPUT,REMEASURE_REQUIRED,differs across input and path (not separable)
+stage3,ad_medium_int8,ext_rd_req_stall,JITTER,0.1312468964086746,0.13062432014104464,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+stage3,ad_medium_int8,sram_wr_beat_stall,JITTER,INCONSISTENT,INCONSISTENT,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+stage3,ad_medium_int8,ext_wr_beat_stall,JITTER,COUNTED_ZERO,INCONSISTENT,CROSS_INPUT,REMEASURE_REQUIRED,differs across input and path (not separable)
+stage3,ad_medium_int8,sram_rd_limit,JITTER,COUNTED_ZERO,COUNTED_ZERO,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+stage3,ad_medium_int8,sram_wr_limit,JITTER,COUNTED_ZERO,COUNTED_ZERO,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+stage3,ad_medium_int8,ext_rd_limit,JITTER,COUNTED_ZERO,COUNTED_ZERO,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+stage3,ad_medium_int8,ext_wr_limit,JITTER,COUNTED_ZERO,COUNTED_ZERO,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+stage3,ad_medium_int8,sram_rd_port_imbalance,DET,0.0005954237432305991,0.0005954237432305991,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+stage3,ad_medium_int8,ext_rd_port_imbalance,DET,0.0008166228109971872,0.0,CROSS_INPUT,REMEASURE_REQUIRED,differs across input and path (not separable)
+stage3,ad_medium_int8,sram_wr_port_imbalance,DET,0.0,0.0,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+stage3,ad_medium_int8,ext_wr_port_imbalance,DET,COUNTED_ZERO,COUNTED_ZERO,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+stage3,ad_medium_int8,vela_sram_bytes,STATIC,2233280.0,,-,RETAINED,"compile-time quantity, not measured"
+stage3,ad_medium_int8,vela_dram_bytes,STATIC,761904.0,,-,RETAINED,"compile-time quantity, not measured"
+stage3,ad_medium_int8,sram0_rd_bytes,DET,564640.0,564640.0,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+stage3,ad_medium_int8,sram1_rd_bytes,DET,563968.0,563968.0,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+stage3,ad_medium_int8,ext0_rd_bytes,DET,352384.0,352672.0,CROSS_INPUT,REMEASURE_REQUIRED,differs across input and path (not separable)
+stage3,ad_medium_int8,ext1_rd_bytes,DET,352960.0,352672.0,CROSS_INPUT,REMEASURE_REQUIRED,differs across input and path (not separable)
+stage3,ad_medium_int8,sram0_wr_bytes,DET,335104.0,335104.0,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+stage3,ad_medium_int8,sram1_wr_bytes,DET,335104.0,335104.0,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+stage3,ad_medium_int8,ext0_wr_bytes,DET,0.0,0.0,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+stage3,ad_medium_int8,ext1_wr_bytes,DET,16.0,16.0,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+unit_stalls,ad_medium_int8,mac_stalled_by_w,JITTER,0.14191285257221775,0.143191034973214,SAME_INPUT,REVALIDATED,"same input, driver agrees"
+unit_stalls,ad_medium_int8,mac_stalled_by_ib,JITTER,0.14731274348771078,0.14700616318843973,SAME_INPUT,REVALIDATED,"same input, driver agrees"
+unit_stalls,ad_medium_int8,mac_stalled_by_w_or_acc,JITTER,0.14658876022553008,0.1467508281255143,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+unit_stalls,ad_medium_int8,mac_stalled_by_acc,JITTER,0.004719462625771493,INCONSISTENT,CROSS_INPUT,REMEASURE_REQUIRED,differs across input and path (not separable)
+unit_stalls,ad_medium_int8,ao_stalled_by_bs_or_ob,JITTER,0.2769808456997328,0.2611045626502556,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+unit_stalls,ad_medium_int8,ao_stalled_by_ob,JITTER,COUNTED_ZERO,COUNTED_ZERO,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+unit_stalls,ad_medium_int8,ao_stalled_by_ab_or_cb,JITTER,0.5595536974698998,0.5585470259341534,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+unit_stalls,ad_medium_int8,ao_stalled_by_cb,JITTER,COUNTED_ZERO,COUNTED_ZERO,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+unit_stalls,ad_medium_int8,wd_stalled_by_wd_buf,JITTER,0.6121085097848459,0.6169266809459559,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+unit_stalls,ad_medium_int8,cc_stalled_on_blockdep,JITTER,0.12431892593192553,0.12655811007090326,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+stage2a,ad_medium_int8,mac_active,JITTER,0.6421520526932987,0.6428048618918774,SAME_INPUT,REVALIDATED,same value as stage1 mac_active_ratio
+stage2a,ad_medium_int8,dpu_over_mac,DET,1.0,1.0,SAME_INPUT,REVALIDATED,same value as stage1 dpu_over_mac
+stage2a,ad_medium_int8,ao_active,JITTER,0.28464066655945136,0.28461028900821483,SAME_INPUT,REVALIDATED,same value as stage1 ao_active_ratio
+stage2a,ad_medium_int8,wd_active,JITTER,0.14737943748163249,0.14811080299599322,SAME_INPUT,REVALIDATED,same value as stage1 wd_active_ratio
+stage2a,ad_medium_int8,wd_stalled,JITTER,0.7979710849799828,0.8024003565853076,SAME_INPUT,REVALIDATED,same value as stage1 wd_stalled_ratio
+stage2a,ad_medium_int8,mac_stalled_by_ib,JITTER,0.14731274348771078,0.14700616318843973,SAME_INPUT,REVALIDATED,same value as unit_stalls mac_stalled_by_ib
+stage2a,ad_medium_int8,mac_stalled_by_w_or_acc,JITTER,0.14658876022553008,0.1467508281255143,CROSS_INPUT,RETAINED,same value as unit_stalls mac_stalled_by_w_or_acc
+stage2a,ad_medium_int8,mac_stalled_by_w,JITTER,0.14191285257221775,0.143191034973214,SAME_INPUT,REVALIDATED,same value as unit_stalls mac_stalled_by_w
+stage2a,ad_medium_int8,mac_stalled_by_acc,JITTER,0.004719462625771493,INCONSISTENT,CROSS_INPUT,REMEASURE_REQUIRED,same value as unit_stalls mac_stalled_by_acc
+stage2a,ad_medium_int8,ao_stalled_by_bs_or_ob,JITTER,0.2769808456997328,0.2611045626502556,CROSS_INPUT,RETAINED,same value as unit_stalls ao_stalled_by_bs_or_ob
+stage2a,ad_medium_int8,ao_stalled_by_ob,JITTER,COUNTED_ZERO,COUNTED_ZERO,CROSS_INPUT,RETAINED,same value as unit_stalls ao_stalled_by_ob
+stage2a,ad_medium_int8,ao_stalled_by_ab_or_cb,JITTER,0.5595536974698998,0.5585470259341534,CROSS_INPUT,RETAINED,same value as unit_stalls ao_stalled_by_ab_or_cb
+stage2a,ad_medium_int8,ao_stalled_by_cb,JITTER,COUNTED_ZERO,COUNTED_ZERO,CROSS_INPUT,RETAINED,same value as unit_stalls ao_stalled_by_cb
+stage2a,ad_medium_int8,wd_stalled_by_wd_buf,JITTER,0.6121085097848459,0.6169266809459559,CROSS_INPUT,RETAINED,same value as unit_stalls wd_stalled_by_wd_buf
+stage2a,ad_medium_int8,cc_stalled_on_blockdep,JITTER,0.12431892593192553,0.12655811007090326,CROSS_INPUT,RETAINED,same value as unit_stalls cc_stalled_on_blockdep
+stage3_channels,ad_medium_int8,channel_shares,DET,,,-,RETAINED,unfiltered beats revalidated
+stage1,kws_micronet_m,infer_cycles,WINDOW,93348.0,,-,CONDITION_SPECIFIC,defined by the legacy runner's own seam window
+stage1,kws_micronet_m,active_over_infer,WINDOW,0.9743868163972191,,-,CONDITION_SPECIFIC,defined by the legacy runner's own seam window
+stage1,kws_micronet_m,runner_window,POLLUTED,2626582.5,,-,INVALID,window includes the CPU staging copies (P1)
+stage1,kws_micronet_m,active,JITTER,90961.0,91429.5,SAME_INPUT,REVALIDATED,"same input, driver agrees"
+stage1,kws_micronet_m,mac_active_ratio,JITTER,0.6211060752179935,0.6183701318075125,SAME_INPUT,REVALIDATED,"same input, driver agrees"
+stage1,kws_micronet_m,dpu_active_ratio,JITTER,0.5445818457557943,0.542182988021485,SAME_INPUT,REVALIDATED,"same input, driver agrees"
+stage1,kws_micronet_m,dpu_over_mac,DET,0.8767936226749335,0.8767936226749335,SAME_INPUT,REVALIDATED,"same input, driver agrees"
+stage1,kws_micronet_m,ao_active_ratio,JITTER,0.19547512014743795,0.19521639340884017,SAME_INPUT,REVALIDATED,"same input, driver agrees"
+stage1,kws_micronet_m,wd_active_ratio,JITTER,0.12370716922454252,0.1258803178702841,SAME_INPUT,REVALIDATED,"same input, driver agrees"
+stage1,kws_micronet_m,wd_stalled_ratio,JITTER,0.7070583996319995,0.7088540333951809,SAME_INPUT,REVALIDATED,"same input, driver agrees"
+stage1,kws_micronet_m,n_mac,STATIC,15556352.0,,-,RETAINED,"compile-time quantity, not measured"
+stage1,kws_micronet_m,vela_cycles_npu,STATIC,86324.0,,-,RETAINED,"compile-time quantity, not measured"
+stage1,kws_micronet_m,mac_per_cycle,JITTER,171.02221831334307,170.14587195598796,SAME_INPUT,REVALIDATED,"same input, driver agrees"
+stage1,kws_micronet_m,peak_mac_eff,JITTER,0.1670138850716241,0.1661580780820195,SAME_INPUT,REVALIDATED,"same input, driver agrees"
+stage1,kws_micronet_m,mac_active_cycle_eff,DET,0.269118689105403,0.269118689105403,SAME_INPUT,REVALIDATED,"same input, driver agrees"
+stage1,kws_micronet_m,active_over_vela,JITTER,1.053716231870627,1.0591434595245819,SAME_INPUT,REVALIDATED,"same input, driver agrees"
+stage3,kws_micronet_m,sram_bytes,DET,646784.0,646784.0,SAME_INPUT,REVALIDATED,"same input, driver agrees"
+stage3,kws_micronet_m,ext_bytes,DET,253056.0,253056.0,SAME_INPUT,REVALIDATED,"same input, driver agrees"
+stage3,kws_micronet_m,total_bytes,DET,899840.0,899840.0,SAME_INPUT,REVALIDATED,"same input, driver agrees"
+stage3,kws_micronet_m,bytes_per_mac,DET,0.05784389553540573,0.05784389553540573,SAME_INPUT,REVALIDATED,"same input, driver agrees"
+stage3,kws_micronet_m,sram_bw_bytes_per_cycle,JITTER,7.110563868031354,7.074128153385942,SAME_INPUT,REVALIDATED,"same input, driver agrees"
+stage3,kws_micronet_m,ext_bw_bytes_per_cycle,JITTER,2.7820274623190158,2.767771889816744,SAME_INPUT,REVALIDATED,"same input, driver agrees"
+stage3,kws_micronet_m,sram_rd_burst,DET,6.791729097992208,6.791729097992208,SAME_INPUT,REVALIDATED,"same input, driver agrees"
+stage3,kws_micronet_m,ext_rd_burst,DET,9.829086389061528,9.841319228375855,SAME_INPUT,CONDITION_SPECIFIC,"same input, execution path changes it"
+stage3,kws_micronet_m,sram_rd_req_stall,JITTER,0.004283761099629634,0.004271121017999732,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+stage3,kws_micronet_m,ext_rd_req_stall,JITTER,0.09872807782188037,0.0971779494243962,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+stage3,kws_micronet_m,sram_wr_beat_stall,JITTER,5.4871399080189336e-05,5.209410606344823e-05,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+stage3,kws_micronet_m,ext_wr_beat_stall,JITTER,INCONSISTENT,INCONSISTENT,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+stage3,kws_micronet_m,sram_rd_limit,JITTER,2.7583774739386702e-05,2.7502341700259778e-05,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+stage3,kws_micronet_m,sram_wr_limit,JITTER,COUNTED_ZERO,COUNTED_ZERO,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+stage3,kws_micronet_m,ext_rd_limit,JITTER,INCONSISTENT,COUNTED_ZERO,CROSS_INPUT,REMEASURE_REQUIRED,differs across input and path (not separable)
+stage3,kws_micronet_m,ext_wr_limit,JITTER,COUNTED_ZERO,COUNTED_ZERO,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+stage3,kws_micronet_m,sram_rd_port_imbalance,DET,8.824567596187787e-05,8.824567596187787e-05,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+stage3,kws_micronet_m,ext_rd_port_imbalance,DET,0.027252608283275373,0.009547897565602276,CROSS_INPUT,REMEASURE_REQUIRED,differs across input and path (not separable)
+stage3,kws_micronet_m,sram_wr_port_imbalance,DET,0.0012387387387387387,0.0012387387387387387,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+stage3,kws_micronet_m,ext_wr_port_imbalance,DET,COUNTED_ZERO,COUNTED_ZERO,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+stage3,kws_micronet_m,vela_sram_bytes,STATIC,1007632.0,,-,RETAINED,"compile-time quantity, not measured"
+stage3,kws_micronet_m,vela_dram_bytes,STATIC,319792.0,,-,RETAINED,"compile-time quantity, not measured"
+stage3,kws_micronet_m,sram0_rd_bytes,DET,181328.0,181328.0,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+stage3,kws_micronet_m,sram1_rd_bytes,DET,181296.0,181296.0,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+stage3,kws_micronet_m,ext0_rd_bytes,DET,129968.0,125312.0,CROSS_INPUT,REMEASURE_REQUIRED,differs across input and path (not separable)
+stage3,kws_micronet_m,ext1_rd_bytes,DET,123072.0,127728.0,CROSS_INPUT,REMEASURE_REQUIRED,differs across input and path (not separable)
+stage3,kws_micronet_m,sram0_wr_bytes,DET,142256.0,142256.0,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+stage3,kws_micronet_m,sram1_wr_bytes,DET,141904.0,141904.0,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+stage3,kws_micronet_m,ext0_wr_bytes,DET,16.0,0.0,CROSS_INPUT,REMEASURE_REQUIRED,differs across input and path (not separable)
+stage3,kws_micronet_m,ext1_wr_bytes,DET,0.0,16.0,CROSS_INPUT,REMEASURE_REQUIRED,differs across input and path (not separable)
+unit_stalls,kws_micronet_m,mac_stalled_by_w,JITTER,0.1210846683336672,0.12358041991159607,SAME_INPUT,REVALIDATED,"same input, driver agrees"
+unit_stalls,kws_micronet_m,mac_stalled_by_ib,JITTER,0.09841812804042521,0.1002887347794065,SAME_INPUT,REVALIDATED,"same input, driver agrees"
+unit_stalls,kws_micronet_m,mac_stalled_by_w_or_acc,JITTER,0.1365495183655738,0.1322692872236157,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+unit_stalls,kws_micronet_m,mac_stalled_by_acc,JITTER,0.012644017411306878,0.014439506928844874,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+unit_stalls,kws_micronet_m,ao_stalled_by_bs_or_ob,JITTER,0.43798676017034477,0.4410327427454429,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+unit_stalls,kws_micronet_m,ao_stalled_by_ob,JITTER,COUNTED_ZERO,COUNTED_ZERO,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+unit_stalls,kws_micronet_m,ao_stalled_by_ab_or_cb,JITTER,0.4130862880742453,0.4139447706047642,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+unit_stalls,kws_micronet_m,ao_stalled_by_cb,JITTER,COUNTED_ZERO,COUNTED_ZERO,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+unit_stalls,kws_micronet_m,wd_stalled_by_wd_buf,JITTER,0.5434936830953642,0.5402713557263557,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+unit_stalls,kws_micronet_m,cc_stalled_on_blockdep,JITTER,0.260365444607154,0.2586526484054512,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+stage2a,kws_micronet_m,mac_active,JITTER,0.6211060752179935,0.6183701318075125,SAME_INPUT,REVALIDATED,same value as stage1 mac_active_ratio
+stage2a,kws_micronet_m,dpu_over_mac,DET,0.8767936226749335,0.8767936226749335,SAME_INPUT,REVALIDATED,same value as stage1 dpu_over_mac
+stage2a,kws_micronet_m,ao_active,JITTER,0.19547512014743795,0.19521639340884017,SAME_INPUT,REVALIDATED,same value as stage1 ao_active_ratio
+stage2a,kws_micronet_m,wd_active,JITTER,0.12370716922454252,0.1258803178702841,SAME_INPUT,REVALIDATED,same value as stage1 wd_active_ratio
+stage2a,kws_micronet_m,wd_stalled,JITTER,0.7070583996319995,0.7088540333951809,SAME_INPUT,REVALIDATED,same value as stage1 wd_stalled_ratio
+stage2a,kws_micronet_m,mac_stalled_by_ib,JITTER,0.09841812804042521,0.1002887347794065,SAME_INPUT,REVALIDATED,same value as unit_stalls mac_stalled_by_ib
+stage2a,kws_micronet_m,mac_stalled_by_w_or_acc,JITTER,0.1365495183655738,0.1322692872236157,CROSS_INPUT,RETAINED,same value as unit_stalls mac_stalled_by_w_or_acc
+stage2a,kws_micronet_m,mac_stalled_by_w,JITTER,0.1210846683336672,0.12358041991159607,SAME_INPUT,REVALIDATED,same value as unit_stalls mac_stalled_by_w
+stage2a,kws_micronet_m,mac_stalled_by_acc,JITTER,0.012644017411306878,0.014439506928844874,CROSS_INPUT,RETAINED,same value as unit_stalls mac_stalled_by_acc
+stage2a,kws_micronet_m,ao_stalled_by_bs_or_ob,JITTER,0.43798676017034477,0.4410327427454429,CROSS_INPUT,RETAINED,same value as unit_stalls ao_stalled_by_bs_or_ob
+stage2a,kws_micronet_m,ao_stalled_by_ob,JITTER,COUNTED_ZERO,COUNTED_ZERO,CROSS_INPUT,RETAINED,same value as unit_stalls ao_stalled_by_ob
+stage2a,kws_micronet_m,ao_stalled_by_ab_or_cb,JITTER,0.4130862880742453,0.4139447706047642,CROSS_INPUT,RETAINED,same value as unit_stalls ao_stalled_by_ab_or_cb
+stage2a,kws_micronet_m,ao_stalled_by_cb,JITTER,COUNTED_ZERO,COUNTED_ZERO,CROSS_INPUT,RETAINED,same value as unit_stalls ao_stalled_by_cb
+stage2a,kws_micronet_m,wd_stalled_by_wd_buf,JITTER,0.5434936830953642,0.5402713557263557,CROSS_INPUT,RETAINED,same value as unit_stalls wd_stalled_by_wd_buf
+stage2a,kws_micronet_m,cc_stalled_on_blockdep,JITTER,0.260365444607154,0.2586526484054512,CROSS_INPUT,RETAINED,same value as unit_stalls cc_stalled_on_blockdep
+stage3_channels,kws_micronet_m,channel_shares,DET,,,-,RETAINED,unfiltered beats revalidated
+stage1,mobilenet_v2_1.0_224_INT8,infer_cycles,WINDOW,1450765.0,,-,CONDITION_SPECIFIC,defined by the legacy runner's own seam window
+stage1,mobilenet_v2_1.0_224_INT8,active_over_infer,WINDOW,0.9983499497102266,,-,CONDITION_SPECIFIC,defined by the legacy runner's own seam window
+stage1,mobilenet_v2_1.0_224_INT8,runner_window,POLLUTED,64951534.0,,-,INVALID,window includes the CPU staging copies (P1)
+stage1,mobilenet_v2_1.0_224_INT8,active,JITTER,1448379.5,1449069.5,SAME_INPUT,REVALIDATED,"same input, driver agrees"
+stage1,mobilenet_v2_1.0_224_INT8,mac_active_ratio,JITTER,0.39709683642854343,0.39638410244359523,SAME_INPUT,REVALIDATED,"same input, driver agrees"
+stage1,mobilenet_v2_1.0_224_INT8,dpu_active_ratio,JITTER,0.3429542705263673,0.34233871497048396,SAME_INPUT,REVALIDATED,"same input, driver agrees"
+stage1,mobilenet_v2_1.0_224_INT8,dpu_over_mac,DET,0.8636539983820318,0.8636539983820318,SAME_INPUT,REVALIDATED,"same input, driver agrees"
+stage1,mobilenet_v2_1.0_224_INT8,ao_active_ratio,JITTER,0.30461765653162465,0.30409917763178096,SAME_INPUT,REVALIDATED,"same input, driver agrees"
+stage1,mobilenet_v2_1.0_224_INT8,wd_active_ratio,JITTER,0.11715977407341753,0.11676335326778059,SAME_INPUT,REVALIDATED,"same input, driver agrees"
+stage1,mobilenet_v2_1.0_224_INT8,wd_stalled_ratio,JITTER,0.8358732384272207,0.8361013133643971,SAME_INPUT,REVALIDATED,"same input, driver agrees"
+stage1,mobilenet_v2_1.0_224_INT8,n_mac,STATIC,300775552.0,,-,RETAINED,"compile-time quantity, not measured"
+stage1,mobilenet_v2_1.0_224_INT8,vela_cycles_npu,STATIC,1737984.0,,-,RETAINED,"compile-time quantity, not measured"
+stage1,mobilenet_v2_1.0_224_INT8,mac_per_cycle,JITTER,207.66349703237307,207.56461439565183,SAME_INPUT,REVALIDATED,"same input, driver agrees"
+stage1,mobilenet_v2_1.0_224_INT8,peak_mac_eff,JITTER,0.20279638382067683,0.20269981874575374,SAME_INPUT,REVALIDATED,"same input, driver agrees"
+stage1,mobilenet_v2_1.0_224_INT8,mac_active_cycle_eff,DET,0.5110102297340791,0.5110102297340791,SAME_INPUT,REVALIDATED,"same input, driver agrees"
+stage1,mobilenet_v2_1.0_224_INT8,active_over_vela,JITTER,0.83336756840109,0.8337645801112094,SAME_INPUT,REVALIDATED,"same input, driver agrees"
+stage3,mobilenet_v2_1.0_224_INT8,sram_bytes,DET,17190256.0,17190256.0,SAME_INPUT,REVALIDATED,"same input, driver agrees"
+stage3,mobilenet_v2_1.0_224_INT8,ext_bytes,DET,5585664.0,5585664.0,SAME_INPUT,REVALIDATED,"same input, driver agrees"
+stage3,mobilenet_v2_1.0_224_INT8,total_bytes,DET,22775920.0,22775920.0,SAME_INPUT,REVALIDATED,"same input, driver agrees"
+stage3,mobilenet_v2_1.0_224_INT8,bytes_per_mac,DET,0.07572397373573767,0.07572397373573767,SAME_INPUT,REVALIDATED,"same input, driver agrees"
+stage3,mobilenet_v2_1.0_224_INT8,sram_bw_bytes_per_cycle,JITTER,11.86861316388419,11.862961714396722,SAME_INPUT,REVALIDATED,"same input, driver agrees"
+stage3,mobilenet_v2_1.0_224_INT8,ext_bw_bytes_per_cycle,JITTER,3.8564920312666673,3.8546556945681347,SAME_INPUT,REVALIDATED,"same input, driver agrees"
+stage3,mobilenet_v2_1.0_224_INT8,sram_rd_burst,DET,10.963100532720786,10.963100532720786,SAME_INPUT,REVALIDATED,"same input, driver agrees"
+stage3,mobilenet_v2_1.0_224_INT8,ext_rd_burst,DET,12.887391434561247,12.7203125,SAME_INPUT,CONDITION_SPECIFIC,"same input, execution path changes it"
+stage3,mobilenet_v2_1.0_224_INT8,sram_rd_req_stall,JITTER,0.00023578661849853183,0.00023317050522132234,SAME_INPUT,REVALIDATED,"same input, driver agrees"
+stage3,mobilenet_v2_1.0_224_INT8,ext_rd_req_stall,JITTER,0.09722277746995595,0.09898101292238727,SAME_INPUT,REVALIDATED,"same input, driver agrees"
+stage3,mobilenet_v2_1.0_224_INT8,sram_wr_beat_stall,JITTER,2.589075910630893e-06,9.660162170396651e-06,SAME_INPUT,CONDITION_SPECIFIC,"same input, execution path changes it"
+stage3,mobilenet_v2_1.0_224_INT8,ext_wr_beat_stall,JITTER,0.00897818908977987,0.00915504995026049,SAME_INPUT,REVALIDATED,"same input, driver agrees"
+stage3,mobilenet_v2_1.0_224_INT8,sram_rd_limit,JITTER,COUNTED_ZERO,COUNTED_ZERO,SAME_INPUT,REVALIDATED,"same input, driver agrees"
+stage3,mobilenet_v2_1.0_224_INT8,sram_wr_limit,JITTER,COUNTED_ZERO,COUNTED_ZERO,SAME_INPUT,REVALIDATED,"same input, driver agrees"
+stage3,mobilenet_v2_1.0_224_INT8,ext_rd_limit,JITTER,COUNTED_ZERO,COUNTED_ZERO,SAME_INPUT,REVALIDATED,"same input, driver agrees"
+stage3,mobilenet_v2_1.0_224_INT8,ext_wr_limit,JITTER,COUNTED_ZERO,COUNTED_ZERO,SAME_INPUT,REVALIDATED,"same input, driver agrees"
+stage3,mobilenet_v2_1.0_224_INT8,sram_rd_port_imbalance,DET,0.0012749870718094117,0.0012749870718094117,SAME_INPUT,REVALIDATED,"same input, driver agrees"
+stage3,mobilenet_v2_1.0_224_INT8,ext_rd_port_imbalance,DET,9.627610659424933e-05,0.00012283503255128362,SAME_INPUT,CONDITION_SPECIFIC,"same input, execution path changes it"
+stage3,mobilenet_v2_1.0_224_INT8,sram_wr_port_imbalance,DET,6.227534170479994e-05,6.227534170479994e-05,SAME_INPUT,REVALIDATED,"same input, driver agrees"
+stage3,mobilenet_v2_1.0_224_INT8,ext_wr_port_imbalance,DET,0.00035500240148683357,0.0007726522855889908,SAME_INPUT,CONDITION_SPECIFIC,"same input, execution path changes it"
+stage3,mobilenet_v2_1.0_224_INT8,vela_sram_bytes,STATIC,19443134.0,,-,RETAINED,"compile-time quantity, not measured"
+stage3,mobilenet_v2_1.0_224_INT8,vela_dram_bytes,STATIC,6869120.0,,-,RETAINED,"compile-time quantity, not measured"
+stage3,mobilenet_v2_1.0_224_INT8,sram0_rd_bytes,DET,5390448.0,5390448.0,SAME_INPUT,REVALIDATED,"same input, driver agrees"
+stage3,mobilenet_v2_1.0_224_INT8,sram1_rd_bytes,DET,5376720.0,5376720.0,SAME_INPUT,REVALIDATED,"same input, driver agrees"
+stage3,mobilenet_v2_1.0_224_INT8,ext0_rd_bytes,DET,2409504.0,2410032.0,SAME_INPUT,CONDITION_SPECIFIC,"same input, execution path changes it"
+stage3,mobilenet_v2_1.0_224_INT8,ext1_rd_bytes,DET,2409968.0,2409440.0,SAME_INPUT,CONDITION_SPECIFIC,"same input, execution path changes it"
+stage3,mobilenet_v2_1.0_224_INT8,sram0_wr_bytes,DET,3211744.0,3211744.0,SAME_INPUT,REVALIDATED,"same input, driver agrees"
+stage3,mobilenet_v2_1.0_224_INT8,sram1_wr_bytes,DET,3211344.0,3211344.0,SAME_INPUT,REVALIDATED,"same input, driver agrees"
+stage3,mobilenet_v2_1.0_224_INT8,ext0_wr_bytes,DET,382960.0,383392.0,SAME_INPUT,CONDITION_SPECIFIC,"same input, execution path changes it"
+stage3,mobilenet_v2_1.0_224_INT8,ext1_wr_bytes,DET,383232.0,382800.0,SAME_INPUT,CONDITION_SPECIFIC,"same input, execution path changes it"
+unit_stalls,mobilenet_v2_1.0_224_INT8,mac_stalled_by_w,JITTER,0.14467114411042076,0.14347050161706384,SAME_INPUT,REVALIDATED,"same input, driver agrees"
+unit_stalls,mobilenet_v2_1.0_224_INT8,mac_stalled_by_ib,JITTER,0.33336418091258047,0.33326415589426783,SAME_INPUT,REVALIDATED,"same input, driver agrees"
+unit_stalls,mobilenet_v2_1.0_224_INT8,mac_stalled_by_w_or_acc,JITTER,0.2156714368953488,0.21575119248349225,SAME_INPUT,REVALIDATED,"same input, driver agrees"
+unit_stalls,mobilenet_v2_1.0_224_INT8,mac_stalled_by_acc,JITTER,0.07100097122211899,0.07187632381756823,SAME_INPUT,REVALIDATED,"same input, driver agrees"
+unit_stalls,mobilenet_v2_1.0_224_INT8,ao_stalled_by_bs_or_ob,JITTER,0.2104066328424885,0.21082401961077338,SAME_INPUT,REVALIDATED,"same input, driver agrees"
+unit_stalls,mobilenet_v2_1.0_224_INT8,ao_stalled_by_ob,JITTER,0.003939616673769018,0.0039874474161995955,SAME_INPUT,REVALIDATED,"same input, driver agrees"
+unit_stalls,mobilenet_v2_1.0_224_INT8,ao_stalled_by_ab_or_cb,JITTER,0.3999368134155654,0.3992793440688557,SAME_INPUT,REVALIDATED,"same input, driver agrees"
+unit_stalls,mobilenet_v2_1.0_224_INT8,ao_stalled_by_cb,JITTER,0.09122091343151277,0.09147793101148466,SAME_INPUT,REVALIDATED,"same input, driver agrees"
+unit_stalls,mobilenet_v2_1.0_224_INT8,wd_stalled_by_wd_buf,JITTER,0.6492197730893787,0.649961039221373,SAME_INPUT,REVALIDATED,"same input, driver agrees"
+unit_stalls,mobilenet_v2_1.0_224_INT8,cc_stalled_on_blockdep,JITTER,0.12510701070600205,0.12484576925094397,SAME_INPUT,REVALIDATED,"same input, driver agrees"
+stage2a,mobilenet_v2_1.0_224_INT8,mac_active,JITTER,0.39709683642854343,0.39638410244359523,SAME_INPUT,REVALIDATED,same value as stage1 mac_active_ratio
+stage2a,mobilenet_v2_1.0_224_INT8,dpu_over_mac,DET,0.8636539983820318,0.8636539983820318,SAME_INPUT,REVALIDATED,same value as stage1 dpu_over_mac
+stage2a,mobilenet_v2_1.0_224_INT8,ao_active,JITTER,0.30461765653162465,0.30409917763178096,SAME_INPUT,REVALIDATED,same value as stage1 ao_active_ratio
+stage2a,mobilenet_v2_1.0_224_INT8,wd_active,JITTER,0.11715977407341753,0.11676335326778059,SAME_INPUT,REVALIDATED,same value as stage1 wd_active_ratio
+stage2a,mobilenet_v2_1.0_224_INT8,wd_stalled,JITTER,0.8358732384272207,0.8361013133643971,SAME_INPUT,REVALIDATED,same value as stage1 wd_stalled_ratio
+stage2a,mobilenet_v2_1.0_224_INT8,mac_stalled_by_ib,JITTER,0.33336418091258047,0.33326415589426783,SAME_INPUT,REVALIDATED,same value as unit_stalls mac_stalled_by_ib
+stage2a,mobilenet_v2_1.0_224_INT8,mac_stalled_by_w_or_acc,JITTER,0.2156714368953488,0.21575119248349225,SAME_INPUT,REVALIDATED,same value as unit_stalls mac_stalled_by_w_or_acc
+stage2a,mobilenet_v2_1.0_224_INT8,mac_stalled_by_w,JITTER,0.14467114411042076,0.14347050161706384,SAME_INPUT,REVALIDATED,same value as unit_stalls mac_stalled_by_w
+stage2a,mobilenet_v2_1.0_224_INT8,mac_stalled_by_acc,JITTER,0.07100097122211899,0.07187632381756823,SAME_INPUT,REVALIDATED,same value as unit_stalls mac_stalled_by_acc
+stage2a,mobilenet_v2_1.0_224_INT8,ao_stalled_by_bs_or_ob,JITTER,0.2104066328424885,0.21082401961077338,SAME_INPUT,REVALIDATED,same value as unit_stalls ao_stalled_by_bs_or_ob
+stage2a,mobilenet_v2_1.0_224_INT8,ao_stalled_by_ob,JITTER,0.003939616673769018,0.0039874474161995955,SAME_INPUT,REVALIDATED,same value as unit_stalls ao_stalled_by_ob
+stage2a,mobilenet_v2_1.0_224_INT8,ao_stalled_by_ab_or_cb,JITTER,0.3999368134155654,0.3992793440688557,SAME_INPUT,REVALIDATED,same value as unit_stalls ao_stalled_by_ab_or_cb
+stage2a,mobilenet_v2_1.0_224_INT8,ao_stalled_by_cb,JITTER,0.09122091343151277,0.09147793101148466,SAME_INPUT,REVALIDATED,same value as unit_stalls ao_stalled_by_cb
+stage2a,mobilenet_v2_1.0_224_INT8,wd_stalled_by_wd_buf,JITTER,0.6492197730893787,0.649961039221373,SAME_INPUT,REVALIDATED,same value as unit_stalls wd_stalled_by_wd_buf
+stage2a,mobilenet_v2_1.0_224_INT8,cc_stalled_on_blockdep,JITTER,0.12510701070600205,0.12484576925094397,SAME_INPUT,REVALIDATED,same value as unit_stalls cc_stalled_on_blockdep
+stage3_channels,mobilenet_v2_1.0_224_INT8,channel_shares,DET,,,-,RETAINED,unfiltered beats revalidated
+stage1,rnnoise_INT8,infer_cycles,WINDOW,53040.5,,-,CONDITION_SPECIFIC,defined by the legacy runner's own seam window
+stage1,rnnoise_INT8,active_over_infer,WINDOW,0.9555433838054946,,-,CONDITION_SPECIFIC,defined by the legacy runner's own seam window
+stage1,rnnoise_INT8,runner_window,POLLUTED,2179644.5,,-,INVALID,window includes the CPU staging copies (P1)
+stage1,rnnoise_INT8,active,JITTER,50688.0,50436.5,BRIDGED,REVALIDATED,bridged: path and input both agree
+stage1,rnnoise_INT8,mac_active_ratio,JITTER,0.010735009843642628,0.010849768623505389,BRIDGED,REVALIDATED,bridged: path and input both agree
+stage1,rnnoise_INT8,dpu_active_ratio,JITTER,0.008384277761093146,0.008473906881131945,BRIDGED,REVALIDATED,bridged: path and input both agree
+stage1,rnnoise_INT8,dpu_over_mac,DET,0.781021897810219,0.781021897810219,BRIDGED,REVALIDATED,bridged: path and input both agree
+stage1,rnnoise_INT8,ao_active_ratio,JITTER,0.005896419640394947,0.005930721206100963,BRIDGED,REVALIDATED,bridged: path and input both agree
+stage1,rnnoise_INT8,wd_active_ratio,JITTER,0.048268365428349336,0.05555948976796501,BRIDGED,REVALIDATED,bridged: path and input both agree
+stage1,rnnoise_INT8,wd_stalled_ratio,JITTER,0.2232999584081794,0.24828023392478404,BRIDGED,REVALIDATED,bridged: path and input both agree
+stage1,rnnoise_INT8,n_mac,STATIC,86952.0,,-,RETAINED,"compile-time quantity, not measured"
+stage1,rnnoise_INT8,vela_cycles_npu,STATIC,31334.0,,-,RETAINED,"compile-time quantity, not measured"
+stage1,rnnoise_INT8,mac_per_cycle,JITTER,1.715435606060606,1.723989571044779,BRIDGED,REVALIDATED,bridged: path and input both agree
+stage1,rnnoise_INT8,peak_mac_eff,JITTER,0.0016752300840435605,0.001683583565473417,BRIDGED,REVALIDATED,bridged: path and input both agree
+stage1,rnnoise_INT8,mac_active_cycle_eff,DET,0.15495266879562045,0.15495266879562045,BRIDGED,REVALIDATED,bridged: path and input both agree
+stage1,rnnoise_INT8,active_over_vela,JITTER,1.6176677091976766,1.6096412842279952,BRIDGED,REVALIDATED,bridged: path and input both agree
+stage3,rnnoise_INT8,sram_bytes,DET,4448.0,4448.0,BRIDGED,REVALIDATED,bridged: path and input both agree
+stage3,rnnoise_INT8,ext_bytes,DET,125984.0,125984.0,BRIDGED,REVALIDATED,bridged: path and input both agree
+stage3,rnnoise_INT8,total_bytes,DET,130432.0,130432.0,BRIDGED,REVALIDATED,bridged: path and input both agree
+stage3,rnnoise_INT8,bytes_per_mac,DET,1.5000460023921245,1.5000460023921245,BRIDGED,REVALIDATED,bridged: path and input both agree
+stage3,rnnoise_INT8,sram_bw_bytes_per_cycle,JITTER,0.08775252525252525,0.08819010042330455,BRIDGED,REVALIDATED,bridged: path and input both agree
+stage3,rnnoise_INT8,ext_bw_bytes_per_cycle,JITTER,2.485479797979798,2.4978735637881297,BRIDGED,REVALIDATED,bridged: path and input both agree
+stage3,rnnoise_INT8,sram_rd_burst,DET,1.4444444444444444,1.4444444444444444,BRIDGED,REVALIDATED,bridged: path and input both agree
+stage3,rnnoise_INT8,ext_rd_burst,DET,9.7975,9.7975,BRIDGED,REVALIDATED,bridged: path and input both agree
+stage3,rnnoise_INT8,sram_rd_req_stall,JITTER,0.0001774168652809753,0.00018084709117644648,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+stage3,rnnoise_INT8,ext_rd_req_stall,JITTER,0.1155172251528237,0.08903503236214633,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+stage3,rnnoise_INT8,sram_wr_beat_stall,JITTER,COUNTED_ZERO,COUNTED_ZERO,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+stage3,rnnoise_INT8,ext_wr_beat_stall,JITTER,INCONSISTENT,0.01853595220489363,CROSS_INPUT,REMEASURE_REQUIRED,differs across input and path (not separable)
+stage3,rnnoise_INT8,sram_rd_limit,JITTER,COUNTED_ZERO,COUNTED_ZERO,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+stage3,rnnoise_INT8,sram_wr_limit,JITTER,COUNTED_ZERO,COUNTED_ZERO,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+stage3,rnnoise_INT8,ext_rd_limit,JITTER,COUNTED_ZERO,COUNTED_ZERO,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+stage3,rnnoise_INT8,ext_wr_limit,JITTER,COUNTED_ZERO,COUNTED_ZERO,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+stage3,rnnoise_INT8,sram_rd_port_imbalance,DET,0.03496503496503497,0.03496503496503497,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+stage3,rnnoise_INT8,ext_rd_port_imbalance,DET,0.009441183975503956,0.007910181168665476,CROSS_INPUT,REMEASURE_REQUIRED,differs across input and path (not separable)
+stage3,rnnoise_INT8,sram_wr_port_imbalance,DET,0.022222222222222223,0.022222222222222223,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+stage3,rnnoise_INT8,ext_wr_port_imbalance,DET,COUNTED_ZERO,0.7222222222222222,CROSS_INPUT,REMEASURE_REQUIRED,differs across input and path (not separable)
+stage3,rnnoise_INT8,vela_sram_bytes,STATIC,4196.0,,-,RETAINED,"compile-time quantity, not measured"
+stage3,rnnoise_INT8,vela_dram_bytes,STATIC,116500.0,,-,RETAINED,"compile-time quantity, not measured"
+stage3,rnnoise_INT8,sram0_rd_bytes,DET,1104.0,1104.0,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+stage3,rnnoise_INT8,sram1_rd_bytes,DET,1184.0,1184.0,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+stage3,rnnoise_INT8,ext0_rd_bytes,DET,62112.0,62208.0,CROSS_INPUT,REMEASURE_REQUIRED,differs across input and path (not separable)
+stage3,rnnoise_INT8,ext1_rd_bytes,DET,63296.0,63200.0,CROSS_INPUT,REMEASURE_REQUIRED,differs across input and path (not separable)
+stage3,rnnoise_INT8,sram0_wr_bytes,DET,1056.0,1056.0,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+stage3,rnnoise_INT8,sram1_wr_bytes,DET,1104.0,1104.0,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+stage3,rnnoise_INT8,ext0_wr_bytes,DET,0.0,80.0,CROSS_INPUT,REMEASURE_REQUIRED,differs across input and path (not separable)
+stage3,rnnoise_INT8,ext1_wr_bytes,DET,576.0,496.0,CROSS_INPUT,REMEASURE_REQUIRED,differs across input and path (not separable)
+unit_stalls,rnnoise_INT8,mac_stalled_by_w,JITTER,0.2278447071011084,0.2576116652623408,BRIDGED,REVALIDATED,bridged: path and input both agree
+unit_stalls,rnnoise_INT8,mac_stalled_by_ib,JITTER,0.06501733151651438,0.07058059482610564,BRIDGED,REVALIDATED,bridged: path and input both agree
+unit_stalls,rnnoise_INT8,mac_stalled_by_w_or_acc,JITTER,0.22671620491431593,0.2526098547862564,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+unit_stalls,rnnoise_INT8,mac_stalled_by_acc,JITTER,COUNTED_ZERO,COUNTED_ZERO,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+unit_stalls,rnnoise_INT8,ao_stalled_by_bs_or_ob,JITTER,0.5550985144090527,0.5454463228935852,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+unit_stalls,rnnoise_INT8,ao_stalled_by_ob,JITTER,COUNTED_ZERO,COUNTED_ZERO,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+unit_stalls,rnnoise_INT8,ao_stalled_by_ab_or_cb,JITTER,0.41083180631535154,0.4169181425297681,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+unit_stalls,rnnoise_INT8,ao_stalled_by_cb,JITTER,0.1333781116214533,0.13481076468864217,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+unit_stalls,rnnoise_INT8,wd_stalled_by_wd_buf,JITTER,0.003604705101825957,0.0036076942595998,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+unit_stalls,rnnoise_INT8,cc_stalled_on_blockdep,JITTER,0.40831365745379233,0.39165740010228456,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+stage2a,rnnoise_INT8,mac_active,JITTER,0.010735009843642628,0.010849768623505389,BRIDGED,REVALIDATED,same value as stage1 mac_active_ratio
+stage2a,rnnoise_INT8,dpu_over_mac,DET,0.781021897810219,0.781021897810219,BRIDGED,REVALIDATED,same value as stage1 dpu_over_mac
+stage2a,rnnoise_INT8,ao_active,JITTER,0.005896419640394947,0.005930721206100963,BRIDGED,REVALIDATED,same value as stage1 ao_active_ratio
+stage2a,rnnoise_INT8,wd_active,JITTER,0.048268365428349336,0.05555948976796501,BRIDGED,REVALIDATED,same value as stage1 wd_active_ratio
+stage2a,rnnoise_INT8,wd_stalled,JITTER,0.2232999584081794,0.24828023392478404,BRIDGED,REVALIDATED,same value as stage1 wd_stalled_ratio
+stage2a,rnnoise_INT8,mac_stalled_by_ib,JITTER,0.06501733151651438,0.07058059482610564,BRIDGED,REVALIDATED,same value as unit_stalls mac_stalled_by_ib
+stage2a,rnnoise_INT8,mac_stalled_by_w_or_acc,JITTER,0.22671620491431593,0.2526098547862564,CROSS_INPUT,RETAINED,same value as unit_stalls mac_stalled_by_w_or_acc
+stage2a,rnnoise_INT8,mac_stalled_by_w,JITTER,0.2278447071011084,0.2576116652623408,BRIDGED,REVALIDATED,same value as unit_stalls mac_stalled_by_w
+stage2a,rnnoise_INT8,mac_stalled_by_acc,JITTER,COUNTED_ZERO,COUNTED_ZERO,CROSS_INPUT,RETAINED,same value as unit_stalls mac_stalled_by_acc
+stage2a,rnnoise_INT8,ao_stalled_by_bs_or_ob,JITTER,0.5550985144090527,0.5454463228935852,CROSS_INPUT,RETAINED,same value as unit_stalls ao_stalled_by_bs_or_ob
+stage2a,rnnoise_INT8,ao_stalled_by_ob,JITTER,COUNTED_ZERO,COUNTED_ZERO,CROSS_INPUT,RETAINED,same value as unit_stalls ao_stalled_by_ob
+stage2a,rnnoise_INT8,ao_stalled_by_ab_or_cb,JITTER,0.41083180631535154,0.4169181425297681,CROSS_INPUT,RETAINED,same value as unit_stalls ao_stalled_by_ab_or_cb
+stage2a,rnnoise_INT8,ao_stalled_by_cb,JITTER,0.1333781116214533,0.13481076468864217,CROSS_INPUT,RETAINED,same value as unit_stalls ao_stalled_by_cb
+stage2a,rnnoise_INT8,wd_stalled_by_wd_buf,JITTER,0.003604705101825957,0.0036076942595998,CROSS_INPUT,RETAINED,same value as unit_stalls wd_stalled_by_wd_buf
+stage2a,rnnoise_INT8,cc_stalled_on_blockdep,JITTER,0.40831365745379233,0.39165740010228456,CROSS_INPUT,RETAINED,same value as unit_stalls cc_stalled_on_blockdep
+stage3_channels,rnnoise_INT8,channel_shares,DET,,,-,RETAINED,unfiltered beats revalidated
+stage1,vww4_128_128_INT8,infer_cycles,WINDOW,238112.5,,-,CONDITION_SPECIFIC,defined by the legacy runner's own seam window
+stage1,vww4_128_128_INT8,active_over_infer,WINDOW,0.989880671753746,,-,CONDITION_SPECIFIC,defined by the legacy runner's own seam window
+stage1,vww4_128_128_INT8,runner_window,POLLUTED,6564543.0,,-,INVALID,window includes the CPU staging copies (P1)
+stage1,vww4_128_128_INT8,active,JITTER,235703.5,234489.0,BRIDGED,REVALIDATED,bridged: path and input both agree
+stage1,vww4_128_128_INT8,mac_active_ratio,JITTER,0.23959725745757826,0.24081608295412432,BRIDGED,REVALIDATED,bridged: path and input both agree
+stage1,vww4_128_128_INT8,dpu_active_ratio,JITTER,0.18490436707672536,0.18584497115294576,BRIDGED,REVALIDATED,bridged: path and input both agree
+stage1,vww4_128_128_INT8,dpu_over_mac,DET,0.7717298980747452,0.7717298980747452,BRIDGED,REVALIDATED,bridged: path and input both agree
+stage1,vww4_128_128_INT8,ao_active_ratio,JITTER,0.2736616240229466,0.2750302686709286,BRIDGED,REVALIDATED,bridged: path and input both agree
+stage1,vww4_128_128_INT8,wd_active_ratio,JITTER,0.055922682513870836,0.05715291096724086,BRIDGED,CONDITION_SPECIFIC,"same input (MLEK's), execution path changes it"
+stage1,vww4_128_128_INT8,wd_stalled_ratio,JITTER,0.5703213145577141,0.5726341614067543,BRIDGED,REVALIDATED,bridged: path and input both agree
+stage1,vww4_128_128_INT8,n_mac,STATIC,18828800.0,,-,RETAINED,"compile-time quantity, not measured"
+stage1,vww4_128_128_INT8,vela_cycles_npu,STATIC,222478.0,,-,RETAINED,"compile-time quantity, not measured"
+stage1,vww4_128_128_INT8,mac_per_cycle,JITTER,79.8834128470727,80.29715679626763,BRIDGED,REVALIDATED,bridged: path and input both agree
+stage1,vww4_128_128_INT8,peak_mac_eff,JITTER,0.07801114535846944,0.0784151921838551,BRIDGED,REVALIDATED,bridged: path and input both agree
+stage1,vww4_128_128_INT8,mac_active_cycle_eff,DET,0.3253733720271801,0.3253733720271801,BRIDGED,REVALIDATED,bridged: path and input both agree
+stage1,vww4_128_128_INT8,active_over_vela,JITTER,1.0594463272773038,1.0539873605480092,BRIDGED,REVALIDATED,bridged: path and input both agree
+stage3,vww4_128_128_INT8,sram_bytes,DET,2069936.0,2069936.0,BRIDGED,REVALIDATED,bridged: path and input both agree
+stage3,vww4_128_128_INT8,ext_bytes,DET,380192.0,380192.0,BRIDGED,REVALIDATED,bridged: path and input both agree
+stage3,vww4_128_128_INT8,total_bytes,DET,2450128.0,2450128.0,BRIDGED,REVALIDATED,bridged: path and input both agree
+stage3,vww4_128_128_INT8,bytes_per_mac,DET,0.13012661454792657,0.13012661454792657,BRIDGED,REVALIDATED,bridged: path and input both agree
+stage3,vww4_128_128_INT8,sram_bw_bytes_per_cycle,JITTER,8.78194850734079,8.827433269790907,BRIDGED,REVALIDATED,bridged: path and input both agree
+stage3,vww4_128_128_INT8,ext_bw_bytes_per_cycle,JITTER,1.613009564983125,1.6213639019314339,BRIDGED,REVALIDATED,bridged: path and input both agree
+stage3,vww4_128_128_INT8,sram_rd_burst,DET,9.318010752688172,9.318010752688172,BRIDGED,REVALIDATED,bridged: path and input both agree
+stage3,vww4_128_128_INT8,ext_rd_burst,DET,7.543174603174603,7.411416094822209,BRIDGED,CONDITION_SPECIFIC,"same input (MLEK's), execution path changes it"
+stage3,vww4_128_128_INT8,sram_rd_req_stall,JITTER,0.006298963800472851,0.006326929541697335,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+stage3,vww4_128_128_INT8,ext_rd_req_stall,JITTER,0.09928264994231678,0.09511052970552165,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+stage3,vww4_128_128_INT8,sram_wr_beat_stall,JITTER,0.015653222166744973,0.01577038883300139,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+stage3,vww4_128_128_INT8,ext_wr_beat_stall,JITTER,COUNTED_ZERO,INCONSISTENT,CROSS_INPUT,REMEASURE_REQUIRED,differs across input and path (not separable)
+stage3,vww4_128_128_INT8,sram_rd_limit,JITTER,6.148914346549473e-05,6.178496139820756e-05,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+stage3,vww4_128_128_INT8,sram_wr_limit,JITTER,COUNTED_ZERO,COUNTED_ZERO,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+stage3,vww4_128_128_INT8,ext_rd_limit,JITTER,0.0006254930111145153,0.0006860261231111321,CROSS_INPUT,REMEASURE_REQUIRED,differs across input and path (not separable)
+stage3,vww4_128_128_INT8,ext_wr_limit,JITTER,COUNTED_ZERO,COUNTED_ZERO,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+stage3,vww4_128_128_INT8,sram_rd_port_imbalance,DET,0.0016444046966506073,0.0016444046966506073,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+stage3,vww4_128_128_INT8,ext_rd_port_imbalance,DET,0.003998148226084761,0.0005471150204115989,CROSS_INPUT,REMEASURE_REQUIRED,differs across input and path (not separable)
+stage3,vww4_128_128_INT8,sram_wr_port_imbalance,DET,0.0003830460487967358,0.0003830460487967358,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+stage3,vww4_128_128_INT8,ext_wr_port_imbalance,DET,COUNTED_ZERO,COUNTED_ZERO,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+stage3,vww4_128_128_INT8,vela_sram_bytes,STATIC,2496880.0,,-,RETAINED,"compile-time quantity, not measured"
+stage3,vww4_128_128_INT8,vela_dram_bytes,STATIC,615832.0,,-,RETAINED,"compile-time quantity, not measured"
+stage3,vww4_128_128_INT8,sram0_rd_bytes,DET,553696.0,553696.0,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+stage3,vww4_128_128_INT8,sram1_rd_bytes,DET,555520.0,555520.0,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+stage3,vww4_128_128_INT8,ext0_rd_bytes,DET,189328.0,189984.0,CROSS_INPUT,REMEASURE_REQUIRED,differs across input and path (not separable)
+stage3,vww4_128_128_INT8,ext1_rd_bytes,DET,190848.0,190192.0,CROSS_INPUT,REMEASURE_REQUIRED,differs across input and path (not separable)
+stage3,vww4_128_128_INT8,sram0_wr_bytes,DET,480544.0,480544.0,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+stage3,vww4_128_128_INT8,sram1_wr_bytes,DET,480176.0,480176.0,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+stage3,vww4_128_128_INT8,ext0_wr_bytes,DET,16.0,0.0,CROSS_INPUT,REMEASURE_REQUIRED,differs across input and path (not separable)
+stage3,vww4_128_128_INT8,ext1_wr_bytes,DET,0.0,16.0,CROSS_INPUT,REMEASURE_REQUIRED,differs across input and path (not separable)
+unit_stalls,vww4_128_128_INT8,mac_stalled_by_w,JITTER,0.10325467998987589,0.10229803909481827,BRIDGED,REVALIDATED,bridged: path and input both agree
+unit_stalls,vww4_128_128_INT8,mac_stalled_by_ib,JITTER,0.2761795895394879,0.27893538961801706,BRIDGED,REVALIDATED,bridged: path and input both agree
+unit_stalls,vww4_128_128_INT8,mac_stalled_by_w_or_acc,JITTER,0.10181161061381987,0.10278572706073485,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+unit_stalls,vww4_128_128_INT8,mac_stalled_by_acc,JITTER,COUNTED_ZERO,COUNTED_ZERO,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+unit_stalls,vww4_128_128_INT8,ao_stalled_by_bs_or_ob,JITTER,0.47712502958902064,0.4671858477115579,CROSS_INPUT,REMEASURE_REQUIRED,differs across input and path (not separable)
+unit_stalls,vww4_128_128_INT8,ao_stalled_by_ob,JITTER,0.01807980495329195,0.017027653694061107,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+unit_stalls,vww4_128_128_INT8,ao_stalled_by_ab_or_cb,JITTER,0.31264054755518333,0.316242463618582,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+unit_stalls,vww4_128_128_INT8,ao_stalled_by_cb,JITTER,0.04583008191964762,0.04404180894084336,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+unit_stalls,vww4_128_128_INT8,wd_stalled_by_wd_buf,JITTER,0.43311101943130703,0.4351629132691899,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+unit_stalls,vww4_128_128_INT8,cc_stalled_on_blockdep,JITTER,0.518011622253983,0.5151056335106952,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+stage2a,vww4_128_128_INT8,mac_active,JITTER,0.23959725745757826,0.24081608295412432,BRIDGED,REVALIDATED,same value as stage1 mac_active_ratio
+stage2a,vww4_128_128_INT8,dpu_over_mac,DET,0.7717298980747452,0.7717298980747452,BRIDGED,REVALIDATED,same value as stage1 dpu_over_mac
+stage2a,vww4_128_128_INT8,ao_active,JITTER,0.2736616240229466,0.2750302686709286,BRIDGED,REVALIDATED,same value as stage1 ao_active_ratio
+stage2a,vww4_128_128_INT8,wd_active,JITTER,0.055922682513870836,0.05715291096724086,BRIDGED,CONDITION_SPECIFIC,same value as stage1 wd_active_ratio
+stage2a,vww4_128_128_INT8,wd_stalled,JITTER,0.5703213145577141,0.5726341614067543,BRIDGED,REVALIDATED,same value as stage1 wd_stalled_ratio
+stage2a,vww4_128_128_INT8,mac_stalled_by_ib,JITTER,0.2761795895394879,0.27893538961801706,BRIDGED,REVALIDATED,same value as unit_stalls mac_stalled_by_ib
+stage2a,vww4_128_128_INT8,mac_stalled_by_w_or_acc,JITTER,0.10181161061381987,0.10278572706073485,CROSS_INPUT,RETAINED,same value as unit_stalls mac_stalled_by_w_or_acc
+stage2a,vww4_128_128_INT8,mac_stalled_by_w,JITTER,0.10325467998987589,0.10229803909481827,BRIDGED,REVALIDATED,same value as unit_stalls mac_stalled_by_w
+stage2a,vww4_128_128_INT8,mac_stalled_by_acc,JITTER,COUNTED_ZERO,COUNTED_ZERO,CROSS_INPUT,RETAINED,same value as unit_stalls mac_stalled_by_acc
+stage2a,vww4_128_128_INT8,ao_stalled_by_bs_or_ob,JITTER,0.47712502958902064,0.4671858477115579,CROSS_INPUT,REMEASURE_REQUIRED,same value as unit_stalls ao_stalled_by_bs_or_ob
+stage2a,vww4_128_128_INT8,ao_stalled_by_ob,JITTER,0.01807980495329195,0.017027653694061107,CROSS_INPUT,RETAINED,same value as unit_stalls ao_stalled_by_ob
+stage2a,vww4_128_128_INT8,ao_stalled_by_ab_or_cb,JITTER,0.31264054755518333,0.316242463618582,CROSS_INPUT,RETAINED,same value as unit_stalls ao_stalled_by_ab_or_cb
+stage2a,vww4_128_128_INT8,ao_stalled_by_cb,JITTER,0.04583008191964762,0.04404180894084336,CROSS_INPUT,RETAINED,same value as unit_stalls ao_stalled_by_cb
+stage2a,vww4_128_128_INT8,wd_stalled_by_wd_buf,JITTER,0.43311101943130703,0.4351629132691899,CROSS_INPUT,RETAINED,same value as unit_stalls wd_stalled_by_wd_buf
+stage2a,vww4_128_128_INT8,cc_stalled_on_blockdep,JITTER,0.518011622253983,0.5151056335106952,CROSS_INPUT,RETAINED,same value as unit_stalls cc_stalled_on_blockdep
+stage3_channels,vww4_128_128_INT8,channel_shares,DET,,,-,RETAINED,unfiltered beats revalidated
+stage1,wav2letter_pruned_int8,infer_cycles,WINDOW,4133625.0,,-,CONDITION_SPECIFIC,defined by the legacy runner's own seam window
+stage1,wav2letter_pruned_int8,active_over_infer,WINDOW,0.9994169821957878,,-,CONDITION_SPECIFIC,defined by the legacy runner's own seam window
+stage1,wav2letter_pruned_int8,runner_window,POLLUTED,250250445.0,,-,INVALID,window includes the CPU staging copies (P1)
+stage1,wav2letter_pruned_int8,active,JITTER,4131215.0,4132806.5,BRIDGED,REVALIDATED,bridged: path and input both agree
+stage1,wav2letter_pruned_int8,mac_active_ratio,JITTER,0.8524478034280102,0.8520562584820366,BRIDGED,REVALIDATED,bridged: path and input both agree
+stage1,wav2letter_pruned_int8,dpu_active_ratio,JITTER,0.8249205662657126,0.8245416650857786,BRIDGED,REVALIDATED,bridged: path and input both agree
+stage1,wav2letter_pruned_int8,dpu_over_mac,DET,0.9677080085706125,0.9677080085706125,BRIDGED,REVALIDATED,bridged: path and input both agree
+stage1,wav2letter_pruned_int8,ao_active_ratio,JITTER,0.014467012274707307,0.014459012058933622,BRIDGED,REVALIDATED,bridged: path and input both agree
+stage1,wav2letter_pruned_int8,wd_active_ratio,JITTER,0.27423228810569383,0.2742642052998873,BRIDGED,REVALIDATED,bridged: path and input both agree
+stage1,wav2letter_pruned_int8,wd_stalled_ratio,JITTER,0.7213006164897162,0.7214460363480457,BRIDGED,REVALIDATED,bridged: path and input both agree
+stage1,wav2letter_pruned_int8,n_mac,STATIC,3491098000.0,,-,RETAINED,"compile-time quantity, not measured"
+stage1,wav2letter_pruned_int8,vela_cycles_npu,STATIC,5233545.0,,-,RETAINED,"compile-time quantity, not measured"
+stage1,wav2letter_pruned_int8,mac_per_cycle,JITTER,845.0535738275544,844.7281526488114,BRIDGED,REVALIDATED,bridged: path and input both agree
+stage1,wav2letter_pruned_int8,peak_mac_eff,JITTER,0.8252476306909711,0.8249298365711049,BRIDGED,REVALIDATED,bridged: path and input both agree
+stage1,wav2letter_pruned_int8,mac_active_cycle_eff,DET,0.96804857019929,0.96804857019929,BRIDGED,REVALIDATED,bridged: path and input both agree
+stage1,wav2letter_pruned_int8,active_over_vela,JITTER,0.7893722132894625,0.7896763092702939,BRIDGED,REVALIDATED,bridged: path and input both agree
+stage3,wav2letter_pruned_int8,sram_bytes,DET,8064560.0,8064560.0,BRIDGED,REVALIDATED,bridged: path and input both agree
+stage3,wav2letter_pruned_int8,ext_bytes,DET,29694832.0,29694832.0,BRIDGED,REVALIDATED,bridged: path and input both agree
+stage3,wav2letter_pruned_int8,total_bytes,DET,37759392.0,37759392.0,BRIDGED,REVALIDATED,bridged: path and input both agree
+stage3,wav2letter_pruned_int8,bytes_per_mac,DET,0.010815907201688409,0.010815907201688409,BRIDGED,REVALIDATED,bridged: path and input both agree
+stage3,wav2letter_pruned_int8,sram_bw_bytes_per_cycle,JITTER,1.9521036789419093,1.9513519444958287,BRIDGED,REVALIDATED,bridged: path and input both agree
+stage3,wav2letter_pruned_int8,ext_bw_bytes_per_cycle,JITTER,7.187917356032063,7.185149365207396,BRIDGED,REVALIDATED,bridged: path and input both agree
+stage3,wav2letter_pruned_int8,sram_rd_burst,DET,13.333093400898306,13.333093400898306,BRIDGED,REVALIDATED,bridged: path and input both agree
+stage3,wav2letter_pruned_int8,ext_rd_burst,DET,15.250794968657894,15.24952886970238,BRIDGED,CONDITION_SPECIFIC,"same input (MLEK's), execution path changes it"
+stage3,wav2letter_pruned_int8,sram_rd_req_stall,JITTER,2.7844857654747096e-06,2.1172128417458677e-06,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+stage3,wav2letter_pruned_int8,ext_rd_req_stall,JITTER,0.18241577554160066,0.18283808200977839,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+stage3,wav2letter_pruned_int8,sram_wr_beat_stall,JITTER,5.143104677673828e-06,5.142326689495755e-06,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+stage3,wav2letter_pruned_int8,ext_wr_beat_stall,JITTER,0.001404080575573327,0.0013603992639256983,CROSS_INPUT,REMEASURE_REQUIRED,differs across input and path (not separable)
+stage3,wav2letter_pruned_int8,sram_rd_limit,JITTER,COUNTED_ZERO,COUNTED_ZERO,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+stage3,wav2letter_pruned_int8,sram_wr_limit,JITTER,COUNTED_ZERO,COUNTED_ZERO,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+stage3,wav2letter_pruned_int8,ext_rd_limit,JITTER,0.0007438602661268696,0.0007025647127984955,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+stage3,wav2letter_pruned_int8,ext_wr_limit,JITTER,2.1417805482034006e-05,5.214742112762137e-05,CROSS_INPUT,REMEASURE_REQUIRED,differs across input and path (not separable)
+stage3,wav2letter_pruned_int8,sram_rd_port_imbalance,DET,0.0018463133118110065,0.0018463133118110065,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+stage3,wav2letter_pruned_int8,ext_rd_port_imbalance,DET,1.1976817237035367e-05,0.00014698821154543405,CROSS_INPUT,REMEASURE_REQUIRED,differs across input and path (not separable)
+stage3,wav2letter_pruned_int8,sram_wr_port_imbalance,DET,0.0007814407814407814,0.0007814407814407814,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+stage3,wav2letter_pruned_int8,ext_wr_port_imbalance,DET,0.002782882646363875,0.002257810448936729,CROSS_INPUT,REMEASURE_REQUIRED,differs across input and path (not separable)
+stage3,wav2letter_pruned_int8,vela_sram_bytes,STATIC,12143796.0,,-,RETAINED,"compile-time quantity, not measured"
+stage3,wav2letter_pruned_int8,vela_dram_bytes,STATIC,33403744.0,,-,RETAINED,"compile-time quantity, not measured"
+stage3,wav2letter_pruned_int8,sram0_rd_bytes,DET,3711520.0,3711520.0,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+stage3,wav2letter_pruned_int8,sram1_rd_bytes,DET,3697840.0,3697840.0,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+stage3,wav2letter_pruned_int8,ext0_rd_bytes,DET,14694880.0,14697216.0,CROSS_INPUT,REMEASURE_REQUIRED,differs across input and path (not separable)
+stage3,wav2letter_pruned_int8,ext1_rd_bytes,DET,14695232.0,14692896.0,CROSS_INPUT,REMEASURE_REQUIRED,differs across input and path (not separable)
+stage3,wav2letter_pruned_int8,sram0_wr_bytes,DET,327344.0,327344.0,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+stage3,wav2letter_pruned_int8,sram1_wr_bytes,DET,327856.0,327856.0,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+stage3,wav2letter_pruned_int8,ext0_wr_bytes,DET,152784.0,152704.0,CROSS_INPUT,REMEASURE_REQUIRED,differs across input and path (not separable)
+stage3,wav2letter_pruned_int8,ext1_wr_bytes,DET,151936.0,152016.0,CROSS_INPUT,REMEASURE_REQUIRED,differs across input and path (not separable)
+unit_stalls,wav2letter_pruned_int8,mac_stalled_by_w,JITTER,0.13369607518559026,0.13412220938561253,BRIDGED,REVALIDATED,bridged: path and input both agree
+unit_stalls,wav2letter_pruned_int8,mac_stalled_by_ib,JITTER,0.00998491697747379,0.010030235425850336,BRIDGED,REVALIDATED,bridged: path and input both agree
+unit_stalls,wav2letter_pruned_int8,mac_stalled_by_w_or_acc,JITTER,0.1336382541012694,0.13443174594500862,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+unit_stalls,wav2letter_pruned_int8,mac_stalled_by_acc,JITTER,COUNTED_ZERO,COUNTED_ZERO,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+unit_stalls,wav2letter_pruned_int8,ao_stalled_by_bs_or_ob,JITTER,0.031876569844212464,0.03209347846211823,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+unit_stalls,wav2letter_pruned_int8,ao_stalled_by_ob,JITTER,0.0013689043536852976,0.0014214283730748047,CROSS_INPUT,REMEASURE_REQUIRED,differs across input and path (not separable)
+unit_stalls,wav2letter_pruned_int8,ao_stalled_by_ab_or_cb,JITTER,0.11601214499127824,0.11619303751509313,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+unit_stalls,wav2letter_pruned_int8,ao_stalled_by_cb,JITTER,0.0007829919844036527,0.0007823177941667664,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+unit_stalls,wav2letter_pruned_int8,wd_stalled_by_wd_buf,JITTER,0.5515003419903218,0.5511008267200951,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+unit_stalls,wav2letter_pruned_int8,cc_stalled_on_blockdep,JITTER,0.0019455784201056587,0.0019582752616973138,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+stage2a,wav2letter_pruned_int8,mac_active,JITTER,0.8524478034280102,0.8520562584820366,BRIDGED,REVALIDATED,same value as stage1 mac_active_ratio
+stage2a,wav2letter_pruned_int8,dpu_over_mac,DET,0.9677080085706125,0.9677080085706125,BRIDGED,REVALIDATED,same value as stage1 dpu_over_mac
+stage2a,wav2letter_pruned_int8,ao_active,JITTER,0.014467012274707307,0.014459012058933622,BRIDGED,REVALIDATED,same value as stage1 ao_active_ratio
+stage2a,wav2letter_pruned_int8,wd_active,JITTER,0.27423228810569383,0.2742642052998873,BRIDGED,REVALIDATED,same value as stage1 wd_active_ratio
+stage2a,wav2letter_pruned_int8,wd_stalled,JITTER,0.7213006164897162,0.7214460363480457,BRIDGED,REVALIDATED,same value as stage1 wd_stalled_ratio
+stage2a,wav2letter_pruned_int8,mac_stalled_by_ib,JITTER,0.00998491697747379,0.010030235425850336,BRIDGED,REVALIDATED,same value as unit_stalls mac_stalled_by_ib
+stage2a,wav2letter_pruned_int8,mac_stalled_by_w_or_acc,JITTER,0.1336382541012694,0.13443174594500862,CROSS_INPUT,RETAINED,same value as unit_stalls mac_stalled_by_w_or_acc
+stage2a,wav2letter_pruned_int8,mac_stalled_by_w,JITTER,0.13369607518559026,0.13412220938561253,BRIDGED,REVALIDATED,same value as unit_stalls mac_stalled_by_w
+stage2a,wav2letter_pruned_int8,mac_stalled_by_acc,JITTER,COUNTED_ZERO,COUNTED_ZERO,CROSS_INPUT,RETAINED,same value as unit_stalls mac_stalled_by_acc
+stage2a,wav2letter_pruned_int8,ao_stalled_by_bs_or_ob,JITTER,0.031876569844212464,0.03209347846211823,CROSS_INPUT,RETAINED,same value as unit_stalls ao_stalled_by_bs_or_ob
+stage2a,wav2letter_pruned_int8,ao_stalled_by_ob,JITTER,0.0013689043536852976,0.0014214283730748047,CROSS_INPUT,REMEASURE_REQUIRED,same value as unit_stalls ao_stalled_by_ob
+stage2a,wav2letter_pruned_int8,ao_stalled_by_ab_or_cb,JITTER,0.11601214499127824,0.11619303751509313,CROSS_INPUT,RETAINED,same value as unit_stalls ao_stalled_by_ab_or_cb
+stage2a,wav2letter_pruned_int8,ao_stalled_by_cb,JITTER,0.0007829919844036527,0.0007823177941667664,CROSS_INPUT,RETAINED,same value as unit_stalls ao_stalled_by_cb
+stage2a,wav2letter_pruned_int8,wd_stalled_by_wd_buf,JITTER,0.5515003419903218,0.5511008267200951,CROSS_INPUT,RETAINED,same value as unit_stalls wd_stalled_by_wd_buf
+stage2a,wav2letter_pruned_int8,cc_stalled_on_blockdep,JITTER,0.0019455784201056587,0.0019582752616973138,CROSS_INPUT,RETAINED,same value as unit_stalls cc_stalled_on_blockdep
+stage3_channels,wav2letter_pruned_int8,channel_shares,DET,,,-,RETAINED,unfiltered beats revalidated
+stage1,yolo-fastest_192_face_v4,infer_cycles,WINDOW,450642.5,,-,CONDITION_SPECIFIC,defined by the legacy runner's own seam window
+stage1,yolo-fastest_192_face_v4,active_over_infer,WINDOW,0.9945916327296558,,-,CONDITION_SPECIFIC,defined by the legacy runner's own seam window
+stage1,yolo-fastest_192_face_v4,runner_window,POLLUTED,8110259.5,,-,INVALID,window includes the CPU staging copies (P1)
+stage1,yolo-fastest_192_face_v4,active,JITTER,448204.5,447982.5,BRIDGED,REVALIDATED,bridged: path and input both agree
+stage1,yolo-fastest_192_face_v4,mac_active_ratio,JITTER,0.38255306711986214,0.38332324302342424,BRIDGED,REVALIDATED,bridged: path and input both agree
+stage1,yolo-fastest_192_face_v4,dpu_active_ratio,JITTER,0.28648002013702223,0.2870567767423807,BRIDGED,REVALIDATED,bridged: path and input both agree
+stage1,yolo-fastest_192_face_v4,dpu_over_mac,DET,0.7488634774094279,0.7488634774094279,BRIDGED,REVALIDATED,bridged: path and input both agree
+stage1,yolo-fastest_192_face_v4,ao_active_ratio,JITTER,0.4616930985570522,0.46239446740227297,BRIDGED,REVALIDATED,bridged: path and input both agree
+stage1,yolo-fastest_192_face_v4,wd_active_ratio,JITTER,0.06164179960324022,0.06091366571154451,BRIDGED,REVALIDATED,bridged: path and input both agree
+stage1,yolo-fastest_192_face_v4,wd_stalled_ratio,JITTER,0.7212317281853191,0.7222529831451435,BRIDGED,REVALIDATED,bridged: path and input both agree
+stage1,yolo-fastest_192_face_v4,n_mac,STATIC,38916000.0,,-,RETAINED,"compile-time quantity, not measured"
+stage1,yolo-fastest_192_face_v4,vela_cycles_npu,STATIC,478546.0,,-,RETAINED,"compile-time quantity, not measured"
+stage1,yolo-fastest_192_face_v4,mac_per_cycle,JITTER,86.82643748556741,86.86946476703889,BRIDGED,REVALIDATED,bridged: path and input both agree
+stage1,yolo-fastest_192_face_v4,peak_mac_eff,JITTER,0.08479144285699942,0.08483346168656142,BRIDGED,REVALIDATED,bridged: path and input both agree
+stage1,yolo-fastest_192_face_v4,mac_active_cycle_eff,DET,0.2214989640159463,0.2214989640159463,BRIDGED,REVALIDATED,bridged: path and input both agree
+stage1,yolo-fastest_192_face_v4,active_over_vela,JITTER,0.9365964818429159,0.9361325765966072,BRIDGED,REVALIDATED,bridged: path and input both agree
+stage3,yolo-fastest_192_face_v4,sram_bytes,DET,6796448.0,6796448.0,BRIDGED,REVALIDATED,bridged: path and input both agree
+stage3,yolo-fastest_192_face_v4,ext_bytes,DET,477824.0,477824.0,BRIDGED,REVALIDATED,bridged: path and input both agree
+stage3,yolo-fastest_192_face_v4,total_bytes,DET,7274272.0,7274272.0,BRIDGED,REVALIDATED,bridged: path and input both agree
+stage3,yolo-fastest_192_face_v4,bytes_per_mac,DET,0.18692239695754959,0.18692239695754959,BRIDGED,REVALIDATED,bridged: path and input both agree
+stage3,yolo-fastest_192_face_v4,sram_bw_bytes_per_cycle,JITTER,15.163721024666195,15.171235483528932,BRIDGED,REVALIDATED,bridged: path and input both agree
+stage3,yolo-fastest_192_face_v4,ext_bw_bytes_per_cycle,JITTER,1.0660847894209005,1.0666130931453797,BRIDGED,REVALIDATED,bridged: path and input both agree
+stage3,yolo-fastest_192_face_v4,sram_rd_burst,DET,10.373511447027289,10.373511447027289,BRIDGED,REVALIDATED,bridged: path and input both agree
+stage3,yolo-fastest_192_face_v4,ext_rd_burst,DET,7.323933117045171,7.307519920318725,BRIDGED,CONDITION_SPECIFIC,"same input (MLEK's), execution path changes it"
+stage3,yolo-fastest_192_face_v4,sram_rd_req_stall,JITTER,0.0009517940834824468,0.0009487077841434811,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+stage3,yolo-fastest_192_face_v4,ext_rd_req_stall,JITTER,0.05951852445735101,0.05918798942025427,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+stage3,yolo-fastest_192_face_v4,sram_wr_beat_stall,JITTER,7.043833985016458e-05,6.985711646613485e-05,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+stage3,yolo-fastest_192_face_v4,ext_wr_beat_stall,JITTER,0.0005384157397258576,INCONSISTENT,CROSS_INPUT,REMEASURE_REQUIRED,differs across input and path (not separable)
+stage3,yolo-fastest_192_face_v4,sram_rd_limit,JITTER,COUNTED_ZERO,COUNTED_ZERO,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+stage3,yolo-fastest_192_face_v4,sram_wr_limit,JITTER,COUNTED_ZERO,COUNTED_ZERO,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+stage3,yolo-fastest_192_face_v4,ext_rd_limit,JITTER,COUNTED_ZERO,COUNTED_ZERO,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+stage3,yolo-fastest_192_face_v4,ext_wr_limit,JITTER,0.001261531277390629,0.0011922035238220627,CROSS_INPUT,REMEASURE_REQUIRED,differs across input and path (not separable)
+stage3,yolo-fastest_192_face_v4,sram_rd_port_imbalance,DET,8.472063371034016e-06,8.472063371034016e-06,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+stage3,yolo-fastest_192_face_v4,ext_rd_port_imbalance,DET,0.0013970763621494531,0.00023852523256210175,CROSS_INPUT,REMEASURE_REQUIRED,differs across input and path (not separable)
+stage3,yolo-fastest_192_face_v4,sram_wr_port_imbalance,DET,0.0007736820908493546,0.0007736820908493546,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+stage3,yolo-fastest_192_face_v4,ext_wr_port_imbalance,DET,0.09864603481624758,0.048355899419729204,CROSS_INPUT,REMEASURE_REQUIRED,differs across input and path (not separable)
+stage3,yolo-fastest_192_face_v4,vela_sram_bytes,STATIC,7525472.0,,-,RETAINED,"compile-time quantity, not measured"
+stage3,yolo-fastest_192_face_v4,vela_dram_bytes,STATIC,792224.0,,-,RETAINED,"compile-time quantity, not measured"
+stage3,yolo-fastest_192_face_v4,sram0_rd_bytes,DET,1888576.0,1888576.0,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+stage3,yolo-fastest_192_face_v4,sram1_rd_bytes,DET,1888544.0,1888544.0,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+stage3,yolo-fastest_192_face_v4,ext0_rd_bytes,DET,235104.0,234720.0,CROSS_INPUT,REMEASURE_REQUIRED,differs across input and path (not separable)
+stage3,yolo-fastest_192_face_v4,ext1_rd_bytes,DET,234448.0,234832.0,CROSS_INPUT,REMEASURE_REQUIRED,differs across input and path (not separable)
+stage3,yolo-fastest_192_face_v4,sram0_wr_bytes,DET,1510832.0,1510832.0,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+stage3,yolo-fastest_192_face_v4,sram1_wr_bytes,DET,1508496.0,1508496.0,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+stage3,yolo-fastest_192_face_v4,ext0_wr_bytes,DET,4544.0,4336.0,CROSS_INPUT,REMEASURE_REQUIRED,differs across input and path (not separable)
+stage3,yolo-fastest_192_face_v4,ext1_wr_bytes,DET,3728.0,3936.0,CROSS_INPUT,REMEASURE_REQUIRED,differs across input and path (not separable)
+unit_stalls,yolo-fastest_192_face_v4,mac_stalled_by_w,JITTER,0.06597176449545575,0.06649511490620813,BRIDGED,REVALIDATED,bridged: path and input both agree
+unit_stalls,yolo-fastest_192_face_v4,mac_stalled_by_ib,JITTER,0.33834741913369026,0.3379194146220553,BRIDGED,REVALIDATED,bridged: path and input both agree
+unit_stalls,yolo-fastest_192_face_v4,mac_stalled_by_w_or_acc,JITTER,0.06592698031012806,0.06744791903129116,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+unit_stalls,yolo-fastest_192_face_v4,mac_stalled_by_acc,JITTER,0.0005736468695728234,0.000572952838997879,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+unit_stalls,yolo-fastest_192_face_v4,ao_stalled_by_bs_or_ob,JITTER,0.22666330053844397,0.22770305103784577,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+unit_stalls,yolo-fastest_192_face_v4,ao_stalled_by_ob,JITTER,0.00013615742818654566,0.00015159841654418588,CROSS_INPUT,REMEASURE_REQUIRED,differs across input and path (not separable)
+unit_stalls,yolo-fastest_192_face_v4,ao_stalled_by_ab_or_cb,JITTER,0.37250167593000083,0.3729937081047945,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+unit_stalls,yolo-fastest_192_face_v4,ao_stalled_by_cb,JITTER,0.11841455283154807,0.11828020573164386,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+unit_stalls,yolo-fastest_192_face_v4,wd_stalled_by_wd_buf,JITTER,0.625424637796484,0.6246036323509783,CROSS_INPUT,RETAINED,agrees across input and path (not separable)
+unit_stalls,yolo-fastest_192_face_v4,cc_stalled_on_blockdep,JITTER,0.3475260037515218,0.34328230177455704,CROSS_INPUT,REMEASURE_REQUIRED,differs across input and path (not separable)
+stage2a,yolo-fastest_192_face_v4,mac_active,JITTER,0.38255306711986214,0.38332324302342424,BRIDGED,REVALIDATED,same value as stage1 mac_active_ratio
+stage2a,yolo-fastest_192_face_v4,dpu_over_mac,DET,0.7488634774094279,0.7488634774094279,BRIDGED,REVALIDATED,same value as stage1 dpu_over_mac
+stage2a,yolo-fastest_192_face_v4,ao_active,JITTER,0.4616930985570522,0.46239446740227297,BRIDGED,REVALIDATED,same value as stage1 ao_active_ratio
+stage2a,yolo-fastest_192_face_v4,wd_active,JITTER,0.06164179960324022,0.06091366571154451,BRIDGED,REVALIDATED,same value as stage1 wd_active_ratio
+stage2a,yolo-fastest_192_face_v4,wd_stalled,JITTER,0.7212317281853191,0.7222529831451435,BRIDGED,REVALIDATED,same value as stage1 wd_stalled_ratio
+stage2a,yolo-fastest_192_face_v4,mac_stalled_by_ib,JITTER,0.33834741913369026,0.3379194146220553,BRIDGED,REVALIDATED,same value as unit_stalls mac_stalled_by_ib
+stage2a,yolo-fastest_192_face_v4,mac_stalled_by_w_or_acc,JITTER,0.06592698031012806,0.06744791903129116,CROSS_INPUT,RETAINED,same value as unit_stalls mac_stalled_by_w_or_acc
+stage2a,yolo-fastest_192_face_v4,mac_stalled_by_w,JITTER,0.06597176449545575,0.06649511490620813,BRIDGED,REVALIDATED,same value as unit_stalls mac_stalled_by_w
+stage2a,yolo-fastest_192_face_v4,mac_stalled_by_acc,JITTER,0.0005736468695728234,0.000572952838997879,CROSS_INPUT,RETAINED,same value as unit_stalls mac_stalled_by_acc
+stage2a,yolo-fastest_192_face_v4,ao_stalled_by_bs_or_ob,JITTER,0.22666330053844397,0.22770305103784577,CROSS_INPUT,RETAINED,same value as unit_stalls ao_stalled_by_bs_or_ob
+stage2a,yolo-fastest_192_face_v4,ao_stalled_by_ob,JITTER,0.00013615742818654566,0.00015159841654418588,CROSS_INPUT,REMEASURE_REQUIRED,same value as unit_stalls ao_stalled_by_ob
+stage2a,yolo-fastest_192_face_v4,ao_stalled_by_ab_or_cb,JITTER,0.37250167593000083,0.3729937081047945,CROSS_INPUT,RETAINED,same value as unit_stalls ao_stalled_by_ab_or_cb
+stage2a,yolo-fastest_192_face_v4,ao_stalled_by_cb,JITTER,0.11841455283154807,0.11828020573164386,CROSS_INPUT,RETAINED,same value as unit_stalls ao_stalled_by_cb
+stage2a,yolo-fastest_192_face_v4,wd_stalled_by_wd_buf,JITTER,0.625424637796484,0.6246036323509783,CROSS_INPUT,RETAINED,same value as unit_stalls wd_stalled_by_wd_buf
+stage2a,yolo-fastest_192_face_v4,cc_stalled_on_blockdep,JITTER,0.3475260037515218,0.34328230177455704,CROSS_INPUT,REMEASURE_REQUIRED,same value as unit_stalls cc_stalled_on_blockdep
+stage3_channels,yolo-fastest_192_face_v4,channel_shares,DET,,,-,RETAINED,unfiltered beats revalidated
