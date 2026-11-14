@@ -1,0 +1,2 @@
+# Stage 4 placement (contract.md): WAIT_WFE, no trace, both passes
+wfe 0 0 off 1,2

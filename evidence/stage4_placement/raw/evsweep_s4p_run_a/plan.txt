@@ -1,0 +1,2 @@
+# Stage 4 placement boot A (contract.md): region 1 in DDR, EXT port, TA profile 1
+367 s4p_conv_base_ddr @/home/gihwan/evsweep_s4p/conditions.txt

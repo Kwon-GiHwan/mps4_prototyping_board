@@ -1,0 +1,93 @@
+=== 2026-11-14T12:54:56Z step 4: user python3 mcc.py USB_ON 4 && sleep 5 && test -e /dev/sdb1
+USB_ON
+Enabling debug USB...
+
+Cmd> 
+=== 2026-11-14T12:55:06Z step 5: deploy_mlek /home/gihwan/evsweep_s4p /home/gihwan/evsweep/evidence_s4p
+images.txt: OK
+APP.BIN: OK
+VECTORS.BIN: OK
+DDR.BIN: OK
+DEPLOY VERIFIED: source == destination
+718c456283bfd44863d5fb697360b680ff4dc6b297cc0dc74d7ed78a6ca7ef59  boot.bin
+c80e77df9fe14b908966a5cebc5045cca93c5fd98bcea50fb1a7aef35f9fe99c  bram.bin
+374708fff7719dd5979ec875d56cd2286f6d3cf7ec317a3b25632aab28ec37bb  ddr.bin
+af688281435a73dda3b2247845149817ecc7a9bbdff5a3ccd2e4dfa52875423f  images.txt
+DEPLOY DONE: unmounted, safe to REBOOT
+=== 2026-11-14T12:55:07Z step 6: user OUTPUTS=1 STOP_ON_INVALID=1 sh run_driver_campaign.sh /home/gihwan/evsweep_s4p /home/gihwan/evsweep_s4p_run_a /home/gihwan/evsweep_s4p/ids.txt /home/gihwan/evsweep_s4p/plan_a.txt 5
+mcc boot log: 10551 bytes -> /home/gihwan/evsweep_s4p_run_a/conds/s4p_conv_base_ddr/mcc_boot.log
+Image loaded from \SOFTWARE\boot.bin
+Image loaded from \SOFTWARE\bram.bin
+Image loaded from \SOFTWARE\ddr.bin
+DDR memory test at 0x70000000: PASSED
+Clearing SCC CPUWAIT (0xFFFFFFFF80000000:0x00000000)
+--- boot367 s4p_conv_base_ddr @/home/gihwan/evsweep_s4p/conditions.txt campaign exit=0
+10
+CAMPAIGN DONE
+=== 2026-11-14T12:58:05Z step 7: user python3 host/analysis/stage4p.py p1-gate /home/gihwan/evsweep_s4p_run_a/conds/s4p_conv_base_ddr/wfe /home/gihwan/evsweep_s4p/ref /home/gihwan/evsweep_s4p/ref/stage4_capabilities.json
+{
+ "verdict": "PASS",
+ "why": [],
+ "p1": {
+  "verdict": "PASS",
+  "why": [],
+  "npu_active": 21086.5,
+  "npu_active_tol": 617
+ },
+ "ta_profile": 1,
+ "metrics": {
+  "A_35": 21086.5,
+  "A_48": 2304.0,
+  "A_51": 1152.0,
+  "A_53": 0.0,
+  "A_55": 5600.5,
+  "A_64": 3535.5,
+  "A_80": 1052.0,
+  "A_81": 6583.5,
+  "B_35": 21192.0,
+  "B_128": 304.0,
+  "B_130": 2016.0,
+  "B_132": 16.0,
+  "B_135": 252.0,
+  "B_384": 171.0,
+  "B_386": 1437.0,
+  "B_391": 3456.0,
+  "mac_active_per_npu_active": 0.10926422118416997,
+  "mac_dpu_active_per_npu_active": 0.05463211059208498,
+  "ao_active_per_npu_active": 0.16766651649159414,
+  "wd_active_per_npu_active": 0.0498897398809665,
+  "wd_stalled_per_npu_active": 0.3122139757664857,
+  "macs_per_npu_active": 41.95746093472127,
+  "cycles_per_mac": 0.023833663375289353,
+  "macs_per_1024_mac_active": 0.375
+ }
+}
+=== 2026-11-14T12:58:05Z step 8: user OUTPUTS=1 STOP_ON_INVALID=1 sh run_driver_campaign.sh /home/gihwan/evsweep_s4p /home/gihwan/evsweep_s4p_run_b /home/gihwan/evsweep_s4p/ids.txt /home/gihwan/evsweep_s4p/plan_b.txt 5
+mcc boot log: 10390 bytes -> /home/gihwan/evsweep_s4p_run_b/conds/s4p_conv_base_sram/mcc_boot.log
+Image loaded from \SOFTWARE\boot.bin
+Image loaded from \SOFTWARE\bram.bin
+Image loaded from \SOFTWARE\ddr.bin
+DDR memory test at 0x70000000: PASSED
+Clearing SCC CPUWAIT (0xFFFFFFFF80000000:0x00000000)
+--- boot368 s4p_conv_base_sram @/home/gihwan/evsweep_s4p/conditions.txt campaign exit=0
+10
+CAMPAIGN DONE
+=== 2026-11-14T13:01:03Z step 9: restore_mlek /home/gihwan/evsweep/evidence_s4p /home/gihwan/evsweep_s4p
+RESTORE VERIFIED
+cb78a12efd33fa72555b94ee4b8ca6faef4d9504c971c52c6cb47c75096673de  images.txt
+ffa3e5bd0363f791d61f9673074c625865f1e6a8f24e53ee303372c64ef3597d  APP.BIN
+45e943c577e3744104d53cf57c7d0afb369ff68a99e5e6906971d71503f06c92  VECTORS.BIN
+81d37a219a6b4141d0b433796711ab8af2ee2c3c668a28143a3ffe6a574ade98  DDR.BIN
+RESTORE DONE: unmounted, safe to REBOOT then USB_OFF
+=== 2026-11-14T13:01:03Z step 10: user sh postflight.sh
+mcc boot log: 10527 bytes -> /home/gihwan/evsweep/evidence/postflight/mcc_boot.log
+Image loaded from \SOFTWARE\VECTORS.BIN
+Image loaded from \SOFTWARE\APP.BIN
+Image loaded from \SOFTWARE\DDR.BIN
+DDR memory test at 0x70000000: PASSED
+Clearing SCC CPUWAIT (0xFFFFFFFF80000000:0x00000000)
+[functional-v1] PING -> Counters(state=1, version=1, rx_bytes=20, tx_bytes=0, rx_overrun=0, bad_magic=0, bad_version=0, bad_crc=0, length_error=0, sequence_error=0, parser_resync=0)
+
+Cmd> 
+POSTFLIGHT DONE: card withdrawn, board on restored image
+=== 2026-11-14T13:03:45Z SESSION DONE
