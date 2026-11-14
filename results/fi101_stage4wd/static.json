@@ -1,0 +1,325 @@
+{
+ "s4ao_conv1x1_h24": {
+  "config": "s4ao_conv1x1_h24",
+  "kind": "CONV",
+  "traversal": "PartKernel",
+  "ofm_block": "6x12x96",
+  "n_kernels": 2,
+  "raw_weight_bytes": 1536,
+  "encoded_bytes": 2752,
+  "encoded_per_kernel": [
+   704,
+   2048
+  ],
+  "vela_weight_bytes": 2752,
+  "weight_dma": [
+   [
+    1024
+   ],
+   [
+    3008
+   ]
+  ],
+  "weight_format": [
+   0
+  ],
+  "blocks": 16,
+  "spatial_blocks": 8,
+  "staged_bytes": 4032,
+  "blocks_per_kernel": [
+   8,
+   8
+  ],
+  "block_weight_reads": 22016,
+  "n_ofm": 55296,
+  "n_mac": 884736,
+  "reference": null
+ },
+ "s4ao_conv1x1_h36": {
+  "config": "s4ao_conv1x1_h36",
+  "kind": "CONV",
+  "traversal": "PartKernel",
+  "ofm_block": "6x12x96",
+  "n_kernels": 2,
+  "raw_weight_bytes": 1536,
+  "encoded_bytes": 2752,
+  "encoded_per_kernel": [
+   704,
+   2048
+  ],
+  "vela_weight_bytes": 2752,
+  "weight_dma": [
+   [
+    1024
+   ],
+   [
+    3008
+   ]
+  ],
+  "weight_format": [
+   0
+  ],
+  "blocks": 24,
+  "spatial_blocks": 12,
+  "staged_bytes": 4032,
+  "blocks_per_kernel": [
+   12,
+   12
+  ],
+  "block_weight_reads": 33024,
+  "n_ofm": 82944,
+  "n_mac": 1327104,
+  "reference": null
+ },
+ "s4wd_h23": {
+  "config": "s4wd_h23",
+  "kind": "CONV",
+  "traversal": "PartKernel",
+  "ofm_block": "6x12x96",
+  "n_kernels": 2,
+  "raw_weight_bytes": 1536,
+  "encoded_bytes": 2752,
+  "encoded_per_kernel": [
+   704,
+   2048
+  ],
+  "vela_weight_bytes": 2752,
+  "weight_dma": [
+   [
+    1024
+   ],
+   [
+    3008
+   ]
+  ],
+  "weight_format": [
+   0
+  ],
+  "blocks": 16,
+  "spatial_blocks": 8,
+  "staged_bytes": 4032,
+  "blocks_per_kernel": [
+   8,
+   8
+  ],
+  "block_weight_reads": 22016,
+  "n_ofm": 52992,
+  "n_mac": 847872,
+  "reference": {
+   "opt_vs_ref": 0,
+   "opt_sha256": "a3c82ad5a5892a14a2c07bcd1a3e454addbcbcd20235d1a45002fba3e3bfe58a",
+   "ref_sha256": "a3c82ad5a5892a14a2c07bcd1a3e454addbcbcd20235d1a45002fba3e3bfe58a"
+  }
+ },
+ "s4wd_h32": {
+  "config": "s4wd_h32",
+  "kind": "CONV",
+  "traversal": "PartKernel",
+  "ofm_block": "6x12x96",
+  "n_kernels": 2,
+  "raw_weight_bytes": 1536,
+  "encoded_bytes": 2752,
+  "encoded_per_kernel": [
+   704,
+   2048
+  ],
+  "vela_weight_bytes": 2752,
+  "weight_dma": [
+   [
+    1024
+   ],
+   [
+    3008
+   ]
+  ],
+  "weight_format": [
+   0
+  ],
+  "blocks": 24,
+  "spatial_blocks": 12,
+  "staged_bytes": 4032,
+  "blocks_per_kernel": [
+   12,
+   12
+  ],
+  "block_weight_reads": 33024,
+  "n_ofm": 73728,
+  "n_mac": 1179648,
+  "reference": {
+   "opt_vs_ref": 0,
+   "opt_sha256": "845a251d581e89e1b340d57409237253512a7722bd9edd64293b91abd263db02",
+   "ref_sha256": "845a251d581e89e1b340d57409237253512a7722bd9edd64293b91abd263db02"
+  }
+ },
+ "s4wd_h34": {
+  "config": "s4wd_h34",
+  "kind": "CONV",
+  "traversal": "PartKernel",
+  "ofm_block": "6x12x96",
+  "n_kernels": 2,
+  "raw_weight_bytes": 1536,
+  "encoded_bytes": 2752,
+  "encoded_per_kernel": [
+   704,
+   2048
+  ],
+  "vela_weight_bytes": 2752,
+  "weight_dma": [
+   [
+    1024
+   ],
+   [
+    3008
+   ]
+  ],
+  "weight_format": [
+   0
+  ],
+  "blocks": 24,
+  "spatial_blocks": 12,
+  "staged_bytes": 4032,
+  "blocks_per_kernel": [
+   12,
+   12
+  ],
+  "block_weight_reads": 33024,
+  "n_ofm": 78336,
+  "n_mac": 1253376,
+  "reference": {
+   "opt_vs_ref": 0,
+   "opt_sha256": "200f89f02899b1c8056f06ff5b576fffe2bbbdcd27693602e709f0a9b1fa2970",
+   "ref_sha256": "200f89f02899b1c8056f06ff5b576fffe2bbbdcd27693602e709f0a9b1fa2970"
+  }
+ },
+ "s4wd_w_small": {
+  "config": "s4wd_w_small",
+  "kind": "CONV",
+  "traversal": "PartKernel",
+  "ofm_block": "6x12x96",
+  "n_kernels": 2,
+  "raw_weight_bytes": 1536,
+  "encoded_bytes": 1536,
+  "encoded_per_kernel": [
+   448,
+   1088
+  ],
+  "vela_weight_bytes": 1536,
+  "weight_dma": [
+   [
+    768
+   ],
+   [
+    2048
+   ]
+  ],
+  "weight_format": [
+   0
+  ],
+  "blocks": 16,
+  "spatial_blocks": 8,
+  "staged_bytes": 2816,
+  "blocks_per_kernel": [
+   8,
+   8
+  ],
+  "block_weight_reads": 12288,
+  "n_ofm": 55296,
+  "n_mac": 884736,
+  "reference": {
+   "opt_vs_ref": 0,
+   "opt_sha256": "ec1382168dd47ed3fbb24b08730c6be6f8703ce1ce8d0f1c1889a1298632de7c",
+   "ref_sha256": "ec1382168dd47ed3fbb24b08730c6be6f8703ce1ce8d0f1c1889a1298632de7c"
+  }
+ },
+ "s4wd_w_sparse75": {
+  "config": "s4wd_w_sparse75",
+  "kind": "CONV",
+  "traversal": "PartKernel",
+  "ofm_block": "6x12x96",
+  "n_kernels": 2,
+  "raw_weight_bytes": 1536,
+  "encoded_bytes": 1168,
+  "encoded_per_kernel": [
+   416,
+   752
+  ],
+  "vela_weight_bytes": 1168,
+  "weight_dma": [
+   [
+    736
+   ],
+   [
+    1712
+   ]
+  ],
+  "weight_format": [
+   0
+  ],
+  "blocks": 16,
+  "spatial_blocks": 8,
+  "staged_bytes": 2448,
+  "blocks_per_kernel": [
+   8,
+   8
+  ],
+  "block_weight_reads": 9344,
+  "n_ofm": 55296,
+  "n_mac": 884736,
+  "reference": {
+   "opt_vs_ref": 0,
+   "opt_sha256": "7c3a2864ddcc7c485875c3b57a22aa71852b3bc07a7d5b2db5edd22365f6bb13",
+   "ref_sha256": "7c3a2864ddcc7c485875c3b57a22aa71852b3bc07a7d5b2db5edd22365f6bb13"
+  }
+ },
+ "s4wd_w_sparse90": {
+  "config": "s4wd_w_sparse90",
+  "kind": "CONV",
+  "traversal": "PartKernel",
+  "ofm_block": "6x12x96",
+  "n_kernels": 2,
+  "raw_weight_bytes": 1536,
+  "encoded_bytes": 640,
+  "encoded_per_kernel": [
+   224,
+   416
+  ],
+  "vela_weight_bytes": 640,
+  "weight_dma": [
+   [
+    544
+   ],
+   [
+    1376
+   ]
+  ],
+  "weight_format": [
+   0
+  ],
+  "blocks": 16,
+  "spatial_blocks": 8,
+  "staged_bytes": 1920,
+  "blocks_per_kernel": [
+   8,
+   8
+  ],
+  "block_weight_reads": 5120,
+  "n_ofm": 55296,
+  "n_mac": 884736,
+  "reference": {
+   "opt_vs_ref": 0,
+   "opt_sha256": "de7bfb89069e2fa16ac47c234c45aa14c90e522ed3de2248efedbf64c02ac6ff",
+   "ref_sha256": "de7bfb89069e2fa16ac47c234c45aa14c90e522ed3de2248efedbf64c02ac6ff"
+  }
+ },
+ "_checks": {
+  "a_same_schedule": true,
+  "a_encoded_distinct": true,
+  "a_staged_distinct": true,
+  "b_same_block": true,
+  "b_block_groups": [
+   16,
+   24
+  ],
+  "golden_unambiguous": true
+ }
+}

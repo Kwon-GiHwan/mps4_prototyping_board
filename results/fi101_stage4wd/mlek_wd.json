@@ -1,0 +1,65 @@
+[
+ {
+  "model": "ad_medium_int8",
+  "set_id": "2",
+  "wd_active": 21319,
+  "wd_stalled": 117148,
+  "mac_active": 93672,
+  "ao_active": 41503,
+  "npu_active": 145893
+ },
+ {
+  "model": "kws_micronet_m",
+  "set_id": "2",
+  "wd_active": 11421,
+  "wd_stalled": 64117,
+  "mac_active": 56450,
+  "ao_active": 17825,
+  "npu_active": 91540
+ },
+ {
+  "model": "mobilenet_v2_1.0_224_INT8",
+  "set_id": "2",
+  "wd_active": 169343,
+  "wd_stalled": 1212443,
+  "mac_active": 574795,
+  "ao_active": 440990,
+  "npu_active": 1450168
+ },
+ {
+  "model": "rnnoise_INT8",
+  "set_id": "2",
+  "wd_active": 2852,
+  "wd_stalled": 12744,
+  "mac_active": 548,
+  "ao_active": 300,
+  "npu_active": 50531
+ },
+ {
+  "model": "vww4_128_128_INT8",
+  "set_id": "2",
+  "wd_active": 13412,
+  "wd_stalled": 134125,
+  "mac_active": 56512,
+  "ao_active": 64559,
+  "npu_active": 234929
+ },
+ {
+  "model": "wav2letter_pruned_int8",
+  "set_id": "2",
+  "wd_active": 1133549,
+  "wd_stalled": 2982245,
+  "mac_active": 3521802,
+  "ao_active": 59766,
+  "npu_active": 4133419
+ },
+ {
+  "model": "yolo-fastest_192_face_v4",
+  "set_id": "2",
+  "wd_active": 27272,
+  "wd_stalled": 323328,
+  "mac_active": 171576,
+  "ao_active": 206938,
+  "npu_active": 447340
+ }
+]

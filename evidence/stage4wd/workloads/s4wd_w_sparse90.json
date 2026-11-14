@@ -1,0 +1,49 @@
+{
+ "op": "s4wd_w_sparse90",
+ "operator_type": "CONV_2D",
+ "input_shape": [
+  1,
+  24,
+  24,
+  16
+ ],
+ "output_shape": [
+  1,
+  24,
+  24,
+  96
+ ],
+ "kernel_shape": [
+  1,
+  1
+ ],
+ "weight_shape": [
+  96,
+  1,
+  1,
+  16
+ ],
+ "stride": [
+  1,
+  1
+ ],
+ "padding": "SAME",
+ "groups": 1,
+ "activation": "RELU6",
+ "n_mac": 884736,
+ "weight_seed": 20261014,
+ "ifm_seed": 1,
+ "quant": {
+  "ifm_scale": 0.0078125,
+  "weight_scale": 0.0078125,
+  "ofm_scale": 0.05013293168676181,
+  "zero_points": 0
+ },
+ "acc_abs_max": 42829,
+ "model_sha256": "e05ca0bd662a2a03b0f7a755351c6ce7b267d45af96976cb54c486aa18dd4c43",
+ "base": "s4_conv_base",
+ "wd_seed": 20261117,
+ "weight_kind": "sparse90",
+ "weight_zero_share": 0.9029947916666666,
+ "ofm_scale_from": "s4_conv_base"
+}

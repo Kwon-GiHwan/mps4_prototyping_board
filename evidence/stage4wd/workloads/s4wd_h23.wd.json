@@ -1,0 +1,10 @@
+{
+ "config": "s4wd_h23",
+ "reference": {
+  "opt_vs_ref": 0,
+  "opt_sha256": "a3c82ad5a5892a14a2c07bcd1a3e454addbcbcd20235d1a45002fba3e3bfe58a",
+  "ref_sha256": "a3c82ad5a5892a14a2c07bcd1a3e454addbcbcd20235d1a45002fba3e3bfe58a"
+ },
+ "weight_kind": "dense",
+ "weight_zero_share": 0.00390625
+}

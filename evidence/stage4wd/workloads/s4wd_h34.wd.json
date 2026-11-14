@@ -1,0 +1,10 @@
+{
+ "config": "s4wd_h34",
+ "reference": {
+  "opt_vs_ref": 0,
+  "opt_sha256": "200f89f02899b1c8056f06ff5b576fffe2bbbdcd27693602e709f0a9b1fa2970",
+  "ref_sha256": "200f89f02899b1c8056f06ff5b576fffe2bbbdcd27693602e709f0a9b1fa2970"
+ },
+ "weight_kind": "dense",
+ "weight_zero_share": 0.00390625
+}

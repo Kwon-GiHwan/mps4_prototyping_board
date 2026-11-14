@@ -1,0 +1,10 @@
+{
+ "config": "s4wd_h32",
+ "reference": {
+  "opt_vs_ref": 0,
+  "opt_sha256": "845a251d581e89e1b340d57409237253512a7722bd9edd64293b91abd263db02",
+  "ref_sha256": "845a251d581e89e1b340d57409237253512a7722bd9edd64293b91abd263db02"
+ },
+ "weight_kind": "dense",
+ "weight_zero_share": 0.00390625
+}

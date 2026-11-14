@@ -1,0 +1,49 @@
+{
+ "op": "s4wd_h34",
+ "operator_type": "CONV_2D",
+ "input_shape": [
+  1,
+  34,
+  24,
+  16
+ ],
+ "output_shape": [
+  1,
+  34,
+  24,
+  96
+ ],
+ "kernel_shape": [
+  1,
+  1
+ ],
+ "weight_shape": [
+  96,
+  1,
+  1,
+  16
+ ],
+ "stride": [
+  1,
+  1
+ ],
+ "padding": "SAME",
+ "groups": 1,
+ "activation": "RELU6",
+ "n_mac": 1253376,
+ "weight_seed": 20261014,
+ "ifm_seed": 1,
+ "quant": {
+  "ifm_scale": 0.0078125,
+  "weight_scale": 0.0078125,
+  "ofm_scale": 0.05013293168676181,
+  "zero_points": 0
+ },
+ "acc_abs_max": 104315,
+ "model_sha256": "3e242fe3adc8f3a7e1c466a9301caef313cce30feeed6c6b5a9297d6db73cefb",
+ "base": "s4_conv_base",
+ "wd_seed": 20261117,
+ "weight_kind": "dense",
+ "weight_zero_share": 0.00390625,
+ "ofm_scale_from": "s4_conv_base"
+}

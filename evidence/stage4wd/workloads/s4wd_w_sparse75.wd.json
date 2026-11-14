@@ -1,0 +1,10 @@
+{
+ "config": "s4wd_w_sparse75",
+ "reference": {
+  "opt_vs_ref": 0,
+  "opt_sha256": "7c3a2864ddcc7c485875c3b57a22aa71852b3bc07a7d5b2db5edd22365f6bb13",
+  "ref_sha256": "7c3a2864ddcc7c485875c3b57a22aa71852b3bc07a7d5b2db5edd22365f6bb13"
+ },
+ "weight_kind": "sparse75",
+ "weight_zero_share": 0.751953125
+}

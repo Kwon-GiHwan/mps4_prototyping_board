@@ -1,0 +1,173 @@
+[
+ {
+  "h": 18,
+  "w": 24,
+  "n_ofm": 41472,
+  "ofm_block": "10x24x32",
+  "ifm_block": "10x24x16",
+  "traversal": "PartKernel",
+  "vela_npu_cycles": "6277"
+ },
+ {
+  "h": 19,
+  "w": 24,
+  "n_ofm": 43776,
+  "ofm_block": "10x24x32",
+  "ifm_block": "10x24x16",
+  "traversal": "PartKernel",
+  "vela_npu_cycles": "6524"
+ },
+ {
+  "h": 20,
+  "w": 24,
+  "n_ofm": 46080,
+  "ofm_block": "16x16x32",
+  "ifm_block": "16x16x16",
+  "traversal": "PartKernel",
+  "vela_npu_cycles": "6672"
+ },
+ {
+  "h": 21,
+  "w": 24,
+  "n_ofm": 48384,
+  "ofm_block": "21x12x32",
+  "ifm_block": "22x12x16",
+  "traversal": "PartKernel",
+  "vela_npu_cycles": "6939"
+ },
+ {
+  "h": 22,
+  "w": 24,
+  "n_ofm": 50688,
+  "ofm_block": "14x18x32",
+  "ifm_block": "14x20x16",
+  "traversal": "PartKernel",
+  "vela_npu_cycles": "7214"
+ },
+ {
+  "h": 23,
+  "w": 24,
+  "n_ofm": 52992,
+  "ofm_block": "6x12x96",
+  "ifm_block": "6x12x16",
+  "traversal": "PartKernel",
+  "vela_npu_cycles": "16035"
+ },
+ {
+  "h": 24,
+  "w": 24,
+  "n_ofm": 55296,
+  "ofm_block": "6x12x96",
+  "ifm_block": "6x12x16",
+  "traversal": "PartKernel",
+  "vela_npu_cycles": "16660"
+ },
+ {
+  "h": 25,
+  "w": 24,
+  "n_ofm": 57600,
+  "ofm_block": "7x12x96",
+  "ifm_block": "8x12x16",
+  "traversal": "PartKernel",
+  "vela_npu_cycles": "15081"
+ },
+ {
+  "h": 26,
+  "w": 24,
+  "n_ofm": 59904,
+  "ofm_block": "10x8x96",
+  "ifm_block": "10x8x16",
+  "traversal": "PartKernel",
+  "vela_npu_cycles": "16302"
+ },
+ {
+  "h": 27,
+  "w": 24,
+  "n_ofm": 62208,
+  "ofm_block": "7x12x96",
+  "ifm_block": "8x12x16",
+  "traversal": "PartKernel",
+  "vela_npu_cycles": "16152"
+ },
+ {
+  "h": 28,
+  "w": 24,
+  "n_ofm": 64512,
+  "ofm_block": "10x8x96",
+  "ifm_block": "10x8x16",
+  "traversal": "PartKernel",
+  "vela_npu_cycles": "17427"
+ },
+ {
+  "h": 29,
+  "w": 24,
+  "n_ofm": 66816,
+  "ofm_block": "10x8x96",
+  "ifm_block": "10x8x16",
+  "traversal": "PartKernel",
+  "vela_npu_cycles": "17990"
+ },
+ {
+  "h": 30,
+  "w": 24,
+  "n_ofm": 69120,
+  "ofm_block": "10x8x96",
+  "ifm_block": "10x8x16",
+  "traversal": "PartKernel",
+  "vela_npu_cycles": "18552"
+ },
+ {
+  "h": 31,
+  "w": 24,
+  "n_ofm": 71424,
+  "ofm_block": "7x12x96",
+  "ifm_block": "8x12x16",
+  "traversal": "PartKernel",
+  "vela_npu_cycles": "18295"
+ },
+ {
+  "h": 32,
+  "w": 24,
+  "n_ofm": 73728,
+  "ofm_block": "6x12x96",
+  "ifm_block": "6x12x16",
+  "traversal": "PartKernel",
+  "vela_npu_cycles": "21660"
+ },
+ {
+  "h": 33,
+  "w": 24,
+  "n_ofm": 76032,
+  "ofm_block": "7x12x96",
+  "ifm_block": "8x12x16",
+  "traversal": "PartKernel",
+  "vela_npu_cycles": "19366"
+ },
+ {
+  "h": 34,
+  "w": 24,
+  "n_ofm": 78336,
+  "ofm_block": "6x12x96",
+  "ifm_block": "6x12x16",
+  "traversal": "PartKernel",
+  "vela_npu_cycles": "22910"
+ },
+ {
+  "h": 35,
+  "w": 24,
+  "n_ofm": 80640,
+  "ofm_block": "7x12x96",
+  "ifm_block": "8x12x16",
+  "traversal": "PartKernel",
+  "vela_npu_cycles": "20438"
+ },
+ {
+  "h": 36,
+  "w": 24,
+  "n_ofm": 82944,
+  "ofm_block": "6x12x96",
+  "ifm_block": "6x12x16",
+  "traversal": "PartKernel",
+  "vela_npu_cycles": "24160"
+ }
+]

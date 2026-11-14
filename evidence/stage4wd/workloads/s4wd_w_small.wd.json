@@ -1,0 +1,10 @@
+{
+ "config": "s4wd_w_small",
+ "reference": {
+  "opt_vs_ref": 0,
+  "opt_sha256": "ec1382168dd47ed3fbb24b08730c6be6f8703ce1ce8d0f1c1889a1298632de7c",
+  "ref_sha256": "ec1382168dd47ed3fbb24b08730c6be6f8703ce1ce8d0f1c1889a1298632de7c"
+ },
+ "weight_kind": "small",
+ "weight_zero_share": 0.13802083333333334
+}

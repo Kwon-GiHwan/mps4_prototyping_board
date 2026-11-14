@@ -1,0 +1,2126 @@
+[
+ {
+  "stage": "stage4",
+  "boot": 330,
+  "config": "s4_conv_base",
+  "placement": "ddr",
+  "all_valid": true,
+  "kind": "CONV",
+  "traversal": "PartKernel",
+  "ofm_block": "6x12x96",
+  "n_kernels": 2,
+  "raw_weight_bytes": 1536,
+  "encoded_bytes": 2752,
+  "encoded_per_kernel": [
+   704,
+   2048
+  ],
+  "vela_weight_bytes": 2752,
+  "weight_dma": [
+   [
+    1024
+   ],
+   [
+    3008
+   ]
+  ],
+  "weight_format": [
+   0
+  ],
+  "blocks": 16,
+  "spatial_blocks": 8,
+  "staged_bytes": 4032,
+  "blocks_per_kernel": [
+   8,
+   8
+  ],
+  "block_weight_reads": 22016,
+  "n_ofm": 55296,
+  "n_mac": 884736,
+  "wd_active": 1052.0,
+  "wd_active_range": 40,
+  "wd_stalled": 6993.0,
+  "wd_stalled_range": 1743,
+  "mac_active": 2304.0,
+  "ao_active": 3540.0,
+  "npu_active": 21207.0,
+  "sram_rd": 2016.0,
+  "sram_wr": 252.0,
+  "ext_rd": 1437.0,
+  "ext_wr": 3456.0,
+  "sram_rd_is_spatial_x_staged": true,
+  "sram_rd_bytes_per_wd_cycle": 30.661596958174904,
+  "enc_bytes_per_wd_cycle": 2.6159695817490496,
+  "wd_per_block": 65.75,
+  "block_reads_bytes_per_wd_cycle": 20.927756653992397
+ },
+ {
+  "stage": "stage4",
+  "boot": 331,
+  "config": "s4_conv_cin15",
+  "placement": "ddr",
+  "all_valid": true,
+  "kind": "CONV",
+  "traversal": "PartKernel",
+  "ofm_block": "14x18x32",
+  "n_kernels": 2,
+  "raw_weight_bytes": 1440,
+  "encoded_bytes": 2624,
+  "encoded_per_kernel": [
+   704,
+   1920
+  ],
+  "vela_weight_bytes": 2624,
+  "weight_dma": [
+   [
+    1024
+   ],
+   [
+    2880
+   ]
+  ],
+  "weight_format": [
+   0
+  ],
+  "blocks": 16,
+  "spatial_blocks": 4,
+  "staged_bytes": 3904,
+  "blocks_per_kernel": [
+   4,
+   12
+  ],
+  "block_weight_reads": 25856,
+  "n_ofm": 55296,
+  "n_mac": 829440,
+  "wd_active": 619.0,
+  "wd_active_range": 0,
+  "wd_stalled": 10368.5,
+  "wd_stalled_range": 1774,
+  "mac_active": 2304.0,
+  "ao_active": 3541.0,
+  "npu_active": 20905.0,
+  "sram_rd": 976.0,
+  "sram_wr": 244.0,
+  "ext_rd": 1429.0,
+  "ext_wr": 3456.0,
+  "sram_rd_is_spatial_x_staged": true,
+  "sram_rd_bytes_per_wd_cycle": 25.22778675282714,
+  "enc_bytes_per_wd_cycle": 4.239095315024232,
+  "wd_per_block": 38.6875,
+  "block_reads_bytes_per_wd_cycle": 41.77059773828756
+ },
+ {
+  "stage": "stage4",
+  "boot": 332,
+  "config": "s4_conv_cout95",
+  "placement": "ddr",
+  "all_valid": true,
+  "kind": "CONV",
+  "traversal": "PartKernel",
+  "ofm_block": "6x12x96",
+  "n_kernels": 2,
+  "raw_weight_bytes": 1520,
+  "encoded_bytes": 2736,
+  "encoded_per_kernel": [
+   704,
+   2032
+  ],
+  "vela_weight_bytes": 2736,
+  "weight_dma": [
+   [
+    1024
+   ],
+   [
+    2992
+   ]
+  ],
+  "weight_format": [
+   0
+  ],
+  "blocks": 16,
+  "spatial_blocks": 8,
+  "staged_bytes": 4016,
+  "blocks_per_kernel": [
+   8,
+   8
+  ],
+  "block_weight_reads": 21888,
+  "n_ofm": 54720,
+  "n_mac": 875520,
+  "wd_active": 1092.0,
+  "wd_active_range": 29,
+  "wd_stalled": 7276.0,
+  "wd_stalled_range": 1612,
+  "mac_active": 2304.0,
+  "ao_active": 3536.5,
+  "npu_active": 22684.0,
+  "sram_rd": 2008.0,
+  "sram_wr": 251.0,
+  "ext_rd": 1436.0,
+  "ext_wr": 6660.0,
+  "sram_rd_is_spatial_x_staged": true,
+  "sram_rd_bytes_per_wd_cycle": 29.42124542124542,
+  "enc_bytes_per_wd_cycle": 2.5054945054945055,
+  "wd_per_block": 68.25,
+  "block_reads_bytes_per_wd_cycle": 20.043956043956044
+ },
+ {
+  "stage": "stage4",
+  "boot": 333,
+  "config": "s4_dw_base",
+  "placement": "ddr",
+  "all_valid": true,
+  "kind": "DEPTHWISE",
+  "traversal": "Depthwise",
+  "ofm_block": "26x28x16",
+  "n_kernels": 2,
+  "raw_weight_bytes": 1296,
+  "encoded_bytes": 1792,
+  "encoded_per_kernel": [
+   320,
+   1472
+  ],
+  "vela_weight_bytes": 1792,
+  "weight_dma": [
+   [
+    480
+   ],
+   [
+    2752
+   ]
+  ],
+  "weight_format": [
+   0
+  ],
+  "blocks": 54,
+  "spatial_blocks": 6,
+  "staged_bytes": 3232,
+  "blocks_per_kernel": [
+   6,
+   48
+  ],
+  "block_weight_reads": 72576,
+  "n_ofm": 451584,
+  "n_mac": 4064256,
+  "wd_active": 195.0,
+  "wd_active_range": 0,
+  "wd_stalled": 156816.0,
+  "wd_stalled_range": 567,
+  "mac_active": 31752.0,
+  "ao_active": 28491.0,
+  "npu_active": 159325.0,
+  "sram_rd": 1212.0,
+  "sram_wr": 202.0,
+  "ext_rd": 31556.0,
+  "ext_wr": 28224.0,
+  "sram_rd_is_spatial_x_staged": true,
+  "sram_rd_bytes_per_wd_cycle": 99.44615384615385,
+  "enc_bytes_per_wd_cycle": 9.189743589743589,
+  "wd_per_block": 3.611111111111111,
+  "block_reads_bytes_per_wd_cycle": 372.18461538461537
+ },
+ {
+  "stage": "stage4",
+  "boot": 334,
+  "config": "s4_dw_c143",
+  "placement": "ddr",
+  "all_valid": true,
+  "kind": "DEPTHWISE",
+  "traversal": "Depthwise",
+  "ofm_block": "26x28x16",
+  "n_kernels": 2,
+  "raw_weight_bytes": 1287,
+  "encoded_bytes": 1776,
+  "encoded_per_kernel": [
+   320,
+   1456
+  ],
+  "vela_weight_bytes": 1776,
+  "weight_dma": [
+   [
+    480
+   ],
+   [
+    2736
+   ]
+  ],
+  "weight_format": [
+   0
+  ],
+  "blocks": 54,
+  "spatial_blocks": 6,
+  "staged_bytes": 3216,
+  "blocks_per_kernel": [
+   6,
+   48
+  ],
+  "block_weight_reads": 71808,
+  "n_ofm": 448448,
+  "n_mac": 4036032,
+  "wd_active": 196.0,
+  "wd_active_range": 0,
+  "wd_stalled": 166414.0,
+  "wd_stalled_range": 209,
+  "mac_active": 31752.0,
+  "ao_active": 28484.5,
+  "npu_active": 169069.0,
+  "sram_rd": 1206.0,
+  "sram_wr": 201.0,
+  "ext_rd": 60775.0,
+  "ext_wr": 54488.0,
+  "sram_rd_is_spatial_x_staged": true,
+  "sram_rd_bytes_per_wd_cycle": 98.44897959183673,
+  "enc_bytes_per_wd_cycle": 9.061224489795919,
+  "wd_per_block": 3.6296296296296298,
+  "block_reads_bytes_per_wd_cycle": 366.3673469387755
+ },
+ {
+  "stage": "stage4",
+  "boot": 335,
+  "config": "s4_fc_base",
+  "placement": "ddr",
+  "all_valid": true,
+  "kind": "CONV",
+  "traversal": "DepthFirst",
+  "ofm_block": "2x2x288",
+  "n_kernels": 1,
+  "raw_weight_bytes": 27648,
+  "encoded_bytes": 32208,
+  "encoded_per_kernel": [
+   32208
+  ],
+  "vela_weight_bytes": 32208,
+  "weight_dma": [
+   []
+  ],
+  "weight_format": [
+   0
+  ],
+  "blocks": 1,
+  "spatial_blocks": 1,
+  "staged_bytes": 0,
+  "blocks_per_kernel": [
+   1
+  ],
+  "block_weight_reads": 32208,
+  "n_ofm": 288,
+  "n_mac": 27648,
+  "wd_active": 836.0,
+  "wd_active_range": 113,
+  "wd_stalled": 3346.5,
+  "wd_stalled_range": 928,
+  "mac_active": 108.0,
+  "ao_active": 19.0,
+  "npu_active": 9415.5,
+  "sram_rd": 0.0,
+  "sram_wr": 0.0,
+  "ext_rd": 2221.0,
+  "ext_wr": 18.0,
+  "sram_rd_is_spatial_x_staged": false,
+  "sram_rd_bytes_per_wd_cycle": 0.0,
+  "enc_bytes_per_wd_cycle": 38.526315789473685,
+  "wd_per_block": 836.0,
+  "block_reads_bytes_per_wd_cycle": 38.526315789473685
+ },
+ {
+  "stage": "stage4",
+  "boot": 336,
+  "config": "s4_fc_in95",
+  "placement": "ddr",
+  "all_valid": true,
+  "kind": "CONV",
+  "traversal": "DepthFirst",
+  "ofm_block": "2x2x288",
+  "n_kernels": 1,
+  "raw_weight_bytes": 27360,
+  "encoded_bytes": 31920,
+  "encoded_per_kernel": [
+   31920
+  ],
+  "vela_weight_bytes": 31920,
+  "weight_dma": [
+   []
+  ],
+  "weight_format": [
+   0
+  ],
+  "blocks": 1,
+  "spatial_blocks": 1,
+  "staged_bytes": 0,
+  "blocks_per_kernel": [
+   1
+  ],
+  "block_weight_reads": 31920,
+  "n_ofm": 288,
+  "n_mac": 27360,
+  "wd_active": 919.0,
+  "wd_active_range": 106,
+  "wd_stalled": 3237.5,
+  "wd_stalled_range": 947,
+  "mac_active": 108.0,
+  "ao_active": 20.0,
+  "npu_active": 9400.0,
+  "sram_rd": 0.0,
+  "sram_wr": 0.0,
+  "ext_rd": 2203.0,
+  "ext_wr": 18.0,
+  "sram_rd_is_spatial_x_staged": false,
+  "sram_rd_bytes_per_wd_cycle": 0.0,
+  "enc_bytes_per_wd_cycle": 34.73340587595212,
+  "wd_per_block": 919.0,
+  "block_reads_bytes_per_wd_cycle": 34.73340587595212
+ },
+ {
+  "stage": "stage4",
+  "boot": 337,
+  "config": "s4_fc_out287",
+  "placement": "ddr",
+  "all_valid": true,
+  "kind": "CONV",
+  "traversal": "DepthFirst",
+  "ofm_block": "2x2x288",
+  "n_kernels": 1,
+  "raw_weight_bytes": 27552,
+  "encoded_bytes": 32112,
+  "encoded_per_kernel": [
+   32112
+  ],
+  "vela_weight_bytes": 32112,
+  "weight_dma": [
+   []
+  ],
+  "weight_format": [
+   0
+  ],
+  "blocks": 1,
+  "spatial_blocks": 1,
+  "staged_bytes": 0,
+  "blocks_per_kernel": [
+   1
+  ],
+  "block_weight_reads": 32112,
+  "n_ofm": 287,
+  "n_mac": 27552,
+  "wd_active": 765.0,
+  "wd_active_range": 55,
+  "wd_stalled": 2471.0,
+  "wd_stalled_range": 697,
+  "mac_active": 108.0,
+  "ao_active": 19.0,
+  "npu_active": 8518.5,
+  "sram_rd": 0.0,
+  "sram_wr": 0.0,
+  "ext_rd": 2215.0,
+  "ext_wr": 18.0,
+  "sram_rd_is_spatial_x_staged": false,
+  "sram_rd_bytes_per_wd_cycle": 0.0,
+  "enc_bytes_per_wd_cycle": 41.976470588235294,
+  "wd_per_block": 765.0,
+  "block_reads_bytes_per_wd_cycle": 41.976470588235294
+ },
+ {
+  "stage": "stage4c1",
+  "boot": 338,
+  "config": "s4_conv_base",
+  "placement": "ddr",
+  "all_valid": true,
+  "kind": "CONV",
+  "traversal": "PartKernel",
+  "ofm_block": "6x12x96",
+  "n_kernels": 2,
+  "raw_weight_bytes": 1536,
+  "encoded_bytes": 2752,
+  "encoded_per_kernel": [
+   704,
+   2048
+  ],
+  "vela_weight_bytes": 2752,
+  "weight_dma": [
+   [
+    1024
+   ],
+   [
+    3008
+   ]
+  ],
+  "weight_format": [
+   0
+  ],
+  "blocks": 16,
+  "spatial_blocks": 8,
+  "staged_bytes": 4032,
+  "blocks_per_kernel": [
+   8,
+   8
+  ],
+  "block_weight_reads": 22016,
+  "n_ofm": 55296,
+  "n_mac": 884736,
+  "wd_active": 1051.5,
+  "wd_active_range": 25,
+  "wd_stalled": 6513.5,
+  "wd_stalled_range": 1815,
+  "mac_active": 2304.0,
+  "ao_active": 3534.0,
+  "npu_active": 21124.5,
+  "sram_rd": 2016.0,
+  "sram_wr": 252.0,
+  "ext_rd": 1437.0,
+  "ext_wr": 3456.0,
+  "sram_rd_is_spatial_x_staged": true,
+  "sram_rd_bytes_per_wd_cycle": 30.676176890156917,
+  "enc_bytes_per_wd_cycle": 2.6172135045173563,
+  "wd_per_block": 65.71875,
+  "block_reads_bytes_per_wd_cycle": 20.93770803613885
+ },
+ {
+  "stage": "stage4c1",
+  "boot": 341,
+  "config": "s4_dw_base",
+  "placement": "ddr",
+  "all_valid": true,
+  "kind": "DEPTHWISE",
+  "traversal": "Depthwise",
+  "ofm_block": "26x28x16",
+  "n_kernels": 2,
+  "raw_weight_bytes": 1296,
+  "encoded_bytes": 1792,
+  "encoded_per_kernel": [
+   320,
+   1472
+  ],
+  "vela_weight_bytes": 1792,
+  "weight_dma": [
+   [
+    480
+   ],
+   [
+    2752
+   ]
+  ],
+  "weight_format": [
+   0
+  ],
+  "blocks": 54,
+  "spatial_blocks": 6,
+  "staged_bytes": 3232,
+  "blocks_per_kernel": [
+   6,
+   48
+  ],
+  "block_weight_reads": 72576,
+  "n_ofm": 451584,
+  "n_mac": 4064256,
+  "wd_active": 195.0,
+  "wd_active_range": 0,
+  "wd_stalled": 157278.0,
+  "wd_stalled_range": 885,
+  "mac_active": 31752.0,
+  "ao_active": 28474.5,
+  "npu_active": 159759.5,
+  "sram_rd": 1212.0,
+  "sram_wr": 202.0,
+  "ext_rd": 31556.0,
+  "ext_wr": 28224.0,
+  "sram_rd_is_spatial_x_staged": true,
+  "sram_rd_bytes_per_wd_cycle": 99.44615384615385,
+  "enc_bytes_per_wd_cycle": 9.189743589743589,
+  "wd_per_block": 3.611111111111111,
+  "block_reads_bytes_per_wd_cycle": 372.18461538461537
+ },
+ {
+  "stage": "stage4c1",
+  "boot": 339,
+  "config": "s4c_conv_cout94",
+  "placement": "ddr",
+  "all_valid": true,
+  "kind": "CONV",
+  "traversal": "PartKernel",
+  "ofm_block": "6x12x96",
+  "n_kernels": 2,
+  "raw_weight_bytes": 1504,
+  "encoded_bytes": 2720,
+  "encoded_per_kernel": [
+   704,
+   2016
+  ],
+  "vela_weight_bytes": 2720,
+  "weight_dma": [
+   [
+    1024
+   ],
+   [
+    2976
+   ]
+  ],
+  "weight_format": [
+   0
+  ],
+  "blocks": 16,
+  "spatial_blocks": 8,
+  "staged_bytes": 4000,
+  "blocks_per_kernel": [
+   8,
+   8
+  ],
+  "block_weight_reads": 21760,
+  "n_ofm": 54144,
+  "n_mac": 866304,
+  "wd_active": 1092.0,
+  "wd_active_range": 47,
+  "wd_stalled": 6977.0,
+  "wd_stalled_range": 401,
+  "mac_active": 2304.0,
+  "ao_active": 3537.5,
+  "npu_active": 22192.0,
+  "sram_rd": 2000.0,
+  "sram_wr": 250.0,
+  "ext_rd": 1435.0,
+  "ext_wr": 6408.0,
+  "sram_rd_is_spatial_x_staged": true,
+  "sram_rd_bytes_per_wd_cycle": 29.304029304029303,
+  "enc_bytes_per_wd_cycle": 2.490842490842491,
+  "wd_per_block": 68.25,
+  "block_reads_bytes_per_wd_cycle": 19.926739926739927
+ },
+ {
+  "stage": "stage4c1",
+  "boot": 340,
+  "config": "s4c_conv_cout97",
+  "placement": "ddr",
+  "all_valid": true,
+  "kind": "CONV",
+  "traversal": "PartKernel",
+  "ofm_block": "6x12x112",
+  "n_kernels": 2,
+  "raw_weight_bytes": 1552,
+  "encoded_bytes": 2640,
+  "encoded_per_kernel": [
+   576,
+   2064
+  ],
+  "vela_weight_bytes": 2640,
+  "weight_dma": [
+   [
+    736
+   ],
+   [
+    3024
+   ]
+  ],
+  "weight_format": [
+   0
+  ],
+  "blocks": 16,
+  "spatial_blocks": 8,
+  "staged_bytes": 3760,
+  "blocks_per_kernel": [
+   8,
+   8
+  ],
+  "block_weight_reads": 21120,
+  "n_ofm": 55872,
+  "n_mac": 893952,
+  "wd_active": 920.0,
+  "wd_active_range": 12,
+  "wd_stalled": 7204.5,
+  "wd_stalled_range": 896,
+  "mac_active": 2016.0,
+  "ao_active": 4127.5,
+  "npu_active": 25977.0,
+  "sram_rd": 1880.0,
+  "sram_wr": 235.0,
+  "ext_rd": 1420.0,
+  "ext_wr": 7272.0,
+  "sram_rd_is_spatial_x_staged": true,
+  "sram_rd_bytes_per_wd_cycle": 32.69565217391305,
+  "enc_bytes_per_wd_cycle": 2.869565217391304,
+  "wd_per_block": 57.5,
+  "block_reads_bytes_per_wd_cycle": 22.956521739130434
+ },
+ {
+  "stage": "stage4c1",
+  "boot": 342,
+  "config": "s4c_dw_c142",
+  "placement": "ddr",
+  "all_valid": true,
+  "kind": "DEPTHWISE",
+  "traversal": "Depthwise",
+  "ofm_block": "26x28x16",
+  "n_kernels": 2,
+  "raw_weight_bytes": 1278,
+  "encoded_bytes": 1776,
+  "encoded_per_kernel": [
+   320,
+   1456
+  ],
+  "vela_weight_bytes": 1776,
+  "weight_dma": [
+   [
+    480
+   ],
+   [
+    2736
+   ]
+  ],
+  "weight_format": [
+   0
+  ],
+  "blocks": 54,
+  "spatial_blocks": 6,
+  "staged_bytes": 3216,
+  "blocks_per_kernel": [
+   6,
+   48
+  ],
+  "block_weight_reads": 71808,
+  "n_ofm": 445312,
+  "n_mac": 4007808,
+  "wd_active": 195.0,
+  "wd_active_range": 0,
+  "wd_stalled": 166001.5,
+  "wd_stalled_range": 310,
+  "mac_active": 31752.0,
+  "ao_active": 28477.0,
+  "npu_active": 168400.5,
+  "sram_rd": 1206.0,
+  "sram_wr": 201.0,
+  "ext_rd": 58675.0,
+  "ext_wr": 52528.0,
+  "sram_rd_is_spatial_x_staged": true,
+  "sram_rd_bytes_per_wd_cycle": 98.95384615384616,
+  "enc_bytes_per_wd_cycle": 9.107692307692307,
+  "wd_per_block": 3.611111111111111,
+  "block_reads_bytes_per_wd_cycle": 368.24615384615385
+ },
+ {
+  "stage": "stage4c1",
+  "boot": 343,
+  "config": "s4c_dw_c145",
+  "placement": "ddr",
+  "all_valid": true,
+  "kind": "DEPTHWISE",
+  "traversal": "Depthwise",
+  "ofm_block": "26x28x16",
+  "n_kernels": 2,
+  "raw_weight_bytes": 1305,
+  "encoded_bytes": 1808,
+  "encoded_per_kernel": [
+   320,
+   1488
+  ],
+  "vela_weight_bytes": 1808,
+  "weight_dma": [
+   [
+    480
+   ],
+   [
+    2928
+   ]
+  ],
+  "weight_format": [
+   0
+  ],
+  "blocks": 60,
+  "spatial_blocks": 6,
+  "staged_bytes": 3408,
+  "blocks_per_kernel": [
+   6,
+   54
+  ],
+  "block_weight_reads": 82272,
+  "n_ofm": 454720,
+  "n_mac": 4092480,
+  "wd_active": 210.0,
+  "wd_active_range": 3,
+  "wd_stalled": 185209.0,
+  "wd_stalled_range": 59,
+  "mac_active": 35280.0,
+  "ao_active": 31641.5,
+  "npu_active": 187345.5,
+  "sram_rd": 1278.0,
+  "sram_wr": 213.0,
+  "ext_rd": 64477.0,
+  "ext_wr": 57820.0,
+  "sram_rd_is_spatial_x_staged": true,
+  "sram_rd_bytes_per_wd_cycle": 97.37142857142857,
+  "enc_bytes_per_wd_cycle": 8.60952380952381,
+  "wd_per_block": 3.5,
+  "block_reads_bytes_per_wd_cycle": 391.77142857142854
+ },
+ {
+  "stage": "stage4c2",
+  "boot": 344,
+  "config": "s4_conv_base",
+  "placement": "ddr",
+  "all_valid": true,
+  "kind": "CONV",
+  "traversal": "PartKernel",
+  "ofm_block": "6x12x96",
+  "n_kernels": 2,
+  "raw_weight_bytes": 1536,
+  "encoded_bytes": 2752,
+  "encoded_per_kernel": [
+   704,
+   2048
+  ],
+  "vela_weight_bytes": 2752,
+  "weight_dma": [
+   [
+    1024
+   ],
+   [
+    3008
+   ]
+  ],
+  "weight_format": [
+   0
+  ],
+  "blocks": 16,
+  "spatial_blocks": 8,
+  "staged_bytes": 4032,
+  "blocks_per_kernel": [
+   8,
+   8
+  ],
+  "block_weight_reads": 22016,
+  "n_ofm": 55296,
+  "n_mac": 884736,
+  "wd_active": 1056.0,
+  "wd_active_range": 69,
+  "wd_stalled": 6146.0,
+  "wd_stalled_range": 1417,
+  "mac_active": 2304.0,
+  "ao_active": 3533.5,
+  "npu_active": 21479.5,
+  "sram_rd": 2016.0,
+  "sram_wr": 252.0,
+  "ext_rd": 1437.0,
+  "ext_wr": 3456.0,
+  "sram_rd_is_spatial_x_staged": true,
+  "sram_rd_bytes_per_wd_cycle": 30.545454545454547,
+  "enc_bytes_per_wd_cycle": 2.606060606060606,
+  "wd_per_block": 66.0,
+  "block_reads_bytes_per_wd_cycle": 20.848484848484848
+ },
+ {
+  "stage": "stage4c2",
+  "boot": 347,
+  "config": "s4c2_conv_cin128",
+  "placement": "ddr",
+  "all_valid": true,
+  "kind": "CONV",
+  "traversal": "DepthFirst",
+  "ofm_block": "6x12x96",
+  "n_kernels": 2,
+  "raw_weight_bytes": 12288,
+  "encoded_bytes": 14416,
+  "encoded_per_kernel": [
+   2624,
+   11792
+  ],
+  "vela_weight_bytes": 14416,
+  "weight_dma": [
+   [
+    2944
+   ],
+   [
+    12752
+   ]
+  ],
+  "weight_format": [
+   0
+  ],
+  "blocks": 16,
+  "spatial_blocks": 8,
+  "staged_bytes": 15696,
+  "blocks_per_kernel": [
+   8,
+   8
+  ],
+  "block_weight_reads": 115328,
+  "n_ofm": 55296,
+  "n_mac": 7077888,
+  "wd_active": 4165.0,
+  "wd_active_range": 0,
+  "wd_stalled": 21035.5,
+  "wd_stalled_range": 400,
+  "mac_active": 9216.0,
+  "ao_active": 3526.0,
+  "npu_active": 30728.0,
+  "sram_rd": 7848.0,
+  "sram_wr": 981.0,
+  "ext_rd": 10230.0,
+  "ext_wr": 3456.0,
+  "sram_rd_is_spatial_x_staged": true,
+  "sram_rd_bytes_per_wd_cycle": 30.148379351740697,
+  "enc_bytes_per_wd_cycle": 3.4612244897959186,
+  "wd_per_block": 260.3125,
+  "block_reads_bytes_per_wd_cycle": 27.68979591836735
+ },
+ {
+  "stage": "stage4c2",
+  "boot": 345,
+  "config": "s4c2_conv_cin32",
+  "placement": "ddr",
+  "all_valid": true,
+  "kind": "CONV",
+  "traversal": "PartKernel",
+  "ofm_block": "6x12x96",
+  "n_kernels": 2,
+  "raw_weight_bytes": 3072,
+  "encoded_bytes": 4928,
+  "encoded_per_kernel": [
+   960,
+   3968
+  ],
+  "vela_weight_bytes": 4928,
+  "weight_dma": [
+   [
+    1280
+   ],
+   [
+    4928
+   ]
+  ],
+  "weight_format": [
+   0
+  ],
+  "blocks": 16,
+  "spatial_blocks": 8,
+  "staged_bytes": 6208,
+  "blocks_per_kernel": [
+   8,
+   8
+  ],
+  "block_weight_reads": 39424,
+  "n_ofm": 55296,
+  "n_mac": 1769472,
+  "wd_active": 1762.0,
+  "wd_active_range": 0,
+  "wd_stalled": 17914.0,
+  "wd_stalled_range": 348,
+  "mac_active": 4608.0,
+  "ao_active": 3536.0,
+  "npu_active": 25622.5,
+  "sram_rd": 3104.0,
+  "sram_wr": 388.0,
+  "ext_rd": 2725.0,
+  "ext_wr": 3456.0,
+  "sram_rd_is_spatial_x_staged": true,
+  "sram_rd_bytes_per_wd_cycle": 28.186152099886492,
+  "enc_bytes_per_wd_cycle": 2.796821793416572,
+  "wd_per_block": 110.125,
+  "block_reads_bytes_per_wd_cycle": 22.374574347332576
+ },
+ {
+  "stage": "stage4c2",
+  "boot": 346,
+  "config": "s4c2_conv_cin64",
+  "placement": "ddr",
+  "all_valid": true,
+  "kind": "CONV",
+  "traversal": "DepthFirst",
+  "ofm_block": "6x12x96",
+  "n_kernels": 2,
+  "raw_weight_bytes": 6144,
+  "encoded_bytes": 7296,
+  "encoded_per_kernel": [
+   1344,
+   5952
+  ],
+  "vela_weight_bytes": 7296,
+  "weight_dma": [
+   [
+    1664
+   ],
+   [
+    6912
+   ]
+  ],
+  "weight_format": [
+   0
+  ],
+  "blocks": 16,
+  "spatial_blocks": 8,
+  "staged_bytes": 8576,
+  "blocks_per_kernel": [
+   8,
+   8
+  ],
+  "block_weight_reads": 58368,
+  "n_ofm": 55296,
+  "n_mac": 3538944,
+  "wd_active": 1927.0,
+  "wd_active_range": 62,
+  "wd_stalled": 13098.0,
+  "wd_stalled_range": 1483,
+  "mac_active": 4608.0,
+  "ao_active": 3541.0,
+  "npu_active": 24182.5,
+  "sram_rd": 4288.0,
+  "sram_wr": 536.0,
+  "ext_rd": 5177.0,
+  "ext_wr": 3456.0,
+  "sram_rd_is_spatial_x_staged": true,
+  "sram_rd_bytes_per_wd_cycle": 35.60352880124546,
+  "enc_bytes_per_wd_cycle": 3.786196159833939,
+  "wd_per_block": 120.4375,
+  "block_reads_bytes_per_wd_cycle": 30.28956927867151
+ },
+ {
+  "stage": "stage4c2b",
+  "boot": 348,
+  "config": "s4c2_conv_cin40",
+  "placement": "ddr",
+  "all_valid": true,
+  "kind": "CONV",
+  "traversal": "DepthFirst",
+  "ofm_block": "6x12x96",
+  "n_kernels": 2,
+  "raw_weight_bytes": 3840,
+  "encoded_bytes": 4992,
+  "encoded_per_kernel": [
+   960,
+   4032
+  ],
+  "vela_weight_bytes": 4992,
+  "weight_dma": [
+   [
+    1280
+   ],
+   [
+    4992
+   ]
+  ],
+  "weight_format": [
+   0
+  ],
+  "blocks": 16,
+  "spatial_blocks": 8,
+  "staged_bytes": 6272,
+  "blocks_per_kernel": [
+   8,
+   8
+  ],
+  "block_weight_reads": 39936,
+  "n_ofm": 55296,
+  "n_mac": 2211840,
+  "wd_active": 1670.0,
+  "wd_active_range": 0,
+  "wd_stalled": 8929.0,
+  "wd_stalled_range": 168,
+  "mac_active": 3456.0,
+  "ao_active": 3532.0,
+  "npu_active": 22454.5,
+  "sram_rd": 3136.0,
+  "sram_wr": 392.0,
+  "ext_rd": 3305.0,
+  "ext_wr": 3456.0,
+  "sram_rd_is_spatial_x_staged": true,
+  "sram_rd_bytes_per_wd_cycle": 30.04550898203593,
+  "enc_bytes_per_wd_cycle": 2.9892215568862275,
+  "wd_per_block": 104.375,
+  "block_reads_bytes_per_wd_cycle": 23.91377245508982
+ },
+ {
+  "stage": "stage4c2b",
+  "boot": 349,
+  "config": "s4c2_conv_cin48",
+  "placement": "ddr",
+  "all_valid": true,
+  "kind": "CONV",
+  "traversal": "DepthFirst",
+  "ofm_block": "6x12x96",
+  "n_kernels": 2,
+  "raw_weight_bytes": 4608,
+  "encoded_bytes": 5760,
+  "encoded_per_kernel": [
+   1088,
+   4672
+  ],
+  "vela_weight_bytes": 5760,
+  "weight_dma": [
+   [
+    1408
+   ],
+   [
+    5632
+   ]
+  ],
+  "weight_format": [
+   0
+  ],
+  "blocks": 16,
+  "spatial_blocks": 8,
+  "staged_bytes": 7040,
+  "blocks_per_kernel": [
+   8,
+   8
+  ],
+  "block_weight_reads": 46080,
+  "n_ofm": 55296,
+  "n_mac": 2654208,
+  "wd_active": 1781.0,
+  "wd_active_range": 1,
+  "wd_stalled": 9772.5,
+  "wd_stalled_range": 554,
+  "mac_active": 3456.0,
+  "ao_active": 3535.5,
+  "npu_active": 22331.0,
+  "sram_rd": 3520.0,
+  "sram_wr": 440.0,
+  "ext_rd": 3929.0,
+  "ext_wr": 3456.0,
+  "sram_rd_is_spatial_x_staged": true,
+  "sram_rd_bytes_per_wd_cycle": 31.622683885457608,
+  "enc_bytes_per_wd_cycle": 3.2341381246490735,
+  "wd_per_block": 111.3125,
+  "block_reads_bytes_per_wd_cycle": 25.873104997192588
+ },
+ {
+  "stage": "stage4c2b",
+  "boot": 350,
+  "config": "s4c2_conv_cin64",
+  "placement": "ddr",
+  "all_valid": true,
+  "kind": "CONV",
+  "traversal": "DepthFirst",
+  "ofm_block": "6x12x96",
+  "n_kernels": 2,
+  "raw_weight_bytes": 6144,
+  "encoded_bytes": 7296,
+  "encoded_per_kernel": [
+   1344,
+   5952
+  ],
+  "vela_weight_bytes": 7296,
+  "weight_dma": [
+   [
+    1664
+   ],
+   [
+    6912
+   ]
+  ],
+  "weight_format": [
+   0
+  ],
+  "blocks": 16,
+  "spatial_blocks": 8,
+  "staged_bytes": 8576,
+  "blocks_per_kernel": [
+   8,
+   8
+  ],
+  "block_weight_reads": 58368,
+  "n_ofm": 55296,
+  "n_mac": 3538944,
+  "wd_active": 1927.0,
+  "wd_active_range": 62,
+  "wd_stalled": 13200.5,
+  "wd_stalled_range": 503,
+  "mac_active": 4608.0,
+  "ao_active": 3546.5,
+  "npu_active": 24554.0,
+  "sram_rd": 4288.0,
+  "sram_wr": 536.0,
+  "ext_rd": 5177.0,
+  "ext_wr": 3456.0,
+  "sram_rd_is_spatial_x_staged": true,
+  "sram_rd_bytes_per_wd_cycle": 35.60352880124546,
+  "enc_bytes_per_wd_cycle": 3.786196159833939,
+  "wd_per_block": 120.4375,
+  "block_reads_bytes_per_wd_cycle": 30.28956927867151
+ },
+ {
+  "stage": "stage4k",
+  "boot": 369,
+  "config": "s4_conv_base",
+  "placement": "ddr",
+  "all_valid": true,
+  "kind": "CONV",
+  "traversal": "PartKernel",
+  "ofm_block": "6x12x96",
+  "n_kernels": 2,
+  "raw_weight_bytes": 1536,
+  "encoded_bytes": 2752,
+  "encoded_per_kernel": [
+   704,
+   2048
+  ],
+  "vela_weight_bytes": 2752,
+  "weight_dma": [
+   [
+    1024
+   ],
+   [
+    3008
+   ]
+  ],
+  "weight_format": [
+   0
+  ],
+  "blocks": 16,
+  "spatial_blocks": 8,
+  "staged_bytes": 4032,
+  "blocks_per_kernel": [
+   8,
+   8
+  ],
+  "block_weight_reads": 22016,
+  "n_ofm": 55296,
+  "n_mac": 884736,
+  "wd_active": 1052.0,
+  "wd_active_range": 25,
+  "wd_stalled": 6402.0,
+  "wd_stalled_range": 1252,
+  "mac_active": 2304.0,
+  "ao_active": 3540.5,
+  "npu_active": 21629.0,
+  "sram_rd": 2016.0,
+  "sram_wr": 252.0,
+  "ext_rd": 1437.0,
+  "ext_wr": 3456.0,
+  "sram_rd_is_spatial_x_staged": true,
+  "sram_rd_bytes_per_wd_cycle": 30.661596958174904,
+  "enc_bytes_per_wd_cycle": 2.6159695817490496,
+  "wd_per_block": 65.75,
+  "block_reads_bytes_per_wd_cycle": 20.927756653992397
+ },
+ {
+  "stage": "stage4k",
+  "boot": 371,
+  "config": "s4c2_conv_cin32",
+  "placement": "ddr",
+  "all_valid": true,
+  "kind": "CONV",
+  "traversal": "PartKernel",
+  "ofm_block": "6x12x96",
+  "n_kernels": 2,
+  "raw_weight_bytes": 3072,
+  "encoded_bytes": 4928,
+  "encoded_per_kernel": [
+   960,
+   3968
+  ],
+  "vela_weight_bytes": 4928,
+  "weight_dma": [
+   [
+    1280
+   ],
+   [
+    4928
+   ]
+  ],
+  "weight_format": [
+   0
+  ],
+  "blocks": 16,
+  "spatial_blocks": 8,
+  "staged_bytes": 6208,
+  "blocks_per_kernel": [
+   8,
+   8
+  ],
+  "block_weight_reads": 39424,
+  "n_ofm": 55296,
+  "n_mac": 1769472,
+  "wd_active": 1762.0,
+  "wd_active_range": 0,
+  "wd_stalled": 17838.0,
+  "wd_stalled_range": 900,
+  "mac_active": 4608.0,
+  "ao_active": 3533.0,
+  "npu_active": 25470.0,
+  "sram_rd": 3104.0,
+  "sram_wr": 388.0,
+  "ext_rd": 2725.0,
+  "ext_wr": 3456.0,
+  "sram_rd_is_spatial_x_staged": true,
+  "sram_rd_bytes_per_wd_cycle": 28.186152099886492,
+  "enc_bytes_per_wd_cycle": 2.796821793416572,
+  "wd_per_block": 110.125,
+  "block_reads_bytes_per_wd_cycle": 22.374574347332576
+ },
+ {
+  "stage": "stage4k",
+  "boot": 373,
+  "config": "s4c2_conv_cin40",
+  "placement": "ddr",
+  "all_valid": true,
+  "kind": "CONV",
+  "traversal": "DepthFirst",
+  "ofm_block": "6x12x96",
+  "n_kernels": 2,
+  "raw_weight_bytes": 3840,
+  "encoded_bytes": 4992,
+  "encoded_per_kernel": [
+   960,
+   4032
+  ],
+  "vela_weight_bytes": 4992,
+  "weight_dma": [
+   [
+    1280
+   ],
+   [
+    4992
+   ]
+  ],
+  "weight_format": [
+   0
+  ],
+  "blocks": 16,
+  "spatial_blocks": 8,
+  "staged_bytes": 6272,
+  "blocks_per_kernel": [
+   8,
+   8
+  ],
+  "block_weight_reads": 39936,
+  "n_ofm": 55296,
+  "n_mac": 2211840,
+  "wd_active": 1670.0,
+  "wd_active_range": 0,
+  "wd_stalled": 8962.5,
+  "wd_stalled_range": 502,
+  "mac_active": 3456.0,
+  "ao_active": 3530.0,
+  "npu_active": 21927.5,
+  "sram_rd": 3136.0,
+  "sram_wr": 392.0,
+  "ext_rd": 3305.0,
+  "ext_wr": 3456.0,
+  "sram_rd_is_spatial_x_staged": true,
+  "sram_rd_bytes_per_wd_cycle": 30.04550898203593,
+  "enc_bytes_per_wd_cycle": 2.9892215568862275,
+  "wd_per_block": 104.375,
+  "block_reads_bytes_per_wd_cycle": 23.91377245508982
+ },
+ {
+  "stage": "stage4k",
+  "boot": 375,
+  "config": "s4c2_conv_cin48",
+  "placement": "ddr",
+  "all_valid": true,
+  "kind": "CONV",
+  "traversal": "DepthFirst",
+  "ofm_block": "6x12x96",
+  "n_kernels": 2,
+  "raw_weight_bytes": 4608,
+  "encoded_bytes": 5760,
+  "encoded_per_kernel": [
+   1088,
+   4672
+  ],
+  "vela_weight_bytes": 5760,
+  "weight_dma": [
+   [
+    1408
+   ],
+   [
+    5632
+   ]
+  ],
+  "weight_format": [
+   0
+  ],
+  "blocks": 16,
+  "spatial_blocks": 8,
+  "staged_bytes": 7040,
+  "blocks_per_kernel": [
+   8,
+   8
+  ],
+  "block_weight_reads": 46080,
+  "n_ofm": 55296,
+  "n_mac": 2654208,
+  "wd_active": 1781.0,
+  "wd_active_range": 1,
+  "wd_stalled": 9748.0,
+  "wd_stalled_range": 504,
+  "mac_active": 3456.0,
+  "ao_active": 3533.0,
+  "npu_active": 22251.0,
+  "sram_rd": 3520.0,
+  "sram_wr": 440.0,
+  "ext_rd": 3929.0,
+  "ext_wr": 3456.0,
+  "sram_rd_is_spatial_x_staged": true,
+  "sram_rd_bytes_per_wd_cycle": 31.622683885457608,
+  "enc_bytes_per_wd_cycle": 3.2341381246490735,
+  "wd_per_block": 111.3125,
+  "block_reads_bytes_per_wd_cycle": 25.873104997192588
+ },
+ {
+  "stage": "stage4k",
+  "boot": 377,
+  "config": "s4c2_conv_cin64",
+  "placement": "ddr",
+  "all_valid": true,
+  "kind": "CONV",
+  "traversal": "DepthFirst",
+  "ofm_block": "6x12x96",
+  "n_kernels": 2,
+  "raw_weight_bytes": 6144,
+  "encoded_bytes": 7296,
+  "encoded_per_kernel": [
+   1344,
+   5952
+  ],
+  "vela_weight_bytes": 7296,
+  "weight_dma": [
+   [
+    1664
+   ],
+   [
+    6912
+   ]
+  ],
+  "weight_format": [
+   0
+  ],
+  "blocks": 16,
+  "spatial_blocks": 8,
+  "staged_bytes": 8576,
+  "blocks_per_kernel": [
+   8,
+   8
+  ],
+  "block_weight_reads": 58368,
+  "n_ofm": 55296,
+  "n_mac": 3538944,
+  "wd_active": 1954.0,
+  "wd_active_range": 62,
+  "wd_stalled": 13062.5,
+  "wd_stalled_range": 716,
+  "mac_active": 4608.0,
+  "ao_active": 3538.0,
+  "npu_active": 24257.0,
+  "sram_rd": 4288.0,
+  "sram_wr": 536.0,
+  "ext_rd": 5177.0,
+  "ext_wr": 3456.0,
+  "sram_rd_is_spatial_x_staged": true,
+  "sram_rd_bytes_per_wd_cycle": 35.111566018423744,
+  "enc_bytes_per_wd_cycle": 3.7338792221084955,
+  "wd_per_block": 122.125,
+  "block_reads_bytes_per_wd_cycle": 29.871033776867964
+ },
+ {
+  "stage": "stage4k",
+  "boot": 370,
+  "config": "s4k_conv3x3_cin16",
+  "placement": "ddr",
+  "all_valid": true,
+  "kind": "CONV",
+  "traversal": "PartKernel",
+  "ofm_block": "24x10x32",
+  "n_kernels": 2,
+  "raw_weight_bytes": 13824,
+  "encoded_bytes": 16432,
+  "encoded_per_kernel": [
+   2992,
+   13440
+  ],
+  "vela_weight_bytes": 16432,
+  "weight_dma": [
+   [
+    3312
+   ],
+   [
+    14400
+   ]
+  ],
+  "weight_format": [
+   0
+  ],
+  "blocks": 12,
+  "spatial_blocks": 3,
+  "staged_bytes": 17712,
+  "blocks_per_kernel": [
+   3,
+   9
+  ],
+  "block_weight_reads": 129936,
+  "n_ofm": 55296,
+  "n_mac": 7962624,
+  "wd_active": 1886.0,
+  "wd_active_range": 49,
+  "wd_stalled": 13205.5,
+  "wd_stalled_range": 68,
+  "mac_active": 10368.0,
+  "ao_active": 3562.5,
+  "npu_active": 22777.0,
+  "sram_rd": 3321.0,
+  "sram_wr": 1107.0,
+  "ext_rd": 2484.0,
+  "ext_wr": 3456.0,
+  "sram_rd_is_spatial_x_staged": true,
+  "sram_rd_bytes_per_wd_cycle": 28.17391304347826,
+  "enc_bytes_per_wd_cycle": 8.712619300106045,
+  "wd_per_block": 157.16666666666666,
+  "block_reads_bytes_per_wd_cycle": 68.89501590668081
+ },
+ {
+  "stage": "stage4k",
+  "boot": 372,
+  "config": "s4k_conv3x3_cin32",
+  "placement": "ddr",
+  "all_valid": true,
+  "kind": "CONV",
+  "traversal": "PartKernel",
+  "ofm_block": "24x10x32",
+  "n_kernels": 2,
+  "raw_weight_bytes": 27648,
+  "encoded_bytes": 32800,
+  "encoded_per_kernel": [
+   5936,
+   26864
+  ],
+  "vela_weight_bytes": 32800,
+  "weight_dma": [
+   [
+    6256
+   ],
+   [
+    27824
+   ]
+  ],
+  "weight_format": [
+   0
+  ],
+  "blocks": 12,
+  "spatial_blocks": 3,
+  "staged_bytes": 34080,
+  "blocks_per_kernel": [
+   3,
+   9
+  ],
+  "block_weight_reads": 259584,
+  "n_ofm": 55296,
+  "n_mac": 15925248,
+  "wd_active": 3802.0,
+  "wd_active_range": 2,
+  "wd_stalled": 22271.0,
+  "wd_stalled_range": 96,
+  "mac_active": 20736.0,
+  "ao_active": 3529.5,
+  "npu_active": 30494.5,
+  "sram_rd": 6390.0,
+  "sram_wr": 2130.0,
+  "ext_rd": 4851.0,
+  "ext_wr": 3456.0,
+  "sram_rd_is_spatial_x_staged": true,
+  "sram_rd_bytes_per_wd_cycle": 26.891109942135717,
+  "enc_bytes_per_wd_cycle": 8.627038400841663,
+  "wd_per_block": 316.8333333333333,
+  "block_reads_bytes_per_wd_cycle": 68.27564439768543
+ },
+ {
+  "stage": "stage4k",
+  "boot": 374,
+  "config": "s4k_conv3x3_cin40",
+  "placement": "ddr",
+  "all_valid": true,
+  "kind": "CONV",
+  "traversal": "PartKernel",
+  "ofm_block": "24x10x32",
+  "n_kernels": 2,
+  "raw_weight_bytes": 34560,
+  "encoded_bytes": 42240,
+  "encoded_per_kernel": [
+   7728,
+   34512
+  ],
+  "vela_weight_bytes": 42240,
+  "weight_dma": [
+   [
+    8048
+   ],
+   [
+    35472
+   ]
+  ],
+  "weight_format": [
+   0
+  ],
+  "blocks": 12,
+  "spatial_blocks": 3,
+  "staged_bytes": 43520,
+  "blocks_per_kernel": [
+   3,
+   9
+  ],
+  "block_weight_reads": 333792,
+  "n_ofm": 55296,
+  "n_mac": 19906560,
+  "wd_active": 5224.0,
+  "wd_active_range": 11,
+  "wd_stalled": 28519.0,
+  "wd_stalled_range": 1158,
+  "mac_active": 25920.0,
+  "ao_active": 3484.5,
+  "npu_active": 37635.0,
+  "sram_rd": 8160.0,
+  "sram_wr": 2720.0,
+  "ext_rd": 8129.0,
+  "ext_wr": 3456.0,
+  "sram_rd_is_spatial_x_staged": true,
+  "sram_rd_bytes_per_wd_cycle": 24.992343032159265,
+  "enc_bytes_per_wd_cycle": 8.085758039816232,
+  "wd_per_block": 435.3333333333333,
+  "block_reads_bytes_per_wd_cycle": 63.895865237366
+ },
+ {
+  "stage": "stage4k",
+  "boot": 376,
+  "config": "s4k_conv3x3_cin48",
+  "placement": "ddr",
+  "all_valid": true,
+  "kind": "CONV",
+  "traversal": "PartKernel",
+  "ofm_block": "24x10x32",
+  "n_kernels": 2,
+  "raw_weight_bytes": 41472,
+  "encoded_bytes": 49104,
+  "encoded_per_kernel": [
+   8848,
+   40256
+  ],
+  "vela_weight_bytes": 49104,
+  "weight_dma": [
+   [
+    9168
+   ],
+   [
+    41216
+   ]
+  ],
+  "weight_format": [
+   0
+  ],
+  "blocks": 12,
+  "spatial_blocks": 3,
+  "staged_bytes": 50384,
+  "blocks_per_kernel": [
+   3,
+   9
+  ],
+  "block_weight_reads": 388848,
+  "n_ofm": 55296,
+  "n_mac": 23887872,
+  "wd_active": 5768.0,
+  "wd_active_range": 0,
+  "wd_stalled": 30697.5,
+  "wd_stalled_range": 211,
+  "mac_active": 31104.0,
+  "ao_active": 3507.5,
+  "npu_active": 40156.0,
+  "sram_rd": 9447.0,
+  "sram_wr": 3149.0,
+  "ext_rd": 7214.0,
+  "ext_wr": 3456.0,
+  "sram_rd_is_spatial_x_staged": true,
+  "sram_rd_bytes_per_wd_cycle": 26.205270457697644,
+  "enc_bytes_per_wd_cycle": 8.513176144244106,
+  "wd_per_block": 480.6666666666667,
+  "block_reads_bytes_per_wd_cycle": 67.41470180305132
+ },
+ {
+  "stage": "stage4k",
+  "boot": 378,
+  "config": "s4k_conv3x3_cin64",
+  "placement": "ddr",
+  "all_valid": true,
+  "kind": "CONV",
+  "traversal": "PartKernel",
+  "ofm_block": "24x10x32",
+  "n_kernels": 2,
+  "raw_weight_bytes": 55296,
+  "encoded_bytes": 65424,
+  "encoded_per_kernel": [
+   11776,
+   53648
+  ],
+  "vela_weight_bytes": 65424,
+  "weight_dma": [
+   [
+    12096
+   ],
+   [
+    54608
+   ]
+  ],
+  "weight_format": [
+   0
+  ],
+  "blocks": 12,
+  "spatial_blocks": 3,
+  "staged_bytes": 66704,
+  "blocks_per_kernel": [
+   3,
+   9
+  ],
+  "block_weight_reads": 518160,
+  "n_ofm": 55296,
+  "n_mac": 31850496,
+  "wd_active": 7637.0,
+  "wd_active_range": 0,
+  "wd_stalled": 43080.5,
+  "wd_stalled_range": 1132,
+  "mac_active": 41472.0,
+  "ao_active": 3524.5,
+  "npu_active": 55015.0,
+  "sram_rd": 12507.0,
+  "sram_wr": 4169.0,
+  "ext_rd": 10682.0,
+  "ext_wr": 3456.0,
+  "sram_rd_is_spatial_x_staged": true,
+  "sram_rd_bytes_per_wd_cycle": 26.20295927720309,
+  "enc_bytes_per_wd_cycle": 8.566714678538693,
+  "wd_per_block": 636.4166666666666,
+  "block_reads_bytes_per_wd_cycle": 67.84863166164725
+ },
+ {
+  "stage": "stage4ao",
+  "boot": 379,
+  "config": "s4_conv_base",
+  "placement": "ddr",
+  "all_valid": true,
+  "kind": "CONV",
+  "traversal": "PartKernel",
+  "ofm_block": "6x12x96",
+  "n_kernels": 2,
+  "raw_weight_bytes": 1536,
+  "encoded_bytes": 2752,
+  "encoded_per_kernel": [
+   704,
+   2048
+  ],
+  "vela_weight_bytes": 2752,
+  "weight_dma": [
+   [
+    1024
+   ],
+   [
+    3008
+   ]
+  ],
+  "weight_format": [
+   0
+  ],
+  "blocks": 16,
+  "spatial_blocks": 8,
+  "staged_bytes": 4032,
+  "blocks_per_kernel": [
+   8,
+   8
+  ],
+  "block_weight_reads": 22016,
+  "n_ofm": 55296,
+  "n_mac": 884736,
+  "wd_active": 1052.0,
+  "wd_active_range": 1,
+  "wd_stalled": 6435.0,
+  "wd_stalled_range": 1635,
+  "mac_active": 2304.0,
+  "ao_active": 3533.0,
+  "npu_active": 21069.0,
+  "sram_rd": 2016.0,
+  "sram_wr": 252.0,
+  "ext_rd": 1437.0,
+  "ext_wr": 3456.0,
+  "sram_rd_is_spatial_x_staged": true,
+  "sram_rd_bytes_per_wd_cycle": 30.661596958174904,
+  "enc_bytes_per_wd_cycle": 2.6159695817490496,
+  "wd_per_block": 65.75,
+  "block_reads_bytes_per_wd_cycle": 20.927756653992397
+ },
+ {
+  "stage": "stage4ao",
+  "boot": 380,
+  "config": "s4ao_conv1x1_h24",
+  "placement": "ddr",
+  "all_valid": true,
+  "kind": "CONV",
+  "traversal": "PartKernel",
+  "ofm_block": "6x12x96",
+  "n_kernels": 2,
+  "raw_weight_bytes": 1536,
+  "encoded_bytes": 2752,
+  "encoded_per_kernel": [
+   704,
+   2048
+  ],
+  "vela_weight_bytes": 2752,
+  "weight_dma": [
+   [
+    1024
+   ],
+   [
+    3008
+   ]
+  ],
+  "weight_format": [
+   0
+  ],
+  "blocks": 16,
+  "spatial_blocks": 8,
+  "staged_bytes": 4032,
+  "blocks_per_kernel": [
+   8,
+   8
+  ],
+  "block_weight_reads": 22016,
+  "n_ofm": 55296,
+  "n_mac": 884736,
+  "wd_active": 1052.0,
+  "wd_active_range": 0,
+  "wd_stalled": 7270.0,
+  "wd_stalled_range": 1807,
+  "mac_active": 2304.0,
+  "ao_active": 3534.0,
+  "npu_active": 21008.0,
+  "sram_rd": 2016.0,
+  "sram_wr": 252.0,
+  "ext_rd": 1437.0,
+  "ext_wr": 3456.0,
+  "sram_rd_is_spatial_x_staged": true,
+  "sram_rd_bytes_per_wd_cycle": 30.661596958174904,
+  "enc_bytes_per_wd_cycle": 2.6159695817490496,
+  "wd_per_block": 65.75,
+  "block_reads_bytes_per_wd_cycle": 20.927756653992397
+ },
+ {
+  "stage": "stage4ao",
+  "boot": 381,
+  "config": "s4ao_conv1x1_h36",
+  "placement": "ddr",
+  "all_valid": true,
+  "kind": "CONV",
+  "traversal": "PartKernel",
+  "ofm_block": "6x12x96",
+  "n_kernels": 2,
+  "raw_weight_bytes": 1536,
+  "encoded_bytes": 2752,
+  "encoded_per_kernel": [
+   704,
+   2048
+  ],
+  "vela_weight_bytes": 2752,
+  "weight_dma": [
+   [
+    1024
+   ],
+   [
+    3008
+   ]
+  ],
+  "weight_format": [
+   0
+  ],
+  "blocks": 24,
+  "spatial_blocks": 12,
+  "staged_bytes": 4032,
+  "blocks_per_kernel": [
+   12,
+   12
+  ],
+  "block_weight_reads": 33024,
+  "n_ofm": 82944,
+  "n_mac": 1327104,
+  "wd_active": 1563.0,
+  "wd_active_range": 58,
+  "wd_stalled": 11178.0,
+  "wd_stalled_range": 415,
+  "mac_active": 3456.0,
+  "ao_active": 5304.5,
+  "npu_active": 30657.0,
+  "sram_rd": 3024.0,
+  "sram_wr": 252.0,
+  "ext_rd": 2013.0,
+  "ext_wr": 5184.0,
+  "sram_rd_is_spatial_x_staged": true,
+  "sram_rd_bytes_per_wd_cycle": 30.955854126679462,
+  "enc_bytes_per_wd_cycle": 1.7607165706973769,
+  "wd_per_block": 65.125,
+  "block_reads_bytes_per_wd_cycle": 21.128598848368522
+ },
+ {
+  "stage": "stage4ao",
+  "boot": 382,
+  "config": "s4ao_conv1x1_h54",
+  "placement": "ddr",
+  "all_valid": true,
+  "kind": "CONV",
+  "traversal": "PartKernel",
+  "ofm_block": "6x12x96",
+  "n_kernels": 2,
+  "raw_weight_bytes": 1536,
+  "encoded_bytes": 2752,
+  "encoded_per_kernel": [
+   704,
+   2048
+  ],
+  "vela_weight_bytes": 2752,
+  "weight_dma": [
+   [
+    1024
+   ],
+   [
+    3008
+   ]
+  ],
+  "weight_format": [
+   0
+  ],
+  "blocks": 36,
+  "spatial_blocks": 18,
+  "staged_bytes": 4032,
+  "blocks_per_kernel": [
+   18,
+   18
+  ],
+  "block_weight_reads": 49536,
+  "n_ofm": 124416,
+  "n_mac": 1990656,
+  "wd_active": 2298.0,
+  "wd_active_range": 132,
+  "wd_stalled": 18195.5,
+  "wd_stalled_range": 979,
+  "mac_active": 5184.0,
+  "ao_active": 7953.0,
+  "npu_active": 44848.5,
+  "sram_rd": 4536.0,
+  "sram_wr": 252.0,
+  "ext_rd": 2877.0,
+  "ext_wr": 7776.0,
+  "sram_rd_is_spatial_x_staged": true,
+  "sram_rd_bytes_per_wd_cycle": 31.5822454308094,
+  "enc_bytes_per_wd_cycle": 1.197563098346388,
+  "wd_per_block": 63.833333333333336,
+  "block_reads_bytes_per_wd_cycle": 21.556135770234988
+ },
+ {
+  "stage": "stage4ao",
+  "boot": 383,
+  "config": "s4ao_conv1x1_h72",
+  "placement": "ddr",
+  "all_valid": true,
+  "kind": "CONV",
+  "traversal": "PartKernel",
+  "ofm_block": "6x12x96",
+  "n_kernels": 2,
+  "raw_weight_bytes": 1536,
+  "encoded_bytes": 2752,
+  "encoded_per_kernel": [
+   704,
+   2048
+  ],
+  "vela_weight_bytes": 2752,
+  "weight_dma": [
+   [
+    1024
+   ],
+   [
+    3008
+   ]
+  ],
+  "weight_format": [
+   0
+  ],
+  "blocks": 48,
+  "spatial_blocks": 24,
+  "staged_bytes": 4032,
+  "blocks_per_kernel": [
+   24,
+   24
+  ],
+  "block_weight_reads": 66048,
+  "n_ofm": 165888,
+  "n_mac": 2654208,
+  "wd_active": 2993.5,
+  "wd_active_range": 102,
+  "wd_stalled": 24302.0,
+  "wd_stalled_range": 2154,
+  "mac_active": 6912.0,
+  "ao_active": 10623.5,
+  "npu_active": 58635.0,
+  "sram_rd": 6048.0,
+  "sram_wr": 252.0,
+  "ext_rd": 3741.0,
+  "ext_wr": 10368.0,
+  "sram_rd_is_spatial_x_staged": true,
+  "sram_rd_bytes_per_wd_cycle": 32.326039752797726,
+  "enc_bytes_per_wd_cycle": 0.9193252046099883,
+  "wd_per_block": 62.364583333333336,
+  "block_reads_bytes_per_wd_cycle": 22.06380491063972
+ },
+ {
+  "stage": "stage4_placement",
+  "boot": 367,
+  "config": "s4p_conv_base_ddr",
+  "placement": "ddr",
+  "all_valid": true,
+  "kind": "CONV",
+  "traversal": "PartKernel",
+  "ofm_block": "6x12x96",
+  "n_kernels": 2,
+  "raw_weight_bytes": 1536,
+  "encoded_bytes": 2752,
+  "encoded_per_kernel": [
+   704,
+   2048
+  ],
+  "vela_weight_bytes": 2752,
+  "weight_dma": [
+   [
+    1024
+   ],
+   [
+    3008
+   ]
+  ],
+  "weight_format": [
+   0
+  ],
+  "blocks": 16,
+  "spatial_blocks": 8,
+  "staged_bytes": 4032,
+  "blocks_per_kernel": [
+   8,
+   8
+  ],
+  "block_weight_reads": 22016,
+  "n_ofm": 55296,
+  "n_mac": 884736,
+  "wd_active": 1052.0,
+  "wd_active_range": 70,
+  "wd_stalled": 6583.5,
+  "wd_stalled_range": 1590,
+  "mac_active": 2304.0,
+  "ao_active": 3535.5,
+  "npu_active": 21086.5,
+  "sram_rd": 2016.0,
+  "sram_wr": 252.0,
+  "ext_rd": 1437.0,
+  "ext_wr": 3456.0,
+  "sram_rd_is_spatial_x_staged": true,
+  "sram_rd_bytes_per_wd_cycle": 30.661596958174904,
+  "enc_bytes_per_wd_cycle": 2.6159695817490496,
+  "wd_per_block": 65.75,
+  "block_reads_bytes_per_wd_cycle": 20.927756653992397
+ },
+ {
+  "stage": "stage4_placement",
+  "boot": 368,
+  "config": "s4p_conv_base_sram",
+  "placement": "sram",
+  "all_valid": true,
+  "kind": "CONV",
+  "traversal": "PartKernel",
+  "ofm_block": "6x12x96",
+  "n_kernels": 2,
+  "raw_weight_bytes": 1536,
+  "encoded_bytes": 2752,
+  "encoded_per_kernel": [
+   704,
+   2048
+  ],
+  "vela_weight_bytes": 2752,
+  "weight_dma": [
+   [
+    1024
+   ],
+   [
+    3008
+   ]
+  ],
+  "weight_format": [
+   0
+  ],
+  "blocks": 16,
+  "spatial_blocks": 8,
+  "staged_bytes": 4032,
+  "blocks_per_kernel": [
+   8,
+   8
+  ],
+  "block_weight_reads": 22016,
+  "n_ofm": 55296,
+  "n_mac": 884736,
+  "wd_active": 1048.0,
+  "wd_active_range": 36,
+  "wd_stalled": 2414.0,
+  "wd_stalled_range": 18,
+  "mac_active": 2304.0,
+  "ao_active": 3513.0,
+  "npu_active": 10355.5,
+  "sram_rd": 3168.0,
+  "sram_wr": 3708.0,
+  "ext_rd": 285.0,
+  "ext_wr": 0.0,
+  "sram_rd_is_spatial_x_staged": false,
+  "sram_rd_bytes_per_wd_cycle": 48.36641221374046,
+  "enc_bytes_per_wd_cycle": 2.6259541984732824,
+  "wd_per_block": 65.5,
+  "block_reads_bytes_per_wd_cycle": 21.00763358778626
+ },
+ {
+  "stage": "stage4aoe",
+  "boot": 394,
+  "config": "s4ao_conv1x1_h24",
+  "placement": "ddr",
+  "all_valid": true,
+  "kind": "CONV",
+  "traversal": "PartKernel",
+  "ofm_block": "6x12x96",
+  "n_kernels": 2,
+  "raw_weight_bytes": 1536,
+  "encoded_bytes": 2752,
+  "encoded_per_kernel": [
+   704,
+   2048
+  ],
+  "vela_weight_bytes": 2752,
+  "weight_dma": [
+   [
+    1024
+   ],
+   [
+    3008
+   ]
+  ],
+  "weight_format": [
+   0
+  ],
+  "blocks": 16,
+  "spatial_blocks": 8,
+  "staged_bytes": 4032,
+  "blocks_per_kernel": [
+   8,
+   8
+  ],
+  "block_weight_reads": 22016,
+  "n_ofm": 55296,
+  "n_mac": 884736,
+  "wd_active": 1051.0,
+  "wd_active_range": 36,
+  "wd_stalled": 7050.5,
+  "wd_stalled_range": 1847,
+  "mac_active": 2304.0,
+  "ao_active": 3534.0,
+  "npu_active": 21179.0,
+  "sram_rd": 2016.0,
+  "sram_wr": 252.0,
+  "ext_rd": 1437.0,
+  "ext_wr": 3456.0,
+  "sram_rd_is_spatial_x_staged": true,
+  "sram_rd_bytes_per_wd_cycle": 30.690770694576592,
+  "enc_bytes_per_wd_cycle": 2.6184586108468126,
+  "wd_per_block": 65.6875,
+  "block_reads_bytes_per_wd_cycle": 20.9476688867745
+ }
+]
