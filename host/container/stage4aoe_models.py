@@ -6,6 +6,7 @@ container. Imports stage4ao_models / make_op_model; edits neither and rebuilds n
   python3 stage4aoe_models.py <out dir>                 Group A/B/C builds: <cfg>.tflite, .ifm.bin, .ref_ofm.bin, .drwl
                                                         (golden = TFLite reference kernels), <cfg>.aoe.json
   python3 stage4aoe_models.py <out dir> rounding <Stage 4AO workloads dir>   act_none diagnosis -> rounding.json
+  python3 stage4aoe_models.py <out dir> identity <drwl>...   amendment A1: expected n_base per DRWL -> expected_identity.json
   python3 stage4aoe_models.py <out dir> refcheck <dir>...   for every <cfg>.drwl.json in the dirs: tflite_runtime default
                                                         (optimized) kernels vs BUILTIN_REF on the same IFMs -> refcheck.json
 
@@ -215,8 +216,35 @@ def rounding(o: pathlib.Path, wl: str) -> dict:
     return res
 
 
+def identity_manifest(o: pathlib.Path, drwls: list[str]) -> dict:
+    """Amendment A1: the expected number of driver base addresses per DRWL, from the Vela model inside it (TFLM
+    ethos_u/ethosu.cc: num_base_addr = custom-op inputs - 1 (the command stream) + outputs, at most 8), and the DRWL's
+    placement word. -> expected_identity.json (REGIONCFG is computed from these on the analysis side)."""
+    import drwl
+    import tflite
+    res = {}
+    for p in drwls:
+        blob = open(p, "rb").read()
+        h = drwl.parse(blob)
+        m = tflite.Model.GetRootAsModel(blob[h["model_off"]:h["model_off"] + h["model_len"]], 0)
+        sg = m.Subgraphs(0)
+        ops = [sg.Operators(i) for i in range(sg.OperatorsLength())]
+        code = lambda op: m.OperatorCodes(op.OpcodeIndex()).CustomCode()
+        eu = [op for op in ops if (code(op) or b"").startswith(b"ethos-u")]
+        assert len(eu) == 1, f"{p}: {len(eu)} ethos-u custom ops"
+        n_in, n_out = eu[0].InputsLength(), eu[0].OutputsLength()
+        res[os.path.basename(p)[:-len(".drwl")]] = dict(custom_op_inputs=n_in, custom_op_outputs=n_out,
+                                                       n_base=min(n_in - 1 + n_out, 8), placement=h["placement"],
+                                                       drwl_sha256=hashlib.sha256(blob).hexdigest())
+    (o / "expected_identity.json").write_text(json.dumps(res, indent=1))
+    return res
+
+
 def main(argv: list) -> None:
     o = pathlib.Path(argv[0]); o.mkdir(parents=True, exist_ok=True)
+    if argv[1:2] == ["identity"]:
+        print(json.dumps(identity_manifest(o, argv[2:]), indent=1))
+        return
     if argv[1:2] == ["refcheck"]:
         refcheck(o, argv[2:])
         return

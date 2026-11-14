@@ -43,6 +43,12 @@ RATE_TOL = 0.01                  # rate class band: +-1 % around 16 or around 15
 PROP_TOL = 0.02                  # AO(H72) / AO(H24) within 2 % of 3 -> PROPORTIONAL
 AO_RANGE_ABS, AO_RANGE_REL = 50, 0.02
 AB_REL = 0.05
+# Amendment A1 (evidence/stage4aoe/contract_a1.md): REGIONCFG per the firmware's rule (placement.h / placement.c),
+# with n_base expected from the DRWL, not from the RUN record. Values typed from the firmware header.
+REGION0, REGION1_DDR, REGION1_SRAM, REGION2_7 = 3, 3, 0, 1
+QCONFIG = 3
+REGIONCFG_MATCH = 1 << 6          # record.h REC_REGIONCFG_MATCH
+MANIFEST = "expected_identity.json"
 
 
 def precision_bits(word: int | None) -> int | None:
@@ -162,13 +168,51 @@ def output_exact(folder: pathlib.Path, golden: bytes, runs: dict) -> bool:
     return bool(rows) and all(r["output_match"] == "1" and r["ofm_mismatch_count"] == "0" for r in rows)
 
 
+def placement_regioncfg(n_base: int, placement: int) -> int:
+    """firmware placement_regioncfg: 2 bits per region for the first min(n_base, 8) regions."""
+    sel = lambda i: REGION0 if i == 0 else (REGION1_SRAM if placement == 1 else REGION1_DDR) if i == 1 else REGION2_7
+    return sum(sel(i) << (2 * i) for i in range(min(n_base, 8)))
+
+
+def expected_identity(wl: pathlib.Path, cfg: str) -> dict:
+    """n_base from two derivations that never look at a RUN: the manifest (the Vela model's ethos-u custom op:
+    inputs - 1 + outputs, made in the container) and the DRWL header (3 + graph inputs + graph outputs: command
+    stream, flash, scratch, fast scratch). They must agree; the placement is the DRWL's word 7."""
+    import drwl
+    h = drwl.parse((wl / f"{cfg}.drwl").read_bytes())
+    man = json.loads((wl / MANIFEST).read_text()).get(cfg, {})
+    from_header = min(3 + h["n_in"] + h["n_out"], 8)
+    agree = man.get("n_base") == from_header and man.get("placement") == h["placement"]
+    return dict(n_base=from_header if agree else None, from_manifest=man.get("n_base"), from_header=from_header,
+                placement=h["placement"], agree=agree,
+                regioncfg=placement_regioncfg(from_header, h["placement"]) if agree else None)
+
+
+def identity_a1(folder: pathlib.Path, wl: pathlib.Path, cfg: str, caps_ref: str | None = None) -> dict:
+    """K.identity without its fixed REGIONCFG constant, plus, for every RUN (warm-up included): n_base = the expected
+    n_base, regioncfg_irq = placement_regioncfg(expected n_base, DRWL placement), qconfig_irq = 3, placement = the
+    DRWL's, and the firmware's REGIONCFG_MATCH flag set."""
+    k = K.identity(folder, wl, cfg, caps_ref)
+    checks = {n: v for n, v in k["checks"].items() if n != "regioncfg"}
+    exp = expected_identity(wl, cfg)
+    raw = json.loads((folder / "raw_runs.json").read_text())[1:]
+    recs = [(x["record"], x.get("valid_flags", 0)) for x in raw]
+    checks.update(expected_agree=exp["agree"],
+                  n_base=bool(recs) and exp["agree"] and all(r.get("n_base") == exp["n_base"] for r, _ in recs),
+                  regioncfg=bool(recs) and exp["agree"] and all(r.get("regioncfg_irq") == exp["regioncfg"] for r, _ in recs),
+                  qconfig=bool(recs) and all(r.get("qconfig_irq") == QCONFIG for r, _ in recs),
+                  drwl_placement=bool(recs) and all(r.get("placement") == exp["placement"] for r, _ in recs),
+                  regioncfg_match_flag=bool(recs) and all(f & REGIONCFG_MATCH for _, f in recs))
+    return dict(ok=all(checks.values()), checks=checks, expected=exp, caps_diff=k.get("caps_diff"))
+
+
 def config_result(root: pathlib.Path, wl: pathlib.Path, cfg: str, caps_ref: str | None = None) -> dict:
     folder = root / "conds" / cfg / "wfe"
     if not (folder / "raw_runs.json").exists():
         return dict(config=cfg, verdict="NOT_MEASURED")
     s = K.summary_of(folder, 1)
     runs_ok = sorted(s["runs"]) == [1, 2] and all(len(rs) == 4 and all(r["valid"] for r in rs) for rs in s["runs"].values())
-    ident = K.identity(folder, wl, cfg, caps_ref)
+    ident = identity_a1(folder, wl, cfg, caps_ref)
     wl_ok = AO.workload_ok(folder, wl / f"{cfg}.drwl")
     out_ok = output_exact(folder, (wl / f"{cfg}.ref_ofm.bin").read_bytes(), s["runs"])
     ok = runs_ok and ident["ok"] and wl_ok and out_ok
@@ -219,7 +263,8 @@ def repro_gate(root: str, wl: str, ref: str, caps_ref: str | None = None) -> dic
 def boot_check(root: str, wl: str, cfg: str, caps_ref: str | None = None) -> dict:
     r = config_result(pathlib.Path(root), pathlib.Path(wl), cfg, caps_ref)
     return dict(config=cfg, verdict="PASS" if r.get("gate_c") == "PASS" else "FAIL", output_exact=r.get("output_exact"),
-                workload_sha256_ok=r.get("workload_sha256_ok"), runs_valid=r.get("runs_valid"))
+                workload_sha256_ok=r.get("workload_sha256_ok"), runs_valid=r.get("runs_valid"),
+                identity=r.get("identity"))
 
 
 def judge(root: str, wl: str, pred_path: str, out: str, caps_ref: str | None = None) -> dict:

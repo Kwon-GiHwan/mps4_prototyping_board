@@ -2,6 +2,8 @@
 
 초안 `contract_draft.md`(같은 날)를 대체한다.
 
+> **개정 A1 (2026-11-15, 세션 1 이후)**: 정체성 REGIONCFG 규칙을 바꾼 재측정 계약은 `contract_a1.md`. 이 문서와 세션 1 (boot 386–387) 판정은 그대로 둔다.
+
 측정 조건 (모든 숫자): FI101 Ethos-U85 1024 MAC, **TA profile 1**, driver runner
 이미지 `70090f1`, DDR/EXT (DRWL word 7 = 0), Vela 5.0.0 (MLEK 옵션), pass A/B 각 warm-up 1 + 측정 4 RUN.
 근거: `docs/plan/stage4aoe_characterization_plan.md`. 코드: `host/analysis/stage4aoe.py` (test_stage4aoe 16개, 시뮬레이터 34개),

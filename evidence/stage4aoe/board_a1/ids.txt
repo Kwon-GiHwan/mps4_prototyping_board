@@ -1,0 +1,3 @@
+# Stage 4 sets: 1 = Stage 1 pass A, 2 = Stage 3 pass B (config/fi101_passes.txt)
+35 48 51 53 55 64 80 81
+35 128 130 132 135 384 386 391

@@ -140,6 +140,7 @@ class Board(unittest.TestCase):
         for suf in (".drwl", ".drwl.tflite_ofm.bin"):
             shutil.copy(AO_WL / f"{self.CFG}{suf}", self.wl / f"{self.CFG}{suf}")
         shutil.copy(AO_WL / f"{self.CFG}.drwl.tflite_ofm.bin", self.wl / f"{self.CFG}.ref_ofm.bin")
+        shutil.copy(WL / E.MANIFEST, self.wl / E.MANIFEST)
         self.root = AO_RAW / "evsweep_s4ao_run"; self.caps = str(AO_RAW / "evsweep_s4ao/ref/capabilities.json")
 
     def tearDown(self):
@@ -160,7 +161,7 @@ class Board(unittest.TestCase):
         self.assertEqual(E.boot_check(str(self.root), str(self.wl), self.CFG, self.caps)["verdict"], "FAIL")
 
     def test_other_gates(self):
-        with mock.patch.object(E.K, "identity", return_value=dict(ok=False)):
+        with mock.patch.object(E.K, "identity", return_value=dict(ok=False, checks=dict(runs=False), caps_diff={})):
             self.assertEqual(E.config_result(self.root, self.wl, self.CFG, self.caps)["verdict"], "INVALID")
         with mock.patch.object(E.AO, "workload_ok", return_value=False):
             self.assertEqual(E.config_result(self.root, self.wl, self.CFG, self.caps)["verdict"], "INVALID")
@@ -217,6 +218,122 @@ class Board(unittest.TestCase):
             self.assertEqual(s["proportional"]["abs"]["verdict"], "NOT_PROPORTIONAL")
         finally:
             shutil.rmtree(d)
+
+
+S1 = REPO / "evidence/stage4aoe/raw"           # session 1 (boots 386-387): used here as fixtures only
+
+
+class A1Identity(unittest.TestCase):
+    """Amendment A1: REGIONCFG from the expected n_base (DRWL + manifest), checked against every RUN. Fault injection
+    on copies of the session-1 RUNs; the official session-1 verdicts are not changed by these tests."""
+    CFGS = ("s4ao_conv1x1_h24", "s4aoe_add_h24")
+
+    def setUp(self):
+        self.d = pathlib.Path(tempfile.mkdtemp()); self.wl = self.d / "wl"; self.wl.mkdir()
+        for c in self.CFGS:
+            for suf in (".drwl", ".drwl.tflite_ofm.bin", ".ref_ofm.bin"):
+                shutil.copy(S1 / "evsweep_s4aoe" / f"{c}{suf}", self.wl / f"{c}{suf}")
+        shutil.copy(WL / E.MANIFEST, self.wl / E.MANIFEST)
+        shutil.copytree(S1 / "evsweep_s4aoe_run", self.d / "run")
+        self.caps = str(S1 / "evsweep_s4aoe/ref/capabilities.json")
+
+    def tearDown(self):
+        shutil.rmtree(self.d)
+
+    def edit(self, cfg, fn, manifest=None):
+        p = self.d / "run" / "conds" / cfg / "wfe" / "raw_runs.json"
+        raw = json.loads(p.read_text())
+        for x in raw[1:]:
+            fn(x)
+        p.write_text(json.dumps(raw))
+        if manifest:
+            m = json.loads((self.wl / E.MANIFEST).read_text()); m[cfg].update(manifest)
+            (self.wl / E.MANIFEST).write_text(json.dumps(m))
+
+    def ident(self, cfg):
+        return E.identity_a1(self.d / "run" / "conds" / cfg / "wfe", self.wl, cfg, self.caps)
+
+    def test_regioncfg_rule(self):
+        self.assertEqual(E.placement_regioncfg(5, 0), 0x15F)
+        self.assertEqual(E.placement_regioncfg(6, 0), 0x55F)
+        self.assertEqual(E.placement_regioncfg(7, 0), 0x155F)
+        self.assertEqual(E.placement_regioncfg(5, 1), 0x153)
+        self.assertEqual(E.placement_regioncfg(9, 0), 0x555F)
+
+    def test_expected(self):
+        e = E.expected_identity(self.wl, "s4aoe_add_h24")
+        self.assertEqual((e["n_base"], e["from_manifest"], e["from_header"], e["regioncfg"]), (6, 6, 6, 0x55F))
+        self.assertEqual(E.expected_identity(self.wl, "s4ao_conv1x1_h24")["regioncfg"], 0x15F)
+        m = json.loads((WL / E.MANIFEST).read_text())
+        self.assertEqual({c: m[c]["n_base"] for c in m},
+                         {"s4aoe_add_h24": 6, "s4aoe_add_h72": 6, "s4aoe_mul_h24": 6, "s4aoe_mul_h72": 6,
+                          "s4aoe_abs_h24": 5, "s4aoe_abs_h72": 5, "s4aoe_add_mul_h24": 7, "s4ao_conv1x1_h24": 5,
+                          "s4_conv_base": 5})
+
+    def test_clean(self):
+        for c in self.CFGS:
+            self.assertTrue(self.ident(c)["ok"], c)
+
+    def test_wrong_regioncfg(self):                     # right n_base, wrong REGIONCFG
+        self.edit("s4aoe_add_h24", lambda x: x["record"].update(regioncfg_irq=0x15F))
+        i = self.ident("s4aoe_add_h24")
+        self.assertFalse(i["ok"]); self.assertFalse(i["checks"]["regioncfg"]); self.assertTrue(i["checks"]["n_base"])
+
+    def test_wrong_n_base_consistent_regioncfg(self):   # n_base and REGIONCFG agree with each other, not with the DRWL
+        self.edit("s4aoe_add_h24", lambda x: x["record"].update(n_base=7, regioncfg_irq=0x155F))
+        i = self.ident("s4aoe_add_h24")
+        self.assertFalse(i["ok"]); self.assertFalse(i["checks"]["n_base"]); self.assertFalse(i["checks"]["regioncfg"])
+
+    def test_wrong_placement(self):
+        self.edit("s4aoe_add_h24", lambda x: x["record"].update(placement=1))
+        i = self.ident("s4aoe_add_h24")
+        self.assertFalse(i["ok"]); self.assertFalse(i["checks"]["drwl_placement"])
+
+    def test_qconfig(self):
+        self.edit("s4aoe_add_h24", lambda x: x["record"].update(qconfig_irq=2))
+        i = self.ident("s4aoe_add_h24")
+        self.assertFalse(i["ok"]); self.assertFalse(i["checks"]["qconfig"])
+
+    def test_firmware_flag(self):                       # values right, firmware REGIONCFG_MATCH not set
+        self.edit("s4aoe_add_h24", lambda x: x.update(valid_flags=x["valid_flags"] & ~E.REGIONCFG_MATCH))
+        i = self.ident("s4aoe_add_h24")
+        self.assertFalse(i["ok"]); self.assertFalse(i["checks"]["regioncfg_match_flag"]); self.assertTrue(i["checks"]["regioncfg"])
+
+    def test_manifest_disagrees(self):                  # the two static derivations differ
+        self.edit("s4aoe_add_h24", lambda x: None, manifest=dict(n_base=7))
+        i = self.ident("s4aoe_add_h24")
+        self.assertFalse(i["ok"]); self.assertFalse(i["checks"]["expected_agree"])
+
+    def test_output_and_workload(self):
+        root = self.d / "run"
+        self.assertEqual(E.config_result(root, self.wl, "s4aoe_add_h24", self.caps)["verdict"], "VALID")
+        g = bytearray((self.wl / "s4aoe_add_h24.ref_ofm.bin").read_bytes()); g[0] ^= 1
+        (self.wl / "s4aoe_add_h24.ref_ofm.bin").write_bytes(bytes(g))
+        self.assertEqual(E.config_result(root, self.wl, "s4aoe_add_h24", self.caps)["verdict"], "INVALID")
+        shutil.copy(S1 / "evsweep_s4aoe/s4aoe_add_h24.ref_ofm.bin", self.wl / "s4aoe_add_h24.ref_ofm.bin")
+        shutil.copy(WL / "s4aoe_mul_h24.drwl", self.wl / "s4aoe_add_h24.drwl")       # other workload, same n_base
+        r = E.config_result(root, self.wl, "s4aoe_add_h24", self.caps)
+        self.assertEqual(r["verdict"], "INVALID"); self.assertFalse(r["workload_sha256_ok"])
+
+    def test_existing_runs_follow_the_rule(self):
+        """Regression on every archived RUN of the driver-runner Stage 4 campaigns: REGIONCFG at the IRQ follows the
+        rule for the RUN's n_base and placement; where the DRWL is at hand, its header gives that n_base."""
+        import glob
+        import drwl
+        n = 0
+        for f in glob.glob(str(REPO / "evidence/stage4*/raw/**/raw_runs.json"), recursive=True):
+            cfg = pathlib.Path(f).parent.parent.name
+            wl = next((p for p in (REPO / "evidence/stage4k/workloads", AO_WL, WL) if (p / f"{cfg}.drwl").exists()), None)
+            for x in json.loads(open(f).read())[1:]:
+                r = x["record"]
+                if r.get("schema", 0) < 4:
+                    continue
+                self.assertEqual(r["regioncfg_irq"], E.placement_regioncfg(r["n_base"], r["placement"]), f)
+                if wl is not None:
+                    h = drwl.parse((wl / f"{cfg}.drwl").read_bytes())
+                    self.assertEqual(r["n_base"], 3 + h["n_in"] + h["n_out"], f)
+                n += 1
+        self.assertGreaterEqual(n, 200)
 
 
 if __name__ == "__main__":

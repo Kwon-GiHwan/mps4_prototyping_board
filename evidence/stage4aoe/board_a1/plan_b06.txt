@@ -1,0 +1,2 @@
+# Stage 4AO-E A1 boot 6/8: s4aoe_add_h72, TA profile 1, image 70090f1, DDR/EXT (word 7 = 0)
+399 s4aoe_add_h72 @/home/gihwan/evsweep_s4aoe2/conditions.txt
