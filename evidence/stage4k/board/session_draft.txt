@@ -1,0 +1,28 @@
+# DRAFT — not frozen, not approved, not run. Stage 4K (evidence/stage4k/contract_draft.md), TA profile 1, image 70090f1.
+# Boot numbers 369-378 are provisional (the next boots after 368); confirm at freeze. One step per boot: a failing
+# step stops the session (sudo_session.sh) and restores the card; later configs stay NOT_MEASURED.
+user python3 mcc.py USB_ON 4 && sleep 5 && test -e /dev/sdb1
+deploy_mlek /home/gihwan/evsweep_s4k /home/gihwan/evsweep/evidence_s4k
+user OUTPUTS=1 STOP_ON_INVALID=1 sh run_driver_campaign.sh /home/gihwan/evsweep_s4k /home/gihwan/evsweep_s4k_run /home/gihwan/evsweep_s4k/ids.txt /home/gihwan/evsweep_s4k/plan_b01.txt 5
+user python3 host/analysis/stage4k.py boot-check /home/gihwan/evsweep_s4k_run /home/gihwan/evsweep_s4k s4_conv_base
+user python3 host/analysis/stage4k.py repro-gate /home/gihwan/evsweep_s4k_run /home/gihwan/evsweep_s4k /home/gihwan/evsweep_s4k/ref/wfe
+user OUTPUTS=1 STOP_ON_INVALID=1 sh run_driver_campaign.sh /home/gihwan/evsweep_s4k /home/gihwan/evsweep_s4k_run /home/gihwan/evsweep_s4k/ids.txt /home/gihwan/evsweep_s4k/plan_b02.txt 5
+user python3 host/analysis/stage4k.py boot-check /home/gihwan/evsweep_s4k_run /home/gihwan/evsweep_s4k s4k_conv3x3_cin16
+user OUTPUTS=1 STOP_ON_INVALID=1 sh run_driver_campaign.sh /home/gihwan/evsweep_s4k /home/gihwan/evsweep_s4k_run /home/gihwan/evsweep_s4k/ids.txt /home/gihwan/evsweep_s4k/plan_b03.txt 5
+user python3 host/analysis/stage4k.py boot-check /home/gihwan/evsweep_s4k_run /home/gihwan/evsweep_s4k s4c2_conv_cin32
+user OUTPUTS=1 STOP_ON_INVALID=1 sh run_driver_campaign.sh /home/gihwan/evsweep_s4k /home/gihwan/evsweep_s4k_run /home/gihwan/evsweep_s4k/ids.txt /home/gihwan/evsweep_s4k/plan_b04.txt 5
+user python3 host/analysis/stage4k.py boot-check /home/gihwan/evsweep_s4k_run /home/gihwan/evsweep_s4k s4k_conv3x3_cin32
+user OUTPUTS=1 STOP_ON_INVALID=1 sh run_driver_campaign.sh /home/gihwan/evsweep_s4k /home/gihwan/evsweep_s4k_run /home/gihwan/evsweep_s4k/ids.txt /home/gihwan/evsweep_s4k/plan_b05.txt 5
+user python3 host/analysis/stage4k.py boot-check /home/gihwan/evsweep_s4k_run /home/gihwan/evsweep_s4k s4c2_conv_cin40
+user OUTPUTS=1 STOP_ON_INVALID=1 sh run_driver_campaign.sh /home/gihwan/evsweep_s4k /home/gihwan/evsweep_s4k_run /home/gihwan/evsweep_s4k/ids.txt /home/gihwan/evsweep_s4k/plan_b06.txt 5
+user python3 host/analysis/stage4k.py boot-check /home/gihwan/evsweep_s4k_run /home/gihwan/evsweep_s4k s4k_conv3x3_cin40
+user OUTPUTS=1 STOP_ON_INVALID=1 sh run_driver_campaign.sh /home/gihwan/evsweep_s4k /home/gihwan/evsweep_s4k_run /home/gihwan/evsweep_s4k/ids.txt /home/gihwan/evsweep_s4k/plan_b07.txt 5
+user python3 host/analysis/stage4k.py boot-check /home/gihwan/evsweep_s4k_run /home/gihwan/evsweep_s4k s4c2_conv_cin48
+user OUTPUTS=1 STOP_ON_INVALID=1 sh run_driver_campaign.sh /home/gihwan/evsweep_s4k /home/gihwan/evsweep_s4k_run /home/gihwan/evsweep_s4k/ids.txt /home/gihwan/evsweep_s4k/plan_b08.txt 5
+user python3 host/analysis/stage4k.py boot-check /home/gihwan/evsweep_s4k_run /home/gihwan/evsweep_s4k s4k_conv3x3_cin48
+user OUTPUTS=1 STOP_ON_INVALID=1 sh run_driver_campaign.sh /home/gihwan/evsweep_s4k /home/gihwan/evsweep_s4k_run /home/gihwan/evsweep_s4k/ids.txt /home/gihwan/evsweep_s4k/plan_b09.txt 5
+user python3 host/analysis/stage4k.py boot-check /home/gihwan/evsweep_s4k_run /home/gihwan/evsweep_s4k s4c2_conv_cin64
+user OUTPUTS=1 STOP_ON_INVALID=1 sh run_driver_campaign.sh /home/gihwan/evsweep_s4k /home/gihwan/evsweep_s4k_run /home/gihwan/evsweep_s4k/ids.txt /home/gihwan/evsweep_s4k/plan_b10.txt 5
+user python3 host/analysis/stage4k.py boot-check /home/gihwan/evsweep_s4k_run /home/gihwan/evsweep_s4k s4k_conv3x3_cin64
+restore_mlek /home/gihwan/evsweep/evidence_s4k /home/gihwan/evsweep_s4k
+user sh postflight.sh

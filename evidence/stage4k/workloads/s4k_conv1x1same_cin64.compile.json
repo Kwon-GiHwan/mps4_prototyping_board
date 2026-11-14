@@ -1,0 +1,94 @@
+{
+ "config": "s4k_conv1x1same_cin64",
+ "checks": {
+  "placement": true,
+  "schedule": true,
+  "kernels": true,
+  "macs": true,
+  "same_vela": true
+ },
+ "gate_b": true,
+ "n_mac": 3538944,
+ "vela_ops": [
+  "CUSTOM:ethos-u"
+ ],
+ "scheduled": [
+  [
+   "Conv2D",
+   "16709"
+  ],
+  [
+   "Relu6",
+   "0"
+  ]
+ ],
+ "kernel_kinds": [
+  "CONV",
+  "CONV"
+ ],
+ "n_kernels": 2,
+ "vela_op_cycles": "24999",
+ "vela_npu_cycles": "16709",
+ "vela_mac_cycles": "5331",
+ "vela_ao_cycles": "3888",
+ "vela_cmd_cycles": "956",
+ "ofm_block": "6x12x96",
+ "ifm_block": "6x12x64",
+ "ofm_ublock": "2x2x32",
+ "traversal": "DepthFirst",
+ "ifm_memory": "Dram",
+ "ofm_memory": "Dram",
+ "ifm_format": "NHWC",
+ "ofm_format": "NHWC",
+ "weight_bytes": "7296",
+ "cascade": "0",
+ "sram_ac": "2850",
+ "dram_ac": "24999",
+ "staging_usage": "8576",
+ "model_sha256": "68ec822bc48bb907ecbc2f054b118b7d6deb041cdc7b94ed0ef6b2b948a28287",
+ "vela_sha256": "245cccbd35c4dbb6f3681fed19b3847d865c503683a7d84bcbd57bb03d7ac204",
+ "cms_sha256": "7802057b476d28598420a3bfb731bc4878b9409d7b0d2c62dd673bf48df1f216",
+ "cms_len": 520,
+ "drwl_sha256": "1bac68c7e6589d5e5370caa3c580d65551094042825ba46029cc5d75133ceecd",
+ "ifm_sha256": "937f4bbc1243fa820fc9c8ac086894fc23dae9b1b4aaff23b552358f530ac17d",
+ "cpu_ofm_sha256": "8d4cfaa9215026660eabb50a45a186d97668a8a7487849ea6fbd1bf24003cc4f",
+ "arena_size": 92160,
+ "vela_version": "5.0.0",
+ "vela_options": [
+  "--accelerator-config",
+  "ethos-u85-1024",
+  "--optimise",
+  "Performance",
+  "--config",
+  "/opt/arm/ml-embedded-evaluation-kit/scripts/vela/default_vela.ini",
+  "--memory-mode",
+  "Dedicated_Sram",
+  "--system-config",
+  "Ethos_U85_SYS_DRAM_Mid_1024"
+ ],
+ "quant": {
+  "ifm_scale": 0.0078125,
+  "weight_scale": 0.0078125,
+  "ofm_scale": 0.05013293168676181,
+  "zero_points": 0
+ },
+ "activation": "RELU6",
+ "ifm_shape": [
+  1,
+  24,
+  24,
+  64
+ ],
+ "ofm_shape": [
+  1,
+  24,
+  24,
+  96
+ ],
+ "weight_shape": [
+  96,
+  1,
+  1,
+  64
+ ]
+}

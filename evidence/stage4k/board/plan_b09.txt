@@ -1,0 +1,2 @@
+# Stage 4K boot 9/10: 1x1 Cin 64, TA profile 1, image 70090f1, DDR/EXT (word 7 = 0)
+377 s4c2_conv_cin64 @/home/gihwan/evsweep_s4k/conditions.txt

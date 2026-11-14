@@ -77,6 +77,78 @@ def derive_cin(name: str) -> tuple[bytes, dict, bytes]:
     return model, meta, x.tobytes()
 
 
+# Stage 4K (docs/plan/stage4k_conv_kernel_plan.md): 3x3 Conv (24x24, Cout 96, stride 1, SAME, RELU6) at the 4C-2 Cin
+# values. Same IFM bytes as the 1x1 config of that Cin (first Cin channels of the CIN_SEED extension); weights
+# (96, 3, 3, Cin): centre tap = the 1x1 weights of that Cin, the 8 other taps drawn once at Cin 128 from K3_SEED and cut
+# to Cin; bias and OFM scale = the base's (as every 4C-2 config), so all ten configs share one OFM quantization.
+K3_SEED = 20261114
+K3_VARIANTS = {f"s4k_conv3x3_cin{c}": c for c in (16, 32, 40, 48, 64)}
+# compile-only control: the 1x1 configs written with SAME padding (the 1x1 data use VALID; for 1x1 they are the same op)
+K1_SAME_VARIANTS = {f"s4k_conv1x1same_cin{c}": c for c in (16, 32, 40, 48, 64)}
+
+
+def cin_arrays(cin: int):
+    """IFM (1, 24, 24, cin) and 1x1 weights (96, 1, 1, cin) of the 4C-2 rule; bias and OFM scale of s4_conv_base."""
+    x, wt, bias, s_out, _ = M.arrays("s4_conv_base")
+    rng = np.random.default_rng(CIN_SEED)
+    x = np.take(fit(x, CIN_MAX, 3, rng, -128, 128), range(cin), axis=3)
+    wt = np.take(fit(wt, CIN_MAX, 3, rng, -127, 128), range(cin), axis=3)
+    return x, wt, bias, s_out
+
+
+def k3_weights(wt1: np.ndarray) -> np.ndarray:
+    """(96, 3, 3, cin) with the 1x1 weights at the centre tap and K3_SEED draws (made at Cin 128, cut) elsewhere."""
+    cout, cin = wt1.shape[0], wt1.shape[3]
+    w = np.random.default_rng(K3_SEED).integers(-127, 128, size=(cout, 3, 3, CIN_MAX), dtype=np.int8)[..., :cin].copy()
+    w[:, 1, 1, :] = wt1[:, 0, 0, :]
+    return w
+
+
+def k3_spec(cin: int) -> dict:
+    return dict(M.OPS["s4_conv_base"], ifm=(1, 24, 24, cin), k=3, padding="SAME")
+
+
+def derive_k3(name: str) -> tuple[bytes, dict, bytes]:
+    cin = K3_VARIANTS[name]
+    x, wt1, bias, s_out = cin_arrays(cin)
+    wt, spec = k3_weights(wt1), k3_spec(cin)
+    acc_max = int(np.abs(M.accumulators(spec, x, wt, bias)).max())
+    model, meta = M.serialize(name, spec, wt, bias, s_out, acc_max)
+    meta.update(base="s4_conv_base", cin_seed=CIN_SEED, cin_max=CIN_MAX, k3_seed=K3_SEED, ofm_scale_from="s4_conv_base",
+                acc_abs_max_note="of this config; the OFM scale is the base's, so values beyond it saturate")
+    return model, meta, x.tobytes()
+
+
+def derive_k1_same(name: str) -> tuple[bytes, dict, bytes]:
+    cin = K1_SAME_VARIANTS[name]
+    x, wt, bias, s_out = cin_arrays(cin)
+    spec = dict(M.OPS["s4_conv_base"], ifm=(1, 24, 24, cin), padding="SAME")
+    acc_max = int(np.abs(M.accumulators(spec, x, wt, bias)).max())
+    model, meta = M.serialize(name, spec, wt, bias, s_out, acc_max)
+    meta.update(base="s4_conv_base", cin_seed=CIN_SEED, cin_max=CIN_MAX, ofm_scale_from="s4_conv_base",
+                note="compile-only control: same tensors as the 1x1 VALID config of this Cin, padding SAME")
+    return model, meta, x.tobytes()
+
+
+def main_k3(out):
+    """Stage 4K: the 1x1 configs (s4_conv_base, 4C-2 builds) rebuilt for a byte check, the 3x3 configs and the 1x1 SAME
+    control, all compile-checked by stage4_compile.check (Gate B, DRWL with --ifm)."""
+    import stage4_compile as SC
+    o = pathlib.Path(out); o.mkdir(parents=True, exist_ok=True)
+    r = SC.check("s4_conv_base", o)
+    print("s4_conv_base", "GATE_B", r["gate_b"], r["drwl_sha256"][:12], flush=True)
+    for name in ("s4c2_conv_cin32", "s4c2_conv_cin40", "s4c2_conv_cin48", "s4c2_conv_cin64"):
+        model, meta, ifm = derive_cin(name)
+        r = SC.check(name, o, built=(model, meta, ifm), kind="conv")
+        print(name, "GATE_B", r["gate_b"], r["drwl_sha256"][:12], flush=True)
+    for table, fn in ((K3_VARIANTS, derive_k3), (K1_SAME_VARIANTS, derive_k1_same)):
+        for name in table:
+            model, meta, ifm = fn(name)
+            r = SC.check(name, o, built=(model, meta, ifm), kind="conv")
+            print(name, "GATE_B", r["gate_b"], r["checks"], meta["n_mac"], r["ofm_block"], r["ifm_block"],
+                  r["ofm_ublock"], r["traversal"], r["n_kernels"], r["vela_npu_cycles"], flush=True)
+
+
 def main_cin(out):
     """Stage 4C-2: the four Cin configs compile-checked like the 4C-1 variants (Gate B, DRWL with --ifm)."""
     import stage4_compile as SC
@@ -106,4 +178,4 @@ def main(out):
 
 
 if __name__ == "__main__":
-    main_cin(sys.argv[1]) if sys.argv[2:] == ["cin"] else main(sys.argv[1])
+    {"cin": main_cin, "k3": main_k3}.get((sys.argv[2:] or [""])[0], main)(sys.argv[1])

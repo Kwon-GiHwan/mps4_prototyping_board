@@ -1,0 +1,49 @@
+{
+ "op": "s4c2_conv_cin40",
+ "operator_type": "CONV_2D",
+ "input_shape": [
+  1,
+  24,
+  24,
+  40
+ ],
+ "output_shape": [
+  1,
+  24,
+  24,
+  96
+ ],
+ "kernel_shape": [
+  1,
+  1
+ ],
+ "weight_shape": [
+  96,
+  1,
+  1,
+  40
+ ],
+ "stride": [
+  1,
+  1
+ ],
+ "padding": "VALID",
+ "groups": 1,
+ "activation": "RELU6",
+ "n_mac": 2211840,
+ "weight_seed": 20261014,
+ "ifm_seed": 1,
+ "quant": {
+  "ifm_scale": 0.0078125,
+  "weight_scale": 0.0078125,
+  "ofm_scale": 0.05013293168676181,
+  "zero_points": 0
+ },
+ "acc_abs_max": 162743,
+ "model_sha256": "53bbafd9477882d86b6bd5c9289e8787209fb1b172c2323935e927dbb368ca33",
+ "base": "s4_conv_base",
+ "cin_seed": 20261111,
+ "cin_max": 128,
+ "ofm_scale_from": "s4_conv_base",
+ "acc_abs_max_note": "of this config; the OFM scale is the base's, so values beyond it saturate"
+}

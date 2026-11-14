@@ -1,0 +1,402 @@
+{
+ "s4_conv_base": {
+  "kernel": 1,
+  "cin": 16,
+  "macs": {
+   "nominal": 884736,
+   "valid": 884736,
+   "c16": 884736
+  },
+  "hypotheses": {
+   "R384_nominal": 2304.0,
+   "R384_valid": 2304.0,
+   "R384_c16": 2304.0,
+   "R384_valid_c16": 2304.0,
+   "R768_nominal": 1152.0,
+   "R768_valid": 1152.0,
+   "R768_c16": 1152.0,
+   "R768_valid_c16": 1152.0
+  },
+  "distinct": {
+   "R384_nominal": false,
+   "R384_valid": false,
+   "R384_c16": false,
+   "R384_valid_c16": false,
+   "R768_nominal": false,
+   "R768_valid": false,
+   "R768_c16": false,
+   "R768_valid_c16": false
+  },
+  "static": {
+   "traversal": "PartKernel",
+   "ofm_block": "6x12x96",
+   "ifm_block": "6x12x16",
+   "ofm_ublock": "2x2x32",
+   "ofm_ublocks": 576,
+   "ublock_x_steps": 576,
+   "n_kernels": 2,
+   "weight_bytes": "2752",
+   "drwl_sha256": "2681c566729ce568f4041df6a69d1b5c5c558d2172bb76b6d75ad64ca2b4f267"
+  }
+ },
+ "s4k_conv3x3_cin16": {
+  "kernel": 3,
+  "cin": 16,
+  "macs": {
+   "nominal": 7962624,
+   "valid": 7526400,
+   "c16": 7962624
+  },
+  "hypotheses": {
+   "R384_nominal": 20736.0,
+   "R384_valid": 19600.0,
+   "R384_c16": 20736.0,
+   "R384_valid_c16": 19600.0,
+   "R768_nominal": 10368.0,
+   "R768_valid": 9800.0,
+   "R768_c16": 10368.0,
+   "R768_valid_c16": 9800.0
+  },
+  "distinct": {
+   "R384_nominal": false,
+   "R384_valid": false,
+   "R384_c16": false,
+   "R384_valid_c16": false,
+   "R768_nominal": false,
+   "R768_valid": false,
+   "R768_c16": false,
+   "R768_valid_c16": false
+  },
+  "static": {
+   "traversal": "PartKernel",
+   "ofm_block": "24x10x32",
+   "ifm_block": "26x12x16",
+   "ofm_ublock": "2x2x32",
+   "ofm_ublocks": 576,
+   "ublock_x_steps": 576,
+   "n_kernels": 2,
+   "weight_bytes": "16432",
+   "drwl_sha256": "81c97de6e44cff75e59a7d0b30610ef60c0be77ad169c367ca3b54e874d9ae1a"
+  }
+ },
+ "s4c2_conv_cin32": {
+  "kernel": 1,
+  "cin": 32,
+  "macs": {
+   "nominal": 1769472,
+   "valid": 1769472,
+   "c16": 1769472
+  },
+  "hypotheses": {
+   "R384_nominal": 4608.0,
+   "R384_valid": 4608.0,
+   "R384_c16": 4608.0,
+   "R384_valid_c16": 4608.0,
+   "R768_nominal": 2304.0,
+   "R768_valid": 2304.0,
+   "R768_c16": 2304.0,
+   "R768_valid_c16": 2304.0
+  },
+  "distinct": {
+   "R384_nominal": false,
+   "R384_valid": false,
+   "R384_c16": false,
+   "R384_valid_c16": false,
+   "R768_nominal": false,
+   "R768_valid": false,
+   "R768_c16": false,
+   "R768_valid_c16": false
+  },
+  "static": {
+   "traversal": "PartKernel",
+   "ofm_block": "6x12x96",
+   "ifm_block": "6x12x16",
+   "ofm_ublock": "2x2x32",
+   "ofm_ublocks": 576,
+   "ublock_x_steps": 1152,
+   "n_kernels": 2,
+   "weight_bytes": "4928",
+   "drwl_sha256": "825151e9fa8c83641c08a2f0c61ee5368d194f89ba8df1b057f73143ebd588f5"
+  }
+ },
+ "s4k_conv3x3_cin32": {
+  "kernel": 3,
+  "cin": 32,
+  "macs": {
+   "nominal": 15925248,
+   "valid": 15052800,
+   "c16": 15925248
+  },
+  "hypotheses": {
+   "R384_nominal": 41472.0,
+   "R384_valid": 39200.0,
+   "R384_c16": 41472.0,
+   "R384_valid_c16": 39200.0,
+   "R768_nominal": 20736.0,
+   "R768_valid": 19600.0,
+   "R768_c16": 20736.0,
+   "R768_valid_c16": 19600.0
+  },
+  "distinct": {
+   "R384_nominal": false,
+   "R384_valid": false,
+   "R384_c16": false,
+   "R384_valid_c16": false,
+   "R768_nominal": false,
+   "R768_valid": false,
+   "R768_c16": false,
+   "R768_valid_c16": false
+  },
+  "static": {
+   "traversal": "PartKernel",
+   "ofm_block": "24x10x32",
+   "ifm_block": "26x12x16",
+   "ofm_ublock": "2x2x32",
+   "ofm_ublocks": 576,
+   "ublock_x_steps": 1152,
+   "n_kernels": 2,
+   "weight_bytes": "32800",
+   "drwl_sha256": "bff7a37c2a014b0537818ad0f0405fb9ca430ff99707cfa65bec3df4f9c27a65"
+  }
+ },
+ "s4c2_conv_cin40": {
+  "kernel": 1,
+  "cin": 40,
+  "macs": {
+   "nominal": 2211840,
+   "valid": 2211840,
+   "c16": 2654208
+  },
+  "hypotheses": {
+   "R384_nominal": 5760.0,
+   "R384_valid": 5760.0,
+   "R384_c16": 6912.0,
+   "R384_valid_c16": 6912.0,
+   "R768_nominal": 2880.0,
+   "R768_valid": 2880.0,
+   "R768_c16": 3456.0,
+   "R768_valid_c16": 3456.0
+  },
+  "distinct": {
+   "R384_nominal": false,
+   "R384_valid": false,
+   "R384_c16": false,
+   "R384_valid_c16": false,
+   "R768_nominal": false,
+   "R768_valid": false,
+   "R768_c16": false,
+   "R768_valid_c16": false
+  },
+  "static": {
+   "traversal": "DepthFirst",
+   "ofm_block": "6x12x96",
+   "ifm_block": "6x12x64",
+   "ofm_ublock": "2x2x32",
+   "ofm_ublocks": 576,
+   "ublock_x_steps": 576,
+   "n_kernels": 2,
+   "weight_bytes": "4992",
+   "drwl_sha256": "9f26fefd207d40a21bb1c801729b5ea1b7e03aee45c307f31d08fe909cd05519"
+  }
+ },
+ "s4k_conv3x3_cin40": {
+  "kernel": 3,
+  "cin": 40,
+  "macs": {
+   "nominal": 19906560,
+   "valid": 18816000,
+   "c16": 23887872
+  },
+  "hypotheses": {
+   "R384_nominal": 51840.0,
+   "R384_valid": 49000.0,
+   "R384_c16": 62208.0,
+   "R384_valid_c16": 58800.0,
+   "R768_nominal": 25920.0,
+   "R768_valid": 24500.0,
+   "R768_c16": 31104.0,
+   "R768_valid_c16": 29400.0
+  },
+  "distinct": {
+   "R384_nominal": true,
+   "R384_valid": true,
+   "R384_c16": true,
+   "R384_valid_c16": true,
+   "R768_nominal": true,
+   "R768_valid": true,
+   "R768_c16": true,
+   "R768_valid_c16": true
+  },
+  "static": {
+   "traversal": "PartKernel",
+   "ofm_block": "24x10x32",
+   "ifm_block": "26x12x16",
+   "ofm_ublock": "2x2x32",
+   "ofm_ublocks": 576,
+   "ublock_x_steps": 1728,
+   "n_kernels": 2,
+   "weight_bytes": "42240",
+   "drwl_sha256": "d21e23794ed9ce8e947083a013268869273590a70d2047a56722c08583ea99e6"
+  }
+ },
+ "s4c2_conv_cin48": {
+  "kernel": 1,
+  "cin": 48,
+  "macs": {
+   "nominal": 2654208,
+   "valid": 2654208,
+   "c16": 2654208
+  },
+  "hypotheses": {
+   "R384_nominal": 6912.0,
+   "R384_valid": 6912.0,
+   "R384_c16": 6912.0,
+   "R384_valid_c16": 6912.0,
+   "R768_nominal": 3456.0,
+   "R768_valid": 3456.0,
+   "R768_c16": 3456.0,
+   "R768_valid_c16": 3456.0
+  },
+  "distinct": {
+   "R384_nominal": false,
+   "R384_valid": false,
+   "R384_c16": false,
+   "R384_valid_c16": false,
+   "R768_nominal": false,
+   "R768_valid": false,
+   "R768_c16": false,
+   "R768_valid_c16": false
+  },
+  "static": {
+   "traversal": "DepthFirst",
+   "ofm_block": "6x12x96",
+   "ifm_block": "6x12x64",
+   "ofm_ublock": "2x2x32",
+   "ofm_ublocks": 576,
+   "ublock_x_steps": 576,
+   "n_kernels": 2,
+   "weight_bytes": "5760",
+   "drwl_sha256": "6eb390be2874088b53970ab4f859962d5bb0b16b4e060e2e460d86840f4339d7"
+  }
+ },
+ "s4k_conv3x3_cin48": {
+  "kernel": 3,
+  "cin": 48,
+  "macs": {
+   "nominal": 23887872,
+   "valid": 22579200,
+   "c16": 23887872
+  },
+  "hypotheses": {
+   "R384_nominal": 62208.0,
+   "R384_valid": 58800.0,
+   "R384_c16": 62208.0,
+   "R384_valid_c16": 58800.0,
+   "R768_nominal": 31104.0,
+   "R768_valid": 29400.0,
+   "R768_c16": 31104.0,
+   "R768_valid_c16": 29400.0
+  },
+  "distinct": {
+   "R384_nominal": false,
+   "R384_valid": false,
+   "R384_c16": false,
+   "R384_valid_c16": false,
+   "R768_nominal": false,
+   "R768_valid": false,
+   "R768_c16": false,
+   "R768_valid_c16": false
+  },
+  "static": {
+   "traversal": "PartKernel",
+   "ofm_block": "24x10x32",
+   "ifm_block": "26x12x16",
+   "ofm_ublock": "2x2x32",
+   "ofm_ublocks": 576,
+   "ublock_x_steps": 1728,
+   "n_kernels": 2,
+   "weight_bytes": "49104",
+   "drwl_sha256": "c89abb9c5ce6552531fed652adcf8ae1b183165a34ab75ade92c3ec6b4c09e9f"
+  }
+ },
+ "s4c2_conv_cin64": {
+  "kernel": 1,
+  "cin": 64,
+  "macs": {
+   "nominal": 3538944,
+   "valid": 3538944,
+   "c16": 3538944
+  },
+  "hypotheses": {
+   "R384_nominal": 9216.0,
+   "R384_valid": 9216.0,
+   "R384_c16": 9216.0,
+   "R384_valid_c16": 9216.0,
+   "R768_nominal": 4608.0,
+   "R768_valid": 4608.0,
+   "R768_c16": 4608.0,
+   "R768_valid_c16": 4608.0
+  },
+  "distinct": {
+   "R384_nominal": false,
+   "R384_valid": false,
+   "R384_c16": false,
+   "R384_valid_c16": false,
+   "R768_nominal": false,
+   "R768_valid": false,
+   "R768_c16": false,
+   "R768_valid_c16": false
+  },
+  "static": {
+   "traversal": "DepthFirst",
+   "ofm_block": "6x12x96",
+   "ifm_block": "6x12x64",
+   "ofm_ublock": "2x2x32",
+   "ofm_ublocks": 576,
+   "ublock_x_steps": 576,
+   "n_kernels": 2,
+   "weight_bytes": "7296",
+   "drwl_sha256": "46a875322f77a623d8310f8f6b14447335e3c63523aac07b1bc6e06c8276f623"
+  }
+ },
+ "s4k_conv3x3_cin64": {
+  "kernel": 3,
+  "cin": 64,
+  "macs": {
+   "nominal": 31850496,
+   "valid": 30105600,
+   "c16": 31850496
+  },
+  "hypotheses": {
+   "R384_nominal": 82944.0,
+   "R384_valid": 78400.0,
+   "R384_c16": 82944.0,
+   "R384_valid_c16": 78400.0,
+   "R768_nominal": 41472.0,
+   "R768_valid": 39200.0,
+   "R768_c16": 41472.0,
+   "R768_valid_c16": 39200.0
+  },
+  "distinct": {
+   "R384_nominal": false,
+   "R384_valid": false,
+   "R384_c16": false,
+   "R384_valid_c16": false,
+   "R768_nominal": false,
+   "R768_valid": false,
+   "R768_c16": false,
+   "R768_valid_c16": false
+  },
+  "static": {
+   "traversal": "PartKernel",
+   "ofm_block": "24x10x32",
+   "ifm_block": "26x12x16",
+   "ofm_ublock": "2x2x32",
+   "ofm_ublocks": 576,
+   "ublock_x_steps": 2304,
+   "n_kernels": 2,
+   "weight_bytes": "65424",
+   "drwl_sha256": "38186371651ce6992c00e6e08ae7af7f2f514bb8c5dc8ca65d2620e724f9449b"
+  }
+ }
+}

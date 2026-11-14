@@ -1,0 +1,94 @@
+{
+ "config": "s4k_conv3x3_cin32",
+ "checks": {
+  "placement": true,
+  "schedule": true,
+  "kernels": true,
+  "macs": true,
+  "same_vela": true
+ },
+ "gate_b": true,
+ "n_mac": 15925248,
+ "vela_ops": [
+  "CUSTOM:ethos-u"
+ ],
+ "scheduled": [
+  [
+   "Conv2D",
+   "27944"
+  ],
+  [
+   "Relu6",
+   "0"
+  ]
+ ],
+ "kernel_kinds": [
+  "CONV",
+  "CONV"
+ ],
+ "n_kernels": 2,
+ "vela_op_cycles": "101249",
+ "vela_npu_cycles": "27944",
+ "vela_mac_cycles": "21361",
+ "vela_ao_cycles": "6336",
+ "vela_cmd_cycles": "1767",
+ "ofm_block": "24x10x32",
+ "ifm_block": "26x12x16",
+ "ofm_ublock": "2x2x32",
+ "traversal": "PartKernel",
+ "ifm_memory": "Dram",
+ "ofm_memory": "Dram",
+ "ifm_format": "NHWC",
+ "ofm_format": "NHWC",
+ "weight_bytes": "32800",
+ "cascade": "0",
+ "sram_ac": "4804",
+ "dram_ac": "101249",
+ "staging_usage": "34080",
+ "model_sha256": "1e087d73a9a87aedabacd1cbf6b7f1e8af12ee7a969d56cf9301c86db9d24382",
+ "vela_sha256": "6af47fd8530c25ef97f78fea475a479ac929d36a6e1728b1597caf76cc8a1be6",
+ "cms_sha256": "8fdc50cb862e403992c0bfe8f68fd53bea8afd84b5a3bc8e3aef3ad69b7b8481",
+ "cms_len": 520,
+ "drwl_sha256": "bff7a37c2a014b0537818ad0f0405fb9ca430ff99707cfa65bec3df4f9c27a65",
+ "ifm_sha256": "462e3b6a5b7ac55b7d3f86a86b9c43cac6a67d60e240afa40d262e4b53cb99ef",
+ "cpu_ofm_sha256": "1ccf746534321885e44f2b7f5452450e850390291b6109cd39f846ed307a0a61",
+ "arena_size": 73728,
+ "vela_version": "5.0.0",
+ "vela_options": [
+  "--accelerator-config",
+  "ethos-u85-1024",
+  "--optimise",
+  "Performance",
+  "--config",
+  "/opt/arm/ml-embedded-evaluation-kit/scripts/vela/default_vela.ini",
+  "--memory-mode",
+  "Dedicated_Sram",
+  "--system-config",
+  "Ethos_U85_SYS_DRAM_Mid_1024"
+ ],
+ "quant": {
+  "ifm_scale": 0.0078125,
+  "weight_scale": 0.0078125,
+  "ofm_scale": 0.05013293168676181,
+  "zero_points": 0
+ },
+ "activation": "RELU6",
+ "ifm_shape": [
+  1,
+  24,
+  24,
+  32
+ ],
+ "ofm_shape": [
+  1,
+  24,
+  24,
+  96
+ ],
+ "weight_shape": [
+  96,
+  3,
+  3,
+  32
+ ]
+}

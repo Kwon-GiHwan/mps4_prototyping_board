@@ -1,0 +1,49 @@
+{
+ "op": "s4k_conv1x1same_cin64",
+ "operator_type": "CONV_2D",
+ "input_shape": [
+  1,
+  24,
+  24,
+  64
+ ],
+ "output_shape": [
+  1,
+  24,
+  24,
+  96
+ ],
+ "kernel_shape": [
+  1,
+  1
+ ],
+ "weight_shape": [
+  96,
+  1,
+  1,
+  64
+ ],
+ "stride": [
+  1,
+  1
+ ],
+ "padding": "SAME",
+ "groups": 1,
+ "activation": "RELU6",
+ "n_mac": 3538944,
+ "weight_seed": 20261014,
+ "ifm_seed": 1,
+ "quant": {
+  "ifm_scale": 0.0078125,
+  "weight_scale": 0.0078125,
+  "ofm_scale": 0.05013293168676181,
+  "zero_points": 0
+ },
+ "acc_abs_max": 183984,
+ "model_sha256": "68ec822bc48bb907ecbc2f054b118b7d6deb041cdc7b94ed0ef6b2b948a28287",
+ "base": "s4_conv_base",
+ "cin_seed": 20261111,
+ "cin_max": 128,
+ "ofm_scale_from": "s4_conv_base",
+ "note": "compile-only control: same tensors as the 1x1 VALID config of this Cin, padding SAME"
+}

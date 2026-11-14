@@ -1,0 +1,258 @@
+{
+ "s4_conv_base@stage4_b330_83398c7": {
+  "cin": 16,
+  "macs": 884736,
+  "mac_active": [
+   2304,
+   2304,
+   2304,
+   2304
+  ],
+  "mac_dpu_active": [
+   1152,
+   1152,
+   1152,
+   1152
+  ],
+  "npu_active": 21207.0,
+  "npu_active_range": 367,
+  "macs_per_mac_active": 384.0,
+  "macs_per_mac_dpu_active": 768.0,
+  "dpu_over_mac": 0.5,
+  "mac_active_over_npu_active": 0.1086433724713538,
+  "pass_b": {
+   "128": 304.0,
+   "130": 2016.0,
+   "132": 16.0,
+   "135": 252.0,
+   "384": 171.0,
+   "386": 1437.0,
+   "391": 3456.0
+  },
+  "output_sha256": "05deb078b59e85b063f2f91243993b6e1a5a3705703cf02374c6b05c072bc116"
+ },
+ "s4_conv_base@stage4c2_b344_83398c7": {
+  "cin": 16,
+  "macs": 884736,
+  "mac_active": [
+   2304,
+   2304,
+   2304,
+   2304
+  ],
+  "mac_dpu_active": [
+   1152,
+   1152,
+   1152,
+   1152
+  ],
+  "npu_active": 21479.5,
+  "npu_active_range": 1299,
+  "macs_per_mac_active": 384.0,
+  "macs_per_mac_dpu_active": 768.0,
+  "dpu_over_mac": 0.5,
+  "mac_active_over_npu_active": 0.10726506669149655,
+  "pass_b": {
+   "128": 304.0,
+   "130": 2016.0,
+   "132": 16.0,
+   "135": 252.0,
+   "384": 171.0,
+   "386": 1437.0,
+   "391": 3456.0
+  },
+  "output_sha256": "05deb078b59e85b063f2f91243993b6e1a5a3705703cf02374c6b05c072bc116"
+ },
+ "s4_conv_base@placement_a_b367_70090f1": {
+  "cin": 16,
+  "macs": 884736,
+  "mac_active": [
+   2304,
+   2304,
+   2304,
+   2304
+  ],
+  "mac_dpu_active": [
+   1152,
+   1152,
+   1152,
+   1152
+  ],
+  "npu_active": 21086.5,
+  "npu_active_range": 617,
+  "macs_per_mac_active": 384.0,
+  "macs_per_mac_dpu_active": 768.0,
+  "dpu_over_mac": 0.5,
+  "mac_active_over_npu_active": 0.10926422118416997,
+  "pass_b": {
+   "128": 304.0,
+   "130": 2016.0,
+   "132": 16.0,
+   "135": 252.0,
+   "384": 171.0,
+   "386": 1437.0,
+   "391": 3456.0
+  },
+  "output_sha256": "05deb078b59e85b063f2f91243993b6e1a5a3705703cf02374c6b05c072bc116"
+ },
+ "s4c2_conv_cin32@stage4c2_b345_83398c7": {
+  "cin": 32,
+  "macs": 1769472,
+  "mac_active": [
+   4608,
+   4608,
+   4608,
+   4608
+  ],
+  "mac_dpu_active": [
+   2304,
+   2304,
+   2304,
+   2304
+  ],
+  "npu_active": 25622.5,
+  "npu_active_range": 407,
+  "macs_per_mac_active": 384.0,
+  "macs_per_mac_dpu_active": 768.0,
+  "dpu_over_mac": 0.5,
+  "mac_active_over_npu_active": 0.1798419357986145,
+  "pass_b": {
+   "128": 368.0,
+   "130": 3104.0,
+   "132": 25.0,
+   "135": 388.0,
+   "384": 2339.0,
+   "386": 2725.0,
+   "391": 3456.0
+  },
+  "output_sha256": "2fc9cc8888d60e758bfd6239b0ca15cc6660319c05b2b063cadb7b1119acd01c"
+ },
+ "s4c2_conv_cin40@stage4c2b_b348_83398c7": {
+  "cin": 40,
+  "macs": 2211840,
+  "mac_active": [
+   3456,
+   3456,
+   3456,
+   3456
+  ],
+  "mac_dpu_active": [
+   3456,
+   3456,
+   3456,
+   3456
+  ],
+  "npu_active": 22454.5,
+  "npu_active_range": 101,
+  "macs_per_mac_active": 640.0,
+  "macs_per_mac_dpu_active": 640.0,
+  "dpu_over_mac": 1.0,
+  "mac_active_over_npu_active": 0.15391124273530918,
+  "pass_b": {
+   "128": 376.0,
+   "130": 3136.0,
+   "132": 25.0,
+   "135": 392.0,
+   "384": 300.0,
+   "386": 3305.0,
+   "391": 3456.0
+  },
+  "output_sha256": "3dc532a4d13843f6b075314e3d65780019a682a6d04b58fd94705ae30f578f63"
+ },
+ "s4c2_conv_cin48@stage4c2b_b349_83398c7": {
+  "cin": 48,
+  "macs": 2654208,
+  "mac_active": [
+   3456,
+   3456,
+   3456,
+   3456
+  ],
+  "mac_dpu_active": [
+   3456,
+   3456,
+   3456,
+   3456
+  ],
+  "npu_active": 22331.0,
+  "npu_active_range": 887,
+  "macs_per_mac_active": 768.0,
+  "macs_per_mac_dpu_active": 768.0,
+  "dpu_over_mac": 1.0,
+  "mac_active_over_npu_active": 0.1547624378666428,
+  "pass_b": {
+   "128": 400.0,
+   "130": 3520.0,
+   "132": 29.0,
+   "135": 440.0,
+   "384": 327.0,
+   "386": 3929.0,
+   "391": 3456.0
+  },
+  "output_sha256": "86d13e7c6cae01b38808007412a92bade84299f9c56149d5555ab709edf52ddc"
+ },
+ "s4c2_conv_cin64@stage4c2_b346_83398c7": {
+  "cin": 64,
+  "macs": 3538944,
+  "mac_active": [
+   4608,
+   4608,
+   4608,
+   4608
+  ],
+  "mac_dpu_active": [
+   4608,
+   4608,
+   4608,
+   4608
+  ],
+  "npu_active": 24182.5,
+  "npu_active_range": 997,
+  "macs_per_mac_active": 768.0,
+  "macs_per_mac_dpu_active": 768.0,
+  "dpu_over_mac": 1.0,
+  "mac_active_over_npu_active": 0.19055101829835625,
+  "pass_b": {
+   "128": 448.0,
+   "130": 4288.0,
+   "132": 35.0,
+   "135": 536.0,
+   "384": 429.0,
+   "386": 5177.0,
+   "391": 3456.0
+  },
+  "output_sha256": "8d4cfaa9215026660eabb50a45a186d97668a8a7487849ea6fbd1bf24003cc4f"
+ },
+ "s4c2_conv_cin64@stage4c2b_b350_83398c7": {
+  "cin": 64,
+  "macs": 3538944,
+  "mac_active": [
+   4608,
+   4608,
+   4608,
+   4608
+  ],
+  "mac_dpu_active": [
+   4608,
+   4608,
+   4608,
+   4608
+  ],
+  "npu_active": 24554.0,
+  "npu_active_range": 449,
+  "macs_per_mac_active": 768.0,
+  "macs_per_mac_dpu_active": 768.0,
+  "dpu_over_mac": 1.0,
+  "mac_active_over_npu_active": 0.18766799706768755,
+  "pass_b": {
+   "128": 448.0,
+   "130": 4288.0,
+   "132": 35.0,
+   "135": 536.0,
+   "384": 429.0,
+   "386": 5177.0,
+   "391": 3456.0
+  },
+  "output_sha256": "8d4cfaa9215026660eabb50a45a186d97668a8a7487849ea6fbd1bf24003cc4f"
+ }
+}

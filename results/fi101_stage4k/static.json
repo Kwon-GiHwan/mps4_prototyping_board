@@ -1,0 +1,1255 @@
+{
+ "s4_conv_base": {
+  "config": "s4_conv_base",
+  "cin": 16,
+  "n_mac": 884736,
+  "ofm_block": "6x12x96",
+  "ifm_block": "6x12x16",
+  "ofm_ublock": "2x2x32",
+  "traversal": "PartKernel",
+  "n_kernels": 2,
+  "kernels": [
+   {
+    "kind": "CONV",
+    "ofm_slice": 16,
+    "ifm_depth": 16,
+    "ofm_ublocks": 144,
+    "ifm_depth_steps": 1,
+    "ublock_x_steps": 144,
+    "acc_format": 768,
+    "block": "6x12x96",
+    "weight_lengths": [
+     176,
+     176,
+     176,
+     176
+    ],
+    "dma_before": [
+     1024
+    ]
+   },
+   {
+    "kind": "CONV",
+    "ofm_slice": 80,
+    "ifm_depth": 16,
+    "ofm_ublocks": 432,
+    "ifm_depth_steps": 1,
+    "ublock_x_steps": 432,
+    "acc_format": 768,
+    "block": "6x12x96",
+    "weight_lengths": [
+     512,
+     512,
+     512,
+     512
+    ],
+    "dma_before": [
+     3008
+    ]
+   }
+  ],
+  "ofm_ublocks": 576,
+  "ublock_x_steps": 576,
+  "weight_bytes": "2752",
+  "vela_npu_cycles": "16660",
+  "vela_mac_cycles": "8019",
+  "vela_op_cycles": "24999",
+  "gate_b": true,
+  "model_sha256": "3f0a3645f13313ae65e5bfe94f0d1f80272cab9453e9d8d178c01af33255ad25",
+  "cms_sha256": "596fe964f9805a31fd0b8baa81ebdcd52c22b358eddfb1389be12c28e9f38e06",
+  "drwl_sha256": "2681c566729ce568f4041df6a69d1b5c5c558d2172bb76b6d75ad64ca2b4f267",
+  "kernel": 1,
+  "kernel_hw": [
+   [
+    1,
+    1
+   ]
+  ],
+  "macs": {
+   "nominal": 884736,
+   "valid": 884736,
+   "c16": 884736
+  },
+  "valid_tap_fraction": 1.0,
+  "block_fill": 1.0,
+  "ublock_fill": 0.75,
+  "ublock_fill_per_kernel": [
+   0.5,
+   0.8333333333333334
+  ],
+  "ifm_block_depth_fill": [
+   1.0,
+   1.0
+  ],
+  "vela_ao_cycles": "4224",
+  "cms_len": 520,
+  "weight_stream_lengths": [
+   [
+    176,
+    176,
+    176,
+    176
+   ],
+   [
+    512,
+    512,
+    512,
+    512
+   ]
+  ],
+  "dma_lengths": [
+   [
+    1024
+   ],
+   [
+    3008
+   ]
+  ],
+  "acc_format": [
+   768
+  ],
+  "vela_macs_per_mac_cycle": 110.32996632996633,
+  "ifm_sha256": "7dc7f308de9b1e468aa698c0ab61728602e3a6e7d2861b81bebc66961418fbb2",
+  "schedule": [
+   "PartKernel",
+   "6x12x96",
+   "6x12x16",
+   "2x2x32",
+   [
+    16,
+    80
+   ]
+  ]
+ },
+ "s4k_conv3x3_cin16": {
+  "config": "s4k_conv3x3_cin16",
+  "cin": 16,
+  "n_mac": 7962624,
+  "ofm_block": "24x10x32",
+  "ifm_block": "26x12x16",
+  "ofm_ublock": "2x2x32",
+  "traversal": "PartKernel",
+  "n_kernels": 2,
+  "kernels": [
+   {
+    "kind": "CONV",
+    "ofm_slice": 16,
+    "ifm_depth": 16,
+    "ofm_ublocks": 144,
+    "ifm_depth_steps": 1,
+    "ublock_x_steps": 144,
+    "acc_format": 768,
+    "block": "24x10x32",
+    "weight_lengths": [
+     752,
+     752,
+     752,
+     736
+    ],
+    "dma_before": [
+     3312
+    ]
+   },
+   {
+    "kind": "CONV",
+    "ofm_slice": 80,
+    "ifm_depth": 16,
+    "ofm_ublocks": 432,
+    "ifm_depth_steps": 1,
+    "ublock_x_steps": 432,
+    "acc_format": 768,
+    "block": "24x10x32",
+    "weight_lengths": [
+     3360,
+     3360,
+     3360,
+     3360
+    ],
+    "dma_before": [
+     14400
+    ]
+   }
+  ],
+  "ofm_ublocks": 576,
+  "ublock_x_steps": 576,
+  "weight_bytes": "16432",
+  "vela_npu_cycles": "14487",
+  "vela_mac_cycles": "10993",
+  "vela_op_cycles": "14487",
+  "gate_b": true,
+  "model_sha256": "45fb9fd3d08bf20902e2f4ffe4e51f2f120721f9b47d8e277b7c08583fb9592c",
+  "cms_sha256": "d6d4d8d950c30658cd84967d241f79684c7fa9c8024168fabae603544a713f99",
+  "drwl_sha256": "81c97de6e44cff75e59a7d0b30610ef60c0be77ad169c367ca3b54e874d9ae1a",
+  "kernel": 3,
+  "kernel_hw": [
+   [
+    3,
+    3
+   ]
+  ],
+  "macs": {
+   "nominal": 7962624,
+   "valid": 7526400,
+   "c16": 7962624
+  },
+  "valid_tap_fraction": 0.9452160493827161,
+  "block_fill": 0.8,
+  "ublock_fill": 0.75,
+  "ublock_fill_per_kernel": [
+   0.5,
+   0.8333333333333334
+  ],
+  "ifm_block_depth_fill": [
+   1.0,
+   1.0
+  ],
+  "vela_ao_cycles": "4896",
+  "cms_len": 520,
+  "weight_stream_lengths": [
+   [
+    752,
+    752,
+    752,
+    736
+   ],
+   [
+    3360,
+    3360,
+    3360,
+    3360
+   ]
+  ],
+  "dma_lengths": [
+   [
+    3312
+   ],
+   [
+    14400
+   ]
+  ],
+  "acc_format": [
+   768
+  ],
+  "vela_macs_per_mac_cycle": 724.3358500864186,
+  "ifm_sha256": "7dc7f308de9b1e468aa698c0ab61728602e3a6e7d2861b81bebc66961418fbb2",
+  "schedule": [
+   "PartKernel",
+   "24x10x32",
+   "26x12x16",
+   "2x2x32",
+   [
+    16,
+    80
+   ]
+  ]
+ },
+ "s4c2_conv_cin32": {
+  "config": "s4c2_conv_cin32",
+  "cin": 32,
+  "n_mac": 1769472,
+  "ofm_block": "6x12x96",
+  "ifm_block": "6x12x16",
+  "ofm_ublock": "2x2x32",
+  "traversal": "PartKernel",
+  "n_kernels": 2,
+  "kernels": [
+   {
+    "kind": "CONV",
+    "ofm_slice": 16,
+    "ifm_depth": 32,
+    "ofm_ublocks": 144,
+    "ifm_depth_steps": 2,
+    "ublock_x_steps": 288,
+    "acc_format": 768,
+    "block": "6x12x96",
+    "weight_lengths": [
+     224,
+     256,
+     224,
+     256
+    ],
+    "dma_before": [
+     1280
+    ]
+   },
+   {
+    "kind": "CONV",
+    "ofm_slice": 80,
+    "ifm_depth": 32,
+    "ofm_ublocks": 432,
+    "ifm_depth_steps": 2,
+    "ublock_x_steps": 864,
+    "acc_format": 768,
+    "block": "6x12x96",
+    "weight_lengths": [
+     992,
+     992,
+     992,
+     992
+    ],
+    "dma_before": [
+     4928
+    ]
+   }
+  ],
+  "ofm_ublocks": 576,
+  "ublock_x_steps": 1152,
+  "weight_bytes": "4928",
+  "vela_npu_cycles": "17231",
+  "vela_mac_cycles": "14163",
+  "vela_op_cycles": "24999",
+  "gate_b": true,
+  "model_sha256": "0f1487d5931e1263375662a84d4033b1108d242340cf108760ab6510b7f2cb37",
+  "cms_sha256": "1ff7f8e546a62be03b3bff26c4f5bfd37751c6c0f7e40ee50a6c3208d044d760",
+  "drwl_sha256": "825151e9fa8c83641c08a2f0c61ee5368d194f89ba8df1b057f73143ebd588f5",
+  "kernel": 1,
+  "kernel_hw": [
+   [
+    1,
+    1
+   ]
+  ],
+  "macs": {
+   "nominal": 1769472,
+   "valid": 1769472,
+   "c16": 1769472
+  },
+  "valid_tap_fraction": 1.0,
+  "block_fill": 1.0,
+  "ublock_fill": 0.75,
+  "ublock_fill_per_kernel": [
+   0.5,
+   0.8333333333333334
+  ],
+  "ifm_block_depth_fill": [
+   1.0,
+   1.0
+  ],
+  "vela_ao_cycles": "4992",
+  "cms_len": 520,
+  "weight_stream_lengths": [
+   [
+    224,
+    256,
+    224,
+    256
+   ],
+   [
+    992,
+    992,
+    992,
+    992
+   ]
+  ],
+  "dma_lengths": [
+   [
+    1280
+   ],
+   [
+    4928
+   ]
+  ],
+  "acc_format": [
+   768
+  ],
+  "vela_macs_per_mac_cycle": 124.93624232154204,
+  "ifm_sha256": "462e3b6a5b7ac55b7d3f86a86b9c43cac6a67d60e240afa40d262e4b53cb99ef",
+  "schedule": [
+   "PartKernel",
+   "6x12x96",
+   "6x12x16",
+   "2x2x32",
+   [
+    16,
+    80
+   ]
+  ]
+ },
+ "s4k_conv3x3_cin32": {
+  "config": "s4k_conv3x3_cin32",
+  "cin": 32,
+  "n_mac": 15925248,
+  "ofm_block": "24x10x32",
+  "ifm_block": "26x12x16",
+  "ofm_ublock": "2x2x32",
+  "traversal": "PartKernel",
+  "n_kernels": 2,
+  "kernels": [
+   {
+    "kind": "CONV",
+    "ofm_slice": 16,
+    "ifm_depth": 32,
+    "ofm_ublocks": 144,
+    "ifm_depth_steps": 2,
+    "ublock_x_steps": 288,
+    "acc_format": 768,
+    "block": "24x10x32",
+    "weight_lengths": [
+     1488,
+     1488,
+     1488,
+     1472
+    ],
+    "dma_before": [
+     6256
+    ]
+   },
+   {
+    "kind": "CONV",
+    "ofm_slice": 80,
+    "ifm_depth": 32,
+    "ofm_ublocks": 432,
+    "ifm_depth_steps": 2,
+    "ublock_x_steps": 864,
+    "acc_format": 768,
+    "block": "24x10x32",
+    "weight_lengths": [
+     6720,
+     6704,
+     6720,
+     6720
+    ],
+    "dma_before": [
+     27824
+    ]
+   }
+  ],
+  "ofm_ublocks": 576,
+  "ublock_x_steps": 1152,
+  "weight_bytes": "32800",
+  "vela_npu_cycles": "27944",
+  "vela_mac_cycles": "21361",
+  "vela_op_cycles": "101249",
+  "gate_b": true,
+  "model_sha256": "1e087d73a9a87aedabacd1cbf6b7f1e8af12ee7a969d56cf9301c86db9d24382",
+  "cms_sha256": "8fdc50cb862e403992c0bfe8f68fd53bea8afd84b5a3bc8e3aef3ad69b7b8481",
+  "drwl_sha256": "bff7a37c2a014b0537818ad0f0405fb9ca430ff99707cfa65bec3df4f9c27a65",
+  "kernel": 3,
+  "kernel_hw": [
+   [
+    3,
+    3
+   ]
+  ],
+  "macs": {
+   "nominal": 15925248,
+   "valid": 15052800,
+   "c16": 15925248
+  },
+  "valid_tap_fraction": 0.9452160493827161,
+  "block_fill": 0.8,
+  "ublock_fill": 0.75,
+  "ublock_fill_per_kernel": [
+   0.5,
+   0.8333333333333334
+  ],
+  "ifm_block_depth_fill": [
+   1.0,
+   1.0
+  ],
+  "vela_ao_cycles": "6336",
+  "cms_len": 520,
+  "weight_stream_lengths": [
+   [
+    1488,
+    1488,
+    1488,
+    1472
+   ],
+   [
+    6720,
+    6704,
+    6720,
+    6720
+   ]
+  ],
+  "dma_lengths": [
+   [
+    6256
+   ],
+   [
+    27824
+   ]
+  ],
+  "acc_format": [
+   768
+  ],
+  "vela_macs_per_mac_cycle": 745.529141894106,
+  "ifm_sha256": "462e3b6a5b7ac55b7d3f86a86b9c43cac6a67d60e240afa40d262e4b53cb99ef",
+  "schedule": [
+   "PartKernel",
+   "24x10x32",
+   "26x12x16",
+   "2x2x32",
+   [
+    16,
+    80
+   ]
+  ]
+ },
+ "s4c2_conv_cin40": {
+  "config": "s4c2_conv_cin40",
+  "cin": 40,
+  "n_mac": 2211840,
+  "ofm_block": "6x12x96",
+  "ifm_block": "6x12x64",
+  "ofm_ublock": "2x2x32",
+  "traversal": "DepthFirst",
+  "n_kernels": 2,
+  "kernels": [
+   {
+    "kind": "CONV",
+    "ofm_slice": 16,
+    "ifm_depth": 40,
+    "ofm_ublocks": 144,
+    "ifm_depth_steps": 1,
+    "ublock_x_steps": 144,
+    "acc_format": 768,
+    "block": "6x12x96",
+    "weight_lengths": [
+     240,
+     240,
+     240,
+     240
+    ],
+    "dma_before": [
+     1280
+    ]
+   },
+   {
+    "kind": "CONV",
+    "ofm_slice": 80,
+    "ifm_depth": 40,
+    "ofm_ublocks": 432,
+    "ifm_depth_steps": 1,
+    "ublock_x_steps": 432,
+    "acc_format": 768,
+    "block": "6x12x96",
+    "weight_lengths": [
+     1008,
+     1008,
+     1008,
+     1008
+    ],
+    "dma_before": [
+     4992
+    ]
+   }
+  ],
+  "ofm_ublocks": 576,
+  "ublock_x_steps": 576,
+  "weight_bytes": "4992",
+  "vela_npu_cycles": "16651",
+  "vela_mac_cycles": "4947",
+  "vela_op_cycles": "24999",
+  "gate_b": true,
+  "model_sha256": "53bbafd9477882d86b6bd5c9289e8787209fb1b172c2323935e927dbb368ca33",
+  "cms_sha256": "5dde33b406a56d29dbf82208c06530b7550f01ccd022c0da98062d6507af3164",
+  "drwl_sha256": "9f26fefd207d40a21bb1c801729b5ea1b7e03aee45c307f31d08fe909cd05519",
+  "kernel": 1,
+  "kernel_hw": [
+   [
+    1,
+    1
+   ]
+  ],
+  "macs": {
+   "nominal": 2211840,
+   "valid": 2211840,
+   "c16": 2654208
+  },
+  "valid_tap_fraction": 1.0,
+  "block_fill": 1.0,
+  "ublock_fill": 0.75,
+  "ublock_fill_per_kernel": [
+   0.5,
+   0.8333333333333334
+  ],
+  "ifm_block_depth_fill": [
+   0.625,
+   0.625
+  ],
+  "vela_ao_cycles": "3840",
+  "cms_len": 520,
+  "weight_stream_lengths": [
+   [
+    240,
+    240,
+    240,
+    240
+   ],
+   [
+    1008,
+    1008,
+    1008,
+    1008
+   ]
+  ],
+  "dma_lengths": [
+   [
+    1280
+   ],
+   [
+    4992
+   ]
+  ],
+  "acc_format": [
+   768
+  ],
+  "vela_macs_per_mac_cycle": 447.107337780473,
+  "ifm_sha256": "54c9e207136c8b3eb6d2c8495a8b43cb9f67c5609e4a0dca6886f23b9e8247f4",
+  "schedule": [
+   "DepthFirst",
+   "6x12x96",
+   "6x12x64",
+   "2x2x32",
+   [
+    16,
+    80
+   ]
+  ]
+ },
+ "s4k_conv3x3_cin40": {
+  "config": "s4k_conv3x3_cin40",
+  "cin": 40,
+  "n_mac": 19906560,
+  "ofm_block": "24x10x32",
+  "ifm_block": "26x12x16",
+  "ofm_ublock": "2x2x32",
+  "traversal": "PartKernel",
+  "n_kernels": 2,
+  "kernels": [
+   {
+    "kind": "CONV",
+    "ofm_slice": 16,
+    "ifm_depth": 40,
+    "ofm_ublocks": 144,
+    "ifm_depth_steps": 3,
+    "ublock_x_steps": 432,
+    "acc_format": 768,
+    "block": "24x10x32",
+    "weight_lengths": [
+     1936,
+     1936,
+     1936,
+     1920
+    ],
+    "dma_before": [
+     8048
+    ]
+   },
+   {
+    "kind": "CONV",
+    "ofm_slice": 80,
+    "ifm_depth": 40,
+    "ofm_ublocks": 432,
+    "ifm_depth_steps": 3,
+    "ublock_x_steps": 1296,
+    "acc_format": 768,
+    "block": "24x10x32",
+    "weight_lengths": [
+     8624,
+     8624,
+     8624,
+     8640
+    ],
+    "dma_before": [
+     35472
+    ]
+   }
+  ],
+  "ofm_ublocks": 576,
+  "ublock_x_steps": 1728,
+  "weight_bytes": "42240",
+  "vela_npu_cycles": "40020",
+  "vela_mac_cycles": "31729",
+  "vela_op_cycles": "126562",
+  "gate_b": true,
+  "model_sha256": "6800e5caf77b36df84b20e63ba6b9b51306537b85baeaa1136b586f19157d405",
+  "cms_sha256": "70168153c1caeee9792bf30526d727a77b72ae0ed2bf56a2deade798be2c768a",
+  "drwl_sha256": "d21e23794ed9ce8e947083a013268869273590a70d2047a56722c08583ea99e6",
+  "kernel": 3,
+  "kernel_hw": [
+   [
+    3,
+    3
+   ]
+  ],
+  "macs": {
+   "nominal": 19906560,
+   "valid": 18816000,
+   "c16": 23887872
+  },
+  "valid_tap_fraction": 0.9452160493827161,
+  "block_fill": 0.8,
+  "ublock_fill": 0.75,
+  "ublock_fill_per_kernel": [
+   0.5,
+   0.8333333333333334
+  ],
+  "ifm_block_depth_fill": [
+   0.8333333333333334,
+   0.8333333333333334
+  ],
+  "vela_ao_cycles": "7776",
+  "cms_len": 520,
+  "weight_stream_lengths": [
+   [
+    1936,
+    1936,
+    1936,
+    1920
+   ],
+   [
+    8624,
+    8624,
+    8624,
+    8640
+   ]
+  ],
+  "dma_lengths": [
+   [
+    8048
+   ],
+   [
+    35472
+   ]
+  ],
+  "acc_format": [
+   768
+  ],
+  "vela_macs_per_mac_cycle": 627.3932364713669,
+  "ifm_sha256": "54c9e207136c8b3eb6d2c8495a8b43cb9f67c5609e4a0dca6886f23b9e8247f4",
+  "schedule": [
+   "PartKernel",
+   "24x10x32",
+   "26x12x16",
+   "2x2x32",
+   [
+    16,
+    80
+   ]
+  ]
+ },
+ "s4c2_conv_cin48": {
+  "config": "s4c2_conv_cin48",
+  "cin": 48,
+  "n_mac": 2654208,
+  "ofm_block": "6x12x96",
+  "ifm_block": "6x12x64",
+  "ofm_ublock": "2x2x32",
+  "traversal": "DepthFirst",
+  "n_kernels": 2,
+  "kernels": [
+   {
+    "kind": "CONV",
+    "ofm_slice": 16,
+    "ifm_depth": 48,
+    "ofm_ublocks": 144,
+    "ifm_depth_steps": 1,
+    "ublock_x_steps": 144,
+    "acc_format": 768,
+    "block": "6x12x96",
+    "weight_lengths": [
+     272,
+     272,
+     272,
+     272
+    ],
+    "dma_before": [
+     1408
+    ]
+   },
+   {
+    "kind": "CONV",
+    "ofm_slice": 80,
+    "ifm_depth": 48,
+    "ofm_ublocks": 432,
+    "ifm_depth_steps": 1,
+    "ublock_x_steps": 432,
+    "acc_format": 768,
+    "block": "6x12x96",
+    "weight_lengths": [
+     1168,
+     1168,
+     1168,
+     1168
+    ],
+    "dma_before": [
+     5632
+    ]
+   }
+  ],
+  "ofm_ublocks": 576,
+  "ublock_x_steps": 576,
+  "weight_bytes": "5760",
+  "vela_npu_cycles": "16682",
+  "vela_mac_cycles": "4947",
+  "vela_op_cycles": "24999",
+  "gate_b": true,
+  "model_sha256": "a4bdf17866a15ba3b2be858c572295740dab0c19975a0a42b1bf178312c09175",
+  "cms_sha256": "ecaa3f2a259bc84205ebb638c6a5081760f01554fa4beb10964230607ec7495d",
+  "drwl_sha256": "6eb390be2874088b53970ab4f859962d5bb0b16b4e060e2e460d86840f4339d7",
+  "kernel": 1,
+  "kernel_hw": [
+   [
+    1,
+    1
+   ]
+  ],
+  "macs": {
+   "nominal": 2654208,
+   "valid": 2654208,
+   "c16": 2654208
+  },
+  "valid_tap_fraction": 1.0,
+  "block_fill": 1.0,
+  "ublock_fill": 0.75,
+  "ublock_fill_per_kernel": [
+   0.5,
+   0.8333333333333334
+  ],
+  "ifm_block_depth_fill": [
+   0.75,
+   0.75
+  ],
+  "vela_ao_cycles": "3840",
+  "cms_len": 520,
+  "weight_stream_lengths": [
+   [
+    272,
+    272,
+    272,
+    272
+   ],
+   [
+    1168,
+    1168,
+    1168,
+    1168
+   ]
+  ],
+  "dma_lengths": [
+   [
+    1408
+   ],
+   [
+    5632
+   ]
+  ],
+  "acc_format": [
+   768
+  ],
+  "vela_macs_per_mac_cycle": 536.5288053365676,
+  "ifm_sha256": "c71114411d91f27072cf8b8093fa44176c1b829569afe71c62da75cf3454b5d0",
+  "schedule": [
+   "DepthFirst",
+   "6x12x96",
+   "6x12x64",
+   "2x2x32",
+   [
+    16,
+    80
+   ]
+  ]
+ },
+ "s4k_conv3x3_cin48": {
+  "config": "s4k_conv3x3_cin48",
+  "cin": 48,
+  "n_mac": 23887872,
+  "ofm_block": "24x10x32",
+  "ifm_block": "26x12x16",
+  "ofm_ublock": "2x2x32",
+  "traversal": "PartKernel",
+  "n_kernels": 2,
+  "kernels": [
+   {
+    "kind": "CONV",
+    "ofm_slice": 16,
+    "ifm_depth": 48,
+    "ofm_ublocks": 144,
+    "ifm_depth_steps": 3,
+    "ublock_x_steps": 432,
+    "acc_format": 768,
+    "block": "24x10x32",
+    "weight_lengths": [
+     2208,
+     2224,
+     2208,
+     2208
+    ],
+    "dma_before": [
+     9168
+    ]
+   },
+   {
+    "kind": "CONV",
+    "ofm_slice": 80,
+    "ifm_depth": 48,
+    "ofm_ublocks": 432,
+    "ifm_depth_steps": 3,
+    "ublock_x_steps": 1296,
+    "acc_format": 768,
+    "block": "24x10x32",
+    "weight_lengths": [
+     10064,
+     10064,
+     10064,
+     10064
+    ],
+    "dma_before": [
+     41216
+    ]
+   }
+  ],
+  "ofm_ublocks": 576,
+  "ublock_x_steps": 1728,
+  "weight_bytes": "49104",
+  "vela_npu_cycles": "41069",
+  "vela_mac_cycles": "31729",
+  "vela_op_cycles": "151875",
+  "gate_b": true,
+  "model_sha256": "f61f42a054621b02873eb831e130f0c4355aa84f861603288f5e938021015eb2",
+  "cms_sha256": "f411c66d7abb8875cee2120b50062b6442b0598fd7538e42f5fb860de3c0dff8",
+  "drwl_sha256": "c89abb9c5ce6552531fed652adcf8ae1b183165a34ab75ade92c3ec6b4c09e9f",
+  "kernel": 3,
+  "kernel_hw": [
+   [
+    3,
+    3
+   ]
+  ],
+  "macs": {
+   "nominal": 23887872,
+   "valid": 22579200,
+   "c16": 23887872
+  },
+  "valid_tap_fraction": 0.9452160493827161,
+  "block_fill": 0.8,
+  "ublock_fill": 0.75,
+  "ublock_fill_per_kernel": [
+   0.5,
+   0.8333333333333334
+  ],
+  "ifm_block_depth_fill": [
+   1.0,
+   1.0
+  ],
+  "vela_ao_cycles": "7776",
+  "cms_len": 520,
+  "weight_stream_lengths": [
+   [
+    2208,
+    2224,
+    2208,
+    2208
+   ],
+   [
+    10064,
+    10064,
+    10064,
+    10064
+   ]
+  ],
+  "dma_lengths": [
+   [
+    9168
+   ],
+   [
+    41216
+   ]
+  ],
+  "acc_format": [
+   768
+  ],
+  "vela_macs_per_mac_cycle": 752.8718837656403,
+  "ifm_sha256": "c71114411d91f27072cf8b8093fa44176c1b829569afe71c62da75cf3454b5d0",
+  "schedule": [
+   "PartKernel",
+   "24x10x32",
+   "26x12x16",
+   "2x2x32",
+   [
+    16,
+    80
+   ]
+  ]
+ },
+ "s4c2_conv_cin64": {
+  "config": "s4c2_conv_cin64",
+  "cin": 64,
+  "n_mac": 3538944,
+  "ofm_block": "6x12x96",
+  "ifm_block": "6x12x64",
+  "ofm_ublock": "2x2x32",
+  "traversal": "DepthFirst",
+  "n_kernels": 2,
+  "kernels": [
+   {
+    "kind": "CONV",
+    "ofm_slice": 16,
+    "ifm_depth": 64,
+    "ofm_ublocks": 144,
+    "ifm_depth_steps": 1,
+    "ublock_x_steps": 144,
+    "acc_format": 768,
+    "block": "6x12x96",
+    "weight_lengths": [
+     336,
+     336,
+     336,
+     336
+    ],
+    "dma_before": [
+     1664
+    ]
+   },
+   {
+    "kind": "CONV",
+    "ofm_slice": 80,
+    "ifm_depth": 64,
+    "ofm_ublocks": 432,
+    "ifm_depth_steps": 1,
+    "ublock_x_steps": 432,
+    "acc_format": 768,
+    "block": "6x12x96",
+    "weight_lengths": [
+     1488,
+     1488,
+     1488,
+     1488
+    ],
+    "dma_before": [
+     6912
+    ]
+   }
+  ],
+  "ofm_ublocks": 576,
+  "ublock_x_steps": 576,
+  "weight_bytes": "7296",
+  "vela_npu_cycles": "16709",
+  "vela_mac_cycles": "5331",
+  "vela_op_cycles": "24999",
+  "gate_b": true,
+  "model_sha256": "4df4113d4f27d98abf7199377eff4ff6b7c06e62d1a4203e3e7ca6f4db2f9207",
+  "cms_sha256": "7802057b476d28598420a3bfb731bc4878b9409d7b0d2c62dd673bf48df1f216",
+  "drwl_sha256": "46a875322f77a623d8310f8f6b14447335e3c63523aac07b1bc6e06c8276f623",
+  "kernel": 1,
+  "kernel_hw": [
+   [
+    1,
+    1
+   ]
+  ],
+  "macs": {
+   "nominal": 3538944,
+   "valid": 3538944,
+   "c16": 3538944
+  },
+  "valid_tap_fraction": 1.0,
+  "block_fill": 1.0,
+  "ublock_fill": 0.75,
+  "ublock_fill_per_kernel": [
+   0.5,
+   0.8333333333333334
+  ],
+  "ifm_block_depth_fill": [
+   1.0,
+   1.0
+  ],
+  "vela_ao_cycles": "3888",
+  "cms_len": 520,
+  "weight_stream_lengths": [
+   [
+    336,
+    336,
+    336,
+    336
+   ],
+   [
+    1488,
+    1488,
+    1488,
+    1488
+   ]
+  ],
+  "dma_lengths": [
+   [
+    1664
+   ],
+   [
+    6912
+   ]
+  ],
+  "acc_format": [
+   768
+  ],
+  "vela_macs_per_mac_cycle": 663.8424310635903,
+  "ifm_sha256": "937f4bbc1243fa820fc9c8ac086894fc23dae9b1b4aaff23b552358f530ac17d",
+  "schedule": [
+   "DepthFirst",
+   "6x12x96",
+   "6x12x64",
+   "2x2x32",
+   [
+    16,
+    80
+   ]
+  ]
+ },
+ "s4k_conv3x3_cin64": {
+  "config": "s4k_conv3x3_cin64",
+  "cin": 64,
+  "n_mac": 31850496,
+  "ofm_block": "24x10x32",
+  "ifm_block": "26x12x16",
+  "ofm_ublock": "2x2x32",
+  "traversal": "PartKernel",
+  "n_kernels": 2,
+  "kernels": [
+   {
+    "kind": "CONV",
+    "ofm_slice": 16,
+    "ifm_depth": 64,
+    "ofm_ublocks": 144,
+    "ifm_depth_steps": 4,
+    "ublock_x_steps": 576,
+    "acc_format": 768,
+    "block": "24x10x32",
+    "weight_lengths": [
+     2944,
+     2944,
+     2944,
+     2944
+    ],
+    "dma_before": [
+     12096
+    ]
+   },
+   {
+    "kind": "CONV",
+    "ofm_slice": 80,
+    "ifm_depth": 64,
+    "ofm_ublocks": 432,
+    "ifm_depth_steps": 4,
+    "ublock_x_steps": 1728,
+    "acc_format": 768,
+    "block": "24x10x32",
+    "weight_lengths": [
+     13408,
+     13408,
+     13408,
+     13424
+    ],
+    "dma_before": [
+     54608
+    ]
+   }
+  ],
+  "ofm_ublocks": 576,
+  "ublock_x_steps": 2304,
+  "weight_bytes": "65424",
+  "vela_npu_cycles": "54195",
+  "vela_mac_cycles": "42097",
+  "vela_op_cycles": "202499",
+  "gate_b": true,
+  "model_sha256": "c525f950bcc4fd4c98cd077224134b1e33095143b4634a3f3c68983ec0d7be92",
+  "cms_sha256": "be2b270488526694454f05c7a234c28ed5dcfda91264b01fee0abfcfe13afb92",
+  "drwl_sha256": "38186371651ce6992c00e6e08ae7af7f2f514bb8c5dc8ca65d2620e724f9449b",
+  "kernel": 3,
+  "kernel_hw": [
+   [
+    3,
+    3
+   ]
+  ],
+  "macs": {
+   "nominal": 31850496,
+   "valid": 30105600,
+   "c16": 31850496
+  },
+  "valid_tap_fraction": 0.9452160493827161,
+  "block_fill": 0.8,
+  "ublock_fill": 0.75,
+  "ublock_fill_per_kernel": [
+   0.5,
+   0.8333333333333334
+  ],
+  "ifm_block_depth_fill": [
+   1.0,
+   1.0
+  ],
+  "vela_ao_cycles": "9216",
+  "cms_len": 520,
+  "weight_stream_lengths": [
+   [
+    2944,
+    2944,
+    2944,
+    2944
+   ],
+   [
+    13408,
+    13408,
+    13408,
+    13424
+   ]
+  ],
+  "dma_lengths": [
+   [
+    12096
+   ],
+   [
+    54608
+   ]
+  ],
+  "acc_format": [
+   768
+  ],
+  "vela_macs_per_mac_cycle": 756.5977623108535,
+  "ifm_sha256": "937f4bbc1243fa820fc9c8ac086894fc23dae9b1b4aaff23b552358f530ac17d",
+  "schedule": [
+   "PartKernel",
+   "24x10x32",
+   "26x12x16",
+   "2x2x32",
+   [
+    16,
+    80
+   ]
+  ]
+ },
+ "switches_k1": [
+  "32->40"
+ ],
+ "switches_k3": [],
+ "k1_same_control": {
+  "16": {
+   "cms": true,
+   "cpu_ofm": true
+  },
+  "32": {
+   "cms": true,
+   "cpu_ofm": true
+  },
+  "40": {
+   "cms": true,
+   "cpu_ofm": true
+  },
+  "48": {
+   "cms": true,
+   "cpu_ofm": true
+  },
+  "64": {
+   "cms": true,
+   "cpu_ofm": true
+  }
+ },
+ "same_ifm_per_cin": {
+  "16": true,
+  "32": true,
+  "40": true,
+  "48": true,
+  "64": true
+ }
+}
