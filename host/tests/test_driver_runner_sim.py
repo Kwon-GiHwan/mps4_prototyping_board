@@ -477,6 +477,54 @@ class BoardScript(unittest.TestCase):
         for l in links:
             l._ser.close()
 
+    def test_campaign_keeps_mismatch_output(self):
+        """--stop-on-invalid on an output mismatch: the refusal stands and that RUN's outputs are kept."""
+        sys.path.insert(0, str(REPO / "host" / "board"))
+        import run_driver_events as R
+        links = []
+        R.DriverLink = lambda port: links.append(link()) or links[-1]
+        with tempfile.TemporaryDirectory() as d:
+            d = pathlib.Path(d)
+            want = expected_output(IFM, 0, 30)
+            bad = bytes([want[0] ^ 1]) + want[1:]
+            (d / "w.drwl").write_bytes(drwl.pack(simm([40], [30]), [IFM], [bad]))
+            (d / "cond.txt").write_text("wfe 0 0 off all\n")
+            for extra, kept in ((["--outputs"], True), ([], False)):
+                out = d / f"out{len(extra)}"
+                argv = ["x", "--out", str(out), "--host-boot-index", "7", "--workload", str(d / "w.drwl"),
+                        "--ids", "35,48", "--repeats", "2", "--conditions", f"@{d / 'cond.txt'}", "--stop-on-invalid",
+                        "--image-sha256", "b,r,d,i", *extra]
+                old, sys.argv = sys.argv, argv
+                try:
+                    self.assertEqual(R.main(), 1)                                   # refused
+                finally:
+                    sys.argv = old
+                summ = json.loads((out / "wfe" / "summary.json").read_text())
+                self.assertEqual(summ["refusal"]["rule"], "RULE_RUN_INVALID")
+                self.assertEqual((out / "wfe" / "output_mismatch.bin").exists(), kept)
+                if kept:
+                    self.assertEqual((out / "wfe" / "output_mismatch.bin").read_bytes(), want)
+                    note = json.loads((out / "wfe" / "output_mismatch.json").read_text())
+                    self.assertEqual((note["set_id"], note["rep"], note["crc_ok"]), (1, 1, True))
+                    self.assertFalse((out / "wfe" / "output.bin").exists())
+
+            def corrupt(port):                      # the fetched bytes differ from the RUN's CRC
+                l = link(); links.append(l); real = l.get_output
+                l.get_output = lambda n: bytes([real(n)[0] ^ 2]) + real(n)[1:]
+                return l
+            R.DriverLink = corrupt
+            out = d / "out_crc"
+            old, sys.argv = sys.argv, ["x", "--out", str(out), "--host-boot-index", "7", "--workload", str(d / "w.drwl"),
+                                       "--ids", "35,48", "--repeats", "2", "--conditions", f"@{d / 'cond.txt'}",
+                                       "--stop-on-invalid", "--image-sha256", "b,r,d,i", "--outputs"]
+            try:
+                self.assertEqual(R.main(), 1)
+            finally:
+                sys.argv = old
+            self.assertFalse(json.loads((out / "wfe" / "output_mismatch.json").read_text())["crc_ok"])
+        for l in links:
+            l._ser.close()
+
     def test_campaign_conditions(self):
         sys.path.insert(0, str(REPO / "host" / "board"))
         import run_driver_events as R

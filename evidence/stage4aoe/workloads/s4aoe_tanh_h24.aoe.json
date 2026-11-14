@@ -1,0 +1,114 @@
+{
+ "config": "s4aoe_tanh_h24",
+ "group": "C",
+ "h": 24,
+ "description": "Conv 1x1 (no fused act) -> TANH",
+ "n_ofm": 55296,
+ "n_ifm": 1,
+ "aoe_seed": 20261116,
+ "model_sha256": "12cae2bddc2d9ca790f979a5cfc400830cc422db540f2fd91dfc906f618c3e0c",
+ "reference": {
+  "n": 55296,
+  "opt_vs_ref": 49,
+  "max_abs": 6,
+  "ref_negative": 27221,
+  "ref_min": -128,
+  "ref_max": 127,
+  "opt_sha256": "6a3670ec3fe8c1043a28bff367fb508c536bd32e38624a8082449ddb1593b140",
+  "ref_sha256": "0c564523c13d6567e6be25f3a6a4f1077676677b9712e81f798a586c6f43e3a7"
+ },
+ "pack_rc": 0,
+ "pack_log_tail": [
+  " \"power_ctrl\": 0,",
+  " \"fast_base\": 823132160,",
+  " \"ta_profile\": 1",
+  "}"
+ ],
+ "vela_ops": [
+  "CUSTOM:ethos-u"
+ ],
+ "cpu_fallback": [],
+ "scheduled": [
+  {
+   "operator": "Conv2D",
+   "npu_cycles": "16660",
+   "mac_count": "884736"
+  },
+  {
+   "operator": "LUT",
+   "npu_cycles": "0",
+   "mac_count": "0"
+  }
+ ],
+ "perf_main": [
+  {
+   "id": "10",
+   "mac_cycles": "8019",
+   "ao_cycles": "4224",
+   "cmd_cycles": "1004",
+   "ofm_block_h": "6",
+   "ofm_block_w": "12",
+   "ofm_block_c": "96",
+   "ifm_block_h": "6",
+   "ifm_block_w": "12",
+   "ifm_block_c": "16",
+   "ofm_ublock_h": "2",
+   "ofm_ublock_w": "2",
+   "ofm_ublock_c": "32",
+   "traversal": "PartKernel"
+  }
+ ],
+ "perf_debug": [
+  {
+   "id": "10",
+   "ifm_memory": "Dram",
+   "ifm2_memory": "",
+   "ofm_memory": "Dram",
+   "ifm_format": "NHWC",
+   "ofm_format": "NHWC",
+   "weight_total_bytes": "2752",
+   "cascade": "0"
+  },
+  {
+   "id": "15",
+   "ifm_memory": "Dram",
+   "ifm2_memory": "",
+   "ofm_memory": "Dram",
+   "ifm_format": "NHCWB16",
+   "ofm_format": "NHWC",
+   "weight_total_bytes": "",
+   "cascade": "0"
+  }
+ ],
+ "kernels": [
+  {
+   "kind": "CONV",
+   "ifm_storage": 0,
+   "ifm2_storage": null,
+   "ofm_storage": 0,
+   "ifm_precision": 1,
+   "ofm_precision": 1,
+   "activation": 4
+  },
+  {
+   "kind": "CONV",
+   "ifm_storage": 0,
+   "ifm2_storage": null,
+   "ofm_storage": 0,
+   "ifm_precision": 1,
+   "ofm_precision": 1,
+   "activation": 4
+  }
+ ],
+ "kernel_kinds": [
+  "CONV",
+  "CONV"
+ ],
+ "cms_len": 548,
+ "cms_sha256": "7d2501d20bbaf4891cfa0b540cc729938cf08a2b08d0a599d71d6d31c7a077dc",
+ "drwl_sha256": "a257e22b45ffad0d25ca2dc4e3ea6835d6df999c51e1f05d23963327a1a5ac5f",
+ "golden_sha256": "0c564523c13d6567e6be25f3a6a4f1077676677b9712e81f798a586c6f43e3a7",
+ "tflite_ofm_sha256": "6a3670ec3fe8c1043a28bff367fb508c536bd32e38624a8082449ddb1593b140",
+ "arena_size": 64512,
+ "fast_size": 4032
+}

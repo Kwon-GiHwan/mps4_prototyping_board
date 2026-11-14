@@ -76,13 +76,31 @@
 - 사전 데이터와 비교: Stage 4 DW 56×56×144는 N/AO = 15.85 (0.991)로, 이번 Conv 1×1 (0.976–0.978)보다 높다.
   연산이나 블록 구성에 따라 AO 처리율이 달라질 가능성이 있다 (미검증).
 
-## 3. Activation 비교 (Phase C) — 판정 불가
+## 3. Activation 비교 (Phase C) — 판정 불가 (확정: INCONCLUSIVE, §3a)
 
 - act_none: INVALID. NPU 출력이 tflite_runtime CPU reference와 **57개 원소에서 1 LSB** 다르다. RELU6 구성은 모두 PASS_EXACT였다.
   NONE은 음수 출력을 클램프하지 않으므로, 음수 영역에서 반올림이 다를 가능성이 있다. 이것은 **미검증 가설**이다:
   출력 파일이 저장되지 않아 어느 원소가 다른지 확인할 수 없다.
 - act_relu: NOT_MEASURED. judge는 측정되지 않은 config를 `INVALID`로 표기하는데, 실제 의미는 미측정이다.
 - 계약 §9에 따라 재측정하지 않았다 (별도 승인 필요).
+
+## 3a. 확정 판정과 1 LSB 불일치 원인 진단 (2026-11-15, owner 결정 후 추가)
+
+- owner 결정 (ChatGPT 경유): **Phase C = INCONCLUSIVE**. 추가 보드 측정 없이 종료한다. 출력 검증 기준(PASS_EXACT)과 기존 결과는 바꾸지 않는다.
+- 원인 진단은 보드 없이 했다 (Stage 4AO-E, `results/fi101_stage4aoe/rounding.json`, `refcheck.json`).
+  1. 명령 스트림의 `NPU_SET_OFM_SCALE`: round_mode = double_symmetric (0), dbl_rnd 0, shift 40, scale 1,338,618,422.
+  2. TRM §3.6 `rounded_shift_right`대로 이 값으로 출력을 에뮬레이션하면, packed golden(tflite_runtime 2.14 기본 = 최적화 커널)과
+     act_none에서 **정확히 57개, 모두 NPU − golden = −1**이 다르다. 보드 관측(57개, 최대 차이 1)과 같다. RELU/RELU6에서는 0개다.
+  3. 같은 입력으로 tflite_runtime **BUILTIN_REF (reference 커널)**를 돌리면 에뮬레이션과 세 구성 모두 0개 차이다.
+     기본 커널 golden과는 act_none에서만 57개 다르다.
+  4. 해석: 두 커널 모두 Q31 곱셈 뒤 2단계 반올림을 쓰지만, 마지막 단계에서 정확히 .5인 값을 reference/NPU는 0에서 먼 쪽으로,
+     최적화 커널은 +∞ 쪽으로 보낸다. 그래서 음수 출력의 .5 경계 57곳에서만 1 LSB가 다르다 (예: −13.5 → NPU −14, golden −13).
+     ReLU/ReLU6에서는 음수가 0으로 잘려 차이가 보이지 않는다.
+  5. 기존 측정 workload 53개 (Stage 4·4C·4C-2·4K·4AO)의 golden은 모두 BUILTIN_REF와 바이트 동일하다. **이미 보고한 PASS_EXACT
+     결과에는 영향이 없다.** 기본 커널과 reference 커널이 다른 것은 act_none, chain_conv_add, lut_tanh, lut_logistic뿐이다
+     (모두 측정되지 않았거나 INVALID였던 구성).
+  6. 남은 증명: NPU 출력 자체를 저장해 확인하지 않았다 (보드 출력 파일 없음). 정적 에뮬레이션과 reference 커널의 일치라는 강한
+     근거이지만 보드 증거는 아니다. 출력 보존 기능을 추가했다 (`run_driver_events.py` `output_mismatch.bin`).
 
 ## 4. 파일
 

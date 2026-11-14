@@ -125,6 +125,21 @@ def write_outputs(d: pathlib.Path, raw: list, rows: list, summ: dict) -> None:
     (d / "summary.json").write_text(json.dumps(summ, indent=2, default=str))
 
 
+def keep_mismatch_output(link, run: dict, d: pathlib.Path) -> None:
+    """Stage 4AO-E: before a stop on an output mismatch, the outputs of that RUN (already measured; nothing is run
+    again) into output_mismatch.bin, with output_mismatch.json (set, rep, CRC check). A transport error here is
+    recorded and does not replace the refusal that follows."""
+    d.mkdir(parents=True, exist_ok=True)
+    note = dict(set_id=run["set_id"], rep=run["rep"], output_len=run.get("output_len"), crc32=run.get("output_crc32"))
+    try:
+        data = link.get_output(run["output_len"])
+        note["crc_ok"] = zlib.crc32(data) == run["output_crc32"]
+        (d / "output_mismatch.bin").write_bytes(data)
+    except (Nack, ProtocolError) as e:
+        note["error"] = repr(e)
+    (d / "output_mismatch.json").write_text(json.dumps(note, indent=1))
+
+
 def run_condition(link, cond, sets, ctx, d: pathlib.Path, raw: list, rows: list) -> None:
     """Every RUN of one condition into raw/rows (appended as they come, so a refusal keeps what ran)."""
     link.set_run_options(cond.wait_mode, cond.pmccntr_cfg, cond.trace_word)
@@ -174,6 +189,8 @@ def run_condition(link, cond, sets, ctx, d: pathlib.Path, raw: list, rows: list)
                   f"{failed or ''}", flush=True)
             placement_check(r, ctx["placement"])
             if ctx["stop_on_invalid"] and (not ok or r.f["ofm_mismatch"] != 0):
+                if ctx["outputs"] and r.f["ofm_mismatch"] != 0:
+                    keep_mismatch_output(link, raw[-1], d)
                 raise E.fail_rule("RULE_RUN_INVALID", f"{cond.name} set {set_id} rep {rep}: {failed} "
                                                       f"ofm_mismatch={r.f['ofm_mismatch']}")
     if ctx["outputs"] and len(raw) > 1:   # the last RUN's outputs, once per condition; its CRC must match

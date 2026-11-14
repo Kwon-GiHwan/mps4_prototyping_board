@@ -1,0 +1,114 @@
+{
+ "config": "s4aoe_add_mul_h24",
+ "group": "B",
+ "h": 24,
+ "description": "ADD -> MUL, three IFMs",
+ "n_ofm": 55296,
+ "n_ifm": 3,
+ "aoe_seed": 20261116,
+ "model_sha256": "9ca136b38d10df77d5c2219aa0cab9a8a80142fda7bfc640d0adca165b3e6298",
+ "reference": {
+  "n": 55296,
+  "opt_vs_ref": 0,
+  "max_abs": 0,
+  "ref_negative": 26512,
+  "ref_min": -123,
+  "ref_max": 126,
+  "opt_sha256": "6e934cc9c66571c148e8f2b8b46def834ff11588184f28d99b688db0b7485010",
+  "ref_sha256": "6e934cc9c66571c148e8f2b8b46def834ff11588184f28d99b688db0b7485010"
+ },
+ "pack_rc": 0,
+ "pack_log_tail": [
+  " \"power_ctrl\": 0,",
+  " \"fast_base\": 823132160,",
+  " \"ta_profile\": 1",
+  "}"
+ ],
+ "vela_ops": [
+  "CUSTOM:ethos-u"
+ ],
+ "cpu_fallback": [],
+ "scheduled": [
+  {
+   "operator": "Add",
+   "npu_cycles": "6912",
+   "mac_count": "0"
+  },
+  {
+   "operator": "Mul",
+   "npu_cycles": "0",
+   "mac_count": "0"
+  }
+ ],
+ "perf_main": [
+  {
+   "id": "8",
+   "mac_cycles": "",
+   "ao_cycles": "6912",
+   "cmd_cycles": "2494",
+   "ofm_block_h": "24",
+   "ofm_block_w": "42",
+   "ofm_block_c": "96",
+   "ifm_block_h": "24",
+   "ifm_block_w": "42",
+   "ifm_block_c": "96",
+   "ofm_ublock_h": "2",
+   "ofm_ublock_w": "2",
+   "ofm_ublock_c": "32",
+   "traversal": "DepthFirst"
+  }
+ ],
+ "perf_debug": [
+  {
+   "id": "8",
+   "ifm_memory": "Dram",
+   "ifm2_memory": "Dram",
+   "ofm_memory": "Dram",
+   "ifm_format": "NHWC",
+   "ofm_format": "NHCWB16",
+   "weight_total_bytes": "",
+   "cascade": "0"
+  },
+  {
+   "id": "12",
+   "ifm_memory": "Dram",
+   "ifm2_memory": "Dram",
+   "ofm_memory": "Dram",
+   "ifm_format": "NHCWB16",
+   "ofm_format": "NHWC",
+   "weight_total_bytes": "",
+   "cascade": "0"
+  }
+ ],
+ "kernels": [
+  {
+   "kind": "ELEMENTWISE",
+   "ifm_storage": 0,
+   "ifm2_storage": 0,
+   "ofm_storage": 2,
+   "ifm_precision": 1,
+   "ofm_precision": 33089,
+   "activation": 0
+  },
+  {
+   "kind": "ELEMENTWISE",
+   "ifm_storage": 2,
+   "ifm2_storage": 0,
+   "ofm_storage": 0,
+   "ifm_precision": 32833,
+   "ofm_precision": 257,
+   "activation": 0
+  }
+ ],
+ "kernel_kinds": [
+  "ELEMENTWISE",
+  "ELEMENTWISE"
+ ],
+ "cms_len": 460,
+ "cms_sha256": "c282b810548c9a8a1bc646af168c4962168f71457a820158b28980452f586273",
+ "drwl_sha256": "c3eab559eaf1912d1415b31d96d3c0fafbb7272433f86b31949a49854e5556de",
+ "golden_sha256": "6e934cc9c66571c148e8f2b8b46def834ff11588184f28d99b688db0b7485010",
+ "tflite_ofm_sha256": "6e934cc9c66571c148e8f2b8b46def834ff11588184f28d99b688db0b7485010",
+ "arena_size": 165888,
+ "fast_size": 0
+}

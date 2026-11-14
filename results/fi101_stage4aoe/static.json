@@ -1,0 +1,972 @@
+{
+ "s4aoe_add_h24": {
+  "config": "s4aoe_add_h24",
+  "group": "A",
+  "h": 24,
+  "n_ofm": 55296,
+  "n_ifm": 2,
+  "passes": [
+   {
+    "kind": "ELEMENTWISE",
+    "src": "IFM",
+    "dst": "OB",
+    "ofm_bits": 8,
+    "lut": false,
+    "elements": 55296
+   }
+  ],
+  "n_passes": 1,
+  "logical_elements": 55296,
+  "chained": false,
+  "lut": false,
+  "geometry": [
+   {
+    "h": 24,
+    "w": 24,
+    "c": 96,
+    "blk": [
+     24,
+     42,
+     96
+    ],
+    "dma": []
+   }
+  ],
+  "exactness": "EXACT_EITHER",
+  "reference": {
+   "n": 55296,
+   "opt_vs_ref": 0,
+   "max_abs": 0,
+   "ref_negative": 27578,
+   "ref_min": -128,
+   "ref_max": 127,
+   "opt_sha256": "ca2e6aef2705720c2290ada5b2db4e9171be33233a163b9e317c87abd82b5722",
+   "ref_sha256": "ca2e6aef2705720c2290ada5b2db4e9171be33233a163b9e317c87abd82b5722"
+  },
+  "selection": {
+   "verdict": "SELECTED",
+   "why": []
+  },
+  "kernel_kinds": [
+   "ELEMENTWISE"
+  ],
+  "scheduled": [
+   {
+    "operator": "Add",
+    "npu_cycles": "3456",
+    "mac_count": "0"
+   }
+  ],
+  "vela_ao_cycles": 3456.0,
+  "memories": [
+   {
+    "id": "5",
+    "ifm_memory": "Dram",
+    "ifm2_memory": "Dram",
+    "ofm_memory": "Dram",
+    "ifm_format": "NHWC",
+    "ofm_format": "NHWC",
+    "weight_total_bytes": "",
+    "cascade": "0"
+   }
+  ],
+  "drwl_sha256": "dfbe74f3d5c579acc280411868546572f617cbcb500dacfea86d66edd381c0ce",
+  "golden_sha256": "ca2e6aef2705720c2290ada5b2db4e9171be33233a163b9e317c87abd82b5722",
+  "tflite_ofm_sha256": "ca2e6aef2705720c2290ada5b2db4e9171be33233a163b9e317c87abd82b5722",
+  "arena_size": 110592,
+  "fast_size": 0
+ },
+ "s4aoe_add_h72": {
+  "config": "s4aoe_add_h72",
+  "group": "A",
+  "h": 72,
+  "n_ofm": 165888,
+  "n_ifm": 2,
+  "passes": [
+   {
+    "kind": "ELEMENTWISE",
+    "src": "IFM",
+    "dst": "OB",
+    "ofm_bits": 8,
+    "lut": false,
+    "elements": 165888
+   }
+  ],
+  "n_passes": 1,
+  "logical_elements": 165888,
+  "chained": false,
+  "lut": false,
+  "geometry": [
+   {
+    "h": 72,
+    "w": 24,
+    "c": 96,
+    "blk": [
+     72,
+     42,
+     96
+    ],
+    "dma": []
+   }
+  ],
+  "exactness": "EXACT_EITHER",
+  "reference": {
+   "n": 165888,
+   "opt_vs_ref": 0,
+   "max_abs": 0,
+   "ref_negative": 83080,
+   "ref_min": -128,
+   "ref_max": 127,
+   "opt_sha256": "347faa7d5b69799b388d72d91103d27ed55be01ee2ef5cf52abce36d1d1732e3",
+   "ref_sha256": "347faa7d5b69799b388d72d91103d27ed55be01ee2ef5cf52abce36d1d1732e3"
+  },
+  "selection": {
+   "verdict": "SELECTED",
+   "why": []
+  },
+  "kernel_kinds": [
+   "ELEMENTWISE"
+  ],
+  "scheduled": [
+   {
+    "operator": "Add",
+    "npu_cycles": "10368",
+    "mac_count": "0"
+   }
+  ],
+  "vela_ao_cycles": 10368.0,
+  "memories": [
+   {
+    "id": "5",
+    "ifm_memory": "Dram",
+    "ifm2_memory": "Dram",
+    "ofm_memory": "Dram",
+    "ifm_format": "NHWC",
+    "ofm_format": "NHWC",
+    "weight_total_bytes": "",
+    "cascade": "0"
+   }
+  ],
+  "drwl_sha256": "be981ef6916fa19a7c20e4914199ce5e2a25c36bf2d7e97b4a11d51d4846082c",
+  "golden_sha256": "347faa7d5b69799b388d72d91103d27ed55be01ee2ef5cf52abce36d1d1732e3",
+  "tflite_ofm_sha256": "347faa7d5b69799b388d72d91103d27ed55be01ee2ef5cf52abce36d1d1732e3",
+  "arena_size": 331776,
+  "fast_size": 0
+ },
+ "s4aoe_mul_h24": {
+  "config": "s4aoe_mul_h24",
+  "group": "A",
+  "h": 24,
+  "n_ofm": 55296,
+  "n_ifm": 2,
+  "passes": [
+   {
+    "kind": "ELEMENTWISE",
+    "src": "IFM",
+    "dst": "OB",
+    "ofm_bits": 8,
+    "lut": false,
+    "elements": 55296
+   }
+  ],
+  "n_passes": 1,
+  "logical_elements": 55296,
+  "chained": false,
+  "lut": false,
+  "geometry": [
+   {
+    "h": 24,
+    "w": 24,
+    "c": 96,
+    "blk": [
+     24,
+     42,
+     96
+    ],
+    "dma": []
+   }
+  ],
+  "exactness": "EXACT_EITHER",
+  "reference": {
+   "n": 55296,
+   "opt_vs_ref": 0,
+   "max_abs": 0,
+   "ref_negative": 27037,
+   "ref_min": -127,
+   "ref_max": 127,
+   "opt_sha256": "d4c5f7f7fab56bc37e5f58aeda776eaa6a1efe031b8fdf202d20f01fbd51df0d",
+   "ref_sha256": "d4c5f7f7fab56bc37e5f58aeda776eaa6a1efe031b8fdf202d20f01fbd51df0d"
+  },
+  "selection": {
+   "verdict": "SELECTED",
+   "why": []
+  },
+  "kernel_kinds": [
+   "ELEMENTWISE"
+  ],
+  "scheduled": [
+   {
+    "operator": "Mul",
+    "npu_cycles": "3456",
+    "mac_count": "0"
+   }
+  ],
+  "vela_ao_cycles": 3456.0,
+  "memories": [
+   {
+    "id": "5",
+    "ifm_memory": "Dram",
+    "ifm2_memory": "Dram",
+    "ofm_memory": "Dram",
+    "ifm_format": "NHWC",
+    "ofm_format": "NHWC",
+    "weight_total_bytes": "",
+    "cascade": "0"
+   }
+  ],
+  "drwl_sha256": "3a96dd083afe7564fb84ffce35d5b553384bb40e2fd7cce1b7877202eff66b0c",
+  "golden_sha256": "d4c5f7f7fab56bc37e5f58aeda776eaa6a1efe031b8fdf202d20f01fbd51df0d",
+  "tflite_ofm_sha256": "d4c5f7f7fab56bc37e5f58aeda776eaa6a1efe031b8fdf202d20f01fbd51df0d",
+  "arena_size": 110592,
+  "fast_size": 0
+ },
+ "s4aoe_mul_h72": {
+  "config": "s4aoe_mul_h72",
+  "group": "A",
+  "h": 72,
+  "n_ofm": 165888,
+  "n_ifm": 2,
+  "passes": [
+   {
+    "kind": "ELEMENTWISE",
+    "src": "IFM",
+    "dst": "OB",
+    "ofm_bits": 8,
+    "lut": false,
+    "elements": 165888
+   }
+  ],
+  "n_passes": 1,
+  "logical_elements": 165888,
+  "chained": false,
+  "lut": false,
+  "geometry": [
+   {
+    "h": 72,
+    "w": 24,
+    "c": 96,
+    "blk": [
+     72,
+     42,
+     96
+    ],
+    "dma": []
+   }
+  ],
+  "exactness": "EXACT_EITHER",
+  "reference": {
+   "n": 165888,
+   "opt_vs_ref": 0,
+   "max_abs": 0,
+   "ref_negative": 80902,
+   "ref_min": -127,
+   "ref_max": 127,
+   "opt_sha256": "b81e3ed7f92cd63a73f6c40f0305f7baa1537e0ce44cc6e751ff5278acd64b91",
+   "ref_sha256": "b81e3ed7f92cd63a73f6c40f0305f7baa1537e0ce44cc6e751ff5278acd64b91"
+  },
+  "selection": {
+   "verdict": "SELECTED",
+   "why": []
+  },
+  "kernel_kinds": [
+   "ELEMENTWISE"
+  ],
+  "scheduled": [
+   {
+    "operator": "Mul",
+    "npu_cycles": "10368",
+    "mac_count": "0"
+   }
+  ],
+  "vela_ao_cycles": 10368.0,
+  "memories": [
+   {
+    "id": "5",
+    "ifm_memory": "Dram",
+    "ifm2_memory": "Dram",
+    "ofm_memory": "Dram",
+    "ifm_format": "NHWC",
+    "ofm_format": "NHWC",
+    "weight_total_bytes": "",
+    "cascade": "0"
+   }
+  ],
+  "drwl_sha256": "16c238a2178a5005beda65b1e30caaaee45dcfe0349fdd6d38bc02bba84e26b8",
+  "golden_sha256": "b81e3ed7f92cd63a73f6c40f0305f7baa1537e0ce44cc6e751ff5278acd64b91",
+  "tflite_ofm_sha256": "b81e3ed7f92cd63a73f6c40f0305f7baa1537e0ce44cc6e751ff5278acd64b91",
+  "arena_size": 331776,
+  "fast_size": 0
+ },
+ "s4aoe_abs_h24": {
+  "config": "s4aoe_abs_h24",
+  "group": "A",
+  "h": 24,
+  "n_ofm": 55296,
+  "n_ifm": 1,
+  "passes": [
+   {
+    "kind": "ELEMENTWISE",
+    "src": "IFM",
+    "dst": "OB",
+    "ofm_bits": 8,
+    "lut": false,
+    "elements": 55296
+   }
+  ],
+  "n_passes": 1,
+  "logical_elements": 55296,
+  "chained": false,
+  "lut": false,
+  "geometry": [
+   {
+    "h": 24,
+    "w": 24,
+    "c": 96,
+    "blk": [
+     24,
+     42,
+     96
+    ],
+    "dma": []
+   }
+  ],
+  "exactness": "EXACT_EITHER",
+  "reference": {
+   "n": 55296,
+   "opt_vs_ref": 0,
+   "max_abs": 0,
+   "ref_negative": 0,
+   "ref_min": 0,
+   "ref_max": 127,
+   "opt_sha256": "8498ce02004f0bcd3ac12b9e1a2548b6c898281990efd4e7867b94ef38ea6635",
+   "ref_sha256": "8498ce02004f0bcd3ac12b9e1a2548b6c898281990efd4e7867b94ef38ea6635"
+  },
+  "selection": {
+   "verdict": "SELECTED",
+   "why": []
+  },
+  "kernel_kinds": [
+   "ELEMENTWISE"
+  ],
+  "scheduled": [
+   {
+    "operator": "Abs",
+    "npu_cycles": "3456",
+    "mac_count": "0"
+   }
+  ],
+  "vela_ao_cycles": 3456.0,
+  "memories": [
+   {
+    "id": "4",
+    "ifm_memory": "Dram",
+    "ifm2_memory": "",
+    "ofm_memory": "Dram",
+    "ifm_format": "NHWC",
+    "ofm_format": "NHWC",
+    "weight_total_bytes": "",
+    "cascade": "0"
+   }
+  ],
+  "drwl_sha256": "66e138cc0cbb390aefeb1ce68c635492903b3af50b319576f7a6261c0f12bbf6",
+  "golden_sha256": "8498ce02004f0bcd3ac12b9e1a2548b6c898281990efd4e7867b94ef38ea6635",
+  "tflite_ofm_sha256": "8498ce02004f0bcd3ac12b9e1a2548b6c898281990efd4e7867b94ef38ea6635",
+  "arena_size": 55296,
+  "fast_size": 0
+ },
+ "s4aoe_abs_h72": {
+  "config": "s4aoe_abs_h72",
+  "group": "A",
+  "h": 72,
+  "n_ofm": 165888,
+  "n_ifm": 1,
+  "passes": [
+   {
+    "kind": "ELEMENTWISE",
+    "src": "IFM",
+    "dst": "OB",
+    "ofm_bits": 8,
+    "lut": false,
+    "elements": 165888
+   }
+  ],
+  "n_passes": 1,
+  "logical_elements": 165888,
+  "chained": false,
+  "lut": false,
+  "geometry": [
+   {
+    "h": 72,
+    "w": 24,
+    "c": 96,
+    "blk": [
+     72,
+     42,
+     96
+    ],
+    "dma": []
+   }
+  ],
+  "exactness": "EXACT_EITHER",
+  "reference": {
+   "n": 165888,
+   "opt_vs_ref": 0,
+   "max_abs": 0,
+   "ref_negative": 0,
+   "ref_min": 0,
+   "ref_max": 127,
+   "opt_sha256": "3957964a1de0abb1188b2299c3bceeaa1e3e88464a727b8a5710cada81b8715b",
+   "ref_sha256": "3957964a1de0abb1188b2299c3bceeaa1e3e88464a727b8a5710cada81b8715b"
+  },
+  "selection": {
+   "verdict": "SELECTED",
+   "why": []
+  },
+  "kernel_kinds": [
+   "ELEMENTWISE"
+  ],
+  "scheduled": [
+   {
+    "operator": "Abs",
+    "npu_cycles": "10368",
+    "mac_count": "0"
+   }
+  ],
+  "vela_ao_cycles": 10368.0,
+  "memories": [
+   {
+    "id": "4",
+    "ifm_memory": "Dram",
+    "ifm2_memory": "",
+    "ofm_memory": "Dram",
+    "ifm_format": "NHWC",
+    "ofm_format": "NHWC",
+    "weight_total_bytes": "",
+    "cascade": "0"
+   }
+  ],
+  "drwl_sha256": "e5d5ed2051ced7ba87028a64070bf9cbcaf6a56918658c8772389d56ed94c2e0",
+  "golden_sha256": "3957964a1de0abb1188b2299c3bceeaa1e3e88464a727b8a5710cada81b8715b",
+  "tflite_ofm_sha256": "3957964a1de0abb1188b2299c3bceeaa1e3e88464a727b8a5710cada81b8715b",
+  "arena_size": 165888,
+  "fast_size": 0
+ },
+ "s4aoe_conv_add_h24": {
+  "config": "s4aoe_conv_add_h24",
+  "group": "B",
+  "h": 24,
+  "n_ofm": 55296,
+  "n_ifm": 2,
+  "passes": [
+   {
+    "kind": "CONV",
+    "src": "AB",
+    "dst": "CB",
+    "ofm_bits": 8,
+    "lut": false,
+    "elements": 9216
+   },
+   {
+    "kind": "ELEMENTWISE",
+    "src": "CB",
+    "dst": "OB",
+    "ofm_bits": 8,
+    "lut": false,
+    "elements": 9216
+   },
+   {
+    "kind": "CONV",
+    "src": "AB",
+    "dst": "CB",
+    "ofm_bits": 8,
+    "lut": false,
+    "elements": 46080
+   },
+   {
+    "kind": "ELEMENTWISE",
+    "src": "CB",
+    "dst": "OB",
+    "ofm_bits": 8,
+    "lut": false,
+    "elements": 46080
+   }
+  ],
+  "n_passes": 4,
+  "logical_elements": 110592,
+  "chained": true,
+  "lut": false,
+  "geometry": [
+   {
+    "h": 24,
+    "w": 24,
+    "c": 16,
+    "blk": [
+     6,
+     12,
+     96
+    ],
+    "dma": [
+     1024
+    ]
+   },
+   {
+    "h": 24,
+    "w": 24,
+    "c": 16,
+    "blk": [
+     6,
+     12,
+     96
+    ],
+    "dma": []
+   },
+   {
+    "h": 24,
+    "w": 24,
+    "c": 80,
+    "blk": [
+     6,
+     12,
+     96
+    ],
+    "dma": [
+     3008
+    ]
+   },
+   {
+    "h": 24,
+    "w": 24,
+    "c": 80,
+    "blk": [
+     6,
+     12,
+     96
+    ],
+    "dma": []
+   }
+  ],
+  "exactness": "REF_ONLY",
+  "reference": {
+   "n": 55296,
+   "opt_vs_ref": 48,
+   "max_abs": 4,
+   "ref_negative": 27613,
+   "ref_min": -128,
+   "ref_max": 127,
+   "opt_sha256": "ce638bc4b85144d3aed9cb7dea9b37e549f7a1ffbf4bae6da0434e7ae8468f9b",
+   "ref_sha256": "a5d33f976bfb50288382490f90ad1de2d973099c72f7f3fca15756caf7152eb4"
+  },
+  "selection": {
+   "verdict": "NEEDS_GOLDEN_RULE",
+   "why": [
+    "default and BUILTIN_REF kernels differ"
+   ]
+  },
+  "kernel_kinds": [
+   "CONV",
+   "ELEMENTWISE",
+   "CONV",
+   "ELEMENTWISE"
+  ],
+  "scheduled": [
+   {
+    "operator": "Conv2D",
+    "npu_cycles": "16588",
+    "mac_count": "884736"
+   },
+   {
+    "operator": "Add",
+    "npu_cycles": "0",
+    "mac_count": "0"
+   }
+  ],
+  "vela_ao_cycles": 7680.0,
+  "memories": [
+   {
+    "id": "9",
+    "ifm_memory": "Dram",
+    "ifm2_memory": "",
+    "ofm_memory": "Dram",
+    "ifm_format": "NHWC",
+    "ofm_format": "NHCWB16",
+    "weight_total_bytes": "2752",
+    "cascade": "0"
+   },
+   {
+    "id": "14",
+    "ifm_memory": "Dram",
+    "ifm2_memory": "Dram",
+    "ofm_memory": "Dram",
+    "ifm_format": "NHCWB16",
+    "ofm_format": "NHWC",
+    "weight_total_bytes": "",
+    "cascade": "0"
+   }
+  ],
+  "drwl_sha256": "e1852465337701b866f6a57519d47b786bccb87d4ea89331bdc9de5d5279243e",
+  "golden_sha256": "a5d33f976bfb50288382490f90ad1de2d973099c72f7f3fca15756caf7152eb4",
+  "tflite_ofm_sha256": "ce638bc4b85144d3aed9cb7dea9b37e549f7a1ffbf4bae6da0434e7ae8468f9b",
+  "arena_size": 119808,
+  "fast_size": 4032
+ },
+ "s4aoe_add_mul_h24": {
+  "config": "s4aoe_add_mul_h24",
+  "group": "B",
+  "h": 24,
+  "n_ofm": 55296,
+  "n_ifm": 3,
+  "passes": [
+   {
+    "kind": "ELEMENTWISE",
+    "src": "IFM",
+    "dst": "CB",
+    "ofm_bits": 8,
+    "lut": false,
+    "elements": 55296
+   },
+   {
+    "kind": "ELEMENTWISE",
+    "src": "CB",
+    "dst": "OB",
+    "ofm_bits": 8,
+    "lut": false,
+    "elements": 55296
+   }
+  ],
+  "n_passes": 2,
+  "logical_elements": 110592,
+  "chained": true,
+  "lut": false,
+  "geometry": [
+   {
+    "h": 24,
+    "w": 24,
+    "c": 96,
+    "blk": [
+     24,
+     42,
+     96
+    ],
+    "dma": []
+   },
+   {
+    "h": 24,
+    "w": 24,
+    "c": 96,
+    "blk": [
+     24,
+     42,
+     96
+    ],
+    "dma": []
+   }
+  ],
+  "exactness": "EXACT_EITHER",
+  "reference": {
+   "n": 55296,
+   "opt_vs_ref": 0,
+   "max_abs": 0,
+   "ref_negative": 26512,
+   "ref_min": -123,
+   "ref_max": 126,
+   "opt_sha256": "6e934cc9c66571c148e8f2b8b46def834ff11588184f28d99b688db0b7485010",
+   "ref_sha256": "6e934cc9c66571c148e8f2b8b46def834ff11588184f28d99b688db0b7485010"
+  },
+  "selection": {
+   "verdict": "SELECTED",
+   "why": []
+  },
+  "kernel_kinds": [
+   "ELEMENTWISE",
+   "ELEMENTWISE"
+  ],
+  "scheduled": [
+   {
+    "operator": "Add",
+    "npu_cycles": "6912",
+    "mac_count": "0"
+   },
+   {
+    "operator": "Mul",
+    "npu_cycles": "0",
+    "mac_count": "0"
+   }
+  ],
+  "vela_ao_cycles": 6912.0,
+  "memories": [
+   {
+    "id": "8",
+    "ifm_memory": "Dram",
+    "ifm2_memory": "Dram",
+    "ofm_memory": "Dram",
+    "ifm_format": "NHWC",
+    "ofm_format": "NHCWB16",
+    "weight_total_bytes": "",
+    "cascade": "0"
+   },
+   {
+    "id": "12",
+    "ifm_memory": "Dram",
+    "ifm2_memory": "Dram",
+    "ofm_memory": "Dram",
+    "ifm_format": "NHCWB16",
+    "ofm_format": "NHWC",
+    "weight_total_bytes": "",
+    "cascade": "0"
+   }
+  ],
+  "drwl_sha256": "c3eab559eaf1912d1415b31d96d3c0fafbb7272433f86b31949a49854e5556de",
+  "golden_sha256": "6e934cc9c66571c148e8f2b8b46def834ff11588184f28d99b688db0b7485010",
+  "tflite_ofm_sha256": "6e934cc9c66571c148e8f2b8b46def834ff11588184f28d99b688db0b7485010",
+  "arena_size": 165888,
+  "fast_size": 0
+ },
+ "s4aoe_tanh_h24": {
+  "config": "s4aoe_tanh_h24",
+  "group": "C",
+  "h": 24,
+  "n_ofm": 55296,
+  "n_ifm": 1,
+  "passes": [
+   {
+    "kind": "CONV",
+    "src": "AB",
+    "dst": "OB",
+    "ofm_bits": 8,
+    "lut": true,
+    "elements": 9216
+   },
+   {
+    "kind": "CONV",
+    "src": "AB",
+    "dst": "OB",
+    "ofm_bits": 8,
+    "lut": true,
+    "elements": 46080
+   }
+  ],
+  "n_passes": 2,
+  "logical_elements": 55296,
+  "chained": false,
+  "lut": true,
+  "geometry": [
+   {
+    "h": 24,
+    "w": 24,
+    "c": 16,
+    "blk": [
+     6,
+     12,
+     96
+    ],
+    "dma": [
+     1024,
+     256
+    ]
+   },
+   {
+    "h": 24,
+    "w": 24,
+    "c": 80,
+    "blk": [
+     6,
+     12,
+     96
+    ],
+    "dma": [
+     3008
+    ]
+   }
+  ],
+  "exactness": "REF_ONLY",
+  "reference": {
+   "n": 55296,
+   "opt_vs_ref": 49,
+   "max_abs": 6,
+   "ref_negative": 27221,
+   "ref_min": -128,
+   "ref_max": 127,
+   "opt_sha256": "6a3670ec3fe8c1043a28bff367fb508c536bd32e38624a8082449ddb1593b140",
+   "ref_sha256": "0c564523c13d6567e6be25f3a6a4f1077676677b9712e81f798a586c6f43e3a7"
+  },
+  "selection": {
+   "verdict": "NEEDS_GOLDEN_RULE",
+   "why": [
+    "default and BUILTIN_REF kernels differ"
+   ]
+  },
+  "kernel_kinds": [
+   "CONV",
+   "CONV"
+  ],
+  "scheduled": [
+   {
+    "operator": "Conv2D",
+    "npu_cycles": "16660",
+    "mac_count": "884736"
+   },
+   {
+    "operator": "LUT",
+    "npu_cycles": "0",
+    "mac_count": "0"
+   }
+  ],
+  "vela_ao_cycles": 4224.0,
+  "memories": [
+   {
+    "id": "10",
+    "ifm_memory": "Dram",
+    "ifm2_memory": "",
+    "ofm_memory": "Dram",
+    "ifm_format": "NHWC",
+    "ofm_format": "NHWC",
+    "weight_total_bytes": "2752",
+    "cascade": "0"
+   },
+   {
+    "id": "15",
+    "ifm_memory": "Dram",
+    "ifm2_memory": "",
+    "ofm_memory": "Dram",
+    "ifm_format": "NHCWB16",
+    "ofm_format": "NHWC",
+    "weight_total_bytes": "",
+    "cascade": "0"
+   }
+  ],
+  "drwl_sha256": "a257e22b45ffad0d25ca2dc4e3ea6835d6df999c51e1f05d23963327a1a5ac5f",
+  "golden_sha256": "0c564523c13d6567e6be25f3a6a4f1077676677b9712e81f798a586c6f43e3a7",
+  "tflite_ofm_sha256": "6a3670ec3fe8c1043a28bff367fb508c536bd32e38624a8082449ddb1593b140",
+  "arena_size": 64512,
+  "fast_size": 4032
+ },
+ "s4aoe_logistic_h24": {
+  "config": "s4aoe_logistic_h24",
+  "group": "C",
+  "h": 24,
+  "n_ofm": 55296,
+  "n_ifm": 1,
+  "passes": [
+   {
+    "kind": "CONV",
+    "src": "AB",
+    "dst": "OB",
+    "ofm_bits": 8,
+    "lut": true,
+    "elements": 9216
+   },
+   {
+    "kind": "CONV",
+    "src": "AB",
+    "dst": "OB",
+    "ofm_bits": 8,
+    "lut": true,
+    "elements": 46080
+   }
+  ],
+  "n_passes": 2,
+  "logical_elements": 55296,
+  "chained": false,
+  "lut": true,
+  "geometry": [
+   {
+    "h": 24,
+    "w": 24,
+    "c": 16,
+    "blk": [
+     6,
+     12,
+     96
+    ],
+    "dma": [
+     1024,
+     256
+    ]
+   },
+   {
+    "h": 24,
+    "w": 24,
+    "c": 80,
+    "blk": [
+     6,
+     12,
+     96
+    ],
+    "dma": [
+     3008
+    ]
+   }
+  ],
+  "exactness": "REF_ONLY",
+  "reference": {
+   "n": 55296,
+   "opt_vs_ref": 55,
+   "max_abs": 3,
+   "ref_negative": 27221,
+   "ref_min": -127,
+   "ref_max": 127,
+   "opt_sha256": "d432b1d073e40abea449c0e117ece90b7c6aa2fdc219912a3f7a38db8f8a8d0b",
+   "ref_sha256": "5235a753162a174b5d615423d452c0d79a88e7dbc19116fca0d618c1fe82a895"
+  },
+  "selection": {
+   "verdict": "NEEDS_GOLDEN_RULE",
+   "why": [
+    "default and BUILTIN_REF kernels differ"
+   ]
+  },
+  "kernel_kinds": [
+   "CONV",
+   "CONV"
+  ],
+  "scheduled": [
+   {
+    "operator": "Conv2D",
+    "npu_cycles": "16660",
+    "mac_count": "884736"
+   },
+   {
+    "operator": "LUT",
+    "npu_cycles": "0",
+    "mac_count": "0"
+   }
+  ],
+  "vela_ao_cycles": 4224.0,
+  "memories": [
+   {
+    "id": "10",
+    "ifm_memory": "Dram",
+    "ifm2_memory": "",
+    "ofm_memory": "Dram",
+    "ifm_format": "NHWC",
+    "ofm_format": "NHWC",
+    "weight_total_bytes": "2752",
+    "cascade": "0"
+   },
+   {
+    "id": "15",
+    "ifm_memory": "Dram",
+    "ifm2_memory": "",
+    "ofm_memory": "Dram",
+    "ifm_format": "NHCWB16",
+    "ofm_format": "NHWC",
+    "weight_total_bytes": "",
+    "cascade": "0"
+   }
+  ],
+  "drwl_sha256": "ddf9df243c77a101d24bb656427122f7b655467b69231da4c91a0c6006966323",
+  "golden_sha256": "5235a753162a174b5d615423d452c0d79a88e7dbc19116fca0d618c1fe82a895",
+  "tflite_ofm_sha256": "d432b1d073e40abea449c0e117ece90b7c6aa2fdc219912a3f7a38db8f8a8d0b",
+  "arena_size": 64512,
+  "fast_size": 4032
+ }
+}

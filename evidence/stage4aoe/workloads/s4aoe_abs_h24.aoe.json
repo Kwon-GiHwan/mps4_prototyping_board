@@ -1,0 +1,89 @@
+{
+ "config": "s4aoe_abs_h24",
+ "group": "A",
+ "h": 24,
+ "description": "INT8 ABS, one IFM",
+ "n_ofm": 55296,
+ "n_ifm": 1,
+ "aoe_seed": 20261116,
+ "model_sha256": "70616ee47d4e552bf1ab67079a0baa4807a1f6ef42e7bed720be3560c34d64cf",
+ "reference": {
+  "n": 55296,
+  "opt_vs_ref": 0,
+  "max_abs": 0,
+  "ref_negative": 0,
+  "ref_min": 0,
+  "ref_max": 127,
+  "opt_sha256": "8498ce02004f0bcd3ac12b9e1a2548b6c898281990efd4e7867b94ef38ea6635",
+  "ref_sha256": "8498ce02004f0bcd3ac12b9e1a2548b6c898281990efd4e7867b94ef38ea6635"
+ },
+ "pack_rc": 0,
+ "pack_log_tail": [
+  " \"power_ctrl\": 0,",
+  " \"fast_base\": 823132160,",
+  " \"ta_profile\": 1",
+  "}"
+ ],
+ "vela_ops": [
+  "CUSTOM:ethos-u"
+ ],
+ "cpu_fallback": [],
+ "scheduled": [
+  {
+   "operator": "Abs",
+   "npu_cycles": "3456",
+   "mac_count": "0"
+  }
+ ],
+ "perf_main": [
+  {
+   "id": "4",
+   "mac_cycles": "",
+   "ao_cycles": "3456",
+   "cmd_cycles": "1959",
+   "ofm_block_h": "24",
+   "ofm_block_w": "42",
+   "ofm_block_c": "96",
+   "ifm_block_h": "24",
+   "ifm_block_w": "42",
+   "ifm_block_c": "96",
+   "ofm_ublock_h": "2",
+   "ofm_ublock_w": "2",
+   "ofm_ublock_c": "32",
+   "traversal": "DepthFirst"
+  }
+ ],
+ "perf_debug": [
+  {
+   "id": "4",
+   "ifm_memory": "Dram",
+   "ifm2_memory": "",
+   "ofm_memory": "Dram",
+   "ifm_format": "NHWC",
+   "ofm_format": "NHWC",
+   "weight_total_bytes": "",
+   "cascade": "0"
+  }
+ ],
+ "kernels": [
+  {
+   "kind": "ELEMENTWISE",
+   "ifm_storage": 0,
+   "ifm2_storage": null,
+   "ofm_storage": 0,
+   "ifm_precision": 1,
+   "ofm_precision": 257,
+   "activation": 0
+  }
+ ],
+ "kernel_kinds": [
+  "ELEMENTWISE"
+ ],
+ "cms_len": 244,
+ "cms_sha256": "061653d35cf5951d0dc9a7f12602c451bce1c069fd94dd2f465734d215257050",
+ "drwl_sha256": "66e138cc0cbb390aefeb1ce68c635492903b3af50b319576f7a6261c0f12bbf6",
+ "golden_sha256": "8498ce02004f0bcd3ac12b9e1a2548b6c898281990efd4e7867b94ef38ea6635",
+ "tflite_ofm_sha256": "8498ce02004f0bcd3ac12b9e1a2548b6c898281990efd4e7867b94ef38ea6635",
+ "arena_size": 55296,
+ "fast_size": 0
+}
