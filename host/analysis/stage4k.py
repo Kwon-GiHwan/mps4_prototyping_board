@@ -8,7 +8,8 @@ TA profile 1, driver runner image 70090f1 (DDR/EXT placement, DRWL word 7 = 0), 
   python3 host/analysis/stage4k.py predict <workloads dir> <out dir>      pre-registered MAC_ACTIVE hypotheses
   python3 host/analysis/stage4k.py repro-gate <campaign root> <workloads dir> [<reference wfe folder>]
                                                                           boot 1 (1x1 Cin 16): exit 0 = PASS
-  python3 host/analysis/stage4k.py boot-check <campaign root> <workloads dir> <config>   after every boot: exit 0 = Gate C
+  python3 host/analysis/stage4k.py boot-check <campaign root> <workloads dir> <config> [<reference capabilities.json>]
+                                                                          after every boot: exit 0 = Gate C
   python3 host/analysis/stage4k.py judge <campaign root> <workloads dir> <predictions.json> <out dir>
 
 MAC definitions (per config, from the compiled model; never from a counter):
@@ -219,18 +220,52 @@ def reproduce(now: dict, ref: dict) -> dict:
                 npu_active=(nb["A_35"], na["A_35"]), tolerance=t, compared=len(set(a) & set(b)))
 
 
-def config_result(root: pathlib.Path, wl: pathlib.Path, cfg: str, hyp: dict) -> dict:
+REGIONCFG_DDR, QCONFIG = 0x15F, 3          # region 1 on the EXT port (DDR placement), as the placement A run
+CAPS_REF = "evidence/stage4_placement/raw/evsweep_s4p_run_a/conds/s4p_conv_base_ddr/capabilities.json"
+
+
+def identity(folder: pathlib.Path, wl: pathlib.Path, cfg: str, caps_ref: str | None = None) -> dict:
+    """The boot ran this config on the fixed set-up: every RUN (warm-up included) carries this DRWL's model length,
+    schema 4, placement 0 (DDR/EXT), REGIONCFG 0x15F / QCONFIG 3 at the IRQ, one IRQ, one output CRC (so the
+    warm-up RUN's output equals the measured ones, which output_check compares byte by byte with the CPU reference)
+    and the output length of the CPU reference; capabilities.json (TA registers, AXI, MEM_ATTR, fast memory, NPU
+    config) equals the placement A boot of the same image."""
+    import drwl
+    raw = json.loads((folder / "raw_runs.json").read_text())[1:]
+    model_len = drwl.parse((wl / f"{cfg}.drwl").read_bytes())["model_len"]
+    n_out = len((wl / f"{cfg}.drwl.tflite_ofm.bin").read_bytes())
+    recs = [x["record"] for x in raw]
+    caps_path = folder.parent / "capabilities.json"
+    ref = json.loads(pathlib.Path(caps_ref or REPO / CAPS_REF).read_text())
+    caps = json.loads(caps_path.read_text()) if caps_path.exists() else {}
+    checks = dict(runs=len(raw) == 10,
+                  model_len=bool(recs) and all(r.get("model_len") == model_len for r in recs),
+                  schema=all(r.get("schema") == 4 for r in recs),
+                  placement=all(r.get("placement") == 0 for r in recs),
+                  regioncfg=all(r.get("regioncfg_irq") == REGIONCFG_DDR and r.get("qconfig_irq") == QCONFIG for r in recs),
+                  irq=all(r.get("irq_count") == 1 for r in recs),
+                  one_crc=len({x.get("output_crc32") for x in raw}) == 1,
+                  output_len=all(x.get("output_len") == n_out for x in raw),
+                  capabilities=caps == ref)
+    return dict(ok=all(checks.values()), checks=checks,
+                caps_diff={k: (ref.get(k), caps.get(k)) for k in set(ref) | set(caps) if ref.get(k) != caps.get(k)})
+
+
+def config_result(root: pathlib.Path, wl: pathlib.Path, cfg: str, hyp: dict, caps_ref: str | None = None) -> dict:
+    """Gate C of this stage (owner 2026-11-14: output must be PASS_EXACT): both passes with 4 measured RUNs, every
+    RUN valid, output byte-identical to the CPU reference, and identity() above."""
     folder = root / "conds" / cfg / "wfe"
     if not (folder / "raw_runs.json").exists():
         return dict(verdict="NOT_MEASURED")
     comp = json.loads((wl / f"{cfg}.compile.json").read_text())
     s = summary_of(folder, comp["n_mac"])
     oc = S4.output_check(folder, comp, (wl / f"{cfg}.drwl.tflite_ofm.bin").read_bytes(), s["runs"])
+    ident = identity(folder, wl, cfg, caps_ref)
     valid = all(r["valid"] for rs in s["runs"].values() for r in rs) and sorted(s["runs"]) == [1, 2] \
-        and all(len(rs) == 4 for rs in s["runs"].values())
-    out_ok = oc["verdict"] in ("PASS_EXACT", "PASS_TOLERANCE")
-    return dict(s, comp=comp, output=oc, runs_valid=valid, gate_c="PASS" if valid and out_ok else "FAIL",
-                verdict=verdict(s["mac_active"], valid, out_ok, hyp))
+        and all(len(rs) == 4 for rs in s["runs"].values()) and ident["ok"]
+    out_ok = oc["verdict"] == "PASS_EXACT"
+    return dict(s, comp=comp, output=oc, identity=ident, runs_valid=valid,
+                gate_c="PASS" if valid and out_ok else "FAIL", verdict=verdict(s["mac_active"], valid, out_ok, hyp))
 
 
 def gate_ref(ref: str | None = None) -> dict:
@@ -242,7 +277,8 @@ def gate_ref(ref: str | None = None) -> dict:
 def repro_gate(root: str, wl: str, ref: str | None = None) -> dict:
     """Boot 1 (1x1 Cin 16) on image 70090f1 against the placement A run of the same image and blob (boot 367).
     Fail -> the campaign stops before any 3x3 boot."""
-    r = config_result(pathlib.Path(root), pathlib.Path(wl), BASE, hypotheses(1, 16))
+    caps = str(pathlib.Path(ref).parent / "capabilities.json") if ref else None
+    r = config_result(pathlib.Path(root), pathlib.Path(wl), BASE, hypotheses(1, 16), caps)
     if r["verdict"] in ("NOT_MEASURED", "INVALID"):
         return dict(verdict="FAIL", why=r["verdict"])
     rep = reproduce(r, gate_ref(ref))
@@ -250,12 +286,13 @@ def repro_gate(root: str, wl: str, ref: str | None = None) -> dict:
                 output=r["output"]["verdict"])
 
 
-def boot_check(root: str, wl: str, cfg: str) -> dict:
-    """Stop rule after each boot: Gate C (both passes, 4 measured RUNs each, every RUN valid, output PASS_EXACT or
-    PASS_TOLERANCE with one CRC across RUNs). FAIL -> the session stops; later configs stay NOT_MEASURED."""
-    r = config_result(pathlib.Path(root), pathlib.Path(wl), cfg, {})
+def boot_check(root: str, wl: str, cfg: str, caps_ref: str | None = None) -> dict:
+    """Stop rule after each boot: config_result's Gate C (PASS_EXACT, valid RUNs, identity). FAIL -> the session
+    stops; later configs stay NOT_MEASURED."""
+    r = config_result(pathlib.Path(root), pathlib.Path(wl), cfg, {}, caps_ref)
     return dict(config=cfg, verdict="PASS" if r.get("gate_c") == "PASS" else "FAIL",
-                runs_valid=r.get("runs_valid"), output=r.get("output", {}).get("verdict"), why=r.get("verdict"))
+                runs_valid=r.get("runs_valid"), output=r.get("output", {}).get("verdict"), why=r.get("verdict"),
+                identity=r.get("identity"))
 
 
 def exact(r: dict) -> int | None:
@@ -351,9 +388,12 @@ def judge(root: str, wl: str, pred_path: str, out: str) -> dict:
             macs_per_mac_active=n["nominal"] / mac if mac else None,
             valid_macs_per_mac_active=n["valid"] / mac if mac else None,
             macs_per_npu_active=n["nominal"] / na if na else None,
+            valid_macs_per_npu_active=n["valid"] / na if na else None,
             mac_active_over_npu_active=mac / na if mac and na else None,
             peak_rel_mac_active=n["nominal"] / (PEAK * mac) if mac else None,
             peak_rel_npu_active=n["nominal"] / (PEAK * na) if na else None,
+            relu6_cap_count=r.get("output", {}).get("npu_at_relu6_cap"),
+            relu6_cap_share=(r.get("output", {}).get("npu_at_relu6_cap") or 0) / 55296 if r.get("output") else None,
             ao_active=m.get("A_64"), wd_active=m.get("A_80"), wd_stalled=m.get("A_81"),
             **{f"b{x}": m.get(f"B_{x}") for x in S4.PASS_B[1:]}, ev53=m.get("A_53"), ev55=m.get("A_55")))
     o.mkdir(parents=True, exist_ok=True)
@@ -368,7 +408,7 @@ def judge(root: str, wl: str, pred_path: str, out: str) -> dict:
 def main(argv: list) -> int:
     cmd, a = argv[0], argv[1:]
     if cmd in ("repro-gate", "boot-check"):
-        r = repro_gate(*a[:3]) if cmd == "repro-gate" else boot_check(*a[:3])
+        r = repro_gate(*a[:3]) if cmd == "repro-gate" else boot_check(*a[:4])
         print(json.dumps(r, indent=1, default=str))
         return 0 if r["verdict"] == "PASS" else 1
     r = dict(static=lambda: static(*a[:2]), prior=lambda: prior(a[0]), predict=lambda: predict(*a[:2]),

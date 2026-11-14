@@ -48,6 +48,17 @@ MUTATIONS = [
      "same = lambda a, b: True"),
     ("boot-check: Gate C", A, "return dict(config=cfg, verdict=\"PASS\" if r.get(\"gate_c\") == \"PASS\" else \"FAIL\",",
      "return dict(config=cfg, verdict=\"PASS\","),
+    ("Gate C: PASS_EXACT only", A, "out_ok = oc[\"verdict\"] == \"PASS_EXACT\"",
+     "out_ok = oc[\"verdict\"] in (\"PASS_EXACT\", \"PASS_TOLERANCE\")"),
+    ("Gate C: identity", A, "and all(len(rs) == 4 for rs in s[\"runs\"].values()) and ident[\"ok\"]",
+     "and all(len(rs) == 4 for rs in s[\"runs\"].values())"),
+    ("identity: model length", A, "model_len=bool(recs) and all(r.get(\"model_len\") == model_len for r in recs),", "model_len=True,"),
+    ("identity: placement", A, "placement=all(r.get(\"placement\") == 0 for r in recs),", "placement=True,"),
+    ("identity: REGIONCFG/QCONFIG", A, "regioncfg=all(r.get(\"regioncfg_irq\") == REGIONCFG_DDR and r.get(\"qconfig_irq\") == QCONFIG for r in recs),", "regioncfg=True,"),
+    ("identity: one IRQ", A, "irq=all(r.get(\"irq_count\") == 1 for r in recs),", "irq=True,"),
+    ("identity: schema", A, "schema=all(r.get(\"schema\") == 4 for r in recs),", "schema=True,"),
+    ("identity: one CRC incl. warm-up", A, "one_crc=len({x.get(\"output_crc32\") for x in raw}) == 1,", "one_crc=True,"),
+    ("identity: capabilities", A, "capabilities=caps == ref)", "capabilities=True)"),
     ("predict: MACs = definition", A, "        assert st[\"n_mac\"] == macs(k, cin)[\"nominal\"], c       # the compiled model's MACs = the definition\n", ""),
 ]
 

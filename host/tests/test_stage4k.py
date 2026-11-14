@@ -82,9 +82,24 @@ class Prior(unittest.TestCase):
                 self.assertEqual(r["macs_per_mac_active"], 24 * 24 * 96 * cin / mac)
 
 
-def write_cfg(root, cfg, mac, npu, beats=3456, out=None, unstable=False, valid=True, dpu=None):
+CAPS = REPO / P.CAPS_REF
+
+
+def write_cfg(root, cfg, mac, npu, beats=3456, out=None, unstable=False, valid=True, dpu=None, rec=None, caps=None):
+    """A synthetic boot of cfg: 10 RUNs whose records carry the identity fields of the fixed set-up (rec overrides),
+    capabilities.json = the placement A boot's (caps overrides keys)."""
     out = out if out is not None else (WL / f"{cfg}.drwl.tflite_ofm.bin").read_bytes()
     f = write(root, cfg, [beats] * 4, [npu] * 4, 0x70000010, out=out, valid=valid)
+    sys.path.insert(0, str(REPO / "host" / "lib"))
+    import drwl
+    ml = drwl.parse((WL / f"{cfg}.drwl").read_bytes())["model_len"]
+    raw = json.loads((f / "raw_runs.json").read_text())
+    for x in raw[1:]:
+        x["record"].update(dict(model_len=ml, schema=4, placement=0, regioncfg_irq=0x15F, qconfig_irq=3, irq_count=1),
+                           **(rec or {}))
+        x["output_len"] = 55296 if len(out) == 55296 else x["output_len"]
+    (f / "raw_runs.json").write_text(json.dumps(raw))
+    (f.parent / "capabilities.json").write_text(json.dumps(dict(json.loads(CAPS.read_text()), **(caps or {}))))
     mac = int(mac)
     add_mac(f, mac, int(dpu if dpu is not None else mac))
     if unstable:
@@ -183,6 +198,18 @@ class Judge(unittest.TestCase):
             self.assertEqual(P.boot_check(str(d / "bad"), str(WL), P.K3[16])["verdict"], "FAIL")
             write_cfg(d / "out", P.K3[16], 20736, 40000, out=bytes(55296))
             self.assertEqual(P.boot_check(str(d / "out"), str(WL), P.K3[16])["verdict"], "FAIL")
+            for i, (rec, caps) in enumerate(((dict(model_len=5568), None), (dict(placement=1), None),
+                                             (dict(regioncfg_irq=0x153), None), (dict(qconfig_irq=2), None),
+                                             (dict(irq_count=2), None), (dict(schema=3), None),
+                                             (dict(ofm_mismatch=1), None), (None, dict(ta_ext_rlatency=0)))):
+                write_cfg(d / f"id{i}", P.K3[16], 20736, 40000, rec=rec, caps=caps)
+                r = P.boot_check(str(d / f"id{i}"), str(WL), P.K3[16])
+                self.assertEqual(r["verdict"], "FAIL", (rec, caps))
+            write_cfg(d / "ok", P.K3[16], 20736, 40000)
+            self.assertEqual(P.boot_check(str(d / "ok"), str(WL), P.K3[16])["verdict"], "PASS")
+            f = d / "ok" / "conds" / P.K3[16] / "wfe" / "raw_runs.json"         # a warm-up RUN with another CRC
+            raw = json.loads(f.read_text()); raw[1]["output_crc32"] ^= 1; f.write_text(json.dumps(raw))
+            self.assertEqual(P.boot_check(str(d / "ok"), str(WL), P.K3[16])["verdict"], "FAIL")
 
     def test_repro_other_1x1(self):
         mac3 = {c: P.hypotheses(3, c)["R384_c16"] for c in P.CINS}
@@ -227,6 +254,17 @@ class Reproduce(unittest.TestCase):
             self.assertFalse(r["ok"], kw)
             self.assertEqual([k for k, v in r["checks"].items() if not v], [key], kw)
         self.assertTrue(P.reproduce(summ(npu=21200.0), summ())["ok"])            # inside 1 % of 21,000
+
+    def test_tolerance_output_fails_gate_c(self):
+        with tempfile.TemporaryDirectory() as d:
+            d = pathlib.Path(d)
+            ref = bytearray((WL / f"{P.K3[16]}.drwl.tflite_ofm.bin").read_bytes())
+            i = next(j for j, v in enumerate(ref) if 0 < v < 100)
+            ref[i] += 1
+            write_cfg(d, P.K3[16], 20736, 40000, out=bytes(ref), rec=dict(ofm_mismatch=1, ofm_max_diff=1))
+            r = P.config_result(d, WL, P.K3[16], P.hypotheses(3, 16))
+            self.assertEqual(r["output"]["verdict"], "PASS_TOLERANCE")
+            self.assertEqual(r["gate_c"], "FAIL")
 
     def test_gate_requires_exact_output(self):
         rep = dict(ok=True, checks={}, differing_constant_counters={}, npu_active=(1, 1), tolerance=1, compared=1)
