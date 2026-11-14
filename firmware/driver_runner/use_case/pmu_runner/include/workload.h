@@ -1,5 +1,6 @@
 /* DRWL workload (host/lib/drwl.py declares the same layout; host/tests/test_driver_runner_contract.py checks both).
- * Little-endian u32: header words 0..15 = magic 'DRWL', version, total_len, model_off, model_len, n_in, n_out, rest 0;
+ * Little-endian u32: header words 0..15 = magic 'DRWL', version, total_len, model_off, model_len, n_in, n_out, placement
+ * (word 7: 0 = DDR arena, the default every earlier blob has; 1 = SRAM arena; placement.h), rest 0;
  * from word 16 the IO table: per input (data_off, len), then per output (golden_off, len); every section 16-B aligned.
  * Platform independent: addresses come in as arguments. */
 #ifndef DRV_WORKLOAD_H
@@ -13,6 +14,7 @@
 #define DRWL_IO_WORD      16U
 #define DRWL_IO_MAX       8U      /* per side: inputs and outputs each */
 #define DRWL_ALIGN        16U
+#define DRWL_PLACEMENT_WORD 7U
 
 typedef struct {
     const uint8_t *ptr;
@@ -22,11 +24,12 @@ typedef struct {
 typedef struct {
     drwl_span_t model;
     uint32_t n_in, n_out;
+    uint32_t placement;             /* header word 7 (placement.h) */
     drwl_span_t in[DRWL_IO_MAX];
     drwl_span_t out[DRWL_IO_MAX];
 } drwl_t;
 
-/* 0 = accepted. Refuses what host/lib/drwl.py parse() refuses. */
+/* 0 = accepted. Refuses what host/lib/drwl.py parse() refuses (7: placement not 0 or 1). */
 uint32_t drwl_parse(const uint8_t *blob, uint32_t len, drwl_t *w);
 
 /* MLEK's DDR placement (mps4-sse-320.gnu.ld, .ddr.at_ddr): nn_model at the region base, the tensor arena at the next

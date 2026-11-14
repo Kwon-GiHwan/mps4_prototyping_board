@@ -45,6 +45,9 @@ typedef enum { ST_BOOT, ST_IDLE, ST_MODEL_LOADING, ST_MODEL_READY, ST_INPUT_READ
 #define LOAD_MODEL_INIT  0x300U   /* + port code */
 #define LOAD_IO_COUNT    0x400U
 #define LOAD_IO_SIZE     0x500U
+#define LOAD_SRAM_NO_ROOM 0x600U   /* PLACEMENT_SRAM: the arena does not fit in the free SRAM */
+#define LOAD_MEM_CHECK   0x700U   /* + placement_mem_check() pass: the arena did not read back what was written */
+#define LOAD_IFM_CHECK   0x800U   /* + input index: the IFM did not read back from the input tensor */
 
 typedef struct {
     uint8_t *staging;
@@ -61,6 +64,8 @@ typedef struct {
     uint32_t (*dcache_on)(void);
     uint32_t (*rx_overruns)(void);
     uint32_t (*capabilities)(uint8_t *out, uint32_t max, uint32_t load_status);                   /* bytes */
+    void (*sram_window)(uintptr_t *free_base, uintptr_t *limit);   /* free SRAM after the driver's fast memory */
+    void (*dcache_sync)(void);      /* D-cache clean + invalidate (nothing if the D-cache is off) */
 } runner_ports_t;
 
 void runner_init(const runner_ports_t *ports, const frame_io_t *io, uint32_t build_id);

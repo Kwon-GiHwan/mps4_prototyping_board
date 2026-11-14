@@ -1,4 +1,4 @@
-import struct, sys, unittest, pathlib
+import hashlib, struct, sys, unittest, pathlib
 from unittest import mock
 REPO = pathlib.Path(__file__).resolve().parents[2]; sys.path.insert(0, str(REPO / "host" / "lib"))
 import drwl as D
@@ -54,6 +54,45 @@ class Parse(unittest.TestCase):
                 b = D.pack(b"M" * 20, [b"i"] * ins, [b"g"] * outs)
             with self.assertRaises(ValueError, msg=(ins, outs)):
                 D.parse(b)
+
+class Placement(unittest.TestCase):
+    """Header word 7 (docs/plan/stage4_memory_placement_plan.md F1): 0 = DDR arena, 1 = SRAM arena."""
+    S4 = REPO / "evidence" / "stage4" / "workloads" / "s4_conv_base.drwl"
+    S4_SHA256 = "2681c566729ce568f4041df6a69d1b5c5c558d2172bb76b6d75ad64ca2b4f267"   # Stage 4 conv_base (boot 330)
+
+    def test_word_7(self):
+        self.assertEqual(D.HEADER_FIELDS[7], "placement")
+        b = D.pack(b"M" * 20, [b"i" * 3], [b"g" * 7])
+        self.assertEqual(struct.unpack_from("<I", b, 28)[0], 0)                   # default DDR
+        self.assertEqual(D.parse(b)["placement"], 0)
+        s = D.pack(b"M" * 20, [b"i" * 3], [b"g" * 7], placement=1)
+        self.assertEqual(D.parse(s)["placement"], 1)
+        self.assertEqual([i for i in range(len(b)) if b[i] != s[i]], [28])
+        with self.assertRaises(ValueError):
+            D.pack(b"M", [b"i"], [b"g"], placement=2)
+
+    def test_unknown_placement_refused(self):
+        b = bytearray(D.pack(b"M" * 20, [b"i" * 3], [b"g" * 7]))
+        for v in (2, 0xFFFFFFFF):
+            struct.pack_into("<I", b, 28, v)
+            with self.assertRaises(ValueError, msg=v):
+                D.parse(bytes(b))
+            with self.assertRaises(ValueError, msg=v):
+                D.with_placement(bytes(b), 0)                                      # refuses what parse refuses
+        with self.assertRaises(ValueError):
+            D.with_placement(D.pack(b"M", [b"i"], [b"g"]), 2)
+
+    def test_stage4_blob_a_unchanged_b_one_word(self):
+        a = self.S4.read_bytes()
+        self.assertEqual(hashlib.sha256(a).hexdigest(), self.S4_SHA256)
+        self.assertEqual(D.parse(a)["placement"], 0)                               # every earlier blob: word 7 = 0
+        self.assertEqual(D.with_placement(a, 0), a)
+        b = D.with_placement(a, 1)
+        self.assertEqual(len(b), len(a))
+        self.assertEqual([i for i in range(len(a)) if a[i] != b[i]], [28])        # one byte of word 7 (LE 1)
+        self.assertEqual(b[28:32], bytes([1, 0, 0, 0]))
+        self.assertEqual(D.with_placement(b, 0), a)
+
 
 if __name__ == "__main__":
     unittest.main()

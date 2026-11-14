@@ -32,6 +32,22 @@ def prime(link, blob):
     link.load_input(b"")
 
 
+def placement_check(r, placement: int) -> None:
+    """Stops the boot when a RUN did not run the workload's placement (DRWL word 7, firmware placement.h): the record
+    must carry the same placement and REGIONCFG/QCONFIG read at the IRQ must equal it (REGIONCFG_MATCH). A schema-3
+    record comes from an image without placement support, which ignores word 7: refused unless the placement is DDR."""
+    if r.f["schema"] < 4:
+        if placement != drwl.PLACEMENT_DDR:
+            raise E.fail_rule("RULE_RECORD_SCHEMA", f"schema {r.f['schema']} image cannot place the arena "
+                                                    f"(workload placement {placement})")
+        return
+    if r.f["placement"] != placement:
+        raise E.fail_rule("RULE_CAPABILITY", f"RUN placement {r.f['placement']}, workload {placement}")
+    if not r.valid_flags & record_v2.REGIONCFG_MATCH:
+        raise E.fail_rule("RULE_CAPABILITY", f"REGIONCFG 0x{r.f['regioncfg_irq']:x} / QCONFIG {r.f['qconfig_irq']} "
+                                             f"at the IRQ differ from placement {placement}")
+
+
 def rows_of(r, codes, ok, failed, names, trm, base):
     """One runs.csv row per event slot of a RUN."""
     f = r.f
@@ -148,6 +164,7 @@ def run_condition(link, cond, sets, ctx, d: pathlib.Path, raw: list, rows: list)
             print(f"{cond.name} set {set_id:2d} rep {rep} rc={r.run_rc} flags=0x{r.valid_flags:02x} "
                   f"npu_exec={r.npu_execution_cycles()} ofm_mismatch={r.f['ofm_mismatch']} valid={ok} "
                   f"{failed or ''}", flush=True)
+            placement_check(r, ctx["placement"])
     if ctx["outputs"] and len(raw) > 1:   # the last RUN's outputs, once per condition; its CRC must match
         try:
             data = link.get_output(raw[-1]["output_len"])
@@ -191,7 +208,7 @@ def main():
     m0 = h["model_off"]
     boot, bram, ddr, images = a.image_sha256.split(",")
     prov = dict(PROV, boot_sha256=boot, bram_sha256=bram, ddr_sha256=ddr, images_txt_sha256=images,
-                workload_sha256=hashlib.sha256(blob).hexdigest(),
+                workload_sha256=hashlib.sha256(blob).hexdigest(), workload_placement=h["placement"],
                 model_sha256=hashlib.sha256(blob[m0:m0 + h["model_len"]]).hexdigest(),
                 host_boot_index=a.host_boot_index,
                 captured_at_utc=datetime.datetime.now(datetime.timezone.utc).isoformat())
@@ -199,6 +216,7 @@ def main():
     ids, explicit = E.parse_ids_text(txt)
     sets = E.event_sets(ids, sets=explicit)
     ctx = dict(blob=blob, primed=False, repeats=a.repeats, run_timeout=a.run_timeout, prov=prov, outputs=a.outputs,
+               placement=h["placement"],
                names=reference.driver_ids(), trm=reference.trm_ids())
     done, refusal, ping = [], None, None
     link = DriverLink(a.port)

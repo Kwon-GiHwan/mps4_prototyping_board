@@ -3,6 +3,7 @@
 
 #include <string.h>
 
+#include "placement.h"
 #include "pmu_session.h"
 #include "probe.h"
 #include "record.h"
@@ -210,13 +211,53 @@ static void load_chunk(void)
     ack(out, sizeof out);
 }
 
+/* Load-time checks (never in the RUN): every output tensor filled with OFM_POISON, so an output the NPU did not write
+ * cannot match its golden in the first RUN after the load; every IFM copied in and read back. */
+#define OFM_POISON 0x5AU
+static uint32_t prepare_io(void)
+{
+    for (uint32_t i = 0; i < wl.n_out; i++) {
+        uint8_t *o;
+        uint32_t len;
+        (void)P->model_io(1U, i, &o, &len);
+        memset(o, OFM_POISON, len);
+    }
+    for (uint32_t i = 0; i < wl.n_in; i++) {
+        uint8_t *p;
+        uint32_t len;
+        (void)P->model_io(0U, i, &p, &len);
+        memcpy(p, wl.in[i].ptr, len);
+    }
+    P->dcache_sync();
+    for (uint32_t i = 0; i < wl.n_in; i++) {
+        uint8_t *p;
+        uint32_t len;
+        (void)P->model_io(0U, i, &p, &len);
+        if (memcmp(p, wl.in[i].ptr, len) != 0) { return LOAD_IFM_CHECK + i; }
+    }
+    return LOAD_OK;
+}
+
+/* The arena of the workload's placement (placement.h); 0 if it does not fit. */
+static uintptr_t arena_of(uint32_t *status)
+{
+    uintptr_t ddr = drwl_arena_after(P->model_base, wl.model.len, P->arena_len, P->ddr_limit), free_base, limit;
+    *status = LOAD_NO_ROOM;
+    if (ddr == 0U || wl.placement == PLACEMENT_DDR) { return ddr; }
+    *status = LOAD_SRAM_NO_ROOM;
+    P->sram_window(&free_base, &limit);
+    return placement_sram_arena(free_base, limit, P->model_base, ddr, P->arena_len);
+}
+
 /* Model in place and loaded; returns a LOAD_* status. */
 static uint32_t place_and_load(void)
 {
     uint32_t r, n_in, n_out;
+    uintptr_t bad;
+    placement_set(PLACEMENT_DDR);
     if ((r = drwl_parse(P->staging, total_len, &wl)) != 0U) { return LOAD_BAD_DRWL + r; }
-    arena_base = drwl_arena_after(P->model_base, wl.model.len, P->arena_len, P->ddr_limit);
-    if (arena_base == 0U) { return LOAD_NO_ROOM; }
+    if ((arena_base = arena_of(&r)) == 0U) { return r; }
+    if ((r = placement_mem_check(arena_base, P->arena_len, P->dcache_sync, &bad)) != 0U) { return LOAD_MEM_CHECK + r; }
     P->place_model(P->model_base, wl.model.ptr, wl.model.len);
     if ((r = P->model_load(P->model_base, wl.model.len, arena_base, P->arena_len)) != 0U) { return LOAD_MODEL_INIT + r; }
     P->model_counts(&n_in, &n_out);
@@ -229,6 +270,8 @@ static uint32_t place_and_load(void)
             return LOAD_IO_SIZE + k;
         }
     }
+    if ((r = prepare_io()) != LOAD_OK) { return r; }
+    placement_set(wl.placement);
     return LOAD_OK;
 }
 
@@ -291,6 +334,7 @@ static void fill_from_probe(drv_record_t *r, const probe_t *p)
     r->base_size0 = p->base_size[0]; r->base_size1 = p->base_size[1]; r->base_size2 = p->base_size[2];
     r->base_size3 = p->base_size[3]; r->base_size4 = p->base_size[4]; r->base_size5 = p->base_size[5];
     r->base_size6 = p->base_size[6]; r->base_size7 = p->base_size[7];
+    r->regioncfg_irq = p->regioncfg_irq; r->qconfig_irq = p->qconfig_irq;
 }
 
 static void fill_config(drv_record_t *r)
@@ -302,7 +346,7 @@ static void fill_config(drv_record_t *r)
     r->event_code3 = pmu_cfg.codes[3]; r->event_code4 = pmu_cfg.codes[4]; r->event_code5 = pmu_cfg.codes[5];
     r->event_code6 = pmu_cfg.codes[6]; r->event_code7 = pmu_cfg.codes[7];
     r->model_base = (uint32_t)P->model_base; r->model_len = wl.model.len;
-    r->arena_base = (uint32_t)arena_base; r->arena_len = P->arena_len;
+    r->arena_base = (uint32_t)arena_base; r->arena_len = P->arena_len; r->placement = wl.placement;
 }
 
 static uint32_t flags_of(const drv_record_t *r)
@@ -313,6 +357,10 @@ static uint32_t flags_of(const drv_record_t *r)
     if (r->irq_count == 1U) { f |= REC_ONE_IRQ; }
     if ((r->ovf_irq & pmu_session_armed_mask()) == 0U) { f |= REC_NO_OVERFLOW; }
     if (r->ofm_mismatch == 0U && r->invoke_ok) { f |= REC_OUTPUT_MATCH; }
+    if (r->irq_count != 0U && r->regioncfg_irq == placement_regioncfg(r->n_base, r->placement)
+        && r->qconfig_irq == placement_config_select(-1, r->placement)) {
+        f |= REC_REGIONCFG_MATCH;
+    }
     return f;
 }
 

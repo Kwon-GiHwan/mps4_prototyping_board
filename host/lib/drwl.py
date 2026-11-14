@@ -6,7 +6,8 @@ The driver runner declares the same layout independently (firmware/driver_runner
 host/tests/test_driver_runner_contract.py requires the two to agree. Neither imports the other.
 
 Little-endian u32 words:
-  words 0..15  header (HEADER_FIELDS)
+  words 0..15  header (HEADER_FIELDS; word 7 = placement: 0 = DDR arena, the default of every earlier blob, 1 = SRAM arena
+               (firmware placement.h); the rest 0)
   words 16..   IO table: per input (data_off, len), then per output (golden_off, len)
   then the model, every IFM, every golden, each 16-byte aligned
 """
@@ -20,18 +21,23 @@ HEADER_WORDS = 16
 IO_WORD = HEADER_WORDS
 IO_MAX = 8           # per side: up to 8 inputs and up to 8 outputs (rnnoise has 4 and 5)
 ALIGN = 16
-HEADER_FIELDS = ("magic", "version", "total_len", "model_off", "model_len", "n_in", "n_out")
+HEADER_FIELDS = ("magic", "version", "total_len", "model_off", "model_len", "n_in", "n_out", "placement")
+PLACEMENT_DDR, PLACEMENT_SRAM = 0, 1
+PLACEMENTS = {"ddr": PLACEMENT_DDR, "sram": PLACEMENT_SRAM}
+PLACEMENT_WORD = HEADER_FIELDS.index("placement")
 
 
 def align(n: int, a: int = ALIGN) -> int:
     return (n + a - 1) // a * a
 
 
-def pack(model: bytes, ifms: list[bytes], goldens: list[bytes]) -> bytes:
+def pack(model: bytes, ifms: list[bytes], goldens: list[bytes], placement: int = PLACEMENT_DDR) -> bytes:
     if not model or not ifms or not goldens:
         raise ValueError("a model, at least one IFM and one golden are needed")
     if len(ifms) > IO_MAX or len(goldens) > IO_MAX:
         raise ValueError(f"{len(ifms)} IFMs / {len(goldens)} OFMs: at most {IO_MAX} each")
+    if placement not in PLACEMENTS.values():
+        raise ValueError(f"placement {placement}")
     off = align(4 * (HEADER_WORDS + 2 * (len(ifms) + len(goldens))))
     places = []
     for b in [model] + ifms + goldens:
@@ -39,7 +45,7 @@ def pack(model: bytes, ifms: list[bytes], goldens: list[bytes]) -> bytes:
         off = align(off + len(b))
     blob = bytearray(off)
     fields = dict(magic=MAGIC, version=VERSION, total_len=off, model_off=places[0], model_len=len(model),
-                  n_in=len(ifms), n_out=len(goldens))
+                  n_in=len(ifms), n_out=len(goldens), placement=placement)
     struct.pack_into(f"<{len(HEADER_FIELDS)}I", blob, 0, *(fields[f] for f in HEADER_FIELDS))
     table = [w for p, b in zip(places[1:], ifms + goldens) for w in (p, len(b))]
     struct.pack_into(f"<{len(table)}I", blob, 4 * IO_WORD, *table)
@@ -65,5 +71,18 @@ def parse(blob: bytes) -> dict:
     for o, ln in ents:
         if o % ALIGN or ln == 0 or o + ln > len(blob) or o < 4 * (HEADER_WORDS + 2 * n):
             raise ValueError(f"section ({o}, {ln}) misplaced")
+    if h["placement"] not in PLACEMENTS.values():
+        raise ValueError(f"placement {h['placement']}")
     h["inputs"], h["outputs"] = ents[1:1 + h["n_in"]], ents[1 + h["n_in"]:]
     return h
+
+
+def with_placement(blob: bytes, placement: int) -> bytes:
+    """The same workload with header word 7 set to placement; every other byte unchanged. Refuses a blob parse()
+    refuses and a placement it does not know."""
+    parse(blob)
+    if placement not in PLACEMENTS.values():
+        raise ValueError(f"placement {placement}")
+    out = bytearray(blob)
+    struct.pack_into("<I", out, 4 * PLACEMENT_WORD, placement)
+    return bytes(out)

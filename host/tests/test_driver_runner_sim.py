@@ -14,7 +14,7 @@ import runner_proto as rp
 
 FW = REPO / "firmware"
 UC = FW / "driver_runner" / "use_case" / "pmu_runner"
-SRCS = [UC / "src" / f for f in ("frame.c", "workload.c", "record.c", "pmu_session.c", "runner.c", "probe.c", "trace.c")]
+SRCS = [UC / "src" / f for f in ("frame.c", "workload.c", "record.c", "pmu_session.c", "runner.c", "probe.c", "trace.c", "placement.c")]
 SIM = None
 CC = shutil.which("cc") or shutil.which("clang") or shutil.which("gcc")
 
@@ -110,7 +110,7 @@ class Session(unittest.TestCase):
         self.assertEqual(l.ping().state, 1)                                    # IDLE
         caps = l.capabilities()
         self.assertEqual((caps["magic"], caps["schema"], caps["record_fields"]),
-                         (record_v2.CAPS_MAGIC, 3, len(record_v2.FIELDS)))
+                         (record_v2.CAPS_MAGIC, 4, len(record_v2.FIELDS)))
         self.assertEqual(l.set_instrumentation_mode(2, [35, 48, 51], 7), (2, 2, 3, 1))
         self.assertEqual(l.set_run_options(driver_link.WAIT_BUSY, 0x00200023), (1, 0x00200023, driver_link.TRACE_OFF))
         golds = [expected_output(IFM, 0, 30), expected_output(IFM, 1, 9)]
@@ -548,3 +548,173 @@ class BoardScript(unittest.TestCase):
             self.assertEqual(len(raw), 1 + 2 * 3)
         for l in links:
             l._ser.close()
+
+
+class Placement(unittest.TestCase):
+    """Stage 4 placement comparison (docs/plan/stage4_memory_placement_plan.md F1-F5) on the simulator. Expected values
+    from MLEK Dedicated_Sram's table (QCONFIG 3, region 0 3, region 1 3, regions 2-7 1; SRAM: region 1 0) and the
+    simulator's fake memories (fast memory 0x6000 B at the SRAM base, 64 KiB aligned), not from placement.c."""
+    MLEK = {-1: 3, 0: 3, 1: 3, 2: 1}
+    POISON = 0x5A
+
+    def regioncfg(self, sram):   # the simulator's job has 3 bases
+        sel = {**self.MLEK, **({1: 0} if sram else {})}
+        return sel[0] | sel[1] << 2 | sel[2] << 4
+
+    def blob(self, placement=0):
+        return drwl.pack(simm([40], [30]), [IFM], [expected_output(IFM, 0, 30)], placement=placement)
+
+    def session(self, blob, **env):
+        self.l = l = link(**env)
+        l.set_instrumentation_mode(2, [35], 1)
+        load(l, blob)
+        l.load_input(b"")
+        return l
+
+    def tearDown(self):
+        self.l._ser.close()
+
+    def bases(self):
+        self.l._ser.close()
+        m = [ln.split() for ln in self.l._ser.stderr.splitlines() if ln.startswith("LOAD ")]
+        return [{k: int(v, 16) for k, v in (x.split("=") for x in ln[1:])} for ln in m]
+
+    def test_a_is_ddr_and_the_ext_port(self):
+        l = self.session(self.blob(0))
+        self.assertEqual(l.run(), 0)
+        f, r = l.last_measurement.f, l.last_measurement
+        self.assertEqual((f["schema"], f["placement"], f["regioncfg_irq"], f["qconfig_irq"]),
+                         (4, 0, self.regioncfg(False), 3))
+        self.assertEqual(self.regioncfg(False), 0x1F)
+        self.assertTrue(r.valid_flags & record_v2.REGIONCFG_MATCH)
+        self.assertEqual(record_v2.validity(r, [35]), (True, []))
+        self.assertEqual(f["arena_base"] - f["model_base"], (f["model_len"] + 15) // 16 * 16)   # MLEK's ld rule, as before
+        b = self.bases()[0]
+        self.assertEqual(b["arena"], b["ddr"] + (f["model_len"] + 15) // 16 * 16)
+
+    def test_b_is_sram_after_the_fast_memory_and_the_sram_port(self):
+        l = self.session(self.blob(1))
+        self.assertEqual(l.run(), 0)
+        f, r = l.last_measurement.f, l.last_measurement
+        self.assertEqual((f["placement"], f["regioncfg_irq"], f["qconfig_irq"]), (1, self.regioncfg(True), 3))
+        self.assertEqual(self.regioncfg(True), 0x13)                           # region 1 field only
+        self.assertTrue(r.valid_flags & record_v2.OUTPUT_MATCH)
+        self.assertEqual(record_v2.validity(r, [35]), (True, []))
+        self.assertEqual((f["base0"], f["base2"]), (0x70000010, 0x31000000))    # the other bases as the driver passed them
+        b = self.bases()[0]
+        off = (f["model_len"] + 15) // 16 * 16
+        self.assertEqual(b["arena"], b["sram"] + 0x10000 + off)                # fast memory 0x6000 -> next 64 KiB
+        self.assertEqual(f["arena_base"], b["arena"] & 0xFFFFFFFF)
+        self.assertEqual(f["arena_base"] & 0xFFFF, (b["ddr"] + off) & 0xFFFF)  # A's low 16 bits
+
+    def test_poison_catches_an_output_the_npu_did_not_write(self):
+        for placement in (0, 1):
+            l = self.session(self.blob(placement), SIM_NO_WRITE="1")
+            self.assertEqual(l.run(), 0)
+            f = l.last_measurement.f
+            self.assertEqual(f["ofm_mismatch"], 30, placement)                 # every byte is the poison
+            self.assertFalse(l.last_measurement.valid_flags & record_v2.OUTPUT_MATCH)
+            self.assertEqual(l.get_output(30), bytes([self.POISON]) * 30)
+            l._ser.close()
+
+    def test_port_setting_not_applied_stops(self):
+        for env in (dict(SIM_REGIONCFG=hex(self.regioncfg(False))), dict(SIM_QCONFIG="2")):
+            l = self.session(self.blob(1), **env)
+            self.assertEqual(l.run(), 0)
+            r = l.last_measurement
+            self.assertFalse(r.valid_flags & record_v2.REGIONCFG_MATCH, env)
+            self.assertEqual(record_v2.validity(r, [35]), (False, ["regioncfg_match"]))
+            l._ser.close()
+
+    def refused(self, blob, status, **env):
+        self.l = l = link(**env)
+        with self.assertRaises(rp.Nack) as c:
+            load(l, blob)
+        self.assertEqual(c.exception.code, 9)                                  # PAYLOAD_FORMAT
+        self.assertEqual(l.capabilities()["load_status"], status)
+        self.assertEqual(l.ping().state, 1)                                    # back to IDLE, nothing runs
+        l._ser.close()
+
+    def test_load_refusals(self):
+        b = bytearray(self.blob(0))
+        for v in (2, 0xFFFFFFFF):
+            struct.pack_into("<I", b, 28, v)
+            self.refused(bytes(b), 0x107)                                      # LOAD_BAD_DRWL + 7
+        self.refused(self.blob(1), 0x600, SIM_FAST="0x31000")                  # arena past the SRAM end
+        self.refused(self.blob(1), 0x701, SIM_BAD_SRAM="0x10040")              # a word inside the arena does not hold
+        self.refused(self.blob(1), 0x800, SIM_IFM_FLIP="1")                    # the IFM does not read back
+        self.refused(self.blob(0), 0x800, SIM_IFM_FLIP="1")
+
+    def test_a_never_touches_the_sram_window(self):
+        l = self.session(self.blob(0), SIM_BAD_SRAM="0x10040")                 # a broken SRAM word: A does not care
+        self.assertEqual(l.run(), 0)
+        self.assertTrue(l.last_measurement.valid_flags & record_v2.OUTPUT_MATCH)
+
+    def test_reload_switches_and_a_refused_load_resets(self):
+        self.l = l = link()
+        l.set_instrumentation_mode(2, [35], 1)
+        for placement in (1, 0, 1):
+            load(l, self.blob(placement))
+            l.load_input(b"")
+            self.assertEqual(l.run(), 0)
+            f = l.last_measurement.f
+            self.assertEqual((f["placement"], f["regioncfg_irq"]), (placement, self.regioncfg(placement == 1)))
+        b = bytearray(self.blob(0)); struct.pack_into("<I", b, 28, 2)
+        with self.assertRaises(rp.Nack):
+            load(l, bytes(b))
+        with self.assertRaises(rp.Nack) as c:
+            l.run()                                                            # no model after a refused load
+        self.assertEqual(c.exception.code, 5)
+
+
+class PlacementBoardScript(unittest.TestCase):
+    """run_driver_events.py stops the boot when a RUN did not run the workload's placement."""
+
+    def campaign(self, placement, **env):
+        sys.path.insert(0, str(REPO / "host" / "board"))
+        import run_driver_events as R
+        self.links = []
+        R.DriverLink = lambda port: self.links.append(link(**env)) or self.links[-1]
+        self.d = tempfile.TemporaryDirectory()
+        d = pathlib.Path(self.d.name)
+        (d / "w.drwl").write_bytes(drwl.pack(simm([40], [30]), [IFM], [expected_output(IFM, 0, 30)], placement=placement))
+        argv = ["x", "--out", str(d / "out"), "--host-boot-index", "7", "--workload", str(d / "w.drwl"),
+                "--ids", "35,48", "--repeats", "2", "--outputs", "--image-sha256", "b,r,d,i"]
+        old, sys.argv = sys.argv, argv
+        try:
+            rc = R.main()
+        finally:
+            sys.argv = old
+        for l in self.links:
+            l._ser.close()
+        summ = json.loads((d / "out" / "summary.json").read_text())
+        raw = json.loads((d / "out" / "raw_runs.json").read_text())
+        self.d.cleanup()
+        return rc, summ, raw
+
+    def test_b_runs_and_records_the_placement(self):
+        rc, summ, raw = self.campaign(1)
+        self.assertEqual((rc, summ["refusal"], summ["provenance"]["workload_placement"]), (0, None, 1))
+        self.assertEqual({x["record"]["placement"] for x in raw[1:]}, {1})
+
+    def test_regioncfg_mismatch_stops_after_the_first_run(self):
+        rc, summ, raw = self.campaign(1, SIM_REGIONCFG="0x1f")
+        self.assertEqual((rc, summ["refusal"]["rule"]), (1, "RULE_CAPABILITY"))
+        self.assertEqual(len(raw), 2)                                          # the RUN is kept, nothing after it
+
+    def test_placement_check_rules(self):
+        sys.path.insert(0, str(REPO / "host" / "board"))
+        import run_driver_events as R
+        import pmu_events_parse as E
+        ok = record_v2.REQUIRED | record_v2.REGIONCFG_MATCH
+        rec = lambda schema, flags=ok, **f: record_v2.Record(1, flags, 0, dict(dict(schema=schema, placement=0,
+                                                                                    regioncfg_irq=0, qconfig_irq=3), **f))
+        R.placement_check(rec(3), 0)                                           # an old image with a DDR workload: as before
+        for r, p, rule in ((rec(3), 1, "RULE_RECORD_SCHEMA"),                  # an old image ignores word 7
+                           (rec(4, placement=0), 1, "RULE_CAPABILITY"),
+                           (rec(4, placement=1), 0, "RULE_CAPABILITY"),
+                           (rec(4, flags=record_v2.REQUIRED, placement=1), 1, "RULE_CAPABILITY")):
+            with self.assertRaises(E.Refusal) as c:
+                R.placement_check(r, p)
+            self.assertEqual(c.exception.rule, rule)
+        R.placement_check(rec(4, placement=1), 1)

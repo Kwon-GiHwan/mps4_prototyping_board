@@ -83,8 +83,46 @@ class Workload(unittest.TestCase):
         self.assertEqual(define("DRWL_ALIGN", h), drwl.ALIGN)
         offs = re.findall(r"rd32\(blob \+ (\d+)\)", SRC["workload.c"])
         want = {str(4 * drwl.HEADER_FIELDS.index(f)) for f in ("version", "total_len", "model_off", "model_len",
-                                                               "n_in", "n_out")}
+                                                               "n_in", "n_out", "placement")}
         self.assertTrue(want <= set(offs), (want, offs))
+
+
+class Placement(unittest.TestCase):
+    """docs/plan/stage4_memory_placement_plan.md F1-F4: the firmware's placement values against the host and against the
+    literals of MLEK b2c0bb2 (source/hal/source/components/npu/CMakeLists.txt Dedicated_Sram: NPU_QCONFIG=3,
+    NPU_REGIONCFG_0=3, NPU_REGIONCFG_1=3, regions 2-7 = 1; Shared_Sram region 1 = 0) and of the core driver
+    (ethosu85_interface.h NPU_REG_QCONFIG 0x1C, NPU_REG_REGIONCFG 0x3C)."""
+    P = INC["placement.h"]
+
+    def test_values(self):
+        self.assertEqual((define("PLACEMENT_DDR", self.P), define("PLACEMENT_SRAM", self.P), define("PLACEMENT_MODES", self.P)),
+                         (drwl.PLACEMENT_DDR, drwl.PLACEMENT_SRAM, len(drwl.PLACEMENTS)))
+        self.assertEqual((define("PLACEMENT_QCONFIG", self.P), define("PLACEMENT_REGION0", self.P),
+                          define("PLACEMENT_REGION1_DDR", self.P), define("PLACEMENT_REGION2_7", self.P),
+                          define("PLACEMENT_REGION1_SRAM", self.P)), (3, 3, 3, 1, 0))
+        self.assertEqual(define("PLACEMENT_SRAM_ALIGN", self.P), 0x10000)
+        self.assertEqual((define("NPU_OFF_QCONFIG", INC["probe.h"]), define("NPU_OFF_REGIONCFG", INC["probe.h"])),
+                         (0x1C, 0x3C))
+        self.assertEqual(define("DRWL_PLACEMENT_WORD", INC["workload.h"]), drwl.PLACEMENT_WORD)
+        self.assertIn("REC_REGIONCFG_MATCH = 1u << 6", INC["record.h"])
+        self.assertEqual(record_v2.REGIONCFG_MATCH, 1 << 6)
+
+    def test_hooks(self):
+        h = SRC["hooks.c"]
+        self.assertIn("unsigned int ethosu_config_select(uint64_t address, int index)", h)   # the driver's prototype
+        self.assertIn("return placement_config_select(index, placement_get());", h)
+        irq = h[h.index("void ethosu_irq_handler("):]
+        # the PMU snapshot stays the first read at the IRQ; the region read-back comes after it
+        self.assertLess(irq.index("pmu_session_snapshot(&s)"), irq.index("npu_word(NPU_OFF_REGIONCFG)"))
+        self.assertLess(irq.index("npu_word(NPU_OFF_QCONFIG)"), irq.index("probe.irq_count++"))
+
+    def test_run_path_unchanged(self):
+        # the measured RUN gets nothing new: no placement call, no memory check, no poison, no cache maintenance
+        c = SRC["runner.c"]
+        run = c[c.index("static void run(void)"):c.index("static void reset_runner(void)")]
+        for s in ("placement_", "dcache_sync", "memset", "prepare_io", "mem_check"):
+            self.assertNotIn(s, run, s)
+        self.assertIn("prepare_io()", c[c.index("static uint32_t place_and_load(void)"):])
 
 
 class Commands(unittest.TestCase):

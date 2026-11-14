@@ -12,6 +12,9 @@
 #define WAIT_TRACE 2U  /* the busy loop sampling QREAD (and events) on an interval: trace.c */
 #define WAIT_MODES 3U
 #define PROBE_BASES 8U
+/* NPU registers read at the completion IRQ (core driver ethosu85_interface.h: QCONFIG 0x1C, REGIONCFG 0x3C) */
+#define NPU_OFF_QCONFIG   0x1CU
+#define NPU_OFF_REGIONCFG 0x3CU
 
 typedef struct {
     uint32_t wait_mode;
@@ -20,6 +23,7 @@ typedef struct {
     uint32_t pmcr_at_arm, cnten_at_arm;
     pmu_snapshot_t at_irq;
     uint32_t status_at_irq, qread_at_irq, qsize;
+    uint32_t regioncfg_irq, qconfig_irq;   /* the job's region/port configuration, read at the IRQ */
     uint32_t job_result;            /* the driver's job result as the IRQ left it (0 = OK) */
     uint32_t power_requests;        /* the driver's power reference count at the arm */
     uint32_t n_base;

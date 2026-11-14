@@ -23,14 +23,23 @@ cp "$B"/bin/mlek_pmu_runner.axf "$B"/bin/mlek_pmu_runner.map "$OUT/" || exit 1
 # Gate: the driver hooks must be ours (strong, T), not the driver's weak defaults (W), and the driver must call them.
 NM=/opt/arm/gcc-arm-none-eabi/bin/arm-none-eabi-nm; OD=/opt/arm/gcc-arm-none-eabi/bin/arm-none-eabi-objdump
 for s in ethosu_address_remap ethosu_irq_handler ethosu_semaphore_create ethosu_semaphore_take ethosu_semaphore_give \
-         hooks_install; do
+         ethosu_config_select hooks_install; do
   "$NM" "$OUT/mlek_pmu_runner.axf" | grep -q " T $s\$" || { echo "FAIL gate: $s is not the runner's strong definition"; exit 1; }
 done
 "$OD" -d "$OUT/mlek_pmu_runner.axf" | awk '/<ethosu_dev_run_command_stream>:/,/^$/' | grep -q "bl.*<ethosu_address_remap>" \
   || { echo "FAIL gate: ethosu_dev_run_command_stream does not call ethosu_address_remap"; exit 1; }
+"$OD" -d "$OUT/mlek_pmu_runner.axf" | awk '/<ethosu_dev_run_command_stream>:/,/^$/' | grep -q "bl.*<ethosu_config_select>" \
+  || { echo "FAIL gate: ethosu_dev_run_command_stream does not call ethosu_config_select"; exit 1; }
+# Gate (Stage 4 placement, PLACEMENT_SRAM puts the arena after the fast memory): the only thing the image places in the
+# SRAM 0x31000000-0x313FFFFF is the driver's fast memory, cache_arena, 0x60000 bytes at 0x31000000.
+# (8-digit lower-case hex addresses compare as strings)
+sram=$("$NM" -S "$OUT/mlek_pmu_runner.axf" | awk 'length($1) == 8 && $1 >= "31000000" && $1 < "31400000" {print $1, $2, $4}')
+[ "$sram" = "31000000 00060000 cache_arena" ] || { echo "FAIL gate: SRAM symbols: $sram"; exit 1; }
+secs=$("$OD" -h "$OUT/mlek_pmu_runner.axf" | awk '$4 ~ /^[0-9a-f]+$/ && length($4) == 8 && $4 >= "31000000" && $4 < "31400000" {print $2, $3, $4}')
+[ "$secs" = ".sram 00060000 31000000" ] || { echo "FAIL gate: SRAM sections: $secs"; exit 1; }
 "$NM" "$OUT/mlek_pmu_runner.axf" | grep -q " T ethosu_inference_begin\$" \
   || { echo "FAIL gate: MLEK's profiler begin/end not linked (the platform is not stock)"; exit 1; }
-echo "GATE OK: driver hooks are the runner's, MLEK profiler hooks are MLEK's"
+echo "GATE OK: driver hooks are the runner's, MLEK profiler hooks are MLEK's, SRAM holds only cache_arena"
 mkdir -p "$OUT/image" && cp "$B"/bin/sectors/images.txt "$B"/bin/sectors/pmu_runner/* "$OUT/image/" || exit 1
 (cd "$OUT/image" && sha256sum * > image.sha256)
 rm -rf "$B"

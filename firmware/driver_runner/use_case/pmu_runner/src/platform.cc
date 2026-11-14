@@ -32,6 +32,11 @@ constexpr uintptr_t kDdrLimit  = 0x72000000U;
  * reads it; the CPU copies the model out of it. */
 uint8_t *const kStaging = reinterpret_cast<uint8_t *>(0x90000000U);
 constexpr uint32_t kStagingSize = 0x04000000U;
+/* MLEK mps4-sse-320.gnu.ld MEMORY SRAM: 0x31000000, length 0x00400000 (ISRAM0 + ISRAM1, secure alias). The linker places
+ * only the driver's fast memory (cache_arena, .sram) there; build_driver_runner.sh checks that. PLACEMENT_SRAM puts the
+ * arena after it. */
+constexpr uintptr_t kSramBase  = 0x31000000U;
+constexpr uintptr_t kSramLimit = 0x31400000U;
 constexpr uintptr_t kTaBase[2] = {0x51102000U, 0x51102400U};   /* MLEK mps4 CMakeLists TA_SRAM_BASE / TA_EXT_BASE */
 constexpr uint32_t kTaOff[11] = {0x00U, 0x04U, 0x08U, 0x0CU, 0x10U, 0x14U, 0x18U, 0x1CU, 0x20U, 0x28U, 0x30U};
 constexpr uint32_t kTaVersion = 0x38U;
@@ -79,6 +84,22 @@ uint32_t model_io(uint32_t output, uint32_t index, uint8_t **ptr, uint32_t *len)
     return 0U;
 }
 
+/* Free SRAM after the driver's fast memory; an empty window if the fast memory is not inside the SRAM. */
+void sram_window(uintptr_t *free_base, uintptr_t *limit)
+{
+    const uintptr_t fast = static_cast<uintptr_t>(ethosu_drv.fast_memory);
+    const uintptr_t end = fast + static_cast<uintptr_t>(ethosu_drv.fast_memory_size);
+    *limit = kSramLimit;
+    *free_base = (fast >= kSramBase && end >= fast && end <= kSramLimit) ? end : kSramLimit;
+}
+
+void dcache_sync()
+{
+    if (dcache_enabled()) {
+        SCB_CleanInvalidateDCache();
+    }
+}
+
 uint32_t invoke() { return model->RunInference() ? 1U : 0U; }
 uint32_t dwt() { return read_timestamp(); }
 uint32_t dcache_on() { return dcache_enabled() ? 1U : 0U; }
@@ -114,7 +135,8 @@ uint32_t capabilities(uint8_t *out, uint32_t max, uint32_t load_status)
 }
 
 const runner_ports_t ports = {kStaging, kStagingSize, kModelBase, kDdrLimit, ACTIVATION_BUF_SZ, place_model, model_load,
-                              model_counts, model_io, invoke, dwt, dcache_on, uart_overruns, capabilities};
+                              model_counts, model_io, invoke, dwt, dcache_on, uart_overruns, capabilities,
+                              sram_window, dcache_sync};
 const frame_io_t uart_io = {uart_getc, uart_putc};
 
 }  // namespace

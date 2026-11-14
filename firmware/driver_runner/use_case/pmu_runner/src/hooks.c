@@ -6,8 +6,11 @@
  *   ethosu_irq_handler    reads the PMU, STATUS and QREAD first, then does exactly what the driver's default does
  *   ethosu_semaphore_*    the driver's baremetal semaphore, same semantics; take() waits with __WFE (WAIT_WFE, as the
  *                         default), spins without it (WAIT_BUSY) or spins sampling QREAD (WAIT_TRACE, trace.c)
+ *   ethosu_config_select  MLEK Dedicated_Sram's QCONFIG/REGIONCFG values (the driver's weak default as MLEK builds it);
+ *                         region 1 on the SRAM port only for a PLACEMENT_SRAM workload (placement.h)
  * Nothing else of the driver or of MLEK is replaced. */
 #include "ethosu_driver.h"
+#include "placement.h"
 #include "probe.h"
 #include "timing.h"
 #include "trace.h"
@@ -46,6 +49,12 @@ uint64_t ethosu_address_remap(uint64_t address, int index)
     return address;
 }
 
+unsigned int ethosu_config_select(uint64_t address, int index)
+{
+    (void)address;
+    return placement_config_select(index, placement_get());
+}
+
 void ethosu_irq_handler(struct ethosu_driver *drv)
 {
     pmu_snapshot_t s;
@@ -55,6 +64,8 @@ void ethosu_irq_handler(struct ethosu_driver *drv)
     probe.status_at_irq = npu_word(NPU_OFF_STATUS);
     probe.qread_at_irq = npu_word(NPU_OFF_QREAD);
     probe.qsize = npu_word(NPU_OFF_QSIZE);
+    probe.regioncfg_irq = npu_word(NPU_OFF_REGIONCFG);
+    probe.qconfig_irq = npu_word(NPU_OFF_QCONFIG);
     probe.irq_count++;
 
     /* the driver's default handler, unchanged */

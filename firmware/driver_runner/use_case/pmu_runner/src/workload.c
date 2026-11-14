@@ -3,6 +3,8 @@
 
 #include <stddef.h>
 
+#include "placement.h"
+
 static uint32_t rd32(const uint8_t *p)
 {
     return (uint32_t)p[0] | ((uint32_t)p[1] << 8) | ((uint32_t)p[2] << 16) | ((uint32_t)p[3] << 24);
@@ -36,6 +38,8 @@ uint32_t drwl_parse(const uint8_t *blob, uint32_t len, drwl_t *w)
         s->ptr = blob + off;
         s->len = sz;
     }
+    w->placement = rd32(blob + 28);
+    if (w->placement >= PLACEMENT_MODES) { return 7U; }
     return 0U;
 }
 
