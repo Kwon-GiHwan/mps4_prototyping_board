@@ -1,0 +1,2 @@
+# Stage 4AO-E boot 3/8: s4aoe_mul_h24, TA profile 1, image 70090f1, DDR/EXT (word 7 = 0)
+388 s4aoe_mul_h24 @/home/gihwan/evsweep_s4aoe/conditions.txt

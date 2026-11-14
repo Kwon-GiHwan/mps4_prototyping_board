@@ -17,3 +17,18 @@
 - Elementwise ADD/MUL/ABS: ELEMENTWISE 커널 하나, block 하나 (H24·H72 모두), Vela 추정 N/16.
 - 체인: Conv→ADD와 ADD→MUL은 CB(CHAINED)를 사용한다. 논리 AO 원소는 2N이다.
 - LUT: TANH·LOGISTIC은 Conv의 AO에 lut_s8_s8로 융합되고, LUT DMA 256 B가 추가된다.
+
+## 보드 세션 1 (2026-11-15, 보드 시각 18:24–18:31Z, TA profile 1) — boot 386–387, 중단
+
+| boot | config | 결과 |
+|---:|---|---|
+| 386 | `s4ao_conv1x1_h24` | VALID. **재현 Gate PASS**: MAC·DPU·출력·상수 카운터 동일, NPU 허용폭 1,228 안, AO 3,538 vs 3,534 (허용폭 35.34) |
+| 387 | `s4aoe_add_h24` | **INVALID (정체성 검사 `regioncfg`)**. RUN 10개 valid, PASS_EXACT, workload sha 일치, capabilities 동일. 그러나 REGIONCFG at IRQ가 0x55F여서, `K.identity`의 고정 기대값 0x15F와 다름 → boot-check FAIL → fail-fast 중단 |
+| 388–393 | 나머지 6개 | NOT_MEASURED |
+
+- 원인: 펌웨어는 RUN마다 `placement_regioncfg(n_base, placement)`로 REGIONCFG를 검사한다 (REGION0 3, REGION1_DDR 3, REGION2–7 1; 2 bit/region). n_base는 Conv 5, ADD(IFM 2개) 6이다. 이 RUN들은 펌웨어 검사(REGIONCFG_MATCH)를 통과했다. 호스트 쪽 `K.identity`는 n_base 5일 때의 값 0x15F를 고정 상수로 갖고 있어 Elementwise에 맞지 않았다. G0 dry run을 Conv blob으로만 해서 이 가정을 잡지 못했다 (검증 누락).
+- n_base 규칙은 기존 원시 데이터 전부 (4K 100, 4AO 61, placement 20 (SRAM 0x153 포함), 이번 30 RUN)와 일치한다.
+- 복원: RESTORE VERIFIED (m6 digest 4개가 이전과 같음). postflight는 user 단계로 따로 실행: PING state 1, 카드 분리.
+  원시 데이터 73개 파일 (`raw.sha256`, 보드와 sha256 일치).
+- **POST_HOC_DESCRIPTIVE (계약상 INVALID인 구성의 값; 판정에 쓰지 않음)**: ADD H24 AO_ACTIVE 3,456 (4 RUN 모두, range 0) = N/16.
+  MAC_ACTIVE 0, WD 0, NPU_ACTIVE 36,644 / 37,180.5 (A/B), EXT rd beat 6,933 (IFM 2개 ≈ 2 × 3,456), EXT wr 3,456, SRAM 0.
