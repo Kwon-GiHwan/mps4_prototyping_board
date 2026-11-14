@@ -1,0 +1,9 @@
+# Stage 4WD G0 (before the session, 2026-11-15); contract evidence/stage4wd/contract.md (frozen fc2330f)
+boot numbers 402-409 unused: max host_boot_index on the board and in Mac evidence = 401
+image (staging ~/evsweep_s4wd, from ~/evsweep_s4aoe2): boot 718c4562.. bram c80e77df.. ddr 374708ff.. images.txt af688281.. = 70090f1
+staging: 37 files (6 WD DRWL + tflite_ofm; 4AO H24 DRWL + compile.json + tflite_ofm; 4AO H36 DRWL + tflite_ofm; 8 ref_ofm (= BUILTIN_REF, sha256 checked); expected_identity.json; conditions, ids, 8 plans, session) sha256 equal Mac <-> board; no AppleDouble files
+ref: ~/evsweep_s4wd/ref = Stage 4AO-E A1 boot 394 conds/s4ao_conv1x1_h24 (sha256 equal to evidence/stage4aoe/raw_a1)
+board code: 24 files sha256 equal Mac <-> board (stage4wd.py with repro-gate and boot-check)
+static identity, all 8 configs: n_base 5 (manifest = header), placement 0, REGIONCFG 0x15F
+board-side dry run on boot 394 data: repro-gate rc=0 (AO 3534, WD 1051 = 1051, wd_ok), boot-check h24 rc=0, unmeasured s4wd_h32 rc=1
+session: ~/evsweep_s4wd/session.txt sha256 e0f72a179acd27e43d758acd100505541a98647363c4278faff1c75f2bbf0d1d (= Mac), sudo_session.sh --check OK; card not mounted; evidence_m6 present
