@@ -1,0 +1,10 @@
+# Owner-approved sudo session 2026-11-14: Stage 4 placement boots 367 (A, DDR) and 368 (B, SRAM), contract
+# evidence/stage4_placement/contract.md, TA profile 1. B runs only if the p1-gate step passes (a failing step stops the
+# session and restores the card). Ends with postflight (m6 image, PING, card withdrawn).
+user python3 mcc.py USB_ON 4 && sleep 5 && test -e /dev/sdb1
+deploy_mlek /home/gihwan/evsweep_s4p /home/gihwan/evsweep/evidence_s4p
+user OUTPUTS=1 STOP_ON_INVALID=1 sh run_driver_campaign.sh /home/gihwan/evsweep_s4p /home/gihwan/evsweep_s4p_run_a /home/gihwan/evsweep_s4p/ids.txt /home/gihwan/evsweep_s4p/plan_a.txt 5
+user python3 host/analysis/stage4p.py p1-gate /home/gihwan/evsweep_s4p_run_a/conds/s4p_conv_base_ddr/wfe /home/gihwan/evsweep_s4p/ref /home/gihwan/evsweep_s4p/ref/stage4_capabilities.json
+user OUTPUTS=1 STOP_ON_INVALID=1 sh run_driver_campaign.sh /home/gihwan/evsweep_s4p /home/gihwan/evsweep_s4p_run_b /home/gihwan/evsweep_s4p/ids.txt /home/gihwan/evsweep_s4p/plan_b.txt 5
+restore_mlek /home/gihwan/evsweep/evidence_s4p /home/gihwan/evsweep_s4p
+user sh postflight.sh

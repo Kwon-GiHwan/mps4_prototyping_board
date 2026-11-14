@@ -670,7 +670,7 @@ class Placement(unittest.TestCase):
 class PlacementBoardScript(unittest.TestCase):
     """run_driver_events.py stops the boot when a RUN did not run the workload's placement."""
 
-    def campaign(self, placement, **env):
+    def campaign(self, placement, extra=(), **env):
         sys.path.insert(0, str(REPO / "host" / "board"))
         import run_driver_events as R
         self.links = []
@@ -679,7 +679,7 @@ class PlacementBoardScript(unittest.TestCase):
         d = pathlib.Path(self.d.name)
         (d / "w.drwl").write_bytes(drwl.pack(simm([40], [30]), [IFM], [expected_output(IFM, 0, 30)], placement=placement))
         argv = ["x", "--out", str(d / "out"), "--host-boot-index", "7", "--workload", str(d / "w.drwl"),
-                "--ids", "35,48", "--repeats", "2", "--outputs", "--image-sha256", "b,r,d,i"]
+                "--ids", "35,48", "--repeats", "2", "--outputs", "--image-sha256", "b,r,d,i", *extra]
         old, sys.argv = sys.argv, argv
         try:
             rc = R.main()
@@ -696,6 +696,17 @@ class PlacementBoardScript(unittest.TestCase):
         rc, summ, raw = self.campaign(1)
         self.assertEqual((rc, summ["refusal"], summ["provenance"]["workload_placement"]), (0, None, 1))
         self.assertEqual({x["record"]["placement"] for x in raw[1:]}, {1})
+
+    def test_stop_on_invalid(self):
+        rc, summ, raw = self.campaign(0, ["--stop-on-invalid"], SIM_NO_WRITE="1")  # output stays the poison
+        self.assertEqual((rc, summ["refusal"]["rule"], len(raw)), (1, "RULE_RUN_INVALID", 2))
+        rc, summ, raw = self.campaign(0, [], SIM_NO_WRITE="1")                    # without the flag: reported only
+        self.assertEqual((rc, len(raw)), (0, 1 + 2))                             # one set (35, 48), 2 RUNs
+        rc, summ, raw = self.campaign(1, ["--stop-on-invalid"], SIM_OVF="1")      # a PMU overflow: invalid RUN
+        self.assertEqual((rc, summ["refusal"]["rule"]), (1, "RULE_RUN_INVALID"))
+        rc, summ, raw = self.campaign(1, ["--stop-on-invalid"])
+        self.assertEqual((rc, summ["refusal"], summ["stop_on_invalid"]), (0, None, True))
+        self.assertIsInstance(summ["load_end_s"], float)
 
     def test_regioncfg_mismatch_stops_after_the_first_run(self):
         rc, summ, raw = self.campaign(1, SIM_REGIONCFG="0x1f")

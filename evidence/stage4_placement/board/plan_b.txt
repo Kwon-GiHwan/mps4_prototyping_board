@@ -1,0 +1,2 @@
+# Stage 4 placement boot B (contract.md): region 1 in SRAM, SRAM port, TA profile 1; only after p1-gate PASS
+368 s4p_conv_base_sram @/home/gihwan/evsweep_s4p/conditions.txt

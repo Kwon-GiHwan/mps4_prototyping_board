@@ -8,7 +8,7 @@ SLOTS = 8
 REPEATS = 3
 VERDICTS = ("COUNTED_NONZERO", "COUNTED_ZERO", "INCONSISTENT", "NOT_OBSERVED")
 RULES = ("RULE_PING", "RULE_CAPABILITY", "RULE_MODE_NACK", "RULE_RUN_TRANSPORT",
-         "RULE_RECORD_SCHEMA", "RULE_CODES_ECHO", "RULE_SET_COVERAGE")
+         "RULE_RECORD_SCHEMA", "RULE_CODES_ECHO", "RULE_SET_COVERAGE", "RULE_RUN_INVALID")
 VALIDITY_TERMS = ("rc_zero", "required_flags_ok", "cycle_valid", "cycle_progress", "seam_fired",
                   "mode_applied_2", "applied_count", "valid_mask_full", "codes_echo")
 

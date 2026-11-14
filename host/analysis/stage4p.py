@@ -7,6 +7,9 @@ together; a difference is a "DRAM path vs SRAM path under TA profile 1" differen
 
   python3 host/analysis/stage4p.py make-b <A.drwl> <B.drwl>          the B workload: header word 7 = 1, nothing else
   python3 host/analysis/stage4p.py gate-b <A.drwl> <B.drwl> <A.drwl.json> <A.drwl.cms.bin>
+  python3 host/analysis/stage4p.py p1-gate <A folder> <compile dir> <Stage 4 capabilities.json>
+      on the board host between the A boot and the B boot: exit 0 only if P0 + P1 pass (else the session stops, B never
+      runs); writes <A folder>/p1_gate.json
   python3 host/analysis/stage4p.py analyse <A folder> <B folder> <compile dir> <out dir> <A.drwl> <B.drwl> <cms.bin>
       (a folder = run_driver_events.py's condition folder: raw_runs.json, runs.csv, output.bin; capabilities.json in it
        or in its parent)
@@ -22,6 +25,8 @@ Rules (fixed before the data):
               (MEM_ATTR, AXI, TA, fast memory) equal between the two boots
   gate C      stage4.output_check PASS_EXACT, every measured RUN valid (record_v2.validity), passes 1 and 2 with 4 RUNs
   outputs     A and B output CRCs equal
+  P0          the new image's capabilities equal Stage 4 conv_base's (boot 330) on the TA profile 1 registers, AXI limits,
+              MEM_ATTR and the fast memory (CAPS_SAME)
   P1          A reproduces Stage 4 conv_base (image 83398c7, boot 330, TA profile 1): MAC_ACTIVE, MAC_DPU_ACTIVE and the
               pass-B beat counters (range 0 there) equal; NPU_ACTIVE pass A within max(1 %, Stage 4 range, A range);
               output CRC equal
@@ -226,6 +231,26 @@ def verdict(a: dict, b: dict, gb: dict) -> dict:
     return dict(res, outcome="INTERPRETED", cost=cost(a, b), compute=compute(a, b), auxiliary=auxiliary(a, b))
 
 
+def p1_gate(a_dir, comp_dir, stage4_caps) -> dict:
+    """P0 + P1 + A's own validity (gate C, placement, poisoned RUN): the condition for running B at all."""
+    comp_dir = pathlib.Path(comp_dir)
+    comp = json.loads((comp_dir / "s4_conv_base.compile.json").read_text())
+    ref = (comp_dir / "s4_conv_base.drwl.tflite_ofm.bin").read_bytes()
+    a = condition(pathlib.Path(a_dir), comp, ref, 0)
+    s4 = json.loads(pathlib.Path(stage4_caps).read_text())
+    why = [f"P0 capabilities {k}: new {a['caps'].get(k)!r} Stage 4 {s4.get(k)!r}" for k in CAPS_SAME
+           if k not in s4 or a["caps"].get(k) != s4[k]]
+    if a["gate_c"] != "PASS":
+        why.append(f"gate C A: output {a['output']['verdict']}")
+    why += [f"placement A: {x}" for x in a["placement"]]
+    if not a["poisoned_run_ok"]:
+        why.append("poison A: the first RUN after the load does not match its golden")
+    rep = p1(a)
+    why += [f"P1: {x}" for x in rep["why"]]
+    return dict(verdict="PASS" if not why else "FAIL", why=why, p1=rep, ta_profile=1,
+                metrics={k: v for k, v in a["metrics"].items() if not k.endswith("_range")})
+
+
 def analyse(a_dir: str, b_dir: str, comp_dir: str, out: str, a_blob: str, b_blob: str, cms: str) -> dict:
     comp_dir, out = pathlib.Path(comp_dir), pathlib.Path(out)
     comp = json.loads((comp_dir / "s4_conv_base.compile.json").read_text())
@@ -254,6 +279,11 @@ def main(argv: list) -> int:
         r = gate_b(*(pathlib.Path(p).read_bytes() for p in args[:2]), json.loads(pathlib.Path(args[2]).read_text()),
                    pathlib.Path(args[3]).read_bytes())
         print(json.dumps(r, indent=1))
+        return 0 if r["verdict"] == "PASS" else 1
+    if cmd == "p1-gate":
+        r = p1_gate(*args[:3])
+        (pathlib.Path(args[0]) / "p1_gate.json").write_text(json.dumps(r, indent=1, default=str))
+        print(json.dumps(r, indent=1, default=str))
         return 0 if r["verdict"] == "PASS" else 1
     if cmd == "analyse":
         print(json.dumps(analyse(*args[:7]), indent=1, default=str))

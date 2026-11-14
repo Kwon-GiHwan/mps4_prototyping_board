@@ -8,7 +8,7 @@ span in CPU DWT cycles; the driver runner's own columns follow.
   python3 run_driver_events.py --out <dir> --host-boot-index N --workload <x.drwl> --ids @<ids file> --repeats 10 \
       [--wait-mode 0|1|2] [--pmccntr-cfg 0x..] [--trace-word 0x..] --image-sha256 <boot>,<bram>,<ddr>,<images.txt>
 """
-import argparse, csv, datetime, hashlib, json, pathlib, sys, zlib
+import argparse, csv, datetime, hashlib, json, pathlib, sys, time, zlib
 from dataclasses import dataclass
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "lib"))
 import drwl
@@ -24,12 +24,20 @@ PORT = "/dev/serial/by-id/usb-FTDI_USB__-__Serial_Converter_00FT46259002B-if01-p
 PROV = dict(board_serial="FTDI-00FT46259002B", fpga_image="FI101-r1p0 (109762 v0100)", runner="driver_runner")
 
 
-def prime(link, blob):
+# LOAD_MODEL_END also writes and reads back the whole 2 MiB arena twice (placement.h, both placements): extra seconds
+LOAD_ARENA_CHECK_S = 30.0
+
+
+def prime(link, blob) -> float:
+    """Uploads and loads the workload; returns the LOAD_MODEL_END round trip in seconds."""
     link.load_model_begin(len(blob), zlib.crc32(blob) & 0xFFFFFFFF)
     for off in range(0, len(blob), CHUNK):
         link.load_model_chunk(off, blob[off:off + CHUNK])
-    link.load_model_end(timeout=load_end_timeout(len(blob)))
+    t0 = time.monotonic()
+    link.load_model_end(timeout=load_end_timeout(len(blob)) + LOAD_ARENA_CHECK_S)
+    took = time.monotonic() - t0
     link.load_input(b"")
+    return took
 
 
 def placement_check(r, placement: int) -> None:
@@ -131,7 +139,7 @@ def run_condition(link, cond, sets, ctx, d: pathlib.Path, raw: list, rows: list)
             raise E.fail_rule("RULE_MODE_NACK", f"applied={applied} count={cnt}")
         if not ctx["primed"]:
             try:
-                prime(link, ctx["blob"])
+                ctx["load_end_s"] = prime(link, ctx["blob"])
             except (Nack, ProtocolError) as e:
                 raise E.fail_rule("RULE_RUN_TRANSPORT", f"prime: {e!r}")
             ctx["primed"] = True
@@ -165,6 +173,9 @@ def run_condition(link, cond, sets, ctx, d: pathlib.Path, raw: list, rows: list)
                   f"npu_exec={r.npu_execution_cycles()} ofm_mismatch={r.f['ofm_mismatch']} valid={ok} "
                   f"{failed or ''}", flush=True)
             placement_check(r, ctx["placement"])
+            if ctx["stop_on_invalid"] and (not ok or r.f["ofm_mismatch"] != 0):
+                raise E.fail_rule("RULE_RUN_INVALID", f"{cond.name} set {set_id} rep {rep}: {failed} "
+                                                      f"ofm_mismatch={r.f['ofm_mismatch']}")
     if ctx["outputs"] and len(raw) > 1:   # the last RUN's outputs, once per condition; its CRC must match
         try:
             data = link.get_output(raw[-1]["output_len"])
@@ -194,6 +205,8 @@ def main():
     ap.add_argument("--outputs", action="store_true", help="CRC of the outputs after every RUN (raw_runs.json) and the "
                                                             "last RUN's outputs per condition (output.bin)")
     ap.add_argument("--image-sha256", required=True, help="boot.bin,bram.bin,ddr.bin,images.txt digests")
+    ap.add_argument("--stop-on-invalid", action="store_true", help="end the boot at the first RUN that is invalid "
+                                                                     "(record_v2.validity) or whose output differs")
     a = ap.parse_args()
     try:
         if a.conditions:
@@ -216,7 +229,7 @@ def main():
     ids, explicit = E.parse_ids_text(txt)
     sets = E.event_sets(ids, sets=explicit)
     ctx = dict(blob=blob, primed=False, repeats=a.repeats, run_timeout=a.run_timeout, prov=prov, outputs=a.outputs,
-               placement=h["placement"],
+               placement=h["placement"], stop_on_invalid=a.stop_on_invalid, load_end_s=None,
                names=reference.driver_ids(), trm=reference.trm_ids())
     done, refusal, ping = [], None, None
     link = DriverLink(a.port)
@@ -237,6 +250,7 @@ def main():
         write_outputs(d, raw, rows, dict(provenance=prov, condition=cond.name, wait_mode=cond.wait_mode,
                                          pmccntr_cfg=cond.pmccntr_cfg, trace_word=cond.trace_word,
                                          runs=len(raw) - 1, rows=len(rows), refusal=refusal,
+                                         load_end_s=ctx["load_end_s"], stop_on_invalid=a.stop_on_invalid,
                                          text_log_lines=len(link.text_log), text_log_tail=link.text_log[-40:]))
     print(json.dumps({"runs": sum(len(x[2]) - 1 for x in done), "conditions": len(done), "refusal": refusal}))
     return 1 if refusal else 0

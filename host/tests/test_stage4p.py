@@ -180,5 +180,39 @@ class Verdicts(unittest.TestCase):
             self.assert_stop(r, "traffic: TRAFFIC_INCONSISTENT")
 
 
+class P1Gate(unittest.TestCase):
+    """stage4p.py p1-gate: on the board host between the A boot and the B boot; B runs only on exit 0."""
+    S4_CAPS = REPO / "evidence" / "stage4" / "raw" / "conds" / "s4_conv_base" / "capabilities.json"
+
+    def gate(self, caps_s4=None, **a):
+        with tempfile.TemporaryDirectory() as d:
+            d = pathlib.Path(d)
+            write(d / "A" / "wfe", 0, a.pop("ev", A_EV), **a)
+            (d / "s4caps.json").write_text(json.dumps(caps_s4 or CAPS))
+            rc = P.main(["p1-gate", str(d / "A" / "wfe"), str(W), str(d / "s4caps.json")])
+            return rc, json.loads((d / "A" / "wfe" / "p1_gate.json").read_text())
+
+    def test_pass(self):
+        rc, r = self.gate()
+        self.assertEqual((rc, r["verdict"], r["why"]), (0, "PASS", []))
+
+    def test_fail(self):
+        for kw, text in ((dict(caps_s4=dict(CAPS, ta_ext_rlatency=500)), "P0 capabilities ta_ext_rlatency"),
+                         (dict(ev=ev_with(A_EV, {(1, 48): 2305})), "P1: pass 1 event 48"),
+                         (dict(ev=ev_with(A_EV, {(2, 386): 1438})), "P1: pass 2 event 386"),
+                         (dict(first=dict(ofm_mismatch=9, ofm_max_diff=3)), "poison A"),
+                         (dict(rec=dict(regioncfg_irq=0x153)), "placement A"),
+                         (dict(valid=False), "gate C A")):
+            rc, r = self.gate(**kw)
+            self.assertEqual((rc, r["verdict"]), (1, "FAIL"), text)
+            self.assertTrue(any(text in w for w in r["why"]), (text, r["why"]))
+
+    def test_stage4_capabilities_hold_every_compared_field(self):
+        s4 = json.loads(self.S4_CAPS.read_text())
+        self.assertEqual([k for k in P.CAPS_SAME if k not in s4], [])           # the gate can pass on real data
+        self.assertEqual((s4["ta_ext_rlatency"], s4["ta_sram_rlatency"], s4["fast_base"], s4["fast_size"]),
+                         (500, 32, 0x31000000, 0x60000))                         # TA profile 1, cache_arena
+
+
 if __name__ == "__main__":
     unittest.main()

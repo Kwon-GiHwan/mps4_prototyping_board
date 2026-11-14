@@ -1,5 +1,7 @@
 # Stage 4 보완 — conv_base IFM·OFM DRAM/SRAM 배치 비교: 계약 초안 (2026-11-14, **동결 전, 실행 전**)
 
+> **대체됨(2026-11-14):** owner 승인 뒤 `contract.md`로 동결했다. 이 초안은 이력으로만 남긴다.
+
 - 이 문서는 초안이다. 동결하지 않았고, 이 초안으로 보드를 실행하지 않았다.
 - 동결과 보드 실행은 owner의 별도 결정 뒤에 한다.
 - 설계: `docs/plan/stage4_memory_placement_plan.md`(`19adf32`).
