@@ -1,6 +1,6 @@
 # Stage 4AO — Ethos-U85 AO(Activation Output) 하드웨어 특성: 분석·설계 (보드 없음)
 
-상태: **2026-11-15 보드 없는 단계 완료.** 판정 `NEEDS_REVISION`. 지시된 Phase B 형상 4개 중 Vela 실행 구성(OFM block)이
+상태: **2026-11-15 보드 측정 완료 (boot 379–384, TA profile 1; 결과 `results/fi101_stage4ao/README.md`)**: 재현 Gate PASS, RQ1 RATE_NOT_CONSISTENT (15.60 elem/cycle), H2 M3_ONLY, Phase C 판정 불가 (act_none 출력 1 LSB 불일치로 fail-fast). 아래는 보드 전 설계 기록. 보드 없는 단계의 원래 상태: 판정 `NEEDS_REVISION`. 지시된 Phase B 형상 4개 중 Vela 실행 구성(OFM block)이
 같은 것은 2개뿐입니다. 수정안과 계약 초안은 `evidence/stage4ao/contract_draft.md`에 있고, 동결·보드 실행은 하지 않았습니다.
 모든 보드 수치의 조건은 TA profile 1, 이미지 `70090f1`, DDR/EXT 배치, Vela 5.0.0(MLEK 옵션)입니다.
 

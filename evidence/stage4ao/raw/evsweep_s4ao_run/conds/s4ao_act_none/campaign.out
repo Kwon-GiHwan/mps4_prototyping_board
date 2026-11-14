@@ -1,0 +1,3 @@
+wfe set  1 rep 1 rc=0 flags=0x5f npu_exec=22649 ofm_mismatch=57 valid=True 
+REFUSED RULE_RUN_INVALID: wfe set 1 rep 1: [] ofm_mismatch=57
+{"runs": 1, "conditions": 1, "refusal": {"rule": "RULE_RUN_INVALID", "msg": "RULE_RUN_INVALID: wfe set 1 rep 1: [] ofm_mismatch=57"}}

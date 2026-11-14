@@ -1,0 +1,460 @@
+{
+ "repro_gate": {
+  "verdict": "PASS",
+  "reproduce": {
+   "ok": true,
+   "checks": {
+    "mac": true,
+    "dpu": true,
+    "output": true,
+    "constant_counters": true,
+    "npu_active": true
+   },
+   "differing_constant_counters": {},
+   "npu_active": [
+    21629.0,
+    21069.0
+   ],
+   "tolerance": 1211,
+   "compared": 10
+  },
+  "ao": 3533.0,
+  "ao_ref": 3540.5,
+  "ao_ok": true
+ },
+ "rq1": {
+  "verdict": "RATE_NOT_CONSISTENT",
+  "configs": [
+   "s4ao_conv1x1_h24",
+   "s4ao_conv1x1_h36",
+   "s4ao_conv1x1_h54",
+   "s4ao_conv1x1_h72"
+  ],
+  "slope": 1.0253133660871756,
+  "intercept": -11.748299319728176,
+  "observed_rate": 15.604985294456432
+ },
+ "rq2": {
+  "verdict": "M3_ONLY",
+  "per_model": {
+   "M1": "NOT_CONSISTENT",
+   "M2": "NOT_CONSISTENT",
+   "M3": "CONSISTENT",
+   "M4": "NOT_CONSISTENT"
+  },
+  "configs": [
+   "s4ao_conv1x1_h24",
+   "s4ao_conv1x1_h36",
+   "s4ao_conv1x1_h54",
+   "s4ao_conv1x1_h72"
+  ]
+ },
+ "rq3": {
+  "s4ao_act_none": {
+   "verdict": "INVALID"
+  },
+  "s4ao_act_relu": {
+   "verdict": "INVALID"
+  }
+ },
+ "base_vs_h24": {
+  "verdict": "SAME_WITHIN_TOL",
+  "ao_diff": 1.0,
+  "npu_diff": -61.0
+ },
+ "configs": {
+  "s4ao_conv1x1_h24": {
+   "config": "s4ao_conv1x1_h24",
+   "gate_c": "PASS",
+   "verdict": "VALID",
+   "metrics": {
+    "A_35": 21008.0,
+    "A_35_range": 1228,
+    "A_48": 2304.0,
+    "A_48_range": 0,
+    "A_51": 1152.0,
+    "A_51_range": 0,
+    "A_53": 0.0,
+    "A_53_range": 0,
+    "A_55": 5489.0,
+    "A_55_range": 988,
+    "A_64": 3534.0,
+    "A_64_range": 3,
+    "A_80": 1052.0,
+    "A_80_range": 0,
+    "A_81": 7270.0,
+    "A_81_range": 1807,
+    "B_35": 21155.5,
+    "B_35_range": 612,
+    "B_128": 304.0,
+    "B_128_range": 0,
+    "B_130": 2016.0,
+    "B_130_range": 0,
+    "B_132": 16.0,
+    "B_132_range": 0,
+    "B_135": 252.0,
+    "B_135_range": 0,
+    "B_384": 171.0,
+    "B_384_range": 0,
+    "B_386": 1437.0,
+    "B_386_range": 0,
+    "B_391": 3456.0,
+    "B_391_range": 0,
+    "mac_active_per_npu_active": 0.10967250571210967,
+    "mac_dpu_active_per_npu_active": 0.05483625285605483,
+    "ao_active_per_npu_active": 0.1682216298552932,
+    "wd_active_per_npu_active": 0.050076161462300074,
+    "wd_stalled_per_npu_active": 0.34605864432597105,
+    "macs_per_npu_active": 42.11424219345012,
+    "cycles_per_mac": 0.02374493634259259,
+    "macs_per_1024_mac_active": 0.375
+   },
+   "output": "PASS_EXACT",
+   "workload_sha256_ok": true,
+   "runs_valid": true,
+   "stability": {
+    "ok": true,
+    "ao_range_ok": true,
+    "pass_ab_ok": true
+   },
+   "n_ofm": 55296,
+   "models": {
+    "M1": {
+     "pred": 3456.0,
+     "error": 78.0,
+     "within": false
+    },
+    "M2": {
+     "pred": 3535.5,
+     "error": -1.5,
+     "within": true
+    },
+    "M3": {
+     "pred": 3535.5,
+     "error": -1.5,
+     "within": true
+    },
+    "M4": {
+     "pred": 4224.0,
+     "error": -690.0,
+     "within": false
+    }
+   },
+   "ao": {
+    "n_ofm": 55296,
+    "ao_ideal_cycles": 3456.0,
+    "ao_observed_throughput": 15.64685908319185,
+    "ao_cycle_residual": 78.0,
+    "ao_relative_throughput": 0.9779286926994907
+   }
+  },
+  "s4ao_conv1x1_h36": {
+   "config": "s4ao_conv1x1_h36",
+   "gate_c": "PASS",
+   "verdict": "VALID",
+   "metrics": {
+    "A_35": 30657.0,
+    "A_35_range": 192,
+    "A_48": 3456.0,
+    "A_48_range": 0,
+    "A_51": 1728.0,
+    "A_51_range": 0,
+    "A_53": 0.0,
+    "A_53_range": 0,
+    "A_55": 9166.0,
+    "A_55_range": 1997,
+    "A_64": 5304.5,
+    "A_64_range": 8,
+    "A_80": 1563.0,
+    "A_80_range": 58,
+    "A_81": 11178.0,
+    "A_81_range": 415,
+    "B_35": 30611.0,
+    "B_35_range": 208,
+    "B_128": 456.0,
+    "B_128_range": 0,
+    "B_130": 3024.0,
+    "B_130_range": 0,
+    "B_132": 16.0,
+    "B_132_range": 0,
+    "B_135": 252.0,
+    "B_135_range": 0,
+    "B_384": 243.0,
+    "B_384_range": 0,
+    "B_386": 2013.0,
+    "B_386_range": 0,
+    "B_391": 5184.0,
+    "B_391_range": 0,
+    "mac_active_per_npu_active": 0.11273118700459928,
+    "mac_dpu_active_per_npu_active": 0.05636559350229964,
+    "ao_active_per_npu_active": 0.1730273673223081,
+    "wd_active_per_npu_active": 0.05098346217829533,
+    "wd_stalled_per_npu_active": 0.3646149329680008,
+    "macs_per_npu_active": 43.28877580976612,
+    "cycles_per_mac": 0.023100676359953703,
+    "macs_per_1024_mac_active": 0.375
+   },
+   "output": "PASS_EXACT",
+   "workload_sha256_ok": true,
+   "runs_valid": true,
+   "stability": {
+    "ok": true,
+    "ao_range_ok": true,
+    "pass_ab_ok": true
+   },
+   "n_ofm": 82944,
+   "models": {
+    "M1": {
+     "pred": 5184.0,
+     "error": 120.5,
+     "within": false
+    },
+    "M2": {
+     "pred": 5263.5,
+     "error": 41.0,
+     "within": true
+    },
+    "M3": {
+     "pred": 5303.25,
+     "error": 1.25,
+     "within": true
+    },
+    "M4": {
+     "pred": 5952.0,
+     "error": -647.5,
+     "within": false
+    }
+   },
+   "ao": {
+    "n_ofm": 82944,
+    "ao_ideal_cycles": 5184.0,
+    "ao_observed_throughput": 15.636535017438025,
+    "ao_cycle_residual": 120.5,
+    "ao_relative_throughput": 0.9772834385898765
+   }
+  },
+  "s4ao_conv1x1_h54": {
+   "config": "s4ao_conv1x1_h54",
+   "gate_c": "PASS",
+   "verdict": "VALID",
+   "metrics": {
+    "A_35": 44848.5,
+    "A_35_range": 1006,
+    "A_48": 5184.0,
+    "A_48_range": 0,
+    "A_51": 2592.0,
+    "A_51_range": 0,
+    "A_53": 0.0,
+    "A_53_range": 0,
+    "A_55": 14494.5,
+    "A_55_range": 1029,
+    "A_64": 7953.0,
+    "A_64_range": 20,
+    "A_80": 2298.0,
+    "A_80_range": 132,
+    "A_81": 18195.5,
+    "A_81_range": 979,
+    "B_35": 44782.0,
+    "B_35_range": 248,
+    "B_128": 684.0,
+    "B_128_range": 0,
+    "B_130": 4536.0,
+    "B_130_range": 0,
+    "B_132": 16.0,
+    "B_132_range": 0,
+    "B_135": 252.0,
+    "B_135_range": 0,
+    "B_384": 351.0,
+    "B_384_range": 0,
+    "B_386": 2877.0,
+    "B_386_range": 0,
+    "B_391": 7776.0,
+    "B_391_range": 0,
+    "mac_active_per_npu_active": 0.11558915013880063,
+    "mac_dpu_active_per_npu_active": 0.05779457506940031,
+    "ao_active_per_npu_active": 0.1773303454965049,
+    "wd_active_per_npu_active": 0.051239171878658146,
+    "wd_stalled_per_npu_active": 0.4057103359086703,
+    "macs_per_npu_active": 44.38623365329944,
+    "cycles_per_mac": 0.022529507860725308,
+    "macs_per_1024_mac_active": 0.375
+   },
+   "output": "PASS_EXACT",
+   "workload_sha256_ok": true,
+   "runs_valid": true,
+   "stability": {
+    "ok": true,
+    "ao_range_ok": true,
+    "pass_ab_ok": true
+   },
+   "n_ofm": 124416,
+   "models": {
+    "M1": {
+     "pred": 7776.0,
+     "error": 177.0,
+     "within": false
+    },
+    "M2": {
+     "pred": 7855.5,
+     "error": 97.5,
+     "within": false
+    },
+    "M3": {
+     "pred": 7954.875,
+     "error": -1.875,
+     "within": true
+    },
+    "M4": {
+     "pred": 8544.0,
+     "error": -591.0,
+     "within": false
+    }
+   },
+   "ao": {
+    "n_ofm": 124416,
+    "ao_ideal_cycles": 7776.0,
+    "ao_observed_throughput": 15.643907959260657,
+    "ao_cycle_residual": 177.0,
+    "ao_relative_throughput": 0.9777442474537911
+   }
+  },
+  "s4ao_conv1x1_h72": {
+   "config": "s4ao_conv1x1_h72",
+   "gate_c": "PASS",
+   "verdict": "VALID",
+   "metrics": {
+    "A_35": 58635.0,
+    "A_35_range": 511,
+    "A_48": 6912.0,
+    "A_48_range": 0,
+    "A_51": 3456.0,
+    "A_51_range": 0,
+    "A_53": 0.0,
+    "A_53_range": 0,
+    "A_55": 19609.0,
+    "A_55_range": 2232,
+    "A_64": 10623.5,
+    "A_64_range": 13,
+    "A_80": 2993.5,
+    "A_80_range": 102,
+    "A_81": 24302.0,
+    "A_81_range": 2154,
+    "B_35": 58989.5,
+    "B_35_range": 678,
+    "B_128": 912.0,
+    "B_128_range": 0,
+    "B_130": 6048.0,
+    "B_130_range": 0,
+    "B_132": 16.0,
+    "B_132_range": 0,
+    "B_135": 252.0,
+    "B_135_range": 0,
+    "B_384": 459.0,
+    "B_384_range": 0,
+    "B_386": 3741.0,
+    "B_386_range": 0,
+    "B_391": 10368.0,
+    "B_391_range": 0,
+    "mac_active_per_npu_active": 0.11788181120491174,
+    "mac_dpu_active_per_npu_active": 0.05894090560245587,
+    "ao_active_per_npu_active": 0.18118018248486398,
+    "wd_active_per_npu_active": 0.051053125266479066,
+    "wd_stalled_per_npu_active": 0.41446235183763963,
+    "macs_per_npu_active": 45.26661550268611,
+    "cycles_per_mac": 0.022091335720486112,
+    "macs_per_1024_mac_active": 0.375
+   },
+   "output": "PASS_EXACT",
+   "workload_sha256_ok": true,
+   "runs_valid": true,
+   "stability": {
+    "ok": true,
+    "ao_range_ok": true,
+    "pass_ab_ok": true
+   },
+   "n_ofm": 165888,
+   "models": {
+    "M1": {
+     "pred": 10368.0,
+     "error": 255.5,
+     "within": false
+    },
+    "M2": {
+     "pred": 10447.5,
+     "error": 176.0,
+     "within": false
+    },
+    "M3": {
+     "pred": 10606.5,
+     "error": 17.0,
+     "within": true
+    },
+    "M4": {
+     "pred": 11136.0,
+     "error": -512.5,
+     "within": false
+    }
+   },
+   "ao": {
+    "n_ofm": 165888,
+    "ao_ideal_cycles": 10368.0,
+    "ao_observed_throughput": 15.61519273309173,
+    "ao_cycle_residual": 255.5,
+    "ao_relative_throughput": 0.9759495458182331
+   }
+  },
+  "s4ao_act_none": {
+   "config": "s4ao_act_none",
+   "gate_c": "FAIL",
+   "verdict": "INVALID",
+   "metrics": {
+    "A_35": null,
+    "A_35_range": null,
+    "A_48": null,
+    "A_48_range": null,
+    "A_51": null,
+    "A_51_range": null,
+    "A_53": null,
+    "A_53_range": null,
+    "A_55": null,
+    "A_55_range": null,
+    "A_64": null,
+    "A_64_range": null,
+    "A_80": null,
+    "A_80_range": null,
+    "A_81": null,
+    "A_81_range": null,
+    "B_35": null,
+    "B_35_range": null,
+    "B_128": null,
+    "B_128_range": null,
+    "B_130": null,
+    "B_130_range": null,
+    "B_132": null,
+    "B_132_range": null,
+    "B_135": null,
+    "B_135_range": null,
+    "B_384": null,
+    "B_384_range": null,
+    "B_386": null,
+    "B_386_range": null,
+    "B_391": null,
+    "B_391_range": null
+   },
+   "output": "INVALID",
+   "workload_sha256_ok": true,
+   "runs_valid": false,
+   "stability": {
+    "ok": false,
+    "ao_range_ok": false,
+    "pass_ab_ok": false
+   },
+   "n_ofm": 55296
+  },
+  "s4ao_act_relu": {
+   "config": "s4ao_act_relu",
+   "verdict": "NOT_MEASURED",
+   "n_ofm": 55296
+  }
+ }
+}

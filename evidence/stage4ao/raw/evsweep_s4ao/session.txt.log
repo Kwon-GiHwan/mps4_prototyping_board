@@ -1,0 +1,240 @@
+=== 2026-11-14T17:33:55Z step 4: user python3 mcc.py USB_ON 4 && sleep 5 && test -e /dev/sdb1
+USB_ON
+Enabling debug USB...
+
+Cmd> 
+=== 2026-11-14T17:34:05Z step 5: deploy_mlek /home/gihwan/evsweep_s4ao /home/gihwan/evsweep/evidence_s4ao
+images.txt: OK
+APP.BIN: OK
+VECTORS.BIN: OK
+DDR.BIN: OK
+DEPLOY VERIFIED: source == destination
+718c456283bfd44863d5fb697360b680ff4dc6b297cc0dc74d7ed78a6ca7ef59  boot.bin
+c80e77df9fe14b908966a5cebc5045cca93c5fd98bcea50fb1a7aef35f9fe99c  bram.bin
+374708fff7719dd5979ec875d56cd2286f6d3cf7ec317a3b25632aab28ec37bb  ddr.bin
+af688281435a73dda3b2247845149817ecc7a9bbdff5a3ccd2e4dfa52875423f  images.txt
+DEPLOY DONE: unmounted, safe to REBOOT
+=== 2026-11-14T17:34:05Z step 6: user OUTPUTS=1 STOP_ON_INVALID=1 sh run_driver_campaign.sh /home/gihwan/evsweep_s4ao /home/gihwan/evsweep_s4ao_run /home/gihwan/evsweep_s4ao/ids.txt /home/gihwan/evsweep_s4ao/plan_b01.txt 5
+mcc boot log: 10551 bytes -> /home/gihwan/evsweep_s4ao_run/conds/s4_conv_base/mcc_boot.log
+Image loaded from \SOFTWARE\boot.bin
+Image loaded from \SOFTWARE\bram.bin
+Image loaded from \SOFTWARE\ddr.bin
+DDR memory test at 0x70000000: PASSED
+Clearing SCC CPUWAIT (0xFFFFFFFF80000000:0x00000000)
+--- boot379 s4_conv_base @/home/gihwan/evsweep_s4ao/conditions.txt campaign exit=0
+10
+CAMPAIGN DONE
+=== 2026-11-14T17:37:03Z step 7: user python3 host/analysis/stage4ao.py boot-check /home/gihwan/evsweep_s4ao_run /home/gihwan/evsweep_s4ao s4_conv_base /home/gihwan/evsweep_s4ao/ref/capabilities.json
+{
+ "config": "s4_conv_base",
+ "verdict": "PASS",
+ "output": "PASS_EXACT",
+ "identity": {
+  "ok": true,
+  "checks": {
+   "runs": true,
+   "model_len": true,
+   "schema": true,
+   "placement": true,
+   "regioncfg": true,
+   "irq": true,
+   "one_crc": true,
+   "output_len": true,
+   "capabilities": true
+  },
+  "caps_diff": {}
+ },
+ "runs_valid": true
+}
+=== 2026-11-14T17:37:03Z step 8: user python3 host/analysis/stage4ao.py repro-gate /home/gihwan/evsweep_s4ao_run /home/gihwan/evsweep_s4ao /home/gihwan/evsweep_s4ao/ref/wfe
+{
+ "verdict": "PASS",
+ "reproduce": {
+  "ok": true,
+  "checks": {
+   "mac": true,
+   "dpu": true,
+   "output": true,
+   "constant_counters": true,
+   "npu_active": true
+  },
+  "differing_constant_counters": {},
+  "npu_active": [
+   21629.0,
+   21069.0
+  ],
+  "tolerance": 1211,
+  "compared": 10
+ },
+ "ao": 3533.0,
+ "ao_ref": 3540.5,
+ "ao_ok": true
+}
+=== 2026-11-14T17:37:03Z step 9: user OUTPUTS=1 STOP_ON_INVALID=1 sh run_driver_campaign.sh /home/gihwan/evsweep_s4ao /home/gihwan/evsweep_s4ao_run /home/gihwan/evsweep_s4ao/ids.txt /home/gihwan/evsweep_s4ao/plan_b02.txt 5
+mcc boot log: 10390 bytes -> /home/gihwan/evsweep_s4ao_run/conds/s4ao_conv1x1_h24/mcc_boot.log
+Image loaded from \SOFTWARE\boot.bin
+Image loaded from \SOFTWARE\bram.bin
+Image loaded from \SOFTWARE\ddr.bin
+DDR memory test at 0x70000000: PASSED
+Clearing SCC CPUWAIT (0xFFFFFFFF80000000:0x00000000)
+--- boot380 s4ao_conv1x1_h24 @/home/gihwan/evsweep_s4ao/conditions.txt campaign exit=0
+10
+CAMPAIGN DONE
+=== 2026-11-14T17:40:01Z step 10: user python3 host/analysis/stage4ao.py boot-check /home/gihwan/evsweep_s4ao_run /home/gihwan/evsweep_s4ao s4ao_conv1x1_h24 /home/gihwan/evsweep_s4ao/ref/capabilities.json
+{
+ "config": "s4ao_conv1x1_h24",
+ "verdict": "PASS",
+ "output": "PASS_EXACT",
+ "identity": {
+  "ok": true,
+  "checks": {
+   "runs": true,
+   "model_len": true,
+   "schema": true,
+   "placement": true,
+   "regioncfg": true,
+   "irq": true,
+   "one_crc": true,
+   "output_len": true,
+   "capabilities": true
+  },
+  "caps_diff": {}
+ },
+ "runs_valid": true
+}
+=== 2026-11-14T17:40:01Z step 11: user OUTPUTS=1 STOP_ON_INVALID=1 sh run_driver_campaign.sh /home/gihwan/evsweep_s4ao /home/gihwan/evsweep_s4ao_run /home/gihwan/evsweep_s4ao/ids.txt /home/gihwan/evsweep_s4ao/plan_b03.txt 5
+mcc boot log: 10431 bytes -> /home/gihwan/evsweep_s4ao_run/conds/s4ao_conv1x1_h36/mcc_boot.log
+Image loaded from \SOFTWARE\boot.bin
+Image loaded from \SOFTWARE\bram.bin
+Image loaded from \SOFTWARE\ddr.bin
+DDR memory test at 0x70000000: PASSED
+Clearing SCC CPUWAIT (0xFFFFFFFF80000000:0x00000000)
+--- boot381 s4ao_conv1x1_h36 @/home/gihwan/evsweep_s4ao/conditions.txt campaign exit=0
+10
+CAMPAIGN DONE
+=== 2026-11-14T17:43:07Z step 12: user python3 host/analysis/stage4ao.py boot-check /home/gihwan/evsweep_s4ao_run /home/gihwan/evsweep_s4ao s4ao_conv1x1_h36 /home/gihwan/evsweep_s4ao/ref/capabilities.json
+{
+ "config": "s4ao_conv1x1_h36",
+ "verdict": "PASS",
+ "output": "PASS_EXACT",
+ "identity": {
+  "ok": true,
+  "checks": {
+   "runs": true,
+   "model_len": true,
+   "schema": true,
+   "placement": true,
+   "regioncfg": true,
+   "irq": true,
+   "one_crc": true,
+   "output_len": true,
+   "capabilities": true
+  },
+  "caps_diff": {}
+ },
+ "runs_valid": true
+}
+=== 2026-11-14T17:43:07Z step 13: user OUTPUTS=1 STOP_ON_INVALID=1 sh run_driver_campaign.sh /home/gihwan/evsweep_s4ao /home/gihwan/evsweep_s4ao_run /home/gihwan/evsweep_s4ao/ids.txt /home/gihwan/evsweep_s4ao/plan_b04.txt 5
+mcc boot log: 10390 bytes -> /home/gihwan/evsweep_s4ao_run/conds/s4ao_conv1x1_h54/mcc_boot.log
+Image loaded from \SOFTWARE\boot.bin
+Image loaded from \SOFTWARE\bram.bin
+Image loaded from \SOFTWARE\ddr.bin
+DDR memory test at 0x70000000: PASSED
+Clearing SCC CPUWAIT (0xFFFFFFFF80000000:0x00000000)
+--- boot382 s4ao_conv1x1_h54 @/home/gihwan/evsweep_s4ao/conditions.txt campaign exit=0
+10
+CAMPAIGN DONE
+=== 2026-11-14T17:46:24Z step 14: user python3 host/analysis/stage4ao.py boot-check /home/gihwan/evsweep_s4ao_run /home/gihwan/evsweep_s4ao s4ao_conv1x1_h54 /home/gihwan/evsweep_s4ao/ref/capabilities.json
+{
+ "config": "s4ao_conv1x1_h54",
+ "verdict": "PASS",
+ "output": "PASS_EXACT",
+ "identity": {
+  "ok": true,
+  "checks": {
+   "runs": true,
+   "model_len": true,
+   "schema": true,
+   "placement": true,
+   "regioncfg": true,
+   "irq": true,
+   "one_crc": true,
+   "output_len": true,
+   "capabilities": true
+  },
+  "caps_diff": {}
+ },
+ "runs_valid": true
+}
+=== 2026-11-14T17:46:24Z step 15: user OUTPUTS=1 STOP_ON_INVALID=1 sh run_driver_campaign.sh /home/gihwan/evsweep_s4ao /home/gihwan/evsweep_s4ao_run /home/gihwan/evsweep_s4ao/ids.txt /home/gihwan/evsweep_s4ao/plan_b05.txt 5
+mcc boot log: 10390 bytes -> /home/gihwan/evsweep_s4ao_run/conds/s4ao_conv1x1_h72/mcc_boot.log
+Image loaded from \SOFTWARE\boot.bin
+Image loaded from \SOFTWARE\bram.bin
+Image loaded from \SOFTWARE\ddr.bin
+DDR memory test at 0x70000000: PASSED
+Clearing SCC CPUWAIT (0xFFFFFFFF80000000:0x00000000)
+--- boot383 s4ao_conv1x1_h72 @/home/gihwan/evsweep_s4ao/conditions.txt campaign exit=0
+10
+CAMPAIGN DONE
+=== 2026-11-14T17:49:53Z step 16: user python3 host/analysis/stage4ao.py boot-check /home/gihwan/evsweep_s4ao_run /home/gihwan/evsweep_s4ao s4ao_conv1x1_h72 /home/gihwan/evsweep_s4ao/ref/capabilities.json
+{
+ "config": "s4ao_conv1x1_h72",
+ "verdict": "PASS",
+ "output": "PASS_EXACT",
+ "identity": {
+  "ok": true,
+  "checks": {
+   "runs": true,
+   "model_len": true,
+   "schema": true,
+   "placement": true,
+   "regioncfg": true,
+   "irq": true,
+   "one_crc": true,
+   "output_len": true,
+   "capabilities": true
+  },
+  "caps_diff": {}
+ },
+ "runs_valid": true
+}
+=== 2026-11-14T17:49:53Z step 17: user OUTPUTS=1 STOP_ON_INVALID=1 sh run_driver_campaign.sh /home/gihwan/evsweep_s4ao /home/gihwan/evsweep_s4ao_run /home/gihwan/evsweep_s4ao/ids.txt /home/gihwan/evsweep_s4ao/plan_b06.txt 5
+mcc boot log: 10390 bytes -> /home/gihwan/evsweep_s4ao_run/conds/s4ao_act_none/mcc_boot.log
+Image loaded from \SOFTWARE\boot.bin
+Image loaded from \SOFTWARE\bram.bin
+Image loaded from \SOFTWARE\ddr.bin
+DDR memory test at 0x70000000: PASSED
+Clearing SCC CPUWAIT (0xFFFFFFFF80000000:0x00000000)
+--- boot384 s4ao_act_none @/home/gihwan/evsweep_s4ao/conditions.txt campaign exit=1
+1
+CAMPAIGN DONE
+=== 2026-11-14T17:52:40Z step 18: user python3 host/analysis/stage4ao.py boot-check /home/gihwan/evsweep_s4ao_run /home/gihwan/evsweep_s4ao s4ao_act_none /home/gihwan/evsweep_s4ao/ref/capabilities.json
+{
+ "config": "s4ao_act_none",
+ "verdict": "FAIL",
+ "output": "INVALID",
+ "identity": {
+  "ok": false,
+  "checks": {
+   "runs": false,
+   "model_len": true,
+   "schema": true,
+   "placement": true,
+   "regioncfg": true,
+   "irq": true,
+   "one_crc": true,
+   "output_len": true,
+   "capabilities": true
+  },
+  "caps_diff": {}
+ },
+ "runs_valid": false
+}
+=== 2026-11-14T17:52:40Z SESSION FAILED at step 18 (rc=1)
+=== 2026-11-14T17:52:40Z recovery: restore_mlek /home/gihwan/evsweep/evidence_s4ao /home/gihwan/evsweep_s4ao
+RESTORE VERIFIED
+cb78a12efd33fa72555b94ee4b8ca6faef4d9504c971c52c6cb47c75096673de  images.txt
+ffa3e5bd0363f791d61f9673074c625865f1e6a8f24e53ee303372c64ef3597d  APP.BIN
+45e943c577e3744104d53cf57c7d0afb369ff68a99e5e6906971d71503f06c92  VECTORS.BIN
+81d37a219a6b4141d0b433796711ab8af2ee2c3c668a28143a3ffe6a574ade98  DDR.BIN
+RESTORE DONE: unmounted, safe to REBOOT then USB_OFF
