@@ -1,0 +1,10 @@
+# Stage 4AO G0 (before the session, 2026-11-15); contract evidence/stage4ao/contract.md (frozen f38c8aa)
+boot numbers 379-385 unused: max host_boot_index in Mac evidence and board runs.csv = 378
+image (staging ~/evsweep_s4ao, copied from ~/evsweep_s4k): boot 718c4562..ef59 bram c80e77df..e99c ddr 374708ff..37bb images.txt af688281..423f = 70090f1
+workloads + board files: 31 staged files (7 DRWL + compile.json + CPU reference, conditions, ids, 7 plans, session) sha256 equal Mac <-> board; every DRWL word 7 = 0; model_len 5568 for all (identity by workload_sha256)
+ref: ~/evsweep_s4ao/ref = copy of Stage 4K boot 369 conds/s4_conv_base (10 files sha256 equal to evidence/stage4k/raw)
+board code: host/analysis/{stage4ao,stage4k,stage4,stage4c1,stage4c2}.py, host/lib/{drwl,cms,cms_regs}.py, evidence/stage4/beat_model.{py,json} sha256 equal Mac <-> board
+sync.sh check: board OK; container /work/selftest runner.c, workload.c differ from this worktree (container firmware copy only; the run uses the prebuilt 70090f1 image verified above)
+board-side dry run on Stage 4K boot 369 data: boot-check s4_conv_base rc=0 PASS (PASS_EXACT), repro-gate rc=0 PASS (AO 3540.5), unmeasured config rc=1
+capacity: fast scratch 4032 B <= 393216; arena <= 193536 B <= 2 MiB; DRWL <= 199184 B; one IFM / one OFM
+session: ~/evsweep_s4ao/session.txt sha256 cfc4396ac1c95a47d10b157634bae75b0ae0ac5359e5a2042d83884d85bbbadf, sudo_session.sh --check OK; card not mounted; restore reference ~/evsweep/evidence_m6 present; ~/evsweep/evidence_s4ao and ~/evsweep_s4ao_run absent
