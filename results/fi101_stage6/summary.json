@@ -1,0 +1,745 @@
+{
+ "models": {
+  "kws_micronet_m": {
+   "baseline": {
+    "npu_active": 91824.5,
+    "npu_active_range": 2423,
+    "mac_active": 56450.0,
+    "mac_dpu_active": 49495.0,
+    "ao_active": 17825.0,
+    "wd_active": 11415.0,
+    "wd_stalled": 64094.0,
+    "sram_rd": 22664.0,
+    "sram_wr": 17760.0,
+    "ext_rd": 15815.0,
+    "ext_wr": 1.0,
+    "reps": 10,
+    "checks": {
+     "all_valid": true,
+     "ten_runs": true,
+     "vela_sha_matches_inventory": true,
+     "vela_sha256": "f9575c36651efe0dc3798135f4bc8f9e3fd3614a75f7ad16377994616d18a069"
+    },
+    "ok": true
+   },
+   "estimate": {
+    "mac": {
+     "shares": {
+      "total": 14208852,
+      "T0": 0.0,
+      "T1_INTERP": 0.0,
+      "T1_EXTRAP": 0.8906315584116156,
+      "T2": 0.10764416435613518,
+      "U": 0.0017242772322493048
+     },
+     "calibrated_coverage": 0,
+     "calibrated_estimate": 0
+    },
+    "ao": {
+     "shares": {
+      "total": 250784,
+      "T0": 0.0,
+      "T1_INTERP": 0.656246012504785,
+      "T1_EXTRAP": 0.0,
+      "T2": 0.3429245884904938,
+      "U": 0.0008293990047211943
+     },
+     "calibrated_coverage": 0.656246012504785,
+     "calibrated_estimate": 10549.74358974359
+    },
+    "wd": {
+     "shares": {
+      "total": 278528,
+      "T0": 0.0,
+      "PROXY": 1.0,
+      "U": 0.0
+     },
+     "calibrated_coverage": 0,
+     "calibrated_estimate": 0,
+     "proxy_total": 278528
+    },
+    "vela": {
+     "npu_cycles": 86324,
+     "mac_cycles": 69011,
+     "ao_cycles": 31206
+    }
+   },
+   "comparison": {
+    "mac": {
+     "status": "INSUFFICIENT_EVIDENCE",
+     "coverage": 0,
+     "measured": 56450.0
+    },
+    "ao": {
+     "status": "INSUFFICIENT_EVIDENCE",
+     "coverage": 0.656246012504785,
+     "measured": 17825.0
+    },
+    "wd": {
+     "status": "INSUFFICIENT_EVIDENCE",
+     "coverage": 0,
+     "measured": 11415.0
+    }
+   },
+   "n_ops": 25,
+   "n_npu_ops": 13,
+   "n_fused": 12,
+   "n_cpu_or_removed": 1
+  },
+  "ad_medium_int8": {
+   "baseline": {
+    "npu_active": 145949.5,
+    "npu_active_range": 1774,
+    "mac_active": 93672.0,
+    "mac_dpu_active": 93672.0,
+    "ao_active": 41503.5,
+    "wd_active": 21319.0,
+    "wd_stalled": 117221.5,
+    "sram_rd": 70538.0,
+    "sram_wr": 41888.0,
+    "ext_rd": 44084.0,
+    "ext_wr": 1.0,
+    "reps": 10,
+    "checks": {
+     "all_valid": true,
+     "ten_runs": true,
+     "vela_sha_matches_inventory": true,
+     "vela_sha256": "b83f28f2e5adc7fad13a41441578c95020c9c178e43d52dbf6b2bac2d789bb54"
+    },
+    "ok": true
+   },
+   "estimate": {
+    "mac": {
+     "shares": {
+      "total": 61466400,
+      "T0": 0.0,
+      "T1_INTERP": 0.0,
+      "T1_EXTRAP": 0.9894982624653469,
+      "T2": 0.010429893405177464,
+      "U": 7.184412947561595e-05
+     },
+     "calibrated_coverage": 0,
+     "calibrated_estimate": 0
+    },
+    "ao": {
+     "shares": {
+      "total": 660784,
+      "T0": 0.0,
+      "T1_INTERP": 0.6671590111140706,
+      "T1_EXTRAP": 0.0,
+      "T2": 0.33240514298167023,
+      "U": 0.000435845904259183
+     },
+     "calibrated_coverage": 0.6671590111140706,
+     "calibrated_estimate": 28259.487179487183
+    },
+    "wd": {
+     "shares": {
+      "total": 672880,
+      "T0": 0.0,
+      "PROXY": 1.0,
+      "U": 0.0
+     },
+     "calibrated_coverage": 0,
+     "calibrated_estimate": 0,
+     "proxy_total": 672880
+    },
+    "vela": {
+     "npu_cycles": 140277,
+     "mac_cycles": 123031,
+     "ao_cycles": 60305
+    }
+   },
+   "comparison": {
+    "mac": {
+     "status": "INSUFFICIENT_EVIDENCE",
+     "coverage": 0,
+     "measured": 93672.0
+    },
+    "ao": {
+     "status": "INSUFFICIENT_EVIDENCE",
+     "coverage": 0.6671590111140706,
+     "measured": 41503.5
+    },
+    "wd": {
+     "status": "INSUFFICIENT_EVIDENCE",
+     "coverage": 0,
+     "measured": 21319.0
+    }
+   },
+   "n_ops": 25,
+   "n_npu_ops": 13,
+   "n_fused": 12,
+   "n_cpu_or_removed": 1
+  },
+  "mobilenet_v2_1.0_224_INT8": {
+   "baseline": {
+    "npu_active": 1450096.0,
+    "npu_active_range": 3643,
+    "mac_active": 574795.0,
+    "mac_dpu_active": 496424.0,
+    "ao_active": 440984.5,
+    "wd_active": 169343.0,
+    "wd_stalled": 1212443.5,
+    "sram_rd": 672948.0,
+    "sram_wr": 401443.0,
+    "ext_rd": 301217.0,
+    "ext_wr": 47887.0,
+    "reps": 10,
+    "checks": {
+     "all_valid": true,
+     "ten_runs": true,
+     "vela_sha_matches_inventory": true,
+     "vela_sha256": "031fade0e9b7136e2ed55a23422efbcc7aba28a32c8ebd3e043afbcc2f44bb75"
+    },
+    "ok": true
+   },
+   "estimate": {
+    "mac": {
+     "shares": {
+      "total": 300840274,
+      "T0": 0.013509680555602739,
+      "T1_INTERP": 0.20548057338892067,
+      "T1_EXTRAP": 0.7304147582314727,
+      "T2": 0.050379850405268545,
+      "U": 0.00021513741873536519
+     },
+     "calibrated_coverage": 0.2189902539445234,
+     "calibrated_estimate": 192733.33333333334
+    },
+    "ao": {
+     "shares": {
+      "total": 6733792,
+      "T0": 0.0,
+      "T1_INTERP": 0.6575005583778055,
+      "T1_EXTRAP": 0.0,
+      "T2": 0.34183176433130097,
+      "U": 0.000667677290893452
+     },
+     "calibrated_coverage": 0.6575005583778055,
+     "calibrated_estimate": 283812.3076923077
+    },
+    "wd": {
+     "shares": {
+      "total": 5901840,
+      "T0": 0.0,
+      "PROXY": 1.0,
+      "U": 0.0
+     },
+     "calibrated_coverage": 0,
+     "calibrated_estimate": 0,
+     "proxy_total": 5901840
+    },
+    "vela": {
+     "npu_cycles": 1737984,
+     "mac_cycles": 1281556,
+     "ao_cycles": 607398
+    }
+   },
+   "comparison": {
+    "mac": {
+     "status": "INSUFFICIENT_EVIDENCE",
+     "coverage": 0.2189902539445234,
+     "measured": 574795.0
+    },
+    "ao": {
+     "status": "INSUFFICIENT_EVIDENCE",
+     "coverage": 0.6575005583778055,
+     "measured": 440984.5
+    },
+    "wd": {
+     "status": "INSUFFICIENT_EVIDENCE",
+     "coverage": 0,
+     "measured": 169343.0
+    }
+   },
+   "n_ops": 128,
+   "n_npu_ops": 69,
+   "n_fused": 59,
+   "n_cpu_or_removed": 1
+  },
+  "vww4_128_128_INT8": {
+   "baseline": {
+    "npu_active": 234669.0,
+    "npu_active_range": 2924,
+    "mac_active": 56512.0,
+    "mac_dpu_active": 43612.0,
+    "ao_active": 64555.0,
+    "wd_active": 13413.0,
+    "wd_stalled": 134171.5,
+    "sram_rd": 69326.0,
+    "sram_wr": 60045.0,
+    "ext_rd": 23761.0,
+    "ext_wr": 1.0,
+    "reps": 10,
+    "checks": {
+     "all_valid": true,
+     "ten_runs": true,
+     "vela_sha_matches_inventory": true,
+     "vela_sha256": "637711c9bb5046bbf7f9010d1e1f1c25e9ea6cf643d74e8eb225c66b4ba6fed7"
+    },
+    "ok": true
+   },
+   "estimate": {
+    "mac": {
+     "shares": {
+      "total": 18763264,
+      "T0": 0.0,
+      "T1_INTERP": 0.19559581957595437,
+      "T1_EXTRAP": 0.7779354380986165,
+      "T2": 0.022102764209894397,
+      "U": 0.004365978115534696
+     },
+     "calibrated_coverage": 0.19559581957595437,
+     "calibrated_estimate": 9557.333333333334
+    },
+    "ao": {
+     "shares": {
+      "total": 1043088,
+      "T0": 0.0,
+      "T1_INTERP": 0.5743101253202031,
+      "T1_EXTRAP": 0.0,
+      "T2": 0.25131532526498246,
+      "U": 0.17437454941481448
+     },
+     "calibrated_coverage": 0.5743101253202031,
+     "calibrated_estimate": 38401.02564102565
+    },
+    "wd": {
+     "shares": {
+      "total": 347328,
+      "T0": 0.0,
+      "PROXY": 1.0,
+      "U": 0.0
+     },
+     "calibrated_coverage": 0,
+     "calibrated_estimate": 0,
+     "proxy_total": 347328
+    },
+    "vela": {
+     "npu_cycles": 222478,
+     "mac_cycles": 176578,
+     "ao_cycles": 97921
+    }
+   },
+   "comparison": {
+    "mac": {
+     "status": "INSUFFICIENT_EVIDENCE",
+     "coverage": 0.19559581957595437,
+     "measured": 56512.0
+    },
+    "ao": {
+     "status": "INSUFFICIENT_EVIDENCE",
+     "coverage": 0.5743101253202031,
+     "measured": 64555.0
+    },
+    "wd": {
+     "status": "INSUFFICIENT_EVIDENCE",
+     "coverage": 0,
+     "measured": 13413.0
+    }
+   },
+   "n_ops": 118,
+   "n_npu_ops": 81,
+   "n_fused": 37,
+   "n_cpu_or_removed": 1
+  },
+  "rnnoise_INT8": {
+   "baseline": {
+    "npu_active": 50508.0,
+    "npu_active_range": 2079,
+    "mac_active": 548.0,
+    "mac_dpu_active": 428.0,
+    "ao_active": 300.0,
+    "wd_active": 2815.0,
+    "wd_stalled": 12573.0,
+    "sram_rd": 143.0,
+    "sram_wr": 135.0,
+    "ext_rd": 7838.0,
+    "ext_wr": 36.0,
+    "reps": 10,
+    "checks": {
+     "all_valid": true,
+     "ten_runs": true,
+     "vela_sha_matches_inventory": true,
+     "vela_sha256": "5bc1ee088fd731dbb9fed4a0d8ddcea92c11600e82b5041371149465510bee79"
+    },
+    "ok": true
+   },
+   "estimate": {
+    "mac": {
+     "shares": {
+      "total": 87510,
+      "T0": 0.0,
+      "T1_INTERP": 0.0,
+      "T1_EXTRAP": 0.0,
+      "T2": 0.9936235858758999,
+      "U": 0.006376414124100103
+     },
+     "calibrated_coverage": 0,
+     "calibrated_estimate": 0
+    },
+    "ao": {
+     "shares": {
+      "total": 3056,
+      "T0": 0.0,
+      "T1_INTERP": 0.0,
+      "T1_EXTRAP": 0.0,
+      "T2": 0.3612565445026178,
+      "U": 0.6387434554973822
+     },
+     "calibrated_coverage": 0,
+     "calibrated_estimate": 0
+    },
+    "wd": {
+     "shares": {
+      "total": 102352,
+      "T0": 0.0,
+      "PROXY": 1.0,
+      "U": 0.0
+     },
+     "calibrated_coverage": 0,
+     "calibrated_estimate": 0,
+     "proxy_total": 102352
+    },
+    "vela": {
+     "npu_cycles": 31334,
+     "mac_cycles": 29098,
+     "ao_cycles": 8653
+    }
+   },
+   "comparison": {
+    "mac": {
+     "status": "INSUFFICIENT_EVIDENCE",
+     "coverage": 0,
+     "measured": 548.0
+    },
+    "ao": {
+     "status": "INSUFFICIENT_EVIDENCE",
+     "coverage": 0,
+     "measured": 300.0
+    },
+    "wd": {
+     "status": "INSUFFICIENT_EVIDENCE",
+     "coverage": 0,
+     "measured": 2815.0
+    }
+   },
+   "n_ops": 73,
+   "n_npu_ops": 39,
+   "n_fused": 34,
+   "n_cpu_or_removed": 13
+  },
+  "yolo-fastest_192_face_v4": {
+   "baseline": {
+    "npu_active": 447601.5,
+    "npu_active_range": 2866,
+    "mac_active": 171576.0,
+    "mac_dpu_active": 128487.0,
+    "ao_active": 206935.0,
+    "wd_active": 27266.5,
+    "wd_stalled": 323342.0,
+    "sram_rd": 236070.0,
+    "sram_wr": 188708.0,
+    "ext_rd": 29347.0,
+    "ext_wr": 517.0,
+    "reps": 10,
+    "checks": {
+     "all_valid": true,
+     "ten_runs": true,
+     "vela_sha_matches_inventory": true,
+     "vela_sha256": "aa143485cf3e64da4d46b58fe7cb2dbeab95193740ee0e13815ce3c0bdd1238b"
+    },
+    "ok": true
+   },
+   "estimate": {
+    "mac": {
+     "shares": {
+      "total": 38807136,
+      "T0": 0.11399140611664824,
+      "T1_INTERP": 0.10615449694612868,
+      "T1_EXTRAP": 0.7174037269846453,
+      "T2": 0.056706271753731066,
+      "U": 0.005744098198846728
+     },
+     "calibrated_coverage": 0.22014590306277693,
+     "calibrated_estimate": 22248.0
+    },
+    "ao": {
+     "shares": {
+      "total": 3158784,
+      "T0": 0.0,
+      "T1_INTERP": 0.6535375638220278,
+      "T1_EXTRAP": 0.0,
+      "T2": 0.32439824945295404,
+      "U": 0.022064186725018236
+     },
+     "calibrated_coverage": 0.6535375638220278,
+     "calibrated_estimate": 132273.23076923078
+    },
+    "wd": {
+     "shares": {
+      "total": 661632,
+      "T0": 0.142774230992455,
+      "PROXY": 0.857225769007545,
+      "U": 0.0
+     },
+     "calibrated_coverage": 0.142774230992455,
+     "calibrated_estimate": 5331.5,
+     "proxy_total": 661632
+    },
+    "vela": {
+     "npu_cycles": 478546,
+     "mac_cycles": 366458,
+     "ao_cycles": 228579
+    }
+   },
+   "comparison": {
+    "mac": {
+     "status": "INSUFFICIENT_EVIDENCE",
+     "coverage": 0.22014590306277693,
+     "measured": 171576.0
+    },
+    "ao": {
+     "status": "INSUFFICIENT_EVIDENCE",
+     "coverage": 0.6535375638220278,
+     "measured": 206935.0
+    },
+    "wd": {
+     "status": "INSUFFICIENT_EVIDENCE",
+     "coverage": 0.142774230992455,
+     "measured": 27266.5
+    }
+   },
+   "n_ops": 171,
+   "n_npu_ops": 94,
+   "n_fused": 77,
+   "n_cpu_or_removed": 5
+  },
+  "wav2letter_pruned_int8": {
+   "baseline": {
+    "npu_active": 4133297.5,
+    "npu_active_range": 2571,
+    "mac_active": 3521802.0,
+    "mac_dpu_active": 3408076.0,
+    "ao_active": 59762.0,
+    "wd_active": 1133549.0,
+    "wd_stalled": 2982162.5,
+    "sram_rd": 463085.0,
+    "sram_wr": 40950.0,
+    "ext_rd": 1836882.0,
+    "ext_wr": 19045.0,
+    "reps": 10,
+    "checks": {
+     "all_valid": true,
+     "ten_runs": true,
+     "vela_sha_matches_inventory": true,
+     "vela_sha256": "4c5b640211f0aaa60eaf65ee5c9c4096a43022fd2c34127042e1304bf45def7b"
+    },
+    "ok": true
+   },
+   "estimate": {
+    "mac": {
+     "shares": {
+      "total": 3491110876,
+      "T0": 0.0,
+      "T1_INTERP": 0.0,
+      "T1_EXTRAP": 0.17203234767728987,
+      "T2": 0.8279639640984007,
+      "U": 3.6882243094934e-06
+     },
+     "calibrated_coverage": 0,
+     "calibrated_estimate": 0
+    },
+    "ao": {
+     "shares": {
+      "total": 922816,
+      "T0": 0.0,
+      "T1_INTERP": 0.9752756779249602,
+      "T1_EXTRAP": 0.0,
+      "T2": 0.0,
+      "U": 0.024724322075039877
+     },
+     "calibrated_coverage": 0.9752756779249602,
+     "calibrated_estimate": 57692.05128205129
+    },
+    "wd": {
+     "shares": {
+      "total": 28847648,
+      "T0": 0.0,
+      "PROXY": 1.0,
+      "U": 0.0
+     },
+     "calibrated_coverage": 0,
+     "calibrated_estimate": 0,
+     "proxy_total": 28847648
+    },
+    "vela": {
+     "npu_cycles": 5233545,
+     "mac_cycles": 5163184,
+     "ao_cycles": 369462
+    }
+   },
+   "comparison": {
+    "mac": {
+     "status": "INSUFFICIENT_EVIDENCE",
+     "coverage": 0,
+     "measured": 3521802.0
+    },
+    "ao": {
+     "status": "CONSISTENT",
+     "coverage": 0.9752756779249602,
+     "measured": 59762.0,
+     "estimate": 57692.05128205129,
+     "rel_error": -0.03463653689549733
+    },
+    "wd": {
+     "status": "INSUFFICIENT_EVIDENCE",
+     "coverage": 0,
+     "measured": 1133549.0
+    }
+   },
+   "n_ops": 51,
+   "n_npu_ops": 27,
+   "n_fused": 24,
+   "n_cpu_or_removed": 1
+  }
+ },
+ "matrix": [
+  {
+   "phenomenon": "P1",
+   "description": "MAC active share high, effective rate low",
+   "model": "kws_micronet_m",
+   "axes": "mac",
+   "coverages": "mac=0.000",
+   "comparisons": "INSUFFICIENT_EVIDENCE",
+   "verdict": "INSUFFICIENT_EVIDENCE"
+  },
+  {
+   "phenomenon": "P2",
+   "description": "high MAC efficiency with high WD_STALLED",
+   "model": "ad_medium_int8",
+   "axes": "mac+wd",
+   "coverages": "mac=0.000;wd=0.000",
+   "comparisons": "INSUFFICIENT_EVIDENCE;INSUFFICIENT_EVIDENCE",
+   "verdict": "INSUFFICIENT_EVIDENCE"
+  },
+  {
+   "phenomenon": "P2",
+   "description": "high MAC efficiency with high WD_STALLED",
+   "model": "wav2letter_pruned_int8",
+   "axes": "mac+wd",
+   "coverages": "mac=0.000;wd=0.000",
+   "comparisons": "INSUFFICIENT_EVIDENCE;INSUFFICIENT_EVIDENCE",
+   "verdict": "INSUFFICIENT_EVIDENCE"
+  },
+  {
+   "phenomenon": "P3",
+   "description": "AO_ACTIVE > MAC_ACTIVE",
+   "model": "yolo-fastest_192_face_v4",
+   "axes": "ao+mac",
+   "coverages": "ao=0.654;mac=0.220",
+   "comparisons": "INSUFFICIENT_EVIDENCE;INSUFFICIENT_EVIDENCE",
+   "verdict": "INSUFFICIENT_EVIDENCE"
+  },
+  {
+   "phenomenon": "P3",
+   "description": "AO_ACTIVE > MAC_ACTIVE",
+   "model": "vww4_128_128_INT8",
+   "axes": "ao+mac",
+   "coverages": "ao=0.574;mac=0.196",
+   "comparisons": "INSUFFICIENT_EVIDENCE;INSUFFICIENT_EVIDENCE",
+   "verdict": "INSUFFICIENT_EVIDENCE"
+  },
+  {
+   "phenomenon": "P4",
+   "description": "very low MAC activity",
+   "model": "rnnoise_INT8",
+   "axes": "mac",
+   "coverages": "mac=0.000",
+   "comparisons": "INSUFFICIENT_EVIDENCE",
+   "verdict": "INSUFFICIENT_EVIDENCE"
+  },
+  {
+   "phenomenon": "P5",
+   "description": "NPU cost vs Vela estimate",
+   "model": "rnnoise_INT8",
+   "axes": "mac+ao+wd",
+   "coverages": "mac=0.000;ao=0.000;wd=0.000",
+   "comparisons": "INSUFFICIENT_EVIDENCE;INSUFFICIENT_EVIDENCE;INSUFFICIENT_EVIDENCE",
+   "verdict": "INSUFFICIENT_EVIDENCE"
+  },
+  {
+   "phenomenon": "P6",
+   "description": "SRAM budget changes performance (Stage 5)",
+   "model": "ad_medium_int8",
+   "axes": "wd",
+   "coverages": "wd=0.000",
+   "comparisons": "INSUFFICIENT_EVIDENCE",
+   "verdict": "INSUFFICIENT_EVIDENCE"
+  },
+  {
+   "phenomenon": "P7",
+   "description": "similar MACs, different cycles",
+   "model": "kws_micronet_m",
+   "axes": "mac+ao+wd",
+   "coverages": "mac=0.000;ao=0.656;wd=0.000",
+   "comparisons": "INSUFFICIENT_EVIDENCE;INSUFFICIENT_EVIDENCE;INSUFFICIENT_EVIDENCE",
+   "verdict": "INSUFFICIENT_EVIDENCE"
+  },
+  {
+   "phenomenon": "P7",
+   "description": "similar MACs, different cycles",
+   "model": "ad_medium_int8",
+   "axes": "mac+ao+wd",
+   "coverages": "mac=0.000;ao=0.667;wd=0.000",
+   "comparisons": "INSUFFICIENT_EVIDENCE;INSUFFICIENT_EVIDENCE;INSUFFICIENT_EVIDENCE",
+   "verdict": "INSUFFICIENT_EVIDENCE"
+  },
+  {
+   "phenomenon": "P7",
+   "description": "similar MACs, different cycles",
+   "model": "mobilenet_v2_1.0_224_INT8",
+   "axes": "mac+ao+wd",
+   "coverages": "mac=0.219;ao=0.658;wd=0.000",
+   "comparisons": "INSUFFICIENT_EVIDENCE;INSUFFICIENT_EVIDENCE;INSUFFICIENT_EVIDENCE",
+   "verdict": "INSUFFICIENT_EVIDENCE"
+  },
+  {
+   "phenomenon": "P7",
+   "description": "similar MACs, different cycles",
+   "model": "vww4_128_128_INT8",
+   "axes": "mac+ao+wd",
+   "coverages": "mac=0.196;ao=0.574;wd=0.000",
+   "comparisons": "INSUFFICIENT_EVIDENCE;INSUFFICIENT_EVIDENCE;INSUFFICIENT_EVIDENCE",
+   "verdict": "INSUFFICIENT_EVIDENCE"
+  },
+  {
+   "phenomenon": "P7",
+   "description": "similar MACs, different cycles",
+   "model": "rnnoise_INT8",
+   "axes": "mac+ao+wd",
+   "coverages": "mac=0.000;ao=0.000;wd=0.000",
+   "comparisons": "INSUFFICIENT_EVIDENCE;INSUFFICIENT_EVIDENCE;INSUFFICIENT_EVIDENCE",
+   "verdict": "INSUFFICIENT_EVIDENCE"
+  },
+  {
+   "phenomenon": "P7",
+   "description": "similar MACs, different cycles",
+   "model": "yolo-fastest_192_face_v4",
+   "axes": "mac+ao+wd",
+   "coverages": "mac=0.220;ao=0.654;wd=0.143",
+   "comparisons": "INSUFFICIENT_EVIDENCE;INSUFFICIENT_EVIDENCE;INSUFFICIENT_EVIDENCE",
+   "verdict": "INSUFFICIENT_EVIDENCE"
+  },
+  {
+   "phenomenon": "P7",
+   "description": "similar MACs, different cycles",
+   "model": "wav2letter_pruned_int8",
+   "axes": "mac+ao+wd",
+   "coverages": "mac=0.000;ao=0.975;wd=0.000",
+   "comparisons": "INSUFFICIENT_EVIDENCE;CONSISTENT;INSUFFICIENT_EVIDENCE",
+   "verdict": "INSUFFICIENT_EVIDENCE"
+  }
+ ]
+}
