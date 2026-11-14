@@ -1,5 +1,7 @@
 # Stage 4WD — Weight Decoder 보드 측정 계약 **초안** (동결 전, 2026-11-15)
 
+> **대체됨**: 동결본은 `contract.md`.
+
 동결은 owner 승인 뒤에 한다. 측정 조건 (모든 숫자): FI101 Ethos-U85 1024 MAC, **TA profile 1**, 이미지 `70090f1`, DDR/EXT
 (DRWL word 7 = 0), Vela 5.0.0 (MLEK 옵션), pass A/B 각 warm-up 1 + 측정 4 RUN.
 근거: `docs/plan/stage4wd_characterization_plan.md`. 코드: `host/analysis/stage4wd.py` (test_stage4wd 13개, mutation 26/26),

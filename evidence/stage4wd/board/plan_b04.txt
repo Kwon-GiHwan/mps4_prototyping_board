@@ -1,0 +1,2 @@
+# Stage 4WD boot 4/8: s4wd_w_sparse90, TA profile 1, image 70090f1, DDR/EXT (word 7 = 0)
+405 s4wd_w_sparse90 @/home/gihwan/evsweep_s4wd/conditions.txt

@@ -1,0 +1,2 @@
+# Stage 4WD boot 6/8: s4wd_h32, TA profile 1, image 70090f1, DDR/EXT (word 7 = 0)
+407 s4wd_h32 @/home/gihwan/evsweep_s4wd/conditions.txt

@@ -1,0 +1,2 @@
+# Stage 4WD boot 8/8: s4ao_conv1x1_h36, TA profile 1, image 70090f1, DDR/EXT (word 7 = 0)
+409 s4ao_conv1x1_h36 @/home/gihwan/evsweep_s4wd/conditions.txt

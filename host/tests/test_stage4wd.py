@@ -141,6 +141,39 @@ class Verdicts(unittest.TestCase):
         self.assertEqual(W.verdict_a(other, self.st)["verdict"], "OTHER")
         self.assertEqual(W.verdict_a(dict(enc, s4wd_w_small=None), self.st)["verdict"], "INCOMPLETE")
 
+    def test_a_overlap(self):                           # with wide ranges every model fits: priority + also_satisfied
+        enc = {c: 1052 * self.st[c]["encoded_bytes"] / 2752 for c in W.EXP_A}
+        W.RNG.update({c: 1000 for c in W.EXP_A})
+        r = W.verdict_a(enc, self.st)
+        self.assertEqual(r["verdict"], "ENCODED_PROPORTIONAL")
+        self.assertEqual(r["also_satisfied"], ["STAGED_PROPORTIONAL", "CONSTANT"])
+
+    def test_mac(self):
+        same4 = {c: [2304] * 4 for c in W.EXP_A}; dpu4 = {c: [1152] * 4 for c in W.EXP_A}
+        self.assertEqual(W.verdict_mac(same4, dpu4)["verdict"], "MAC_SAME+DPU_SAME")
+        self.assertEqual(W.verdict_mac(dict(same4, s4wd_w_small=[2304, 2304, 2304, 2305]), dpu4)["verdict"],
+                         "MAC_CHANGED+DPU_SAME")
+        self.assertEqual(W.verdict_mac(same4, dict(dpu4, s4wd_w_sparse90=[900] * 4))["verdict"], "MAC_SAME+DPU_CHANGED")
+        self.assertEqual(W.verdict_mac(dict(same4, s4wd_w_small=None), dpu4)["verdict"], "INCOMPLETE")
+
+    def test_repro(self):
+        root = REPO / "evidence/stage4aoe/raw_a1/evsweep_s4aoe2_run"
+        ref = root / "conds/s4ao_conv1x1_h24/wfe"
+        wl = REPO / "evidence/stage4aoe/raw_a1/evsweep_s4aoe2"
+        caps = str(wl / "ref/capabilities.json")
+        self.assertEqual(W.repro_gate(str(root), str(wl), str(ref), caps)["verdict"], "PASS")
+        with mock.patch.object(W.AOE, "repro_gate", return_value=dict(verdict="FAIL")):
+            self.assertEqual(W.repro_gate(str(root), str(wl), str(ref), caps)["verdict"], "FAIL")
+        real = W.K.summary_of; calls = []
+        def shifted(folder, n):
+            s = real(folder, n); calls.append(1)
+            if len(calls) == 4:                     # 1-3 inside stage4aoe.repro_gate, 4 = the campaign WD summary
+                s["metrics"] = dict(s["metrics"], A_80=s["metrics"]["A_80"] + 200)
+            return s
+        with mock.patch.object(W.K, "summary_of", side_effect=shifted):
+            r = W.repro_gate(str(root), str(wl), str(ref), caps)
+        self.assertEqual((r["verdict"], r["wd_ok"]), ("FAIL", False))
+
     def test_sram(self):
         good = {c: self.st[c]["spatial_blocks"] * self.st[c]["staged_bytes"] / 16 for c in set(W.EXP_A + W.EXP_B)}
         self.assertEqual(W.verdict_sram(good, self.st)["verdict"], "HOLDS")
@@ -153,15 +186,19 @@ class Verdicts(unittest.TestCase):
         try:
             shutil.copy(REPO / "results/fi101_stage4wd/static.json", pathlib.Path(d) / "static.json")
             vals = dict(B_BLOCKS, **{c: 1052 * self.st[c]["encoded_bytes"] / 2752 for c in W.EXP_A if c != "s4ao_conv1x1_h24"})
+            sums = lambda f, n: dict(mac_active=[2304] * 4, mac_dpu_active=[1152] * 4)
             def fake(root, wl, c, *x):
                 return dict(verdict="VALID", stable=True, metrics={"A_80": vals[c], "A_80_range": 0,
                             "B_130": self.st[c]["spatial_blocks"] * self.st[c]["staged_bytes"] / 16})
-            with mock.patch.object(W.AOE, "config_result", side_effect=fake):
+            with mock.patch.object(W.AOE, "config_result", side_effect=fake), \
+                    mock.patch.object(W.K, "summary_of", side_effect=sums):
                 s = W.judge("x", str(WL), "unused", d)
             self.assertEqual((s["exp_b"]["verdict"], s["exp_a"]["verdict"], s["sram_rule"]["verdict"]),
                              ("BLOCK_LIKE", "ENCODED_PROPORTIONAL", "HOLDS"))
+            self.assertEqual(s["exp_a_compute"]["verdict"], "MAC_SAME+DPU_SAME")
             bad = lambda r, w, c, *x: dict(fake(r, w, c), verdict="INVALID")
-            with mock.patch.object(W.AOE, "config_result", side_effect=bad):
+            with mock.patch.object(W.AOE, "config_result", side_effect=bad), \
+                    mock.patch.object(W.K, "summary_of", side_effect=sums):
                 s = W.judge("x", str(WL), "unused", d)
             self.assertEqual(s["exp_b"]["verdict"], "INCOMPLETE")
         finally:

@@ -7,6 +7,8 @@ decoder (WD) activity. TA profile 1, driver runner image 70090f1, DDR/EXT placem
   python3 host/analysis/stage4wd.py static <workloads dir> <out dir>   Experiment A / B candidates
   python3 host/analysis/stage4wd.py predict <out dir>                  pre-registered hypotheses (from inventory.json)
   python3 host/analysis/stage4wd.py judge <campaign root> <workloads dir> <predictions.json> <out dir> [<caps>]
+  python3 host/analysis/stage4wd.py repro-gate <campaign root> <workloads dir> <boot-394 wfe copy> [<caps>]
+  python3 host/analysis/stage4wd.py boot-check <campaign root> <workloads dir> <config> [<caps>]   (= stage4aoe A1)
 
 Official (Arm Ethos-U85 TRM 102685 issue 05): wd_active (80) "WD is decoding weight stream. Valid blk_cmd and not
 stalled"; wd_stalled (81) "WD stalled on lack of weight stream data or lack of free WD buffer space" — supply and
@@ -200,17 +202,27 @@ def verdict_a(wd: dict, st: dict) -> dict:
     ref = EXP_A[0]
     pred = {c: wd[ref] * st[c]["encoded_bytes"] / st[ref]["encoded_bytes"] for c in EXP_A}
     pred_s = {c: wd[ref] * st[c]["staged_bytes"] / st[ref]["staged_bytes"] for c in EXP_A}
-    if all(same(wd[c], pred[c], RNG.get(c, 0)) for c in EXP_A):
-        v = "ENCODED_PROPORTIONAL"
-    elif all(same(wd[c], pred_s[c], RNG.get(c, 0)) for c in EXP_A):
-        v = "STAGED_PROPORTIONAL"
-    elif all(eq(wd, c, ref) for c in EXP_A):
-        v = "CONSTANT"
+    fits = dict(ENCODED_PROPORTIONAL=all(same(wd[c], pred[c], RNG.get(c, 0)) for c in EXP_A),
+                STAGED_PROPORTIONAL=all(same(wd[c], pred_s[c], RNG.get(c, 0)) for c in EXP_A),
+                CONSTANT=all(eq(wd, c, ref) for c in EXP_A))
+    satisfied = [k for k, ok in fits.items() if ok]          # priority = this order; the rest are reported, not hidden
+    if satisfied:
+        v = satisfied[0]
     else:
         order = sorted(EXP_A, key=lambda c: st[c]["encoded_bytes"])
         mono = all(wd[y] > wd[x] and not eq(wd, x, y) for x, y in zip(order, order[1:]))
-        v = "MONOTONE" if mono else "OTHER"
-    return dict(verdict=v, predicted_encoded=pred, predicted_staged=pred_s)
+        v = "MONOTONE" if mono else "OTHER"      # MONOTONE: direction only, not a byte model
+    return dict(verdict=v, also_satisfied=satisfied[1:], predicted_encoded=pred, predicted_staged=pred_s)
+
+
+def verdict_mac(mac: dict, dpu: dict) -> dict:
+    """Experiment A, compute side (separate from the WD verdict): MAC_SAME if MAC_ACTIVE is identical (every measured
+    RUN, every config) to dense, else MAC_CHANGED; the same for MAC_DPU_ACTIVE (DPU_SAME / DPU_CHANGED)."""
+    if any(mac.get(c) is None or dpu.get(c) is None for c in EXP_A):
+        return dict(verdict="INCOMPLETE")
+    one = lambda d: all(len(set(d[c])) == 1 and d[c][0] == d[EXP_A[0]][0] for c in EXP_A)
+    return dict(verdict=("MAC_SAME" if one(mac) else "MAC_CHANGED") + "+" + ("DPU_SAME" if one(dpu) else "DPU_CHANGED"),
+                mac={c: sorted(set(mac[c])) for c in EXP_A}, dpu={c: sorted(set(dpu[c])) for c in EXP_A})
 
 
 def verdict_sram(sram_rd: dict, st: dict) -> dict:
@@ -269,6 +281,18 @@ def predict(out: str) -> dict:
     return res
 
 
+def repro_gate(root: str, wl: str, ref: str, caps_ref: str | None = None) -> dict:
+    """Boot 1 (s4ao_conv1x1_h24) against the Stage 4AO-E A1 boot 394 copy: stage4aoe.repro_gate (validity,
+    K.reproduce, AO within 35.34) and WD_ACTIVE equal by same() with both RUN ranges."""
+    r = AOE.repro_gate(root, wl, ref, caps_ref)
+    if r["verdict"] != "PASS":
+        return dict(r, wd_ok=None)
+    now = K.summary_of(pathlib.Path(root) / "conds" / AOE.REPRO_CFG / "wfe", 1)["metrics"]
+    was = K.summary_of(pathlib.Path(ref), 1)["metrics"]
+    wd_ok = same(now["A_80"], was["A_80"], now["A_80_range"], was["A_80_range"])
+    return dict(r, verdict="PASS" if wd_ok else "FAIL", wd=now["A_80"], wd_ref=was["A_80"], wd_ok=wd_ok)
+
+
 def judge(root: str, wl: str, pred_path: str, out: str, caps_ref: str | None = None) -> dict:
     """Validity per config = stage4aoe.config_result (A1 identity, workload sha256, PASS_EXACT vs <cfg>.ref_ofm.bin,
     RUN validity, stability); verdicts only from VALID and stable configs."""
@@ -278,7 +302,11 @@ def judge(root: str, wl: str, pred_path: str, out: str, caps_ref: str | None = N
     wd = {c: (r["metrics"]["A_80"] if ok[c] else None) for c, r in res.items()}
     sr = {c: (r["metrics"]["B_130"] if ok[c] else None) for c, r in res.items()}
     RNG.clear(); RNG.update({c: r["metrics"]["A_80_range"] for c, r in res.items() if ok[c]})
-    summary = dict(exp_a=verdict_a(wd, st), exp_b=verdict_b(wd, st), sram_rule=verdict_sram(sr, st), wd_active=wd,
+    runs = {c: K.summary_of(pathlib.Path(root) / "conds" / c / "wfe", 1) if ok[c] else None for c in res}
+    mac = {c: (runs[c]["mac_active"] if runs[c] else None) for c in res}
+    dpu = {c: (runs[c]["mac_dpu_active"] if runs[c] else None) for c in res}
+    summary = dict(exp_a=verdict_a(wd, st), exp_a_compute=verdict_mac(mac, dpu), exp_b=verdict_b(wd, st),
+                   sram_rule=verdict_sram(sr, st), wd_active=wd,
                    configs={c: {k: v for k, v in r.items() if k != "identity"} for c, r in res.items()})
     (pathlib.Path(out) / "summary.json").write_text(json.dumps(summary, indent=1, default=str))
     return summary
@@ -286,6 +314,10 @@ def judge(root: str, wl: str, pred_path: str, out: str, caps_ref: str | None = N
 
 def main(argv: list) -> int:
     cmd, a = argv[0], argv[1:]
+    if cmd in ("repro-gate", "boot-check"):
+        r = repro_gate(*a[:4]) if cmd == "repro-gate" else AOE.boot_check(*a[:4])
+        print(json.dumps(r, indent=1, default=str))
+        return 0 if r["verdict"] == "PASS" else 1
     r = dict(inventory=lambda: (inventory(a[0]), mlek_wd(a[0]))[0], static=lambda: static(*a[:2]), predict=lambda: predict(a[0]),
              judge=lambda: judge(*a[:5]))[cmd]()
     print(json.dumps(r, indent=1, default=str)[:4000])

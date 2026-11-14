@@ -1,0 +1,24 @@
+# Owner-approved sudo session 2026-11-15: Stage 4WD boots 402-409 (contract evidence/stage4wd/contract.md), TA profile 1,
+# image 70090f1, DDR/EXT. One step per boot + boot-check (stage4aoe A1 identity); repro-gate (with WD_ACTIVE) after boot 402.
+# A failing step stops the session and restores the card; postflight then runs as a separate user step.
+user python3 mcc.py USB_ON 4 && sleep 5 && test -e /dev/sdb1
+deploy_mlek /home/gihwan/evsweep_s4wd /home/gihwan/evsweep/evidence_s4wd
+user OUTPUTS=1 STOP_ON_INVALID=1 sh run_driver_campaign.sh /home/gihwan/evsweep_s4wd /home/gihwan/evsweep_s4wd_run /home/gihwan/evsweep_s4wd/ids.txt /home/gihwan/evsweep_s4wd/plan_b01.txt 5
+user python3 host/analysis/stage4wd.py boot-check /home/gihwan/evsweep_s4wd_run /home/gihwan/evsweep_s4wd s4ao_conv1x1_h24 /home/gihwan/evsweep_s4wd/ref/capabilities.json
+user python3 host/analysis/stage4wd.py repro-gate /home/gihwan/evsweep_s4wd_run /home/gihwan/evsweep_s4wd /home/gihwan/evsweep_s4wd/ref/wfe /home/gihwan/evsweep_s4wd/ref/capabilities.json
+user OUTPUTS=1 STOP_ON_INVALID=1 sh run_driver_campaign.sh /home/gihwan/evsweep_s4wd /home/gihwan/evsweep_s4wd_run /home/gihwan/evsweep_s4wd/ids.txt /home/gihwan/evsweep_s4wd/plan_b02.txt 5
+user python3 host/analysis/stage4wd.py boot-check /home/gihwan/evsweep_s4wd_run /home/gihwan/evsweep_s4wd s4wd_w_small /home/gihwan/evsweep_s4wd/ref/capabilities.json
+user OUTPUTS=1 STOP_ON_INVALID=1 sh run_driver_campaign.sh /home/gihwan/evsweep_s4wd /home/gihwan/evsweep_s4wd_run /home/gihwan/evsweep_s4wd/ids.txt /home/gihwan/evsweep_s4wd/plan_b03.txt 5
+user python3 host/analysis/stage4wd.py boot-check /home/gihwan/evsweep_s4wd_run /home/gihwan/evsweep_s4wd s4wd_w_sparse75 /home/gihwan/evsweep_s4wd/ref/capabilities.json
+user OUTPUTS=1 STOP_ON_INVALID=1 sh run_driver_campaign.sh /home/gihwan/evsweep_s4wd /home/gihwan/evsweep_s4wd_run /home/gihwan/evsweep_s4wd/ids.txt /home/gihwan/evsweep_s4wd/plan_b04.txt 5
+user python3 host/analysis/stage4wd.py boot-check /home/gihwan/evsweep_s4wd_run /home/gihwan/evsweep_s4wd s4wd_w_sparse90 /home/gihwan/evsweep_s4wd/ref/capabilities.json
+user OUTPUTS=1 STOP_ON_INVALID=1 sh run_driver_campaign.sh /home/gihwan/evsweep_s4wd /home/gihwan/evsweep_s4wd_run /home/gihwan/evsweep_s4wd/ids.txt /home/gihwan/evsweep_s4wd/plan_b05.txt 5
+user python3 host/analysis/stage4wd.py boot-check /home/gihwan/evsweep_s4wd_run /home/gihwan/evsweep_s4wd s4wd_h23 /home/gihwan/evsweep_s4wd/ref/capabilities.json
+user OUTPUTS=1 STOP_ON_INVALID=1 sh run_driver_campaign.sh /home/gihwan/evsweep_s4wd /home/gihwan/evsweep_s4wd_run /home/gihwan/evsweep_s4wd/ids.txt /home/gihwan/evsweep_s4wd/plan_b06.txt 5
+user python3 host/analysis/stage4wd.py boot-check /home/gihwan/evsweep_s4wd_run /home/gihwan/evsweep_s4wd s4wd_h32 /home/gihwan/evsweep_s4wd/ref/capabilities.json
+user OUTPUTS=1 STOP_ON_INVALID=1 sh run_driver_campaign.sh /home/gihwan/evsweep_s4wd /home/gihwan/evsweep_s4wd_run /home/gihwan/evsweep_s4wd/ids.txt /home/gihwan/evsweep_s4wd/plan_b07.txt 5
+user python3 host/analysis/stage4wd.py boot-check /home/gihwan/evsweep_s4wd_run /home/gihwan/evsweep_s4wd s4wd_h34 /home/gihwan/evsweep_s4wd/ref/capabilities.json
+user OUTPUTS=1 STOP_ON_INVALID=1 sh run_driver_campaign.sh /home/gihwan/evsweep_s4wd /home/gihwan/evsweep_s4wd_run /home/gihwan/evsweep_s4wd/ids.txt /home/gihwan/evsweep_s4wd/plan_b08.txt 5
+user python3 host/analysis/stage4wd.py boot-check /home/gihwan/evsweep_s4wd_run /home/gihwan/evsweep_s4wd s4ao_conv1x1_h36 /home/gihwan/evsweep_s4wd/ref/capabilities.json
+restore_mlek /home/gihwan/evsweep/evidence_s4wd /home/gihwan/evsweep_s4wd
+user sh postflight.sh
