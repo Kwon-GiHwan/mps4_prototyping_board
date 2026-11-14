@@ -75,3 +75,9 @@ judge 결과와 `runs.csv`를 독립 스크립트로 다시 계산한 값이 같
     정황이지만, DMA 대기를 직접 측정한 것은 아니다 (AO/DMA stall 이벤트는 Reserved).
 - **세션 1과 비교**: 세션 1 boot 387 (원 계약상 INVALID)의 ADD H24 AO 3,456 (POST_HOC)은 새 공식 결과 3,456과 같다.
   재현 boot (386: 3,538, 394: 3,534)도 boot 380 (3,534)과 허용폭 안에서 같다.
+
+## 종료 (2026-11-15, owner 결정 ChatGPT 경유)
+
+Stage 4AO-E 결과 확정·종료: ADD/MUL AO_ACTIVE = N/16, ABS = N/32, ADD→MUL = 2N/16 (CHAINED), Conv 1×1 ≈ N/15.60.
+**Open Issue AO-1: ABS의 N/32** — TRM Table 4-12 (8 bit Unary 1/SU)와 불일치, 원인 미상. 추가 실측하지 않고 보존한다. 증명되지
+않은 처리율이므로 일반 AO 성능 모델로 확대 적용하지 않는다.
