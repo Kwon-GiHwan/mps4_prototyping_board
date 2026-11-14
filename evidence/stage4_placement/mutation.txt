@@ -28,6 +28,7 @@ KILLED       output CRC A = B  (host/analysis/stage4p.py; test_stage4p; restored
 KILLED       P1 exact counters  (host/analysis/stage4p.py; test_stage4p; restored by sha256: True)
 KILLED       P1 NPU_ACTIVE tolerance  (host/analysis/stage4p.py; test_stage4p; restored by sha256: True)
 KILLED       traffic direction  (host/analysis/stage4p.py; test_stage4p; restored by sha256: True)
+KILLED       poisoned first RUN  (host/analysis/stage4p.py; test_stage4p; restored by sha256: True)
 KILLED       cost same sign  (host/analysis/stage4p.py; test_stage4p; restored by sha256: True)
 KILLED       cost 1 % floor  (host/analysis/stage4p.py; test_stage4p; restored by sha256: True)
 KILLED       compute rule  (host/analysis/stage4p.py; test_stage4p; restored by sha256: True)

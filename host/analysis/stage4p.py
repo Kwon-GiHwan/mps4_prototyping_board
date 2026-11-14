@@ -15,6 +15,8 @@ Rules (fixed before the data):
   gate B      the two blobs differ only in header word 7 (A 0, B 1); A is byte-identical to the Stage 4 blob; model
               (Vela command stream, weights, bias, scales, tensor definitions), IFM and golden sections identical; the
               Stage 4 command stream occurs once in the model at the same offset in both
+  poison      the first RUN after the load (set 1 rep 1, the only RUN whose OFM was poisoned with 0x5A at the load)
+              matches its golden: the NPU wrote this output at this placement
   placement   every measured RUN: schema 4, placement, arena_base = base1, base_size1, REGIONCFG/QCONFIG at the IRQ and
               REGIONCFG_MATCH as EXPECTED; base0/base2/sizes/n_base/model/arena_len equal between A and B; capabilities
               (MEM_ATTR, AXI, TA, fast memory) equal between the two boots
@@ -120,7 +122,10 @@ def condition(folder: pathlib.Path, comp: dict, ref: bytes, placement: int, warm
     complete = sorted(runs) == [1, 2] and all(len(rs) == 4 for rs in runs.values())
     valid = all(r["valid"] for rs in runs.values() for r in rs)
     crcs = {r["crc"] for rs in runs.values() for r in rs}
-    return dict(runs=runs, records=recs, caps=caps_of(folder), output=oc,
+    first = raw[0] if raw else {}
+    poisoned_run_ok = (first.get("set_id"), first.get("rep")) == (1, 1) and first["record"].get("ofm_mismatch") == 0 \
+        and first.get("output_crc32") in crcs
+    return dict(runs=runs, records=recs, caps=caps_of(folder), output=oc, poisoned_run_ok=poisoned_run_ok,
                 gate_c="PASS" if complete and valid and oc["verdict"] == "PASS_EXACT" else "FAIL",
                 placement=placement_failures(recs, placement),
                 output_crc32=crcs.pop() if len(crcs) == 1 else None, metrics=stage4.metrics(runs, comp["n_mac"]))
@@ -205,6 +210,8 @@ def verdict(a: dict, b: dict, gb: dict) -> dict:
         if c["gate_c"] != "PASS":
             stops.append(f"gate C {name}: output {c['output']['verdict']}")
         stops += [f"placement {name}: {x}" for x in c["placement"]]
+        if not c["poisoned_run_ok"]:
+            stops.append(f"poison {name}: the first RUN after the load does not match its golden")
     stops += [f"A/B differ: {x}" for x in same_between(a, b)]
     if a["output_crc32"] is None or a["output_crc32"] != b["output_crc32"]:
         stops.append(f"output CRC A {a['output_crc32']} B {b['output_crc32']}")

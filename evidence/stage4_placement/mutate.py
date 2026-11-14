@@ -78,6 +78,8 @@ MUTATIONS = [
      "t = max(FLOOR * STAGE4[\"npu_active\"],", "t = max(2 * FLOOR * STAGE4[\"npu_active\"],", [S4P]),
     ("traffic direction", "host/analysis/stage4p.py",
      "ok = all(per[c][\"outside\"] and (per[c][\"delta\"] > 0) == (s > 0)", "ok = all(per[c][\"outside\"]", [S4P]),
+    ("poisoned first RUN", "host/analysis/stage4p.py",
+     "        if not c[\"poisoned_run_ok\"]:\n", "        if False:\n", [S4P]),
     ("cost same sign", "host/analysis/stage4p.py", "and len(signs) == 1:", ":", [S4P]),
     ("cost 1 % floor", "host/analysis/stage4p.py", "return max(FLOOR * ma, ra or 0, rb or 0)",
      "return max(ra or 0, rb or 0)", [S4P]),

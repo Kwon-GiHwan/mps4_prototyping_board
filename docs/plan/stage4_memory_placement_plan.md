@@ -4,6 +4,17 @@ Owner 지시(2026-11-11 "Stage 4 보완 — 대표 Conv의 DRAM·SRAM 배치 비
 검증까지다.** 펌웨어 변경 구현, 이미지 빌드, 배포, 보드 측정은 하지 않았고 이 문서를 보고한 뒤 따로 결정한다.
 기본 실험(Stage 1–5)과 AD 분석의 종료 상태는 바꾸지 않는다.
 
+**구현 상태(2026-11-14 추가).** F1–F7은 구현했고 보드 없는 검증까지 마쳤다. 판정은 `READY_FOR_BOARD_VALIDATION`이고 보드는
+실행하지 않았다.
+- 구현·검증 기록: `evidence/stage4_placement/implementation_check.md`
+- 계약 초안(동결 전): `evidence/stage4_placement/contract_draft.md`
+- 설계와 달라진 점:
+  - SRAM arena 시작을 64 KiB로 올림 정렬한다(conv_base에서는 같은 주소 `0x310615C0`).
+  - load 때 IFM 되읽기 검사를 추가했다.
+  - schema 4 record에 REGIONCFG_MATCH flag를 추가했다.
+  - 분석에 "load 뒤 첫 RUN 출력 일치"를 해석 전제로 추가했다.
+  - host는 schema 3 기록도 계속 읽는다.
+
 **측정 조건(기존 값의 출처).** FI101 Ethos-U85 1024 MAC, **TA profile 1**(MLEK sys_dram_mid), Driver Runner 이미지
 `83398c7`, Vela 5.0.0(MLEK 옵션, Dedicated_Sram, Ethos_U85_SYS_DRAM_Mid_1024, Performance), Stage 4 conv_base(boot 330).
 

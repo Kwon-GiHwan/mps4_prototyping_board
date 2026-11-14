@@ -1,0 +1,19 @@
+{
+ "verdict": "PASS",
+ "checks": {
+  "a_is_stage4_blob": true,
+  "placements": true,
+  "only_word_7_differs": true,
+  "headers_equal_but_placement": true,
+  "sections_equal": true,
+  "cms_sha256": true,
+  "cms_once_same_offset": true,
+  "vela_sha256": true
+ },
+ "differing_bytes": [
+  28
+ ],
+ "a_sha256": "2681c566729ce568f4041df6a69d1b5c5c558d2172bb76b6d75ad64ca2b4f267",
+ "b_sha256": "83034eb167f478f8e926c5252ed4e202ad3b6a891de5c0bae3bc8a00797e1de9",
+ "model_sha256": "fadf33d7ff3f46b21f8064d8de09f0ec8f2128ee0f777e3115fed4afd5e0c46d"
+}

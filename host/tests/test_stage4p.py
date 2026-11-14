@@ -39,12 +39,15 @@ def record(which, **over):
     return r
 
 
-def write(folder, placement, ev, out=REF, rec=None, flags=REQUIRED | REGIONCFG_MATCH, caps=None, valid=True):
+def write(folder, placement, ev, out=REF, rec=None, flags=REQUIRED | REGIONCFG_MATCH, caps=None, valid=True,
+          first=None):
+    """first: record overrides of set 1 rep 1 only (the poisoned RUN)."""
     folder.mkdir(parents=True)
     raw, rows = [{"ping": {}}], []
     for set_id, codes in ((1, PASS_A), (2, PASS_B)):
         for rep, j in enumerate([0] + JITTER, start=1):
-            raw.append(dict(set_id=set_id, rep=rep, valid_flags=flags, record=record(placement, **(rec or {})),
+            over = dict(rec or {}, **(first or {} if (set_id, rep) == (1, 1) else {}))
+            raw.append(dict(set_id=set_id, rep=rep, valid_flags=flags, record=record(placement, **over),
                             output_crc32=zlib.crc32(out), output_len=len(out)))
             for c in codes:
                 rows.append(dict(set_id=set_id, rep=rep, ev_type=c, event_value=ev[set_id][c] + (j if c == 35 else 0),
@@ -156,6 +159,10 @@ class Verdicts(unittest.TestCase):
         self.assert_stop(run(b=dict(out=bytes(bad), rec=dict(ofm_mismatch=1, ofm_max_diff=1))), "output CRC")
         self.assert_stop(run(b=dict(valid=False)), "gate C B")
         self.assert_stop(run(b_blob=A_BLOB), "gate B")
+
+    def test_poisoned_run_must_match(self):
+        self.assert_stop(run(b=dict(first=dict(ofm_mismatch=55296, ofm_max_diff=90))), "poison B")
+        self.assert_stop(run(a=dict(first=dict(ofm_mismatch=1, ofm_max_diff=1))), "poison A")
 
     def test_p1_stops(self):
         for ch, text in (({(1, 48): 2305}, "pass 1 event 48"), ({(1, 51): 1153}, "pass 1 event 51"),

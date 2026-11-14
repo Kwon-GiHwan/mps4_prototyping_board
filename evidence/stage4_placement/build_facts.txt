@@ -1,0 +1,61 @@
+# Stage 4 placement image, built in container benchmark-runner from git archive of 70090f1 (/work/driver_s4p_src), 2026-11-14T12:25:30Z
+## build log tail
+GATE OK: driver hooks are the runner's, MLEK profiler hooks are MLEK's, SRAM holds only cache_arena
+BUILT pmu_runner:
+718c456283bfd44863d5fb697360b680ff4dc6b297cc0dc74d7ed78a6ca7ef59  boot.bin
+c80e77df9fe14b908966a5cebc5045cca93c5fd98bcea50fb1a7aef35f9fe99c  bram.bin
+e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  ddr.bin
+af688281435a73dda3b2247845149817ecc7a9bbdff5a3ccd2e4dfa52875423f  images.txt
+rc=0
+## axf
+13244fce1719fc842f84c4eb616ac28517502beb23ca59de99e5e523396b6b52  /work/driver_s4p_img/mlek_pmu_runner.axf
+## nm: placement and config_select
+12003348 T ethosu_address_remap
+12003448 T ethosu_config_select
+12003460 T ethosu_irq_handler
+12003580 T placement_config_select
+12003704 T placement_get
+12003670 T placement_mem_check
+1200359c T placement_regioncfg
+120036f8 T placement_set
+12003624 T placement_sram_arena
+## nm -S: symbols in SRAM 0x31000000-0x313fffff
+31000000 00060000 b cache_arena
+## size -A
+.text.at_boot            0x7c0   0x11000000
+.data.vtable_rw          0x7c0   0x10000000
+.text.at_bram          0x9e428   0x12000000
+.sram                  0x60000   0x31000000
+.bss                   0x26abc   0x1209e620
+.heap                  0xc0004   0x120c50e4
+.stack                  0x8000   0x30000000
+## disassembly
+12003580 <placement_config_select>:
+12003580:	2801      	cmp	r0, #1
+12003582:	d005      	beq.n	12003590 <placement_config_select+0x10>
+12003584:	3802      	subs	r0, #2
+12003586:	2806      	cmp	r0, #6
+12003588:	bf34      	ite	cc
+1200358a:	2001      	movcc	r0, #1
+1200358c:	2003      	movcs	r0, #3
+1200358e:	4770      	bx	lr
+12003590:	2901      	cmp	r1, #1
+12003592:	bf0c      	ite	eq
+12003594:	2000      	moveq	r0, #0
+12003596:	2003      	movne	r0, #3
+12003598:	4770      	bx	lr
+1200359a:	bf00      	nop
+
+12003448 <ethosu_config_select>:
+12003448:	b500      	push	{lr}
+1200344a:	b083      	sub	sp, #12
+1200344c:	9201      	str	r2, [sp, #4]
+1200344e:	f000 f959 	bl	12003704 <placement_get>
+12003452:	4601      	mov	r1, r0
+12003454:	9801      	ldr	r0, [sp, #4]
+12003456:	b003      	add	sp, #12
+12003458:	f85d eb04 	ldr.w	lr, [sp], #4
+1200345c:	f000 b890 	b.w	12003580 <placement_config_select>
+
+## Stage 4 image (83398c7) for comparison
+12076f78 W ethosu_config_select
