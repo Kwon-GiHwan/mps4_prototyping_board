@@ -1,0 +1,8 @@
+# Stage 4K G0 (before the session, 2026-11-14T15:06:24Z); contract evidence/stage4k/contract.md (frozen fe2f7aa)
+image (staging ~/evsweep_s4k, copied from ~/evsweep_s4p): boot 718c4562..ef59 bram c80e77df..e99c ddr 374708ff..37bb images.txt af688281..423f = 70090f1 build_facts / contract
+workloads: 48 staged files (10 DRWL + compile.json + CPU reference, conditions, ids, 10 plans, ref) sha256 equal Mac <-> board; every DRWL word 7 = 0 (DDR/EXT), model_len 5568..68240 distinct
+PMU sets: ids.txt = Stage 4 (pass A 35 48 51 53 55 64 80 81; pass B 35 128 130 132 135 384 386 391); conditions wfe 0 0 off 1,2 (window unchanged)
+TA profile 1 / driver / placement: checked per boot by stage4k.identity (capabilities.json = placement A boot 367: all 22 TA registers, AXI, MEM_ATTR, fast memory, REGIONCFG 0x15F)
+board code: sync.sh board OK; host/analysis/{stage4k,stage4,stage4c1,stage4c2}.py and evidence/stage4/beat_model.{py,json} sha256 equal (beat_model was missing on the board: found by the board-side import check, copied)
+board-side dry run of the session's gate commands on boot 367 data: boot-check rc=0 PASS, repro-gate rc=0 PASS, unmeasured config rc=1
+session: ~/evsweep_s4k/session.txt sha256 247e8d09829349e459a031c9a155a182809e079efbb1b7240a086e349f76cbd7, sudo_session.sh --check OK; restore reference ~/evsweep/evidence_m6 present; card not mounted

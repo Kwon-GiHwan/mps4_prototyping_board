@@ -1,5 +1,7 @@
 # Stage 4K — Conv 1×1·3×3 MAC 하드웨어 특성: 기존 증거 확인과 정적 분석 (2026-11-14, 보드 실행 없음)
 
+> **상태(2026-11-15):** 보드 측정 완료(boot 369–378, TA profile 1), 결과 `results/fi101_stage4k/README.md`, 계약 `evidence/stage4k/contract.md`.
+
 - **범위:** owner 지시 "Ethos-U85 Stage 4 확장 — Conv 1×1·3×3 MAC Hardware Characterization"의 Phase 1–4.
   보드 배포·RUN·계약 동결은 하지 않았다.
 - **보드 계약 초안:** `evidence/stage4k/contract_draft.md` (동결 전).
