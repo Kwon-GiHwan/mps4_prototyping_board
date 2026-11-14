@@ -54,3 +54,11 @@
   - 실험 A에서 NPU_ACTIVE는 21,086–21,458.5로 거의 같고 WD_STALLED는 6,532–6,837이다.
   - 실험 B에서 NPU_ACTIVE와 WD_STALLED는 block·N과 함께 늘었다.
   - WD_STALLED를 실행 시간 원인으로 배정하지 않는다.
+
+## 종료 (2026-11-15, owner 결정 ChatGPT 경유)
+
+Stage 4WD 완료. 단서:
+- 실험 A의 CONSTANT는 "사전 허용폭 (range 합) 안"이라는 뜻이다. 값이 모두 같다는 뜻은 아니다 (small 1,152 vs sparse75 914).
+  압축률과 완전히 무관한 상수라고 주장하지 않는다. 확인된 것은 "encoded 바이트에 비례하지 않는다"는 것까지다.
+- **Open Issue WD-2: WD_STALLED의 원인 분리** (공급 부족과 buffer backpressure가 하나의 공식 카운터). 배치 비교에서 63 % 감소한 사실은
+  WD 디코딩만으로 정체를 설명할 수 없다는 근거이지만, 실행을 제한하는 원인을 증명한 것은 아니다. WD-1 (FC), AO-1 (ABS)과 함께 보존한다.
