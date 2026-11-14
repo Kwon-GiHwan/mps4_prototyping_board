@@ -1,0 +1,8 @@
+# Stage 4AO-E G0 (before the session, 2026-11-15); contract evidence/stage4aoe/contract.md (frozen 7cedd8e)
+boot numbers 386-393 unused: max host_boot_index in Mac evidence and board runs.csv = 384 (385 never run, skipped)
+image (staging ~/evsweep_s4aoe, copied from ~/evsweep_s4ao): boot 718c4562.. bram c80e77df.. ddr 374708ff.. images.txt af688281.. = 70090f1
+staging: 36 files (7 AO-E DRWL + tflite_ofm + ref_ofm; 4AO H24 DRWL + compile.json + tflite_ofm + ref_ofm; conditions, ids, 8 plans, session) sha256 equal Mac <-> board; no AppleDouble files (COPYFILE_DISABLE=1)
+ref: ~/evsweep_s4aoe/ref = copy of Stage 4AO boot 380 conds/s4ao_conv1x1_h24 (10 files sha256 equal to evidence/stage4ao/raw)
+board code: 23 files (host/lib/*.py, host/board/*.py incl. run_driver_events.py with the output-mismatch record, stage4aoe/stage4ao/stage4k/stage4/stage4c1/stage4c2, beat_model) sha256 equal Mac <-> board
+board-side dry run on Stage 4AO boot 380 data: repro-gate rc=0 PASS (AO 3534), boot-check s4ao_conv1x1_h24 rc=0 PASS (output_exact, workload sha), unmeasured s4aoe_add_h24 rc=1
+session: ~/evsweep_s4aoe/session.txt sha256 49f2894e6fc524a2866f5d8ffe8954af3c1e769eab1127b0aef30af0271f7f1b, sudo_session.sh --check OK; card not mounted; ~/evsweep/evidence_m6 present; ~/evsweep/evidence_s4aoe and ~/evsweep_s4aoe_run absent
