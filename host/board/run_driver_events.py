@@ -125,15 +125,25 @@ def write_outputs(d: pathlib.Path, raw: list, rows: list, summ: dict) -> None:
     (d / "summary.json").write_text(json.dumps(summ, indent=2, default=str))
 
 
-def keep_mismatch_output(link, run: dict, d: pathlib.Path) -> None:
+def keep_mismatch_output(link, run: dict, d: pathlib.Path, ctx: dict) -> None:
     """Stage 4AO-E: before a stop on an output mismatch, the outputs of that RUN (already measured; nothing is run
-    again) into output_mismatch.bin, with output_mismatch.json (set, rep, CRC check). A transport error here is
-    recorded and does not replace the refusal that follows."""
+    again, the PMU window is closed) into output_mismatch.bin, with output_mismatch.json: workload, boot, set/rep,
+    CRC and sha256 of the outputs and of the DRWL golden, the firmware's mismatch count / max diff, and the host's
+    int8 comparison (count, max |diff|, first 256 (index, npu, golden)). A transport error here is recorded and does
+    not replace the refusal that follows."""
     d.mkdir(parents=True, exist_ok=True)
-    note = dict(set_id=run["set_id"], rep=run["rep"], output_len=run.get("output_len"), crc32=run.get("output_crc32"))
+    golden = b"".join(ctx["blob"][o:o + n] for o, n in drwl.parse(ctx["blob"])["outputs"])
+    note = dict(workload_sha256=ctx["prov"]["workload_sha256"], host_boot_index=ctx["prov"]["host_boot_index"],
+                set_id=run["set_id"], rep=run["rep"], output_len=run.get("output_len"), crc32=run.get("output_crc32"),
+                golden_crc32=zlib.crc32(golden), golden_sha256=hashlib.sha256(golden).hexdigest(),
+                firmware_mismatch=run["record"].get("ofm_mismatch"), firmware_max_diff=run["record"].get("ofm_max_diff"))
     try:
         data = link.get_output(run["output_len"])
-        note["crc_ok"] = zlib.crc32(data) == run["output_crc32"]
+        s8 = lambda b: [x - 256 if x > 127 else x for x in b]
+        diffs = [(i, a, g) for i, (a, g) in enumerate(zip(s8(data), s8(golden))) if a != g]
+        note.update(crc_ok=zlib.crc32(data) == run["output_crc32"], output_sha256=hashlib.sha256(data).hexdigest(),
+                    host_mismatch=len(diffs) + abs(len(data) - len(golden)),
+                    host_max_abs_diff=max((abs(a - g) for _, a, g in diffs), default=0), first_mismatches=diffs[:256])
         (d / "output_mismatch.bin").write_bytes(data)
     except (Nack, ProtocolError) as e:
         note["error"] = repr(e)
@@ -190,7 +200,7 @@ def run_condition(link, cond, sets, ctx, d: pathlib.Path, raw: list, rows: list)
             placement_check(r, ctx["placement"])
             if ctx["stop_on_invalid"] and (not ok or r.f["ofm_mismatch"] != 0):
                 if ctx["outputs"] and r.f["ofm_mismatch"] != 0:
-                    keep_mismatch_output(link, raw[-1], d)
+                    keep_mismatch_output(link, raw[-1], d, ctx)
                 raise E.fail_rule("RULE_RUN_INVALID", f"{cond.name} set {set_id} rep {rep}: {failed} "
                                                       f"ofm_mismatch={r.f['ofm_mismatch']}")
     if ctx["outputs"] and len(raw) > 1:   # the last RUN's outputs, once per condition; its CRC must match

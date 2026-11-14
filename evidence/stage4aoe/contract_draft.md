@@ -1,5 +1,7 @@
 # Stage 4AO-E — Elementwise·CB AO 처리율 보드 측정 계약 **초안** (동결 전, 2026-11-15)
 
+> **대체됨**: owner 결정(E1–E3)과 동결 조건을 반영한 동결본은 `contract.md`. 이 초안은 기록으로 남김.
+
 초안이다. 동결은 owner 승인 뒤에 한다. 측정 조건 (모든 숫자): FI101 Ethos-U85 1024 MAC, **TA profile 1**, driver runner
 이미지 `70090f1`, DDR/EXT (DRWL word 7 = 0), Vela 5.0.0 (MLEK 옵션), pass A/B 각 warm-up 1 + 측정 4 RUN.
 근거: `docs/plan/stage4aoe_characterization_plan.md`. 코드: `host/analysis/stage4aoe.py` (test_stage4aoe 16개),

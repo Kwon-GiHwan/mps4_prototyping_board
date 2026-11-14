@@ -2,7 +2,7 @@
 with fake ports (firmware/driver_runner/tests/host_sim.c) and driven by the host's own DriverLink over a pipe: the same
 bytes as on the board. Expected values come from the simulator's documented fake model and from drwl.py, not from the
 module under test."""
-import csv, json, os, shutil, struct, subprocess, sys, tempfile, threading, time, unittest, pathlib, zlib
+import csv, hashlib, json, os, shutil, struct, subprocess, sys, tempfile, threading, time, unittest, pathlib, zlib
 REPO = pathlib.Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO / "host" / "lib"))
 import drwl
@@ -477,6 +477,38 @@ class BoardScript(unittest.TestCase):
         for l in links:
             l._ser.close()
 
+    def test_campaign_normal_path_unchanged(self):
+        """Matching outputs with --stop-on-invalid --outputs: no mismatch files, output.bin as before, and the outputs
+        are fetched once, after the last RUN (the RUN loop itself makes no extra transfer)."""
+        sys.path.insert(0, str(REPO / "host" / "board"))
+        import run_driver_events as R
+        links, fetches = [], []
+
+        def counting(port):
+            l = link(); links.append(l); real = l.get_output
+            l.get_output = lambda n: fetches.append(n) or real(n)
+            return l
+        R.DriverLink = counting
+        with tempfile.TemporaryDirectory() as d:
+            d = pathlib.Path(d)
+            want = expected_output(IFM, 0, 30)
+            (d / "w.drwl").write_bytes(drwl.pack(simm([40], [30]), [IFM], [want]))
+            (d / "cond.txt").write_text("wfe 0 0 off all\n")
+            old, sys.argv = sys.argv, ["x", "--out", str(d / "out"), "--host-boot-index", "7", "--workload",
+                                       str(d / "w.drwl"), "--ids", "35,48", "--repeats", "2", "--conditions",
+                                       f"@{d / 'cond.txt'}", "--outputs", "--stop-on-invalid", "--image-sha256", "b,r,d,i"]
+            try:
+                self.assertEqual(R.main(), 0)
+            finally:
+                sys.argv = old
+            wfe = d / "out" / "wfe"
+            self.assertEqual((wfe / "output.bin").read_bytes(), want)
+            self.assertFalse((wfe / "output_mismatch.bin").exists()); self.assertFalse((wfe / "output_mismatch.json").exists())
+            self.assertEqual(fetches, [30])
+            self.assertEqual(len(json.loads((wfe / "raw_runs.json").read_text())) - 1, 2)
+        for l in links:
+            l._ser.close()
+
     def test_campaign_keeps_mismatch_output(self):
         """--stop-on-invalid on an output mismatch: the refusal stands and that RUN's outputs are kept."""
         sys.path.insert(0, str(REPO / "host" / "board"))
@@ -506,6 +538,13 @@ class BoardScript(unittest.TestCase):
                     self.assertEqual((out / "wfe" / "output_mismatch.bin").read_bytes(), want)
                     note = json.loads((out / "wfe" / "output_mismatch.json").read_text())
                     self.assertEqual((note["set_id"], note["rep"], note["crc_ok"]), (1, 1, True))
+                    self.assertEqual(note["host_boot_index"], 7)
+                    self.assertEqual(note["golden_crc32"], zlib.crc32(bad))
+                    self.assertEqual(note["workload_sha256"], hashlib.sha256((d / "w.drwl").read_bytes()).hexdigest())
+                    s8 = lambda x: x - 256 if x > 127 else x
+                    self.assertEqual((note["host_mismatch"], note["first_mismatches"]), (1, [[0, s8(want[0]), s8(bad[0])]]))
+                    self.assertEqual(note["host_max_abs_diff"], 1)
+                    self.assertEqual(note["firmware_mismatch"], 1)
                     self.assertFalse((out / "wfe" / "output.bin").exists())
 
             def corrupt(port):                      # the fetched bytes differ from the RUN's CRC
@@ -737,6 +776,7 @@ class PlacementBoardScript(unittest.TestCase):
             l._ser.close()
         summ = json.loads((d / "out" / "summary.json").read_text())
         raw = json.loads((d / "out" / "raw_runs.json").read_text())
+        self.mismatch_kept = (d / "out" / "output_mismatch.bin").exists()
         self.d.cleanup()
         return rc, summ, raw
 
@@ -748,10 +788,12 @@ class PlacementBoardScript(unittest.TestCase):
     def test_stop_on_invalid(self):
         rc, summ, raw = self.campaign(0, ["--stop-on-invalid"], SIM_NO_WRITE="1")  # output stays the poison
         self.assertEqual((rc, summ["refusal"]["rule"], len(raw)), (1, "RULE_RUN_INVALID", 2))
+        self.assertTrue(self.mismatch_kept)                                     # output mismatch: outputs kept
         rc, summ, raw = self.campaign(0, [], SIM_NO_WRITE="1")                    # without the flag: reported only
         self.assertEqual((rc, len(raw)), (0, 1 + 2))                             # one set (35, 48), 2 RUNs
         rc, summ, raw = self.campaign(1, ["--stop-on-invalid"], SIM_OVF="1")      # a PMU overflow: invalid RUN
         self.assertEqual((rc, summ["refusal"]["rule"]), (1, "RULE_RUN_INVALID"))
+        self.assertFalse(self.mismatch_kept)                                    # invalid but outputs match: none
         rc, summ, raw = self.campaign(1, ["--stop-on-invalid"])
         self.assertEqual((rc, summ["refusal"], summ["stop_on_invalid"]), (0, None, True))
         self.assertIsInstance(summ["load_end_s"], float)

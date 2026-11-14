@@ -39,5 +39,8 @@ KILLED       runner: CRC check  (host/board/run_driver_events.py; restored by sh
 KILLED       repro: reproduce()  (host/analysis/stage4aoe.py; restored by sha256: True)
 KILLED       repro: AO tolerance  (host/analysis/stage4aoe.py; restored by sha256: True)
 KILLED       repro: validity first  (host/analysis/stage4aoe.py; restored by sha256: True)
+KILLED       runner: golden from the blob  (host/board/run_driver_events.py; restored by sha256: True)
+KILLED       runner: host mismatch list  (host/board/run_driver_events.py; restored by sha256: True)
+KILLED       runner: fetch only on a mismatch  (host/board/run_driver_events.py; restored by sha256: True)
 KILLED       boot-check: gate  (host/analysis/stage4aoe.py; restored by sha256: True)
 after restore: GREEN
