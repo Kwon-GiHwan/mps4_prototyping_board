@@ -1,0 +1,2 @@
+# Stage 4AO boot 1/7: s4_conv_base, TA profile 1, image 70090f1, DDR/EXT (word 7 = 0)
+379 s4_conv_base @/home/gihwan/evsweep_s4ao/conditions.txt

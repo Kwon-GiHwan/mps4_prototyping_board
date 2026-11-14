@@ -225,6 +225,25 @@ class Judgement(unittest.TestCase):
         self.assertEqual(A.act_verdict(r, "c")["verdict"], "INVALID")
         self.assertEqual(A.act_verdict(r, "d")["verdict"], "MEASUREMENT_UNSTABLE")
 
+    def test_models_verdict(self):
+        def r(**within):
+            return {c: dict(models={m: dict(within=within.get(m, True) if c == H[72] else True)
+                                    for m in ("M1", "M2", "M3", "M4")}) for c in SW}
+        self.assertEqual(A.models_verdict(r(), SW)["verdict"], "BOTH_CONSISTENT")
+        self.assertEqual(A.models_verdict(r(M3=False), SW)["verdict"], "M2_ONLY")
+        self.assertEqual(A.models_verdict(r(M2=False), SW)["verdict"], "M3_ONLY")
+        self.assertEqual(A.models_verdict(r(M2=False, M3=False), SW)["verdict"], "NEITHER")
+        self.assertEqual(A.models_verdict(r(M1=False), SW)["per_model"]["M1"], "NOT_CONSISTENT")
+        self.assertEqual(A.models_verdict(r(), SW[:2])["verdict"], "NOT_JUDGED")
+
+    def test_base_vs_ref(self):
+        r = {A.BASE: res_of(3540, 55296), A.REF_H: res_of(3570, 55296)}
+        self.assertEqual(A.base_vs_ref(r)["verdict"], "SAME_WITHIN_TOL")
+        r[A.REF_H] = res_of(3580, 55296)
+        self.assertEqual(A.base_vs_ref(r)["verdict"], "DIFFERENT")
+        r[A.BASE] = res_of(3540, 55296, verdict="INVALID")
+        self.assertEqual(A.base_vs_ref(r)["verdict"], "NOT_JUDGED")
+
     def test_model_check(self):
         m = A.model_check(3540.5, dict(M1=3456, M2=3535.5))
         self.assertFalse(m["M1"]["within"]); self.assertTrue(m["M2"]["within"])
@@ -244,6 +263,14 @@ class Board(unittest.TestCase):
             self.assertEqual(A.config_result(K4, WL4K, A.BASE)["verdict"], "INVALID")
         with mock.patch.object(A.K, "identity", return_value=dict(ok=False)):
             self.assertEqual(A.config_result(K4, WL4K, A.BASE)["verdict"], "INVALID")
+        d = pathlib.Path(tempfile.mkdtemp())          # same model_len, other DRWL: only workload_sha256 catches it
+        try:
+            shutil.copytree(WL4K, d / "wl")
+            shutil.copy(WL / "s4ao_conv1x1_h24.drwl", d / "wl" / f"{A.BASE}.drwl")
+            r = A.config_result(K4, d / "wl", A.BASE)
+            self.assertFalse(r["workload_sha256_ok"]); self.assertEqual(r["verdict"], "INVALID")
+        finally:
+            shutil.rmtree(d)
         real = A.K.summary_of
 
         def three_runs(folder, n):
@@ -253,16 +280,35 @@ class Board(unittest.TestCase):
         with mock.patch.object(A.K, "summary_of", side_effect=three_runs):
             self.assertEqual(A.config_result(K4, WL4K, A.BASE)["verdict"], "INVALID")
 
+    def test_workload_rows(self):
+        d = pathlib.Path(tempfile.mkdtemp())
+        try:
+            shutil.copytree(K4 / "conds" / A.BASE / "wfe", d / "wfe")
+            drwl = WL4K / f"{A.BASE}.drwl"
+            self.assertTrue(A.workload_ok(d / "wfe", drwl))
+            t = (d / "wfe" / "runs.csv").read_text().splitlines()
+            t[-1] = t[-1].replace("2681c566729ce568f4041df6a69d1b5c5c558d2172bb76b6d75ad64ca2b4f267", "0" * 64)
+            (d / "wfe" / "runs.csv").write_text("\n".join(t) + "\n")
+            self.assertFalse(A.workload_ok(d / "wfe", drwl))                  # one row of another blob
+        finally:
+            shutil.rmtree(d)
+
     def test_repro_gate(self):
         self.assertEqual(A.repro_gate(str(K4), str(WL4K))["verdict"], "PASS")
-        b330 = REPO / "evidence/stage4/raw/conds/s4_conv_base/wfe"
-        self.assertEqual(A.repro_gate(str(K4), str(WL4K), str(b330))["verdict"], "PASS")
+        d = pathlib.Path(tempfile.mkdtemp())                        # the board's staged copy of boot 369
+        try:
+            shutil.copytree(K4 / "conds" / A.BASE, d / "ref")
+            self.assertEqual(A.repro_gate(str(K4), str(WL4K), str(d / "ref" / "wfe"))["verdict"], "PASS")
+        finally:
+            shutil.rmtree(d)
+        b330 = REPO / "evidence/stage4/raw/conds/s4_conv_base/wfe"     # image 83398c7: other capabilities
+        self.assertEqual(A.repro_gate(str(K4), str(WL4K), str(b330))["verdict"], "FAIL")
         with mock.patch.object(A.K, "reproduce", return_value=dict(ok=False)):
             self.assertEqual(A.repro_gate(str(K4), str(WL4K))["verdict"], "FAIL")
         real = A.config_result
 
-        def far(root, wl, cfg):
-            r = real(root, wl, cfg)
+        def far(root, wl, cfg, *x):
+            r = real(root, wl, cfg, *x)
             r["metrics"] = dict(r["metrics"], A_64=r["metrics"]["A_64"] + 40)
             return r
         with mock.patch.object(A, "config_result", side_effect=far):
@@ -281,17 +327,21 @@ class Board(unittest.TestCase):
             pred = A.predict(str(WL), d)
             fake = {c: dict(res_of(n / 16 + 80, n), gate_c="PASS") for c, n in N.items()}
             fake["s4ao_act_none"] = dict(res_of(3540, 55296), gate_c="PASS")
-            with mock.patch.object(A, "config_result", side_effect=lambda root, wl, c: copy.deepcopy(fake[c])), \
+            fake[A.BASE] = dict(res_of(3540.5, 55296), gate_c="PASS")
+            with mock.patch.object(A, "config_result", side_effect=lambda root, wl, c, *x: copy.deepcopy(fake[c])), \
                     mock.patch.object(A, "repro_gate", return_value=dict(verdict="PASS")):
                 s = A.judge("x", str(WL), str(pathlib.Path(d) / "predictions.json"), d, ",".join(SW), "s4ao_act_none")
             self.assertEqual(s["rq1"]["verdict"], "RATE_CONSISTENT")
             self.assertEqual(s["rq3"]["s4ao_act_none"]["verdict"], "RATE_CONSISTENT")
             m72 = s["configs"][H[72]]["models"]                 # AO 10448: M2 10447.5 in, M3 10606.5 out (tol 106)
             self.assertTrue(m72["M2"]["within"]); self.assertFalse(m72["M3"]["within"])
-            with mock.patch.object(A, "config_result", side_effect=lambda root, wl, c: copy.deepcopy(fake[c])), \
+            self.assertEqual(s["rq2"]["verdict"], "M2_ONLY")
+            self.assertEqual(s["base_vs_h24"]["verdict"], "SAME_WITHIN_TOL")
+            with mock.patch.object(A, "config_result", side_effect=lambda root, wl, c, *x: copy.deepcopy(fake[c])), \
                     mock.patch.object(A, "repro_gate", return_value=dict(verdict="FAIL")):
                 s = A.judge("x", str(WL), str(pathlib.Path(d) / "predictions.json"), d, ",".join(SW))
             self.assertTrue(s["rq1"]["verdict"].startswith("NOT_INTERPRETED"))
+            self.assertEqual(s["rq2"]["verdict"], "NOT_JUDGED")
             self.assertEqual(pred["c0"], 79.5)
         finally:
             shutil.rmtree(d)

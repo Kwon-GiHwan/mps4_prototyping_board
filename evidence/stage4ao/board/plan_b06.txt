@@ -1,0 +1,2 @@
+# Stage 4AO boot 6/7: s4ao_act_none, TA profile 1, image 70090f1, DDR/EXT (word 7 = 0)
+384 s4ao_act_none @/home/gihwan/evsweep_s4ao/conditions.txt

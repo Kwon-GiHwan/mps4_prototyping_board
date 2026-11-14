@@ -1,5 +1,7 @@
 # Stage 4AO — AO 처리율 보드 측정 계약 **초안** (동결 전, 2026-11-15)
 
+> **대체됨**: owner 결정(D1 R4, D2 포함, D3 둘 다, D4 70 RUN)과 추가 조건을 반영한 동결본은 `contract.md`. 이 초안은 기록으로 남김.
+
 이 문서는 초안입니다. 동결은 owner 승인 뒤에 하며, 그때 개정 기록을 남깁니다.
 측정 조건(모든 숫자에 적용): FI101 Ethos-U85 1024 MAC, **TA profile 1**, driver runner 이미지 `70090f1`, DDR/EXT 배치
 (DRWL word 7 = 0), Vela 5.0.0(MLEK 옵션, `config/fi101_s013.json`), `config/driver_r5.json` 규칙(pass A/B, pass마다

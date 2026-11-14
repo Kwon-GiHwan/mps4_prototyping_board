@@ -7,9 +7,12 @@ boot-check are for a board run under a frozen contract and are exercised here on
   python3 host/analysis/stage4ao.py phase-a <out dir>                    Stage 4K AO re-analysis from the raw RUNs
   python3 host/analysis/stage4ao.py static <workloads dir> <out dir>     Phase B/C/D compile facts, comparability
   python3 host/analysis/stage4ao.py predict <workloads dir> <out dir>    M1-M4 per Phase B / C config
-  python3 host/analysis/stage4ao.py repro-gate <campaign root> <workloads dir>
-  python3 host/analysis/stage4ao.py boot-check <campaign root> <workloads dir> <config>
+  python3 host/analysis/stage4ao.py repro-gate <campaign root> <workloads dir> [<boot-369 wfe copy>]
+  python3 host/analysis/stage4ao.py boot-check <campaign root> <workloads dir> <config> [<reference capabilities.json>]
   python3 host/analysis/stage4ao.py judge <campaign root> <workloads dir> <predictions.json> <out dir> <sweep,configs>
+                                          [<act,configs> [<boot-369 wfe copy>]]
+M3 block count (fixed before the board): sum over the kernel instructions of ceil(H / block_h) * ceil(W / block_w) *
+ceil(kernel OFM slice depth / block_c), from the compiled command stream (cms_regs.kernels) and Vela's OFM block.
 
 Official basis (Arm Ethos-U85 TRM 102685 issue 05, §4.2 Table 4-11): U85-1024 has NUM_SU = 16; AB->OB with an 8-bit
 OFM runs at 1 element per SU per cycle = 16 elements/cycle (16-bit OFM: 1/2, DMA-limited). "AO_Relative_Throughput"
@@ -241,7 +244,7 @@ def predict(wl: str, out: str) -> dict:
 
 
 # ---- board judgement (frozen contract only) -----------------------------------------------------------------------
-def config_result(root: pathlib.Path, wl: pathlib.Path, cfg: str) -> dict:
+def config_result(root: pathlib.Path, wl: pathlib.Path, cfg: str, caps_ref: str | None = None) -> dict:
     """Validity: both passes with 4 measured valid RUNs, K.identity (model, placement 0, REGIONCFG, one IRQ, one CRC,
     output length, capabilities) and an output byte-identical to the CPU reference (PASS_EXACT)."""
     folder = root / "conds" / cfg / "wfe"
@@ -250,13 +253,25 @@ def config_result(root: pathlib.Path, wl: pathlib.Path, cfg: str) -> dict:
     comp = json.loads((wl / f"{cfg}.compile.json").read_text())
     s = K.summary_of(folder, comp["n_mac"])
     oc = S4.output_check(folder, comp, (wl / f"{cfg}.drwl.tflite_ofm.bin").read_bytes(), s["runs"])
-    ident = K.identity(folder, wl, cfg)
+    ident = K.identity(folder, wl, cfg, caps_ref)
     runs_ok = sorted(s["runs"]) == [1, 2] and all(len(rs) == 4 and all(r["valid"] for r in rs)
                                                   for rs in s["runs"].values())
     m = s["metrics"]
-    ok = runs_ok and ident["ok"] and oc["verdict"] == "PASS_EXACT"
+    wl_ok = workload_ok(folder, wl / f"{cfg}.drwl")
+    ok = runs_ok and ident["ok"] and wl_ok and oc["verdict"] == "PASS_EXACT"
     return dict(config=cfg, gate_c="PASS" if ok else "FAIL", verdict="VALID" if ok else "INVALID", metrics=m,
-                output=oc["verdict"], identity=ident, runs_valid=runs_ok, stability=stability(m))
+                output=oc["verdict"], identity=ident, workload_sha256_ok=wl_ok, runs_valid=runs_ok,
+                stability=stability(m))
+
+
+def workload_ok(folder: pathlib.Path, drwl_path: pathlib.Path) -> bool:
+    """Every runs.csv row names this DRWL (workload_sha256 = its sha256). All Stage 4AO configs share model_len
+    5568, so K.identity's model-length check alone cannot tell them apart."""
+    import hashlib
+    want = hashlib.sha256(drwl_path.read_bytes()).hexdigest()
+    with open(folder / "runs.csv") as f:
+        got = {r["workload_sha256"] for r in csv.DictReader(f)}
+    return got == {want}
 
 
 def stability(m: dict) -> dict:
@@ -310,10 +325,35 @@ def act_verdict(res: dict, cfg: str) -> dict:
                 ao_diff=d, tol=tol(ref["metrics"]["A_64"]))
 
 
+def models_verdict(res: dict, use: list) -> dict:
+    """H2 (closed set), over the valid comparable sweep configs rate_verdict used: a model is CONSISTENT if every
+    one of them is within tol. M2 / M3 together: BOTH_CONSISTENT, M2_ONLY, M3_ONLY, NEITHER."""
+    if len(use) < 3:
+        return dict(verdict="NOT_JUDGED", configs=use)
+    per = {m: all(res[c]["models"][m]["within"] for c in use) for m in ("M1", "M2", "M3", "M4")}
+    both = {(True, True): "BOTH_CONSISTENT", (True, False): "M2_ONLY", (False, True): "M3_ONLY",
+            (False, False): "NEITHER"}[(per["M2"], per["M3"])]
+    return dict(verdict=both, per_model={m: "CONSISTENT" if v else "NOT_CONSISTENT" for m, v in per.items()},
+                configs=use)
+
+
+def base_vs_ref(res: dict) -> dict:
+    """s4_conv_base (VALID) and s4ao_conv1x1_h24 (SAME): the same command stream, so a repeated measurement of one
+    execution, never a second sweep sample. Descriptive: AO difference against tol."""
+    a, b = res.get(BASE, {}), res.get(REF_H, {})
+    if a.get("verdict") != "VALID" or b.get("verdict") != "VALID":
+        return dict(verdict="NOT_JUDGED")
+    d = b["metrics"]["A_64"] - a["metrics"]["A_64"]
+    return dict(verdict="SAME_WITHIN_TOL" if abs(d) <= tol(a["metrics"]["A_64"]) else "DIFFERENT", ao_diff=d,
+                npu_diff=b["metrics"]["A_35"] - a["metrics"]["A_35"])
+
+
 def repro_gate(root: str, wl: str, ref: str | None = None) -> dict:
     """Boot 1 = s4_conv_base (the Stage 4K blob) against Stage 4K boot 369 (same image): K.reproduce (MAC, DPU,
-    output, constant counters, NPU_ACTIVE) and AO_ACTIVE within tol."""
-    r = config_result(pathlib.Path(root), pathlib.Path(wl), BASE)
+    output, constant counters, NPU_ACTIVE) and AO_ACTIVE within tol. ref: a copy of the boot-369 wfe folder (its
+    parent holds capabilities.json), as staged on the board."""
+    caps = str(pathlib.Path(ref).parent / "capabilities.json") if ref else None
+    r = config_result(pathlib.Path(root), pathlib.Path(wl), BASE, caps)
     if r["verdict"] != "VALID":
         return dict(verdict="FAIL", why=r["verdict"])
     folder = pathlib.Path(ref) if ref else K4_ROOT / "conds" / BASE / "wfe"
@@ -325,28 +365,32 @@ def repro_gate(root: str, wl: str, ref: str | None = None) -> dict:
     return dict(verdict="PASS" if rep["ok"] and ao_ok else "FAIL", reproduce=rep, ao=ao, ao_ref=ao_ref, ao_ok=ao_ok)
 
 
-def boot_check(root: str, wl: str, cfg: str) -> dict:
-    r = config_result(pathlib.Path(root), pathlib.Path(wl), cfg)
+def boot_check(root: str, wl: str, cfg: str, caps_ref: str | None = None) -> dict:
+    r = config_result(pathlib.Path(root), pathlib.Path(wl), cfg, caps_ref)
     return dict(config=cfg, verdict="PASS" if r.get("gate_c") == "PASS" else "FAIL", output=r.get("output"),
                 identity=r.get("identity"), runs_valid=r.get("runs_valid"))
 
 
-def judge(root: str, wl: str, pred_path: str, out: str, sweep: str, acts: str = "") -> dict:
+def judge(root: str, wl: str, pred_path: str, out: str, sweep: str, acts: str = "", ref: str | None = None) -> dict:
     root, wlp = pathlib.Path(root), pathlib.Path(wl)
     pred = json.loads(pathlib.Path(pred_path).read_text())
     sw = sweep.split(","); ac = [a for a in acts.split(",") if a]
-    res = {c: config_result(root, wlp, c) for c in [*sw, *ac]}
+    caps = str(pathlib.Path(ref).parent / "capabilities.json") if ref else None
+    res = {c: config_result(root, wlp, c, caps) for c in [*sw, *ac]}
+    base = config_result(root, wlp, BASE, caps)
     for c, r in res.items():
         r["n_ofm"] = pred["configs"][c]["n_ofm"]
         if r.get("verdict") == "VALID":
             r["models"] = model_check(r["metrics"]["A_64"], pred["configs"][c]["models"])
             r["ao"] = ao_metrics(r["metrics"]["A_64"], r["n_ofm"])
     st = {c: conv_static(wlp, c) for c in sw}
-    gate = repro_gate(str(root), wl)
+    gate = repro_gate(str(root), wl, ref)
     cmp_set = comparable({**st, REF_H: conv_static(wlp, REF_H)}, sw)["comparable"]
     rq1 = rate_verdict(res, sw, cmp_set) if gate["verdict"] == "PASS" else dict(verdict="NOT_INTERPRETED (REPRO_GATE)")
+    rq2 = models_verdict(res, rq1.get("configs", [])) if rq1["verdict"].startswith("RATE_") \
+        else dict(verdict="NOT_JUDGED")
     rq3 = {a: act_verdict(res, a) if gate["verdict"] == "PASS" else dict(verdict="NOT_INTERPRETED") for a in ac}
-    summary = dict(repro_gate=gate, rq1=rq1, rq3=rq3,
+    summary = dict(repro_gate=gate, rq1=rq1, rq2=rq2, rq3=rq3, base_vs_h24=base_vs_ref({**res, BASE: base}),
                    configs={c: {k: v for k, v in r.items() if k != "identity"} for c, r in res.items()})
     o = pathlib.Path(out); o.mkdir(parents=True, exist_ok=True)
     (o / "summary.json").write_text(json.dumps(summary, indent=1, default=str))
@@ -356,11 +400,11 @@ def judge(root: str, wl: str, pred_path: str, out: str, sweep: str, acts: str = 
 def main(argv: list) -> int:
     cmd, a = argv[0], argv[1:]
     if cmd in ("repro-gate", "boot-check"):
-        r = repro_gate(*a[:3]) if cmd == "repro-gate" else boot_check(*a[:3])
+        r = repro_gate(*a[:3]) if cmd == "repro-gate" else boot_check(*a[:4])
         print(json.dumps(r, indent=1, default=str))
         return 0 if r["verdict"] == "PASS" else 1
     r = dict(**{"phase-a": lambda: phase_a(a[0])}, static=lambda: static(*a[:2]), predict=lambda: predict(*a[:2]),
-             judge=lambda: judge(*a[:6]))[cmd]()
+             judge=lambda: judge(*a[:7]))[cmd]()
     print(json.dumps(r, indent=1, default=str)[:6000])
     return 0
 
