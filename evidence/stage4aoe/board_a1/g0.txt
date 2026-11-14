@@ -1,0 +1,10 @@
+# Stage 4AO-E A1 G0 (before the session, 2026-11-15); contract evidence/stage4aoe/contract_a1.md (frozen eab77da), base contract.md (7cedd8e)
+boot numbers 394-401 unused: max host_boot_index on the board and in Mac evidence = 387
+image (staging ~/evsweep_s4aoe2, copied from ~/evsweep_s4aoe): boot 718c4562.. bram c80e77df.. ddr 374708ff.. images.txt af688281.. = 70090f1
+staging: 37 files (7 AO-E DRWL + tflite_ofm + ref_ofm; 4AO H24 DRWL + compile.json + tflite_ofm + ref_ofm; expected_identity.json; conditions, ids, 8 plans, session) sha256 equal Mac <-> board; no AppleDouble files
+ref: ~/evsweep_s4aoe2/ref = Stage 4AO boot 380 conds/s4ao_conv1x1_h24 (sha256 equal to evidence/stage4ao/raw)
+board code: 23 files sha256 equal Mac <-> board (stage4aoe.py with identity_a1)
+static identity on the board, all 8 configs (manifest n_base = header n_base, placement 0): h24 5/0x15F, add_h24 6/0x55F, mul_h24 6/0x55F, abs_h24 5/0x15F, add_mul_h24 7/0x155F, add_h72 6/0x55F, mul_h72 6/0x55F, abs_h72 5/0x15F
+board-side dry run: repro-gate on 4AO boot 380 data rc=0; boot-check h24 on 4AO boot 380 and on session-1 boot 386 data rc=0; boot-check add_h24 on session-1 boot 387 data rc=0 (dry run only, not a verdict: every A1 check true, n_base 6, REGIONCFG 0x55F); unmeasured mul_h24 / abs_h72 rc=1
+fault injection (unit tests, copies of session-1 RUNs): wrong REGIONCFG, wrong n_base + matching REGIONCFG, wrong placement, QCONFIG, missing REGIONCFG_MATCH flag, manifest/header disagreement, output mismatch, other workload -> all FAIL
+session: ~/evsweep_s4aoe2/session.txt sha256 8e8ac1f8a196cf36cae2afab14433b182f28c2c63b9ef391303eec125bf8d6c5 (= Mac), sudo_session.sh --check OK; card not mounted; ~/evsweep/evidence_m6 present; evidence_s4aoe2 and evsweep_s4aoe2_run absent
