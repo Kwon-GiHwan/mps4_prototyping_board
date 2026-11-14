@@ -1,0 +1,67 @@
+{
+ "config": "s4ao_ew_abs",
+ "description": "INT8 ABS (1,24,24,96)",
+ "model_sha256": "47e91511b1c9022f8c2612330e2c2e146118ec2424a896f1c2bd672c09c73748",
+ "vela_rc": 0,
+ "vela_log_tail": [
+  "",
+  "CPU operators = 0 (0.0%)",
+  "NPU operators = 1 (100.0%)",
+  "",
+  "Average DRAM bandwidth                          18.75 GB/s",
+  "Input   DRAM bandwidth                           0.05 MB/batch",
+  "Weight  DRAM bandwidth                           0.00 MB/batch",
+  "Output  DRAM bandwidth                           0.11 MB/batch",
+  "Total   DRAM bandwidth                           0.16 MB/batch",
+  "Total   DRAM bandwidth            per input      0.16 MB/inference (batch size 1)",
+  "",
+  "Neural network macs                                 0 MACs/batch"
+ ],
+ "vela_ops": [
+  "CUSTOM:ethos-u"
+ ],
+ "cpu_fallback": [],
+ "scheduled": [
+  {
+   "operator": "Abs",
+   "npu_cycles": "3456",
+   "mac_count": "0"
+  }
+ ],
+ "perf_main": [
+  {
+   "id": "4",
+   "mac_cycles": "",
+   "ao_cycles": "3456",
+   "cmd_cycles": "1959",
+   "ofm_block_h": "24",
+   "ofm_block_w": "42",
+   "ofm_block_c": "96",
+   "traversal": "DepthFirst"
+  }
+ ],
+ "kernels": [
+  {
+   "kind": "ELEMENTWISE",
+   "ifm_storage": 0,
+   "ifm2_storage": null,
+   "ofm_storage": 0,
+   "ifm_precision": 1,
+   "ofm_precision": 257,
+   "activation": 0
+  }
+ ],
+ "kernel_kinds": [
+  "ELEMENTWISE"
+ ],
+ "cms_len": 244,
+ "pack_rc": 0,
+ "pack_log_tail": [
+  "  \"ext\": 139071",
+  " },",
+  " \"power_ctrl\": 0,",
+  " \"fast_base\": 823132160,",
+  " \"ta_profile\": 1",
+  "}"
+ ]
+}

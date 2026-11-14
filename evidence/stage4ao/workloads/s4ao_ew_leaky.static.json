@@ -1,0 +1,67 @@
+{
+ "config": "s4ao_ew_leaky",
+ "description": "INT8 LEAKY_RELU alpha 0.125",
+ "model_sha256": "7db9aca7d0072857cd914604f184b1deb39b1f58aa4a53be2b0a429b8c069f8b",
+ "vela_rc": 0,
+ "vela_log_tail": [
+  "",
+  "CPU operators = 0 (0.0%)",
+  "NPU operators = 1 (100.0%)",
+  "",
+  "Average DRAM bandwidth                          10.43 GB/s",
+  "Input   DRAM bandwidth                           0.16 MB/batch",
+  "Weight  DRAM bandwidth                           0.00 MB/batch",
+  "Output  DRAM bandwidth                           0.11 MB/batch",
+  "Total   DRAM bandwidth                           0.26 MB/batch",
+  "Total   DRAM bandwidth            per input      0.26 MB/inference (batch size 1)",
+  "",
+  "Neural network macs                             55296 MACs/batch"
+ ],
+ "vela_ops": [
+  "CUSTOM:ethos-u"
+ ],
+ "cpu_fallback": [],
+ "scheduled": [
+  {
+   "operator": "LUT",
+   "npu_cycles": "8862",
+   "mac_count": "55296"
+  }
+ ],
+ "perf_main": [
+  {
+   "id": "6",
+   "mac_cycles": "7776",
+   "ao_cycles": "5184",
+   "cmd_cycles": "1411",
+   "ofm_block_h": "18",
+   "ofm_block_w": "12",
+   "ofm_block_c": "64",
+   "traversal": "DepthFirst"
+  }
+ ],
+ "kernels": [
+  {
+   "kind": "POOL",
+   "ifm_storage": 0,
+   "ifm2_storage": null,
+   "ofm_storage": 0,
+   "ifm_precision": 1,
+   "ofm_precision": 257,
+   "activation": 4
+  }
+ ],
+ "kernel_kinds": [
+  "POOL"
+ ],
+ "cms_len": 296,
+ "pack_rc": 0,
+ "pack_log_tail": [
+  "  \"ext\": 139071",
+  " },",
+  " \"power_ctrl\": 0,",
+  " \"fast_base\": 823132160,",
+  " \"ta_profile\": 1",
+  "}"
+ ]
+}

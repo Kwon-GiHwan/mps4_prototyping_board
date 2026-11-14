@@ -1,0 +1,102 @@
+{
+ "config": "s4ao_chain_conv_add",
+ "description": "Conv 1x1 -> ADD residual",
+ "model_sha256": "38846664665e847fa0bebd4a6b1d8fec93a769370befce56fe5c5ac94e0e61c0",
+ "vela_rc": 0,
+ "vela_log_tail": [
+  "Output  SRAM bandwidth                           0.00 MB/batch",
+  "Total   SRAM bandwidth                           0.03 MB/batch",
+  "Total   SRAM bandwidth            per input      0.03 MB/inference (batch size 1)",
+  "",
+  "Average DRAM bandwidth                           6.44 GB/s",
+  "Input   DRAM bandwidth                           0.43 MB/batch",
+  "Weight  DRAM bandwidth                           0.00 MB/batch",
+  "Output  DRAM bandwidth                           0.00 MB/batch",
+  "Total   DRAM bandwidth                           0.43 MB/batch",
+  "Total   DRAM bandwidth            per input      0.43 MB/inference (batch size 1)",
+  "",
+  "Neural network macs                            884736 MACs/batch"
+ ],
+ "vela_ops": [
+  "CUSTOM:ethos-u"
+ ],
+ "cpu_fallback": [],
+ "scheduled": [
+  {
+   "operator": "Conv2D",
+   "npu_cycles": "16588",
+   "mac_count": "884736"
+  },
+  {
+   "operator": "Add",
+   "npu_cycles": "0",
+   "mac_count": "0"
+  }
+ ],
+ "perf_main": [
+  {
+   "id": "9",
+   "mac_cycles": "8019",
+   "ao_cycles": "7680",
+   "cmd_cycles": "932",
+   "ofm_block_h": "6",
+   "ofm_block_w": "12",
+   "ofm_block_c": "96",
+   "traversal": "PartKernel"
+  }
+ ],
+ "kernels": [
+  {
+   "kind": "CONV",
+   "ifm_storage": 0,
+   "ifm2_storage": null,
+   "ofm_storage": 2,
+   "ifm_precision": 1,
+   "ofm_precision": 32833,
+   "activation": 0
+  },
+  {
+   "kind": "ELEMENTWISE",
+   "ifm_storage": 2,
+   "ifm2_storage": 0,
+   "ofm_storage": 0,
+   "ifm_precision": 32833,
+   "ofm_precision": 257,
+   "activation": 0
+  },
+  {
+   "kind": "CONV",
+   "ifm_storage": 0,
+   "ifm2_storage": 0,
+   "ofm_storage": 2,
+   "ifm_precision": 1,
+   "ofm_precision": 32833,
+   "activation": 0
+  },
+  {
+   "kind": "ELEMENTWISE",
+   "ifm_storage": 2,
+   "ifm2_storage": 0,
+   "ofm_storage": 0,
+   "ifm_precision": 32833,
+   "ofm_precision": 257,
+   "activation": 0
+  }
+ ],
+ "kernel_kinds": [
+  "CONV",
+  "ELEMENTWISE",
+  "CONV",
+  "ELEMENTWISE"
+ ],
+ "cms_len": 860,
+ "pack_rc": 0,
+ "pack_log_tail": [
+  "  \"ext\": 139071",
+  " },",
+  " \"power_ctrl\": 0,",
+  " \"fast_base\": 823132160,",
+  " \"ta_profile\": 1",
+  "}"
+ ]
+}

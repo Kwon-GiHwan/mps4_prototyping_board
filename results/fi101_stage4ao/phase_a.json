@@ -1,0 +1,604 @@
+{
+ "table": [
+  {
+   "config": "s4_conv_base",
+   "kernel": 1,
+   "cin": 16,
+   "ofm_dtype": "int8",
+   "activation": "RELU6",
+   "ofm_block": "6x12x96",
+   "ofm_ublock": "2x2x32",
+   "traversal": "PartKernel",
+   "vela_ao_cycles": 4224.0,
+   "ao_active": 3540.5,
+   "ao_range": 10,
+   "mac_active": 2304.0,
+   "mac_dpu_active": 1152.0,
+   "npu_active": 21629.0,
+   "ao_over_npu_active": 0.16369226501456377,
+   "ext_wr_beats": 3456.0,
+   "ofm_dma_bytes_at_16B_per_beat": 55296.0,
+   "n_ofm": 55296,
+   "ao_ideal_cycles": 3456.0,
+   "ao_observed_throughput": 15.618133032057619,
+   "ao_cycle_residual": 84.5,
+   "ao_relative_throughput": 0.9761333145036012
+  },
+  {
+   "config": "s4k_conv3x3_cin16",
+   "kernel": 3,
+   "cin": 16,
+   "ofm_dtype": "int8",
+   "activation": "RELU6",
+   "ofm_block": "24x10x32",
+   "ofm_ublock": "2x2x32",
+   "traversal": "PartKernel",
+   "vela_ao_cycles": 4896.0,
+   "ao_active": 3562.5,
+   "ao_range": 18,
+   "mac_active": 10368.0,
+   "mac_dpu_active": 10368.0,
+   "npu_active": 22777.0,
+   "ao_over_npu_active": 0.15640777977784606,
+   "ext_wr_beats": 3456.0,
+   "ofm_dma_bytes_at_16B_per_beat": 55296.0,
+   "n_ofm": 55296,
+   "ao_ideal_cycles": 3456.0,
+   "ao_observed_throughput": 15.521684210526315,
+   "ao_cycle_residual": 106.5,
+   "ao_relative_throughput": 0.9701052631578947
+  },
+  {
+   "config": "s4c2_conv_cin32",
+   "kernel": 1,
+   "cin": 32,
+   "ofm_dtype": "int8",
+   "activation": "RELU6",
+   "ofm_block": "6x12x96",
+   "ofm_ublock": "2x2x32",
+   "traversal": "PartKernel",
+   "vela_ao_cycles": 4992.0,
+   "ao_active": 3533.0,
+   "ao_range": 10,
+   "mac_active": 4608.0,
+   "mac_dpu_active": 2304.0,
+   "npu_active": 25470.0,
+   "ao_over_npu_active": 0.1387122104436592,
+   "ext_wr_beats": 3456.0,
+   "ofm_dma_bytes_at_16B_per_beat": 55296.0,
+   "n_ofm": 55296,
+   "ao_ideal_cycles": 3456.0,
+   "ao_observed_throughput": 15.651287857345032,
+   "ao_cycle_residual": 77.0,
+   "ao_relative_throughput": 0.9782054910840645
+  },
+  {
+   "config": "s4k_conv3x3_cin32",
+   "kernel": 3,
+   "cin": 32,
+   "ofm_dtype": "int8",
+   "activation": "RELU6",
+   "ofm_block": "24x10x32",
+   "ofm_ublock": "2x2x32",
+   "traversal": "PartKernel",
+   "vela_ao_cycles": 6336.0,
+   "ao_active": 3529.5,
+   "ao_range": 11,
+   "mac_active": 20736.0,
+   "mac_dpu_active": 20736.0,
+   "npu_active": 30494.5,
+   "ao_over_npu_active": 0.11574218301660956,
+   "ext_wr_beats": 3456.0,
+   "ofm_dma_bytes_at_16B_per_beat": 55296.0,
+   "n_ofm": 55296,
+   "ao_ideal_cycles": 3456.0,
+   "ao_observed_throughput": 15.666808329791754,
+   "ao_cycle_residual": 73.5,
+   "ao_relative_throughput": 0.9791755206119847
+  },
+  {
+   "config": "s4c2_conv_cin40",
+   "kernel": 1,
+   "cin": 40,
+   "ofm_dtype": "int8",
+   "activation": "RELU6",
+   "ofm_block": "6x12x96",
+   "ofm_ublock": "2x2x32",
+   "traversal": "DepthFirst",
+   "vela_ao_cycles": 3840.0,
+   "ao_active": 3530.0,
+   "ao_range": 13,
+   "mac_active": 3456.0,
+   "mac_dpu_active": 3456.0,
+   "npu_active": 21927.5,
+   "ao_over_npu_active": 0.1609850644168282,
+   "ext_wr_beats": 3456.0,
+   "ofm_dma_bytes_at_16B_per_beat": 55296.0,
+   "n_ofm": 55296,
+   "ao_ideal_cycles": 3456.0,
+   "ao_observed_throughput": 15.66458923512748,
+   "ao_cycle_residual": 74.0,
+   "ao_relative_throughput": 0.9790368271954675
+  },
+  {
+   "config": "s4k_conv3x3_cin40",
+   "kernel": 3,
+   "cin": 40,
+   "ofm_dtype": "int8",
+   "activation": "RELU6",
+   "ofm_block": "24x10x32",
+   "ofm_ublock": "2x2x32",
+   "traversal": "PartKernel",
+   "vela_ao_cycles": 7776.0,
+   "ao_active": 3484.5,
+   "ao_range": 13,
+   "mac_active": 25920.0,
+   "mac_dpu_active": 25920.0,
+   "npu_active": 37635.0,
+   "ao_over_npu_active": 0.09258668792347549,
+   "ext_wr_beats": 3456.0,
+   "ofm_dma_bytes_at_16B_per_beat": 55296.0,
+   "n_ofm": 55296,
+   "ao_ideal_cycles": 3456.0,
+   "ao_observed_throughput": 15.869134739560913,
+   "ao_cycle_residual": 28.5,
+   "ao_relative_throughput": 0.991820921222557
+  },
+  {
+   "config": "s4c2_conv_cin48",
+   "kernel": 1,
+   "cin": 48,
+   "ofm_dtype": "int8",
+   "activation": "RELU6",
+   "ofm_block": "6x12x96",
+   "ofm_ublock": "2x2x32",
+   "traversal": "DepthFirst",
+   "vela_ao_cycles": 3840.0,
+   "ao_active": 3533.0,
+   "ao_range": 7,
+   "mac_active": 3456.0,
+   "mac_dpu_active": 3456.0,
+   "npu_active": 22251.0,
+   "ao_over_npu_active": 0.15877938070199094,
+   "ext_wr_beats": 3456.0,
+   "ofm_dma_bytes_at_16B_per_beat": 55296.0,
+   "n_ofm": 55296,
+   "ao_ideal_cycles": 3456.0,
+   "ao_observed_throughput": 15.651287857345032,
+   "ao_cycle_residual": 77.0,
+   "ao_relative_throughput": 0.9782054910840645
+  },
+  {
+   "config": "s4k_conv3x3_cin48",
+   "kernel": 3,
+   "cin": 48,
+   "ofm_dtype": "int8",
+   "activation": "RELU6",
+   "ofm_block": "24x10x32",
+   "ofm_ublock": "2x2x32",
+   "traversal": "PartKernel",
+   "vela_ao_cycles": 7776.0,
+   "ao_active": 3507.5,
+   "ao_range": 50,
+   "mac_active": 31104.0,
+   "mac_dpu_active": 31104.0,
+   "npu_active": 40156.0,
+   "ao_over_npu_active": 0.08734684729554737,
+   "ext_wr_beats": 3456.0,
+   "ofm_dma_bytes_at_16B_per_beat": 55296.0,
+   "n_ofm": 55296,
+   "ao_ideal_cycles": 3456.0,
+   "ao_observed_throughput": 15.765074839629365,
+   "ao_cycle_residual": 51.5,
+   "ao_relative_throughput": 0.9853171774768353
+  },
+  {
+   "config": "s4c2_conv_cin64",
+   "kernel": 1,
+   "cin": 64,
+   "ofm_dtype": "int8",
+   "activation": "RELU6",
+   "ofm_block": "6x12x96",
+   "ofm_ublock": "2x2x32",
+   "traversal": "DepthFirst",
+   "vela_ao_cycles": 3888.0,
+   "ao_active": 3538.0,
+   "ao_range": 25,
+   "mac_active": 4608.0,
+   "mac_dpu_active": 4608.0,
+   "npu_active": 24257.0,
+   "ao_over_npu_active": 0.14585480479861485,
+   "ext_wr_beats": 3456.0,
+   "ofm_dma_bytes_at_16B_per_beat": 55296.0,
+   "n_ofm": 55296,
+   "ao_ideal_cycles": 3456.0,
+   "ao_observed_throughput": 15.629169022046353,
+   "ao_cycle_residual": 82.0,
+   "ao_relative_throughput": 0.9768230638778971
+  },
+  {
+   "config": "s4k_conv3x3_cin64",
+   "kernel": 3,
+   "cin": 64,
+   "ofm_dtype": "int8",
+   "activation": "RELU6",
+   "ofm_block": "24x10x32",
+   "ofm_ublock": "2x2x32",
+   "traversal": "PartKernel",
+   "vela_ao_cycles": 9216.0,
+   "ao_active": 3524.5,
+   "ao_range": 35,
+   "mac_active": 41472.0,
+   "mac_dpu_active": 41472.0,
+   "npu_active": 55015.0,
+   "ao_over_npu_active": 0.0640643460874307,
+   "ext_wr_beats": 3456.0,
+   "ofm_dma_bytes_at_16B_per_beat": 55296.0,
+   "n_ofm": 55296,
+   "ao_ideal_cycles": 3456.0,
+   "ao_observed_throughput": 15.689033905518514,
+   "ao_cycle_residual": 68.5,
+   "ao_relative_throughput": 0.9805646190949071
+  }
+ ],
+ "descriptive": {
+  "ao_min": 3484.5,
+  "ao_max": 3562.5,
+  "ao_spread": 78.0,
+  "ao_spread_rel": 0.02238484718037021,
+  "mac_active_ratio_max_min": 18.0,
+  "max_ao_run_range": 50,
+  "spearman_ao_mac_active": -0.6789022571231583,
+  "note": "all ten configs share one OFM shape (24x24x96): proportionality to N_OFM is not tested by these data"
+ },
+ "calibration": {
+  "ao_active": {
+   "stage4": 3540.0,
+   "stage4c1": 3534.0,
+   "stage4c2": 3533.5,
+   "placement_a": 3535.5,
+   "stage4k": 3540.5
+  },
+  "c0": 79.5
+ },
+ "other_ofm_post_hoc": [
+  {
+   "config": "s4_conv_cin15",
+   "folder": "evidence/stage4/raw/conds/s4_conv_cin15/wfe",
+   "ofm": [
+    24,
+    24,
+    96
+   ],
+   "ao_active": 3541.0,
+   "ao_range": 11,
+   "exact": {
+    "n_ofm": 55296,
+    "ao_ideal_cycles": 3456.0,
+    "ao_observed_throughput": 15.615927704038407,
+    "ao_cycle_residual": 85.0,
+    "ao_relative_throughput": 0.9759954815024005
+   },
+   "c16": {
+    "n_ofm": 55296,
+    "ao_ideal_cycles": 3456.0,
+    "ao_observed_throughput": 15.615927704038407,
+    "ao_cycle_residual": 85.0,
+    "ao_relative_throughput": 0.9759954815024005
+   },
+   "label": "POST_HOC_DESCRIPTIVE"
+  },
+  {
+   "config": "s4_conv_cout95",
+   "folder": "evidence/stage4/raw/conds/s4_conv_cout95/wfe",
+   "ofm": [
+    24,
+    24,
+    95
+   ],
+   "ao_active": 3536.5,
+   "ao_range": 4,
+   "exact": {
+    "n_ofm": 54720,
+    "ao_ideal_cycles": 3420.0,
+    "ao_observed_throughput": 15.472925208539516,
+    "ao_cycle_residual": 116.5,
+    "ao_relative_throughput": 0.9670578255337198
+   },
+   "c16": {
+    "n_ofm": 55296,
+    "ao_ideal_cycles": 3456.0,
+    "ao_observed_throughput": 15.635798105471512,
+    "ao_cycle_residual": 80.5,
+    "ao_relative_throughput": 0.9772373815919695
+   },
+   "label": "POST_HOC_DESCRIPTIVE"
+  },
+  {
+   "config": "s4c_conv_cout94",
+   "folder": "evidence/stage4c1/raw/conds/s4c_conv_cout94/wfe",
+   "ofm": [
+    24,
+    24,
+    94
+   ],
+   "ao_active": 3537.5,
+   "ao_range": 15,
+   "exact": {
+    "n_ofm": 54144,
+    "ao_ideal_cycles": 3384.0,
+    "ao_observed_throughput": 15.305724381625442,
+    "ao_cycle_residual": 153.5,
+    "ao_relative_throughput": 0.9566077738515901
+   },
+   "c16": {
+    "n_ofm": 55296,
+    "ao_ideal_cycles": 3456.0,
+    "ao_observed_throughput": 15.631378091872792,
+    "ao_cycle_residual": 81.5,
+    "ao_relative_throughput": 0.9769611307420495
+   },
+   "label": "POST_HOC_DESCRIPTIVE"
+  },
+  {
+   "config": "s4c_conv_cout97",
+   "folder": "evidence/stage4c1/raw/conds/s4c_conv_cout97/wfe",
+   "ofm": [
+    24,
+    24,
+    97
+   ],
+   "ao_active": 4127.5,
+   "ao_range": 10,
+   "exact": {
+    "n_ofm": 55872,
+    "ao_ideal_cycles": 3492.0,
+    "ao_observed_throughput": 13.536523319200484,
+    "ao_cycle_residual": 635.5,
+    "ao_relative_throughput": 0.8460327074500302
+   },
+   "c16": {
+    "n_ofm": 64512,
+    "ao_ideal_cycles": 4032.0,
+    "ao_observed_throughput": 15.629800121138704,
+    "ao_cycle_residual": 95.5,
+    "ao_relative_throughput": 0.976862507571169
+   },
+   "label": "POST_HOC_DESCRIPTIVE"
+  },
+  {
+   "config": "s4c2_conv_cin128",
+   "folder": "evidence/stage4c2/raw/conds/s4c2_conv_cin128/wfe",
+   "ofm": [
+    24,
+    24,
+    96
+   ],
+   "ao_active": 3526.0,
+   "ao_range": 6,
+   "exact": {
+    "n_ofm": 55296,
+    "ao_ideal_cycles": 3456.0,
+    "ao_observed_throughput": 15.682359614293818,
+    "ao_cycle_residual": 70.0,
+    "ao_relative_throughput": 0.9801474758933636
+   },
+   "c16": {
+    "n_ofm": 55296,
+    "ao_ideal_cycles": 3456.0,
+    "ao_observed_throughput": 15.682359614293818,
+    "ao_cycle_residual": 70.0,
+    "ao_relative_throughput": 0.9801474758933636
+   },
+   "label": "POST_HOC_DESCRIPTIVE"
+  },
+  {
+   "config": "s4_dw_base",
+   "folder": "evidence/stage4/raw/conds/s4_dw_base/wfe",
+   "ofm": [
+    56,
+    56,
+    144
+   ],
+   "ao_active": 28491.0,
+   "ao_range": 12,
+   "exact": {
+    "n_ofm": 451584,
+    "ao_ideal_cycles": 28224.0,
+    "ao_observed_throughput": 15.850057913025166,
+    "ao_cycle_residual": 267.0,
+    "ao_relative_throughput": 0.9906286195640729
+   },
+   "c16": {
+    "n_ofm": 451584,
+    "ao_ideal_cycles": 28224.0,
+    "ao_observed_throughput": 15.850057913025166,
+    "ao_cycle_residual": 267.0,
+    "ao_relative_throughput": 0.9906286195640729
+   },
+   "label": "POST_HOC_DESCRIPTIVE"
+  },
+  {
+   "config": "s4_dw_base",
+   "folder": "evidence/stage4c1/raw/conds/s4_dw_base/wfe",
+   "ofm": [
+    56,
+    56,
+    144
+   ],
+   "ao_active": 28474.5,
+   "ao_range": 24,
+   "exact": {
+    "n_ofm": 451584,
+    "ao_ideal_cycles": 28224.0,
+    "ao_observed_throughput": 15.859242480113785,
+    "ao_cycle_residual": 250.5,
+    "ao_relative_throughput": 0.9912026550071116
+   },
+   "c16": {
+    "n_ofm": 451584,
+    "ao_ideal_cycles": 28224.0,
+    "ao_observed_throughput": 15.859242480113785,
+    "ao_cycle_residual": 250.5,
+    "ao_relative_throughput": 0.9912026550071116
+   },
+   "label": "POST_HOC_DESCRIPTIVE"
+  },
+  {
+   "config": "s4_dw_c143",
+   "folder": "evidence/stage4/raw/conds/s4_dw_c143/wfe",
+   "ofm": [
+    56,
+    56,
+    143
+   ],
+   "ao_active": 28484.5,
+   "ao_range": 13,
+   "exact": {
+    "n_ofm": 448448,
+    "ao_ideal_cycles": 28028.0,
+    "ao_observed_throughput": 15.743579841668275,
+    "ao_cycle_residual": 456.5,
+    "ao_relative_throughput": 0.9839737401042672
+   },
+   "c16": {
+    "n_ofm": 451584,
+    "ao_ideal_cycles": 28224.0,
+    "ao_observed_throughput": 15.853674805596025,
+    "ao_cycle_residual": 260.5,
+    "ao_relative_throughput": 0.9908546753497516
+   },
+   "label": "POST_HOC_DESCRIPTIVE"
+  },
+  {
+   "config": "s4c_dw_c142",
+   "folder": "evidence/stage4c1/raw/conds/s4c_dw_c142/wfe",
+   "ofm": [
+    56,
+    56,
+    142
+   ],
+   "ao_active": 28477.0,
+   "ao_range": 12,
+   "exact": {
+    "n_ofm": 445312,
+    "ao_ideal_cycles": 27832.0,
+    "ao_observed_throughput": 15.637602275520596,
+    "ao_cycle_residual": 645.0,
+    "ao_relative_throughput": 0.9773501422200372
+   },
+   "c16": {
+    "n_ofm": 451584,
+    "ao_ideal_cycles": 28224.0,
+    "ao_observed_throughput": 15.857850194894125,
+    "ao_cycle_residual": 253.0,
+    "ao_relative_throughput": 0.9911156371808828
+   },
+   "label": "POST_HOC_DESCRIPTIVE"
+  },
+  {
+   "config": "s4c_dw_c145",
+   "folder": "evidence/stage4c1/raw/conds/s4c_dw_c145/wfe",
+   "ofm": [
+    56,
+    56,
+    145
+   ],
+   "ao_active": 31641.5,
+   "ao_range": 24,
+   "exact": {
+    "n_ofm": 454720,
+    "ao_ideal_cycles": 28420.0,
+    "ao_observed_throughput": 14.371000110614226,
+    "ao_cycle_residual": 3221.5,
+    "ao_relative_throughput": 0.8981875069133891
+   },
+   "c16": {
+    "n_ofm": 501760,
+    "ao_ideal_cycles": 31360.0,
+    "ao_observed_throughput": 15.857655294470868,
+    "ao_cycle_residual": 281.5,
+    "ao_relative_throughput": 0.9911034559044293
+   },
+   "label": "POST_HOC_DESCRIPTIVE"
+  },
+  {
+   "config": "s4_fc_base",
+   "folder": "evidence/stage4/raw/conds/s4_fc_base/wfe",
+   "ofm": [
+    1,
+    1,
+    288
+   ],
+   "ao_active": 19.0,
+   "ao_range": 1,
+   "exact": {
+    "n_ofm": 288,
+    "ao_ideal_cycles": 18.0,
+    "ao_observed_throughput": 15.157894736842104,
+    "ao_cycle_residual": 1.0,
+    "ao_relative_throughput": 0.9473684210526315
+   },
+   "c16": {
+    "n_ofm": 288,
+    "ao_ideal_cycles": 18.0,
+    "ao_observed_throughput": 15.157894736842104,
+    "ao_cycle_residual": 1.0,
+    "ao_relative_throughput": 0.9473684210526315
+   },
+   "label": "POST_HOC_DESCRIPTIVE"
+  },
+  {
+   "config": "s4_fc_in95",
+   "folder": "evidence/stage4/raw/conds/s4_fc_in95/wfe",
+   "ofm": [
+    1,
+    1,
+    288
+   ],
+   "ao_active": 20.0,
+   "ao_range": 1,
+   "exact": {
+    "n_ofm": 288,
+    "ao_ideal_cycles": 18.0,
+    "ao_observed_throughput": 14.4,
+    "ao_cycle_residual": 2.0,
+    "ao_relative_throughput": 0.9
+   },
+   "c16": {
+    "n_ofm": 288,
+    "ao_ideal_cycles": 18.0,
+    "ao_observed_throughput": 14.4,
+    "ao_cycle_residual": 2.0,
+    "ao_relative_throughput": 0.9
+   },
+   "label": "POST_HOC_DESCRIPTIVE"
+  },
+  {
+   "config": "s4_fc_out287",
+   "folder": "evidence/stage4/raw/conds/s4_fc_out287/wfe",
+   "ofm": [
+    1,
+    1,
+    287
+   ],
+   "ao_active": 19.0,
+   "ao_range": 1,
+   "exact": {
+    "n_ofm": 287,
+    "ao_ideal_cycles": 17.9375,
+    "ao_observed_throughput": 15.105263157894736,
+    "ao_cycle_residual": 1.0625,
+    "ao_relative_throughput": 0.944078947368421
+   },
+   "c16": {
+    "n_ofm": 288,
+    "ao_ideal_cycles": 18.0,
+    "ao_observed_throughput": 15.157894736842104,
+    "ao_cycle_residual": 1.0,
+    "ao_relative_throughput": 0.9473684210526315
+   },
+   "label": "POST_HOC_DESCRIPTIVE"
+  }
+ ]
+}

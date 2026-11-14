@@ -1,0 +1,82 @@
+{
+ "config": "s4ao_lut_logistic",
+ "description": "Conv 1x1 -> LOGISTIC",
+ "model_sha256": "d611bff90af5d796f62a4d275efd00bee83e59c620f35bd9f7a2f15df6f0f8fd",
+ "vela_rc": 0,
+ "vela_log_tail": [
+  "Output  SRAM bandwidth                           0.00 MB/batch",
+  "Total   SRAM bandwidth                           0.03 MB/batch",
+  "Total   SRAM bandwidth            per input      0.03 MB/inference (batch size 1)",
+  "",
+  "Average DRAM bandwidth                           4.72 GB/s",
+  "Input   DRAM bandwidth                           0.01 MB/batch",
+  "Weight  DRAM bandwidth                           0.00 MB/batch",
+  "Output  DRAM bandwidth                           0.11 MB/batch",
+  "Total   DRAM bandwidth                           0.12 MB/batch",
+  "Total   DRAM bandwidth            per input      0.12 MB/inference (batch size 1)",
+  "",
+  "Neural network macs                            884736 MACs/batch"
+ ],
+ "vela_ops": [
+  "CUSTOM:ethos-u"
+ ],
+ "cpu_fallback": [],
+ "scheduled": [
+  {
+   "operator": "Conv2D",
+   "npu_cycles": "16660",
+   "mac_count": "884736"
+  },
+  {
+   "operator": "LUT",
+   "npu_cycles": "0",
+   "mac_count": "0"
+  }
+ ],
+ "perf_main": [
+  {
+   "id": "10",
+   "mac_cycles": "8019",
+   "ao_cycles": "4224",
+   "cmd_cycles": "1004",
+   "ofm_block_h": "6",
+   "ofm_block_w": "12",
+   "ofm_block_c": "96",
+   "traversal": "PartKernel"
+  }
+ ],
+ "kernels": [
+  {
+   "kind": "CONV",
+   "ifm_storage": 0,
+   "ifm2_storage": null,
+   "ofm_storage": 0,
+   "ifm_precision": 1,
+   "ofm_precision": 1,
+   "activation": 4
+  },
+  {
+   "kind": "CONV",
+   "ifm_storage": 0,
+   "ifm2_storage": null,
+   "ofm_storage": 0,
+   "ifm_precision": 1,
+   "ofm_precision": 1,
+   "activation": 4
+  }
+ ],
+ "kernel_kinds": [
+  "CONV",
+  "CONV"
+ ],
+ "cms_len": 548,
+ "pack_rc": 0,
+ "pack_log_tail": [
+  "  \"ext\": 139071",
+  " },",
+  " \"power_ctrl\": 0,",
+  " \"fast_base\": 823132160,",
+  " \"ta_profile\": 1",
+  "}"
+ ]
+}

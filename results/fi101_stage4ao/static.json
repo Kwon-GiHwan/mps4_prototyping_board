@@ -1,0 +1,1312 @@
+{
+ "configs": {
+  "s4_conv_base": {
+   "config": "s4_conv_base",
+   "gate_b": true,
+   "ofm_shape": [
+    24,
+    24,
+    96
+   ],
+   "n_ofm": 55296,
+   "signature": {
+    "traversal": "PartKernel",
+    "ofm_block": "6x12x96",
+    "ifm_block": "6x12x16",
+    "ofm_ublock": "2x2x32",
+    "n_kernels": 2,
+    "ofm_slices": [
+     16,
+     80
+    ],
+    "ofm_precision": [
+     1
+    ]
+   },
+   "ofm_blocks": 16,
+   "weight_bytes": 2752,
+   "weight_lengths": [
+    176,
+    512
+   ],
+   "dma_lengths": [
+    [
+     1024
+    ],
+    [
+     3008
+    ]
+   ],
+   "vela_ao_cycles": 4224.0,
+   "vela_npu_cycles": 16660.0,
+   "vela_mac_cycles": 8019.0,
+   "sram_ac": "1075",
+   "dram_ac": "24999",
+   "staging_usage": "4032",
+   "ifm_memory": "Dram",
+   "ofm_memory": "Dram",
+   "activation": "RELU6",
+   "drwl_sha256": "2681c566729ce568f4041df6a69d1b5c5c558d2172bb76b6d75ad64ca2b4f267",
+   "model_sha256": "3f0a3645f13313ae65e5bfe94f0d1f80272cab9453e9d8d178c01af33255ad25",
+   "cms_sha256": "596fe964f9805a31fd0b8baa81ebdcd52c22b358eddfb1389be12c28e9f38e06",
+   "cpu_ofm_sha256": "05deb078b59e85b063f2f91243993b6e1a5a3705703cf02374c6b05c072bc116",
+   "arena_size": 64512
+  },
+  "s4ao_conv1x1_h12": {
+   "config": "s4ao_conv1x1_h12",
+   "gate_b": true,
+   "ofm_shape": [
+    12,
+    24,
+    96
+   ],
+   "n_ofm": 27648,
+   "signature": {
+    "traversal": "PartKernel",
+    "ofm_block": "8x24x32",
+    "ifm_block": "8x24x16",
+    "ofm_ublock": "2x2x32",
+    "n_kernels": 2,
+    "ofm_slices": [
+     16,
+     80
+    ],
+    "ofm_precision": [
+     1
+    ]
+   },
+   "ofm_blocks": 8,
+   "weight_bytes": 2752,
+   "weight_lengths": [
+    176,
+    512
+   ],
+   "dma_lengths": [
+    [
+     1024
+    ],
+    [
+     3008
+    ]
+   ],
+   "vela_ao_cycles": 2112.0,
+   "vela_npu_cycles": 5007.0,
+   "vela_mac_cycles": 2353.0,
+   "sram_ac": "268",
+   "dram_ac": "6249",
+   "staging_usage": "4032",
+   "ifm_memory": "Dram",
+   "ofm_memory": "Dram",
+   "activation": "RELU6",
+   "drwl_sha256": "2ec49bda41f6ca737cb18320bb4073e49060a4dc0baab83fc1f0143ca20e97e8",
+   "model_sha256": "77f3321242bc4de8ccab828f8ebfd0650d7cf34708bdcdc63a94c5fac6866707",
+   "cms_sha256": "e1f324dacf9083d6b54db6d41caa8be262e3e438ee939ed33f02485709740423",
+   "cpu_ofm_sha256": "f84bc8c79ec56165d9770b1144ea7664a5e58837eb6ccfbf748d16367d1351a7",
+   "arena_size": 32256
+  },
+  "s4ao_conv1x1_h24": {
+   "config": "s4ao_conv1x1_h24",
+   "gate_b": true,
+   "ofm_shape": [
+    24,
+    24,
+    96
+   ],
+   "n_ofm": 55296,
+   "signature": {
+    "traversal": "PartKernel",
+    "ofm_block": "6x12x96",
+    "ifm_block": "6x12x16",
+    "ofm_ublock": "2x2x32",
+    "n_kernels": 2,
+    "ofm_slices": [
+     16,
+     80
+    ],
+    "ofm_precision": [
+     1
+    ]
+   },
+   "ofm_blocks": 16,
+   "weight_bytes": 2752,
+   "weight_lengths": [
+    176,
+    512
+   ],
+   "dma_lengths": [
+    [
+     1024
+    ],
+    [
+     3008
+    ]
+   ],
+   "vela_ao_cycles": 4224.0,
+   "vela_npu_cycles": 16660.0,
+   "vela_mac_cycles": 8019.0,
+   "sram_ac": "1075",
+   "dram_ac": "24999",
+   "staging_usage": "4032",
+   "ifm_memory": "Dram",
+   "ofm_memory": "Dram",
+   "activation": "RELU6",
+   "drwl_sha256": "bee0fbcb34fe569174115948da8ff7caef62eeb63f5cf479e71082386f9c087f",
+   "model_sha256": "aecd477a57c77984eea46cc60baa194a37ea138992209df1313958a8962b5ec3",
+   "cms_sha256": "596fe964f9805a31fd0b8baa81ebdcd52c22b358eddfb1389be12c28e9f38e06",
+   "cpu_ofm_sha256": "05deb078b59e85b063f2f91243993b6e1a5a3705703cf02374c6b05c072bc116",
+   "arena_size": 64512
+  },
+  "s4ao_conv1x1_h36": {
+   "config": "s4ao_conv1x1_h36",
+   "gate_b": true,
+   "ofm_shape": [
+    36,
+    24,
+    96
+   ],
+   "n_ofm": 82944,
+   "signature": {
+    "traversal": "PartKernel",
+    "ofm_block": "6x12x96",
+    "ifm_block": "6x12x16",
+    "ofm_ublock": "2x2x32",
+    "n_kernels": 2,
+    "ofm_slices": [
+     16,
+     80
+    ],
+    "ofm_precision": [
+     1
+    ]
+   },
+   "ofm_blocks": 24,
+   "weight_bytes": 2752,
+   "weight_lengths": [
+    176,
+    512
+   ],
+   "dma_lengths": [
+    [
+     1024
+    ],
+    [
+     3008
+    ]
+   ],
+   "vela_ao_cycles": 5952.0,
+   "vela_npu_cycles": 24160.0,
+   "vela_mac_cycles": 11091.0,
+   "sram_ac": "1612",
+   "dram_ac": "37500",
+   "staging_usage": "4032",
+   "ifm_memory": "Dram",
+   "ofm_memory": "Dram",
+   "activation": "RELU6",
+   "drwl_sha256": "da5b904905a2dbe07b4dc6060f9e7e05a642640f0a154132cdfc791e726138fe",
+   "model_sha256": "34b66da5838872d441a3246cd5da30db5ac4d3625934b9154e1908cfd0158175",
+   "cms_sha256": "fffa983c7366b63bedd9fb4fa9d2e6855f04a55545da050a1b4bda5e637a9284",
+   "cpu_ofm_sha256": "17d1069c86858e97b54c4dfeedbdd1e7346890823ec4df83faef353130aeef81",
+   "arena_size": 96768
+  },
+  "s4ao_conv1x1_h48": {
+   "config": "s4ao_conv1x1_h48",
+   "gate_b": true,
+   "ofm_shape": [
+    48,
+    24,
+    96
+   ],
+   "n_ofm": 110592,
+   "signature": {
+    "traversal": "PartKernel",
+    "ofm_block": "10x8x96",
+    "ifm_block": "10x8x16",
+    "ofm_ublock": "2x2x32",
+    "n_kernels": 2,
+    "ofm_slices": [
+     16,
+     80
+    ],
+    "ofm_precision": [
+     1
+    ]
+   },
+   "ofm_blocks": 30,
+   "weight_bytes": 2752,
+   "weight_lengths": [
+    176,
+    512
+   ],
+   "dma_lengths": [
+    [
+     1024
+    ],
+    [
+     3008
+    ]
+   ],
+   "vela_ao_cycles": 7680.0,
+   "vela_npu_cycles": 28677.0,
+   "vela_mac_cycles": 12934.0,
+   "sram_ac": "2015",
+   "dram_ac": "46874",
+   "staging_usage": "4032",
+   "ifm_memory": "Dram",
+   "ofm_memory": "Dram",
+   "activation": "RELU6",
+   "drwl_sha256": "d7f00d631b17b4cc56f6a532a5d8112d789f556e24ecbf9ef03d8bf6e19172dd",
+   "model_sha256": "8c3cd2973d283a743def29aab936c3cfeba96e4ef137d43970c238986b19e81a",
+   "cms_sha256": "03fa7e59d84063c69385c9c21049f8b2aad761dc7ed5a905e491621dbeb5f26f",
+   "cpu_ofm_sha256": "b3f17b82a0f297a6c5646ef986e9b5e4a18db51270d510a63229ceb37d45ab65",
+   "arena_size": 129024
+  },
+  "s4ao_conv1x1_h42": {
+   "config": "s4ao_conv1x1_h42",
+   "gate_b": true,
+   "ofm_shape": [
+    42,
+    24,
+    96
+   ],
+   "n_ofm": 96768,
+   "signature": {
+    "traversal": "PartKernel",
+    "ofm_block": "6x12x96",
+    "ifm_block": "6x12x16",
+    "ofm_ublock": "2x2x32",
+    "n_kernels": 2,
+    "ofm_slices": [
+     16,
+     80
+    ],
+    "ofm_precision": [
+     1
+    ]
+   },
+   "ofm_blocks": 28,
+   "weight_bytes": 2752,
+   "weight_lengths": [
+    176,
+    512
+   ],
+   "dma_lengths": [
+    [
+     1024
+    ],
+    [
+     3008
+    ]
+   ],
+   "vela_ao_cycles": 6816.0,
+   "vela_npu_cycles": 27910.0,
+   "vela_mac_cycles": 12627.0,
+   "sram_ac": "1881",
+   "dram_ac": "43749",
+   "staging_usage": "4032",
+   "ifm_memory": "Dram",
+   "ofm_memory": "Dram",
+   "activation": "RELU6",
+   "drwl_sha256": "1d29d69b4a2e6837e6e7ab6f199301d47ab6d970bf48ad1795493c3c63df4fc9",
+   "model_sha256": "0bfd33ee1925f72b093ccdb9525c9c41d7ff5cd329718a548b5e2c58085e2170",
+   "cms_sha256": "e75f8080b01acef32299796132fa26827e2604b91b46c87ab1f889542bb86d61",
+   "cpu_ofm_sha256": "7ba22286bcb07e4aaa892b2f59a0ef5351760052a619679e7627b65242ad7216",
+   "arena_size": 112896
+  },
+  "s4ao_conv1x1_h54": {
+   "config": "s4ao_conv1x1_h54",
+   "gate_b": true,
+   "ofm_shape": [
+    54,
+    24,
+    96
+   ],
+   "n_ofm": 124416,
+   "signature": {
+    "traversal": "PartKernel",
+    "ofm_block": "6x12x96",
+    "ifm_block": "6x12x16",
+    "ofm_ublock": "2x2x32",
+    "n_kernels": 2,
+    "ofm_slices": [
+     16,
+     80
+    ],
+    "ofm_precision": [
+     1
+    ]
+   },
+   "ofm_blocks": 36,
+   "weight_bytes": 2752,
+   "weight_lengths": [
+    176,
+    512
+   ],
+   "dma_lengths": [
+    [
+     1024
+    ],
+    [
+     3008
+    ]
+   ],
+   "vela_ao_cycles": 8544.0,
+   "vela_npu_cycles": 35410.0,
+   "vela_mac_cycles": 15699.0,
+   "sram_ac": "2418",
+   "dram_ac": "56249",
+   "staging_usage": "4032",
+   "ifm_memory": "Dram",
+   "ofm_memory": "Dram",
+   "activation": "RELU6",
+   "drwl_sha256": "c0f9255f956d2ee7abae0f692d14278ff2ce82bc40ab5256d17645071887e330",
+   "model_sha256": "87fe0c52b5daf60ee119c3ac119d409973a37ecae7b588a1742394a4f9bbce93",
+   "cms_sha256": "cf2c9c55a574b5050ba770a1f76437ed59c4f5c050db50cebb138a12a20922f3",
+   "cpu_ofm_sha256": "abd5b9203b0f0ef3b6d35a0326bdc3952bbf629bc761d5647c8d70e6d5fc8897",
+   "arena_size": 145152
+  },
+  "s4ao_conv1x1_h72": {
+   "config": "s4ao_conv1x1_h72",
+   "gate_b": true,
+   "ofm_shape": [
+    72,
+    24,
+    96
+   ],
+   "n_ofm": 165888,
+   "signature": {
+    "traversal": "PartKernel",
+    "ofm_block": "6x12x96",
+    "ifm_block": "6x12x16",
+    "ofm_ublock": "2x2x32",
+    "n_kernels": 2,
+    "ofm_slices": [
+     16,
+     80
+    ],
+    "ofm_precision": [
+     1
+    ]
+   },
+   "ofm_blocks": 48,
+   "weight_bytes": 2752,
+   "weight_lengths": [
+    176,
+    512
+   ],
+   "dma_lengths": [
+    [
+     1024
+    ],
+    [
+     3008
+    ]
+   ],
+   "vela_ao_cycles": 11136.0,
+   "vela_npu_cycles": 46660.0,
+   "vela_mac_cycles": 20307.0,
+   "sram_ac": "3225",
+   "dram_ac": "75000",
+   "staging_usage": "4032",
+   "ifm_memory": "Dram",
+   "ofm_memory": "Dram",
+   "activation": "RELU6",
+   "drwl_sha256": "aa591b53843b9b81845a6e8901dfbca3bb71db67a3604635f6ce4354023c34e8",
+   "model_sha256": "f821b6207fba1f35e6637704d7e74e6f8a13de26229d4b2f4dc741b001e6546c",
+   "cms_sha256": "432bfbb75e957b66c3d3eda3e637802b32885b09fc83c8d7fe62967f8cb28cf4",
+   "cpu_ofm_sha256": "94351abee2bea278545633497c09fc6b7b9f350519ee3fb8ba20452a5e6cf361",
+   "arena_size": 193536
+  },
+  "s4ao_act_none": {
+   "config": "s4ao_act_none",
+   "gate_b": true,
+   "ofm_shape": [
+    24,
+    24,
+    96
+   ],
+   "n_ofm": 55296,
+   "signature": {
+    "traversal": "PartKernel",
+    "ofm_block": "6x12x96",
+    "ifm_block": "6x12x16",
+    "ofm_ublock": "2x2x32",
+    "n_kernels": 2,
+    "ofm_slices": [
+     16,
+     80
+    ],
+    "ofm_precision": [
+     1
+    ]
+   },
+   "ofm_blocks": 16,
+   "weight_bytes": 2752,
+   "weight_lengths": [
+    176,
+    512
+   ],
+   "dma_lengths": [
+    [
+     1024
+    ],
+    [
+     3008
+    ]
+   ],
+   "vela_ao_cycles": 4224.0,
+   "vela_npu_cycles": 16660.0,
+   "vela_mac_cycles": 8019.0,
+   "sram_ac": "1075",
+   "dram_ac": "24999",
+   "staging_usage": "4032",
+   "ifm_memory": "Dram",
+   "ofm_memory": "Dram",
+   "activation": "NONE",
+   "drwl_sha256": "863dabc1e33694727516c42daddf56493bdfa266bf8075873c673c9dd3cfa5e2",
+   "model_sha256": "14af4d340d438edaa68411661e6a0870990338df4835a68517b295cf1c01f97d",
+   "cms_sha256": "a602e98bca14f7c96b17e6373c05289d60e4d3e68ec2981eec1df246c181918c",
+   "cpu_ofm_sha256": "9b074a4dca9fd2ac8967ff71e4d942ba4bd5bbee6236cc210d2c3bbf9300d9a9",
+   "arena_size": 64512
+  },
+  "s4ao_act_relu": {
+   "config": "s4ao_act_relu",
+   "gate_b": true,
+   "ofm_shape": [
+    24,
+    24,
+    96
+   ],
+   "n_ofm": 55296,
+   "signature": {
+    "traversal": "PartKernel",
+    "ofm_block": "6x12x96",
+    "ifm_block": "6x12x16",
+    "ofm_ublock": "2x2x32",
+    "n_kernels": 2,
+    "ofm_slices": [
+     16,
+     80
+    ],
+    "ofm_precision": [
+     1
+    ]
+   },
+   "ofm_blocks": 16,
+   "weight_bytes": 2752,
+   "weight_lengths": [
+    176,
+    512
+   ],
+   "dma_lengths": [
+    [
+     1024
+    ],
+    [
+     3008
+    ]
+   ],
+   "vela_ao_cycles": 4224.0,
+   "vela_npu_cycles": 16660.0,
+   "vela_mac_cycles": 8019.0,
+   "sram_ac": "1075",
+   "dram_ac": "24999",
+   "staging_usage": "4032",
+   "ifm_memory": "Dram",
+   "ofm_memory": "Dram",
+   "activation": "RELU",
+   "drwl_sha256": "4af4c41a3d1c6c9303deacf58f6a749ecd19b8915eff2c8f2f07aea6da252d99",
+   "model_sha256": "5aa1a3f4b59b8bfeb39dad2babc07d649e20401b2f002399419ffdbe7c3dd1bd",
+   "cms_sha256": "3f1a86416864358c693bf7d6a137872f21fd078869e07534bade4eb58d742fda",
+   "cpu_ofm_sha256": "cace7370088c91dca7a4e32db124b384474a7b3ad9663abfe7ea2cf3df289576",
+   "arena_size": 64512
+  }
+ },
+ "base_equals_ref": {
+  "cms": true,
+  "cpu_ofm": true
+ },
+ "phase_b_original": {
+  "verdict": "NEEDS_REVISION",
+  "comparable": [
+   "s4ao_conv1x1_h24",
+   "s4ao_conv1x1_h36"
+  ],
+  "differing": {
+   "s4ao_conv1x1_h12": {
+    "ofm_block": "8x24x32",
+    "ifm_block": "8x24x16"
+   },
+   "s4ao_conv1x1_h48": {
+    "ofm_block": "10x8x96",
+    "ifm_block": "10x8x16"
+   }
+  }
+ },
+ "phase_b_revision": {
+  "verdict": "COMPARABLE",
+  "comparable": [
+   "s4ao_conv1x1_h24",
+   "s4ao_conv1x1_h36",
+   "s4ao_conv1x1_h42",
+   "s4ao_conv1x1_h54",
+   "s4ao_conv1x1_h72"
+  ],
+  "differing": {}
+ },
+ "phase_c": {
+  "s4ao_act_none": {
+   "selected": true,
+   "diff": {
+    "aligned": true,
+    "ops": [
+     294,
+     295
+    ],
+    "changes": [
+     {
+      "index": 59,
+      "op": "ACTIVATION_MIN",
+      "ref": [
+       0,
+       null
+      ],
+      "cfg": [
+       65408,
+       null
+      ]
+     },
+     {
+      "index": 60,
+      "op": "ACTIVATION_MAX",
+      "ref": [
+       120,
+       null
+      ],
+      "cfg": [
+       127,
+       null
+      ]
+     }
+    ]
+   }
+  },
+  "s4ao_act_relu": {
+   "selected": true,
+   "diff": {
+    "aligned": true,
+    "ops": [
+     295
+    ],
+    "changes": [
+     {
+      "index": 60,
+      "op": "ACTIVATION_MAX",
+      "ref": [
+       120,
+       null
+      ],
+      "cfg": [
+       127,
+       null
+      ]
+     }
+    ]
+   }
+  }
+ },
+ "phase_d": {
+  "s4ao_lut_tanh": {
+   "config": "s4ao_lut_tanh",
+   "description": "Conv 1x1 (no fused act) -> TANH",
+   "model_sha256": "bb08532df896818a2c063e7fbf38e3a60043267591493fffea21e7e5e996c721",
+   "vela_rc": 0,
+   "vela_log_tail": [
+    "Output  SRAM bandwidth                           0.00 MB/batch",
+    "Total   SRAM bandwidth                           0.03 MB/batch",
+    "Total   SRAM bandwidth            per input      0.03 MB/inference (batch size 1)",
+    "",
+    "Average DRAM bandwidth                           4.72 GB/s",
+    "Input   DRAM bandwidth                           0.01 MB/batch",
+    "Weight  DRAM bandwidth                           0.00 MB/batch",
+    "Output  DRAM bandwidth                           0.11 MB/batch",
+    "Total   DRAM bandwidth                           0.12 MB/batch",
+    "Total   DRAM bandwidth            per input      0.12 MB/inference (batch size 1)",
+    "",
+    "Neural network macs                            884736 MACs/batch"
+   ],
+   "vela_ops": [
+    "CUSTOM:ethos-u"
+   ],
+   "cpu_fallback": [],
+   "scheduled": [
+    {
+     "operator": "Conv2D",
+     "npu_cycles": "16660",
+     "mac_count": "884736"
+    },
+    {
+     "operator": "LUT",
+     "npu_cycles": "0",
+     "mac_count": "0"
+    }
+   ],
+   "perf_main": [
+    {
+     "id": "10",
+     "mac_cycles": "8019",
+     "ao_cycles": "4224",
+     "cmd_cycles": "1004",
+     "ofm_block_h": "6",
+     "ofm_block_w": "12",
+     "ofm_block_c": "96",
+     "traversal": "PartKernel"
+    }
+   ],
+   "kernels": [
+    {
+     "kind": "CONV",
+     "ifm_storage": 0,
+     "ifm2_storage": null,
+     "ofm_storage": 0,
+     "ifm_precision": 1,
+     "ofm_precision": 1,
+     "activation": 4
+    },
+    {
+     "kind": "CONV",
+     "ifm_storage": 0,
+     "ifm2_storage": null,
+     "ofm_storage": 0,
+     "ifm_precision": 1,
+     "ofm_precision": 1,
+     "activation": 4
+    }
+   ],
+   "kernel_kinds": [
+    "CONV",
+    "CONV"
+   ],
+   "cms_len": 548,
+   "pack_rc": 0,
+   "pack_log_tail": [
+    "  \"ext\": 139071",
+    " },",
+    " \"power_ctrl\": 0,",
+    " \"fast_base\": 823132160,",
+    " \"ta_profile\": 1",
+    "}"
+   ]
+  },
+  "s4ao_lut_logistic": {
+   "config": "s4ao_lut_logistic",
+   "description": "Conv 1x1 -> LOGISTIC",
+   "model_sha256": "d611bff90af5d796f62a4d275efd00bee83e59c620f35bd9f7a2f15df6f0f8fd",
+   "vela_rc": 0,
+   "vela_log_tail": [
+    "Output  SRAM bandwidth                           0.00 MB/batch",
+    "Total   SRAM bandwidth                           0.03 MB/batch",
+    "Total   SRAM bandwidth            per input      0.03 MB/inference (batch size 1)",
+    "",
+    "Average DRAM bandwidth                           4.72 GB/s",
+    "Input   DRAM bandwidth                           0.01 MB/batch",
+    "Weight  DRAM bandwidth                           0.00 MB/batch",
+    "Output  DRAM bandwidth                           0.11 MB/batch",
+    "Total   DRAM bandwidth                           0.12 MB/batch",
+    "Total   DRAM bandwidth            per input      0.12 MB/inference (batch size 1)",
+    "",
+    "Neural network macs                            884736 MACs/batch"
+   ],
+   "vela_ops": [
+    "CUSTOM:ethos-u"
+   ],
+   "cpu_fallback": [],
+   "scheduled": [
+    {
+     "operator": "Conv2D",
+     "npu_cycles": "16660",
+     "mac_count": "884736"
+    },
+    {
+     "operator": "LUT",
+     "npu_cycles": "0",
+     "mac_count": "0"
+    }
+   ],
+   "perf_main": [
+    {
+     "id": "10",
+     "mac_cycles": "8019",
+     "ao_cycles": "4224",
+     "cmd_cycles": "1004",
+     "ofm_block_h": "6",
+     "ofm_block_w": "12",
+     "ofm_block_c": "96",
+     "traversal": "PartKernel"
+    }
+   ],
+   "kernels": [
+    {
+     "kind": "CONV",
+     "ifm_storage": 0,
+     "ifm2_storage": null,
+     "ofm_storage": 0,
+     "ifm_precision": 1,
+     "ofm_precision": 1,
+     "activation": 4
+    },
+    {
+     "kind": "CONV",
+     "ifm_storage": 0,
+     "ifm2_storage": null,
+     "ofm_storage": 0,
+     "ifm_precision": 1,
+     "ofm_precision": 1,
+     "activation": 4
+    }
+   ],
+   "kernel_kinds": [
+    "CONV",
+    "CONV"
+   ],
+   "cms_len": 548,
+   "pack_rc": 0,
+   "pack_log_tail": [
+    "  \"ext\": 139071",
+    " },",
+    " \"power_ctrl\": 0,",
+    " \"fast_base\": 823132160,",
+    " \"ta_profile\": 1",
+    "}"
+   ]
+  },
+  "s4ao_conv_int16": {
+   "config": "s4ao_conv_int16",
+   "description": "Conv 1x1 16x8 (IFM/OFM int16, weights int8, bias int64), RELU6",
+   "model_sha256": "37c2f17863df5786905375189419411da02ca954057ec9c6280f04587802cb6e",
+   "vela_rc": 0,
+   "vela_log_tail": [
+    "Output  SRAM bandwidth                           0.00 MB/batch",
+    "Total   SRAM bandwidth                           0.04 MB/batch",
+    "Total   SRAM bandwidth            per input      0.04 MB/inference (batch size 1)",
+    "",
+    "Average DRAM bandwidth                          12.64 GB/s",
+    "Input   DRAM bandwidth                           0.14 MB/batch",
+    "Weight  DRAM bandwidth                           0.00 MB/batch",
+    "Output  DRAM bandwidth                           0.21 MB/batch",
+    "Total   DRAM bandwidth                           0.36 MB/batch",
+    "Total   DRAM bandwidth            per input      0.36 MB/inference (batch size 1)",
+    "",
+    "Neural network macs                            884736 MACs/batch"
+   ],
+   "vela_ops": [
+    "CUSTOM:ethos-u"
+   ],
+   "cpu_fallback": [],
+   "scheduled": [
+    {
+     "operator": "Conv2D",
+     "npu_cycles": "18799",
+     "mac_count": "884736"
+    }
+   ],
+   "perf_main": [
+    {
+     "id": "6",
+     "mac_cycles": "8162",
+     "ao_cycles": "7424",
+     "cmd_cycles": "883",
+     "ofm_block_h": "8",
+     "ofm_block_w": "8",
+     "ofm_block_c": "64",
+     "traversal": "PartKernel"
+    }
+   ],
+   "kernels": [
+    {
+     "kind": "CONV",
+     "ifm_storage": 0,
+     "ifm2_storage": null,
+     "ofm_storage": 0,
+     "ifm_precision": 5,
+     "ofm_precision": 3,
+     "activation": 0
+    },
+    {
+     "kind": "CONV",
+     "ifm_storage": 0,
+     "ifm2_storage": null,
+     "ofm_storage": 0,
+     "ifm_precision": 5,
+     "ofm_precision": 3,
+     "activation": 0
+    }
+   ],
+   "kernel_kinds": [
+    "CONV",
+    "CONV"
+   ],
+   "cms_len": 520,
+   "pack_rc": 1,
+   "pack_log_tail": [
+    "    main()",
+    "  File \"/work/s4ao_host/host/container/pack_vela_workload.py\", line 195, in main",
+    "    drwl.parse(blob)[\"version\"]),",
+    "  File \"/work/s4ao_host/host/lib/drwl.py\", line 73, in parse",
+    "    raise ValueError(f\"section ({o}, {ln}) misplaced\")",
+    "ValueError: section (24112, 0) misplaced"
+   ]
+  },
+  "s4ao_ew_add": {
+   "config": "s4ao_ew_add",
+   "description": "INT8 ADD (1,24,24,96) x 2",
+   "model_sha256": "7a227077aa8de4f854084ae68e087486b5180c3624e1fe4f307d9b58623d7d24",
+   "vela_rc": 0,
+   "vela_log_tail": [
+    "",
+    "CPU operators = 0 (0.0%)",
+    "NPU operators = 1 (100.0%)",
+    "",
+    "Average DRAM bandwidth                          12.50 GB/s",
+    "Input   DRAM bandwidth                           0.11 MB/batch",
+    "Weight  DRAM bandwidth                           0.00 MB/batch",
+    "Output  DRAM bandwidth                           0.11 MB/batch",
+    "Total   DRAM bandwidth                           0.21 MB/batch",
+    "Total   DRAM bandwidth            per input      0.21 MB/inference (batch size 1)",
+    "",
+    "Neural network macs                                 0 MACs/batch"
+   ],
+   "vela_ops": [
+    "CUSTOM:ethos-u"
+   ],
+   "cpu_fallback": [],
+   "scheduled": [
+    {
+     "operator": "Add",
+     "npu_cycles": "3456",
+     "mac_count": "0"
+    }
+   ],
+   "perf_main": [
+    {
+     "id": "5",
+     "mac_cycles": "",
+     "ao_cycles": "3456",
+     "cmd_cycles": "1959",
+     "ofm_block_h": "24",
+     "ofm_block_w": "42",
+     "ofm_block_c": "96",
+     "traversal": "DepthFirst"
+    }
+   ],
+   "kernels": [
+    {
+     "kind": "ELEMENTWISE",
+     "ifm_storage": 0,
+     "ifm2_storage": 0,
+     "ofm_storage": 0,
+     "ifm_precision": 1,
+     "ofm_precision": 257,
+     "activation": 0
+    }
+   ],
+   "kernel_kinds": [
+    "ELEMENTWISE"
+   ],
+   "cms_len": 332,
+   "pack_rc": 0,
+   "pack_log_tail": [
+    "  \"ext\": 139071",
+    " },",
+    " \"power_ctrl\": 0,",
+    " \"fast_base\": 823132160,",
+    " \"ta_profile\": 1",
+    "}"
+   ]
+  },
+  "s4ao_ew_mul": {
+   "config": "s4ao_ew_mul",
+   "description": "INT8 MUL (1,24,24,96) x 2",
+   "model_sha256": "067f1b2c0108a18b45846033f62ea99c4742e8d78768b6e38804c2ad835e49b6",
+   "vela_rc": 0,
+   "vela_log_tail": [
+    "",
+    "CPU operators = 0 (0.0%)",
+    "NPU operators = 1 (100.0%)",
+    "",
+    "Average DRAM bandwidth                          12.50 GB/s",
+    "Input   DRAM bandwidth                           0.11 MB/batch",
+    "Weight  DRAM bandwidth                           0.00 MB/batch",
+    "Output  DRAM bandwidth                           0.11 MB/batch",
+    "Total   DRAM bandwidth                           0.21 MB/batch",
+    "Total   DRAM bandwidth            per input      0.21 MB/inference (batch size 1)",
+    "",
+    "Neural network macs                                 0 MACs/batch"
+   ],
+   "vela_ops": [
+    "CUSTOM:ethos-u"
+   ],
+   "cpu_fallback": [],
+   "scheduled": [
+    {
+     "operator": "Mul",
+     "npu_cycles": "3456",
+     "mac_count": "0"
+    }
+   ],
+   "perf_main": [
+    {
+     "id": "5",
+     "mac_cycles": "",
+     "ao_cycles": "3456",
+     "cmd_cycles": "1959",
+     "ofm_block_h": "24",
+     "ofm_block_w": "42",
+     "ofm_block_c": "96",
+     "traversal": "DepthFirst"
+    }
+   ],
+   "kernels": [
+    {
+     "kind": "ELEMENTWISE",
+     "ifm_storage": 0,
+     "ifm2_storage": 0,
+     "ofm_storage": 0,
+     "ifm_precision": 1,
+     "ofm_precision": 257,
+     "activation": 0
+    }
+   ],
+   "kernel_kinds": [
+    "ELEMENTWISE"
+   ],
+   "cms_len": 332,
+   "pack_rc": 0,
+   "pack_log_tail": [
+    "  \"ext\": 139071",
+    " },",
+    " \"power_ctrl\": 0,",
+    " \"fast_base\": 823132160,",
+    " \"ta_profile\": 1",
+    "}"
+   ]
+  },
+  "s4ao_ew_abs": {
+   "config": "s4ao_ew_abs",
+   "description": "INT8 ABS (1,24,24,96)",
+   "model_sha256": "47e91511b1c9022f8c2612330e2c2e146118ec2424a896f1c2bd672c09c73748",
+   "vela_rc": 0,
+   "vela_log_tail": [
+    "",
+    "CPU operators = 0 (0.0%)",
+    "NPU operators = 1 (100.0%)",
+    "",
+    "Average DRAM bandwidth                          18.75 GB/s",
+    "Input   DRAM bandwidth                           0.05 MB/batch",
+    "Weight  DRAM bandwidth                           0.00 MB/batch",
+    "Output  DRAM bandwidth                           0.11 MB/batch",
+    "Total   DRAM bandwidth                           0.16 MB/batch",
+    "Total   DRAM bandwidth            per input      0.16 MB/inference (batch size 1)",
+    "",
+    "Neural network macs                                 0 MACs/batch"
+   ],
+   "vela_ops": [
+    "CUSTOM:ethos-u"
+   ],
+   "cpu_fallback": [],
+   "scheduled": [
+    {
+     "operator": "Abs",
+     "npu_cycles": "3456",
+     "mac_count": "0"
+    }
+   ],
+   "perf_main": [
+    {
+     "id": "4",
+     "mac_cycles": "",
+     "ao_cycles": "3456",
+     "cmd_cycles": "1959",
+     "ofm_block_h": "24",
+     "ofm_block_w": "42",
+     "ofm_block_c": "96",
+     "traversal": "DepthFirst"
+    }
+   ],
+   "kernels": [
+    {
+     "kind": "ELEMENTWISE",
+     "ifm_storage": 0,
+     "ifm2_storage": null,
+     "ofm_storage": 0,
+     "ifm_precision": 1,
+     "ofm_precision": 257,
+     "activation": 0
+    }
+   ],
+   "kernel_kinds": [
+    "ELEMENTWISE"
+   ],
+   "cms_len": 244,
+   "pack_rc": 0,
+   "pack_log_tail": [
+    "  \"ext\": 139071",
+    " },",
+    " \"power_ctrl\": 0,",
+    " \"fast_base\": 823132160,",
+    " \"ta_profile\": 1",
+    "}"
+   ]
+  },
+  "s4ao_ew_leaky": {
+   "config": "s4ao_ew_leaky",
+   "description": "INT8 LEAKY_RELU alpha 0.125",
+   "model_sha256": "7db9aca7d0072857cd914604f184b1deb39b1f58aa4a53be2b0a429b8c069f8b",
+   "vela_rc": 0,
+   "vela_log_tail": [
+    "",
+    "CPU operators = 0 (0.0%)",
+    "NPU operators = 1 (100.0%)",
+    "",
+    "Average DRAM bandwidth                          10.43 GB/s",
+    "Input   DRAM bandwidth                           0.16 MB/batch",
+    "Weight  DRAM bandwidth                           0.00 MB/batch",
+    "Output  DRAM bandwidth                           0.11 MB/batch",
+    "Total   DRAM bandwidth                           0.26 MB/batch",
+    "Total   DRAM bandwidth            per input      0.26 MB/inference (batch size 1)",
+    "",
+    "Neural network macs                             55296 MACs/batch"
+   ],
+   "vela_ops": [
+    "CUSTOM:ethos-u"
+   ],
+   "cpu_fallback": [],
+   "scheduled": [
+    {
+     "operator": "LUT",
+     "npu_cycles": "8862",
+     "mac_count": "55296"
+    }
+   ],
+   "perf_main": [
+    {
+     "id": "6",
+     "mac_cycles": "7776",
+     "ao_cycles": "5184",
+     "cmd_cycles": "1411",
+     "ofm_block_h": "18",
+     "ofm_block_w": "12",
+     "ofm_block_c": "64",
+     "traversal": "DepthFirst"
+    }
+   ],
+   "kernels": [
+    {
+     "kind": "POOL",
+     "ifm_storage": 0,
+     "ifm2_storage": null,
+     "ofm_storage": 0,
+     "ifm_precision": 1,
+     "ofm_precision": 257,
+     "activation": 4
+    }
+   ],
+   "kernel_kinds": [
+    "POOL"
+   ],
+   "cms_len": 296,
+   "pack_rc": 0,
+   "pack_log_tail": [
+    "  \"ext\": 139071",
+    " },",
+    " \"power_ctrl\": 0,",
+    " \"fast_base\": 823132160,",
+    " \"ta_profile\": 1",
+    "}"
+   ]
+  },
+  "s4ao_chain_conv_add": {
+   "config": "s4ao_chain_conv_add",
+   "description": "Conv 1x1 -> ADD residual",
+   "model_sha256": "38846664665e847fa0bebd4a6b1d8fec93a769370befce56fe5c5ac94e0e61c0",
+   "vela_rc": 0,
+   "vela_log_tail": [
+    "Output  SRAM bandwidth                           0.00 MB/batch",
+    "Total   SRAM bandwidth                           0.03 MB/batch",
+    "Total   SRAM bandwidth            per input      0.03 MB/inference (batch size 1)",
+    "",
+    "Average DRAM bandwidth                           6.44 GB/s",
+    "Input   DRAM bandwidth                           0.43 MB/batch",
+    "Weight  DRAM bandwidth                           0.00 MB/batch",
+    "Output  DRAM bandwidth                           0.00 MB/batch",
+    "Total   DRAM bandwidth                           0.43 MB/batch",
+    "Total   DRAM bandwidth            per input      0.43 MB/inference (batch size 1)",
+    "",
+    "Neural network macs                            884736 MACs/batch"
+   ],
+   "vela_ops": [
+    "CUSTOM:ethos-u"
+   ],
+   "cpu_fallback": [],
+   "scheduled": [
+    {
+     "operator": "Conv2D",
+     "npu_cycles": "16588",
+     "mac_count": "884736"
+    },
+    {
+     "operator": "Add",
+     "npu_cycles": "0",
+     "mac_count": "0"
+    }
+   ],
+   "perf_main": [
+    {
+     "id": "9",
+     "mac_cycles": "8019",
+     "ao_cycles": "7680",
+     "cmd_cycles": "932",
+     "ofm_block_h": "6",
+     "ofm_block_w": "12",
+     "ofm_block_c": "96",
+     "traversal": "PartKernel"
+    }
+   ],
+   "kernels": [
+    {
+     "kind": "CONV",
+     "ifm_storage": 0,
+     "ifm2_storage": null,
+     "ofm_storage": 2,
+     "ifm_precision": 1,
+     "ofm_precision": 32833,
+     "activation": 0
+    },
+    {
+     "kind": "ELEMENTWISE",
+     "ifm_storage": 2,
+     "ifm2_storage": 0,
+     "ofm_storage": 0,
+     "ifm_precision": 32833,
+     "ofm_precision": 257,
+     "activation": 0
+    },
+    {
+     "kind": "CONV",
+     "ifm_storage": 0,
+     "ifm2_storage": 0,
+     "ofm_storage": 2,
+     "ifm_precision": 1,
+     "ofm_precision": 32833,
+     "activation": 0
+    },
+    {
+     "kind": "ELEMENTWISE",
+     "ifm_storage": 2,
+     "ifm2_storage": 0,
+     "ofm_storage": 0,
+     "ifm_precision": 32833,
+     "ofm_precision": 257,
+     "activation": 0
+    }
+   ],
+   "kernel_kinds": [
+    "CONV",
+    "ELEMENTWISE",
+    "CONV",
+    "ELEMENTWISE"
+   ],
+   "cms_len": 860,
+   "pack_rc": 0,
+   "pack_log_tail": [
+    "  \"ext\": 139071",
+    " },",
+    " \"power_ctrl\": 0,",
+    " \"fast_base\": 823132160,",
+    " \"ta_profile\": 1",
+    "}"
+   ]
+  },
+  "s4ao_chain_add_mul": {
+   "config": "s4ao_chain_add_mul",
+   "description": "ADD -> MUL (three external IFMs)",
+   "model_sha256": "ea6ca3c65a6df4f9d936905c8c8fcb4ae9a80b9faf1eff6977529b636f0cd3e1",
+   "vela_rc": 0,
+   "vela_log_tail": [
+    "",
+    "CPU operators = 0 (0.0%)",
+    "NPU operators = 1 (100.0%)",
+    "",
+    "Average DRAM bandwidth                           6.25 GB/s",
+    "Input   DRAM bandwidth                           0.16 MB/batch",
+    "Weight  DRAM bandwidth                           0.00 MB/batch",
+    "Output  DRAM bandwidth                           0.00 MB/batch",
+    "Total   DRAM bandwidth                           0.16 MB/batch",
+    "Total   DRAM bandwidth            per input      0.16 MB/inference (batch size 1)",
+    "",
+    "Neural network macs                                 0 MACs/batch"
+   ],
+   "vela_ops": [
+    "CUSTOM:ethos-u"
+   ],
+   "cpu_fallback": [],
+   "scheduled": [
+    {
+     "operator": "Add",
+     "npu_cycles": "6912",
+     "mac_count": "0"
+    },
+    {
+     "operator": "Mul",
+     "npu_cycles": "0",
+     "mac_count": "0"
+    }
+   ],
+   "perf_main": [
+    {
+     "id": "8",
+     "mac_cycles": "",
+     "ao_cycles": "6912",
+     "cmd_cycles": "2494",
+     "ofm_block_h": "24",
+     "ofm_block_w": "42",
+     "ofm_block_c": "96",
+     "traversal": "DepthFirst"
+    }
+   ],
+   "kernels": [
+    {
+     "kind": "ELEMENTWISE",
+     "ifm_storage": 0,
+     "ifm2_storage": 0,
+     "ofm_storage": 2,
+     "ifm_precision": 1,
+     "ofm_precision": 33089,
+     "activation": 0
+    },
+    {
+     "kind": "ELEMENTWISE",
+     "ifm_storage": 2,
+     "ifm2_storage": 0,
+     "ofm_storage": 0,
+     "ifm_precision": 32833,
+     "ofm_precision": 257,
+     "activation": 0
+    }
+   ],
+   "kernel_kinds": [
+    "ELEMENTWISE",
+    "ELEMENTWISE"
+   ],
+   "cms_len": 460,
+   "pack_rc": 0,
+   "pack_log_tail": [
+    "  \"ext\": 139071",
+    " },",
+    " \"power_ctrl\": 0,",
+    " \"fast_base\": 823132160,",
+    " \"ta_profile\": 1",
+    "}"
+   ]
+  }
+ }
+}

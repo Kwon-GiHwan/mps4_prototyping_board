@@ -1,0 +1,49 @@
+{
+ "op": "s4ao_act_none",
+ "operator_type": "CONV_2D",
+ "input_shape": [
+  1,
+  24,
+  24,
+  16
+ ],
+ "output_shape": [
+  1,
+  24,
+  24,
+  96
+ ],
+ "kernel_shape": [
+  1,
+  1
+ ],
+ "weight_shape": [
+  96,
+  1,
+  1,
+  16
+ ],
+ "stride": [
+  1,
+  1
+ ],
+ "padding": "SAME",
+ "groups": 1,
+ "activation": "NONE",
+ "n_mac": 884736,
+ "weight_seed": 20261014,
+ "ifm_seed": 1,
+ "quant": {
+  "ifm_scale": 0.0078125,
+  "weight_scale": 0.0078125,
+  "ofm_scale": 0.05013293168676181,
+  "zero_points": 0
+ },
+ "acc_abs_max": 104315,
+ "model_sha256": "14af4d340d438edaa68411661e6a0870990338df4835a68517b295cf1c01f97d",
+ "base": "s4_conv_base",
+ "ao_seed": 20261115,
+ "ofm_scale_from": "s4_conv_base",
+ "ifm_rows": "base 24 rows, cut or extended from AO_SEED",
+ "acc_abs_max_note": "of this config; the OFM scale is the base's"
+}

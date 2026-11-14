@@ -1,0 +1,86 @@
+{
+  "model": "/work/s4ao_compile2/s4ao_ew_add.tflite",
+  "model_sha256": "7a227077aa8de4f854084ae68e087486b5180c3624e1fe4f307d9b58623d7d24",
+  "vela_sha256": "7d8b4d8d164bdab1336bf9692112b4e2e563f4a0be76f73520f0db7d56fc413f",
+  "accelerator": "ethos-u85-1024",
+  "system_config": "Ethos_U85_SYS_DRAM_Mid_1024",
+  "memory_mode": "Dedicated_Sram",
+  "vela_options": [
+    "--accelerator-config",
+    "ethos-u85-1024",
+    "--optimise",
+    "Performance",
+    "--config",
+    "/opt/arm/ml-embedded-evaluation-kit/scripts/vela/default_vela.ini",
+    "--memory-mode",
+    "Dedicated_Sram",
+    "--system-config",
+    "Ethos_U85_SYS_DRAM_Mid_1024"
+  ],
+  "vela_extra": [],
+  "seed": 1,
+  "blob_sha256": "e6e041e82c434915a54497abc9646bf4e607994a65c033052669a537c2522d9d",
+  "cms_len": 332,
+  "const_len": 0,
+  "arena_size": 110592,
+  "fast_size": 0,
+  "ifm_off": 0,
+  "ifm_len": 110592,
+  "ofm_off": 0,
+  "ofm_len": 55296,
+  "total": 167408,
+  "ifms": [
+    {
+      "name": "a",
+      "off": 0,
+      "len": 55296,
+      "sha256": "89f384a12b37a4c9a3792a0e5ca690340a7976b5652b2b5d5167fb74ed26251c"
+    },
+    {
+      "name": "b",
+      "off": 55296,
+      "len": 55296,
+      "sha256": "28ddadd82eee53d2db4a67e041604e0ddb521645b2911db7b7a9623a5248bf44"
+    }
+  ],
+  "ofms": [
+    {
+      "name": "ofm",
+      "off": 0,
+      "len": 55296,
+      "sha256": "1bfc7e8148b0faa978fb115ed9fcd9197fdb851b04f07d108222007ebc126fcb"
+    }
+  ],
+  "format": "drwl",
+  "header_version": 1,
+  "knobs": null,
+  "cms_sha256": "afe9bf60dc4c5d2d6574cbdf3c1518eb6cfe8ce7dba89cf84973fa5fdeaff0e1",
+  "profile": "/work/s4ao_host/config/fi101_s013.json",
+  "profile_sha256": "c80279ca43450872e62078215811ed1401c90a68e96f71f969493632dff29ada",
+  "graph_inputs": [
+    "a",
+    "b"
+  ],
+  "graph_outputs": [
+    "ofm"
+  ],
+  "ifm_file": null,
+  "ifm_sha256": "52833da59ce6daa52e78967f472b152aa9b558656b36578b5e49c5f1a288d523",
+  "tflite_ofm_sha256": "1bfc7e8148b0faa978fb115ed9fcd9197fdb851b04f07d108222007ebc126fcb",
+  "golden_file": null,
+  "golden_sha256": "1bfc7e8148b0faa978fb115ed9fcd9197fdb851b04f07d108222007ebc126fcb",
+  "axi": null,
+  "ports": {
+    "cmd": "ext",
+    "const": "ext",
+    "arena": "ext",
+    "fast": "sram"
+  },
+  "axi_limit": {
+    "sram": 134923,
+    "ext": 139071
+  },
+  "power_ctrl": 0,
+  "fast_base": 823132160,
+  "ta_profile": 1
+}

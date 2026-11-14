@@ -1,0 +1,77 @@
+{
+ "config": "s4ao_conv_int16",
+ "description": "Conv 1x1 16x8 (IFM/OFM int16, weights int8, bias int64), RELU6",
+ "model_sha256": "37c2f17863df5786905375189419411da02ca954057ec9c6280f04587802cb6e",
+ "vela_rc": 0,
+ "vela_log_tail": [
+  "Output  SRAM bandwidth                           0.00 MB/batch",
+  "Total   SRAM bandwidth                           0.04 MB/batch",
+  "Total   SRAM bandwidth            per input      0.04 MB/inference (batch size 1)",
+  "",
+  "Average DRAM bandwidth                          12.64 GB/s",
+  "Input   DRAM bandwidth                           0.14 MB/batch",
+  "Weight  DRAM bandwidth                           0.00 MB/batch",
+  "Output  DRAM bandwidth                           0.21 MB/batch",
+  "Total   DRAM bandwidth                           0.36 MB/batch",
+  "Total   DRAM bandwidth            per input      0.36 MB/inference (batch size 1)",
+  "",
+  "Neural network macs                            884736 MACs/batch"
+ ],
+ "vela_ops": [
+  "CUSTOM:ethos-u"
+ ],
+ "cpu_fallback": [],
+ "scheduled": [
+  {
+   "operator": "Conv2D",
+   "npu_cycles": "18799",
+   "mac_count": "884736"
+  }
+ ],
+ "perf_main": [
+  {
+   "id": "6",
+   "mac_cycles": "8162",
+   "ao_cycles": "7424",
+   "cmd_cycles": "883",
+   "ofm_block_h": "8",
+   "ofm_block_w": "8",
+   "ofm_block_c": "64",
+   "traversal": "PartKernel"
+  }
+ ],
+ "kernels": [
+  {
+   "kind": "CONV",
+   "ifm_storage": 0,
+   "ifm2_storage": null,
+   "ofm_storage": 0,
+   "ifm_precision": 5,
+   "ofm_precision": 3,
+   "activation": 0
+  },
+  {
+   "kind": "CONV",
+   "ifm_storage": 0,
+   "ifm2_storage": null,
+   "ofm_storage": 0,
+   "ifm_precision": 5,
+   "ofm_precision": 3,
+   "activation": 0
+  }
+ ],
+ "kernel_kinds": [
+  "CONV",
+  "CONV"
+ ],
+ "cms_len": 520,
+ "pack_rc": 1,
+ "pack_log_tail": [
+  "    main()",
+  "  File \"/work/s4ao_host/host/container/pack_vela_workload.py\", line 195, in main",
+  "    drwl.parse(blob)[\"version\"]),",
+  "  File \"/work/s4ao_host/host/lib/drwl.py\", line 73, in parse",
+  "    raise ValueError(f\"section ({o}, {ln}) misplaced\")",
+  "ValueError: section (24112, 0) misplaced"
+ ]
+}
