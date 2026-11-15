@@ -1,0 +1,211 @@
+{
+ "label": "POSTHOC_EXPLANATORY",
+ "mac_hypotheses": {
+  "H1-G": {
+   "verdict": "CONTRADICTED",
+   "n_official": 14,
+   "n_exact": 9,
+   "not_exact": [
+    "stage4:s4_conv_base",
+    "stage4:s4c2_conv_cin32",
+    "stage4:s4c2_conv_cin64",
+    "stage4:s4c2_conv_cin128",
+    "6bb:G25"
+   ],
+   "cases_splitting_competitors": 5,
+   "exploratory_exact": 2,
+   "exploratory_total": 3
+  },
+  "H1-C16": {
+   "verdict": "CONTRADICTED",
+   "n_official": 14,
+   "n_exact": 4,
+   "not_exact": [
+    "stage4:s4_conv_base",
+    "stage4:s4c2_conv_cin32",
+    "stage4:s4c2_conv_cin40",
+    "stage4:s4c2_conv_cin48",
+    "stage4:s4c2_conv_cin64",
+    "stage4:s4c2_conv_cin128",
+    "6bb:Stage4K_cin48",
+    "6bb:G25",
+    "6bb:G40",
+    "6bb:G57"
+   ],
+   "cases_splitting_competitors": 5,
+   "exploratory_exact": 2,
+   "exploratory_total": 3
+  },
+  "H1-U8": {
+   "verdict": "CONTRADICTED",
+   "n_official": 14,
+   "n_exact": 7,
+   "not_exact": [
+    "stage4:s4_conv_base",
+    "stage4:s4c2_conv_cin32",
+    "stage4:s4c2_conv_cin40",
+    "6bb:G12",
+    "6bb:G25",
+    "6bb:G52",
+    "6bb:G57"
+   ],
+   "cases_splitting_competitors": 4,
+   "exploratory_exact": 1,
+   "exploratory_total": 3
+  },
+  "H1-U16": {
+   "verdict": "CONTRADICTED",
+   "n_official": 14,
+   "n_exact": 10,
+   "not_exact": [
+    "stage4:s4_conv_base",
+    "stage4:s4c2_conv_cin32",
+    "6bb:G25",
+    "6bb:G57"
+   ],
+   "cases_splitting_competitors": 0,
+   "exploratory_exact": 2,
+   "exploratory_total": 3
+  },
+  "H1-UC": {
+   "verdict": "CONSISTENT_WITH_OBSERVATIONS",
+   "n_official": 14,
+   "n_exact": 14,
+   "not_exact": [],
+   "cases_splitting_competitors": 2,
+   "exploratory_exact": 3,
+   "exploratory_total": 3
+  },
+  "H1-UC without spatial ublock padding": {
+   "verdict": "CONTRADICTED",
+   "n_official": 14,
+   "n_exact": 12,
+   "not_exact": [
+    "6bb:G25",
+    "6bb:G40"
+   ],
+   "cases_splitting_competitors": 2,
+   "exploratory_exact": 3,
+   "exploratory_total": 3
+  },
+  "H1-UC with whole Cout instead of per-kernel slices": {
+   "verdict": "CONTRADICTED",
+   "n_official": 14,
+   "n_exact": 7,
+   "not_exact": [
+    "stage4:s4_conv_base",
+    "stage4:s4c2_conv_cin32",
+    "stage4:s4c2_conv_cin40",
+    "stage4:s4c2_conv_cin48",
+    "stage4:s4c2_conv_cin64",
+    "stage4:s4c2_conv_cin128",
+    "6bb:Stage4K_cin48"
+   ],
+   "cases_splitting_competitors": 5,
+   "exploratory_exact": 3,
+   "exploratory_total": 3
+  },
+  "H1-UC without IFM-depth chunks": {
+   "verdict": "CONTRADICTED",
+   "n_official": 14,
+   "n_exact": 11,
+   "not_exact": [
+    "stage4:s4c2_conv_cin32",
+    "6bb:G25",
+    "6bb:G57"
+   ],
+   "cases_splitting_competitors": 1,
+   "exploratory_exact": 2,
+   "exploratory_total": 3
+  },
+  "H1-UC without the 32 minimum": {
+   "verdict": "CONTRADICTED",
+   "n_official": 14,
+   "n_exact": 10,
+   "not_exact": [
+    "stage4:s4_conv_base",
+    "stage4:s4c2_conv_cin32",
+    "6bb:G25",
+    "6bb:G57"
+   ],
+   "cases_splitting_competitors": 0,
+   "exploratory_exact": 2,
+   "exploratory_total": 3
+  }
+ },
+ "dpu_hypotheses": {
+  "D-U16": {
+   "verdict": "CONTRADICTED",
+   "n_official": 14,
+   "n_exact": 13,
+   "not_exact": [
+    "6bb:G57"
+   ],
+   "cases_splitting_competitors": 1,
+   "exploratory_exact": 2,
+   "exploratory_total": 3
+  },
+  "D-U8": {
+   "verdict": "CONTRADICTED",
+   "n_official": 14,
+   "n_exact": 11,
+   "not_exact": [
+    "stage4:s4c2_conv_cin40",
+    "6bb:G12",
+    "6bb:G52"
+   ],
+   "cases_splitting_competitors": 3,
+   "exploratory_exact": 2,
+   "exploratory_total": 3
+  },
+  "D-PW": {
+   "verdict": "INSUFFICIENT_EVIDENCE",
+   "n_official": 14,
+   "n_exact": 14,
+   "not_exact": [],
+   "cases_splitting_competitors": 1,
+   "exploratory_exact": 3,
+   "exploratory_total": 3
+  },
+  "D-R (DPU/MAC ratio)": {
+   "verdict": "CONTRADICTED",
+   "n_official": 14,
+   "n_exact": 8,
+   "not_exact": [
+    "stage4:s4c2_conv_cin32",
+    "stage4:s4c2_conv_cin40",
+    "stage4:s4c2_conv_cin48",
+    "6bb:Stage4K_cin48",
+    "6bb:G12",
+    "6bb:G52"
+   ],
+   "cases_splitting_competitors": 0,
+   "exploratory_exact": 1,
+   "exploratory_total": 3
+  }
+ },
+ "vela_cost_model_checks": {
+  "op_is_max": {
+   "n": 30,
+   "all_true": true
+  },
+  "total_is_sum": {
+   "n": 10,
+   "all_true": true
+  }
+ },
+ "vela_error": {
+  "n": 7,
+  "min": 54.29458944185129,
+  "max": 102.34847008380432,
+  "median": 89.81221598503075
+ },
+ "vela_error_spearman_descriptive": {
+  "macs_per_mac_active": 0.32433748657040123,
+  "mac_activity": 0.03571428571428571,
+  "vela_cycles_total": -0.03571428571428571,
+  "wd_stalled": -0.21428571428571427,
+  "ao_active": 0.0,
+  "vela_cycles_dram_access": -0.03571428571428571
+ }
+}
