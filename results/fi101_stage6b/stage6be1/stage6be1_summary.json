@@ -1,0 +1,471 @@
+{
+ "contract": "evidence/stage6b/stage6be1/contract.md",
+ "reference_gate": {
+  "verdict": "PASS",
+  "same_binary": true,
+  "reproduce": {
+   "ok": true,
+   "checks": {
+    "mac": true,
+    "dpu": true,
+    "output": true,
+    "constant_counters": true,
+    "npu_active": true
+   },
+   "differing_constant_counters": {},
+   "npu_active": [
+    22251.0,
+    22734.5
+   ],
+   "tolerance": 865,
+   "compared": 10
+  }
+ },
+ "shapes": [
+  {
+   "config": "e1_c72_h13w13_o96",
+   "status": "UNSTABLE",
+   "reasons": [
+    "NPU_ACTIVE pass A range"
+   ],
+   "cls": "MAC_ONLY_DIAGNOSTIC",
+   "measured_mac": 2352,
+   "measured_dpu": 1764,
+   "predicted_mac": 2352.0,
+   "residual": 0.0,
+   "rel_residual": 0.0,
+   "h1_uc_match": true,
+   "measured_rate": 496.6530612244898,
+   "predicted_rate": 496.6530612244898,
+   "competitors": {
+    "H1-G": {
+     "pred": 1764.0,
+     "match": false,
+     "distinguishing": true
+    },
+    "H1-C16": {
+     "pred": 1267.5,
+     "match": false,
+     "distinguishing": true
+    },
+    "H1-U8": {
+     "pred": 1764,
+     "match": false,
+     "distinguishing": true
+    },
+    "H1-U16": {
+     "pred": 1960.0,
+     "match": false,
+     "distinguishing": true
+    },
+    "H1-UC without spatial ublock padding": {
+     "pred": 2028.0,
+     "match": false,
+     "distinguishing": true
+    },
+    "H1-UC with whole Cout instead of per-kernel slices": {
+     "pred": 1764.0,
+     "match": false,
+     "distinguishing": true
+    },
+    "H1-UC without IFM-depth chunks": {
+     "pred": 1960.0,
+     "match": false,
+     "distinguishing": true
+    },
+    "H1-UC without the 32 minimum": {
+     "pred": 1960.0,
+     "match": false,
+     "distinguishing": true
+    }
+   },
+   "dpu": {
+    "D-U16": {
+     "pred": 1960.0,
+     "match": false
+    },
+    "D-U8": {
+     "pred": 1764.0,
+     "match": true
+    },
+    "D-PW": {
+     "pred": 1764.0,
+     "match": true
+    }
+   },
+   "dpu_pw_vs_u16_split": true
+  },
+  {
+   "config": "e1_c136_h13w13_o96",
+   "status": "UNSTABLE",
+   "reasons": [
+    "NPU_ACTIVE pass A range"
+   ],
+   "cls": "MAC_ONLY_DIAGNOSTIC",
+   "measured_mac": 3920,
+   "measured_dpu": 3332,
+   "predicted_mac": 3920.0,
+   "residual": 0.0,
+   "rel_residual": 0.0,
+   "h1_uc_match": true,
+   "measured_rate": 562.8734693877551,
+   "predicted_rate": 562.8734693877551,
+   "competitors": {
+    "H1-G": {
+     "pred": 2940.0,
+     "match": false,
+     "distinguishing": true
+    },
+    "H1-C16": {
+     "pred": 2281.5,
+     "match": false,
+     "distinguishing": true
+    },
+    "H1-U8": {
+     "pred": 3332,
+     "match": false,
+     "distinguishing": true
+    },
+    "H1-U16": {
+     "pred": 3528.0,
+     "match": false,
+     "distinguishing": true
+    },
+    "H1-UC without spatial ublock padding": {
+     "pred": 3380.0,
+     "match": false,
+     "distinguishing": true
+    },
+    "H1-UC with whole Cout instead of per-kernel slices": {
+     "pred": 2940.0,
+     "match": false,
+     "distinguishing": true
+    },
+    "H1-UC without IFM-depth chunks": {
+     "pred": 3528.0,
+     "match": false,
+     "distinguishing": true
+    },
+    "H1-UC without the 32 minimum": {
+     "pred": 3528.0,
+     "match": false,
+     "distinguishing": true
+    }
+   },
+   "dpu": {
+    "D-U16": {
+     "pred": 3528.0,
+     "match": false
+    },
+    "D-U8": {
+     "pred": 3332.0,
+     "match": true
+    },
+    "D-PW": {
+     "pred": 3332.0,
+     "match": true
+    }
+   },
+   "dpu_pw_vs_u16_split": true
+  },
+  {
+   "config": "e1_c72_h7w7_o48",
+   "status": "UNSTABLE",
+   "reasons": [
+    "NPU_ACTIVE pass A range"
+   ],
+   "cls": "MAC_ONLY_DIAGNOSTIC",
+   "measured_mac": 288,
+   "measured_dpu": 216,
+   "predicted_mac": 288.0,
+   "residual": 0.0,
+   "rel_residual": 0.0,
+   "h1_uc_match": true,
+   "measured_rate": 588.0,
+   "predicted_rate": 588.0,
+   "competitors": {
+    "H1-G": {
+     "pred": 288.0,
+     "match": true,
+     "distinguishing": false
+    },
+    "H1-C16": {
+     "pred": 183.75,
+     "match": false,
+     "distinguishing": true
+    },
+    "H1-U8": {
+     "pred": 216,
+     "match": false,
+     "distinguishing": true
+    },
+    "H1-U16": {
+     "pred": 240.0,
+     "match": false,
+     "distinguishing": true
+    },
+    "H1-UC without spatial ublock padding": {
+     "pred": 220.5,
+     "match": false,
+     "distinguishing": true
+    },
+    "H1-UC with whole Cout instead of per-kernel slices": {
+     "pred": 288.0,
+     "match": true,
+     "distinguishing": false
+    },
+    "H1-UC without IFM-depth chunks": {
+     "pred": 240.0,
+     "match": false,
+     "distinguishing": true
+    },
+    "H1-UC without the 32 minimum": {
+     "pred": 240.0,
+     "match": false,
+     "distinguishing": true
+    }
+   },
+   "dpu": {
+    "D-U16": {
+     "pred": 240.0,
+     "match": false
+    },
+    "D-U8": {
+     "pred": 216.0,
+     "match": true
+    },
+    "D-PW": {
+     "pred": 216.0,
+     "match": true
+    }
+   },
+   "dpu_pw_vs_u16_split": true
+  },
+  {
+   "config": "e1_c200_h13w13_o96",
+   "status": "UNSTABLE",
+   "reasons": [
+    "NPU_ACTIVE pass A range"
+   ],
+   "cls": "MAC_ONLY_DIAGNOSTIC",
+   "measured_mac": 5488,
+   "measured_dpu": 4900,
+   "predicted_mac": 5488.0,
+   "residual": 0.0,
+   "rel_residual": 0.0,
+   "h1_uc_match": true,
+   "measured_rate": 591.2536443148688,
+   "predicted_rate": 591.2536443148688,
+   "competitors": {
+    "H1-G": {
+     "pred": 4116.0,
+     "match": false,
+     "distinguishing": true
+    },
+    "H1-C16": {
+     "pred": 3295.5,
+     "match": false,
+     "distinguishing": true
+    },
+    "H1-U8": {
+     "pred": 4900,
+     "match": false,
+     "distinguishing": true
+    },
+    "H1-U16": {
+     "pred": 5096.0,
+     "match": false,
+     "distinguishing": true
+    },
+    "H1-UC without spatial ublock padding": {
+     "pred": 4732.0,
+     "match": false,
+     "distinguishing": true
+    },
+    "H1-UC with whole Cout instead of per-kernel slices": {
+     "pred": 4116.0,
+     "match": false,
+     "distinguishing": true
+    },
+    "H1-UC without IFM-depth chunks": {
+     "pred": 5096.0,
+     "match": false,
+     "distinguishing": true
+    },
+    "H1-UC without the 32 minimum": {
+     "pred": 5096.0,
+     "match": false,
+     "distinguishing": true
+    }
+   },
+   "dpu": {
+    "D-U16": {
+     "pred": 5096.0,
+     "match": false
+    },
+    "D-U8": {
+     "pred": 4900.0,
+     "match": true
+    },
+    "D-PW": {
+     "pred": 4900.0,
+     "match": true
+    }
+   },
+   "dpu_pw_vs_u16_split": true
+  },
+  {
+   "config": "e1_c80_h13w13_o96",
+   "status": "UNSTABLE",
+   "reasons": [
+    "NPU_ACTIVE pass A range"
+   ],
+   "cls": "MAC_ONLY_DIAGNOSTIC",
+   "measured_mac": 2352,
+   "measured_dpu": 1960,
+   "predicted_mac": 2352.0,
+   "residual": 0.0,
+   "rel_residual": 0.0,
+   "h1_uc_match": true,
+   "measured_rate": 551.8367346938776,
+   "predicted_rate": 551.8367346938776,
+   "competitors": {
+    "H1-G": {
+     "pred": 1764.0,
+     "match": false,
+     "distinguishing": true
+    },
+    "H1-C16": {
+     "pred": 1267.5,
+     "match": false,
+     "distinguishing": true
+    },
+    "H1-U8": {
+     "pred": 1960,
+     "match": false,
+     "distinguishing": true
+    },
+    "H1-U16": {
+     "pred": 1960.0,
+     "match": false,
+     "distinguishing": true
+    },
+    "H1-UC without spatial ublock padding": {
+     "pred": 2028.0,
+     "match": false,
+     "distinguishing": true
+    },
+    "H1-UC with whole Cout instead of per-kernel slices": {
+     "pred": 1764.0,
+     "match": false,
+     "distinguishing": true
+    },
+    "H1-UC without IFM-depth chunks": {
+     "pred": 1960.0,
+     "match": false,
+     "distinguishing": true
+    },
+    "H1-UC without the 32 minimum": {
+     "pred": 1960.0,
+     "match": false,
+     "distinguishing": true
+    }
+   },
+   "dpu": {
+    "D-U16": {
+     "pred": 1960.0,
+     "match": true
+    },
+    "D-U8": {
+     "pred": 1960.0,
+     "match": true
+    },
+    "D-PW": {
+     "pred": 1960.0,
+     "match": true
+    }
+   },
+   "dpu_pw_vs_u16_split": false
+  },
+  {
+   "config": "e1_c72_h7w7_o112",
+   "status": "UNSTABLE",
+   "reasons": [
+    "NPU_ACTIVE pass A range"
+   ],
+   "cls": "MAC_ONLY_DIAGNOSTIC",
+   "measured_mac": 672,
+   "measured_dpu": 504,
+   "predicted_mac": 672.0,
+   "residual": 0.0,
+   "rel_residual": 0.0,
+   "h1_uc_match": true,
+   "measured_rate": 588.0,
+   "predicted_rate": 588.0,
+   "competitors": {
+    "H1-G": {
+     "pred": 588.0,
+     "match": false,
+     "distinguishing": true
+    },
+    "H1-C16": {
+     "pred": 428.75,
+     "match": false,
+     "distinguishing": true
+    },
+    "H1-U8": {
+     "pred": 504,
+     "match": false,
+     "distinguishing": true
+    },
+    "H1-U16": {
+     "pred": 560.0,
+     "match": false,
+     "distinguishing": true
+    },
+    "H1-UC without spatial ublock padding": {
+     "pred": 588.0,
+     "match": false,
+     "distinguishing": true
+    },
+    "H1-UC with whole Cout instead of per-kernel slices": {
+     "pred": 672.0,
+     "match": true,
+     "distinguishing": false
+    },
+    "H1-UC without IFM-depth chunks": {
+     "pred": 560.0,
+     "match": false,
+     "distinguishing": true
+    },
+    "H1-UC without the 32 minimum": {
+     "pred": 560.0,
+     "match": false,
+     "distinguishing": true
+    }
+   },
+   "dpu": {
+    "D-U16": {
+     "pred": 560.0,
+     "match": false
+    },
+    "D-U8": {
+     "pred": 504.0,
+     "match": true
+    },
+    "D-PW": {
+     "pred": 504.0,
+     "match": true
+    }
+   },
+   "dpu_pw_vs_u16_split": true
+  }
+ ],
+ "verdict": "INSUFFICIENT_EVIDENCE",
+ "dpu_verdict": "INSUFFICIENT_EVIDENCE",
+ "counts": {
+  "PRIMARY_VALID": 0,
+  "MAC_ONLY_DIAGNOSTIC": 6,
+  "INVALID_OR_UNRESOLVED": 0
+ }
+}

@@ -1,0 +1,21 @@
+# Owner-approved (Stage 6B-E1 공식 지시, ChatGPT 2026-11-15) sudo session: boots 421-427, contract evidence/stage6b/stage6be1/contract.md,
+# TA profile 1, image 70090f1, DDR/EXT. repro-gate after boot 421 (stage6bb.py, unchanged); boot-check after the others (rc 1 only on
+# CONFIG_MISMATCH / UNMEASURED). A failing step stops the session (sudo_session.sh) and restores the card.
+user python3 mcc.py USB_ON 4 && sleep 5 && test -e /dev/sdb1
+deploy_mlek /home/gihwan/evsweep_s6be1 /home/gihwan/evsweep/evidence_s6be1
+user OUTPUTS=1 STOP_ON_INVALID=1 sh run_driver_campaign.sh /home/gihwan/evsweep_s6be1 /home/gihwan/evsweep_s6be1_run /home/gihwan/evsweep_s6be1/ids.txt /home/gihwan/evsweep_s6be1/plan_b01.txt 5
+user python3 host/analysis/stage6bb.py repro-gate /home/gihwan/evsweep_s6be1_run /home/gihwan/evsweep_s6be1 /home/gihwan/evsweep_s6be1/ref/wfe /home/gihwan/evsweep_s6be1/ref/capabilities.json
+user OUTPUTS=1 STOP_ON_INVALID=1 sh run_driver_campaign.sh /home/gihwan/evsweep_s6be1 /home/gihwan/evsweep_s6be1_run /home/gihwan/evsweep_s6be1/ids.txt /home/gihwan/evsweep_s6be1/plan_b02.txt 5
+user python3 host/analysis/stage6bb.py boot-check /home/gihwan/evsweep_s6be1_run /home/gihwan/evsweep_s6be1 e1_c72_h13w13_o96 /home/gihwan/evsweep_s6be1/ref/capabilities.json
+user OUTPUTS=1 STOP_ON_INVALID=1 sh run_driver_campaign.sh /home/gihwan/evsweep_s6be1 /home/gihwan/evsweep_s6be1_run /home/gihwan/evsweep_s6be1/ids.txt /home/gihwan/evsweep_s6be1/plan_b03.txt 5
+user python3 host/analysis/stage6bb.py boot-check /home/gihwan/evsweep_s6be1_run /home/gihwan/evsweep_s6be1 e1_c136_h13w13_o96 /home/gihwan/evsweep_s6be1/ref/capabilities.json
+user OUTPUTS=1 STOP_ON_INVALID=1 sh run_driver_campaign.sh /home/gihwan/evsweep_s6be1 /home/gihwan/evsweep_s6be1_run /home/gihwan/evsweep_s6be1/ids.txt /home/gihwan/evsweep_s6be1/plan_b04.txt 5
+user python3 host/analysis/stage6bb.py boot-check /home/gihwan/evsweep_s6be1_run /home/gihwan/evsweep_s6be1 e1_c72_h7w7_o48 /home/gihwan/evsweep_s6be1/ref/capabilities.json
+user OUTPUTS=1 STOP_ON_INVALID=1 sh run_driver_campaign.sh /home/gihwan/evsweep_s6be1 /home/gihwan/evsweep_s6be1_run /home/gihwan/evsweep_s6be1/ids.txt /home/gihwan/evsweep_s6be1/plan_b05.txt 5
+user python3 host/analysis/stage6bb.py boot-check /home/gihwan/evsweep_s6be1_run /home/gihwan/evsweep_s6be1 e1_c200_h13w13_o96 /home/gihwan/evsweep_s6be1/ref/capabilities.json
+user OUTPUTS=1 STOP_ON_INVALID=1 sh run_driver_campaign.sh /home/gihwan/evsweep_s6be1 /home/gihwan/evsweep_s6be1_run /home/gihwan/evsweep_s6be1/ids.txt /home/gihwan/evsweep_s6be1/plan_b06.txt 5
+user python3 host/analysis/stage6bb.py boot-check /home/gihwan/evsweep_s6be1_run /home/gihwan/evsweep_s6be1 e1_c80_h13w13_o96 /home/gihwan/evsweep_s6be1/ref/capabilities.json
+user OUTPUTS=1 STOP_ON_INVALID=1 sh run_driver_campaign.sh /home/gihwan/evsweep_s6be1 /home/gihwan/evsweep_s6be1_run /home/gihwan/evsweep_s6be1/ids.txt /home/gihwan/evsweep_s6be1/plan_b07.txt 5
+user python3 host/analysis/stage6bb.py boot-check /home/gihwan/evsweep_s6be1_run /home/gihwan/evsweep_s6be1 e1_c72_h7w7_o112 /home/gihwan/evsweep_s6be1/ref/capabilities.json
+restore_mlek /home/gihwan/evsweep/evidence_s6be1 /home/gihwan/evsweep_s6be1
+user sh postflight.sh
