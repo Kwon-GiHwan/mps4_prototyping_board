@@ -1,0 +1,51 @@
+{
+ "s4c2_conv_cin48": {
+  "custom_op_inputs": 5,
+  "custom_op_outputs": 1,
+  "n_base": 5,
+  "placement": 0,
+  "drwl_sha256": "6eb390be2874088b53970ab4f859962d5bb0b16b4e060e2e460d86840f4339d7"
+ },
+ "e1_c72_h13w13_o96": {
+  "custom_op_inputs": 5,
+  "custom_op_outputs": 1,
+  "n_base": 5,
+  "placement": 0,
+  "drwl_sha256": "a7eaa9723e65dc1880f320910278c1d535849adb023815ab78cb749b7728f442"
+ },
+ "e1_c136_h13w13_o96": {
+  "custom_op_inputs": 5,
+  "custom_op_outputs": 1,
+  "n_base": 5,
+  "placement": 0,
+  "drwl_sha256": "dbf11dfc04182a10b1a38c9db0a386127e8470bcca5838b205bd43c81b22b2ad"
+ },
+ "e1_c72_h7w7_o48": {
+  "custom_op_inputs": 5,
+  "custom_op_outputs": 1,
+  "n_base": 5,
+  "placement": 0,
+  "drwl_sha256": "62658f57f50b318ab636ca2bed93caf18d040b722030b453672c4bf18fce8162"
+ },
+ "e1_c200_h13w13_o96": {
+  "custom_op_inputs": 5,
+  "custom_op_outputs": 1,
+  "n_base": 5,
+  "placement": 0,
+  "drwl_sha256": "5fc178455a5b6ceb611b826bf02f20ba78ec3ea585807ff533951e807165697f"
+ },
+ "e1_c80_h13w13_o96": {
+  "custom_op_inputs": 5,
+  "custom_op_outputs": 1,
+  "n_base": 5,
+  "placement": 0,
+  "drwl_sha256": "8a79fd5800e3af860adaf0c279bad275ba7fa2f399e740b067b15b89d9fdad68"
+ },
+ "e1_c72_h7w7_o112": {
+  "custom_op_inputs": 5,
+  "custom_op_outputs": 1,
+  "n_base": 5,
+  "placement": 0,
+  "drwl_sha256": "d2aaae54b5c639b42c63922376aa0d847c05ccbc0d3e0fac954021073a2e873e"
+ }
+}
