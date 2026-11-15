@@ -1,0 +1,2 @@
+# Stage 6B-B boot 5/11: s6bb_g53, TA profile 1, image 70090f1, DDR/EXT (word 7 = 0)
+414 s6bb_g53 @/home/gihwan/evsweep_s6bb/conditions.txt
