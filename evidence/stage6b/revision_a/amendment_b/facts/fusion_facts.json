@@ -1,0 +1,2171 @@
+{
+ "G01": {
+  "original": {
+   "vela_sha256": "aa143485cf3e64da4d46b58fe7cb2dbeab95193740ee0e13815ce3c0bdd1238b",
+   "n_ethosu_ops": 1,
+   "conv_act": [
+    {
+     "activation": 0,
+     "activation_min": 65408,
+     "activation_max": 127,
+     "ofm_zero_point": 65533,
+     "ofm_scale": 177594675088,
+     "kind": "CONV",
+     "offset": 19624
+    }
+   ]
+  },
+  "forms": {
+   "A0": {
+    "cms_sha256": "6a0d1ff3d333119dc78c6a24b87b6749785361fc22695d5e28e4d3d776f0d23a",
+    "kernel_types": [
+     "CONV",
+     "CONV"
+    ],
+    "conv_act": [
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 65533,
+      "ofm_scale": 177594675088,
+      "kind": "CONV",
+      "offset": 380
+     },
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 65533,
+      "ofm_scale": 177594675088,
+      "kind": "CONV",
+      "offset": 512
+     }
+    ]
+   },
+   "A1": {
+    "cms_sha256": "c2df5a4b6a4e2634afd29ba9083b12be6a4972c7f07b872c42d7cf719bd19357",
+    "kernel_types": [
+     "ELEMENTWISE",
+     "CONV",
+     "ELEMENTWISE",
+     "CONV",
+     "ELEMENTWISE"
+    ],
+    "conv_act": [
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 65533,
+      "ofm_scale": 177594675088,
+      "kind": "CONV",
+      "offset": 600
+     },
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 65533,
+      "ofm_scale": 177594675088,
+      "kind": "CONV",
+      "offset": 960
+     }
+    ]
+   },
+   "A2": {
+    "cms_sha256": "7b43a596b2e64351c1fe221c488d1fe6828027255c56524a151c5d2a9f9633ae",
+    "kernel_types": [
+     "ELEMENTWISE",
+     "CONV",
+     "CONV",
+     "ELEMENTWISE"
+    ],
+    "conv_act": [
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 65533,
+      "ofm_scale": 177594675088,
+      "kind": "CONV",
+      "offset": 556
+     },
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 65533,
+      "ofm_scale": 177594675088,
+      "kind": "CONV",
+      "offset": 688
+     }
+    ]
+   }
+  }
+ },
+ "G03": {
+  "original": {
+   "vela_sha256": "aa143485cf3e64da4d46b58fe7cb2dbeab95193740ee0e13815ce3c0bdd1238b",
+   "n_ethosu_ops": 1,
+   "conv_act": [
+    {
+     "activation": 0,
+     "activation_min": 65408,
+     "activation_max": 127,
+     "ofm_zero_point": 7,
+     "ofm_scale": 173175754125,
+     "kind": "CONV",
+     "offset": 11516
+    }
+   ]
+  },
+  "forms": {
+   "A0": {
+    "cms_sha256": "592c6a7bffb58783a14e6a7668087f8631d31789eb4bc849f7093bd7e9d1fbf0",
+    "kernel_types": [
+     "CONV",
+     "CONV"
+    ],
+    "conv_act": [
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 7,
+      "ofm_scale": 173175754125,
+      "kind": "CONV",
+      "offset": 380
+     },
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 7,
+      "ofm_scale": 173175754125,
+      "kind": "CONV",
+      "offset": 496
+     }
+    ]
+   },
+   "A1": {
+    "cms_sha256": "845336cb48f0e2416ac8723bb1fbe66008ec4e1f92c2f0f5aa8b0a35d9b62035",
+    "kernel_types": [
+     "ELEMENTWISE",
+     "CONV",
+     "ELEMENTWISE"
+    ],
+    "conv_act": [
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 7,
+      "ofm_scale": 173175754125,
+      "kind": "CONV",
+      "offset": 608
+     }
+    ]
+   },
+   "A2": {
+    "cms_sha256": "fd77f8e90733d85a303999fd82919a29e186628451a7db2d604475b9cb8ab4c5",
+    "kernel_types": [
+     "ELEMENTWISE",
+     "CONV",
+     "ELEMENTWISE"
+    ],
+    "conv_act": [
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 7,
+      "ofm_scale": 173175754125,
+      "kind": "CONV",
+      "offset": 572
+     }
+    ]
+   }
+  }
+ },
+ "G08": {
+  "original": {
+   "vela_sha256": "031fade0e9b7136e2ed55a23422efbcc7aba28a32c8ebd3e043afbcc2f44bb75",
+   "n_ethosu_ops": 1,
+   "conv_act": [
+    {
+     "activation": 0,
+     "activation_min": 65408,
+     "activation_max": 127,
+     "ofm_zero_point": 65527,
+     "ofm_scale": 173013438842,
+     "kind": "CONV",
+     "offset": 29820
+    }
+   ]
+  },
+  "forms": {
+   "A0": {
+    "cms_sha256": "085974c6fcb6ac2f41fc0ac86fefabe60b9079951333bb01eac70171fcdc5712",
+    "kernel_types": [
+     "CONV",
+     "CONV"
+    ],
+    "conv_act": [
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 65527,
+      "ofm_scale": 173013438842,
+      "kind": "CONV",
+      "offset": 380
+     },
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 65527,
+      "ofm_scale": 173013438842,
+      "kind": "CONV",
+      "offset": 512
+     }
+    ]
+   },
+   "A1": {
+    "cms_sha256": "b0957685843762908d4df5c0b94a761bb4d4a8f41d408d931024a18f298d5961",
+    "kernel_types": [
+     "ELEMENTWISE",
+     "CONV",
+     "ELEMENTWISE",
+     "CONV",
+     "ELEMENTWISE"
+    ],
+    "conv_act": [
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 65527,
+      "ofm_scale": 173013438842,
+      "kind": "CONV",
+      "offset": 600
+     },
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 65527,
+      "ofm_scale": 173013438842,
+      "kind": "CONV",
+      "offset": 960
+     }
+    ]
+   },
+   "A2": {
+    "cms_sha256": "271027a19d470aef991a6350103c88e1e91e893ac0c76fbad46d8f23467c1bab",
+    "kernel_types": [
+     "ELEMENTWISE",
+     "CONV",
+     "CONV",
+     "ELEMENTWISE"
+    ],
+    "conv_act": [
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 65527,
+      "ofm_scale": 173013438842,
+      "kind": "CONV",
+      "offset": 560
+     },
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 65527,
+      "ofm_scale": 173013438842,
+      "kind": "CONV",
+      "offset": 692
+     }
+    ]
+   }
+  }
+ },
+ "G09": {
+  "original": {
+   "vela_sha256": "031fade0e9b7136e2ed55a23422efbcc7aba28a32c8ebd3e043afbcc2f44bb75",
+   "n_ethosu_ops": 1,
+   "conv_act": [
+    {
+     "activation": 0,
+     "activation_min": 65408,
+     "activation_max": 127,
+     "ofm_zero_point": 65408,
+     "ofm_scale": 165147787439,
+     "kind": "CONV",
+     "offset": 26472
+    }
+   ]
+  },
+  "forms": {
+   "A0": {
+    "cms_sha256": "3e3a07572dcdf735a8529bf8e0627fe00f44d3a484c14d5693c5f8a67147a59b",
+    "kernel_types": [
+     "CONV"
+    ],
+    "conv_act": [
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 65408,
+      "ofm_scale": 165147787439,
+      "kind": "CONV",
+      "offset": 340
+     }
+    ]
+   },
+   "A1": {
+    "cms_sha256": "9d4d1844b7fdb950d68cb5de34b18191cdcebbe27dc23e310a7c3658f20c6673",
+    "kernel_types": [
+     "ELEMENTWISE",
+     "CONV",
+     "ELEMENTWISE"
+    ],
+    "conv_act": [
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 65408,
+      "ofm_scale": 165147787439,
+      "kind": "CONV",
+      "offset": 560
+     }
+    ]
+   },
+   "A2": {
+    "cms_sha256": "99234a203257ab6c5c016d6111477f0fd67850307af187aaf75992d31b600b2c",
+    "kernel_types": [
+     "ELEMENTWISE",
+     "CONV",
+     "ELEMENTWISE"
+    ],
+    "conv_act": [
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 65408,
+      "ofm_scale": 165147787439,
+      "kind": "CONV",
+      "offset": 516
+     }
+    ]
+   }
+  }
+ },
+ "G10": {
+  "original": {
+   "vela_sha256": "031fade0e9b7136e2ed55a23422efbcc7aba28a32c8ebd3e043afbcc2f44bb75",
+   "n_ethosu_ops": 1,
+   "conv_act": [
+    {
+     "activation": 0,
+     "activation_min": 65408,
+     "activation_max": 127,
+     "ofm_zero_point": 65408,
+     "ofm_scale": 164914181829,
+     "kind": "CONV",
+     "offset": 29236
+    },
+    {
+     "activation": 0,
+     "activation_min": 65408,
+     "activation_max": 127,
+     "ofm_zero_point": 65408,
+     "ofm_scale": 164914181829,
+     "kind": "CONV",
+     "offset": 29368
+    }
+   ]
+  },
+  "forms": {
+   "A0": {
+    "cms_sha256": "65729fd9446467f0b3053880c67cb560c6946a32e7738c21e155331976510ec3",
+    "kernel_types": [
+     "CONV",
+     "CONV",
+     "CONV",
+     "CONV",
+     "CONV",
+     "CONV",
+     "CONV"
+    ],
+    "conv_act": [
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 65408,
+      "ofm_scale": 164914181829,
+      "kind": "CONV",
+      "offset": 380
+     },
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 65408,
+      "ofm_scale": 164914181829,
+      "kind": "CONV",
+      "offset": 512
+     },
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 65408,
+      "ofm_scale": 164914181829,
+      "kind": "CONV",
+      "offset": 624
+     },
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 65408,
+      "ofm_scale": 164914181829,
+      "kind": "CONV",
+      "offset": 744
+     },
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 65408,
+      "ofm_scale": 164914181829,
+      "kind": "CONV",
+      "offset": 864
+     },
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 65408,
+      "ofm_scale": 164914181829,
+      "kind": "CONV",
+      "offset": 984
+     },
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 65408,
+      "ofm_scale": 164914181829,
+      "kind": "CONV",
+      "offset": 1108
+     }
+    ]
+   },
+   "A1": {
+    "cms_sha256": "567c3f08984a258b838e049c7dde8edf21e810d9aefbb7ce85e690d9f39424da",
+    "kernel_types": [
+     "ELEMENTWISE",
+     "CONV",
+     "ELEMENTWISE",
+     "CONV",
+     "ELEMENTWISE",
+     "CONV",
+     "ELEMENTWISE",
+     "CONV",
+     "ELEMENTWISE"
+    ],
+    "conv_act": [
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 65408,
+      "ofm_scale": 164914181829,
+      "kind": "CONV",
+      "offset": 600
+     },
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 65408,
+      "ofm_scale": 164914181829,
+      "kind": "CONV",
+      "offset": 960
+     },
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 65408,
+      "ofm_scale": 164914181829,
+      "kind": "CONV",
+      "offset": 1288
+     },
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 65408,
+      "ofm_scale": 164914181829,
+      "kind": "CONV",
+      "offset": 1628
+     }
+    ]
+   },
+   "A2": {
+    "cms_sha256": "d05d93c3a18ddfa269865863cf70383a4a3401caf10de3792176be560ccc85bd",
+    "kernel_types": [
+     "ELEMENTWISE",
+     "CONV",
+     "CONV",
+     "CONV",
+     "CONV",
+     "ELEMENTWISE"
+    ],
+    "conv_act": [
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 65408,
+      "ofm_scale": 164914181829,
+      "kind": "CONV",
+      "offset": 556
+     },
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 65408,
+      "ofm_scale": 164914181829,
+      "kind": "CONV",
+      "offset": 688
+     },
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 65408,
+      "ofm_scale": 164914181829,
+      "kind": "CONV",
+      "offset": 808
+     },
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 65408,
+      "ofm_scale": 164914181829,
+      "kind": "CONV",
+      "offset": 940
+     }
+    ]
+   }
+  }
+ },
+ "G11": {
+  "original": {
+   "vela_sha256": "b83f28f2e5adc7fad13a41441578c95020c9c178e43d52dbf6b2bac2d789bb54",
+   "n_ethosu_ops": 1,
+   "conv_act": [
+    {
+     "activation": 0,
+     "activation_min": 65408,
+     "activation_max": 127,
+     "ofm_zero_point": 65408,
+     "ofm_scale": 173200676480,
+     "kind": "CONV",
+     "offset": 948
+    }
+   ]
+  },
+  "forms": {
+   "A0": {
+    "cms_sha256": "86497b11a709b6db780540926290952805ad2343f318ce020928bf7afcddb6e8",
+    "kernel_types": [
+     "CONV"
+    ],
+    "conv_act": [
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 65408,
+      "ofm_scale": 173200676480,
+      "kind": "CONV",
+      "offset": 340
+     }
+    ]
+   },
+   "A1": {
+    "cms_sha256": "58f69f58f112fd2ca64b82b1bf7dd1adbeddc49b44bbb8541d96a7799a6206bb",
+    "kernel_types": [
+     "ELEMENTWISE",
+     "CONV",
+     "ELEMENTWISE"
+    ],
+    "conv_act": [
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 65408,
+      "ofm_scale": 173200676480,
+      "kind": "CONV",
+      "offset": 560
+     }
+    ]
+   },
+   "A2": {
+    "cms_sha256": "c15f45e80626a73778469248c8353e561d03989c4e921571946d154d7566a126",
+    "kernel_types": [
+     "ELEMENTWISE",
+     "CONV",
+     "ELEMENTWISE"
+    ],
+    "conv_act": [
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 65408,
+      "ofm_scale": 173200676480,
+      "kind": "CONV",
+      "offset": 516
+     }
+    ]
+   }
+  }
+ },
+ "G12": {
+  "original": {
+   "vela_sha256": "b83f28f2e5adc7fad13a41441578c95020c9c178e43d52dbf6b2bac2d789bb54",
+   "n_ethosu_ops": 1,
+   "conv_act": [
+    {
+     "activation": 0,
+     "activation_min": 65408,
+     "activation_max": 127,
+     "ofm_zero_point": 65408,
+     "ofm_scale": 173856147760,
+     "kind": "CONV",
+     "offset": 1236
+    }
+   ]
+  },
+  "forms": {
+   "A0": {
+    "cms_sha256": "7f94e58bc076a70bca2b5b93bb33ff0667f6460b405faf3ecf2d98e5b5896475",
+    "kernel_types": [
+     "CONV"
+    ],
+    "conv_act": [
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 65408,
+      "ofm_scale": 173856147760,
+      "kind": "CONV",
+      "offset": 340
+     }
+    ]
+   },
+   "A1": {
+    "cms_sha256": "2313ba651ecbd3f102b7572a0a07401b94242db2e870dfef2b9b9ca8efe985da",
+    "kernel_types": [
+     "ELEMENTWISE",
+     "CONV",
+     "ELEMENTWISE"
+    ],
+    "conv_act": [
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 65408,
+      "ofm_scale": 173856147760,
+      "kind": "CONV",
+      "offset": 552
+     }
+    ]
+   },
+   "A2": {
+    "cms_sha256": "909c9a2aef1260965a4b01c24fd3464aacaeacd90af5608ac3ab73eac278ecd6",
+    "kernel_types": [
+     "ELEMENTWISE",
+     "CONV",
+     "ELEMENTWISE"
+    ],
+    "conv_act": [
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 65408,
+      "ofm_scale": 173856147760,
+      "kind": "CONV",
+      "offset": 512
+     }
+    ]
+   }
+  }
+ },
+ "G13": {
+  "original": {
+   "vela_sha256": "637711c9bb5046bbf7f9010d1e1f1c25e9ea6cf643d74e8eb225c66b4ba6fed7",
+   "n_ethosu_ops": 1,
+   "conv_act": [
+    {
+     "activation": 0,
+     "activation_min": 65408,
+     "activation_max": 127,
+     "ofm_zero_point": 2,
+     "ofm_scale": 173169435392,
+     "kind": "CONV",
+     "offset": 3840
+    }
+   ]
+  },
+  "forms": {
+   "A0": {
+    "cms_sha256": "3ab42ab5ba6e43b2cedfe221633080608f2326f78260dae21e6c97eddc820d94",
+    "kernel_types": [
+     "CONV",
+     "CONV"
+    ],
+    "conv_act": [
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 2,
+      "ofm_scale": 173169435392,
+      "kind": "CONV",
+      "offset": 380
+     },
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 2,
+      "ofm_scale": 173169435392,
+      "kind": "CONV",
+      "offset": 488
+     }
+    ]
+   },
+   "A1": {
+    "cms_sha256": "ac347d6fdd01158498dac1e22d9f9b118d5692684356f65a9f09ef08dbe80416",
+    "kernel_types": [
+     "ELEMENTWISE",
+     "CONV",
+     "ELEMENTWISE"
+    ],
+    "conv_act": [
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 2,
+      "ofm_scale": 173169435392,
+      "kind": "CONV",
+      "offset": 604
+     }
+    ]
+   },
+   "A2": {
+    "cms_sha256": "ca357cea3dc9b065c0e5de98bfb62ed39097c21ea624450b9d489b4427b409f2",
+    "kernel_types": [
+     "ELEMENTWISE",
+     "CONV",
+     "ELEMENTWISE"
+    ],
+    "conv_act": [
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 2,
+      "ofm_scale": 173169435392,
+      "kind": "CONV",
+      "offset": 560
+     }
+    ]
+   }
+  }
+ },
+ "G14": {
+  "original": {
+   "vela_sha256": "4c5b640211f0aaa60eaf65ee5c9c4096a43022fd2c34127042e1304bf45def7b",
+   "n_ethosu_ops": 1,
+   "conv_act": [
+    {
+     "activation": 36,
+     "activation_min": 65408,
+     "activation_max": 127,
+     "ofm_zero_point": 49,
+     "ofm_scale": 177666755538,
+     "kind": "CONV",
+     "offset": 1740
+    }
+   ]
+  },
+  "forms": {
+   "A0": {
+    "cms_sha256": "07f892c1def45f9591192bd2a454eabcd8cca45fd6214f573cf40ad8eb6a7682",
+    "kernel_types": [
+     "CONV"
+    ],
+    "conv_act": [
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 49,
+      "ofm_scale": 177666755538,
+      "kind": "CONV",
+      "offset": 340
+     }
+    ]
+   },
+   "A1": {
+    "cms_sha256": "d3cb65120d654a08f40dcf23a126b161a3dc2909488a851708c44f5366fddb74",
+    "kernel_types": [
+     "ELEMENTWISE",
+     "CONV",
+     "ELEMENTWISE"
+    ],
+    "conv_act": [
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 49,
+      "ofm_scale": 177666755538,
+      "kind": "CONV",
+      "offset": 556
+     }
+    ]
+   },
+   "A2": {
+    "cms_sha256": "8ba2b54d65150cb6d4786cd36016e9426bbb2254ca148f00abb8e522ba9e15ce",
+    "kernel_types": [
+     "ELEMENTWISE",
+     "CONV",
+     "ELEMENTWISE"
+    ],
+    "conv_act": [
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 49,
+      "ofm_scale": 177666755538,
+      "kind": "CONV",
+      "offset": 504
+     }
+    ]
+   }
+  }
+ },
+ "G15": {
+  "original": {
+   "vela_sha256": "4c5b640211f0aaa60eaf65ee5c9c4096a43022fd2c34127042e1304bf45def7b",
+   "n_ethosu_ops": 1,
+   "conv_act": [
+    {
+     "activation": 0,
+     "activation_min": 65408,
+     "activation_max": 127,
+     "ofm_zero_point": 65467,
+     "ofm_scale": 178206669161,
+     "kind": "CONV",
+     "offset": 1884
+    }
+   ]
+  },
+  "forms": {
+   "A0": {
+    "cms_sha256": "ddf5460d13a75e15cfa368219bad78fbe0ed3b17e1e4fc643bc2b995c53162df",
+    "kernel_types": [
+     "CONV"
+    ],
+    "conv_act": [
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 65467,
+      "ofm_scale": 178206669161,
+      "kind": "CONV",
+      "offset": 340
+     }
+    ]
+   },
+   "A1": {
+    "cms_sha256": "b51af8a300cd607faf49208ee5776fc56f077a98cc3c70f92c64803a3e3ad050",
+    "kernel_types": [
+     "ELEMENTWISE",
+     "CONV",
+     "ELEMENTWISE"
+    ],
+    "conv_act": [
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 65467,
+      "ofm_scale": 178206669161,
+      "kind": "CONV",
+      "offset": 560
+     }
+    ]
+   },
+   "A2": {
+    "cms_sha256": "38ecfd655af3673a310a6a6006a5332a30d89df6398a25800679e813943e849c",
+    "kernel_types": [
+     "ELEMENTWISE",
+     "CONV",
+     "ELEMENTWISE"
+    ],
+    "conv_act": [
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 65467,
+      "ofm_scale": 178206669161,
+      "kind": "CONV",
+      "offset": 520
+     }
+    ]
+   }
+  }
+ },
+ "G18": {
+  "original": {
+   "vela_sha256": "f9575c36651efe0dc3798135f4bc8f9e3fd3614a75f7ad16377994616d18a069",
+   "n_ethosu_ops": 1,
+   "conv_act": [
+    {
+     "activation": 0,
+     "activation_min": 65408,
+     "activation_max": 127,
+     "ofm_zero_point": 65482,
+     "ofm_scale": 178038093620,
+     "kind": "CONV",
+     "offset": 2564
+    }
+   ]
+  },
+  "forms": {
+   "A0": {
+    "cms_sha256": "48fc6bd7846193b7fd85d6126f6d6977a0a1c4557f848e3437527c15e68c787e",
+    "kernel_types": [
+     "CONV"
+    ],
+    "conv_act": [
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 65482,
+      "ofm_scale": 178038093620,
+      "kind": "CONV",
+      "offset": 340
+     }
+    ]
+   },
+   "A1": {
+    "cms_sha256": "795cf7cf35406aff091b362976190c44ed8e09033b36b3376de4cc516f5d1744",
+    "kernel_types": [
+     "ELEMENTWISE",
+     "CONV",
+     "ELEMENTWISE"
+    ],
+    "conv_act": [
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 65482,
+      "ofm_scale": 178038093620,
+      "kind": "CONV",
+      "offset": 560
+     }
+    ]
+   },
+   "A2": {
+    "cms_sha256": "fad16706656219a07401a27b3ee0b2f0a44d81d390ed0a5375840bf8e35360da",
+    "kernel_types": [
+     "ELEMENTWISE",
+     "CONV",
+     "ELEMENTWISE"
+    ],
+    "conv_act": [
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 65482,
+      "ofm_scale": 178038093620,
+      "kind": "CONV",
+      "offset": 524
+     }
+    ]
+   }
+  }
+ },
+ "G19": {
+  "original": {
+   "vela_sha256": "b83f28f2e5adc7fad13a41441578c95020c9c178e43d52dbf6b2bac2d789bb54",
+   "n_ethosu_ops": 1,
+   "conv_act": [
+    {
+     "activation": 0,
+     "activation_min": 65408,
+     "activation_max": 127,
+     "ofm_zero_point": 65506,
+     "ofm_scale": 177395976848,
+     "kind": "CONV",
+     "offset": 2472
+    }
+   ]
+  },
+  "forms": {
+   "A0": {
+    "cms_sha256": "bc7bcd025e763d293e260ce176848c754ee820d37d75e56544f6272a60493645",
+    "kernel_types": [
+     "CONV"
+    ],
+    "conv_act": [
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 65506,
+      "ofm_scale": 177395976848,
+      "kind": "CONV",
+      "offset": 340
+     }
+    ]
+   },
+   "A1": {
+    "cms_sha256": "da273c16372e727c4b20043eb2de9588b62ceabfdd886bdff495ec163c6870b8",
+    "kernel_types": [
+     "ELEMENTWISE",
+     "CONV",
+     "ELEMENTWISE"
+    ],
+    "conv_act": [
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 65506,
+      "ofm_scale": 177395976848,
+      "kind": "CONV",
+      "offset": 560
+     }
+    ]
+   },
+   "A2": {
+    "cms_sha256": "e12e56948e749ed450152d6bb9e85dc9b432f53e2ca8664517dddb6646685fe6",
+    "kernel_types": [
+     "ELEMENTWISE",
+     "CONV",
+     "ELEMENTWISE"
+    ],
+    "conv_act": [
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 65506,
+      "ofm_scale": 177395976848,
+      "kind": "CONV",
+      "offset": 524
+     }
+    ]
+   }
+  }
+ },
+ "G22": {
+  "original": {
+   "vela_sha256": "aa143485cf3e64da4d46b58fe7cb2dbeab95193740ee0e13815ce3c0bdd1238b",
+   "n_ethosu_ops": 1,
+   "conv_act": [
+    {
+     "activation": 0,
+     "activation_min": 65408,
+     "activation_max": 127,
+     "ofm_zero_point": 65510,
+     "ofm_scale": 172899247649,
+     "kind": "CONV",
+     "offset": 7616
+    }
+   ]
+  },
+  "forms": {
+   "A0": {
+    "cms_sha256": "7f669c4654ca5db443c035ed12d7cfa70a539afd7ca0d45524bf502b95f68011",
+    "kernel_types": [
+     "CONV"
+    ],
+    "conv_act": [
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 65510,
+      "ofm_scale": 172899247649,
+      "kind": "CONV",
+      "offset": 380
+     }
+    ]
+   },
+   "A1": {
+    "cms_sha256": "f4539d31eb40e10e20bc8f7d84da4a9bb8290dcfaadb80b227b537df4821d386",
+    "kernel_types": [
+     "ELEMENTWISE",
+     "CONV",
+     "ELEMENTWISE"
+    ],
+    "conv_act": [
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 65510,
+      "ofm_scale": 172899247649,
+      "kind": "CONV",
+      "offset": 608
+     }
+    ]
+   },
+   "A2": {
+    "cms_sha256": "5e63882accb78a254f92171ce7a7b96174bc9c76b314d9d823e67af405a848f9",
+    "kernel_types": [
+     "ELEMENTWISE",
+     "CONV",
+     "ELEMENTWISE"
+    ],
+    "conv_act": [
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 65510,
+      "ofm_scale": 172899247649,
+      "kind": "CONV",
+      "offset": 564
+     }
+    ]
+   }
+  }
+ },
+ "G23": {
+  "original": {
+   "vela_sha256": "f9575c36651efe0dc3798135f4bc8f9e3fd3614a75f7ad16377994616d18a069",
+   "n_ethosu_ops": 1,
+   "conv_act": [
+    {
+     "activation": 0,
+     "activation_min": 65408,
+     "activation_max": 127,
+     "ofm_zero_point": 65408,
+     "ofm_scale": 164620752896,
+     "kind": "CONV",
+     "offset": 2260
+    }
+   ]
+  },
+  "forms": {
+   "A0": {
+    "cms_sha256": "ed6b50c01305d7997eaf0739a128859d644b50b0fee21e4b7f3f0cf2597ee552",
+    "kernel_types": [
+     "CONV"
+    ],
+    "conv_act": [
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 65408,
+      "ofm_scale": 164620752896,
+      "kind": "CONV",
+      "offset": 340
+     }
+    ]
+   },
+   "A1": {
+    "cms_sha256": "0d488a1e30d7c028a6c22a83494b70f3015da6610cb9779cf8b17ae2e4114b79",
+    "kernel_types": [
+     "ELEMENTWISE",
+     "CONV",
+     "ELEMENTWISE"
+    ],
+    "conv_act": [
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 65408,
+      "ofm_scale": 164620752896,
+      "kind": "CONV",
+      "offset": 560
+     }
+    ]
+   },
+   "A2": {
+    "cms_sha256": "f38afb58d483f1168b5b463c1d7443f4842b707dd80337531934109d3f27a896",
+    "kernel_types": [
+     "ELEMENTWISE",
+     "CONV",
+     "ELEMENTWISE"
+    ],
+    "conv_act": [
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 65408,
+      "ofm_scale": 164620752896,
+      "kind": "CONV",
+      "offset": 516
+     }
+    ]
+   }
+  }
+ },
+ "G24": {
+  "original": {
+   "vela_sha256": "f9575c36651efe0dc3798135f4bc8f9e3fd3614a75f7ad16377994616d18a069",
+   "n_ethosu_ops": 1,
+   "conv_act": [
+    {
+     "activation": 0,
+     "activation_min": 65408,
+     "activation_max": 127,
+     "ofm_zero_point": 65408,
+     "ofm_scale": 168661407104,
+     "kind": "CONV",
+     "offset": 1924
+    }
+   ]
+  },
+  "forms": {
+   "A0": {
+    "cms_sha256": "983ebb11af09290bed2072fe5b0d25fefc82ed6e7390c4a7997599eaeee96eab",
+    "kernel_types": [
+     "CONV",
+     "CONV"
+    ],
+    "conv_act": [
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 65408,
+      "ofm_scale": 168661407104,
+      "kind": "CONV",
+      "offset": 380
+     },
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 65408,
+      "ofm_scale": 168661407104,
+      "kind": "CONV",
+      "offset": 512
+     }
+    ]
+   },
+   "A1": {
+    "cms_sha256": "dafbcfb010cee48ae1af05359bb1205069a83b41e5555de5e7e29dc987999da6",
+    "kernel_types": [
+     "ELEMENTWISE",
+     "CONV",
+     "ELEMENTWISE",
+     "CONV",
+     "ELEMENTWISE"
+    ],
+    "conv_act": [
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 65408,
+      "ofm_scale": 168661407104,
+      "kind": "CONV",
+      "offset": 600
+     },
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 65408,
+      "ofm_scale": 168661407104,
+      "kind": "CONV",
+      "offset": 960
+     }
+    ]
+   },
+   "A2": {
+    "cms_sha256": "08d1b3d18e2522589aef0d387a0dd7610cba6f1bd28d1faf6749d63c30d1c0ea",
+    "kernel_types": [
+     "ELEMENTWISE",
+     "CONV",
+     "CONV",
+     "ELEMENTWISE"
+    ],
+    "conv_act": [
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 65408,
+      "ofm_scale": 168661407104,
+      "kind": "CONV",
+      "offset": 564
+     },
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 65408,
+      "ofm_scale": 168661407104,
+      "kind": "CONV",
+      "offset": 696
+     }
+    ]
+   }
+  }
+ },
+ "G25": {
+  "original": {
+   "vela_sha256": "f9575c36651efe0dc3798135f4bc8f9e3fd3614a75f7ad16377994616d18a069",
+   "n_ethosu_ops": 1,
+   "conv_act": [
+    {
+     "activation": 0,
+     "activation_min": 65408,
+     "activation_max": 127,
+     "ofm_zero_point": 65408,
+     "ofm_scale": 169579925120,
+     "kind": "CONV",
+     "offset": 960
+    }
+   ]
+  },
+  "forms": {
+   "A0": {
+    "cms_sha256": "e9c5f1045222a6575c5ac90fb8149e489ee28ce57b67bd6076cd8bba15b52a90",
+    "kernel_types": [
+     "CONV"
+    ],
+    "conv_act": [
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 65408,
+      "ofm_scale": 169579925120,
+      "kind": "CONV",
+      "offset": 340
+     }
+    ]
+   },
+   "A1": {
+    "cms_sha256": "684434775c8ecc5c2f00436abd42f43c0b54808265a1cc61a4af74b0cea0870d",
+    "kernel_types": [
+     "ELEMENTWISE",
+     "CONV",
+     "ELEMENTWISE"
+    ],
+    "conv_act": [
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 65408,
+      "ofm_scale": 169579925120,
+      "kind": "CONV",
+      "offset": 556
+     }
+    ]
+   },
+   "A2": {
+    "cms_sha256": "b542bce699ed884e01eac89d9764bee84bcba989400031ec38bd361aad36a3cf",
+    "kernel_types": [
+     "ELEMENTWISE",
+     "CONV",
+     "ELEMENTWISE"
+    ],
+    "conv_act": [
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 65408,
+      "ofm_scale": 169579925120,
+      "kind": "CONV",
+      "offset": 512
+     }
+    ]
+   }
+  }
+ },
+ "G28": {
+  "original": {
+   "vela_sha256": "b83f28f2e5adc7fad13a41441578c95020c9c178e43d52dbf6b2bac2d789bb54",
+   "n_ethosu_ops": 1,
+   "conv_act": [
+    {
+     "activation": 0,
+     "activation_min": 65408,
+     "activation_max": 127,
+     "ofm_zero_point": 65408,
+     "ofm_scale": 168771744911,
+     "kind": "CONV",
+     "offset": 2168
+    }
+   ]
+  },
+  "forms": {
+   "A0": {
+    "cms_sha256": "33bde3333079dc58158bc04be7f2732a06f993cd9decea83b176eb9ca0fdd285",
+    "kernel_types": [
+     "CONV"
+    ],
+    "conv_act": [
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 65408,
+      "ofm_scale": 168771744911,
+      "kind": "CONV",
+      "offset": 340
+     }
+    ]
+   },
+   "A1": {
+    "cms_sha256": "e53f3ce44ab7b4d9d5e51a84c82b78343c74ee32c19f27dc1bff26cb05118dc1",
+    "kernel_types": [
+     "ELEMENTWISE",
+     "CONV",
+     "ELEMENTWISE"
+    ],
+    "conv_act": [
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 65408,
+      "ofm_scale": 168771744911,
+      "kind": "CONV",
+      "offset": 548
+     }
+    ]
+   },
+   "A2": {
+    "cms_sha256": "0b35f11ede15385436f19c90ba960e8e228b24f1d9b145e24a94ca0b47cb722c",
+    "kernel_types": [
+     "ELEMENTWISE",
+     "CONV",
+     "ELEMENTWISE"
+    ],
+    "conv_act": [
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 65408,
+      "ofm_scale": 168771744911,
+      "kind": "CONV",
+      "offset": 504
+     }
+    ]
+   }
+  }
+ },
+ "G36": {
+  "original": {
+   "vela_sha256": "aa143485cf3e64da4d46b58fe7cb2dbeab95193740ee0e13815ce3c0bdd1238b",
+   "n_ethosu_ops": 1,
+   "conv_act": [
+    {
+     "activation": 0,
+     "activation_min": 65408,
+     "activation_max": 127,
+     "ofm_zero_point": 11,
+     "ofm_scale": 178180885954,
+     "kind": "CONV",
+     "offset": 15224
+    }
+   ]
+  },
+  "forms": {
+   "A0": {
+    "cms_sha256": "7c066b80df49224a42ae0473edd1ce4a723c1370ef362a6b31ca0242b1da22d1",
+    "kernel_types": [
+     "CONV"
+    ],
+    "conv_act": [
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 11,
+      "ofm_scale": 178180885954,
+      "kind": "CONV",
+      "offset": 340
+     }
+    ]
+   },
+   "A1": {
+    "cms_sha256": "45f72a4cea2aebd9b3eb385189c21d64ed8acad2f40236008d54856dd20d9162",
+    "kernel_types": [
+     "ELEMENTWISE",
+     "CONV",
+     "ELEMENTWISE"
+    ],
+    "conv_act": [
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 11,
+      "ofm_scale": 178180885954,
+      "kind": "CONV",
+      "offset": 560
+     }
+    ]
+   },
+   "A2": {
+    "cms_sha256": "cf6f7ebbc147d9b79aa83f20d07885ed31e8ba830830abf6f6e30bea7166ea42",
+    "kernel_types": [
+     "ELEMENTWISE",
+     "CONV",
+     "ELEMENTWISE"
+    ],
+    "conv_act": [
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 11,
+      "ofm_scale": 178180885954,
+      "kind": "CONV",
+      "offset": 516
+     }
+    ]
+   }
+  }
+ },
+ "G37": {
+  "original": {
+   "vela_sha256": "aa143485cf3e64da4d46b58fe7cb2dbeab95193740ee0e13815ce3c0bdd1238b",
+   "n_ethosu_ops": 1,
+   "conv_act": [
+    {
+     "activation": 0,
+     "activation_min": 65408,
+     "activation_max": 127,
+     "ofm_zero_point": 65408,
+     "ofm_scale": 164855051420,
+     "kind": "CONV",
+     "offset": 14848
+    }
+   ]
+  },
+  "forms": {
+   "A0": {
+    "cms_sha256": "55bda9b94858fd87eec683925bcde7240db3f687e3bc786907191c0bb42c16e1",
+    "kernel_types": [
+     "CONV"
+    ],
+    "conv_act": [
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 65408,
+      "ofm_scale": 164855051420,
+      "kind": "CONV",
+      "offset": 340
+     }
+    ]
+   },
+   "A1": {
+    "cms_sha256": "195640399826c6247c5c630ea1db190e3177e1c10896144407e4dcff03fa2d4f",
+    "kernel_types": [
+     "ELEMENTWISE",
+     "CONV",
+     "ELEMENTWISE"
+    ],
+    "conv_act": [
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 65408,
+      "ofm_scale": 164855051420,
+      "kind": "CONV",
+      "offset": 560
+     }
+    ]
+   },
+   "A2": {
+    "cms_sha256": "0e2cb7598faa59e895dfe7985186d964791e916ea82c72f522d7ff964064b6b0",
+    "kernel_types": [
+     "ELEMENTWISE",
+     "CONV",
+     "ELEMENTWISE"
+    ],
+    "conv_act": [
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 65408,
+      "ofm_scale": 164855051420,
+      "kind": "CONV",
+      "offset": 516
+     }
+    ]
+   }
+  }
+ },
+ "G40": {
+  "original": {
+   "vela_sha256": "031fade0e9b7136e2ed55a23422efbcc7aba28a32c8ebd3e043afbcc2f44bb75",
+   "n_ethosu_ops": 1,
+   "conv_act": [
+    {
+     "activation": 0,
+     "activation_min": 65408,
+     "activation_max": 127,
+     "ofm_zero_point": 65408,
+     "ofm_scale": 164855269691,
+     "kind": "CONV",
+     "offset": 31572
+    }
+   ]
+  },
+  "forms": {
+   "A0": {
+    "cms_sha256": "beb3ed569e0d65cb7abb2d98ea2fb63ebd943fae9a2a504d691524e4a6afb583",
+    "kernel_types": [
+     "CONV"
+    ],
+    "conv_act": [
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 65408,
+      "ofm_scale": 164855269691,
+      "kind": "CONV",
+      "offset": 340
+     }
+    ]
+   },
+   "A1": {
+    "cms_sha256": "da2ca1c499842776dc2012086e03cd43957a613ad99818ec3c853e4971cdf30e",
+    "kernel_types": [
+     "ELEMENTWISE",
+     "CONV",
+     "ELEMENTWISE"
+    ],
+    "conv_act": [
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 65408,
+      "ofm_scale": 164855269691,
+      "kind": "CONV",
+      "offset": 560
+     }
+    ]
+   },
+   "A2": {
+    "cms_sha256": "b586dfaa0f703106ab7a790e05d438b8f0297722e612ae494e1c6bdf5e4c3821",
+    "kernel_types": [
+     "ELEMENTWISE",
+     "CONV",
+     "ELEMENTWISE"
+    ],
+    "conv_act": [
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 65408,
+      "ofm_scale": 164855269691,
+      "kind": "CONV",
+      "offset": 516
+     }
+    ]
+   }
+  }
+ },
+ "G41": {
+  "original": {
+   "vela_sha256": "031fade0e9b7136e2ed55a23422efbcc7aba28a32c8ebd3e043afbcc2f44bb75",
+   "n_ethosu_ops": 1,
+   "conv_act": [
+    {
+     "activation": 0,
+     "activation_min": 65408,
+     "activation_max": 127,
+     "ofm_zero_point": 65408,
+     "ofm_scale": 156569836364,
+     "kind": "CONV",
+     "offset": 33520
+    }
+   ]
+  },
+  "forms": {
+   "A0": {
+    "cms_sha256": "6df64674342a3dd648c71e0e4fb6c2650708269c5cd6f1dc87b1489d60b4981c",
+    "kernel_types": [
+     "CONV"
+    ],
+    "conv_act": [
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 65408,
+      "ofm_scale": 156569836364,
+      "kind": "CONV",
+      "offset": 340
+     }
+    ]
+   },
+   "A1": {
+    "cms_sha256": "2587e2c2f6a5605825c10e4c7f473e5c0783f6be290f8fdb7212638bb803af34",
+    "kernel_types": [
+     "ELEMENTWISE",
+     "CONV",
+     "ELEMENTWISE"
+    ],
+    "conv_act": [
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 65408,
+      "ofm_scale": 156569836364,
+      "kind": "CONV",
+      "offset": 560
+     }
+    ]
+   },
+   "A2": {
+    "cms_sha256": "5a208956688d89ef7f06de0acd846eec0ab56bcc0edaa134357b7c8a830a175d",
+    "kernel_types": [
+     "ELEMENTWISE",
+     "CONV",
+     "ELEMENTWISE"
+    ],
+    "conv_act": [
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 65408,
+      "ofm_scale": 156569836364,
+      "kind": "CONV",
+      "offset": 516
+     }
+    ]
+   }
+  }
+ },
+ "G51": {
+  "original": {
+   "vela_sha256": "637711c9bb5046bbf7f9010d1e1f1c25e9ea6cf643d74e8eb225c66b4ba6fed7",
+   "n_ethosu_ops": 1,
+   "conv_act": [
+    {
+     "activation": 0,
+     "activation_min": 65408,
+     "activation_max": 127,
+     "ofm_zero_point": 65530,
+     "ofm_scale": 177595694923,
+     "kind": "CONV",
+     "offset": 7028
+    }
+   ]
+  },
+  "forms": {
+   "A0": {
+    "cms_sha256": "defaffe89fa215f2a380db288ef7b1ae4478cfee66c3d384e706c9f23d4072c1",
+    "kernel_types": [
+     "CONV"
+    ],
+    "conv_act": [
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 65530,
+      "ofm_scale": 177595694923,
+      "kind": "CONV",
+      "offset": 340
+     }
+    ]
+   },
+   "A1": {
+    "cms_sha256": "96e388843c83842bb48054b4c8cb5ef95efe1e98757c81392f364e3e879d5e6f",
+    "kernel_types": [
+     "ELEMENTWISE",
+     "CONV",
+     "ELEMENTWISE"
+    ],
+    "conv_act": [
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 65530,
+      "ofm_scale": 177595694923,
+      "kind": "CONV",
+      "offset": 564
+     }
+    ]
+   },
+   "A2": {
+    "cms_sha256": "13a10abedaec0e73fadff6780651a790d33788cd3bcf037ac0e451d3a5e8f59b",
+    "kernel_types": [
+     "ELEMENTWISE",
+     "CONV",
+     "ELEMENTWISE"
+    ],
+    "conv_act": [
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 65530,
+      "ofm_scale": 177595694923,
+      "kind": "CONV",
+      "offset": 528
+     }
+    ]
+   }
+  }
+ },
+ "G52": {
+  "original": {
+   "vela_sha256": "b83f28f2e5adc7fad13a41441578c95020c9c178e43d52dbf6b2bac2d789bb54",
+   "n_ethosu_ops": 1,
+   "conv_act": [
+    {
+     "activation": 0,
+     "activation_min": 65408,
+     "activation_max": 127,
+     "ofm_zero_point": 65408,
+     "ofm_scale": 173568909184,
+     "kind": "CONV",
+     "offset": 1832
+    }
+   ]
+  },
+  "forms": {
+   "A0": {
+    "cms_sha256": "e9cb1a96a70c938fd6308c5334f9a31b0e60029c4a242883b8e2e0266164c5b6",
+    "kernel_types": [
+     "CONV"
+    ],
+    "conv_act": [
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 65408,
+      "ofm_scale": 173568909184,
+      "kind": "CONV",
+      "offset": 340
+     }
+    ]
+   },
+   "A1": {
+    "cms_sha256": "d94859d2b229fc77c31e9df467714187042df2dc62a9d5538a62e76fcf8a1eed",
+    "kernel_types": [
+     "ELEMENTWISE",
+     "CONV",
+     "ELEMENTWISE"
+    ],
+    "conv_act": [
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 65408,
+      "ofm_scale": 173568909184,
+      "kind": "CONV",
+      "offset": 552
+     }
+    ]
+   },
+   "A2": {
+    "cms_sha256": "aebe641af8b31b9b460ce5ca58f1f37c5fce5a1230ce8ba4580675c0d0bbe2ee",
+    "kernel_types": [
+     "ELEMENTWISE",
+     "CONV",
+     "ELEMENTWISE"
+    ],
+    "conv_act": [
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 65408,
+      "ofm_scale": 173568909184,
+      "kind": "CONV",
+      "offset": 508
+     }
+    ]
+   }
+  }
+ },
+ "G53": {
+  "original": {
+   "vela_sha256": "637711c9bb5046bbf7f9010d1e1f1c25e9ea6cf643d74e8eb225c66b4ba6fed7",
+   "n_ethosu_ops": 1,
+   "conv_act": [
+    {
+     "activation": 0,
+     "activation_min": 65408,
+     "activation_max": 127,
+     "ofm_zero_point": 65408,
+     "ofm_scale": 164289112652,
+     "kind": "CONV",
+     "offset": 5952
+    }
+   ]
+  },
+  "forms": {
+   "A0": {
+    "cms_sha256": "c1094046ab060e18a467e746a2c4ce247b5501a195217f33d291f6d32e92f364",
+    "kernel_types": [
+     "CONV"
+    ],
+    "conv_act": [
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 65408,
+      "ofm_scale": 164289112652,
+      "kind": "CONV",
+      "offset": 340
+     }
+    ]
+   },
+   "A1": {
+    "cms_sha256": "399b921b1182b4de4d5a6ca84177730c29f86bac934603e7ede0382946a31219",
+    "kernel_types": [
+     "ELEMENTWISE",
+     "CONV",
+     "ELEMENTWISE"
+    ],
+    "conv_act": [
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 65408,
+      "ofm_scale": 164289112652,
+      "kind": "CONV",
+      "offset": 560
+     }
+    ]
+   },
+   "A2": {
+    "cms_sha256": "79edd6915d7635a823b34978941a024f2ce191dddb9eee4df618bfb65f0419d3",
+    "kernel_types": [
+     "ELEMENTWISE",
+     "CONV",
+     "ELEMENTWISE"
+    ],
+    "conv_act": [
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 65408,
+      "ofm_scale": 164289112652,
+      "kind": "CONV",
+      "offset": 524
+     }
+    ]
+   }
+  }
+ },
+ "G56": {
+  "original": {
+   "vela_sha256": "637711c9bb5046bbf7f9010d1e1f1c25e9ea6cf643d74e8eb225c66b4ba6fed7",
+   "n_ethosu_ops": 1,
+   "conv_act": [
+    {
+     "activation": 0,
+     "activation_min": 65408,
+     "activation_max": 127,
+     "ofm_zero_point": 65408,
+     "ofm_scale": 168915556132,
+     "kind": "CONV",
+     "offset": 8732
+    }
+   ]
+  },
+  "forms": {
+   "A0": {
+    "cms_sha256": "32008fe7167bed0580d442d249e9c5bb6d8af927e5ca2fbd7d607dd3feb9a806",
+    "kernel_types": [
+     "CONV"
+    ],
+    "conv_act": [
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 65408,
+      "ofm_scale": 168915556132,
+      "kind": "CONV",
+      "offset": 340
+     }
+    ]
+   },
+   "A1": {
+    "cms_sha256": "4655f2b7746dbe15def55bbc4452b5b5d3cc37cf98f8dc0ad080d4798873a1f2",
+    "kernel_types": [
+     "ELEMENTWISE",
+     "CONV",
+     "ELEMENTWISE"
+    ],
+    "conv_act": [
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 65408,
+      "ofm_scale": 168915556132,
+      "kind": "CONV",
+      "offset": 560
+     }
+    ]
+   },
+   "A2": {
+    "cms_sha256": "801fabbc0af44c29a3fe0b54f5032fa1eafb108a88db75374217fec6295e1169",
+    "kernel_types": [
+     "ELEMENTWISE",
+     "CONV",
+     "ELEMENTWISE"
+    ],
+    "conv_act": [
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 65408,
+      "ofm_scale": 168915556132,
+      "kind": "CONV",
+      "offset": 524
+     }
+    ]
+   }
+  }
+ },
+ "G57": {
+  "original": {
+   "vela_sha256": "637711c9bb5046bbf7f9010d1e1f1c25e9ea6cf643d74e8eb225c66b4ba6fed7",
+   "n_ethosu_ops": 1,
+   "conv_act": [
+    {
+     "activation": 0,
+     "activation_min": 65408,
+     "activation_max": 127,
+     "ofm_zero_point": 65408,
+     "ofm_scale": 169247706282,
+     "kind": "CONV",
+     "offset": 10200
+    }
+   ]
+  },
+  "forms": {
+   "A0": {
+    "cms_sha256": "ff86acc847ffbd80f4f1dab5200c4ebf10a478e8ebd470d0bfd0bd750e3028bb",
+    "kernel_types": [
+     "CONV"
+    ],
+    "conv_act": [
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 65408,
+      "ofm_scale": 169247706282,
+      "kind": "CONV",
+      "offset": 340
+     }
+    ]
+   },
+   "A1": {
+    "cms_sha256": "82fee42b71cbe5f638a4ce84dc57fde3171ab26cb0db68233a9162a43e2cb9ff",
+    "kernel_types": [
+     "ELEMENTWISE",
+     "CONV",
+     "ELEMENTWISE"
+    ],
+    "conv_act": [
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 65408,
+      "ofm_scale": 169247706282,
+      "kind": "CONV",
+      "offset": 564
+     }
+    ]
+   },
+   "A2": {
+    "cms_sha256": "32cdfa634812a4fc6db9d34932d1d06d1caf8d10cf5f7525466a027b67c7234a",
+    "kernel_types": [
+     "ELEMENTWISE",
+     "CONV",
+     "ELEMENTWISE"
+    ],
+    "conv_act": [
+     {
+      "activation": 0,
+      "activation_min": 65408,
+      "activation_max": 127,
+      "ofm_zero_point": 65408,
+      "ofm_scale": 169247706282,
+      "kind": "CONV",
+      "offset": 528
+     }
+    ]
+   }
+  }
+ }
+}

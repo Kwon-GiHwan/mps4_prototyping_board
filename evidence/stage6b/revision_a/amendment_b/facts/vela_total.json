@@ -1,0 +1,194 @@
+{
+ "G09": {
+  "vela_sha256": "b239c5963531f3f9e7cbe5bc493411801b1b1e6da52843042da6cd9c3f1f7835",
+  "vela_equals_record": true,
+  "summary": {
+   "system_config": "Ethos_U85_SYS_DRAM_Mid_1024",
+   "core_clock": "1000000000.0",
+   "inference_time": "2.9928e-05",
+   "passes_after_fusing": "3",
+   "cycles_npu": "19165",
+   "cycles_sram_access": "13002",
+   "cycles_dram_access": "29755",
+   "cycles_on_chip_flash_access": "0",
+   "cycles_off_chip_flash_access": "0",
+   "cycles_total": "29928"
+  }
+ },
+ "G11": {
+  "vela_sha256": "5850cbb3ef22ad679a21d5486e94fc4222b8427be50c814cc054012287209488",
+  "vela_equals_record": true,
+  "summary": {
+   "system_config": "Ethos_U85_SYS_DRAM_Mid_1024",
+   "core_clock": "1000000000.0",
+   "inference_time": "3.7273e-05",
+   "passes_after_fusing": "3",
+   "cycles_npu": "22562",
+   "cycles_sram_access": "21600",
+   "cycles_dram_access": "35799",
+   "cycles_on_chip_flash_access": "0",
+   "cycles_off_chip_flash_access": "0",
+   "cycles_total": "37273"
+  }
+ },
+ "G12": {
+  "vela_sha256": "95cf070b8da226167e984817f0a093a63b3a246f8d7da26d267ac52eba1b620b",
+  "vela_equals_record": true,
+  "summary": {
+   "system_config": "Ethos_U85_SYS_DRAM_Mid_1024",
+   "core_clock": "1000000000.0",
+   "inference_time": "5.3052e-05",
+   "passes_after_fusing": "3",
+   "cycles_npu": "33314",
+   "cycles_sram_access": "28800",
+   "cycles_dram_access": "44709",
+   "cycles_on_chip_flash_access": "0",
+   "cycles_off_chip_flash_access": "0",
+   "cycles_total": "53052"
+  }
+ },
+ "G23": {
+  "vela_sha256": "6f110162aae90093d9029ac81bd66f57e6092349cc2dc927fc23f8697c254e1a",
+  "vela_equals_record": true,
+  "summary": {
+   "system_config": "Ethos_U85_SYS_DRAM_Mid_1024",
+   "core_clock": "1000000000.0",
+   "inference_time": "1.7748e-05",
+   "passes_after_fusing": "3",
+   "cycles_npu": "9054",
+   "cycles_sram_access": "7597",
+   "cycles_dram_access": "17545",
+   "cycles_on_chip_flash_access": "0",
+   "cycles_off_chip_flash_access": "0",
+   "cycles_total": "17748"
+  }
+ },
+ "G25": {
+  "vela_sha256": "dfca83a2539e7c8e68235659840a12f39d8c26c95f75527f849fbfe52a89456a",
+  "vela_equals_record": true,
+  "summary": {
+   "system_config": "Ethos_U85_SYS_DRAM_Mid_1024",
+   "core_clock": "1000000000.0",
+   "inference_time": "1.4909e-05",
+   "passes_after_fusing": "3",
+   "cycles_npu": "9534",
+   "cycles_sram_access": "4603",
+   "cycles_dram_access": "14820",
+   "cycles_on_chip_flash_access": "0",
+   "cycles_off_chip_flash_access": "0",
+   "cycles_total": "14909"
+  }
+ },
+ "G28": {
+  "vela_sha256": "9158b2010b30cc316d18d87ca2a616d28bac522119e2b26d75c7369f8c0d6448",
+  "vela_equals_record": true,
+  "summary": {
+   "system_config": "Ethos_U85_SYS_DRAM_Mid_1024",
+   "core_clock": "1000000000.0",
+   "inference_time": "1.2947e-05",
+   "passes_after_fusing": "3",
+   "cycles_npu": "11714",
+   "cycles_sram_access": "963",
+   "cycles_dram_access": "9969",
+   "cycles_on_chip_flash_access": "0",
+   "cycles_off_chip_flash_access": "0",
+   "cycles_total": "12947"
+  }
+ },
+ "G40": {
+  "vela_sha256": "502dddc6bdae2cb72e945d78081eeaa356ef97554f22db9f4be12d405078ff75",
+  "vela_equals_record": true,
+  "summary": {
+   "system_config": "Ethos_U85_SYS_DRAM_Mid_1024",
+   "core_clock": "1000000000.0",
+   "inference_time": "3.0422e-05",
+   "passes_after_fusing": "3",
+   "cycles_npu": "23716",
+   "cycles_sram_access": "8405",
+   "cycles_dram_access": "30315",
+   "cycles_on_chip_flash_access": "0",
+   "cycles_off_chip_flash_access": "0",
+   "cycles_total": "30422"
+  }
+ },
+ "G41": {
+  "vela_sha256": "749676a988ea8c4ef735c71f9934f37823574199229567eb509b42f1247b0717",
+  "vela_equals_record": true,
+  "summary": {
+   "system_config": "Ethos_U85_SYS_DRAM_Mid_1024",
+   "core_clock": "1000000000.0",
+   "inference_time": "4.7128e-05",
+   "passes_after_fusing": "3",
+   "cycles_npu": "33000",
+   "cycles_sram_access": "14546",
+   "cycles_dram_access": "46984",
+   "cycles_on_chip_flash_access": "0",
+   "cycles_off_chip_flash_access": "0",
+   "cycles_total": "47128"
+  }
+ },
+ "G52": {
+  "vela_sha256": "a44a13836cfd2dfc46d77c34a9428813549ac23cd947d5b7bb39be99f6c84ccb",
+  "vela_equals_record": true,
+  "summary": {
+   "system_config": "Ethos_U85_SYS_DRAM_Mid_1024",
+   "core_clock": "1000000000.0",
+   "inference_time": "1.5393e-05",
+   "passes_after_fusing": "3",
+   "cycles_npu": "9891",
+   "cycles_sram_access": "5400",
+   "cycles_dram_access": "15277",
+   "cycles_on_chip_flash_access": "0",
+   "cycles_off_chip_flash_access": "0",
+   "cycles_total": "15393"
+  }
+ },
+ "G53": {
+  "vela_sha256": "f00c0e5242cb70f7e1842f8f82ea864b5532f156d4bfd6a75c69433db677fd9b",
+  "vela_equals_record": true,
+  "summary": {
+   "system_config": "Ethos_U85_SYS_DRAM_Mid_1024",
+   "core_clock": "1000000000.0",
+   "inference_time": "1.0631e-05",
+   "passes_after_fusing": "3",
+   "cycles_npu": "7227",
+   "cycles_sram_access": "2700",
+   "cycles_dram_access": "10566",
+   "cycles_on_chip_flash_access": "0",
+   "cycles_off_chip_flash_access": "0",
+   "cycles_total": "10631"
+  }
+ },
+ "G56": {
+  "vela_sha256": "87d0464e6da81f7feabf88f7c6a2050064aafd4a791e941509cbda7d4417025b",
+  "vela_equals_record": true,
+  "summary": {
+   "system_config": "Ethos_U85_SYS_DRAM_Mid_1024",
+   "core_clock": "1000000000.0",
+   "inference_time": "7.52e-06",
+   "passes_after_fusing": "3",
+   "cycles_npu": "5213",
+   "cycles_sram_access": "2022",
+   "cycles_dram_access": "7469",
+   "cycles_on_chip_flash_access": "0",
+   "cycles_off_chip_flash_access": "0",
+   "cycles_total": "7520"
+  }
+ },
+ "G57": {
+  "vela_sha256": "91cd9c8ae6e1df4f164d23065a253362d44685ec6c0257d4dd8729c2097ada01",
+  "vela_equals_record": true,
+  "summary": {
+   "system_config": "Ethos_U85_SYS_DRAM_Mid_1024",
+   "core_clock": "1000000000.0",
+   "inference_time": "1.0955e-05",
+   "passes_after_fusing": "3",
+   "cycles_npu": "7865",
+   "cycles_sram_access": "3106",
+   "cycles_dram_access": "10912",
+   "cycles_on_chip_flash_access": "0",
+   "cycles_off_chip_flash_access": "0",
+   "cycles_total": "10955"
+  }
+ }
+}

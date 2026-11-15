@@ -1,0 +1,1061 @@
+{
+ "G14": {
+  "model": "wav2letter_pruned_int8",
+  "op_index": 19,
+  "activation": "NONE",
+  "act_range": [
+   -128,
+   127
+  ],
+  "quant": {
+   "conv_ifm": {
+    "scale": [
+     0.27014946937561035
+    ],
+    "zp": [
+     -84
+    ]
+   },
+   "conv_ofm": {
+    "scale": [
+     0.7642049193382263
+    ],
+    "zp": [
+     49
+    ]
+   }
+  },
+  "forms": {
+   "A0": {
+    "tensors": {
+     "share_conv_out": "ofm (BUILTIN_REF, after fused activation)",
+     "share_final": "ofm (graph output)"
+    },
+    "quant": {
+     "graph_inputs": [
+      {
+       "scale": [
+        0.27014946937561035
+       ],
+       "zp": [
+        -84
+       ]
+      }
+     ],
+     "final": {
+      "scale": [
+       0.7642049193382263
+      ],
+      "zp": [
+       49
+      ]
+     }
+    },
+    "graph_inputs": [
+     {
+      "n": 296000,
+      "at_lo": 1109,
+      "at_hi": 1125,
+      "inside": 293766,
+      "below_lo": 0,
+      "above_hi": 0,
+      "min": -128,
+      "max": 127,
+      "inside_share": 0.9924527027027027
+     }
+    ],
+    "conv_in": {
+     "n": 296000,
+     "at_lo": 1109,
+     "at_hi": 1125,
+     "inside": 293766,
+     "below_lo": 0,
+     "above_hi": 0,
+     "min": -128,
+     "max": 127,
+     "inside_share": 0.9924527027027027
+    },
+    "conv_out": {
+     "n": 296000,
+     "at_lo": 221059,
+     "at_hi": 1853,
+     "inside": 73088,
+     "below_lo": 0,
+     "above_hi": 0,
+     "min": -128,
+     "max": 127,
+     "inside_share": 0.24691891891891893
+    },
+    "final": {
+     "n": 296000,
+     "at_lo": 221059,
+     "at_hi": 1853,
+     "inside": 73088,
+     "below_lo": 0,
+     "above_hi": 0,
+     "min": -128,
+     "max": 127,
+     "inside_share": 0.24691891891891893
+    },
+    "preclamp": {
+     "n": 296000,
+     "below_lo": 220157,
+     "above_hi": 1833,
+     "inside": 73088,
+     "p01": -460.0,
+     "p50": -194.0,
+     "p99": 84.0
+    },
+    "recomputed_equals_record": {
+     "conv_out": true,
+     "final": true
+    },
+    "record": {
+     "conv_out_informative": 0.24691891891891893,
+     "final_informative": 0.24691891891891893
+    }
+   },
+   "A1": {
+    "tensors": {
+     "share_conv_out": "conv_out (BUILTIN_REF, after fused activation)",
+     "share_final": "ofm (graph output)"
+    },
+    "quant": {
+     "graph_inputs": [
+      {
+       "scale": [
+        0.27014946937561035
+       ],
+       "zp": [
+        -84
+       ]
+      },
+      {
+       "scale": [
+        0.27014946937561035
+       ],
+       "zp": [
+        -84
+       ]
+      },
+      {
+       "scale": [
+        0.27014946937561035
+       ],
+       "zp": [
+        -84
+       ]
+      }
+     ],
+     "final": {
+      "scale": [
+       1.5284098386764526
+      ],
+      "zp": [
+       49
+      ]
+     }
+    },
+    "graph_inputs": [
+     {
+      "n": 296000,
+      "at_lo": 1109,
+      "at_hi": 1125,
+      "inside": 293766,
+      "below_lo": 0,
+      "above_hi": 0,
+      "min": -128,
+      "max": 127,
+      "inside_share": 0.9924527027027027
+     },
+     {
+      "n": 296000,
+      "at_lo": 1159,
+      "at_hi": 1181,
+      "inside": 293660,
+      "below_lo": 0,
+      "above_hi": 0,
+      "min": -128,
+      "max": 127,
+      "inside_share": 0.9920945945945946
+     },
+     {
+      "n": 296000,
+      "at_lo": 1136,
+      "at_hi": 1163,
+      "inside": 293701,
+      "below_lo": 0,
+      "above_hi": 0,
+      "min": -128,
+      "max": 127,
+      "inside_share": 0.992233108108108
+     }
+    ],
+    "conv_in": {
+     "n": 296000,
+     "at_lo": 4722,
+     "at_hi": 102002,
+     "inside": 189276,
+     "below_lo": 0,
+     "above_hi": 0,
+     "min": -128,
+     "max": 127,
+     "inside_share": 0.639445945945946
+    },
+    "conv_out": {
+     "n": 296000,
+     "at_lo": 279069,
+     "at_hi": 2120,
+     "inside": 14811,
+     "below_lo": 0,
+     "above_hi": 0,
+     "min": -128,
+     "max": 127,
+     "inside_share": 0.05003716216216216
+    },
+    "final": {
+     "n": 296000,
+     "at_lo": 2103,
+     "at_hi": 18,
+     "inside": 293879,
+     "below_lo": 0,
+     "above_hi": 0,
+     "min": -128,
+     "max": 127,
+     "inside_share": 0.9928344594594595
+    },
+    "preclamp": {
+     "n": 296000,
+     "below_lo": 278889,
+     "above_hi": 2113,
+     "inside": 14811,
+     "p01": -755.0,
+     "p50": -369.0,
+     "p99": 74.0
+    },
+    "recomputed_equals_record": {
+     "conv_out": true,
+     "final": true
+    },
+    "record": {
+     "conv_out_informative": 0.05003716216216216,
+     "final_informative": 0.9928344594594595
+    }
+   },
+   "A2": {
+    "tensors": {
+     "share_conv_out": "conv_out (BUILTIN_REF, after fused activation)",
+     "share_final": "ofm (graph output)"
+    },
+    "quant": {
+     "graph_inputs": [
+      {
+       "scale": [
+        0.27014946937561035
+       ],
+       "zp": [
+        -84
+       ]
+      },
+      {
+       "scale": [
+        0.27014946937561035
+       ],
+       "zp": [
+        -84
+       ]
+      }
+     ],
+     "final": {
+      "scale": [
+       1.5284098386764526
+      ],
+      "zp": [
+       49
+      ]
+     }
+    },
+    "graph_inputs": [
+     {
+      "n": 296000,
+      "at_lo": 1109,
+      "at_hi": 1125,
+      "inside": 293766,
+      "below_lo": 0,
+      "above_hi": 0,
+      "min": -128,
+      "max": 127,
+      "inside_share": 0.9924527027027027
+     },
+     {
+      "n": 296000,
+      "at_lo": 1159,
+      "at_hi": 1181,
+      "inside": 293660,
+      "below_lo": 0,
+      "above_hi": 0,
+      "min": -128,
+      "max": 127,
+      "inside_share": 0.9920945945945946
+     }
+    ],
+    "conv_in": {
+     "n": 296000,
+     "at_lo": 4722,
+     "at_hi": 102002,
+     "inside": 189276,
+     "below_lo": 0,
+     "above_hi": 0,
+     "min": -128,
+     "max": 127,
+     "inside_share": 0.639445945945946
+    },
+    "conv_out": {
+     "n": 296000,
+     "at_lo": 279069,
+     "at_hi": 2120,
+     "inside": 14811,
+     "below_lo": 0,
+     "above_hi": 0,
+     "min": -128,
+     "max": 127,
+     "inside_share": 0.05003716216216216
+    },
+    "final": {
+     "n": 296000,
+     "at_lo": 279069,
+     "at_hi": 2120,
+     "inside": 14811,
+     "below_lo": 0,
+     "above_hi": 0,
+     "min": -128,
+     "max": 127,
+     "inside_share": 0.05003716216216216
+    },
+    "preclamp": {
+     "n": 296000,
+     "below_lo": 278889,
+     "above_hi": 2113,
+     "inside": 14811,
+     "p01": -755.0,
+     "p50": -369.0,
+     "p99": 74.0
+    },
+    "recomputed_equals_record": {
+     "conv_out": true,
+     "final": true
+    },
+    "record": {
+     "conv_out_informative": 0.05003716216216216,
+     "final_informative": 0.05003716216216216
+    }
+   }
+  }
+ },
+ "G23": {
+  "model": "kws_micronet_m",
+  "op_index": 10,
+  "activation": "RELU6",
+  "act_range": [
+   -128,
+   127
+  ],
+  "quant": {
+   "conv_ifm": {
+    "scale": [
+     0.0235294122248888
+    ],
+    "zp": [
+     -128
+    ]
+   },
+   "conv_ofm": {
+    "scale": [
+     0.0235294122248888
+    ],
+    "zp": [
+     -128
+    ]
+   }
+  },
+  "forms": {
+   "A0": {
+    "tensors": {
+     "share_conv_out": "ofm (BUILTIN_REF, after fused activation)",
+     "share_final": "ofm (graph output)"
+    },
+    "quant": {
+     "graph_inputs": [
+      {
+       "scale": [
+        0.0235294122248888
+       ],
+       "zp": [
+        -128
+       ]
+      }
+     ],
+     "final": {
+      "scale": [
+       0.0235294122248888
+      ],
+      "zp": [
+       -128
+      ]
+     }
+    },
+    "graph_inputs": [
+     {
+      "n": 14000,
+      "at_lo": 53,
+      "at_hi": 46,
+      "inside": 13901,
+      "below_lo": 0,
+      "above_hi": 0,
+      "min": -128,
+      "max": 127,
+      "inside_share": 0.9929285714285714
+     }
+    ],
+    "conv_in": {
+     "n": 14000,
+     "at_lo": 53,
+     "at_hi": 46,
+     "inside": 13901,
+     "below_lo": 0,
+     "above_hi": 0,
+     "min": -128,
+     "max": 127,
+     "inside_share": 0.9929285714285714
+    },
+    "conv_out": {
+     "n": 24500,
+     "at_lo": 20916,
+     "at_hi": 573,
+     "inside": 3011,
+     "below_lo": 0,
+     "above_hi": 0,
+     "min": -128,
+     "max": 127,
+     "inside_share": 0.12289795918367347
+    },
+    "final": {
+     "n": 24500,
+     "at_lo": 20916,
+     "at_hi": 573,
+     "inside": 3011,
+     "below_lo": 0,
+     "above_hi": 0,
+     "min": -128,
+     "max": 127,
+     "inside_share": 0.12289795918367347
+    },
+    "preclamp": {
+     "n": 24500,
+     "below_lo": 20887,
+     "above_hi": 570,
+     "inside": 3010,
+     "p01": -848.0,
+     "p50": -358.0,
+     "p99": 205.0
+    },
+    "recomputed_equals_record": {
+     "conv_out": true,
+     "final": true
+    },
+    "record": {
+     "conv_out_informative": 0.12289795918367347,
+     "final_informative": 0.12289795918367347
+    }
+   },
+   "A1": {
+    "tensors": {
+     "share_conv_out": "conv_out (BUILTIN_REF, after fused activation)",
+     "share_final": "ofm (graph output)"
+    },
+    "quant": {
+     "graph_inputs": [
+      {
+       "scale": [
+        0.0235294122248888
+       ],
+       "zp": [
+        -128
+       ]
+      },
+      {
+       "scale": [
+        0.0235294122248888
+       ],
+       "zp": [
+        -128
+       ]
+      },
+      {
+       "scale": [
+        0.0235294122248888
+       ],
+       "zp": [
+        -128
+       ]
+      }
+     ],
+     "final": {
+      "scale": [
+       0.0470588244497776
+      ],
+      "zp": [
+       -128
+      ]
+     }
+    },
+    "graph_inputs": [
+     {
+      "n": 14000,
+      "at_lo": 53,
+      "at_hi": 46,
+      "inside": 13901,
+      "below_lo": 0,
+      "above_hi": 0,
+      "min": -128,
+      "max": 127,
+      "inside_share": 0.9929285714285714
+     },
+     {
+      "n": 14000,
+      "at_lo": 57,
+      "at_hi": 55,
+      "inside": 13888,
+      "below_lo": 0,
+      "above_hi": 0,
+      "min": -128,
+      "max": 127,
+      "inside_share": 0.992
+     },
+     {
+      "n": 24500,
+      "at_lo": 83,
+      "at_hi": 100,
+      "inside": 24317,
+      "below_lo": 0,
+      "above_hi": 0,
+      "min": -128,
+      "max": 127,
+      "inside_share": 0.9925306122448979
+     }
+    ],
+    "conv_in": {
+     "n": 14000,
+     "at_lo": 0,
+     "at_hi": 7025,
+     "inside": 6975,
+     "below_lo": 0,
+     "above_hi": 0,
+     "min": -125,
+     "max": 127,
+     "inside_share": 0.4982142857142857
+    },
+    "conv_out": {
+     "n": 24500,
+     "at_lo": 22134,
+     "at_hi": 797,
+     "inside": 1569,
+     "below_lo": 0,
+     "above_hi": 0,
+     "min": -128,
+     "max": 127,
+     "inside_share": 0.06404081632653061
+    },
+    "final": {
+     "n": 24500,
+     "at_lo": 78,
+     "at_hi": 5,
+     "inside": 24417,
+     "below_lo": 0,
+     "above_hi": 0,
+     "min": -128,
+     "max": 127,
+     "inside_share": 0.9966122448979592
+    },
+    "preclamp": {
+     "n": 24500,
+     "below_lo": 22128,
+     "above_hi": 795,
+     "inside": 1569,
+     "p01": -1176.01,
+     "p50": -550.0,
+     "p99": 365.0099999999984
+    },
+    "recomputed_equals_record": {
+     "conv_out": true,
+     "final": true
+    },
+    "record": {
+     "conv_out_informative": 0.06404081632653061,
+     "final_informative": 0.9966122448979592
+    }
+   },
+   "A2": {
+    "tensors": {
+     "share_conv_out": "conv_out (BUILTIN_REF, after fused activation)",
+     "share_final": "ofm (graph output)"
+    },
+    "quant": {
+     "graph_inputs": [
+      {
+       "scale": [
+        0.0235294122248888
+       ],
+       "zp": [
+        -128
+       ]
+      },
+      {
+       "scale": [
+        0.0235294122248888
+       ],
+       "zp": [
+        -128
+       ]
+      }
+     ],
+     "final": {
+      "scale": [
+       0.0470588244497776
+      ],
+      "zp": [
+       -128
+      ]
+     }
+    },
+    "graph_inputs": [
+     {
+      "n": 14000,
+      "at_lo": 53,
+      "at_hi": 46,
+      "inside": 13901,
+      "below_lo": 0,
+      "above_hi": 0,
+      "min": -128,
+      "max": 127,
+      "inside_share": 0.9929285714285714
+     },
+     {
+      "n": 14000,
+      "at_lo": 57,
+      "at_hi": 55,
+      "inside": 13888,
+      "below_lo": 0,
+      "above_hi": 0,
+      "min": -128,
+      "max": 127,
+      "inside_share": 0.992
+     }
+    ],
+    "conv_in": {
+     "n": 14000,
+     "at_lo": 0,
+     "at_hi": 7025,
+     "inside": 6975,
+     "below_lo": 0,
+     "above_hi": 0,
+     "min": -125,
+     "max": 127,
+     "inside_share": 0.4982142857142857
+    },
+    "conv_out": {
+     "n": 24500,
+     "at_lo": 22134,
+     "at_hi": 797,
+     "inside": 1569,
+     "below_lo": 0,
+     "above_hi": 0,
+     "min": -128,
+     "max": 127,
+     "inside_share": 0.06404081632653061
+    },
+    "final": {
+     "n": 24500,
+     "at_lo": 22134,
+     "at_hi": 797,
+     "inside": 1569,
+     "below_lo": 0,
+     "above_hi": 0,
+     "min": -128,
+     "max": 127,
+     "inside_share": 0.06404081632653061
+    },
+    "preclamp": {
+     "n": 24500,
+     "below_lo": 22128,
+     "above_hi": 795,
+     "inside": 1569,
+     "p01": -1176.01,
+     "p50": -550.0,
+     "p99": 365.0099999999984
+    },
+    "recomputed_equals_record": {
+     "conv_out": true,
+     "final": true
+    },
+    "record": {
+     "conv_out_informative": 0.06404081632653061,
+     "final_informative": 0.06404081632653061
+    }
+   }
+  }
+ },
+ "G41": {
+  "model": "mobilenet_v2_1.0_224_INT8",
+  "op_index": 61,
+  "activation": "RELU6",
+  "act_range": [
+   -128,
+   127
+  ],
+  "quant": {
+   "conv_ifm": {
+    "scale": [
+     0.1511097401380539
+    ],
+    "zp": [
+     19
+    ]
+   },
+   "conv_ofm": {
+    "scale": [
+     0.0235294122248888
+    ],
+    "zp": [
+     -128
+    ]
+   }
+  },
+  "forms": {
+   "A0": {
+    "tensors": {
+     "share_conv_out": "ofm (BUILTIN_REF, after fused activation)",
+     "share_final": "ofm (graph output)"
+    },
+    "quant": {
+     "graph_inputs": [
+      {
+       "scale": [
+        0.1511097401380539
+       ],
+       "zp": [
+        19
+       ]
+      }
+     ],
+     "final": {
+      "scale": [
+       0.0235294122248888
+      ],
+      "zp": [
+       -128
+      ]
+     }
+    },
+    "graph_inputs": [
+     {
+      "n": 15680,
+      "at_lo": 60,
+      "at_hi": 54,
+      "inside": 15566,
+      "below_lo": 0,
+      "above_hi": 0,
+      "min": -128,
+      "max": 127,
+      "inside_share": 0.9927295918367347
+     }
+    ],
+    "conv_in": {
+     "n": 15680,
+     "at_lo": 60,
+     "at_hi": 54,
+     "inside": 15566,
+     "below_lo": 0,
+     "above_hi": 0,
+     "min": -128,
+     "max": 127,
+     "inside_share": 0.9927295918367347
+    },
+    "conv_out": {
+     "n": 62720,
+     "at_lo": 35710,
+     "at_hi": 21772,
+     "inside": 5238,
+     "below_lo": 0,
+     "above_hi": 0,
+     "min": -128,
+     "max": 127,
+     "inside_share": 0.0835140306122449
+    },
+    "final": {
+     "n": 62720,
+     "at_lo": 35710,
+     "at_hi": 21772,
+     "inside": 5238,
+     "below_lo": 0,
+     "above_hi": 0,
+     "min": -128,
+     "max": 127,
+     "inside_share": 0.0835140306122449
+    },
+    "preclamp": {
+     "n": 62720,
+     "below_lo": 35688,
+     "above_hi": 21745,
+     "inside": 5238,
+     "p01": -3008.81,
+     "p50": -333.0,
+     "p99": 2356.8099999999977
+    },
+    "recomputed_equals_record": {
+     "conv_out": true,
+     "final": true
+    },
+    "record": {
+     "conv_out_informative": 0.0835140306122449,
+     "final_informative": 0.0835140306122449
+    }
+   },
+   "A1": {
+    "tensors": {
+     "share_conv_out": "conv_out (BUILTIN_REF, after fused activation)",
+     "share_final": "ofm (graph output)"
+    },
+    "quant": {
+     "graph_inputs": [
+      {
+       "scale": [
+        0.1511097401380539
+       ],
+       "zp": [
+        19
+       ]
+      },
+      {
+       "scale": [
+        0.1511097401380539
+       ],
+       "zp": [
+        19
+       ]
+      },
+      {
+       "scale": [
+        0.1511097401380539
+       ],
+       "zp": [
+        19
+       ]
+      }
+     ],
+     "final": {
+      "scale": [
+       0.0470588244497776
+      ],
+      "zp": [
+       -128
+      ]
+     }
+    },
+    "graph_inputs": [
+     {
+      "n": 15680,
+      "at_lo": 60,
+      "at_hi": 54,
+      "inside": 15566,
+      "below_lo": 0,
+      "above_hi": 0,
+      "min": -128,
+      "max": 127,
+      "inside_share": 0.9927295918367347
+     },
+     {
+      "n": 15680,
+      "at_lo": 59,
+      "at_hi": 55,
+      "inside": 15566,
+      "below_lo": 0,
+      "above_hi": 0,
+      "min": -128,
+      "max": 127,
+      "inside_share": 0.9927295918367347
+     },
+     {
+      "n": 62720,
+      "at_lo": 226,
+      "at_hi": 267,
+      "inside": 62227,
+      "below_lo": 0,
+      "above_hi": 0,
+      "min": -128,
+      "max": 127,
+      "inside_share": 0.9921396683673469
+     }
+    ],
+    "conv_in": {
+     "n": 15680,
+     "at_lo": 2647,
+     "at_hi": 1465,
+     "inside": 11568,
+     "below_lo": 0,
+     "above_hi": 0,
+     "min": -128,
+     "max": 127,
+     "inside_share": 0.7377551020408163
+    },
+    "conv_out": {
+     "n": 62720,
+     "at_lo": 34691,
+     "at_hi": 23636,
+     "inside": 4393,
+     "below_lo": 0,
+     "above_hi": 0,
+     "min": -128,
+     "max": 127,
+     "inside_share": 0.07004145408163265
+    },
+    "final": {
+     "n": 62720,
+     "at_lo": 121,
+     "at_hi": 181,
+     "inside": 62418,
+     "below_lo": 0,
+     "above_hi": 0,
+     "min": -128,
+     "max": 127,
+     "inside_share": 0.9951849489795919
+    },
+    "preclamp": {
+     "n": 62720,
+     "below_lo": 34673,
+     "above_hi": 23618,
+     "inside": 4394,
+     "p01": -3560.0,
+     "p50": -309.0,
+     "p99": 2929.6199999999953
+    },
+    "recomputed_equals_record": {
+     "conv_out": true,
+     "final": true
+    },
+    "record": {
+     "conv_out_informative": 0.07004145408163265,
+     "final_informative": 0.9951849489795919
+    }
+   },
+   "A2": {
+    "tensors": {
+     "share_conv_out": "conv_out (BUILTIN_REF, after fused activation)",
+     "share_final": "ofm (graph output)"
+    },
+    "quant": {
+     "graph_inputs": [
+      {
+       "scale": [
+        0.1511097401380539
+       ],
+       "zp": [
+        19
+       ]
+      },
+      {
+       "scale": [
+        0.1511097401380539
+       ],
+       "zp": [
+        19
+       ]
+      }
+     ],
+     "final": {
+      "scale": [
+       0.0470588244497776
+      ],
+      "zp": [
+       -128
+      ]
+     }
+    },
+    "graph_inputs": [
+     {
+      "n": 15680,
+      "at_lo": 60,
+      "at_hi": 54,
+      "inside": 15566,
+      "below_lo": 0,
+      "above_hi": 0,
+      "min": -128,
+      "max": 127,
+      "inside_share": 0.9927295918367347
+     },
+     {
+      "n": 15680,
+      "at_lo": 59,
+      "at_hi": 55,
+      "inside": 15566,
+      "below_lo": 0,
+      "above_hi": 0,
+      "min": -128,
+      "max": 127,
+      "inside_share": 0.9927295918367347
+     }
+    ],
+    "conv_in": {
+     "n": 15680,
+     "at_lo": 2647,
+     "at_hi": 1465,
+     "inside": 11568,
+     "below_lo": 0,
+     "above_hi": 0,
+     "min": -128,
+     "max": 127,
+     "inside_share": 0.7377551020408163
+    },
+    "conv_out": {
+     "n": 62720,
+     "at_lo": 34691,
+     "at_hi": 23636,
+     "inside": 4393,
+     "below_lo": 0,
+     "above_hi": 0,
+     "min": -128,
+     "max": 127,
+     "inside_share": 0.07004145408163265
+    },
+    "final": {
+     "n": 62720,
+     "at_lo": 34691,
+     "at_hi": 23636,
+     "inside": 4393,
+     "below_lo": 0,
+     "above_hi": 0,
+     "min": -128,
+     "max": 127,
+     "inside_share": 0.07004145408163265
+    },
+    "preclamp": {
+     "n": 62720,
+     "below_lo": 34673,
+     "above_hi": 23618,
+     "inside": 4394,
+     "p01": -3560.0,
+     "p50": -309.0,
+     "p99": 2929.6199999999953
+    },
+    "recomputed_equals_record": {
+     "conv_out": true,
+     "final": true
+    },
+    "record": {
+     "conv_out_informative": 0.07004145408163265,
+     "final_informative": 0.07004145408163265
+    }
+   }
+  }
+ }
+}

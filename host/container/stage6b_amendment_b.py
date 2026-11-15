@@ -6,11 +6,13 @@ into it.
   stage6b_amendment_b.py fusion   <compile dir> <manifest.json> <out.json>
   stage6b_amendment_b.py diagnose <compile dir> <manifest.json> <out.json> <group>...
   stage6b_amendment_b.py fixture  <compile dir> <manifest.json> <equiv_c dir> <out dir> <group>...
+  stage6b_amendment_b.py vela     <compile dir> <manifest.json> <out.json> <group>...   (A2 network estimate, Vela summary)
 """
 from __future__ import annotations
 
 import hashlib
 import json
+import os
 import pathlib
 import subprocess
 import sys
@@ -234,12 +236,37 @@ def fixture(cdir: pathlib.Path, man: dict, eqc: pathlib.Path, o: pathlib.Path, g
     (o / "fixture.json").write_text(json.dumps(res, indent=1))
 
 
+def vela_total(cdir: pathlib.Path, man: dict, out: pathlib.Path, groups: list[str]) -> None:
+    """Vela's own performance summary of the A2 compile (same tflite, same options); its output must be the record's."""
+    import csv
+    import glob
+    from pack_vela_workload import VELA_OPTIONS
+    res = {}
+    for c in man["candidates"]:
+        if c["group"] not in groups:
+            continue
+        name = f"{c['config']}_f_ctx_self"
+        rec = json.loads((cdir / f"{c['config']}.ra.json").read_text())["forms"]["A2"]
+        with tempfile.TemporaryDirectory() as d:
+            subprocess.run(["vela", str(cdir / f"{name}.tflite"), *VELA_OPTIONS, "--output-dir", d], check=True,
+                           capture_output=True)
+            blob = open(glob.glob(os.path.join(d, "*_vela.tflite"))[0], "rb").read()
+            row = next(csv.DictReader(open(glob.glob(os.path.join(d, "*_summary_*.csv"))[0])))
+        res[c["group"]] = dict(vela_sha256=sha(blob), vela_equals_record=sha(blob) == rec.get("vela_sha256"),
+                               summary={k: row[k] for k in row if "cycles" in k or k in ("inference_time", "core_clock",
+                                                                                          "system_config", "passes_after_fusing")})
+        print(c["group"], res[c["group"]]["vela_equals_record"], res[c["group"]]["summary"], flush=True)
+    out.write_text(json.dumps(res, indent=1))
+
+
 def main(argv: list) -> None:
     man = json.loads(pathlib.Path(argv[2]).read_text())
     if argv[0] == "fusion":
         fusion(pathlib.Path(argv[1]), man, pathlib.Path(argv[3]))
     elif argv[0] == "diagnose":
         diagnose(pathlib.Path(argv[1]), man, pathlib.Path(argv[3]), argv[4:])
+    elif argv[0] == "vela":
+        vela_total(pathlib.Path(argv[1]), man, pathlib.Path(argv[3]), argv[4:])
     elif argv[0] == "fixture":
         fixture(pathlib.Path(argv[1]), man, pathlib.Path(argv[3]), pathlib.Path(argv[4]), argv[5:])
     else:
