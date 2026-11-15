@@ -1,0 +1,79 @@
+{
+ "s4c2_conv_cin48": {
+  "custom_op_inputs": 5,
+  "custom_op_outputs": 1,
+  "n_base": 5,
+  "placement": 0,
+  "drwl_sha256": "6eb390be2874088b53970ab4f859962d5bb0b16b4e060e2e460d86840f4339d7"
+ },
+ "s6bb_g12": {
+  "custom_op_inputs": 6,
+  "custom_op_outputs": 1,
+  "n_base": 6,
+  "placement": 0,
+  "drwl_sha256": "928296b1c235f1b22ce69d29900561d937818ffa655e1ec335e90ee3b1992c5f"
+ },
+ "s6bb_g25": {
+  "custom_op_inputs": 6,
+  "custom_op_outputs": 1,
+  "n_base": 6,
+  "placement": 0,
+  "drwl_sha256": "39c38abd909d3c8093170d605d297d318f0e47ac2d2a31026a0effe40ba47e09"
+ },
+ "s6bb_g40": {
+  "custom_op_inputs": 6,
+  "custom_op_outputs": 1,
+  "n_base": 6,
+  "placement": 0,
+  "drwl_sha256": "d5b7c47afa283d0d1246ae611c655db561e9fc357cdfe72bf7e987954cc74b40"
+ },
+ "s6bb_g53": {
+  "custom_op_inputs": 6,
+  "custom_op_outputs": 1,
+  "n_base": 6,
+  "placement": 0,
+  "drwl_sha256": "7ffd71301d357e1525527994ebc8cd144c27c1306aeeb307d558f3088da48131"
+ },
+ "s6bb_g11": {
+  "custom_op_inputs": 6,
+  "custom_op_outputs": 1,
+  "n_base": 6,
+  "placement": 0,
+  "drwl_sha256": "a670ff7d4156d2d7e6c7a2b89843787c38f9620b71d74b4a7d102a000112ba52"
+ },
+ "s6bb_g56": {
+  "custom_op_inputs": 6,
+  "custom_op_outputs": 1,
+  "n_base": 6,
+  "placement": 0,
+  "drwl_sha256": "6039a1e44f5b3cc16c6dd2c94acffc9ebb4030fc71902b495965967204972bb5"
+ },
+ "s6bb_g52": {
+  "custom_op_inputs": 6,
+  "custom_op_outputs": 1,
+  "n_base": 6,
+  "placement": 0,
+  "drwl_sha256": "829f7e5a4ea6f17f59ffda69fc3a05df7fb6962cc3af33e5a31e66a54516413b"
+ },
+ "s6bb_g57": {
+  "custom_op_inputs": 6,
+  "custom_op_outputs": 1,
+  "n_base": 6,
+  "placement": 0,
+  "drwl_sha256": "3f6032e7f5fcf24c7c0b2a20949c62212e23691c04373154b8d67890f6fdca86"
+ },
+ "s6bb_g09": {
+  "custom_op_inputs": 6,
+  "custom_op_outputs": 1,
+  "n_base": 6,
+  "placement": 0,
+  "drwl_sha256": "3c07cc27161cb2f97af9e60d7662d61f22a0b70d46d38bebf939f9c33c5ea0b5"
+ },
+ "s6bb_g28": {
+  "custom_op_inputs": 6,
+  "custom_op_outputs": 1,
+  "n_base": 6,
+  "placement": 0,
+  "drwl_sha256": "9bc63f431e4afd79425664043dfd170021c70328757dd10fe8cb5a31b77d8975"
+ }
+}
