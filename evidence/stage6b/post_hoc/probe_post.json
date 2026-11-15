@@ -1,0 +1,275 @@
+[
+ {
+  "group": "G25",
+  "variant": "add_self",
+  "orig_ofm": "Sram",
+  "ofm_memory": "Sram",
+  "ofm_format": "NHCWB16",
+  "ifm_memory": "Sram",
+  "ofm_block": "14x6x96",
+  "weight_bytes": "21536",
+  "staging": "36000",
+  "ops": [
+   [
+    "Add",
+    "0"
+   ],
+   [
+    "Conv2D",
+    "0"
+   ],
+   [
+    "Relu6",
+    "0"
+   ],
+   [
+    "Add",
+    "0"
+   ]
+  ]
+ },
+ {
+  "group": "G25",
+  "variant": "abs",
+  "orig_ofm": "Sram",
+  "ofm_memory": "Dram",
+  "ofm_format": "NHCWB16",
+  "ifm_memory": "Sram",
+  "ofm_block": "14x6x96",
+  "weight_bytes": "21536",
+  "staging": "18000",
+  "ops": [
+   [
+    "Add",
+    "0"
+   ],
+   [
+    "Conv2D",
+    "0"
+   ],
+   [
+    "Relu6",
+    "0"
+   ],
+   [
+    "Abs",
+    "0"
+   ]
+  ]
+ },
+ {
+  "group": "G25",
+  "variant": "add_add",
+  "orig_ofm": "Sram",
+  "ofm_memory": "Dram",
+  "ofm_format": "NHCWB16",
+  "ifm_memory": "Sram",
+  "ofm_block": "14x6x96",
+  "weight_bytes": "21536",
+  "staging": "18000",
+  "ops": [
+   [
+    "Add",
+    "0"
+   ],
+   [
+    "Conv2D",
+    "0"
+   ],
+   [
+    "Relu6",
+    "0"
+   ],
+   [
+    "Add",
+    "0"
+   ],
+   [
+    "Add",
+    "0"
+   ]
+  ]
+ },
+ {
+  "group": "G12",
+  "variant": "add_self",
+  "orig_ofm": "Sram",
+  "ofm_memory": "Sram",
+  "ofm_format": "NHCWB16",
+  "ifm_memory": "Sram",
+  "ofm_block": "8x16x64",
+  "weight_bytes": "87376",
+  "staging": "147456",
+  "ops": [
+   [
+    "Add",
+    "0"
+   ],
+   [
+    "Conv2D",
+    "0"
+   ],
+   [
+    "Relu6",
+    "0"
+   ],
+   [
+    "Add",
+    "0"
+   ]
+  ]
+ },
+ {
+  "group": "G12",
+  "variant": "abs",
+  "orig_ofm": "Sram",
+  "ofm_memory": "Dram",
+  "ofm_format": "NHCWB16",
+  "ifm_memory": "Sram",
+  "ofm_block": "8x16x64",
+  "weight_bytes": "87376",
+  "staging": "73728",
+  "ops": [
+   [
+    "Add",
+    "0"
+   ],
+   [
+    "Conv2D",
+    "0"
+   ],
+   [
+    "Relu6",
+    "0"
+   ],
+   [
+    "Abs",
+    "0"
+   ]
+  ]
+ },
+ {
+  "group": "G12",
+  "variant": "add_add",
+  "orig_ofm": "Sram",
+  "ofm_memory": "Dram",
+  "ofm_format": "NHCWB16",
+  "ifm_memory": "Sram",
+  "ofm_block": "8x16x64",
+  "weight_bytes": "87376",
+  "staging": "73728",
+  "ops": [
+   [
+    "Add",
+    "0"
+   ],
+   [
+    "Conv2D",
+    "0"
+   ],
+   [
+    "Relu6",
+    "0"
+   ],
+   [
+    "Add",
+    "0"
+   ],
+   [
+    "Add",
+    "0"
+   ]
+  ]
+ },
+ {
+  "group": "G09",
+  "variant": "add_self",
+  "orig_ofm": "Sram",
+  "ofm_memory": "Sram",
+  "ofm_format": "NHCWB16",
+  "ifm_memory": "Sram",
+  "ofm_block": "8x14x64",
+  "weight_bytes": "23664",
+  "staging": "87808",
+  "ops": [
+   [
+    "Add",
+    "0"
+   ],
+   [
+    "Conv2D",
+    "0"
+   ],
+   [
+    "Relu6",
+    "0"
+   ],
+   [
+    "Add",
+    "0"
+   ]
+  ]
+ },
+ {
+  "group": "G09",
+  "variant": "abs",
+  "orig_ofm": "Sram",
+  "ofm_memory": "Dram",
+  "ofm_format": "NHCWB16",
+  "ifm_memory": "Sram",
+  "ofm_block": "8x14x64",
+  "weight_bytes": "23664",
+  "staging": "12544",
+  "ops": [
+   [
+    "Add",
+    "0"
+   ],
+   [
+    "Conv2D",
+    "0"
+   ],
+   [
+    "Relu6",
+    "0"
+   ],
+   [
+    "Abs",
+    "0"
+   ]
+  ]
+ },
+ {
+  "group": "G09",
+  "variant": "add_add",
+  "orig_ofm": "Sram",
+  "ofm_memory": "Dram",
+  "ofm_format": "NHCWB16",
+  "ifm_memory": "Sram",
+  "ofm_block": "8x14x64",
+  "weight_bytes": "23664",
+  "staging": "12544",
+  "ops": [
+   [
+    "Add",
+    "0"
+   ],
+   [
+    "Conv2D",
+    "0"
+   ],
+   [
+    "Relu6",
+    "0"
+   ],
+   [
+    "Add",
+    "0"
+   ],
+   [
+    "Add",
+    "0"
+   ]
+  ]
+ }
+]

@@ -1,0 +1,143 @@
+{
+ "rules": "evidence/stage6b/rules.md",
+ "n_targets": 93,
+ "n_groups": 57,
+ "n_candidates": 26,
+ "per_model_top": {
+  "ad_medium_int8": [
+   "G12",
+   "G11",
+   "G52",
+   "G28",
+   "G19"
+  ],
+  "kws_micronet_m": [
+   "G25",
+   "G23",
+   "G24",
+   "G18"
+  ],
+  "mobilenet_v2_1.0_224_INT8": [
+   "G10",
+   "G40",
+   "G08",
+   "G41",
+   "G09"
+  ],
+  "rnnoise_INT8": [],
+  "vww4_128_128_INT8": [
+   "G53",
+   "G56",
+   "G13",
+   "G57",
+   "G51"
+  ],
+  "wav2letter_pruned_int8": [
+   "G14",
+   "G15"
+  ],
+  "yolo-fastest_192_face_v4": [
+   "G01",
+   "G22",
+   "G37",
+   "G36",
+   "G03"
+  ]
+ },
+ "classes": {
+  "PARTIAL_STATIC_MATCH": 25,
+  "EXACT_STATIC_MATCH": 1
+ },
+ "selected": [
+  {
+   "group": "G14",
+   "reason": "model_floor:wav2letter_pruned_int8"
+  }
+ ],
+ "coverage": [
+  {
+   "model": "ad_medium_int8",
+   "stage6_mac_coverage": 0.0,
+   "depthfirst_1x1_share": 0.95441333801882,
+   "candidate_share": 0.95441333801882,
+   "candidate_exact_share": 0.0,
+   "candidate_partial_share": 0.95441333801882,
+   "candidate_not_reproducible_share": 0,
+   "selected_share": 0.0,
+   "projected_upper_bound": 0.0,
+   "remaining_top3": "Conv2D 1x1 DepthFirst Cin276 73.4%; Conv2D 1x1 DepthFirst Cin192 22.1%; DepthwiseConv2D 3x3 Depthwise Cin276 2.4%"
+  },
+  {
+   "model": "kws_micronet_m",
+   "stage6_mac_coverage": 0.0,
+   "depthfirst_1x1_share": 0.8485099288809539,
+   "candidate_share": 0.848509928880954,
+   "candidate_exact_share": 0.0,
+   "candidate_partial_share": 0.848509928880954,
+   "candidate_not_reproducible_share": 0,
+   "selected_share": 0.0,
+   "projected_upper_bound": 0.0,
+   "remaining_top3": "Conv2D 1x1 DepthFirst Cin140 65.5%; Conv2D 1x1 DepthFirst Cin112 19.3%; Conv2D 10x4 PartKernel Cin1 9.7%"
+  },
+  {
+   "model": "mobilenet_v2_1.0_224_INT8",
+   "stage6_mac_coverage": 0.2189902539445234,
+   "depthfirst_1x1_share": 0.6894166304342616,
+   "candidate_share": 0.38594321982302143,
+   "candidate_exact_share": 0.0,
+   "candidate_partial_share": 0.38594321982302143,
+   "candidate_not_reproducible_share": 0,
+   "selected_share": 0.0,
+   "projected_upper_bound": 0.2189902539445234,
+   "remaining_top3": "Conv2D 1x1 DepthFirst Cin96 13.2%; Conv2D 1x1 DepthFirst Cin960 10.0%; Conv2D 1x1 DepthFirst Cin576 8.7%"
+  },
+  {
+   "model": "rnnoise_INT8",
+   "stage6_mac_coverage": 0.0,
+   "depthfirst_1x1_share": 0.0,
+   "candidate_share": 0.0,
+   "candidate_exact_share": 0.0,
+   "candidate_partial_share": 0.0,
+   "candidate_not_reproducible_share": 0,
+   "selected_share": 0.0,
+   "projected_upper_bound": 0.0,
+   "remaining_top3": "FullyConnected 1x1 DepthFirst Cin114 37.5%; FullyConnected 1x1 DepthFirst Cin96 34.0%; FullyConnected 1x1 DepthFirst Cin90 14.8%"
+  },
+  {
+   "model": "vww4_128_128_INT8",
+   "stage6_mac_coverage": 0.19559581957595437,
+   "depthfirst_1x1_share": 0.6521816246896063,
+   "candidate_share": 0.3479138810816711,
+   "candidate_exact_share": 0.0,
+   "candidate_partial_share": 0.3479138810816711,
+   "candidate_not_reproducible_share": 0,
+   "selected_share": 0.0,
+   "projected_upper_bound": 0.19559581957595437,
+   "remaining_top3": "Conv2D 1x1 DepthFirst Cin68 14.7%; Conv2D 1x1 DepthFirst Cin268 12.4%; Conv2D 1x1 DepthFirst Cin52 8.2%"
+  },
+  {
+   "model": "wav2letter_pruned_int8",
+   "stage6_mac_coverage": 0.0,
+   "depthfirst_1x1_share": 0.17203234767728987,
+   "candidate_share": 0.17203234767728987,
+   "candidate_exact_share": 0.16957353147096094,
+   "candidate_partial_share": 0.0024588162063289335,
+   "candidate_not_reproducible_share": 0,
+   "selected_share": 0.16957353147096094,
+   "projected_upper_bound": 0.16957353147096094,
+   "remaining_top3": "Conv2D 1x32 PartKernel Cin250 67.8%; Conv2D 1x7 PartKernel Cin250 13.0%; Conv2D 1x48 PartKernel Cin39 2.0%"
+  },
+  {
+   "model": "yolo-fastest_192_face_v4",
+   "stage6_mac_coverage": 0.22014590306277693,
+   "depthfirst_1x1_share": 0.4274677729374309,
+   "candidate_share": 0.346248896079319,
+   "candidate_exact_share": 0.0,
+   "candidate_partial_share": 0.346248896079319,
+   "candidate_not_reproducible_share": 0,
+   "selected_share": 0.0,
+   "projected_upper_bound": 0.22014590306277693,
+   "remaining_top3": "Conv2D 1x1 DepthFirst Cin96 11.8%; Conv2D 1x1 DepthFirst Cin120 11.5%; Conv2D 1x1 PartKernel Cin8 9.3%"
+  }
+ ]
+}

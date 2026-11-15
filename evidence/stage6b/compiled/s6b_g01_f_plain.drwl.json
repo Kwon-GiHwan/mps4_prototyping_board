@@ -1,0 +1,63 @@
+{
+  "model": "/work/s6b_compile/s6b_g01_f_plain.tflite",
+  "model_sha256": "513d3dcadd406f33fc8b5a6a201fb21417cb8de22bd4de70f584be7ec1260c6e",
+  "vela_sha256": "68d1b95f48582e9b2482ee2fd7651857f53cdf6c3517d38e945cb6ed7a84f69f",
+  "accelerator": "ethos-u85-1024",
+  "system_config": "Ethos_U85_SYS_DRAM_Mid_1024",
+  "memory_mode": "Dedicated_Sram",
+  "vela_options": [
+    "--accelerator-config",
+    "ethos-u85-1024",
+    "--optimise",
+    "Performance",
+    "--config",
+    "/opt/arm/ml-embedded-evaluation-kit/scripts/vela/default_vela.ini",
+    "--memory-mode",
+    "Dedicated_Sram",
+    "--system-config",
+    "Ethos_U85_SYS_DRAM_Mid_1024"
+  ],
+  "vela_extra": [],
+  "seed": 1,
+  "blob_sha256": "d3fb6a5c38017fc6c40f615435b05aebc305f143e44ca7ef0e13fdd705d4f88b",
+  "cms_len": 520,
+  "const_len": 17248,
+  "arena_size": 34560,
+  "fast_size": 17248,
+  "ifm_off": 17280,
+  "ifm_len": 17280,
+  "ofm_off": 0,
+  "ofm_len": 17280,
+  "total": 53424,
+  "format": "drwl",
+  "header_version": 1,
+  "knobs": null,
+  "cms_sha256": "6a0d1ff3d333119dc78c6a24b87b6749785361fc22695d5e28e4d3d776f0d23a",
+  "profile": "/work/s6b_host/config/fi101_s013.json",
+  "profile_sha256": "c80279ca43450872e62078215811ed1401c90a68e96f71f969493632dff29ada",
+  "graph_inputs": [
+    "ifm"
+  ],
+  "graph_outputs": [
+    "ofm"
+  ],
+  "ifm_file": "/work/s6b_compile/s6b_g01_f_plain.ifm.bin",
+  "ifm_sha256": "298c9bf0f10ff3ebc4cfc8f816ed7a4438b20243332702b6021b4835c805e8ff",
+  "tflite_ofm_sha256": "172230db2484ec76c9299a52fcb1ee14edab05b000dba07c75c9de262fcf2481",
+  "golden_file": "/work/s6b_compile/s6b_g01_f_plain.ref_ofm.bin",
+  "golden_sha256": "529cfb3ab9e876b011104a8cabb33c7e2ba1fa3e9da19f91a41d605850298678",
+  "axi": null,
+  "ports": {
+    "cmd": "ext",
+    "const": "ext",
+    "arena": "ext",
+    "fast": "sram"
+  },
+  "axi_limit": {
+    "sram": 134923,
+    "ext": 139071
+  },
+  "power_ctrl": 0,
+  "fast_base": 823132160,
+  "ta_profile": 1
+}

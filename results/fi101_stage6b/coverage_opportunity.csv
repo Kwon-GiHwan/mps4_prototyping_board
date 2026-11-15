@@ -1,0 +1,8 @@
+model,stage6_mac_coverage,depthfirst_1x1_share,candidate_share,candidate_exact_share,candidate_partial_share,candidate_not_reproducible_share,selected_share,projected_upper_bound,remaining_top3
+ad_medium_int8,0.0,0.95441333801882,0.95441333801882,0.0,0.95441333801882,0,0.0,0.0,Conv2D 1x1 DepthFirst Cin276 73.4%; Conv2D 1x1 DepthFirst Cin192 22.1%; DepthwiseConv2D 3x3 Depthwise Cin276 2.4%
+kws_micronet_m,0.0,0.8485099288809539,0.848509928880954,0.0,0.848509928880954,0,0.0,0.0,Conv2D 1x1 DepthFirst Cin140 65.5%; Conv2D 1x1 DepthFirst Cin112 19.3%; Conv2D 10x4 PartKernel Cin1 9.7%
+mobilenet_v2_1.0_224_INT8,0.2189902539445234,0.6894166304342616,0.38594321982302143,0.0,0.38594321982302143,0,0.0,0.2189902539445234,Conv2D 1x1 DepthFirst Cin96 13.2%; Conv2D 1x1 DepthFirst Cin960 10.0%; Conv2D 1x1 DepthFirst Cin576 8.7%
+rnnoise_INT8,0.0,0.0,0.0,0.0,0.0,0,0.0,0.0,FullyConnected 1x1 DepthFirst Cin114 37.5%; FullyConnected 1x1 DepthFirst Cin96 34.0%; FullyConnected 1x1 DepthFirst Cin90 14.8%
+vww4_128_128_INT8,0.19559581957595437,0.6521816246896063,0.3479138810816711,0.0,0.3479138810816711,0,0.0,0.19559581957595437,Conv2D 1x1 DepthFirst Cin68 14.7%; Conv2D 1x1 DepthFirst Cin268 12.4%; Conv2D 1x1 DepthFirst Cin52 8.2%
+wav2letter_pruned_int8,0.0,0.17203234767728987,0.17203234767728987,0.16957353147096094,0.0024588162063289335,0,0.16957353147096094,0.16957353147096094,Conv2D 1x32 PartKernel Cin250 67.8%; Conv2D 1x7 PartKernel Cin250 13.0%; Conv2D 1x48 PartKernel Cin39 2.0%
+yolo-fastest_192_face_v4,0.22014590306277693,0.4274677729374309,0.346248896079319,0.0,0.346248896079319,0,0.0,0.22014590306277693,Conv2D 1x1 DepthFirst Cin96 11.8%; Conv2D 1x1 DepthFirst Cin120 11.5%; Conv2D 1x1 PartKernel Cin8 9.3%

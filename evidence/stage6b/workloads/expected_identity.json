@@ -1,0 +1,16 @@
+{
+ "s6b_g14_f_ctx": {
+  "custom_op_inputs": 7,
+  "custom_op_outputs": 1,
+  "n_base": 7,
+  "placement": 0,
+  "drwl_sha256": "9af29638cf269b8c14b4029280f01871ac1c8dc593c8f7f9becf138e392ae06c"
+ },
+ "s4c2_conv_cin48": {
+  "custom_op_inputs": 5,
+  "custom_op_outputs": 1,
+  "n_base": 5,
+  "placement": 0,
+  "drwl_sha256": "6eb390be2874088b53970ab4f859962d5bb0b16b4e060e2e460d86840f4339d7"
+ }
+}

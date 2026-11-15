@@ -1,0 +1,1043 @@
+{
+ "rules": "evidence/stage6b/rules.md",
+ "per_model_top": {
+  "ad_medium_int8": [
+   "G12",
+   "G11",
+   "G52",
+   "G28",
+   "G19"
+  ],
+  "kws_micronet_m": [
+   "G25",
+   "G23",
+   "G24",
+   "G18"
+  ],
+  "mobilenet_v2_1.0_224_INT8": [
+   "G10",
+   "G40",
+   "G08",
+   "G41",
+   "G09"
+  ],
+  "rnnoise_INT8": [],
+  "vww4_128_128_INT8": [
+   "G53",
+   "G56",
+   "G13",
+   "G57",
+   "G51"
+  ],
+  "wav2letter_pruned_int8": [
+   "G14",
+   "G15"
+  ],
+  "yolo-fastest_192_face_v4": [
+   "G01",
+   "G22",
+   "G37",
+   "G36",
+   "G03"
+  ]
+ },
+ "model_macs": {
+  "kws_micronet_m": 14208852,
+  "ad_medium_int8": 61466400,
+  "rnnoise_INT8": 87510,
+  "vww4_128_128_INT8": 18763264,
+  "yolo-fastest_192_face_v4": 38807136,
+  "mobilenet_v2_1.0_224_INT8": 300840274,
+  "wav2letter_pruned_int8": 3491110876
+ },
+ "candidates": [
+  {
+   "group": "G01",
+   "config": "s6b_g01",
+   "key": {
+    "npu_op": "Conv2D",
+    "kernel": "1x1",
+    "stride": "1x1",
+    "padding": "t0b0l0r0",
+    "npu_ifm_hwc": "12x12x120",
+    "npu_ofm_hwc": "12x12x120",
+    "ifm_block": "4x12x64",
+    "ofm_block": "4x12x128",
+    "ofm_ublock": "2x2x32",
+    "traversal": "DepthFirst",
+    "ifm_memory": "Sram",
+    "ofm_memory": "Sram",
+    "ifm_format": "NHCWB16",
+    "ofm_format": "NHCWB16",
+    "cascade": "0",
+    "tflite_activation": "NONE"
+   },
+   "n_members": 2,
+   "rep": {
+    "model": "yolo-fastest_192_face_v4",
+    "scheduled_id": "968",
+    "tflite_op_index": "109",
+    "weight_bytes": "14448",
+    "mac_count": "2073600",
+    "staging_usage": "56048"
+   },
+   "weight_bytes_range": [
+    14448,
+    15680
+   ],
+   "macs": {
+    "yolo-fastest_192_face_v4": 4147200
+   }
+  },
+  {
+   "group": "G03",
+   "config": "s6b_g03",
+   "key": {
+    "npu_op": "Conv2D",
+    "kernel": "1x1",
+    "stride": "1x1",
+    "padding": "t0b0l0r0",
+    "npu_ifm_hwc": "12x12x136",
+    "npu_ofm_hwc": "12x12x24",
+    "ifm_block": "6x12x64",
+    "ofm_block": "6x12x32",
+    "ofm_ublock": "2x2x32",
+    "traversal": "DepthFirst",
+    "ifm_memory": "Sram",
+    "ofm_memory": "Dram",
+    "ifm_format": "NHCWB16",
+    "ofm_format": "NHCWB16",
+    "cascade": "0",
+    "tflite_activation": "NONE"
+   },
+   "n_members": 4,
+   "rep": {
+    "model": "yolo-fastest_192_face_v4",
+    "scheduled_id": "774",
+    "tflite_op_index": "58",
+    "weight_bytes": "3968",
+    "mac_count": "470016",
+    "staging_usage": "34240"
+   },
+   "weight_bytes_range": [
+    3936,
+    4000
+   ],
+   "macs": {
+    "yolo-fastest_192_face_v4": 1880064
+   }
+  },
+  {
+   "group": "G08",
+   "config": "s6b_g08",
+   "key": {
+    "npu_op": "Conv2D",
+    "kernel": "1x1",
+    "stride": "1x1",
+    "padding": "t0b0l0r0",
+    "npu_ifm_hwc": "14x14x576",
+    "npu_ofm_hwc": "14x14x96",
+    "ifm_block": "6x14x64",
+    "ofm_block": "6x14x96",
+    "ofm_ublock": "2x2x32",
+    "traversal": "DepthFirst",
+    "ifm_memory": "Sram",
+    "ofm_memory": "Dram",
+    "ifm_format": "NHCWB16",
+    "ofm_format": "NHCWB16",
+    "cascade": "0",
+    "tflite_activation": "NONE"
+   },
+   "n_members": 2,
+   "rep": {
+    "model": "mobilenet_v2_1.0_224_INT8",
+    "scheduled_id": "575",
+    "tflite_op_index": "41",
+    "weight_bytes": "50304",
+    "mac_count": "10838016",
+    "staging_usage": "201792"
+   },
+   "weight_bytes_range": [
+    49632,
+    50304
+   ],
+   "macs": {
+    "mobilenet_v2_1.0_224_INT8": 21676032
+   }
+  },
+  {
+   "group": "G09",
+   "config": "s6b_g09",
+   "key": {
+    "npu_op": "Conv2D",
+    "kernel": "1x1",
+    "stride": "1x1",
+    "padding": "t0b0l0r0",
+    "npu_ifm_hwc": "14x14x64",
+    "npu_ofm_hwc": "14x14x384",
+    "ifm_block": "8x14x64",
+    "ofm_block": "8x14x64",
+    "ofm_ublock": "2x2x32",
+    "traversal": "DepthFirst",
+    "ifm_memory": "Sram",
+    "ofm_memory": "Sram",
+    "ifm_format": "NHCWB16",
+    "ofm_format": "NHCWB16",
+    "cascade": "0",
+    "tflite_activation": "RELU6"
+   },
+   "n_members": 4,
+   "rep": {
+    "model": "mobilenet_v2_1.0_224_INT8",
+    "scheduled_id": "493",
+    "tflite_op_index": "24",
+    "weight_bytes": "23664",
+    "mac_count": "4816896",
+    "staging_usage": "87808"
+   },
+   "weight_bytes_range": [
+    23008,
+    23664
+   ],
+   "macs": {
+    "mobilenet_v2_1.0_224_INT8": 19267584
+   }
+  },
+  {
+   "group": "G10",
+   "config": "s6b_g10",
+   "key": {
+    "npu_op": "Conv2D",
+    "kernel": "1x1",
+    "stride": "1x1",
+    "padding": "t0b0l0r0",
+    "npu_ifm_hwc": "14x14x96",
+    "npu_ofm_hwc": "14x14x576",
+    "ifm_block": "6x14x64",
+    "ofm_block": "6x14x96",
+    "ofm_ublock": "2x2x32",
+    "traversal": "DepthFirst",
+    "ifm_memory": "Sram",
+    "ofm_memory": "Sram",
+    "ifm_format": "NHCWB16",
+    "ofm_format": "NHCWB16",
+    "cascade": "0",
+    "tflite_activation": "RELU6"
+   },
+   "n_members": 3,
+   "rep": {
+    "model": "mobilenet_v2_1.0_224_INT8",
+    "scheduled_id": "563",
+    "tflite_op_index": "39",
+    "weight_bytes": "62720",
+    "mac_count": "10838016",
+    "staging_usage": "200512"
+   },
+   "weight_bytes_range": [
+    60576,
+    62720
+   ],
+   "macs": {
+    "mobilenet_v2_1.0_224_INT8": 32514048
+   }
+  },
+  {
+   "group": "G11",
+   "config": "s6b_g11",
+   "key": {
+    "npu_op": "Conv2D",
+    "kernel": "1x1",
+    "stride": "1x1",
+    "padding": "t0b0l0r0",
+    "npu_ifm_hwc": "16x16x192",
+    "npu_ofm_hwc": "16x16x276",
+    "ifm_block": "8x16x64",
+    "ofm_block": "8x16x64",
+    "ofm_ublock": "2x2x32",
+    "traversal": "DepthFirst",
+    "ifm_memory": "Sram",
+    "ofm_memory": "Sram",
+    "ifm_format": "NHCWB16",
+    "ofm_format": "NHCWB16",
+    "cascade": "0",
+    "tflite_activation": "RELU6"
+   },
+   "n_members": 1,
+   "rep": {
+    "model": "ad_medium_int8",
+    "scheduled_id": "90",
+    "tflite_op_index": "2",
+    "weight_bytes": "58016",
+    "mac_count": "13565952",
+    "staging_usage": "122880"
+   },
+   "weight_bytes_range": [
+    58016,
+    58016
+   ],
+   "macs": {
+    "ad_medium_int8": 13565952
+   }
+  },
+  {
+   "group": "G12",
+   "config": "s6b_g12",
+   "key": {
+    "npu_op": "Conv2D",
+    "kernel": "1x1",
+    "stride": "1x1",
+    "padding": "t0b0l0r0",
+    "npu_ifm_hwc": "16x16x276",
+    "npu_ofm_hwc": "16x16x276",
+    "ifm_block": "8x16x64",
+    "ofm_block": "8x16x64",
+    "ofm_ublock": "2x2x32",
+    "traversal": "DepthFirst",
+    "ifm_memory": "Sram",
+    "ofm_memory": "Sram",
+    "ifm_format": "NHCWB16",
+    "ofm_format": "NHCWB16",
+    "cascade": "0",
+    "tflite_activation": "RELU6"
+   },
+   "n_members": 2,
+   "rep": {
+    "model": "ad_medium_int8",
+    "scheduled_id": "102",
+    "tflite_op_index": "4",
+    "weight_bytes": "87376",
+    "mac_count": "19501056",
+    "staging_usage": "147456"
+   },
+   "weight_bytes_range": [
+    87344,
+    87376
+   ],
+   "macs": {
+    "ad_medium_int8": 39002112
+   }
+  },
+  {
+   "group": "G13",
+   "config": "s6b_g13",
+   "key": {
+    "npu_op": "Conv2D",
+    "kernel": "1x1",
+    "stride": "1x1",
+    "padding": "t0b0l0r0",
+    "npu_ifm_hwc": "16x16x96",
+    "npu_ofm_hwc": "16x16x28",
+    "ifm_block": "8x16x64",
+    "ofm_block": "8x16x32",
+    "ofm_ublock": "2x2x32",
+    "traversal": "DepthFirst",
+    "ifm_memory": "Sram",
+    "ofm_memory": "Sram",
+    "ifm_format": "NHCWB16",
+    "ofm_format": "NHCWB16",
+    "cascade": "0",
+    "tflite_activation": "NONE"
+   },
+   "n_members": 2,
+   "rep": {
+    "model": "vww4_128_128_INT8",
+    "scheduled_id": "448",
+    "tflite_op_index": "17",
+    "weight_bytes": "3216",
+    "mac_count": "688128",
+    "staging_usage": "44496"
+   },
+   "weight_bytes_range": [
+    3216,
+    3216
+   ],
+   "macs": {
+    "vww4_128_128_INT8": 1376256
+   }
+  },
+  {
+   "group": "G14",
+   "config": "s6b_g14",
+   "key": {
+    "npu_op": "Conv2D",
+    "kernel": "1x1",
+    "stride": "1x1",
+    "padding": "t0b0l0r0",
+    "npu_ifm_hwc": "1x148x2000",
+    "npu_ofm_hwc": "1x148x2000",
+    "ifm_block": "1x76x64",
+    "ofm_block": "1x76x96",
+    "ofm_ublock": "1x4x32",
+    "traversal": "DepthFirst",
+    "ifm_memory": "Sram",
+    "ofm_memory": "Dram",
+    "ifm_format": "NHCWB16",
+    "ofm_format": "NHCWB16",
+    "cascade": "0",
+    "tflite_activation": "NONE"
+   },
+   "n_members": 1,
+   "rep": {
+    "model": "wav2letter_pruned_int8",
+    "scheduled_id": "220",
+    "tflite_op_index": "19",
+    "weight_bytes": "2409280",
+    "mac_count": "592000000",
+    "staging_usage": "296000"
+   },
+   "weight_bytes_range": [
+    2409280,
+    2409280
+   ],
+   "macs": {
+    "wav2letter_pruned_int8": 592000000
+   }
+  },
+  {
+   "group": "G15",
+   "config": "s6b_g15",
+   "key": {
+    "npu_op": "Conv2D",
+    "kernel": "1x1",
+    "stride": "1x1",
+    "padding": "t0b0l0r0",
+    "npu_ifm_hwc": "1x148x2000",
+    "npu_ofm_hwc": "1x148x29",
+    "ifm_block": "1x76x64",
+    "ofm_block": "1x76x32",
+    "ofm_ublock": "1x4x32",
+    "traversal": "DepthFirst",
+    "ifm_memory": "Dram",
+    "ofm_memory": "Sram",
+    "ifm_format": "NHCWB16",
+    "ofm_format": "NHCWB16",
+    "cascade": "0",
+    "tflite_activation": "NONE"
+   },
+   "n_members": 1,
+   "rep": {
+    "model": "wav2letter_pruned_int8",
+    "scheduled_id": "227",
+    "tflite_op_index": "21",
+    "weight_bytes": "33392",
+    "mac_count": "8584000",
+    "staging_usage": "4736"
+   },
+   "weight_bytes_range": [
+    33392,
+    33392
+   ],
+   "macs": {
+    "wav2letter_pruned_int8": 8584000
+   }
+  },
+  {
+   "group": "G18",
+   "config": "s6b_g18",
+   "key": {
+    "npu_op": "Conv2D",
+    "kernel": "1x1",
+    "stride": "1x1",
+    "padding": "t0b0l0r0",
+    "npu_ifm_hwc": "1x1x196",
+    "npu_ofm_hwc": "1x1x12",
+    "ifm_block": "2x2x64",
+    "ofm_block": "2x2x32",
+    "ofm_ublock": "2x2x32",
+    "traversal": "DepthFirst",
+    "ifm_memory": "Sram",
+    "ofm_memory": "Dram",
+    "ifm_format": "NHCWB16",
+    "ofm_format": "NHWC",
+    "cascade": "0",
+    "tflite_activation": "NONE"
+   },
+   "n_members": 1,
+   "rep": {
+    "model": "kws_micronet_m",
+    "scheduled_id": "146",
+    "tflite_op_index": "12",
+    "weight_bytes": "3248",
+    "mac_count": "2352",
+    "staging_usage": "208"
+   },
+   "weight_bytes_range": [
+    3248,
+    3248
+   ],
+   "macs": {
+    "kws_micronet_m": 2352
+   }
+  },
+  {
+   "group": "G19",
+   "config": "s6b_g19",
+   "key": {
+    "npu_op": "Conv2D",
+    "kernel": "1x1",
+    "stride": "1x1",
+    "padding": "t0b0l0r0",
+    "npu_ifm_hwc": "1x1x276",
+    "npu_ofm_hwc": "1x1x8",
+    "ifm_block": "2x2x64",
+    "ofm_block": "2x2x32",
+    "ofm_ublock": "2x2x32",
+    "traversal": "DepthFirst",
+    "ifm_memory": "Sram",
+    "ofm_memory": "Dram",
+    "ifm_format": "NHCWB16",
+    "ofm_format": "NHWC",
+    "cascade": "0",
+    "tflite_activation": "NONE"
+   },
+   "n_members": 1,
+   "rep": {
+    "model": "ad_medium_int8",
+    "scheduled_id": "146",
+    "tflite_op_index": "12",
+    "weight_bytes": "3520",
+    "mac_count": "2208",
+    "staging_usage": "288"
+   },
+   "weight_bytes_range": [
+    3520,
+    3520
+   ],
+   "macs": {
+    "ad_medium_int8": 2208
+   }
+  },
+  {
+   "group": "G22",
+   "config": "s6b_g22",
+   "key": {
+    "npu_op": "Conv2D",
+    "kernel": "1x1",
+    "stride": "1x1",
+    "padding": "t0b0l0r0",
+    "npu_ifm_hwc": "24x24x96",
+    "npu_ofm_hwc": "24x24x16",
+    "ifm_block": "4x24x64",
+    "ofm_block": "4x24x16",
+    "ofm_ublock": "2x4x16",
+    "traversal": "DepthFirst",
+    "ifm_memory": "Sram",
+    "ofm_memory": "Dram",
+    "ifm_format": "NHCWB16",
+    "ofm_format": "NHCWB16",
+    "cascade": "0",
+    "tflite_activation": "NONE"
+   },
+   "n_members": 4,
+   "rep": {
+    "model": "yolo-fastest_192_face_v4",
+    "scheduled_id": "686",
+    "tflite_op_index": "38",
+    "weight_bytes": "1776",
+    "mac_count": "884736",
+    "staging_usage": "75664"
+   },
+   "weight_bytes_range": [
+    1776,
+    1840
+   ],
+   "macs": {
+    "yolo-fastest_192_face_v4": 3538944
+   }
+  },
+  {
+   "group": "G23",
+   "config": "s6b_g23",
+   "key": {
+    "npu_op": "Conv2D",
+    "kernel": "1x1",
+    "stride": "1x1",
+    "padding": "t0b0l0r0",
+    "npu_ifm_hwc": "25x5x112",
+    "npu_ofm_hwc": "25x5x196",
+    "ifm_block": "20x6x64",
+    "ofm_block": "20x6x64",
+    "ofm_ublock": "2x2x32",
+    "traversal": "DepthFirst",
+    "ifm_memory": "Sram",
+    "ofm_memory": "Sram",
+    "ifm_format": "NHCWB16",
+    "ofm_format": "NHCWB16",
+    "cascade": "0",
+    "tflite_activation": "RELU6"
+   },
+   "n_members": 1,
+   "rep": {
+    "model": "kws_micronet_m",
+    "scheduled_id": "138",
+    "tflite_op_index": "10",
+    "weight_bytes": "24080",
+    "mac_count": "2744000",
+    "staging_usage": "40000"
+   },
+   "weight_bytes_range": [
+    24080,
+    24080
+   ],
+   "macs": {
+    "kws_micronet_m": 2744000
+   }
+  },
+  {
+   "group": "G24",
+   "config": "s6b_g24",
+   "key": {
+    "npu_op": "Conv2D",
+    "kernel": "1x1",
+    "stride": "1x1",
+    "padding": "t0b0l0r0",
+    "npu_ifm_hwc": "25x5x140",
+    "npu_ofm_hwc": "25x5x112",
+    "ifm_block": "10x6x64",
+    "ofm_block": "10x6x128",
+    "ofm_ublock": "2x2x32",
+    "traversal": "DepthFirst",
+    "ifm_memory": "Sram",
+    "ofm_memory": "Sram",
+    "ifm_format": "NHCWB16",
+    "ofm_format": "NHCWB16",
+    "cascade": "0",
+    "tflite_activation": "RELU6"
+   },
+   "n_members": 1,
+   "rep": {
+    "model": "kws_micronet_m",
+    "scheduled_id": "126",
+    "tflite_op_index": "8",
+    "weight_bytes": "17760",
+    "mac_count": "1960000",
+    "staging_usage": "51040"
+   },
+   "weight_bytes_range": [
+    17760,
+    17760
+   ],
+   "macs": {
+    "kws_micronet_m": 1960000
+   }
+  },
+  {
+   "group": "G25",
+   "config": "s6b_g25",
+   "key": {
+    "npu_op": "Conv2D",
+    "kernel": "1x1",
+    "stride": "1x1",
+    "padding": "t0b0l0r0",
+    "npu_ifm_hwc": "25x5x140",
+    "npu_ofm_hwc": "25x5x140",
+    "ifm_block": "14x6x64",
+    "ofm_block": "14x6x96",
+    "ofm_ublock": "2x2x32",
+    "traversal": "DepthFirst",
+    "ifm_memory": "Sram",
+    "ofm_memory": "Sram",
+    "ifm_format": "NHCWB16",
+    "ofm_format": "NHCWB16",
+    "cascade": "0",
+    "tflite_activation": "RELU6"
+   },
+   "n_members": 3,
+   "rep": {
+    "model": "kws_micronet_m",
+    "scheduled_id": "90",
+    "tflite_op_index": "2",
+    "weight_bytes": "21536",
+    "mac_count": "2450000",
+    "staging_usage": "36000"
+   },
+   "weight_bytes_range": [
+    21536,
+    22288
+   ],
+   "macs": {
+    "kws_micronet_m": 7350000
+   }
+  },
+  {
+   "group": "G28",
+   "config": "s6b_g28",
+   "key": {
+    "npu_op": "Conv2D",
+    "kernel": "1x1",
+    "stride": "1x1",
+    "padding": "t0b0l0r0",
+    "npu_ifm_hwc": "4x4x276",
+    "npu_ofm_hwc": "4x4x276",
+    "ifm_block": "4x4x64",
+    "ofm_block": "4x4x288",
+    "ofm_ublock": "2x2x32",
+    "traversal": "DepthFirst",
+    "ifm_memory": "Sram",
+    "ofm_memory": "Sram",
+    "ifm_format": "NHCWB16",
+    "ofm_format": "NHCWB16",
+    "cascade": "0",
+    "tflite_activation": "RELU6"
+   },
+   "n_members": 1,
+   "rep": {
+    "model": "ad_medium_int8",
+    "scheduled_id": "138",
+    "tflite_op_index": "10",
+    "weight_bytes": "87344",
+    "mac_count": "1218816",
+    "staging_usage": "9216"
+   },
+   "weight_bytes_range": [
+    87344,
+    87344
+   ],
+   "macs": {
+    "ad_medium_int8": 1218816
+   }
+  },
+  {
+   "group": "G36",
+   "config": "s6b_g36",
+   "key": {
+    "npu_op": "Conv2D",
+    "kernel": "1x1",
+    "stride": "1x1",
+    "padding": "t0b0l0r0",
+    "npu_ifm_hwc": "6x6x224",
+    "npu_ofm_hwc": "6x6x48",
+    "ifm_block": "6x6x64",
+    "ofm_block": "6x6x64",
+    "ofm_ublock": "2x2x32",
+    "traversal": "DepthFirst",
+    "ifm_memory": "Sram",
+    "ofm_memory": "Dram",
+    "ifm_format": "NHCWB16",
+    "ofm_format": "NHCWB16",
+    "cascade": "0",
+    "tflite_activation": "NONE"
+   },
+   "n_members": 5,
+   "rep": {
+    "model": "yolo-fastest_192_face_v4",
+    "scheduled_id": "864",
+    "tflite_op_index": "78",
+    "weight_bytes": "12160",
+    "mac_count": "387072",
+    "staging_usage": "29952"
+   },
+   "weight_bytes_range": [
+    11936,
+    12256
+   ],
+   "macs": {
+    "yolo-fastest_192_face_v4": 1935360
+   }
+  },
+  {
+   "group": "G37",
+   "config": "s6b_g37",
+   "key": {
+    "npu_op": "Conv2D",
+    "kernel": "1x1",
+    "stride": "1x1",
+    "padding": "t0b0l0r0",
+    "npu_ifm_hwc": "6x6x48",
+    "npu_ofm_hwc": "6x6x224",
+    "ifm_block": "6x6x64",
+    "ofm_block": "6x6x224",
+    "ofm_ublock": "2x2x32",
+    "traversal": "DepthFirst",
+    "ifm_memory": "Sram",
+    "ofm_memory": "Sram",
+    "ifm_format": "NHCWB16",
+    "ofm_format": "NHCWB16",
+    "cascade": "0",
+    "tflite_activation": "RELU6"
+   },
+   "n_members": 5,
+   "rep": {
+    "model": "yolo-fastest_192_face_v4",
+    "scheduled_id": "852",
+    "tflite_op_index": "76",
+    "weight_bytes": "12544",
+    "mac_count": "387072",
+    "staging_usage": "28224"
+   },
+   "weight_bytes_range": [
+    12496,
+    12544
+   ],
+   "macs": {
+    "yolo-fastest_192_face_v4": 1935360
+   }
+  },
+  {
+   "group": "G40",
+   "config": "s6b_g40",
+   "key": {
+    "npu_op": "Conv2D",
+    "kernel": "1x1",
+    "stride": "1x1",
+    "padding": "t0b0l0r0",
+    "npu_ifm_hwc": "7x7x160",
+    "npu_ofm_hwc": "7x7x960",
+    "ifm_block": "7x8x64",
+    "ofm_block": "7x8x128",
+    "ofm_ublock": "1x4x32",
+    "traversal": "DepthFirst",
+    "ifm_memory": "Sram",
+    "ofm_memory": "Sram",
+    "ifm_format": "NHCWB16",
+    "ofm_format": "NHCWB16",
+    "cascade": "0",
+    "tflite_activation": "RELU6"
+   },
+   "n_members": 3,
+   "rep": {
+    "model": "mobilenet_v2_1.0_224_INT8",
+    "scheduled_id": "615",
+    "tflite_op_index": "50",
+    "weight_bytes": "167376",
+    "mac_count": "7526400",
+    "staging_usage": "54880"
+   },
+   "weight_bytes_range": [
+    165600,
+    168320
+   ],
+   "macs": {
+    "mobilenet_v2_1.0_224_INT8": 22579200
+   }
+  },
+  {
+   "group": "G41",
+   "config": "s6b_g41",
+   "key": {
+    "npu_op": "Conv2D",
+    "kernel": "1x1",
+    "stride": "1x1",
+    "padding": "t0b0l0r0",
+    "npu_ifm_hwc": "7x7x320",
+    "npu_ofm_hwc": "7x7x1280",
+    "ifm_block": "7x8x64",
+    "ofm_block": "7x8x128",
+    "ofm_ublock": "1x4x32",
+    "traversal": "DepthFirst",
+    "ifm_memory": "Sram",
+    "ofm_memory": "Sram",
+    "ifm_format": "NHCWB16",
+    "ofm_format": "NHCWB16",
+    "cascade": "0",
+    "tflite_activation": "RELU6"
+   },
+   "n_members": 1,
+   "rep": {
+    "model": "mobilenet_v2_1.0_224_INT8",
+    "scheduled_id": "667",
+    "tflite_op_index": "61",
+    "weight_bytes": "385712",
+    "mac_count": "20070400",
+    "staging_usage": "78400"
+   },
+   "weight_bytes_range": [
+    385712,
+    385712
+   ],
+   "macs": {
+    "mobilenet_v2_1.0_224_INT8": 20070400
+   }
+  },
+  {
+   "group": "G51",
+   "config": "s6b_g51",
+   "key": {
+    "npu_op": "Conv2D",
+    "kernel": "1x1",
+    "stride": "1x1",
+    "padding": "t0b0l0r0",
+    "npu_ifm_hwc": "8x8x268",
+    "npu_ofm_hwc": "8x8x52",
+    "ifm_block": "8x8x64",
+    "ofm_block": "8x8x64",
+    "ofm_ublock": "2x2x32",
+    "traversal": "DepthFirst",
+    "ifm_memory": "Sram",
+    "ofm_memory": "Sram",
+    "ifm_format": "NHCWB16",
+    "ofm_format": "NHCWB16",
+    "cascade": "0",
+    "tflite_activation": "NONE"
+   },
+   "n_members": 1,
+   "rep": {
+    "model": "vww4_128_128_INT8",
+    "scheduled_id": "530",
+    "tflite_op_index": "35",
+    "weight_bytes": "15248",
+    "mac_count": "891904",
+    "staging_usage": "24576"
+   },
+   "weight_bytes_range": [
+    15248,
+    15248
+   ],
+   "macs": {
+    "vww4_128_128_INT8": 891904
+   }
+  },
+  {
+   "group": "G52",
+   "config": "s6b_g52",
+   "key": {
+    "npu_op": "Conv2D",
+    "kernel": "1x1",
+    "stride": "1x1",
+    "padding": "t0b0l0r0",
+    "npu_ifm_hwc": "8x8x276",
+    "npu_ofm_hwc": "8x8x276",
+    "ifm_block": "8x8x64",
+    "ofm_block": "8x8x96",
+    "ofm_ublock": "2x2x32",
+    "traversal": "DepthFirst",
+    "ifm_memory": "Sram",
+    "ofm_memory": "Sram",
+    "ifm_format": "NHCWB16",
+    "ofm_format": "NHCWB16",
+    "cascade": "0",
+    "tflite_activation": "RELU6"
+   },
+   "n_members": 1,
+   "rep": {
+    "model": "ad_medium_int8",
+    "scheduled_id": "126",
+    "tflite_op_index": "8",
+    "weight_bytes": "87360",
+    "mac_count": "4875264",
+    "staging_usage": "36864"
+   },
+   "weight_bytes_range": [
+    87360,
+    87360
+   ],
+   "macs": {
+    "ad_medium_int8": 4875264
+   }
+  },
+  {
+   "group": "G53",
+   "config": "s6b_g53",
+   "key": {
+    "npu_op": "Conv2D",
+    "kernel": "1x1",
+    "stride": "1x1",
+    "padding": "t0b0l0r0",
+    "npu_ifm_hwc": "8x8x44",
+    "npu_ofm_hwc": "8x8x268",
+    "ifm_block": "8x8x64",
+    "ofm_block": "8x8x96",
+    "ofm_ublock": "2x4x16",
+    "traversal": "DepthFirst",
+    "ifm_memory": "Sram",
+    "ofm_memory": "Sram",
+    "ifm_format": "NHCWB16",
+    "ofm_format": "NHCWB16",
+    "cascade": "0",
+    "tflite_activation": "RELU6"
+   },
+   "n_members": 2,
+   "rep": {
+    "model": "vww4_128_128_INT8",
+    "scheduled_id": "496",
+    "tflite_op_index": "28",
+    "weight_bytes": "13968",
+    "mac_count": "754688",
+    "staging_usage": "20480"
+   },
+   "weight_bytes_range": [
+    13952,
+    13968
+   ],
+   "macs": {
+    "vww4_128_128_INT8": 1509376
+   }
+  },
+  {
+   "group": "G56",
+   "config": "s6b_g56",
+   "key": {
+    "npu_op": "Conv2D",
+    "kernel": "1x1",
+    "stride": "1x1",
+    "padding": "t0b0l0r0",
+    "npu_ifm_hwc": "8x8x68",
+    "npu_ofm_hwc": "8x8x172",
+    "ifm_block": "8x8x64",
+    "ofm_block": "8x8x96",
+    "ofm_ublock": "2x4x16",
+    "traversal": "DepthFirst",
+    "ifm_memory": "Sram",
+    "ofm_memory": "Sram",
+    "ifm_format": "NHCWB16",
+    "ofm_format": "NHCWB16",
+    "cascade": "0",
+    "tflite_activation": "RELU6"
+   },
+   "n_members": 2,
+   "rep": {
+    "model": "vww4_128_128_INT8",
+    "scheduled_id": "578",
+    "tflite_op_index": "46",
+    "weight_bytes": "14512",
+    "mac_count": "748544",
+    "staging_usage": "16384"
+   },
+   "weight_bytes_range": [
+    14496,
+    14512
+   ],
+   "macs": {
+    "vww4_128_128_INT8": 1497088
+   }
+  },
+  {
+   "group": "G57",
+   "config": "s6b_g57",
+   "key": {
+    "npu_op": "Conv2D",
+    "kernel": "1x1",
+    "stride": "1x1",
+    "padding": "t0b0l0r0",
+    "npu_ifm_hwc": "8x8x68",
+    "npu_ofm_hwc": "8x8x288",
+    "ifm_block": "8x8x64",
+    "ofm_block": "8x8x96",
+    "ofm_ublock": "2x2x32",
+    "traversal": "DepthFirst",
+    "ifm_memory": "Sram",
+    "ofm_memory": "Sram",
+    "ifm_format": "NHCWB16",
+    "ofm_format": "NHCWB16",
+    "cascade": "0",
+    "tflite_activation": "RELU6"
+   },
+   "n_members": 1,
+   "rep": {
+    "model": "vww4_128_128_INT8",
+    "scheduled_id": "618",
+    "tflite_op_index": "55",
+    "weight_bytes": "24096",
+    "mac_count": "1253376",
+    "staging_usage": "23552"
+   },
+   "weight_bytes_range": [
+    24096,
+    24096
+   ],
+   "macs": {
+    "vww4_128_128_INT8": 1253376
+   }
+  }
+ ]
+}
