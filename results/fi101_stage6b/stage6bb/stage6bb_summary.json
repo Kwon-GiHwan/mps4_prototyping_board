@@ -1,0 +1,711 @@
+{
+ "contract": "evidence/stage6b/stage6bb/contract.md",
+ "reference_gate": {
+  "verdict": "PASS",
+  "same_binary": true,
+  "reproduce": {
+   "ok": true,
+   "checks": {
+    "mac": true,
+    "dpu": true,
+    "output": true,
+    "constant_counters": true,
+    "npu_active": true
+   },
+   "differing_constant_counters": {},
+   "npu_active": [
+    22251.0,
+    22662.0
+   ],
+   "tolerance": 820,
+   "compared": 10
+  }
+ },
+ "results": {
+  "s4c2_conv_cin48": {
+   "config": "s4c2_conv_cin48",
+   "group": "Stage4K_cin48",
+   "kind": "reference",
+   "internal_conv": "CONV_OUTPUT_OBSERVED",
+   "output_board_verified": true,
+   "metrics": {
+    "n_mac": 2654208,
+    "npu_active": 22662.0,
+    "npu_active_range": 820,
+    "npu_active_pass_b": 22885.0,
+    "mac_active": 3456.0,
+    "mac_dpu_active": 3456.0,
+    "ao_active": 3529.5,
+    "wd_active": 1781.0,
+    "wd_stalled": 9642.0,
+    "reserved_53": 0.0,
+    "reserved_55": 8221.0,
+    "pass_b": {
+     "128": 400.0,
+     "130": 3520.0,
+     "132": 29.0,
+     "135": 440.0,
+     "384": 327.0,
+     "386": 3929.0,
+     "391": 3456.0
+    },
+    "mac_activity": 0.15250198570293885,
+    "macs_per_mac_active": 768.0,
+    "eff_1024": 0.75,
+    "dpu_over_mac": 1.0,
+    "macs_per_1024_npu_active": 0.11437648927720413,
+    "stage4k_nearest": 768,
+    "rate_over_640": 1.2,
+    "rate_over_768": 1.0,
+    "c16_rate_768": 768.0,
+    "rate_over_c16_768": 1.0
+   },
+   "mac_active_runs": [
+    3456,
+    3456,
+    3456,
+    3456
+   ],
+   "mac_dpu_active_runs": [
+    3456,
+    3456,
+    3456,
+    3456
+   ],
+   "output_sha256": "86d13e7c6cae01b38808007412a92bade84299f9c56149d5555ab709edf52ddc",
+   "status": "VALID",
+   "reasons": []
+  },
+  "s6bb_g12": {
+   "config": "s6bb_g12",
+   "group": "G12",
+   "kind": "A2",
+   "internal_conv": "INTERNAL_CONV_NOT_OBSERVED",
+   "output_board_verified": true,
+   "metrics": {
+    "n_mac": 19501056,
+    "npu_active": 99555.0,
+    "npu_active_range": 886,
+    "npu_active_pass_b": 99888.0,
+    "mac_active": 20736.0,
+    "mac_dpu_active": 20736.0,
+    "ao_active": 14975.0,
+    "wd_active": 5868.0,
+    "wd_stalled": 24085.5,
+    "reserved_53": 3437.0,
+    "reserved_55": 1828.5,
+    "pass_b": {
+     "128": 1568.0,
+     "130": 25088.0,
+     "132": 576.0,
+     "135": 9216.0,
+     "384": 10417.0,
+     "386": 27066.0,
+     "391": 7872.0
+    },
+    "mac_activity": 0.2082868766008739,
+    "macs_per_mac_active": 940.4444444444445,
+    "eff_1024": 0.9184027777777778,
+    "dpu_over_mac": 1.0,
+    "macs_per_1024_npu_active": 0.1912912460448998,
+    "stage4k_nearest": 768,
+    "rate_over_640": 1.4694444444444446,
+    "rate_over_768": 1.224537037037037,
+    "c16_rate_768": 736.0,
+    "rate_over_c16_768": 1.277777777777778
+   },
+   "mac_active_runs": [
+    20736,
+    20736,
+    20736,
+    20736
+   ],
+   "mac_dpu_active_runs": [
+    20736,
+    20736,
+    20736,
+    20736
+   ],
+   "output_sha256": "b9341e6f7af83862c58793b496c2a79d01d5c032e124cfb000d74b353ecf8e92",
+   "status": "VALID",
+   "reasons": []
+  },
+  "s6bb_g25": {
+   "config": "s6bb_g25",
+   "group": "G25",
+   "kind": "A2",
+   "internal_conv": "INTERNAL_CONV_NOT_OBSERVED",
+   "output_board_verified": true,
+   "metrics": {
+    "n_mac": 2450000,
+    "npu_active": 28902.5,
+    "npu_active_range": 252,
+    "npu_active_pass_b": 28768.5,
+    "mac_active": 3900.0,
+    "mac_dpu_active": 3510.0,
+    "ao_active": 4044.0,
+    "wd_active": 1314.0,
+    "wd_stalled": 4386.0,
+    "reserved_53": 1818.5,
+    "reserved_55": 102.0,
+    "pass_b": {
+     "128": 513.0,
+     "130": 3375.0,
+     "132": 375.0,
+     "135": 2250.0,
+     "384": 2586.0,
+     "386": 6794.0,
+     "391": 1931.0
+    },
+    "mac_activity": 0.1349364241847591,
+    "macs_per_mac_active": 628.2051282051282,
+    "eff_1024": 0.6134815705128205,
+    "dpu_over_mac": 0.9,
+    "macs_per_1024_npu_active": 0.08278100942825015,
+    "stage4k_nearest": 640,
+    "rate_over_640": 0.9815705128205128,
+    "rate_over_768": 0.8179754273504273,
+    "c16_rate_768": 746.6666666666666,
+    "rate_over_c16_768": 0.8413461538461539
+   },
+   "mac_active_runs": [
+    3900,
+    3900,
+    3900,
+    3900
+   ],
+   "mac_dpu_active_runs": [
+    3510,
+    3510,
+    3510,
+    3510
+   ],
+   "output_sha256": "df37fa2c11b04fb8db939ef936ad7ac6713826fa33631148792f660a5c2d8e49",
+   "status": "VALID",
+   "reasons": []
+  },
+  "s6bb_g40": {
+   "config": "s6bb_g40",
+   "group": "G40",
+   "kind": "A2",
+   "internal_conv": "INTERNAL_CONV_NOT_OBSERVED",
+   "output_board_verified": true,
+   "metrics": {
+    "n_mac": 7526400,
+    "npu_active": 46939.5,
+    "npu_active_range": 431,
+    "npu_active_pass_b": 46740.0,
+    "mac_active": 8400.0,
+    "mac_dpu_active": 8400.0,
+    "ao_active": 9244.5,
+    "wd_active": 2746.0,
+    "wd_stalled": 15209.0,
+    "reserved_53": 8941.0,
+    "reserved_55": 74.0,
+    "pass_b": {
+     "128": 785.0,
+     "130": 6370.0,
+     "132": 429.0,
+     "135": 3430.0,
+     "384": 1799.0,
+     "386": 12081.0,
+     "391": 2940.0
+    },
+    "mac_activity": 0.17895375962675358,
+    "macs_per_mac_active": 896.0,
+    "eff_1024": 0.875,
+    "dpu_over_mac": 1.0,
+    "macs_per_1024_npu_active": 0.15658453967340938,
+    "stage4k_nearest": 768,
+    "rate_over_640": 1.4,
+    "rate_over_768": 1.1666666666666667,
+    "c16_rate_768": 768.0,
+    "rate_over_c16_768": 1.1666666666666667
+   },
+   "mac_active_runs": [
+    8400,
+    8400,
+    8400,
+    8400
+   ],
+   "mac_dpu_active_runs": [
+    8400,
+    8400,
+    8400,
+    8400
+   ],
+   "output_sha256": "73cadf2ee15965ec4d84ab3e7bcdd42af43b9fdb6e05b0ebf97a05ff24da068d",
+   "status": "VALID",
+   "reasons": []
+  },
+  "s6bb_g53": {
+   "config": "s6bb_g53",
+   "group": "G53",
+   "kind": "A2",
+   "internal_conv": "INTERNAL_CONV_NOT_OBSERVED",
+   "output_board_verified": true,
+   "metrics": {
+    "n_mac": 754688,
+    "npu_active": 17102.0,
+    "npu_active_range": 857,
+    "npu_active_pass_b": 16928.5,
+    "mac_active": 816.0,
+    "mac_dpu_active": 816.0,
+    "ao_active": 2378.0,
+    "wd_active": 342.5,
+    "wd_stalled": 1777.5,
+    "reserved_53": 1240.0,
+    "reserved_55": 110.0,
+    "pass_b": {
+     "128": 288.0,
+     "130": 2368.0,
+     "132": 160.0,
+     "135": 1280.0,
+     "384": 513.0,
+     "386": 1725.0,
+     "391": 1888.0
+    },
+    "mac_activity": 0.04771371769383698,
+    "macs_per_mac_active": 924.8627450980392,
+    "eff_1024": 0.9031862745098039,
+    "dpu_over_mac": 1.0,
+    "macs_per_1024_npu_active": 0.04309437492690913,
+    "stage4k_nearest": 768,
+    "rate_over_640": 1.4450980392156862,
+    "rate_over_768": 1.2042483660130718,
+    "c16_rate_768": 704.0,
+    "rate_over_c16_768": 1.3137254901960784
+   },
+   "mac_active_runs": [
+    816,
+    816,
+    816,
+    816
+   ],
+   "mac_dpu_active_runs": [
+    816,
+    816,
+    816,
+    816
+   ],
+   "output_sha256": "d95c1b751c9790624aacd2215253ecfcf5fc75d406f398712156143f78fec168",
+   "status": "UNSTABLE",
+   "reasons": [
+    "NPU_ACTIVE pass A range"
+   ]
+  },
+  "s6bb_g11": {
+   "config": "s6bb_g11",
+   "group": "G11",
+   "kind": "A2",
+   "internal_conv": "INTERNAL_CONV_NOT_OBSERVED",
+   "output_board_verified": true,
+   "metrics": {
+    "n_mac": 13565952,
+    "npu_active": 75129.5,
+    "npu_active_range": 225,
+    "npu_active_pass_b": 75335.0,
+    "mac_active": 13824.0,
+    "mac_dpu_active": 13824.0,
+    "ao_active": 12526.5,
+    "wd_active": 3633.5,
+    "wd_stalled": 12633.5,
+    "reserved_53": 2168.0,
+    "reserved_55": 482.5,
+    "pass_b": {
+     "128": 1024.0,
+     "130": 16384.0,
+     "132": 480.0,
+     "135": 7680.0,
+     "384": 6704.0,
+     "386": 13796.0,
+     "391": 7872.0
+    },
+    "mac_activity": 0.1840022893803366,
+    "macs_per_mac_active": 981.3333333333334,
+    "eff_1024": 0.9583333333333334,
+    "dpu_over_mac": 1.0,
+    "macs_per_1024_npu_active": 0.1763355273228226,
+    "stage4k_nearest": 768,
+    "rate_over_640": 1.5333333333333334,
+    "rate_over_768": 1.277777777777778,
+    "c16_rate_768": 768.0,
+    "rate_over_c16_768": 1.277777777777778
+   },
+   "mac_active_runs": [
+    13824,
+    13824,
+    13824,
+    13824
+   ],
+   "mac_dpu_active_runs": [
+    13824,
+    13824,
+    13824,
+    13824
+   ],
+   "output_sha256": "d47ef1c5ec60f0a5b42d5af214a72d0146e1f94689765595b3d7d738dd05618f",
+   "status": "VALID",
+   "reasons": []
+  },
+  "s6bb_g56": {
+   "config": "s6bb_g56",
+   "group": "G56",
+   "kind": "A2",
+   "internal_conv": "INTERNAL_CONV_NOT_OBSERVED",
+   "output_board_verified": true,
+   "metrics": {
+    "n_mac": 748544,
+    "npu_active": 13446.0,
+    "npu_active_range": 1539,
+    "npu_active_pass_b": 14092.0,
+    "mac_active": 1056.0,
+    "mac_dpu_active": 792.0,
+    "ao_active": 1733.0,
+    "wd_active": 435.0,
+    "wd_stalled": 1353.0,
+    "reserved_53": 652.0,
+    "reserved_55": 142.0,
+    "pass_b": {
+     "128": 204.0,
+     "130": 1728.0,
+     "132": 128.0,
+     "135": 1024.0,
+     "384": 764.0,
+     "386": 2083.0,
+     "391": 1216.0
+    },
+    "mac_activity": 0.0785363676929942,
+    "macs_per_mac_active": 708.8484848484849,
+    "eff_1024": 0.6922348484848485,
+    "dpu_over_mac": 0.75,
+    "macs_per_1024_npu_active": 0.05436561059051019,
+    "stage4k_nearest": 768,
+    "rate_over_640": 1.1075757575757577,
+    "rate_over_768": 0.922979797979798,
+    "c16_rate_768": 652.8,
+    "rate_over_c16_768": 1.085858585858586
+   },
+   "mac_active_runs": [
+    1056,
+    1056,
+    1056,
+    1056
+   ],
+   "mac_dpu_active_runs": [
+    792,
+    792,
+    792,
+    792
+   ],
+   "output_sha256": "6301a230c3adc22d031136635f4cf7b28f0979c0cd9f048978722408ab8919c9",
+   "status": "UNSTABLE",
+   "reasons": [
+    "NPU_ACTIVE pass A range"
+   ]
+  },
+  "s6bb_g52": {
+   "config": "s6bb_g52",
+   "group": "G52",
+   "kind": "A2",
+   "internal_conv": "INTERNAL_CONV_NOT_OBSERVED",
+   "output_board_verified": true,
+   "metrics": {
+    "n_mac": 4875264,
+    "npu_active": 31147.5,
+    "npu_active_range": 29,
+    "npu_active_pass_b": 31130.5,
+    "mac_active": 5184.0,
+    "mac_dpu_active": 5184.0,
+    "ao_active": 3458.5,
+    "wd_active": 1786.5,
+    "wd_stalled": 8247.0,
+    "reserved_53": 4777.5,
+    "reserved_55": 142.0,
+    "pass_b": {
+     "128": 240.0,
+     "130": 3840.0,
+     "132": 144.0,
+     "135": 2304.0,
+     "384": 2808.0,
+     "386": 9615.0,
+     "391": 1968.0
+    },
+    "mac_activity": 0.1664339032025042,
+    "macs_per_mac_active": 940.4444444444445,
+    "eff_1024": 0.9184027777777778,
+    "dpu_over_mac": 1.0,
+    "macs_per_1024_npu_active": 0.15285335901757766,
+    "stage4k_nearest": 768,
+    "rate_over_640": 1.4694444444444446,
+    "rate_over_768": 1.224537037037037,
+    "c16_rate_768": 736.0,
+    "rate_over_c16_768": 1.277777777777778
+   },
+   "mac_active_runs": [
+    5184,
+    5184,
+    5184,
+    5184
+   ],
+   "mac_dpu_active_runs": [
+    5184,
+    5184,
+    5184,
+    5184
+   ],
+   "output_sha256": "5828fb07a437a424da072ca991fbed0dca6647f9daf60c83e8130dffb4f33917",
+   "status": "VALID",
+   "reasons": []
+  },
+  "s6bb_g57": {
+   "config": "s6bb_g57",
+   "group": "G57",
+   "kind": "A2",
+   "internal_conv": "INTERNAL_CONV_NOT_OBSERVED",
+   "output_board_verified": true,
+   "metrics": {
+    "n_mac": 1253376,
+    "npu_active": 19131.0,
+    "npu_active_range": 755,
+    "npu_active_pass_b": 19571.0,
+    "mac_active": 1728.0,
+    "mac_dpu_active": 1296.0,
+    "ao_active": 2631.0,
+    "wd_active": 635.0,
+    "wd_stalled": 2991.0,
+    "reserved_53": 1820.0,
+    "reserved_55": 142.0,
+    "pass_b": {
+     "128": 172.0,
+     "130": 2624.0,
+     "132": 112.0,
+     "135": 1472.0,
+     "384": 818.0,
+     "386": 2751.0,
+     "391": 1152.0
+    },
+    "mac_activity": 0.09032460404578956,
+    "macs_per_mac_active": 725.3333333333334,
+    "eff_1024": 0.7083333333333334,
+    "dpu_over_mac": 0.75,
+    "macs_per_1024_npu_active": 0.0639799278657676,
+    "stage4k_nearest": 768,
+    "rate_over_640": 1.1333333333333333,
+    "rate_over_768": 0.9444444444444445,
+    "c16_rate_768": 652.8,
+    "rate_over_c16_768": 1.1111111111111112
+   },
+   "mac_active_runs": [
+    1728,
+    1728,
+    1728,
+    1728
+   ],
+   "mac_dpu_active_runs": [
+    1296,
+    1296,
+    1296,
+    1296
+   ],
+   "output_sha256": "86f7d40ee63b34b518b8f55eae948cc23ca44b8933311a74b0a4037a65e74881",
+   "status": "VALID",
+   "reasons": []
+  },
+  "s6bb_g09": {
+   "config": "s6bb_g09",
+   "group": "G09",
+   "kind": "A2",
+   "internal_conv": "INTERNAL_CONV_NOT_OBSERVED",
+   "output_board_verified": true,
+   "metrics": {
+    "n_mac": 4816896,
+    "npu_active": 56807.0,
+    "npu_active_range": 1105,
+    "npu_active_pass_b": 56978.0,
+    "mac_active": 4704.0,
+    "mac_dpu_active": 4704.0,
+    "ao_active": 11166.0,
+    "wd_active": 1583.0,
+    "wd_stalled": 11916.5,
+    "reserved_53": 718.0,
+    "reserved_55": 195.0,
+    "pass_b": {
+     "128": 896.0,
+     "130": 10192.0,
+     "132": 490.0,
+     "135": 5488.0,
+     "384": 1893.0,
+     "386": 5046.0,
+     "391": 4704.0
+    },
+    "mac_activity": 0.08280669635784323,
+    "macs_per_mac_active": 1024.0,
+    "eff_1024": 1.0,
+    "dpu_over_mac": 1.0,
+    "macs_per_1024_npu_active": 0.08280669635784323,
+    "stage4k_nearest": 768,
+    "rate_over_640": 1.6,
+    "rate_over_768": 1.3333333333333333,
+    "c16_rate_768": 768.0,
+    "rate_over_c16_768": 1.3333333333333333
+   },
+   "mac_active_runs": [
+    4704,
+    4704,
+    4704,
+    4704
+   ],
+   "mac_dpu_active_runs": [
+    4704,
+    4704,
+    4704,
+    4704
+   ],
+   "output_sha256": "b8ed6ac79ed4432585074171a067aa0086d9a3139efaec60eaa63815cdd59162",
+   "status": "VALID",
+   "reasons": []
+  },
+  "s6bb_g28": {
+   "config": "s6bb_g28",
+   "group": "G28",
+   "kind": "A2",
+   "internal_conv": "INTERNAL_CONV_NOT_OBSERVED",
+   "output_board_verified": true,
+   "metrics": {
+    "n_mac": 1218816,
+    "npu_active": 20548.5,
+    "npu_active_range": 1345,
+    "npu_active_pass_b": 20724.0,
+    "mac_active": 1296.0,
+    "mac_dpu_active": 1296.0,
+    "ao_active": 870.5,
+    "wd_active": 2130.0,
+    "wd_stalled": 7763.0,
+    "reserved_53": 8509.0,
+    "reserved_55": 102.0,
+    "pass_b": {
+     "128": 100.0,
+     "130": 864.0,
+     "132": 72.0,
+     "135": 576.0,
+     "384": 1003.0,
+     "386": 6662.0,
+     "391": 492.0
+    },
+    "mac_activity": 0.06307029710197824,
+    "macs_per_mac_active": 940.4444444444445,
+    "eff_1024": 0.9184027777777778,
+    "dpu_over_mac": 1.0,
+    "macs_per_1024_npu_active": 0.057923936053726546,
+    "stage4k_nearest": 768,
+    "rate_over_640": 1.4694444444444446,
+    "rate_over_768": 1.224537037037037,
+    "c16_rate_768": 736.0,
+    "rate_over_c16_768": 1.277777777777778
+   },
+   "mac_active_runs": [
+    1296,
+    1296,
+    1296,
+    1296
+   ],
+   "mac_dpu_active_runs": [
+    1296,
+    1296,
+    1296,
+    1296
+   ],
+   "output_sha256": "e6a3cfd613cc9d95270ccdfe9f8212b3c5e4981776a3cfcb7c9fdb675ce05619",
+   "status": "UNSTABLE",
+   "reasons": [
+    "NPU_ACTIVE pass A range"
+   ]
+  }
+ },
+ "fidelity": {
+  "s4c2_conv_cin48": {
+   "status": "NOT_COMPARABLE",
+   "why": "reference config"
+  },
+  "s6bb_g12": {
+   "status": "COMPARABLE",
+   "vela_cycles": 53052,
+   "npu_active": 99555.0,
+   "error_pct": 87.65550780366434,
+   "abs_error_pct": 87.65550780366434,
+   "conditions": "Vela Ethos_U85_SYS_DRAM_Mid_1024 at 1 GHz (NPU cycles) vs board NPU_ACTIVE (NPU cycles), TA profile 1"
+  },
+  "s6bb_g25": {
+   "status": "COMPARABLE",
+   "vela_cycles": 14909,
+   "npu_active": 28902.5,
+   "error_pct": 93.85941377691327,
+   "abs_error_pct": 93.85941377691327,
+   "conditions": "Vela Ethos_U85_SYS_DRAM_Mid_1024 at 1 GHz (NPU cycles) vs board NPU_ACTIVE (NPU cycles), TA profile 1"
+  },
+  "s6bb_g40": {
+   "status": "COMPARABLE",
+   "vela_cycles": 30422,
+   "npu_active": 46939.5,
+   "error_pct": 54.29458944185129,
+   "abs_error_pct": 54.29458944185129,
+   "conditions": "Vela Ethos_U85_SYS_DRAM_Mid_1024 at 1 GHz (NPU cycles) vs board NPU_ACTIVE (NPU cycles), TA profile 1"
+  },
+  "s6bb_g53": {
+   "status": "NOT_COMPARABLE",
+   "why": "board result UNSTABLE"
+  },
+  "s6bb_g11": {
+   "status": "COMPARABLE",
+   "vela_cycles": 37273,
+   "npu_active": 75129.5,
+   "error_pct": 101.56547635017306,
+   "abs_error_pct": 101.56547635017306,
+   "conditions": "Vela Ethos_U85_SYS_DRAM_Mid_1024 at 1 GHz (NPU cycles) vs board NPU_ACTIVE (NPU cycles), TA profile 1"
+  },
+  "s6bb_g56": {
+   "status": "NOT_COMPARABLE",
+   "why": "board result UNSTABLE"
+  },
+  "s6bb_g52": {
+   "status": "COMPARABLE",
+   "vela_cycles": 15393,
+   "npu_active": 31147.5,
+   "error_pct": 102.34847008380432,
+   "abs_error_pct": 102.34847008380432,
+   "conditions": "Vela Ethos_U85_SYS_DRAM_Mid_1024 at 1 GHz (NPU cycles) vs board NPU_ACTIVE (NPU cycles), TA profile 1"
+  },
+  "s6bb_g57": {
+   "status": "COMPARABLE",
+   "vela_cycles": 10955,
+   "npu_active": 19131.0,
+   "error_pct": 74.63258785942492,
+   "abs_error_pct": 74.63258785942492,
+   "conditions": "Vela Ethos_U85_SYS_DRAM_Mid_1024 at 1 GHz (NPU cycles) vs board NPU_ACTIVE (NPU cycles), TA profile 1"
+  },
+  "s6bb_g09": {
+   "status": "COMPARABLE",
+   "vela_cycles": 29928,
+   "npu_active": 56807.0,
+   "error_pct": 89.81221598503075,
+   "abs_error_pct": 89.81221598503075,
+   "conditions": "Vela Ethos_U85_SYS_DRAM_Mid_1024 at 1 GHz (NPU cycles) vs board NPU_ACTIVE (NPU cycles), TA profile 1"
+  },
+  "s6bb_g28": {
+   "status": "NOT_COMPARABLE",
+   "why": "board result UNSTABLE"
+  }
+ },
+ "characterization": "PARTIAL_CHARACTERIZATION",
+ "fidelity_verdict": "FIDELITY_PARTIAL",
+ "counts": {
+  "VALID": 8,
+  "INVALID_OUTPUT": 0,
+  "INVALID_PMU": 0,
+  "UNSTABLE": 3,
+  "CONFIG_MISMATCH": 0,
+  "NOT_COMPARABLE": 0,
+  "UNMEASURED": 0
+ }
+}

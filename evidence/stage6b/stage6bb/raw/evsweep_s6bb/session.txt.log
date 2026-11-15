@@ -1,0 +1,243 @@
+=== 2026-11-15T13:00:23Z step 4: user python3 mcc.py USB_ON 4 && sleep 5 && test -e /dev/sdb1
+USB_ON
+Enabling debug USB...
+
+Cmd> 
+=== 2026-11-15T13:00:33Z step 5: deploy_mlek /home/gihwan/evsweep_s6bb /home/gihwan/evsweep/evidence_s6bb
+images.txt: OK
+APP.BIN: OK
+VECTORS.BIN: OK
+DDR.BIN: OK
+DEPLOY VERIFIED: source == destination
+718c456283bfd44863d5fb697360b680ff4dc6b297cc0dc74d7ed78a6ca7ef59  boot.bin
+c80e77df9fe14b908966a5cebc5045cca93c5fd98bcea50fb1a7aef35f9fe99c  bram.bin
+374708fff7719dd5979ec875d56cd2286f6d3cf7ec317a3b25632aab28ec37bb  ddr.bin
+af688281435a73dda3b2247845149817ecc7a9bbdff5a3ccd2e4dfa52875423f  images.txt
+DEPLOY DONE: unmounted, safe to REBOOT
+=== 2026-11-15T13:00:34Z step 6: user OUTPUTS=1 STOP_ON_INVALID=1 sh run_driver_campaign.sh /home/gihwan/evsweep_s6bb /home/gihwan/evsweep_s6bb_run /home/gihwan/evsweep_s6bb/ids.txt /home/gihwan/evsweep_s6bb/plan_b01.txt 5
+mcc boot log: 10551 bytes -> /home/gihwan/evsweep_s6bb_run/conds/s4c2_conv_cin48/mcc_boot.log
+Image loaded from \SOFTWARE\boot.bin
+Image loaded from \SOFTWARE\bram.bin
+Image loaded from \SOFTWARE\ddr.bin
+DDR memory test at 0x70000000: PASSED
+Clearing SCC CPUWAIT (0xFFFFFFFF80000000:0x00000000)
+--- boot410 s4c2_conv_cin48 @/home/gihwan/evsweep_s6bb/conditions.txt campaign exit=0
+10
+CAMPAIGN DONE
+=== 2026-11-15T13:03:34Z step 7: user python3 host/analysis/stage6bb.py repro-gate /home/gihwan/evsweep_s6bb_run /home/gihwan/evsweep_s6bb /home/gihwan/evsweep_s6bb/ref/wfe /home/gihwan/evsweep_s6bb/ref/capabilities.json
+{
+ "verdict": "PASS",
+ "same_binary": true,
+ "reproduce": {
+  "ok": true,
+  "checks": {
+   "mac": true,
+   "dpu": true,
+   "output": true,
+   "constant_counters": true,
+   "npu_active": true
+  },
+  "differing_constant_counters": {},
+  "npu_active": [
+   22251.0,
+   22662.0
+  ],
+  "tolerance": 820,
+  "compared": 10
+ }
+}
+=== 2026-11-15T13:03:34Z step 8: user OUTPUTS=1 STOP_ON_INVALID=1 sh run_driver_campaign.sh /home/gihwan/evsweep_s6bb /home/gihwan/evsweep_s6bb_run /home/gihwan/evsweep_s6bb/ids.txt /home/gihwan/evsweep_s6bb/plan_b02.txt 5
+mcc boot log: 10390 bytes -> /home/gihwan/evsweep_s6bb_run/conds/s6bb_g12/mcc_boot.log
+Image loaded from \SOFTWARE\boot.bin
+Image loaded from \SOFTWARE\bram.bin
+Image loaded from \SOFTWARE\ddr.bin
+DDR memory test at 0x70000000: PASSED
+Clearing SCC CPUWAIT (0xFFFFFFFF80000000:0x00000000)
+--- boot411 s6bb_g12 @/home/gihwan/evsweep_s6bb/conditions.txt campaign exit=0
+10
+CAMPAIGN DONE
+=== 2026-11-15T13:07:06Z step 9: user python3 host/analysis/stage6bb.py boot-check /home/gihwan/evsweep_s6bb_run /home/gihwan/evsweep_s6bb s6bb_g12 /home/gihwan/evsweep_s6bb/ref/capabilities.json
+{
+ "config": "s6bb_g12",
+ "status": "VALID",
+ "reasons": [],
+ "stop": false
+}
+=== 2026-11-15T13:07:06Z step 10: user OUTPUTS=1 STOP_ON_INVALID=1 sh run_driver_campaign.sh /home/gihwan/evsweep_s6bb /home/gihwan/evsweep_s6bb_run /home/gihwan/evsweep_s6bb/ids.txt /home/gihwan/evsweep_s6bb/plan_b03.txt 5
+mcc boot log: 10390 bytes -> /home/gihwan/evsweep_s6bb_run/conds/s6bb_g25/mcc_boot.log
+Image loaded from \SOFTWARE\boot.bin
+Image loaded from \SOFTWARE\bram.bin
+Image loaded from \SOFTWARE\ddr.bin
+DDR memory test at 0x70000000: PASSED
+Clearing SCC CPUWAIT (0xFFFFFFFF80000000:0x00000000)
+--- boot412 s6bb_g25 @/home/gihwan/evsweep_s6bb/conditions.txt campaign exit=0
+10
+CAMPAIGN DONE
+=== 2026-11-15T13:10:00Z step 11: user python3 host/analysis/stage6bb.py boot-check /home/gihwan/evsweep_s6bb_run /home/gihwan/evsweep_s6bb s6bb_g25 /home/gihwan/evsweep_s6bb/ref/capabilities.json
+{
+ "config": "s6bb_g25",
+ "status": "VALID",
+ "reasons": [],
+ "stop": false
+}
+=== 2026-11-15T13:10:00Z step 12: user OUTPUTS=1 STOP_ON_INVALID=1 sh run_driver_campaign.sh /home/gihwan/evsweep_s6bb /home/gihwan/evsweep_s6bb_run /home/gihwan/evsweep_s6bb/ids.txt /home/gihwan/evsweep_s6bb/plan_b04.txt 5
+mcc boot log: 10390 bytes -> /home/gihwan/evsweep_s6bb_run/conds/s6bb_g40/mcc_boot.log
+Image loaded from \SOFTWARE\boot.bin
+Image loaded from \SOFTWARE\bram.bin
+Image loaded from \SOFTWARE\ddr.bin
+DDR memory test at 0x70000000: PASSED
+Clearing SCC CPUWAIT (0xFFFFFFFF80000000:0x00000000)
+--- boot413 s6bb_g40 @/home/gihwan/evsweep_s6bb/conditions.txt campaign exit=0
+10
+CAMPAIGN DONE
+=== 2026-11-15T13:13:21Z step 13: user python3 host/analysis/stage6bb.py boot-check /home/gihwan/evsweep_s6bb_run /home/gihwan/evsweep_s6bb s6bb_g40 /home/gihwan/evsweep_s6bb/ref/capabilities.json
+{
+ "config": "s6bb_g40",
+ "status": "VALID",
+ "reasons": [],
+ "stop": false
+}
+=== 2026-11-15T13:13:21Z step 14: user OUTPUTS=1 STOP_ON_INVALID=1 sh run_driver_campaign.sh /home/gihwan/evsweep_s6bb /home/gihwan/evsweep_s6bb_run /home/gihwan/evsweep_s6bb/ids.txt /home/gihwan/evsweep_s6bb/plan_b05.txt 5
+mcc boot log: 10390 bytes -> /home/gihwan/evsweep_s6bb_run/conds/s6bb_g53/mcc_boot.log
+Image loaded from \SOFTWARE\boot.bin
+Image loaded from \SOFTWARE\bram.bin
+Image loaded from \SOFTWARE\ddr.bin
+DDR memory test at 0x70000000: PASSED
+Clearing SCC CPUWAIT (0xFFFFFFFF80000000:0x00000000)
+--- boot414 s6bb_g53 @/home/gihwan/evsweep_s6bb/conditions.txt campaign exit=0
+10
+CAMPAIGN DONE
+=== 2026-11-15T13:16:10Z step 15: user python3 host/analysis/stage6bb.py boot-check /home/gihwan/evsweep_s6bb_run /home/gihwan/evsweep_s6bb s6bb_g53 /home/gihwan/evsweep_s6bb/ref/capabilities.json
+{
+ "config": "s6bb_g53",
+ "status": "UNSTABLE",
+ "reasons": [
+  "NPU_ACTIVE pass A range"
+ ],
+ "stop": false
+}
+=== 2026-11-15T13:16:10Z step 16: user OUTPUTS=1 STOP_ON_INVALID=1 sh run_driver_campaign.sh /home/gihwan/evsweep_s6bb /home/gihwan/evsweep_s6bb_run /home/gihwan/evsweep_s6bb/ids.txt /home/gihwan/evsweep_s6bb/plan_b06.txt 5
+mcc boot log: 10431 bytes -> /home/gihwan/evsweep_s6bb_run/conds/s6bb_g11/mcc_boot.log
+Image loaded from \SOFTWARE\boot.bin
+Image loaded from \SOFTWARE\bram.bin
+Image loaded from \SOFTWARE\ddr.bin
+DDR memory test at 0x70000000: PASSED
+Clearing SCC CPUWAIT (0xFFFFFFFF80000000:0x00000000)
+--- boot415 s6bb_g11 @/home/gihwan/evsweep_s6bb/conditions.txt campaign exit=0
+10
+CAMPAIGN DONE
+=== 2026-11-15T13:19:32Z step 17: user python3 host/analysis/stage6bb.py boot-check /home/gihwan/evsweep_s6bb_run /home/gihwan/evsweep_s6bb s6bb_g11 /home/gihwan/evsweep_s6bb/ref/capabilities.json
+{
+ "config": "s6bb_g11",
+ "status": "VALID",
+ "reasons": [],
+ "stop": false
+}
+=== 2026-11-15T13:19:32Z step 18: user OUTPUTS=1 STOP_ON_INVALID=1 sh run_driver_campaign.sh /home/gihwan/evsweep_s6bb /home/gihwan/evsweep_s6bb_run /home/gihwan/evsweep_s6bb/ids.txt /home/gihwan/evsweep_s6bb/plan_b07.txt 5
+mcc boot log: 10390 bytes -> /home/gihwan/evsweep_s6bb_run/conds/s6bb_g56/mcc_boot.log
+Image loaded from \SOFTWARE\boot.bin
+Image loaded from \SOFTWARE\bram.bin
+Image loaded from \SOFTWARE\ddr.bin
+DDR memory test at 0x70000000: PASSED
+Clearing SCC CPUWAIT (0xFFFFFFFF80000000:0x00000000)
+--- boot416 s6bb_g56 @/home/gihwan/evsweep_s6bb/conditions.txt campaign exit=0
+10
+CAMPAIGN DONE
+=== 2026-11-15T13:22:20Z step 19: user python3 host/analysis/stage6bb.py boot-check /home/gihwan/evsweep_s6bb_run /home/gihwan/evsweep_s6bb s6bb_g56 /home/gihwan/evsweep_s6bb/ref/capabilities.json
+{
+ "config": "s6bb_g56",
+ "status": "UNSTABLE",
+ "reasons": [
+  "NPU_ACTIVE pass A range"
+ ],
+ "stop": false
+}
+=== 2026-11-15T13:22:20Z step 20: user OUTPUTS=1 STOP_ON_INVALID=1 sh run_driver_campaign.sh /home/gihwan/evsweep_s6bb /home/gihwan/evsweep_s6bb_run /home/gihwan/evsweep_s6bb/ids.txt /home/gihwan/evsweep_s6bb/plan_b08.txt 5
+mcc boot log: 10390 bytes -> /home/gihwan/evsweep_s6bb_run/conds/s6bb_g52/mcc_boot.log
+Image loaded from \SOFTWARE\boot.bin
+Image loaded from \SOFTWARE\bram.bin
+Image loaded from \SOFTWARE\ddr.bin
+DDR memory test at 0x70000000: PASSED
+Clearing SCC CPUWAIT (0xFFFFFFFF80000000:0x00000000)
+--- boot417 s6bb_g52 @/home/gihwan/evsweep_s6bb/conditions.txt campaign exit=0
+10
+CAMPAIGN DONE
+=== 2026-11-15T13:25:24Z step 21: user python3 host/analysis/stage6bb.py boot-check /home/gihwan/evsweep_s6bb_run /home/gihwan/evsweep_s6bb s6bb_g52 /home/gihwan/evsweep_s6bb/ref/capabilities.json
+{
+ "config": "s6bb_g52",
+ "status": "VALID",
+ "reasons": [],
+ "stop": false
+}
+=== 2026-11-15T13:25:24Z step 22: user OUTPUTS=1 STOP_ON_INVALID=1 sh run_driver_campaign.sh /home/gihwan/evsweep_s6bb /home/gihwan/evsweep_s6bb_run /home/gihwan/evsweep_s6bb/ids.txt /home/gihwan/evsweep_s6bb/plan_b09.txt 5
+mcc boot log: 10390 bytes -> /home/gihwan/evsweep_s6bb_run/conds/s6bb_g57/mcc_boot.log
+Image loaded from \SOFTWARE\boot.bin
+Image loaded from \SOFTWARE\bram.bin
+Image loaded from \SOFTWARE\ddr.bin
+DDR memory test at 0x70000000: PASSED
+Clearing SCC CPUWAIT (0xFFFFFFFF80000000:0x00000000)
+--- boot418 s6bb_g57 @/home/gihwan/evsweep_s6bb/conditions.txt campaign exit=0
+10
+CAMPAIGN DONE
+=== 2026-11-15T13:28:15Z step 23: user python3 host/analysis/stage6bb.py boot-check /home/gihwan/evsweep_s6bb_run /home/gihwan/evsweep_s6bb s6bb_g57 /home/gihwan/evsweep_s6bb/ref/capabilities.json
+{
+ "config": "s6bb_g57",
+ "status": "VALID",
+ "reasons": [],
+ "stop": false
+}
+=== 2026-11-15T13:28:15Z step 24: user OUTPUTS=1 STOP_ON_INVALID=1 sh run_driver_campaign.sh /home/gihwan/evsweep_s6bb /home/gihwan/evsweep_s6bb_run /home/gihwan/evsweep_s6bb/ids.txt /home/gihwan/evsweep_s6bb/plan_b10.txt 5
+mcc boot log: 10390 bytes -> /home/gihwan/evsweep_s6bb_run/conds/s6bb_g09/mcc_boot.log
+Image loaded from \SOFTWARE\boot.bin
+Image loaded from \SOFTWARE\bram.bin
+Image loaded from \SOFTWARE\ddr.bin
+DDR memory test at 0x70000000: PASSED
+Clearing SCC CPUWAIT (0xFFFFFFFF80000000:0x00000000)
+--- boot419 s6bb_g09 @/home/gihwan/evsweep_s6bb/conditions.txt campaign exit=0
+10
+CAMPAIGN DONE
+=== 2026-11-15T13:31:23Z step 25: user python3 host/analysis/stage6bb.py boot-check /home/gihwan/evsweep_s6bb_run /home/gihwan/evsweep_s6bb s6bb_g09 /home/gihwan/evsweep_s6bb/ref/capabilities.json
+{
+ "config": "s6bb_g09",
+ "status": "VALID",
+ "reasons": [],
+ "stop": false
+}
+=== 2026-11-15T13:31:23Z step 26: user OUTPUTS=1 STOP_ON_INVALID=1 sh run_driver_campaign.sh /home/gihwan/evsweep_s6bb /home/gihwan/evsweep_s6bb_run /home/gihwan/evsweep_s6bb/ids.txt /home/gihwan/evsweep_s6bb/plan_b11.txt 5
+mcc boot log: 10390 bytes -> /home/gihwan/evsweep_s6bb_run/conds/s6bb_g28/mcc_boot.log
+Image loaded from \SOFTWARE\boot.bin
+Image loaded from \SOFTWARE\bram.bin
+Image loaded from \SOFTWARE\ddr.bin
+DDR memory test at 0x70000000: PASSED
+Clearing SCC CPUWAIT (0xFFFFFFFF80000000:0x00000000)
+--- boot420 s6bb_g28 @/home/gihwan/evsweep_s6bb/conditions.txt campaign exit=0
+10
+CAMPAIGN DONE
+=== 2026-11-15T13:34:20Z step 27: user python3 host/analysis/stage6bb.py boot-check /home/gihwan/evsweep_s6bb_run /home/gihwan/evsweep_s6bb s6bb_g28 /home/gihwan/evsweep_s6bb/ref/capabilities.json
+{
+ "config": "s6bb_g28",
+ "status": "UNSTABLE",
+ "reasons": [
+  "NPU_ACTIVE pass A range"
+ ],
+ "stop": false
+}
+=== 2026-11-15T13:34:20Z step 28: restore_mlek /home/gihwan/evsweep/evidence_s6bb /home/gihwan/evsweep_s6bb
+RESTORE VERIFIED
+cb78a12efd33fa72555b94ee4b8ca6faef4d9504c971c52c6cb47c75096673de  images.txt
+ffa3e5bd0363f791d61f9673074c625865f1e6a8f24e53ee303372c64ef3597d  APP.BIN
+45e943c577e3744104d53cf57c7d0afb369ff68a99e5e6906971d71503f06c92  VECTORS.BIN
+81d37a219a6b4141d0b433796711ab8af2ee2c3c668a28143a3ffe6a574ade98  DDR.BIN
+RESTORE DONE: unmounted, safe to REBOOT then USB_OFF
+=== 2026-11-15T13:34:20Z step 29: user sh postflight.sh
+mcc boot log: 10527 bytes -> /home/gihwan/evsweep/evidence/postflight/mcc_boot.log
+Image loaded from \SOFTWARE\VECTORS.BIN
+Image loaded from \SOFTWARE\APP.BIN
+Image loaded from \SOFTWARE\DDR.BIN
+DDR memory test at 0x70000000: PASSED
+Clearing SCC CPUWAIT (0xFFFFFFFF80000000:0x00000000)
+[functional-v1] PING -> Counters(state=1, version=1, rx_bytes=20, tx_bytes=0, rx_overrun=0, bad_magic=0, bad_version=0, bad_crc=0, length_error=0, sequence_error=0, parser_resync=0)
+
+Cmd> 
+POSTFLIGHT DONE: card withdrawn, board on restored image
+=== 2026-11-15T13:37:02Z SESSION DONE
