@@ -1,0 +1,234 @@
+/tmp/tmpquxbx1yv/inv.csv 1 rows
+/tmp/tmpulhwxje8/inv.csv 1 rows
+/tmp/tmpwg6qxo67/inv.csv 3 rows
+/tmp/tmp0wntp77r/inv.csv 3 rows
+/tmp/tmpsg8y0579/inv.csv 3 rows
+/tmp/tmp19gym68y/inv.csv 3 rows
+s6b_g01 A0 feasible 4x12x128 Dram Dram 17248 np_vs_ref 1 drwl d3fb6a5c3801
+s6b_g01 A1 feasible 4x12x128 Sram Dram 34080 np_vs_ref 1 drwl 466f396da42a
+s6b_g01 A2 feasible 4x12x128 Sram Sram 52512 np_vs_ref 1 drwl 4aa549a3db80
+/tmp/tmpoiqcidqq/inv.csv 1 rows
+/tmp/tmppghx2koj/inv.csv 1 rows
+/tmp/tmpkw9dc_e7/inv.csv 3 rows
+/tmp/tmpf5tx6y0q/inv.csv 3 rows
+/tmp/tmpbt5tqaww/inv.csv 3 rows
+/tmp/tmp0ji0ulag/inv.csv 3 rows
+s6b_g03 A0 feasible 6x12x32 Dram Dram 5456 np_vs_ref 0 drwl 241acad02f2b
+s6b_g03 A1 feasible 6x12x32 Sram Dram 25024 np_vs_ref 1 drwl a4aaf36faa2a
+s6b_g03 A2 feasible 6x12x32 Sram Sram 29632 np_vs_ref 1 drwl adf131bfec8f
+/tmp/tmpejzoot4w/inv.csv 1 rows
+/tmp/tmpvqur6bwr/inv.csv 1 rows
+/tmp/tmp11za_au7/inv.csv 3 rows
+/tmp/tmpgw6wcimm/inv.csv 3 rows
+/tmp/tmpttdhp_4i/inv.csv 3 rows
+/tmp/tmpmlsjz760/inv.csv 3 rows
+s6b_g08 A0 feasible 6x14x96 Dram Dram 60016 np_vs_ref 1 drwl 31722ac3b80d
+s6b_g08 A1 feasible 6x14x96 Sram Dram 172880 np_vs_ref 1 drwl 0b9bcaf43133
+s6b_g08 A2 feasible 6x14x96 Sram Sram 191696 np_vs_ref 1 drwl 88dc5cb95a30
+/tmp/tmpa4vgbfhq/inv.csv 2 rows
+/tmp/tmpb299gi3v/inv.csv 2 rows
+/tmp/tmp1nybv82k/inv.csv 4 rows
+/tmp/tmpjmse6opz/inv.csv 4 rows
+/tmp/tmpe531wevq/inv.csv 4 rows
+/tmp/tmp3872_82e/inv.csv 4 rows
+s6b_g09 A0 feasible 8x14x64 Dram Dram 0 np_vs_ref 1 drwl 06e15f7483fa
+s6b_g09 A1 feasible 8x14x64 Sram Dram 12544 np_vs_ref 1 drwl aa87b39c99b2
+s6b_g09 A2 feasible 8x14x64 Sram Sram 87808 np_vs_ref 1 drwl e11bb0af3d58
+/tmp/tmpzchg65av/inv.csv 2 rows
+/tmp/tmpnhnqycbk/inv.csv 2 rows
+/tmp/tmpmzeh5se6/inv.csv 4 rows
+/tmp/tmpboq1xn07/inv.csv 4 rows
+/tmp/tmpddwx6pqz/inv.csv 4 rows
+/tmp/tmp2vbjf2at/inv.csv 4 rows
+s6b_g10 A0 feasible 6x14x96 Dram Dram 22784 np_vs_ref 1 drwl bb4faa77363a
+s6b_g10 A1 feasible 6x14x96 Sram Dram 64112 np_vs_ref 1 drwl 7e8c39a5e54f
+s6b_g10 A2 feasible 6x14x96 Sram Sram 177008 np_vs_ref 1 drwl 2ebb799a9560
+/tmp/tmpjgf_zku0/inv.csv 2 rows
+/tmp/tmprh4x9m_k/inv.csv 2 rows
+/tmp/tmpm4_s8ny0/inv.csv 4 rows
+/tmp/tmprpx_xrmf/inv.csv 4 rows
+/tmp/tmpnfdude17/inv.csv 4 rows
+/tmp/tmpvsl_z3pp/inv.csv 4 rows
+s6b_g11 A0 feasible 8x16x64 Dram Dram 0 np_vs_ref 1 drwl 5edc823bf0fc
+s6b_g11 A1 feasible 8x16x64 Sram Dram 49152 np_vs_ref 1 drwl 55b99f6e23c8
+s6b_g11 A2 feasible 8x16x64 Sram Sram 122880 np_vs_ref 1 drwl a3049847403f
+/tmp/tmpllioq88x/inv.csv 2 rows
+/tmp/tmp62tf7ruc/inv.csv 2 rows
+/tmp/tmpe7d1caf7/inv.csv 4 rows
+/tmp/tmpjbs51d0m/inv.csv 4 rows
+/tmp/tmpxm9rkxu4/inv.csv 4 rows
+/tmp/tmpt6t15a81/inv.csv 4 rows
+s6b_g12 A0 feasible 8x16x64 Dram Dram 0 np_vs_ref 1 drwl 8741a5cb11b3
+s6b_g12 A1 feasible 8x16x64 Sram Dram 73728 np_vs_ref 1 drwl 7096d589ff33
+s6b_g12 A2 feasible 8x16x64 Sram Sram 147456 np_vs_ref 1 drwl 769c2337f69e
+/tmp/tmpsv659x7p/inv.csv 1 rows
+/tmp/tmp1frwc3_2/inv.csv 1 rows
+/tmp/tmpbhn0y49v/inv.csv 3 rows
+/tmp/tmpor42aat5/inv.csv 3 rows
+/tmp/tmpmztkth6q/inv.csv 3 rows
+/tmp/tmpsb8y5e2c/inv.csv 3 rows
+s6b_g13 A0 feasible 8x16x32 Dram Dram 4432 np_vs_ref 1 drwl 2c80f1e1fe85
+s6b_g13 A1 feasible 8x16x32 Sram Dram 28112 np_vs_ref 1 drwl 98ad21868758
+s6b_g13 A2 feasible 8x16x32 Sram Sram 36304 np_vs_ref 1 drwl 44f4fe23276c
+/tmp/tmpe93j1nzb/inv.csv 1 rows
+/tmp/tmpypaesjzg/inv.csv 1 rows
+/tmp/tmpd2bg58qn/inv.csv 3 rows
+/tmp/tmp_08h1w5d/inv.csv 3 rows
+/tmp/tmp_n470r1n/inv.csv 3 rows
+/tmp/tmp1fj1k2lz/inv.csv 3 rows
+s6b_g14 A0 feasible 1x76x96 Dram Dram 0 np_vs_ref 1 drwl d05504518446
+s6b_g14 A1 feasible 1x76x96 Sram Dram 296000 np_vs_ref 1 drwl 9af29638cf26
+s6b_g14 A2 feasible 1x76x96 Sram Dram 296000 np_vs_ref 1 drwl f48809a042c3
+/tmp/tmpx1v8hlcp/inv.csv 1 rows
+/tmp/tmpnyj_y35i/inv.csv 1 rows
+/tmp/tmpwb6ar4rd/inv.csv 3 rows
+/tmp/tmp3wn_5_m2/inv.csv 3 rows
+/tmp/tmpu88qgzp7/inv.csv 3 rows
+/tmp/tmpizlmj1f2/inv.csv 3 rows
+s6b_g15 A0 feasible 1x76x32 Dram Dram 0 np_vs_ref 0 drwl dc548f44d60e
+s6b_g15 A1 feasible 1x76x32 Sram Dram 296000 np_vs_ref 0 drwl 6032066cd50c
+s6b_g15 A2 feasible 1x76x32 Sram Sram 300736 np_vs_ref 0 drwl d1cc8a055830
+/tmp/tmpyxc6rtkp/inv.csv 1 rows
+/tmp/tmp_xzf318g/inv.csv 1 rows
+/tmp/tmp3j_d2zuh/inv.csv 3 rows
+/tmp/tmpsjz82iba/inv.csv 3 rows
+/tmp/tmpxyd1wo8f/inv.csv 3 rows
+/tmp/tmput_owtbz/inv.csv 3 rows
+s6b_g18 A0 feasible 2x2x32 Dram Dram 0 np_vs_ref 0 drwl 91eee219983a
+s6b_g18 A1 feasible 2x2x32 Sram Dram 208 np_vs_ref 0 drwl 681fee767580
+s6b_g18 A2 feasible 2x2x32 Sram Sram 224 np_vs_ref 0 drwl 3191b41d408a
+/tmp/tmpqjyvaq76/inv.csv 1 rows
+/tmp/tmpmyduxw01/inv.csv 1 rows
+/tmp/tmp6zbd77hn/inv.csv 3 rows
+/tmp/tmp4y7jyk2s/inv.csv 3 rows
+/tmp/tmpm9x9by8b/inv.csv 3 rows
+/tmp/tmpa6fu2k0o/inv.csv 3 rows
+s6b_g19 A0 feasible 2x2x32 Dram Dram 0 np_vs_ref 0 drwl 790385db9c4f
+s6b_g19 A1 feasible 2x2x32 Sram Dram 288 np_vs_ref 0 drwl 159d2eff79fa
+s6b_g19 A2 feasible 2x2x32 Sram Sram 304 np_vs_ref 0 drwl 01fb5e6817c8
+/tmp/tmp0ux1c65q/inv.csv 1 rows
+/tmp/tmpxawbtae0/inv.csv 1 rows
+/tmp/tmpykved0kx/inv.csv 3 rows
+/tmp/tmpygcdd0mi/inv.csv 3 rows
+/tmp/tmpwxtnfqtu/inv.csv 3 rows
+/tmp/tmpogdy14ha/inv.csv 3 rows
+s6b_g22 A0 feasible 4x24x16 Dram Dram 1936 np_vs_ref 1 drwl 1f4d5cdab79b
+s6b_g22 A1 feasible 4x24x16 Sram Dram 57232 np_vs_ref 1 drwl f01b11df8547
+s6b_g22 A2 feasible 4x24x16 Sram Sram 66448 np_vs_ref 1 drwl d2929cbdec8a
+/tmp/tmplvei7lk1/inv.csv 2 rows
+/tmp/tmp0fpbvi52/inv.csv 2 rows
+/tmp/tmp2u3nt3ac/inv.csv 4 rows
+/tmp/tmpp2zhbvl5/inv.csv 4 rows
+/tmp/tmpewd67_2k/inv.csv 4 rows
+/tmp/tmp1hq05mik/inv.csv 4 rows
+s6b_g23 A0 feasible 20x6x64 Dram Dram 0 np_vs_ref 1 drwl aacfd4d5b52d
+s6b_g23 A1 feasible 20x6x64 Sram Dram 14000 np_vs_ref 1 drwl 9a18de35d528
+s6b_g23 A2 feasible 20x6x64 Sram Sram 40000 np_vs_ref 1 drwl 4cd6703bd1b4
+/tmp/tmp60o78alq/inv.csv 2 rows
+/tmp/tmp70qom1a2/inv.csv 2 rows
+/tmp/tmppah8ou1t/inv.csv 4 rows
+/tmp/tmpoeg8f0m_/inv.csv 4 rows
+/tmp/tmp62rpwqml/inv.csv 4 rows
+/tmp/tmp3feh_5nm/inv.csv 4 rows
+s6b_g24 A0 feasible 10x6x128 Dram Dram 19120 np_vs_ref 1 drwl 1ea8e533c179
+s6b_g24 A1 feasible 10x6x128 Sram Dram 37136 np_vs_ref 1 drwl f958f8532e23
+s6b_g24 A2 feasible 10x6x128 Sram Sram 51136 np_vs_ref 1 drwl 34961aaef424
+/tmp/tmplzi803fr/inv.csv 2 rows
+/tmp/tmpplglcfui/inv.csv 2 rows
+/tmp/tmp6uzptx5f/inv.csv 4 rows
+/tmp/tmp0bh8mr3k/inv.csv 4 rows
+/tmp/tmpnaj6xh0q/inv.csv 4 rows
+/tmp/tmpg1or6dn5/inv.csv 4 rows
+s6b_g25 A0 feasible 14x6x96 Dram Dram 0 np_vs_ref 1 drwl fbb22ad2219b
+s6b_g25 A1 feasible 14x6x96 Sram Dram 18000 np_vs_ref 1 drwl 3223fbd76c66
+s6b_g25 A2 feasible 14x6x96 Sram Sram 36000 np_vs_ref 1 drwl 1ad3ea94d956
+/tmp/tmplhqrpl8f/inv.csv 2 rows
+/tmp/tmp8h_t2kzj/inv.csv 2 rows
+/tmp/tmpihxdkmnk/inv.csv 4 rows
+/tmp/tmpunyqgu7s/inv.csv 4 rows
+/tmp/tmpdgpy3yoo/inv.csv 4 rows
+/tmp/tmphf4tlotm/inv.csv 4 rows
+s6b_g28 A0 feasible 4x4x288 Dram Dram 0 np_vs_ref 1 drwl c8ca4fe3b8b0
+s6b_g28 A1 feasible 4x4x288 Sram Dram 4608 np_vs_ref 1 drwl 3ba83c2ed324
+s6b_g28 A2 feasible 4x4x288 Sram Sram 9216 np_vs_ref 1 drwl 79345eb7af7c
+/tmp/tmpq18hnror/inv.csv 1 rows
+/tmp/tmpah64xct1/inv.csv 1 rows
+/tmp/tmpf1czrsfr/inv.csv 3 rows
+/tmp/tmp0dvtiuvs/inv.csv 3 rows
+/tmp/tmp_h_vgw7d/inv.csv 3 rows
+/tmp/tmp7i_ewsfb/inv.csv 3 rows
+s6b_g36 A0 feasible 6x6x64 Dram Dram 0 np_vs_ref 0 drwl 08daf52c06ec
+s6b_g36 A1 feasible 6x6x64 Sram Dram 8064 np_vs_ref 1 drwl 442f617dc139
+s6b_g36 A2 feasible 6x6x64 Sram Sram 9792 np_vs_ref 1 drwl 6d341b81ab5a
+/tmp/tmpwlvs096q/inv.csv 2 rows
+/tmp/tmp093708bl/inv.csv 2 rows
+/tmp/tmpb4kvsruh/inv.csv 4 rows
+/tmp/tmp40m5drb5/inv.csv 4 rows
+/tmp/tmp6n2rhhuv/inv.csv 4 rows
+/tmp/tmphgckgmpt/inv.csv 4 rows
+s6b_g37 A0 feasible 6x6x224 Dram Dram 0 np_vs_ref 1 drwl caaab3cb041d
+s6b_g37 A1 feasible 6x6x224 Sram Dram 1728 np_vs_ref 1 drwl d36778dbb5ea
+s6b_g37 A2 feasible 6x6x224 Sram Sram 9792 np_vs_ref 1 drwl ea29171893fc
+/tmp/tmppc7def1y/inv.csv 2 rows
+/tmp/tmp8q_meltf/inv.csv 2 rows
+/tmp/tmpdyrab4q_/inv.csv 4 rows
+/tmp/tmphd7ix5kd/inv.csv 4 rows
+/tmp/tmptiab96r_/inv.csv 4 rows
+/tmp/tmpwtdyf7iz/inv.csv 4 rows
+s6b_g40 A0 feasible 7x8x128 Dram Dram 0 np_vs_ref 1 drwl b5f8aa527f7b
+s6b_g40 A1 feasible 7x8x128 Sram Dram 7840 np_vs_ref 1 drwl 3d1e3ed35e22
+s6b_g40 A2 feasible 7x8x128 Sram Sram 54880 np_vs_ref 1 drwl 685351c61512
+/tmp/tmpro__aftq/inv.csv 2 rows
+/tmp/tmpx125fs4d/inv.csv 2 rows
+/tmp/tmprcr97m6k/inv.csv 4 rows
+/tmp/tmpz743cd03/inv.csv 4 rows
+/tmp/tmp8nzbyo_7/inv.csv 4 rows
+/tmp/tmpg4824vfc/inv.csv 4 rows
+s6b_g41 A0 feasible 7x8x128 Dram Dram 0 np_vs_ref 1 drwl 78b98a3bed21
+s6b_g41 A1 feasible 7x8x128 Sram Dram 15680 np_vs_ref 1 drwl f315adc066d9
+s6b_g41 A2 feasible 7x8x128 Sram Sram 78400 np_vs_ref 1 drwl 3fa5403e5798
+/tmp/tmpoa_y81c1/inv.csv 1 rows
+/tmp/tmp78fesnaa/inv.csv 1 rows
+/tmp/tmpe4bu4lmd/inv.csv 3 rows
+/tmp/tmpousu7iby/inv.csv 3 rows
+/tmp/tmp9e_aubu3/inv.csv 3 rows
+/tmp/tmp3il_7onc/inv.csv 3 rows
+s6b_g51 A0 feasible 8x8x64 Dram Dram 0 np_vs_ref 0 drwl 5ca13563f428
+s6b_g51 A1 feasible 8x8x64 Sram Dram 17408 np_vs_ref 1 drwl d659a266c0f4
+s6b_g51 A2 feasible 8x8x64 Sram Sram 21504 np_vs_ref 1 drwl 3e55ff981d84
+/tmp/tmpjtjt3lv7/inv.csv 2 rows
+/tmp/tmp48lydch_/inv.csv 2 rows
+/tmp/tmpz5l4uow8/inv.csv 4 rows
+/tmp/tmpyopv_fvd/inv.csv 4 rows
+/tmp/tmptkt_my4d/inv.csv 4 rows
+/tmp/tmpm7yrulvb/inv.csv 4 rows
+s6b_g52 A0 feasible 8x8x96 Dram Dram 0 np_vs_ref 1 drwl 168e0bf4247c
+s6b_g52 A1 feasible 8x8x96 Sram Dram 18432 np_vs_ref 1 drwl c75725ed9e37
+s6b_g52 A2 feasible 8x8x96 Sram Sram 36864 np_vs_ref 1 drwl 33804c844004
+/tmp/tmpty7cj2xe/inv.csv 2 rows
+/tmp/tmpu2g4ecf8/inv.csv 2 rows
+/tmp/tmpt9t7dvau/inv.csv 4 rows
+/tmp/tmpx__bnu55/inv.csv 4 rows
+/tmp/tmpuw7lcue7/inv.csv 4 rows
+/tmp/tmpv09mixfx/inv.csv 4 rows
+s6b_g53 A0 feasible 8x8x96 Dram Dram 0 np_vs_ref 1 drwl c76c21b21b8d
+s6b_g53 A1 feasible 8x8x96 Sram Dram 3072 np_vs_ref 1 drwl bb5486accc9b
+s6b_g53 A2 feasible 8x8x96 Sram Sram 20480 np_vs_ref 1 drwl 59a6f6c9d172
+/tmp/tmp5bc26s1n/inv.csv 2 rows
+/tmp/tmpw1_bqia9/inv.csv 2 rows
+/tmp/tmp3w146bfh/inv.csv 4 rows
+/tmp/tmpwe4dhx_o/inv.csv 4 rows
+/tmp/tmp6eeb1s8t/inv.csv 4 rows
+/tmp/tmpn2414vzi/inv.csv 4 rows
+s6b_g56 A0 feasible 8x8x96 Dram Dram 0 np_vs_ref 1 drwl 8fe285eae3e4
+s6b_g56 A1 feasible 8x8x96 Sram Dram 5120 np_vs_ref 1 drwl 04fe0f8dc667
+s6b_g56 A2 feasible 8x8x96 Sram Sram 16384 np_vs_ref 1 drwl a0cf349910ec
+/tmp/tmpskzj96my/inv.csv 2 rows
+/tmp/tmpai6sf9x7/inv.csv 2 rows
+/tmp/tmp8sco1squ/inv.csv 4 rows
+/tmp/tmpe7ply0na/inv.csv 4 rows
+/tmp/tmpeng0l8f8/inv.csv 4 rows
+/tmp/tmpi_st87eh/inv.csv 4 rows
+s6b_g57 A0 feasible 8x8x96 Dram Dram 0 np_vs_ref 1 drwl 70a0ef03a8b3
+s6b_g57 A1 feasible 8x8x96 Sram Dram 5120 np_vs_ref 1 drwl b7dfade6b742
+s6b_g57 A2 feasible 8x8x96 Sram Sram 23552 np_vs_ref 1 drwl ad2dcc0d06d8

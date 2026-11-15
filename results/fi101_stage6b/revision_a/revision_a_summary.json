@@ -1,0 +1,146 @@
+{
+ "contract": "evidence/stage6b/revision_a/revision_a_contract.md",
+ "n_candidates": 26,
+ "classes": {
+  "PARTIAL_A": 13,
+  "EXACT_A": 13
+ },
+ "classes_by_form": {
+  "A0": {
+   "PARTIAL_A": 26
+  },
+  "A1": {
+   "PARTIAL_A": 25,
+   "EXACT_A": 1
+  },
+  "A2": {
+   "PARTIAL_A": 13,
+   "EXACT_A": 13
+  }
+ },
+ "board_eligible": [],
+ "board_eligible_by_form": {
+  "A0": [],
+  "A1": [],
+  "A2": []
+ },
+ "selected": [],
+ "selected_second_compile": [],
+ "provenance_errors": [],
+ "verdict": {
+  "verdict": "NEEDS_REVISION",
+  "reasons": [
+   "no BOARD_ELIGIBLE shape besides G14",
+   "nothing selected",
+   "board contract not written"
+  ],
+  "new_board_eligible": []
+ },
+ "coverage": [
+  {
+   "model": "ad_medium_int8",
+   "status": "NO_ELIGIBLE",
+   "n_mac_model": 61466400,
+   "n_mac_depthfirst_1x1": 58664352,
+   "n_mac_candidates": 58664352,
+   "n_mac_exact_a": 58662144,
+   "n_mac_board_eligible": 0,
+   "n_mac_selected": 0,
+   "static_reproduction_coverage": 0.9543774159540822,
+   "board_eligible_coverage": 0.0,
+   "selected_measurement_coverage": 0.0,
+   "validated_hw_coverage": 0.0,
+   "projected_after_board_upper_bound": 0.0
+  },
+  {
+   "model": "kws_micronet_m",
+   "status": "NO_ELIGIBLE",
+   "n_mac_model": 14208852,
+   "n_mac_depthfirst_1x1": 12056352,
+   "n_mac_candidates": 12056352,
+   "n_mac_exact_a": 10094000,
+   "n_mac_board_eligible": 0,
+   "n_mac_selected": 0,
+   "static_reproduction_coverage": 0.7104022196867136,
+   "board_eligible_coverage": 0.0,
+   "selected_measurement_coverage": 0.0,
+   "validated_hw_coverage": 0.0,
+   "projected_after_board_upper_bound": 0.0
+  },
+  {
+   "model": "mobilenet_v2_1.0_224_INT8",
+   "status": "NO_ELIGIBLE",
+   "n_mac_model": 300840274,
+   "n_mac_depthfirst_1x1": 207404288,
+   "n_mac_candidates": 116107264,
+   "n_mac_exact_a": 61917184,
+   "n_mac_board_eligible": 0,
+   "n_mac_selected": 0,
+   "static_reproduction_coverage": 0.20581414574831827,
+   "board_eligible_coverage": 0.0,
+   "selected_measurement_coverage": 0.0,
+   "validated_hw_coverage": 0.2189902539445234,
+   "projected_after_board_upper_bound": 0.2189902539445234
+  },
+  {
+   "model": "rnnoise_INT8",
+   "status": "NOT_APPLICABLE",
+   "n_mac_model": 87510,
+   "n_mac_depthfirst_1x1": 0,
+   "n_mac_candidates": 0,
+   "n_mac_exact_a": 0,
+   "n_mac_board_eligible": 0,
+   "n_mac_selected": 0,
+   "static_reproduction_coverage": 0.0,
+   "board_eligible_coverage": 0.0,
+   "selected_measurement_coverage": 0.0,
+   "validated_hw_coverage": 0.0,
+   "projected_after_board_upper_bound": 0.0
+  },
+  {
+   "model": "vww4_128_128_INT8",
+   "status": "NO_ELIGIBLE",
+   "n_mac_model": 18763264,
+   "n_mac_depthfirst_1x1": 12237056,
+   "n_mac_candidates": 6528000,
+   "n_mac_exact_a": 4259840,
+   "n_mac_board_eligible": 0,
+   "n_mac_selected": 0,
+   "static_reproduction_coverage": 0.22703086200780417,
+   "board_eligible_coverage": 0.0,
+   "selected_measurement_coverage": 0.0,
+   "validated_hw_coverage": 0.19559581957595437,
+   "projected_after_board_upper_bound": 0.19559581957595437
+  },
+  {
+   "model": "wav2letter_pruned_int8",
+   "status": "NO_ELIGIBLE",
+   "n_mac_model": 3491110876,
+   "n_mac_depthfirst_1x1": 600584000,
+   "n_mac_candidates": 600584000,
+   "n_mac_exact_a": 592000000,
+   "n_mac_board_eligible": 0,
+   "n_mac_selected": 0,
+   "static_reproduction_coverage": 0.16957353147096094,
+   "board_eligible_coverage": 0.0,
+   "selected_measurement_coverage": 0.0,
+   "validated_hw_coverage": 0.0,
+   "projected_after_board_upper_bound": 0.0
+  },
+  {
+   "model": "yolo-fastest_192_face_v4",
+   "status": "NO_ELIGIBLE",
+   "n_mac_model": 38807136,
+   "n_mac_depthfirst_1x1": 16588800,
+   "n_mac_candidates": 13436928,
+   "n_mac_exact_a": 0,
+   "n_mac_board_eligible": 0,
+   "n_mac_selected": 0,
+   "static_reproduction_coverage": 0.0,
+   "board_eligible_coverage": 0.0,
+   "selected_measurement_coverage": 0.0,
+   "validated_hw_coverage": 0.22014590306277693,
+   "projected_after_board_upper_bound": 0.22014590306277693
+  }
+ ]
+}
