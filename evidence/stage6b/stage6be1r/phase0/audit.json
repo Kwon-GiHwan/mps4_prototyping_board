@@ -1,0 +1,414 @@
+{
+ "n_new_shapes": 6,
+ "n_unique_names": 6,
+ "n_unique_drwl": 6,
+ "n_unique_dims": 6,
+ "n_unique_exec": 4,
+ "boots": [
+  "421",
+  "422",
+  "423",
+  "424",
+  "425",
+  "426",
+  "427"
+ ],
+ "n_conditions": 7,
+ "h1_uc_matches": 6,
+ "all_competitors_split": 4,
+ "readme_measured_table_rows": [
+  "Cin72 13\u00d713 o96",
+  "Cin136 13\u00d713 o96",
+  "Cin72 7\u00d77 o48",
+  "Cin200 13\u00d713 o96",
+  "Cin80 13\u00d713 o96",
+  "Cin72 7\u00d77 o112"
+ ],
+ "n_tests_test_stage6be1": 18,
+ "commit_message_claim_tests": 19,
+ "issues": [],
+ "rows": [
+  {
+   "name": "s4c2_conv_cin48",
+   "plan_boot": 421,
+   "manifest_boot": 421,
+   "raw_boots": [
+    "421"
+   ],
+   "drwl_file_sha": "6eb390be2874088b53970ab4f859962d5bb0b16b4e060e2e460d86840f4339d7",
+   "manifest_drwl": "6eb390be2874088b53970ab4f859962d5bb0b16b4e060e2e460d86840f4339d7",
+   "raw_workload": [
+    "6eb390be2874088b53970ab4f859962d5bb0b16b4e060e2e460d86840f4339d7"
+   ],
+   "raw_model": [
+    "977d970ee501e85ea56fac3ce5eb5008091d0245a6f13bc158890204f32f2898"
+   ],
+   "mac_measured": [
+    3456
+   ],
+   "mac_measured_runs": 4,
+   "consistent": true
+  },
+  {
+   "name": "e1_c72_h13w13_o96",
+   "plan_boot": 422,
+   "manifest_boot": 422,
+   "raw_boots": [
+    "422"
+   ],
+   "drwl_file_sha": "a7eaa9723e65dc1880f320910278c1d535849adb023815ab78cb749b7728f442",
+   "manifest_drwl": "a7eaa9723e65dc1880f320910278c1d535849adb023815ab78cb749b7728f442",
+   "raw_workload": [
+    "a7eaa9723e65dc1880f320910278c1d535849adb023815ab78cb749b7728f442"
+   ],
+   "raw_model": [
+    "c920f24fbe09cb40db0be5d0d8aadb3f0dd0e1ee246b5f9295073013a223b555"
+   ],
+   "mac_measured": [
+    2352
+   ],
+   "mac_measured_runs": 4,
+   "pred_drwl": "a7eaa9723e65dc1880f320910278c1d535849adb023815ab78cb749b7728f442",
+   "pred_vela": "c920f24fbe09cb40db0be5d0d8aadb3f0dd0e1ee246b5f9295073013a223b555",
+   "h1_uc": 2352.0,
+   "h1_uc_match": true,
+   "competitors_differing": [
+    "H1-C16",
+    "H1-G",
+    "H1-U16",
+    "H1-U8",
+    "H1-UC with whole Cout instead of per-kernel slices",
+    "H1-UC without IFM-depth chunks",
+    "H1-UC without spatial ublock padding",
+    "H1-UC without the 32 minimum"
+   ],
+   "competitors_matching_measured": [],
+   "kernels": [
+    [
+     13,
+     13,
+     16
+    ],
+    [
+     13,
+     13,
+     80
+    ]
+   ],
+   "ublock": [
+    2,
+    2,
+    32
+   ],
+   "ofm_block": "8x14x64",
+   "cin_chunks": [
+    64,
+    8
+   ],
+   "summary_mac": 2352,
+   "summary_pred": 2352.0,
+   "summary_status": "UNSTABLE",
+   "consistent": true
+  },
+  {
+   "name": "e1_c136_h13w13_o96",
+   "plan_boot": 423,
+   "manifest_boot": 423,
+   "raw_boots": [
+    "423"
+   ],
+   "drwl_file_sha": "dbf11dfc04182a10b1a38c9db0a386127e8470bcca5838b205bd43c81b22b2ad",
+   "manifest_drwl": "dbf11dfc04182a10b1a38c9db0a386127e8470bcca5838b205bd43c81b22b2ad",
+   "raw_workload": [
+    "dbf11dfc04182a10b1a38c9db0a386127e8470bcca5838b205bd43c81b22b2ad"
+   ],
+   "raw_model": [
+    "4c5e746c6b240ecdb24477790eabe60e47917a040cec08c54c93832846aea96a"
+   ],
+   "mac_measured": [
+    3920
+   ],
+   "mac_measured_runs": 4,
+   "pred_drwl": "dbf11dfc04182a10b1a38c9db0a386127e8470bcca5838b205bd43c81b22b2ad",
+   "pred_vela": "4c5e746c6b240ecdb24477790eabe60e47917a040cec08c54c93832846aea96a",
+   "h1_uc": 3920.0,
+   "h1_uc_match": true,
+   "competitors_differing": [
+    "H1-C16",
+    "H1-G",
+    "H1-U16",
+    "H1-U8",
+    "H1-UC with whole Cout instead of per-kernel slices",
+    "H1-UC without IFM-depth chunks",
+    "H1-UC without spatial ublock padding",
+    "H1-UC without the 32 minimum"
+   ],
+   "competitors_matching_measured": [],
+   "kernels": [
+    [
+     13,
+     13,
+     16
+    ],
+    [
+     13,
+     13,
+     80
+    ]
+   ],
+   "ublock": [
+    2,
+    2,
+    32
+   ],
+   "ofm_block": "6x14x96",
+   "cin_chunks": [
+    64,
+    64,
+    8
+   ],
+   "summary_mac": 3920,
+   "summary_pred": 3920.0,
+   "summary_status": "UNSTABLE",
+   "consistent": true
+  },
+  {
+   "name": "e1_c72_h7w7_o48",
+   "plan_boot": 424,
+   "manifest_boot": 424,
+   "raw_boots": [
+    "424"
+   ],
+   "drwl_file_sha": "62658f57f50b318ab636ca2bed93caf18d040b722030b453672c4bf18fce8162",
+   "manifest_drwl": "62658f57f50b318ab636ca2bed93caf18d040b722030b453672c4bf18fce8162",
+   "raw_workload": [
+    "62658f57f50b318ab636ca2bed93caf18d040b722030b453672c4bf18fce8162"
+   ],
+   "raw_model": [
+    "54e2b3006f2edac5bd928a9bd22f5c1add2b7b7862296577371ab32763304208"
+   ],
+   "mac_measured": [
+    288
+   ],
+   "mac_measured_runs": 4,
+   "pred_drwl": "62658f57f50b318ab636ca2bed93caf18d040b722030b453672c4bf18fce8162",
+   "pred_vela": "54e2b3006f2edac5bd928a9bd22f5c1add2b7b7862296577371ab32763304208",
+   "h1_uc": 288.0,
+   "h1_uc_match": true,
+   "competitors_differing": [
+    "H1-C16",
+    "H1-U16",
+    "H1-U8",
+    "H1-UC without IFM-depth chunks",
+    "H1-UC without spatial ublock padding",
+    "H1-UC without the 32 minimum"
+   ],
+   "competitors_matching_measured": [
+    "H1-G",
+    "H1-UC with whole Cout instead of per-kernel slices"
+   ],
+   "kernels": [
+    [
+     7,
+     7,
+     48
+    ]
+   ],
+   "ublock": [
+    2,
+    4,
+    16
+   ],
+   "ofm_block": "8x8x48",
+   "cin_chunks": [
+    64,
+    8
+   ],
+   "summary_mac": 288,
+   "summary_pred": 288.0,
+   "summary_status": "UNSTABLE",
+   "consistent": true
+  },
+  {
+   "name": "e1_c200_h13w13_o96",
+   "plan_boot": 425,
+   "manifest_boot": 425,
+   "raw_boots": [
+    "425"
+   ],
+   "drwl_file_sha": "5fc178455a5b6ceb611b826bf02f20ba78ec3ea585807ff533951e807165697f",
+   "manifest_drwl": "5fc178455a5b6ceb611b826bf02f20ba78ec3ea585807ff533951e807165697f",
+   "raw_workload": [
+    "5fc178455a5b6ceb611b826bf02f20ba78ec3ea585807ff533951e807165697f"
+   ],
+   "raw_model": [
+    "007acf664616c5f38b1865fd2e5d14aee0bebfb3e73b8102d2790bffe758e29f"
+   ],
+   "mac_measured": [
+    5488
+   ],
+   "mac_measured_runs": 4,
+   "pred_drwl": "5fc178455a5b6ceb611b826bf02f20ba78ec3ea585807ff533951e807165697f",
+   "pred_vela": "007acf664616c5f38b1865fd2e5d14aee0bebfb3e73b8102d2790bffe758e29f",
+   "h1_uc": 5488.0,
+   "h1_uc_match": true,
+   "competitors_differing": [
+    "H1-C16",
+    "H1-G",
+    "H1-U16",
+    "H1-U8",
+    "H1-UC with whole Cout instead of per-kernel slices",
+    "H1-UC without IFM-depth chunks",
+    "H1-UC without spatial ublock padding",
+    "H1-UC without the 32 minimum"
+   ],
+   "competitors_matching_measured": [],
+   "kernels": [
+    [
+     13,
+     13,
+     16
+    ],
+    [
+     13,
+     13,
+     80
+    ]
+   ],
+   "ublock": [
+    2,
+    2,
+    32
+   ],
+   "ofm_block": "6x14x96",
+   "cin_chunks": [
+    64,
+    64,
+    64,
+    8
+   ],
+   "summary_mac": 5488,
+   "summary_pred": 5488.0,
+   "summary_status": "UNSTABLE",
+   "consistent": true
+  },
+  {
+   "name": "e1_c80_h13w13_o96",
+   "plan_boot": 426,
+   "manifest_boot": 426,
+   "raw_boots": [
+    "426"
+   ],
+   "drwl_file_sha": "8a79fd5800e3af860adaf0c279bad275ba7fa2f399e740b067b15b89d9fdad68",
+   "manifest_drwl": "8a79fd5800e3af860adaf0c279bad275ba7fa2f399e740b067b15b89d9fdad68",
+   "raw_workload": [
+    "8a79fd5800e3af860adaf0c279bad275ba7fa2f399e740b067b15b89d9fdad68"
+   ],
+   "raw_model": [
+    "2904858f23df44959c1592b7d1b60d44da1eb458b8fd666e2de562bc98b56c9b"
+   ],
+   "mac_measured": [
+    2352
+   ],
+   "mac_measured_runs": 4,
+   "pred_drwl": "8a79fd5800e3af860adaf0c279bad275ba7fa2f399e740b067b15b89d9fdad68",
+   "pred_vela": "2904858f23df44959c1592b7d1b60d44da1eb458b8fd666e2de562bc98b56c9b",
+   "h1_uc": 2352.0,
+   "h1_uc_match": true,
+   "competitors_differing": [
+    "H1-C16",
+    "H1-G",
+    "H1-U16",
+    "H1-U8",
+    "H1-UC with whole Cout instead of per-kernel slices",
+    "H1-UC without IFM-depth chunks",
+    "H1-UC without spatial ublock padding",
+    "H1-UC without the 32 minimum"
+   ],
+   "competitors_matching_measured": [],
+   "kernels": [
+    [
+     13,
+     13,
+     16
+    ],
+    [
+     13,
+     13,
+     80
+    ]
+   ],
+   "ublock": [
+    2,
+    2,
+    32
+   ],
+   "ofm_block": "8x14x64",
+   "cin_chunks": [
+    64,
+    16
+   ],
+   "summary_mac": 2352,
+   "summary_pred": 2352.0,
+   "summary_status": "UNSTABLE",
+   "consistent": true
+  },
+  {
+   "name": "e1_c72_h7w7_o112",
+   "plan_boot": 427,
+   "manifest_boot": 427,
+   "raw_boots": [
+    "427"
+   ],
+   "drwl_file_sha": "d2aaae54b5c639b42c63922376aa0d847c05ccbc0d3e0fac954021073a2e873e",
+   "manifest_drwl": "d2aaae54b5c639b42c63922376aa0d847c05ccbc0d3e0fac954021073a2e873e",
+   "raw_workload": [
+    "d2aaae54b5c639b42c63922376aa0d847c05ccbc0d3e0fac954021073a2e873e"
+   ],
+   "raw_model": [
+    "589e29c6a0fb0f20830af66173e8f5afd1d2f563bc46a24c23d2e46285a5970f"
+   ],
+   "mac_measured": [
+    672
+   ],
+   "mac_measured_runs": 4,
+   "pred_drwl": "d2aaae54b5c639b42c63922376aa0d847c05ccbc0d3e0fac954021073a2e873e",
+   "pred_vela": "589e29c6a0fb0f20830af66173e8f5afd1d2f563bc46a24c23d2e46285a5970f",
+   "h1_uc": 672.0,
+   "h1_uc_match": true,
+   "competitors_differing": [
+    "H1-C16",
+    "H1-G",
+    "H1-U16",
+    "H1-U8",
+    "H1-UC without IFM-depth chunks",
+    "H1-UC without spatial ublock padding",
+    "H1-UC without the 32 minimum"
+   ],
+   "competitors_matching_measured": [
+    "H1-UC with whole Cout instead of per-kernel slices"
+   ],
+   "kernels": [
+    [
+     7,
+     7,
+     112
+    ]
+   ],
+   "ublock": [
+    1,
+    4,
+    32
+   ],
+   "ofm_block": "7x8x128",
+   "cin_chunks": [
+    64,
+    8
+   ],
+   "summary_mac": 672,
+   "summary_pred": 672.0,
+   "summary_status": "UNSTABLE",
+   "consistent": true
+  }
+ ]
+}
