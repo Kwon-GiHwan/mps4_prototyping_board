@@ -140,10 +140,10 @@ def dpu_verdict(shapes: list[dict]) -> str:
 
 def npu_table(r: dict) -> dict:
     """Descriptive (contract §7, not a verdict input): NPU_ACTIVE per pass, range, absolute range."""
-    m = r.get("metrics") or {}
-    a, ra = m.get("A_35"), m.get("A_35_range")
+    m = r.get("metrics") or {}                    # stage6bb.rates() names (A_35 -> npu_active, ...)
+    a, ra = m.get("npu_active"), m.get("npu_active_range")
     return dict(a_median=a, a_range=ra, a_range_pct=None if not a or ra is None else 100 * ra / a,
-                b_median=m.get("B_35"), b_range=m.get("B_35_range"))
+                b_median=m.get("npu_active_pass_b"))
 
 
 # ---- commands -----------------------------------------------------------------------------------------------------------

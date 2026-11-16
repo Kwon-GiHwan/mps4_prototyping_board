@@ -1,0 +1,11 @@
+wfe set  1 rep 1 rc=0 flags=0x7f npu_exec=85187 ofm_mismatch=0 valid=True 
+wfe set  1 rep 2 rc=0 flags=0x7f npu_exec=85524 ofm_mismatch=0 valid=True 
+wfe set  1 rep 3 rc=0 flags=0x7f npu_exec=85461 ofm_mismatch=0 valid=True 
+wfe set  1 rep 4 rc=0 flags=0x7f npu_exec=85565 ofm_mismatch=0 valid=True 
+wfe set  1 rep 5 rc=0 flags=0x7f npu_exec=85129 ofm_mismatch=0 valid=True 
+wfe set  2 rep 1 rc=0 flags=0x7f npu_exec=85659 ofm_mismatch=0 valid=True 
+wfe set  2 rep 2 rc=0 flags=0x7f npu_exec=85100 ofm_mismatch=0 valid=True 
+wfe set  2 rep 3 rc=0 flags=0x7f npu_exec=84611 ofm_mismatch=0 valid=True 
+wfe set  2 rep 4 rc=0 flags=0x7f npu_exec=85522 ofm_mismatch=0 valid=True 
+wfe set  2 rep 5 rc=0 flags=0x7f npu_exec=84864 ofm_mismatch=0 valid=True 
+{"runs": 10, "conditions": 1, "refusal": null}

@@ -1,0 +1,51 @@
+{
+ "s4c2_conv_cin48": {
+  "custom_op_inputs": 5,
+  "custom_op_outputs": 1,
+  "n_base": 5,
+  "placement": 0,
+  "drwl_sha256": "6eb390be2874088b53970ab4f859962d5bb0b16b4e060e2e460d86840f4339d7"
+ },
+ "e1r_c200_h37w37_o96": {
+  "custom_op_inputs": 5,
+  "custom_op_outputs": 1,
+  "n_base": 5,
+  "placement": 0,
+  "drwl_sha256": "924cab4f869759fe9d35e385017527659c8bebe4830e0ae4a7c1a97aa929585b"
+ },
+ "e1r_c200_h33w33_o96": {
+  "custom_op_inputs": 5,
+  "custom_op_outputs": 1,
+  "n_base": 5,
+  "placement": 0,
+  "drwl_sha256": "b4d5bc51b59d8a021f6b8012d7a3fe351edf77f626576a0178e7e9ae18363ad7"
+ },
+ "e1r_c200_h37w37_o176": {
+  "custom_op_inputs": 5,
+  "custom_op_outputs": 1,
+  "n_base": 5,
+  "placement": 0,
+  "drwl_sha256": "b5619f1b347385beea72a05465848b2e339debfbaf6f1ddf62ce3102373bb6d2"
+ },
+ "e1r_c200_h29w29_o96": {
+  "custom_op_inputs": 5,
+  "custom_op_outputs": 1,
+  "n_base": 5,
+  "placement": 0,
+  "drwl_sha256": "ca2662f27e44691a11b5e4fc70b83dbc7d0a2a3e90b24eec5a04310a9f6a7df3"
+ },
+ "e1r_c100_h37w37_o96": {
+  "custom_op_inputs": 5,
+  "custom_op_outputs": 1,
+  "n_base": 5,
+  "placement": 0,
+  "drwl_sha256": "f30e53b7f9009759332c57819f62fe7aa2838c3a7ad4220d140af2f953d10309"
+ },
+ "e1r_c136_h37w37_o96": {
+  "custom_op_inputs": 5,
+  "custom_op_outputs": 1,
+  "n_base": 5,
+  "placement": 0,
+  "drwl_sha256": "28c4e710e7b8c285dc33cac8a87e33f5eebe299cec4bbdd2c755b9f404105820"
+ }
+}

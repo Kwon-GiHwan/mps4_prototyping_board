@@ -1,0 +1,509 @@
+{
+ "e1r_c200_h37w37_o96": {
+  "n_mac": 26284800,
+  "kernels": [
+   [
+    37,
+    37,
+    16
+   ],
+   [
+    37,
+    37,
+    80
+   ]
+  ],
+  "n_kernels": 2,
+  "traversal": "DepthFirst",
+  "ofm_block": "2x38x96",
+  "ifm_block": "2x38x64",
+  "ublock": [
+   2,
+   2,
+   32
+  ],
+  "ublocks": 1444,
+  "cin_chunks": [
+   64,
+   64,
+   64,
+   8
+  ],
+  "categories": [
+   "E1-A",
+   "E1-B",
+   "E1-D"
+  ],
+  "mac": {
+   "H1-UC": 40432.0,
+   "H1-G": 30324.0,
+   "H1-C16": 26695.5,
+   "H1-U8": 36100,
+   "H1-U16": 37544.0,
+   "H1-UC without spatial ublock padding": 38332.0,
+   "H1-UC with whole Cout instead of per-kernel slices": 30324.0,
+   "H1-UC without IFM-depth chunks": 37544.0,
+   "H1-UC without the 32 minimum": 37544.0
+  },
+  "dpu": {
+   "D-U16": 37544.0,
+   "D-U8": 36100.0,
+   "D-PW": 36100.0
+  },
+  "h1_uc_rate": 650.0989315393748,
+  "differs_from_h1_uc": [
+   "H1-C16",
+   "H1-G",
+   "H1-U16",
+   "H1-U8",
+   "H1-UC with whole Cout instead of per-kernel slices",
+   "H1-UC without IFM-depth chunks",
+   "H1-UC without spatial ublock padding",
+   "H1-UC without the 32 minimum"
+  ],
+  "dpu_pw_vs_u16_split": true,
+  "role": "E1-A",
+  "drwl_sha256": "924cab4f869759fe9d35e385017527659c8bebe4830e0ae4a7c1a97aa929585b",
+  "golden_sha256": "d7528e23ac1eb82186e4b6f04f1cdd83b81ceb45638049b6fda928581cea91b2",
+  "vela_sha256": "7587edac95344d277171d081a9cf49e40cb8ebd4ceea608790af04d393234227",
+  "cms_sha256": "87489c127c821e7d3694519eaccf7bf4c1a33b79a9e13479f242a0fe87b5c5ee",
+  "deterministic": true,
+  "vela_cycles": 85815,
+  "n_split": 8,
+  "min_gap": 2100.0,
+  "dpu_pw_vs_u8_split": false,
+  "exec_sig": [
+   "[[37, 37, 16], [37, 37, 80]]",
+   "(2, 2, 32)",
+   "2x38x96",
+   "2x38x64",
+   "(8.0, 8.0, 8.0, 4.0)"
+  ],
+  "model_sha256": "5d4eb9be9ffaa92cb3c2c32df51a193e3eafb378b656a93dfeded960a06a52dd",
+  "compiler": {
+   "vela_version": "5.0.0",
+   "package_digest": "78d4c31d06d87c5a48c55139ef44c361f4eedf889486fe3047c88b32028aff51"
+  }
+ },
+ "e1r_c200_h33w33_o96": {
+  "n_mac": 20908800,
+  "kernels": [
+   [
+    33,
+    33,
+    16
+   ],
+   [
+    33,
+    33,
+    80
+   ]
+  ],
+  "n_kernels": 2,
+  "traversal": "DepthFirst",
+  "ofm_block": "2x34x96",
+  "ifm_block": "2x34x64",
+  "ublock": [
+   2,
+   2,
+   32
+  ],
+  "ublocks": 1156,
+  "cin_chunks": [
+   64,
+   64,
+   64,
+   8
+  ],
+  "categories": [
+   "E1-A",
+   "E1-B",
+   "E1-D"
+  ],
+  "mac": {
+   "H1-UC": 32368.0,
+   "H1-G": 24276.0,
+   "H1-C16": 21235.5,
+   "H1-U8": 28900,
+   "H1-U16": 30056.0,
+   "H1-UC without spatial ublock padding": 30492.0,
+   "H1-UC with whole Cout instead of per-kernel slices": 24276.0,
+   "H1-UC without IFM-depth chunks": 30056.0,
+   "H1-UC without the 32 minimum": 30056.0
+  },
+  "dpu": {
+   "D-U16": 30056.0,
+   "D-U8": 28900.0,
+   "D-PW": 28900.0
+  },
+  "h1_uc_rate": 645.9713297083539,
+  "differs_from_h1_uc": [
+   "H1-C16",
+   "H1-G",
+   "H1-U16",
+   "H1-U8",
+   "H1-UC with whole Cout instead of per-kernel slices",
+   "H1-UC without IFM-depth chunks",
+   "H1-UC without spatial ublock padding",
+   "H1-UC without the 32 minimum"
+  ],
+  "dpu_pw_vs_u16_split": true,
+  "role": "E1-B",
+  "drwl_sha256": "b4d5bc51b59d8a021f6b8012d7a3fe351edf77f626576a0178e7e9ae18363ad7",
+  "golden_sha256": "b3320f44c800142e637c0a544f5e5473d6e05995d1f98808a69d1ae8329d62ae",
+  "vela_sha256": "3d32ff9afd021bf4f93591dd5f698d965fc93b8748d91c928bc30e9ab66ba606",
+  "cms_sha256": "f33770ca056dd07601c5b84382d2941a3cab658387e3fc277b9673368cb25a6a",
+  "deterministic": true,
+  "vela_cycles": 68481,
+  "n_split": 8,
+  "min_gap": 1876.0,
+  "dpu_pw_vs_u8_split": false,
+  "exec_sig": [
+   "[[33, 33, 16], [33, 33, 80]]",
+   "(2, 2, 32)",
+   "2x34x96",
+   "2x34x64",
+   "(8.0, 8.0, 8.0, 4.0)"
+  ],
+  "model_sha256": "1beeac024a8692fa1d5f8578e003167119146a39585c4c2af2487b70266730ba",
+  "compiler": {
+   "vela_version": "5.0.0",
+   "package_digest": "78d4c31d06d87c5a48c55139ef44c361f4eedf889486fe3047c88b32028aff51"
+  }
+ },
+ "e1r_c200_h37w37_o176": {
+  "n_mac": 48188800,
+  "kernels": [
+   [
+    37,
+    37,
+    16
+   ],
+   [
+    37,
+    37,
+    160
+   ]
+  ],
+  "n_kernels": 2,
+  "traversal": "DepthFirst",
+  "ofm_block": "2x40x96",
+  "ifm_block": "2x40x64",
+  "ublock": [
+   2,
+   4,
+   16
+  ],
+  "ublocks": 2090,
+  "cin_chunks": [
+   64,
+   64,
+   64,
+   8
+  ],
+  "categories": [
+   "E1-A",
+   "E1-B",
+   "E1-C"
+  ],
+  "mac": {
+   "H1-UC": 58520.0,
+   "H1-G": 58520.0,
+   "H1-C16": 48941.75,
+   "H1-U8": 52250,
+   "H1-U16": 54340.0,
+   "H1-UC without spatial ublock padding": 52706.5,
+   "H1-UC with whole Cout instead of per-kernel slices": 58520.0,
+   "H1-UC without IFM-depth chunks": 54340.0,
+   "H1-UC without the 32 minimum": 54340.0
+  },
+  "dpu": {
+   "D-U16": 54340.0,
+   "D-U8": 52250.0,
+   "D-PW": 52250.0
+  },
+  "h1_uc_rate": 823.4586466165414,
+  "differs_from_h1_uc": [
+   "H1-C16",
+   "H1-U16",
+   "H1-U8",
+   "H1-UC without IFM-depth chunks",
+   "H1-UC without spatial ublock padding",
+   "H1-UC without the 32 minimum"
+  ],
+  "dpu_pw_vs_u16_split": true,
+  "role": "E1-C",
+  "drwl_sha256": "b5619f1b347385beea72a05465848b2e339debfbaf6f1ddf62ce3102373bb6d2",
+  "golden_sha256": "36581a8d62286660df8f2ec6dc8480ce4862cfd9d77acc23a41e416930011ee7",
+  "vela_sha256": "ff70b6140a1795c7944188cfd8b3dd6afbf3c3d1ac772a5479d587fd66ca7d36",
+  "cms_sha256": "998bfb21ee5c3986048bcd5c0941ea8a90ce5879e84664e25fe71583dfd4e344",
+  "deterministic": true,
+  "vela_cycles": 171630,
+  "n_split": 6,
+  "min_gap": 4180.0,
+  "dpu_pw_vs_u8_split": false,
+  "exec_sig": [
+   "[[37, 37, 16], [37, 37, 160]]",
+   "(2, 4, 16)",
+   "2x40x96",
+   "2x40x64",
+   "(8.0, 8.0, 8.0, 4.0)"
+  ],
+  "model_sha256": "a0632cea4c2613088475f6c890fbe1a1f3bdd4f81a6d8dcd210c32170c281d3c",
+  "compiler": {
+   "vela_version": "5.0.0",
+   "package_digest": "78d4c31d06d87c5a48c55139ef44c361f4eedf889486fe3047c88b32028aff51"
+  }
+ },
+ "e1r_c200_h29w29_o96": {
+  "n_mac": 16147200,
+  "kernels": [
+   [
+    29,
+    29,
+    16
+   ],
+   [
+    29,
+    29,
+    80
+   ]
+  ],
+  "n_kernels": 2,
+  "traversal": "DepthFirst",
+  "ofm_block": "8x10x96",
+  "ifm_block": "8x10x64",
+  "ublock": [
+   2,
+   2,
+   32
+  ],
+  "ublocks": 900,
+  "cin_chunks": [
+   64,
+   64,
+   64,
+   8
+  ],
+  "categories": [
+   "E1-A",
+   "E1-B",
+   "E1-D"
+  ],
+  "mac": {
+   "H1-UC": 25200.0,
+   "H1-G": 18900.0,
+   "H1-C16": 16399.5,
+   "H1-U8": 22500,
+   "H1-U16": 23400.0,
+   "H1-UC without spatial ublock padding": 23548.0,
+   "H1-UC with whole Cout instead of per-kernel slices": 18900.0,
+   "H1-UC without IFM-depth chunks": 23400.0,
+   "H1-UC without the 32 minimum": 23400.0
+  },
+  "dpu": {
+   "D-U16": 23400.0,
+   "D-U8": 22500.0,
+   "D-PW": 22500.0
+  },
+  "h1_uc_rate": 640.7619047619048,
+  "differs_from_h1_uc": [
+   "H1-C16",
+   "H1-G",
+   "H1-U16",
+   "H1-U8",
+   "H1-UC with whole Cout instead of per-kernel slices",
+   "H1-UC without IFM-depth chunks",
+   "H1-UC without spatial ublock padding",
+   "H1-UC without the 32 minimum"
+  ],
+  "dpu_pw_vs_u16_split": true,
+  "role": "E1-D",
+  "drwl_sha256": "ca2662f27e44691a11b5e4fc70b83dbc7d0a2a3e90b24eec5a04310a9f6a7df3",
+  "golden_sha256": "2cfd61bf6fa10bf6abc7c7c10d5c4a2692c14220377f5d959d34a02e35c93885",
+  "vela_sha256": "fa34ccbb194416f1de9e703f40ef38e3ba1622d9a3d307f06ba72269bf0390b9",
+  "cms_sha256": "3022cda3431cc544f0c632b61a2c213fd95a5b6797da120e7d653b3edf4ceb47",
+  "deterministic": true,
+  "vela_cycles": 58593,
+  "n_split": 8,
+  "min_gap": 1652.0,
+  "dpu_pw_vs_u8_split": false,
+  "exec_sig": [
+   "[[29, 29, 16], [29, 29, 80]]",
+   "(2, 2, 32)",
+   "8x10x96",
+   "8x10x64",
+   "(8.0, 8.0, 8.0, 4.0)"
+  ],
+  "model_sha256": "f80149036fb6c2efb562306eef13b7ee6a49722f4c6042c6096853eaeb4269f2",
+  "compiler": {
+   "vela_version": "5.0.0",
+   "package_digest": "78d4c31d06d87c5a48c55139ef44c361f4eedf889486fe3047c88b32028aff51"
+  }
+ },
+ "e1r_c100_h37w37_o96": {
+  "n_mac": 13142400,
+  "kernels": [
+   [
+    37,
+    37,
+    16
+   ],
+   [
+    37,
+    37,
+    80
+   ]
+  ],
+  "n_kernels": 2,
+  "traversal": "DepthFirst",
+  "ofm_block": "2x38x96",
+  "ifm_block": "2x38x64",
+  "ublock": [
+   2,
+   2,
+   32
+  ],
+  "ublocks": 1444,
+  "cin_chunks": [
+   64,
+   36
+  ],
+  "categories": [
+   "E1-B",
+   "E1-D"
+  ],
+  "mac": {
+   "H1-UC": 20216.0,
+   "H1-G": 17328.0,
+   "H1-C16": 14374.5,
+   "H1-U8": 18772,
+   "H1-U16": 20216.0,
+   "H1-UC without spatial ublock padding": 19166.0,
+   "H1-UC with whole Cout instead of per-kernel slices": 15162.0,
+   "H1-UC without IFM-depth chunks": 20216.0,
+   "H1-UC without the 32 minimum": 20216.0
+  },
+  "dpu": {
+   "D-U16": 20216.0,
+   "D-U8": 18772.0,
+   "D-PW": 20216.0
+  },
+  "h1_uc_rate": 650.0989315393748,
+  "differs_from_h1_uc": [
+   "H1-C16",
+   "H1-G",
+   "H1-U8",
+   "H1-UC with whole Cout instead of per-kernel slices",
+   "H1-UC without spatial ublock padding"
+  ],
+  "dpu_pw_vs_u16_split": false,
+  "role": "extra-DPU",
+  "drwl_sha256": "f30e53b7f9009759332c57819f62fe7aa2838c3a7ad4220d140af2f953d10309",
+  "golden_sha256": "2687212d3f1764de076e711e33eabbbc2bcb85073c69b4e8809bf3cbf11f4509",
+  "vela_sha256": "22cb3742383d6def096072a6128428b1fa875ef18f36c14e45554c510f596f54",
+  "cms_sha256": "624afcf6143ba7fa9592dd3660e3f5df41b0940db5a0259e6da283887b30bf39",
+  "deterministic": true,
+  "vela_cycles": 59374,
+  "n_split": 5,
+  "min_gap": 1050.0,
+  "dpu_pw_vs_u8_split": true,
+  "exec_sig": [
+   "[[37, 37, 16], [37, 37, 80]]",
+   "(2, 2, 32)",
+   "2x38x96",
+   "2x38x64",
+   "(8.0, 6.0)"
+  ],
+  "model_sha256": "bb2c2bdb9f5094034dad3c687d85e2f8e339802b80d9dc8cf12cd2634fbdba00",
+  "compiler": {
+   "vela_version": "5.0.0",
+   "package_digest": "78d4c31d06d87c5a48c55139ef44c361f4eedf889486fe3047c88b32028aff51"
+  }
+ },
+ "e1r_c136_h37w37_o96": {
+  "n_mac": 17873664,
+  "kernels": [
+   [
+    37,
+    37,
+    16
+   ],
+   [
+    37,
+    37,
+    80
+   ]
+  ],
+  "n_kernels": 2,
+  "traversal": "DepthFirst",
+  "ofm_block": "2x38x96",
+  "ifm_block": "2x38x64",
+  "ublock": [
+   2,
+   2,
+   32
+  ],
+  "ublocks": 1444,
+  "cin_chunks": [
+   64,
+   64,
+   8
+  ],
+  "categories": [
+   "E1-A",
+   "E1-B",
+   "E1-D"
+  ],
+  "mac": {
+   "H1-UC": 28880.0,
+   "H1-G": 21660.0,
+   "H1-C16": 18481.5,
+   "H1-U8": 24548,
+   "H1-U16": 25992.0,
+   "H1-UC without spatial ublock padding": 27380.0,
+   "H1-UC with whole Cout instead of per-kernel slices": 21660.0,
+   "H1-UC without IFM-depth chunks": 25992.0,
+   "H1-UC without the 32 minimum": 25992.0
+  },
+  "dpu": {
+   "D-U16": 25992.0,
+   "D-U8": 24548.0,
+   "D-PW": 24548.0
+  },
+  "h1_uc_rate": 618.8941828254848,
+  "differs_from_h1_uc": [
+   "H1-C16",
+   "H1-G",
+   "H1-U16",
+   "H1-U8",
+   "H1-UC with whole Cout instead of per-kernel slices",
+   "H1-UC without IFM-depth chunks",
+   "H1-UC without spatial ublock padding",
+   "H1-UC without the 32 minimum"
+  ],
+  "dpu_pw_vs_u16_split": true,
+  "role": "extra",
+  "drwl_sha256": "28c4e710e7b8c285dc33cac8a87e33f5eebe299cec4bbdd2c755b9f404105820",
+  "golden_sha256": "043e88f46fc932ac094a1e316d8cbf012ffa95d2099f02bd08daf3bef76a97cc",
+  "vela_sha256": "5b4e65021859b81df3fd35ce5bfb11782f7da993456bd8e7fecc13a7c8a4e944",
+  "cms_sha256": "11a29c3623bde3a7fa487f395f5075d5c6a7e7800b4347cddb6848e748108231",
+  "deterministic": true,
+  "vela_cycles": 59374,
+  "n_split": 8,
+  "min_gap": 1500.0,
+  "dpu_pw_vs_u8_split": false,
+  "exec_sig": [
+   "[[37, 37, 16], [37, 37, 80]]",
+   "(2, 2, 32)",
+   "2x38x96",
+   "2x38x64",
+   "(8.0, 8.0, 4.0)"
+  ],
+  "model_sha256": "0d6302f0cf635f79e81215680d6a9070d22ee43234163f28cc5f769a04288f27",
+  "compiler": {
+   "vela_version": "5.0.0",
+   "package_digest": "78d4c31d06d87c5a48c55139ef44c361f4eedf889486fe3047c88b32028aff51"
+  }
+ }
+}

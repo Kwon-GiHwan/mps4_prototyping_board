@@ -186,7 +186,7 @@ class Verdicts(unittest.TestCase):
         self.assertEqual(X.dpu_verdict(both + [self.shape("PRIMARY_VALID", 10, 10, 10, False)]), "D-PW_CONSISTENT")
 
     def test_npu_table(self):
-        t = X.npu_table(dict(metrics=dict(A_35=60000, A_35_range=1200, B_35=60100, B_35_range=900)))
+        t = X.npu_table(dict(metrics=dict(npu_active=60000, npu_active_range=1200, npu_active_pass_b=60100)))
         self.assertEqual((t["a_median"], t["a_range"], t["a_range_pct"], t["b_median"]), (60000, 1200, 2.0, 60100))
         self.assertIsNone(X.npu_table(dict())["a_range_pct"])
 
