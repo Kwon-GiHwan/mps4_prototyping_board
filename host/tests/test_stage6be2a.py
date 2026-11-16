@@ -207,6 +207,13 @@ class M1(unittest.TestCase):
         self.assertFalse(E.m1_checks(dict(s=self.compile(mac="24292")))["M1c"])
         self.assertTrue(E.m1_checks(dict(s=self.compile(mac="24291")))["M1c"])
 
+    def test_scope_conv_only(self):     # an elementwise op with a DepthFirst main row (mac_cycles empty) is not checked
+        c = self.compile()
+        c["db"]["perf_debug_main"].append(dict(c["db"]["perf_debug_main"][0], id="2", mac_cycles=""))
+        c["db"]["perf_debug"].append(dict(c["db"]["perf_debug"][0], id="2"))
+        m = E.m1_checks(dict(s=c))
+        self.assertEqual((m["M1c_n"], m["M1c"]), (1, True))
+
     def test_scope(self):
         self.assertEqual(E.m1_checks(dict(s=self.compile(traversal="PartKernel")))["M1c_n"], 0)
         self.assertEqual(E.m1_checks(dict(s=self.compile(kx="3")))["M1c_n"], 0)

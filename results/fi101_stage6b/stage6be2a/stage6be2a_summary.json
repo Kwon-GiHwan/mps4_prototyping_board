@@ -1,0 +1,217 @@
+{
+ "contract": "evidence/stage6b/stage6be2a/contract.md",
+ "label": "POSTHOC_DIAGNOSTIC",
+ "ta_profile": 1,
+ "images": {
+  "A_B_C1": "70090f1",
+  "C2": "65cf963"
+ },
+ "integrity": {
+  "I1": {
+   "n": 17,
+   "all_true": true
+  },
+  "I2": {
+   "n": 17,
+   "all_true": true
+  },
+  "I3": {
+   "n": 17,
+   "all_true": true
+  },
+  "I5": {
+   "n": 16,
+   "all_true": true
+  },
+  "I6": {
+   "n": 7,
+   "all_true": true
+  }
+ },
+ "comparable": [
+  "G09",
+  "G11",
+  "G12",
+  "G25",
+  "G40",
+  "G52",
+  "G57",
+  "e1r_c100_h37w37_o96",
+  "e1r_c136_h37w37_o96",
+  "e1r_c200_h29w29_o96",
+  "e1r_c200_h33w33_o96",
+  "e1r_c200_h37w37_o176",
+  "e1r_c200_h37w37_o96"
+ ],
+ "not_comparable": [
+  "G28",
+  "G53",
+  "G56"
+ ],
+ "m1": {
+  "M1a": true,
+  "M1a_n": 40,
+  "M1b": true,
+  "M1b_n": 13,
+  "M1c": true,
+  "M1c_n": 13,
+  "M1c_share": 1.0
+ },
+ "m2": {
+  "F1": {
+   "form": "F1",
+   "n_b": 6,
+   "b_all_within": false,
+   "a_median_abs": 0.18244487174242113,
+   "a_within": false,
+   "holds": false
+  },
+  "F2": {
+   "form": "F2",
+   "n_b": 6,
+   "b_all_within": false,
+   "a_median_abs": 0.35432396033138797,
+   "a_within": false,
+   "holds": false
+  },
+  "F3": {
+   "form": "F3",
+   "n_b": 6,
+   "b_all_within": false,
+   "a_median_abs": 0.06803778212557221,
+   "a_within": true,
+   "holds": false
+  },
+  "F4": {
+   "form": "F4",
+   "n_b": 6,
+   "b_all_within": false,
+   "a_median_abs": 0.7854800508382771,
+   "a_within": false,
+   "holds": false
+  }
+ },
+ "form_errors": {
+  "F0": {
+   "A": [
+    0.8981221598503074,
+    1.0156547635017306,
+    0.8765550780366433,
+    0.9385941377691327,
+    0.5429458944185129,
+    1.0234847008380432,
+    0.7463258785942491
+   ],
+   "B": [
+    0.11212820426449288,
+    0.26784451106544954,
+    0.1211492840441691,
+    0.24060688366116148,
+    -0.2364068053370623,
+    0.2188719920759774
+   ]
+  },
+  "F1": {
+   "A": [
+    0.15713034444829202,
+    0.2772129949169542,
+    0.24325640641390678,
+    0.18244487174242113,
+    -0.13296575418375264,
+    0.23190555291884196,
+    0.016524973432518596
+   ],
+   "B": [
+    -0.3193260419136369,
+    -0.22692915973463143,
+    -0.23435587827363955,
+    -0.17669176575476545,
+    -0.4572934136695861,
+    -0.1703681083782133
+   ]
+  },
+  "F2": {
+   "A": [
+    0.3286011647215661,
+    0.3088991097405878,
+    0.35432396033138797,
+    0.48805539823920097,
+    0.21228047520661156,
+    0.5063839048217826,
+    0.3647453274361535
+   ],
+   "B": [
+    -0.060303974725696964,
+    0.01165165972315549,
+    -0.0911524626452684,
+    -0.033150868887346224,
+    -0.3744695982549842,
+    -0.0268732672161956
+   ]
+  },
+  "F3": {
+   "A": [
+    -0.08260392106198121,
+    -0.060423206313077626,
+    -0.06803778212557221,
+    -0.0018821010463791138,
+    -0.2481981549106285,
+    0.018957733577597488,
+    -0.12575972215875336
+   ],
+   "B": [
+    -0.3880532695729537,
+    -0.3303353794146428,
+    -0.33969101180065536,
+    -0.30692358522120067,
+    -0.5308824266374577,
+    -0.2920547147846333
+   ]
+  },
+  "F4": {
+   "A": [
+    1.5773753745874832,
+    1.071773804628583,
+    0.6908563638317391,
+    0.579635414854085,
+    0.7854800508382771,
+    0.7383816971432341,
+    0.9680121904132063
+   ],
+   "B": [
+    0.27880602687925127,
+    0.430304569471761,
+    0.28846287015197003,
+    0.33354689286173184,
+    0.3700338805586511,
+    0.3083569258379663
+   ]
+  }
+ },
+ "audit": {
+  "C1 latency Sram": "MATCH",
+  "C2 outstanding Sram": "MATCH",
+  "C4 bandwidth Sram": "UNKNOWN",
+  "C1 latency Dram": "MATCH",
+  "C2 outstanding Dram": "MATCH",
+  "C4 bandwidth Dram": "UNKNOWN",
+  "C3 ports": "MATCH",
+  "C5 burst sram_read": "MISMATCH_VERIFIED",
+  "C5 burst sram_write": "MISMATCH_VERIFIED",
+  "C5 burst ext_read": "MATCH",
+  "C5 AXI max_beats": "NOT_APPLICABLE",
+  "C6 placement": "MATCH",
+  "C7 SRAM size": "MATCH",
+  "C8 clock": "NOT_APPLICABLE",
+  "C9 TA MODE bit 0": "NOT_APPLICABLE"
+ },
+ "hypotheses": {
+  "H-E2-1a bytes": "NOT_DISTINGUISHABLE",
+  "H-E2-1b service cost per byte": "NOT_DISTINGUISHABLE",
+  "H-E2-2 overlap": "NOT_DISTINGUISHABLE",
+  "H-E2-3 fixed cost": "NOT_DISTINGUISHABLE",
+  "H-E2-4 compile/placement": "NOT_DISTINGUISHABLE"
+ },
+ "capabilities_files": 18,
+ "verdict": "CONFIGURATION_DISCREPANCY_IDENTIFIED"
+}

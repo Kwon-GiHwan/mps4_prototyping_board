@@ -1,0 +1,6 @@
+hypothesis,status,f4_median_abs,f0_median_abs,board_bytes_le_vela,n,note,A,B,rho_A,rho_B,pattern_difference,median_error_A,median_error_B
+H-E2-1a bytes,NOT_DISTINGUISHABLE,0.579635414854085,0.5429458944185129,12,13,,,,,,,,
+H-E2-1b service cost per byte,NOT_DISTINGUISHABLE,,,,,contract: needs a TA-condition A/B,,,,,,,
+H-E2-2 overlap,NOT_DISTINGUISHABLE,,,,,,,,,,,,
+H-E2-3 fixed cost,NOT_DISTINGUISHABLE,,,,,,CONTRADICTED,NOT_DISTINGUISHABLE,0.9642857142857143,0.028988551782622423,,,
+H-E2-4 compile/placement,NOT_DISTINGUISHABLE,,,,,,,,,,True,0.8981221598503074,0.17001063806007324

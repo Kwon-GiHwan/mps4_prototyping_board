@@ -263,9 +263,10 @@ def m1_checks(compiles: dict) -> dict:
         a += [o["total"] == max(o["npu"], o["sram"], o["dram"], o["lut"]) for o in ops]
         b.append(num(cmp["summary"]["cycles_total"]) == sum(o["total"] for o in ops))
         dbg = {r.get("id"): r for r in cmp["db"]["perf_debug"]}
+        kind = {r.get("id"): r.get("operator") for r in cmp["db"]["perf"]}
         for m in cmp["db"]["perf_debug_main"]:
             d = dbg.get(m.get("id"))
-            if not d or m.get("traversal") != "DepthFirst" or num(d.get("kernel_size_x")) != 1 or num(d.get("kernel_size_y")) != 1:
+            if not d or kind.get(m.get("id")) != "Conv2D" or m.get("traversal") != "DepthFirst" or num(d.get("kernel_size_x")) != 1 or num(d.get("kernel_size_y")) != 1:
                 continue
             hwc = lambda p, src: [int(num(src[f"{p}_{k}"])) for k in ("h", "w", "c")]
             pred = mac_cycles_src(hwc("ifm_shape", d), hwc("ofm_shape", d), hwc("ifm_block", m), hwc("ofm_block", m), hwc("ofm_ublock", m))

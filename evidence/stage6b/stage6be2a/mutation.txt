@@ -69,5 +69,6 @@ KILLED       m1a: lut in max  (host/analysis/stage6be2a.py; restored by sha256: 
 KILLED       m1b: sum  (host/analysis/stage6be2a.py; restored by sha256: True)
 KILLED       m1c: tolerance  (host/analysis/stage6be2a.py; restored by sha256: True)
 KILLED       m1c: scope DF  (host/analysis/stage6be2a.py; restored by sha256: True)
+KILLED       m1c: scope Conv2D  (host/analysis/stage6be2a.py; restored by sha256: True)
 KILLED       m1c: scope 1x1  (host/analysis/stage6be2a.py; restored by sha256: True)
 after restore: GREEN

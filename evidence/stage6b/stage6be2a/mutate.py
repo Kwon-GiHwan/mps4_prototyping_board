@@ -95,7 +95,8 @@ MUTATIONS = [
     ('m1a: lut in max', A, 'a += [o["total"] == max(o["npu"], o["sram"], o["dram"], o["lut"]) for o in ops]', 'a += [True for o in ops]'),
     ('m1b: sum', A, 'b.append(num(cmp["summary"]["cycles_total"]) == sum(o["total"] for o in ops))', 'b.append(True)'),
     ('m1c: tolerance', A, '            c.append(abs(pred - rep) <= 1)', '            c.append(abs(pred - rep) <= 2)'),
-    ('m1c: scope DF', A, 'if not d or m.get("traversal") != "DepthFirst" or', 'if not d or'),
+    ('m1c: scope DF', A, 'm.get("traversal") != "DepthFirst" or num(d.get("kernel_size_x"))', 'num(d.get("kernel_size_x"))'),
+    ('m1c: scope Conv2D', A, 'if not d or kind.get(m.get("id")) != "Conv2D" or m.get("traversal")', 'if not d or m.get("traversal")'),
     ('m1c: scope 1x1', A, ' or num(d.get("kernel_size_x")) != 1 or num(d.get("kernel_size_y")) != 1:', ':'),
 ]
 

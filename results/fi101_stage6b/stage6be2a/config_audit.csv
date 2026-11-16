@@ -1,0 +1,16 @@
+item,vela,board,status,note
+C1 latency Sram,32/32,32/32,MATCH,"unit: TA root clock = CPU clock, MCLK_ON = NPU cycles (S0-3 c2)"
+C2 outstanding Sram,8/8,"TA 8/8 (0=inf), AXI 12/16 -> 8/8",MATCH,
+C4 bandwidth Sram,32 B/cycle,bwcap 4000 per 3999+1 cycles,UNKNOWN,"word 8 or 16 B (docs differ), one TA per bus or per port"
+C1 latency Dram,500/250,500/250,MATCH,"unit: TA root clock = CPU clock, MCLK_ON = NPU cycles (S0-3 c2)"
+C2 outstanding Dram,64/32,"TA 0/32 (0=inf), AXI 64/32 -> 64/32",MATCH,
+C4 bandwidth Dram,24 B/cycle,bwcap 3750 per 4000+1000 cycles,UNKNOWN,"word 8 or 16 B (docs differ), one TA per bus or per port"
+C3 ports,2/2,CONFIG num_axi_sram/ext (log2) -> 2/2,MATCH,
+C5 burst sram_read,64 B,measured mean 105.3-256.0 B,MISMATCH_VERIFIED,a mean burst only bounds the largest burst from below
+C5 burst sram_write,64 B,measured mean 96.0-256.0 B,MISMATCH_VERIFIED,a mean burst only bounds the largest burst from below
+C5 burst ext_read,128 B,measured mean 32.9-107.4 B,MATCH,a mean burst only bounds the largest burst from below
+C5 AXI max_beats,-,"SRAM 2, EXT 2 (enum B64/B128/B256)",NOT_APPLICABLE,"upper limit of the NPU, not a Vela parameter"
+C6 placement,"const/arena Dram (Axi1), cache Sram (Axi0)","fast_base via SRAM port, DDR via EXT port",MATCH,"static, 6B-R"
+C7 SRAM size,393216,393216,MATCH,
+C8 clock,1 GHz,cycles compared in NPU cycles,NOT_APPLICABLE,
+C9 TA MODE bit 0,no counterpart,"SRAM 1, EXT 1",NOT_APPLICABLE,dynamic clocking: the NPU clock stops while the FPGA memory misses the emulated deadline (S0-3)

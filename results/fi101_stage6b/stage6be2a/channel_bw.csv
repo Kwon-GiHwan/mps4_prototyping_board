@@ -1,0 +1,13 @@
+memory,channel,bytes_per_cycle,bandwidth
+Sram,IFM,20.480000000000004,32.0
+Sram,IFMStream,20.480000000000004,32.0
+Sram,Weight,20.480000000000004,32.0
+Sram,Scale,6.4,32.0
+Sram,Mem2Mem,20.480000000000004,32.0
+Sram,Write,20.480000000000004,32.0
+Dram,IFM,6.5536,24.0
+Dram,IFMStream,6.5536,24.0
+Dram,Weight,10.6496,24.0
+Dram,Scale,0.4096,24.0
+Dram,Mem2Mem,6.5536,24.0
+Dram,Write,20.97152,24.0
