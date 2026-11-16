@@ -1,0 +1,1094 @@
+{
+ "e1r_c200_h37w37_o96": {
+  "name": "e1r_c200_h37w37_o96",
+  "model_sha256": "5d4eb9be9ffaa92cb3c2c32df51a193e3eafb378b656a93dfeded960a06a52dd",
+  "ifm_sha256": "a4f8c4f5c284006f27adbe40e102e8ee4d395654c417da6d7351496170a1c247",
+  "ref_sha256": "d7528e23ac1eb82186e4b6f04f1cdd83b81ceb45638049b6fda928581cea91b2",
+  "reference": {
+   "n": 131424,
+   "opt_vs_ref": 0,
+   "max_abs": 0,
+   "ref_negative": 0,
+   "ref_min": 0,
+   "ref_max": 11,
+   "opt_sha256": "d7528e23ac1eb82186e4b6f04f1cdd83b81ceb45638049b6fda928581cea91b2",
+   "ref_sha256": "d7528e23ac1eb82186e4b6f04f1cdd83b81ceb45638049b6fda928581cea91b2"
+  },
+  "pack_rc": 0,
+  "pack_log_tail": [
+   " \"fast_base\": 823132160,",
+   " \"ta_profile\": 1",
+   "}"
+  ],
+  "vela_sha256": "7587edac95344d277171d081a9cf49e40cb8ebd4ceea608790af04d393234227",
+  "n_ethosu_ops": 1,
+  "cms_sha256": "87489c127c821e7d3694519eaccf7bf4c1a33b79a9e13479f242a0fe87b5c5ee",
+  "rows": [
+   {
+    "npu_op": "Conv2D",
+    "tflite_op": "CONV_2D",
+    "cms_offsets": "380 512",
+    "mac_count": "26284800",
+    "vela_op_cycles": "85815",
+    "cpu": "0",
+    "traversal": "DepthFirst",
+    "ofm_block": "2x38x96",
+    "ifm_block": "2x38x64",
+    "ofm_ublock": "2x2x32",
+    "kernel": "1x1",
+    "stride": "1x1",
+    "npu_ifm_hwc": "37x37x200",
+    "npu_ofm_hwc": "37x37x96",
+    "ifm_memory": "Dram",
+    "ofm_memory": "Dram",
+    "fused_names": "1",
+    "vela_mac_cycles": "36531",
+    "vela_npu_cycles": "40262"
+   },
+   {
+    "npu_op": "Relu6",
+    "tflite_op": "CONV_2D",
+    "cms_offsets": "",
+    "mac_count": "0",
+    "vela_op_cycles": "0",
+    "cpu": "0",
+    "traversal": "",
+    "ofm_block": "xx",
+    "ifm_block": "xx",
+    "ofm_ublock": "xx",
+    "kernel": "1x1",
+    "stride": "1x1",
+    "npu_ifm_hwc": "37x37x96",
+    "npu_ofm_hwc": "37x37x96",
+    "ifm_memory": "Dram",
+    "ofm_memory": "Dram",
+    "fused_names": "1",
+    "vela_mac_cycles": "",
+    "vela_npu_cycles": "0"
+   }
+  ],
+  "kernels": [
+   {
+    "ofm": [
+     37,
+     37,
+     16
+    ],
+    "ifm_depth": 200,
+    "offset": 380,
+    "kind": "CONV"
+   },
+   {
+    "ofm": [
+     37,
+     37,
+     80
+    ],
+    "ifm_depth": 200,
+    "offset": 512,
+    "kind": "CONV"
+   }
+  ],
+  "kernel_kinds": [
+   "CONV",
+   "CONV"
+  ],
+  "drwl_sha256": "924cab4f869759fe9d35e385017527659c8bebe4830e0ae4a7c1a97aa929585b",
+  "golden_sha256": "d7528e23ac1eb82186e4b6f04f1cdd83b81ceb45638049b6fda928581cea91b2",
+  "drwl_vela_sha256": "7587edac95344d277171d081a9cf49e40cb8ebd4ceea608790af04d393234227",
+  "drwl_cms_sha256": "87489c127c821e7d3694519eaccf7bf4c1a33b79a9e13479f242a0fe87b5c5ee",
+  "fast_size": 24640,
+  "arena_size": 405232,
+  "model_len": 26176,
+  "placement": 0,
+  "n_in": 1,
+  "n_out": 1,
+  "ta_profile": 1,
+  "fits": true,
+  "second": {
+   "model_sha256": "5d4eb9be9ffaa92cb3c2c32df51a193e3eafb378b656a93dfeded960a06a52dd",
+   "ifm_sha256": "a4f8c4f5c284006f27adbe40e102e8ee4d395654c417da6d7351496170a1c247",
+   "ref_sha256": "d7528e23ac1eb82186e4b6f04f1cdd83b81ceb45638049b6fda928581cea91b2",
+   "vela_sha256": "7587edac95344d277171d081a9cf49e40cb8ebd4ceea608790af04d393234227",
+   "cms_sha256": "87489c127c821e7d3694519eaccf7bf4c1a33b79a9e13479f242a0fe87b5c5ee",
+   "drwl_sha256": "924cab4f869759fe9d35e385017527659c8bebe4830e0ae4a7c1a97aa929585b",
+   "rows": [
+    {
+     "npu_op": "Conv2D",
+     "tflite_op": "CONV_2D",
+     "cms_offsets": "380 512",
+     "mac_count": "26284800",
+     "vela_op_cycles": "85815",
+     "cpu": "0",
+     "traversal": "DepthFirst",
+     "ofm_block": "2x38x96",
+     "ifm_block": "2x38x64",
+     "ofm_ublock": "2x2x32",
+     "kernel": "1x1",
+     "stride": "1x1",
+     "npu_ifm_hwc": "37x37x200",
+     "npu_ofm_hwc": "37x37x96",
+     "ifm_memory": "Dram",
+     "ofm_memory": "Dram",
+     "fused_names": "1",
+     "vela_mac_cycles": "36531",
+     "vela_npu_cycles": "40262"
+    },
+    {
+     "npu_op": "Relu6",
+     "tflite_op": "CONV_2D",
+     "cms_offsets": "",
+     "mac_count": "0",
+     "vela_op_cycles": "0",
+     "cpu": "0",
+     "traversal": "",
+     "ofm_block": "xx",
+     "ifm_block": "xx",
+     "ofm_ublock": "xx",
+     "kernel": "1x1",
+     "stride": "1x1",
+     "npu_ifm_hwc": "37x37x96",
+     "npu_ofm_hwc": "37x37x96",
+     "ifm_memory": "Dram",
+     "ofm_memory": "Dram",
+     "fused_names": "1",
+     "vela_mac_cycles": "",
+     "vela_npu_cycles": "0"
+    }
+   ],
+   "kernels": [
+    {
+     "ofm": [
+      37,
+      37,
+      16
+     ],
+     "ifm_depth": 200,
+     "offset": 380,
+     "kind": "CONV"
+    },
+    {
+     "ofm": [
+      37,
+      37,
+      80
+     ],
+     "ifm_depth": 200,
+     "offset": 512,
+     "kind": "CONV"
+    }
+   ]
+  },
+  "deterministic": true
+ },
+ "e1r_c200_h33w33_o96": {
+  "name": "e1r_c200_h33w33_o96",
+  "model_sha256": "1beeac024a8692fa1d5f8578e003167119146a39585c4c2af2487b70266730ba",
+  "ifm_sha256": "d7dc24a064369eab2afe45397548b61d8f833b490d2f3ea8d4fba8f062c8ed87",
+  "ref_sha256": "b3320f44c800142e637c0a544f5e5473d6e05995d1f98808a69d1ae8329d62ae",
+  "reference": {
+   "n": 104544,
+   "opt_vs_ref": 0,
+   "max_abs": 0,
+   "ref_negative": 0,
+   "ref_min": 0,
+   "ref_max": 11,
+   "opt_sha256": "b3320f44c800142e637c0a544f5e5473d6e05995d1f98808a69d1ae8329d62ae",
+   "ref_sha256": "b3320f44c800142e637c0a544f5e5473d6e05995d1f98808a69d1ae8329d62ae"
+  },
+  "pack_rc": 0,
+  "pack_log_tail": [
+   " \"fast_base\": 823132160,",
+   " \"ta_profile\": 1",
+   "}"
+  ],
+  "vela_sha256": "3d32ff9afd021bf4f93591dd5f698d965fc93b8748d91c928bc30e9ab66ba606",
+  "n_ethosu_ops": 1,
+  "cms_sha256": "f33770ca056dd07601c5b84382d2941a3cab658387e3fc277b9673368cb25a6a",
+  "rows": [
+   {
+    "npu_op": "Conv2D",
+    "tflite_op": "CONV_2D",
+    "cms_offsets": "380 512",
+    "mac_count": "20908800",
+    "vela_op_cycles": "68481",
+    "cpu": "0",
+    "traversal": "DepthFirst",
+    "ofm_block": "2x34x96",
+    "ifm_block": "2x34x64",
+    "ofm_ublock": "2x2x32",
+    "kernel": "1x1",
+    "stride": "1x1",
+    "npu_ifm_hwc": "33x33x200",
+    "npu_ofm_hwc": "33x33x96",
+    "ifm_memory": "Dram",
+    "ofm_memory": "Dram",
+    "fused_names": "1",
+    "vela_mac_cycles": "29619",
+    "vela_npu_cycles": "34710"
+   },
+   {
+    "npu_op": "Relu6",
+    "tflite_op": "CONV_2D",
+    "cms_offsets": "",
+    "mac_count": "0",
+    "vela_op_cycles": "0",
+    "cpu": "0",
+    "traversal": "",
+    "ofm_block": "xx",
+    "ifm_block": "xx",
+    "ofm_ublock": "xx",
+    "kernel": "1x1",
+    "stride": "1x1",
+    "npu_ifm_hwc": "33x33x96",
+    "npu_ofm_hwc": "33x33x96",
+    "ifm_memory": "Dram",
+    "ofm_memory": "Dram",
+    "fused_names": "1",
+    "vela_mac_cycles": "",
+    "vela_npu_cycles": "0"
+   }
+  ],
+  "kernels": [
+   {
+    "ofm": [
+     33,
+     33,
+     16
+    ],
+    "ifm_depth": 200,
+    "offset": 380,
+    "kind": "CONV"
+   },
+   {
+    "ofm": [
+     33,
+     33,
+     80
+    ],
+    "ifm_depth": 200,
+    "offset": 512,
+    "kind": "CONV"
+   }
+  ],
+  "kernel_kinds": [
+   "CONV",
+   "CONV"
+  ],
+  "drwl_sha256": "b4d5bc51b59d8a021f6b8012d7a3fe351edf77f626576a0178e7e9ae18363ad7",
+  "golden_sha256": "b3320f44c800142e637c0a544f5e5473d6e05995d1f98808a69d1ae8329d62ae",
+  "drwl_vela_sha256": "3d32ff9afd021bf4f93591dd5f698d965fc93b8748d91c928bc30e9ab66ba606",
+  "drwl_cms_sha256": "f33770ca056dd07601c5b84382d2941a3cab658387e3fc277b9673368cb25a6a",
+  "fast_size": 24640,
+  "arena_size": 322352,
+  "model_len": 26176,
+  "placement": 0,
+  "n_in": 1,
+  "n_out": 1,
+  "ta_profile": 1,
+  "fits": true,
+  "second": {
+   "model_sha256": "1beeac024a8692fa1d5f8578e003167119146a39585c4c2af2487b70266730ba",
+   "ifm_sha256": "d7dc24a064369eab2afe45397548b61d8f833b490d2f3ea8d4fba8f062c8ed87",
+   "ref_sha256": "b3320f44c800142e637c0a544f5e5473d6e05995d1f98808a69d1ae8329d62ae",
+   "vela_sha256": "3d32ff9afd021bf4f93591dd5f698d965fc93b8748d91c928bc30e9ab66ba606",
+   "cms_sha256": "f33770ca056dd07601c5b84382d2941a3cab658387e3fc277b9673368cb25a6a",
+   "drwl_sha256": "b4d5bc51b59d8a021f6b8012d7a3fe351edf77f626576a0178e7e9ae18363ad7",
+   "rows": [
+    {
+     "npu_op": "Conv2D",
+     "tflite_op": "CONV_2D",
+     "cms_offsets": "380 512",
+     "mac_count": "20908800",
+     "vela_op_cycles": "68481",
+     "cpu": "0",
+     "traversal": "DepthFirst",
+     "ofm_block": "2x34x96",
+     "ifm_block": "2x34x64",
+     "ofm_ublock": "2x2x32",
+     "kernel": "1x1",
+     "stride": "1x1",
+     "npu_ifm_hwc": "33x33x200",
+     "npu_ofm_hwc": "33x33x96",
+     "ifm_memory": "Dram",
+     "ofm_memory": "Dram",
+     "fused_names": "1",
+     "vela_mac_cycles": "29619",
+     "vela_npu_cycles": "34710"
+    },
+    {
+     "npu_op": "Relu6",
+     "tflite_op": "CONV_2D",
+     "cms_offsets": "",
+     "mac_count": "0",
+     "vela_op_cycles": "0",
+     "cpu": "0",
+     "traversal": "",
+     "ofm_block": "xx",
+     "ifm_block": "xx",
+     "ofm_ublock": "xx",
+     "kernel": "1x1",
+     "stride": "1x1",
+     "npu_ifm_hwc": "33x33x96",
+     "npu_ofm_hwc": "33x33x96",
+     "ifm_memory": "Dram",
+     "ofm_memory": "Dram",
+     "fused_names": "1",
+     "vela_mac_cycles": "",
+     "vela_npu_cycles": "0"
+    }
+   ],
+   "kernels": [
+    {
+     "ofm": [
+      33,
+      33,
+      16
+     ],
+     "ifm_depth": 200,
+     "offset": 380,
+     "kind": "CONV"
+    },
+    {
+     "ofm": [
+      33,
+      33,
+      80
+     ],
+     "ifm_depth": 200,
+     "offset": 512,
+     "kind": "CONV"
+    }
+   ]
+  },
+  "deterministic": true
+ },
+ "e1r_c200_h37w37_o176": {
+  "name": "e1r_c200_h37w37_o176",
+  "model_sha256": "a0632cea4c2613088475f6c890fbe1a1f3bdd4f81a6d8dcd210c32170c281d3c",
+  "ifm_sha256": "a4f8c4f5c284006f27adbe40e102e8ee4d395654c417da6d7351496170a1c247",
+  "ref_sha256": "36581a8d62286660df8f2ec6dc8480ce4862cfd9d77acc23a41e416930011ee7",
+  "reference": {
+   "n": 240944,
+   "opt_vs_ref": 0,
+   "max_abs": 0,
+   "ref_negative": 0,
+   "ref_min": 0,
+   "ref_max": 11,
+   "opt_sha256": "36581a8d62286660df8f2ec6dc8480ce4862cfd9d77acc23a41e416930011ee7",
+   "ref_sha256": "36581a8d62286660df8f2ec6dc8480ce4862cfd9d77acc23a41e416930011ee7"
+  },
+  "pack_rc": 0,
+  "pack_log_tail": [
+   " \"fast_base\": 823132160,",
+   " \"ta_profile\": 1",
+   "}"
+  ],
+  "vela_sha256": "ff70b6140a1795c7944188cfd8b3dd6afbf3c3d1ac772a5479d587fd66ca7d36",
+  "n_ethosu_ops": 1,
+  "cms_sha256": "998bfb21ee5c3986048bcd5c0941ea8a90ce5879e84664e25fe71583dfd4e344",
+  "rows": [
+   {
+    "npu_op": "Conv2D",
+    "tflite_op": "CONV_2D",
+    "cms_offsets": "380 512",
+    "mac_count": "48188800",
+    "vela_op_cycles": "171630",
+    "cpu": "0",
+    "traversal": "DepthFirst",
+    "ofm_block": "2x40x96",
+    "ifm_block": "2x40x64",
+    "ofm_ublock": "2x4x16",
+    "kernel": "1x1",
+    "stride": "1x1",
+    "npu_ifm_hwc": "37x37x200",
+    "npu_ofm_hwc": "37x37x176",
+    "ifm_memory": "Dram",
+    "ofm_memory": "Dram",
+    "fused_names": "1",
+    "vela_mac_cycles": "68755",
+    "vela_npu_cycles": "69855"
+   },
+   {
+    "npu_op": "Relu6",
+    "tflite_op": "CONV_2D",
+    "cms_offsets": "",
+    "mac_count": "0",
+    "vela_op_cycles": "0",
+    "cpu": "0",
+    "traversal": "",
+    "ofm_block": "xx",
+    "ifm_block": "xx",
+    "ofm_ublock": "xx",
+    "kernel": "1x1",
+    "stride": "1x1",
+    "npu_ifm_hwc": "37x37x176",
+    "npu_ofm_hwc": "37x37x176",
+    "ifm_memory": "Dram",
+    "ofm_memory": "Dram",
+    "fused_names": "1",
+    "vela_mac_cycles": "",
+    "vela_npu_cycles": "0"
+   }
+  ],
+  "kernels": [
+   {
+    "ofm": [
+     37,
+     37,
+     16
+    ],
+    "ifm_depth": 200,
+    "offset": 380,
+    "kind": "CONV"
+   },
+   {
+    "ofm": [
+     37,
+     37,
+     160
+    ],
+    "ifm_depth": 200,
+    "offset": 512,
+    "kind": "CONV"
+   }
+  ],
+  "kernel_kinds": [
+   "CONV",
+   "CONV"
+  ],
+  "drwl_sha256": "b5619f1b347385beea72a05465848b2e339debfbaf6f1ddf62ce3102373bb6d2",
+  "golden_sha256": "36581a8d62286660df8f2ec6dc8480ce4862cfd9d77acc23a41e416930011ee7",
+  "drwl_vela_sha256": "ff70b6140a1795c7944188cfd8b3dd6afbf3c3d1ac772a5479d587fd66ca7d36",
+  "drwl_cms_sha256": "998bfb21ee5c3986048bcd5c0941ea8a90ce5879e84664e25fe71583dfd4e344",
+  "fast_size": 42592,
+  "arena_size": 514752,
+  "model_len": 44144,
+  "placement": 0,
+  "n_in": 1,
+  "n_out": 1,
+  "ta_profile": 1,
+  "fits": true,
+  "second": {
+   "model_sha256": "a0632cea4c2613088475f6c890fbe1a1f3bdd4f81a6d8dcd210c32170c281d3c",
+   "ifm_sha256": "a4f8c4f5c284006f27adbe40e102e8ee4d395654c417da6d7351496170a1c247",
+   "ref_sha256": "36581a8d62286660df8f2ec6dc8480ce4862cfd9d77acc23a41e416930011ee7",
+   "vela_sha256": "ff70b6140a1795c7944188cfd8b3dd6afbf3c3d1ac772a5479d587fd66ca7d36",
+   "cms_sha256": "998bfb21ee5c3986048bcd5c0941ea8a90ce5879e84664e25fe71583dfd4e344",
+   "drwl_sha256": "b5619f1b347385beea72a05465848b2e339debfbaf6f1ddf62ce3102373bb6d2",
+   "rows": [
+    {
+     "npu_op": "Conv2D",
+     "tflite_op": "CONV_2D",
+     "cms_offsets": "380 512",
+     "mac_count": "48188800",
+     "vela_op_cycles": "171630",
+     "cpu": "0",
+     "traversal": "DepthFirst",
+     "ofm_block": "2x40x96",
+     "ifm_block": "2x40x64",
+     "ofm_ublock": "2x4x16",
+     "kernel": "1x1",
+     "stride": "1x1",
+     "npu_ifm_hwc": "37x37x200",
+     "npu_ofm_hwc": "37x37x176",
+     "ifm_memory": "Dram",
+     "ofm_memory": "Dram",
+     "fused_names": "1",
+     "vela_mac_cycles": "68755",
+     "vela_npu_cycles": "69855"
+    },
+    {
+     "npu_op": "Relu6",
+     "tflite_op": "CONV_2D",
+     "cms_offsets": "",
+     "mac_count": "0",
+     "vela_op_cycles": "0",
+     "cpu": "0",
+     "traversal": "",
+     "ofm_block": "xx",
+     "ifm_block": "xx",
+     "ofm_ublock": "xx",
+     "kernel": "1x1",
+     "stride": "1x1",
+     "npu_ifm_hwc": "37x37x176",
+     "npu_ofm_hwc": "37x37x176",
+     "ifm_memory": "Dram",
+     "ofm_memory": "Dram",
+     "fused_names": "1",
+     "vela_mac_cycles": "",
+     "vela_npu_cycles": "0"
+    }
+   ],
+   "kernels": [
+    {
+     "ofm": [
+      37,
+      37,
+      16
+     ],
+     "ifm_depth": 200,
+     "offset": 380,
+     "kind": "CONV"
+    },
+    {
+     "ofm": [
+      37,
+      37,
+      160
+     ],
+     "ifm_depth": 200,
+     "offset": 512,
+     "kind": "CONV"
+    }
+   ]
+  },
+  "deterministic": true
+ },
+ "e1r_c200_h29w29_o96": {
+  "name": "e1r_c200_h29w29_o96",
+  "model_sha256": "f80149036fb6c2efb562306eef13b7ee6a49722f4c6042c6096853eaeb4269f2",
+  "ifm_sha256": "fc441f07285ae2590f8590897b5db7677932014b2f9381fbce690eee702478f5",
+  "ref_sha256": "2cfd61bf6fa10bf6abc7c7c10d5c4a2692c14220377f5d959d34a02e35c93885",
+  "reference": {
+   "n": 80736,
+   "opt_vs_ref": 0,
+   "max_abs": 0,
+   "ref_negative": 0,
+   "ref_min": 0,
+   "ref_max": 11,
+   "opt_sha256": "2cfd61bf6fa10bf6abc7c7c10d5c4a2692c14220377f5d959d34a02e35c93885",
+   "ref_sha256": "2cfd61bf6fa10bf6abc7c7c10d5c4a2692c14220377f5d959d34a02e35c93885"
+  },
+  "pack_rc": 0,
+  "pack_log_tail": [
+   " \"fast_base\": 823132160,",
+   " \"ta_profile\": 1",
+   "}"
+  ],
+  "vela_sha256": "fa34ccbb194416f1de9e703f40ef38e3ba1622d9a3d307f06ba72269bf0390b9",
+  "n_ethosu_ops": 1,
+  "cms_sha256": "3022cda3431cc544f0c632b61a2c213fd95a5b6797da120e7d653b3edf4ceb47",
+  "rows": [
+   {
+    "npu_op": "Conv2D",
+    "tflite_op": "CONV_2D",
+    "cms_offsets": "380 512",
+    "mac_count": "16147200",
+    "vela_op_cycles": "58593",
+    "cpu": "0",
+    "traversal": "DepthFirst",
+    "ofm_block": "8x10x96",
+    "ifm_block": "8x10x64",
+    "ofm_ublock": "2x2x32",
+    "kernel": "1x1",
+    "stride": "1x1",
+    "npu_ifm_hwc": "29x29x200",
+    "npu_ofm_hwc": "29x29x96",
+    "ifm_memory": "Dram",
+    "ofm_memory": "Dram",
+    "fused_names": "1",
+    "vela_mac_cycles": "23475",
+    "vela_npu_cycles": "27206"
+   },
+   {
+    "npu_op": "Relu6",
+    "tflite_op": "CONV_2D",
+    "cms_offsets": "",
+    "mac_count": "0",
+    "vela_op_cycles": "0",
+    "cpu": "0",
+    "traversal": "",
+    "ofm_block": "xx",
+    "ifm_block": "xx",
+    "ofm_ublock": "xx",
+    "kernel": "1x1",
+    "stride": "1x1",
+    "npu_ifm_hwc": "29x29x96",
+    "npu_ofm_hwc": "29x29x96",
+    "ifm_memory": "Dram",
+    "ofm_memory": "Dram",
+    "fused_names": "1",
+    "vela_mac_cycles": "",
+    "vela_npu_cycles": "0"
+   }
+  ],
+  "kernels": [
+   {
+    "ofm": [
+     29,
+     29,
+     16
+    ],
+    "ifm_depth": 200,
+    "offset": 380,
+    "kind": "CONV"
+   },
+   {
+    "ofm": [
+     29,
+     29,
+     80
+    ],
+    "ifm_depth": 200,
+    "offset": 512,
+    "kind": "CONV"
+   }
+  ],
+  "kernel_kinds": [
+   "CONV",
+   "CONV"
+  ],
+  "drwl_sha256": "ca2662f27e44691a11b5e4fc70b83dbc7d0a2a3e90b24eec5a04310a9f6a7df3",
+  "golden_sha256": "2cfd61bf6fa10bf6abc7c7c10d5c4a2692c14220377f5d959d34a02e35c93885",
+  "drwl_vela_sha256": "fa34ccbb194416f1de9e703f40ef38e3ba1622d9a3d307f06ba72269bf0390b9",
+  "drwl_cms_sha256": "3022cda3431cc544f0c632b61a2c213fd95a5b6797da120e7d653b3edf4ceb47",
+  "fast_size": 24640,
+  "arena_size": 248944,
+  "model_len": 26176,
+  "placement": 0,
+  "n_in": 1,
+  "n_out": 1,
+  "ta_profile": 1,
+  "fits": true,
+  "second": {
+   "model_sha256": "f80149036fb6c2efb562306eef13b7ee6a49722f4c6042c6096853eaeb4269f2",
+   "ifm_sha256": "fc441f07285ae2590f8590897b5db7677932014b2f9381fbce690eee702478f5",
+   "ref_sha256": "2cfd61bf6fa10bf6abc7c7c10d5c4a2692c14220377f5d959d34a02e35c93885",
+   "vela_sha256": "fa34ccbb194416f1de9e703f40ef38e3ba1622d9a3d307f06ba72269bf0390b9",
+   "cms_sha256": "3022cda3431cc544f0c632b61a2c213fd95a5b6797da120e7d653b3edf4ceb47",
+   "drwl_sha256": "ca2662f27e44691a11b5e4fc70b83dbc7d0a2a3e90b24eec5a04310a9f6a7df3",
+   "rows": [
+    {
+     "npu_op": "Conv2D",
+     "tflite_op": "CONV_2D",
+     "cms_offsets": "380 512",
+     "mac_count": "16147200",
+     "vela_op_cycles": "58593",
+     "cpu": "0",
+     "traversal": "DepthFirst",
+     "ofm_block": "8x10x96",
+     "ifm_block": "8x10x64",
+     "ofm_ublock": "2x2x32",
+     "kernel": "1x1",
+     "stride": "1x1",
+     "npu_ifm_hwc": "29x29x200",
+     "npu_ofm_hwc": "29x29x96",
+     "ifm_memory": "Dram",
+     "ofm_memory": "Dram",
+     "fused_names": "1",
+     "vela_mac_cycles": "23475",
+     "vela_npu_cycles": "27206"
+    },
+    {
+     "npu_op": "Relu6",
+     "tflite_op": "CONV_2D",
+     "cms_offsets": "",
+     "mac_count": "0",
+     "vela_op_cycles": "0",
+     "cpu": "0",
+     "traversal": "",
+     "ofm_block": "xx",
+     "ifm_block": "xx",
+     "ofm_ublock": "xx",
+     "kernel": "1x1",
+     "stride": "1x1",
+     "npu_ifm_hwc": "29x29x96",
+     "npu_ofm_hwc": "29x29x96",
+     "ifm_memory": "Dram",
+     "ofm_memory": "Dram",
+     "fused_names": "1",
+     "vela_mac_cycles": "",
+     "vela_npu_cycles": "0"
+    }
+   ],
+   "kernels": [
+    {
+     "ofm": [
+      29,
+      29,
+      16
+     ],
+     "ifm_depth": 200,
+     "offset": 380,
+     "kind": "CONV"
+    },
+    {
+     "ofm": [
+      29,
+      29,
+      80
+     ],
+     "ifm_depth": 200,
+     "offset": 512,
+     "kind": "CONV"
+    }
+   ]
+  },
+  "deterministic": true
+ },
+ "e1r_c100_h37w37_o96": {
+  "name": "e1r_c100_h37w37_o96",
+  "model_sha256": "bb2c2bdb9f5094034dad3c687d85e2f8e339802b80d9dc8cf12cd2634fbdba00",
+  "ifm_sha256": "93692949d75a21ba653a17b6d9bb2c52b1bf08b758ef962edbca7a470824aae7",
+  "ref_sha256": "2687212d3f1764de076e711e33eabbbc2bcb85073c69b4e8809bf3cbf11f4509",
+  "reference": {
+   "n": 131424,
+   "opt_vs_ref": 0,
+   "max_abs": 0,
+   "ref_negative": 0,
+   "ref_min": 0,
+   "ref_max": 22,
+   "opt_sha256": "2687212d3f1764de076e711e33eabbbc2bcb85073c69b4e8809bf3cbf11f4509",
+   "ref_sha256": "2687212d3f1764de076e711e33eabbbc2bcb85073c69b4e8809bf3cbf11f4509"
+  },
+  "pack_rc": 0,
+  "pack_log_tail": [
+   " \"fast_base\": 823132160,",
+   " \"ta_profile\": 1",
+   "}"
+  ],
+  "vela_sha256": "22cb3742383d6def096072a6128428b1fa875ef18f36c14e45554c510f596f54",
+  "n_ethosu_ops": 1,
+  "cms_sha256": "624afcf6143ba7fa9592dd3660e3f5df41b0940db5a0259e6da283887b30bf39",
+  "rows": [
+   {
+    "npu_op": "Conv2D",
+    "tflite_op": "CONV_2D",
+    "cms_offsets": "380 512",
+    "mac_count": "13142400",
+    "vela_op_cycles": "59374",
+    "cpu": "0",
+    "traversal": "DepthFirst",
+    "ofm_block": "2x38x96",
+    "ifm_block": "2x38x64",
+    "ofm_ublock": "2x2x32",
+    "kernel": "1x1",
+    "stride": "1x1",
+    "npu_ifm_hwc": "37x37x100",
+    "npu_ofm_hwc": "37x37x96",
+    "ifm_memory": "Dram",
+    "ofm_memory": "Dram",
+    "fused_names": "1",
+    "vela_mac_cycles": "19203",
+    "vela_npu_cycles": "37635"
+   },
+   {
+    "npu_op": "Relu6",
+    "tflite_op": "CONV_2D",
+    "cms_offsets": "",
+    "mac_count": "0",
+    "vela_op_cycles": "0",
+    "cpu": "0",
+    "traversal": "",
+    "ofm_block": "xx",
+    "ifm_block": "xx",
+    "ofm_ublock": "xx",
+    "kernel": "1x1",
+    "stride": "1x1",
+    "npu_ifm_hwc": "37x37x96",
+    "npu_ofm_hwc": "37x37x96",
+    "ifm_memory": "Dram",
+    "ofm_memory": "Dram",
+    "fused_names": "1",
+    "vela_mac_cycles": "",
+    "vela_npu_cycles": "0"
+   }
+  ],
+  "kernels": [
+   {
+    "ofm": [
+     37,
+     37,
+     16
+    ],
+    "ifm_depth": 100,
+    "offset": 380,
+    "kind": "CONV"
+   },
+   {
+    "ofm": [
+     37,
+     37,
+     80
+    ],
+    "ifm_depth": 100,
+    "offset": 512,
+    "kind": "CONV"
+   }
+  ],
+  "kernel_kinds": [
+   "CONV",
+   "CONV"
+  ],
+  "drwl_sha256": "f30e53b7f9009759332c57819f62fe7aa2838c3a7ad4220d140af2f953d10309",
+  "golden_sha256": "2687212d3f1764de076e711e33eabbbc2bcb85073c69b4e8809bf3cbf11f4509",
+  "drwl_vela_sha256": "22cb3742383d6def096072a6128428b1fa875ef18f36c14e45554c510f596f54",
+  "drwl_cms_sha256": "624afcf6143ba7fa9592dd3660e3f5df41b0940db5a0259e6da283887b30bf39",
+  "fast_size": 13024,
+  "arena_size": 268336,
+  "model_len": 14560,
+  "placement": 0,
+  "n_in": 1,
+  "n_out": 1,
+  "ta_profile": 1,
+  "fits": true,
+  "second": {
+   "model_sha256": "bb2c2bdb9f5094034dad3c687d85e2f8e339802b80d9dc8cf12cd2634fbdba00",
+   "ifm_sha256": "93692949d75a21ba653a17b6d9bb2c52b1bf08b758ef962edbca7a470824aae7",
+   "ref_sha256": "2687212d3f1764de076e711e33eabbbc2bcb85073c69b4e8809bf3cbf11f4509",
+   "vela_sha256": "22cb3742383d6def096072a6128428b1fa875ef18f36c14e45554c510f596f54",
+   "cms_sha256": "624afcf6143ba7fa9592dd3660e3f5df41b0940db5a0259e6da283887b30bf39",
+   "drwl_sha256": "f30e53b7f9009759332c57819f62fe7aa2838c3a7ad4220d140af2f953d10309",
+   "rows": [
+    {
+     "npu_op": "Conv2D",
+     "tflite_op": "CONV_2D",
+     "cms_offsets": "380 512",
+     "mac_count": "13142400",
+     "vela_op_cycles": "59374",
+     "cpu": "0",
+     "traversal": "DepthFirst",
+     "ofm_block": "2x38x96",
+     "ifm_block": "2x38x64",
+     "ofm_ublock": "2x2x32",
+     "kernel": "1x1",
+     "stride": "1x1",
+     "npu_ifm_hwc": "37x37x100",
+     "npu_ofm_hwc": "37x37x96",
+     "ifm_memory": "Dram",
+     "ofm_memory": "Dram",
+     "fused_names": "1",
+     "vela_mac_cycles": "19203",
+     "vela_npu_cycles": "37635"
+    },
+    {
+     "npu_op": "Relu6",
+     "tflite_op": "CONV_2D",
+     "cms_offsets": "",
+     "mac_count": "0",
+     "vela_op_cycles": "0",
+     "cpu": "0",
+     "traversal": "",
+     "ofm_block": "xx",
+     "ifm_block": "xx",
+     "ofm_ublock": "xx",
+     "kernel": "1x1",
+     "stride": "1x1",
+     "npu_ifm_hwc": "37x37x96",
+     "npu_ofm_hwc": "37x37x96",
+     "ifm_memory": "Dram",
+     "ofm_memory": "Dram",
+     "fused_names": "1",
+     "vela_mac_cycles": "",
+     "vela_npu_cycles": "0"
+    }
+   ],
+   "kernels": [
+    {
+     "ofm": [
+      37,
+      37,
+      16
+     ],
+     "ifm_depth": 100,
+     "offset": 380,
+     "kind": "CONV"
+    },
+    {
+     "ofm": [
+      37,
+      37,
+      80
+     ],
+     "ifm_depth": 100,
+     "offset": 512,
+     "kind": "CONV"
+    }
+   ]
+  },
+  "deterministic": true
+ },
+ "e1r_c136_h37w37_o96": {
+  "name": "e1r_c136_h37w37_o96",
+  "model_sha256": "0d6302f0cf635f79e81215680d6a9070d22ee43234163f28cc5f769a04288f27",
+  "ifm_sha256": "e0b4d2e8a6e97f6c6a668ac03a60e478bfd0500f19b42dd66c967b97afeb10d8",
+  "ref_sha256": "043e88f46fc932ac094a1e316d8cbf012ffa95d2099f02bd08daf3bef76a97cc",
+  "reference": {
+   "n": 131424,
+   "opt_vs_ref": 0,
+   "max_abs": 0,
+   "ref_negative": 0,
+   "ref_min": 0,
+   "ref_max": 16,
+   "opt_sha256": "043e88f46fc932ac094a1e316d8cbf012ffa95d2099f02bd08daf3bef76a97cc",
+   "ref_sha256": "043e88f46fc932ac094a1e316d8cbf012ffa95d2099f02bd08daf3bef76a97cc"
+  },
+  "pack_rc": 0,
+  "pack_log_tail": [
+   " \"fast_base\": 823132160,",
+   " \"ta_profile\": 1",
+   "}"
+  ],
+  "vela_sha256": "5b4e65021859b81df3fd35ce5bfb11782f7da993456bd8e7fecc13a7c8a4e944",
+  "n_ethosu_ops": 1,
+  "cms_sha256": "11a29c3623bde3a7fa487f395f5075d5c6a7e7800b4347cddb6848e748108231",
+  "rows": [
+   {
+    "npu_op": "Conv2D",
+    "tflite_op": "CONV_2D",
+    "cms_offsets": "380 512",
+    "mac_count": "17873664",
+    "vela_op_cycles": "59374",
+    "cpu": "0",
+    "traversal": "DepthFirst",
+    "ofm_block": "2x38x96",
+    "ifm_block": "2x38x64",
+    "ofm_ublock": "2x2x32",
+    "kernel": "1x1",
+    "stride": "1x1",
+    "npu_ifm_hwc": "37x37x136",
+    "npu_ofm_hwc": "37x37x96",
+    "ifm_memory": "Dram",
+    "ofm_memory": "Dram",
+    "fused_names": "1",
+    "vela_mac_cycles": "27867",
+    "vela_npu_cycles": "38000"
+   },
+   {
+    "npu_op": "Relu6",
+    "tflite_op": "CONV_2D",
+    "cms_offsets": "",
+    "mac_count": "0",
+    "vela_op_cycles": "0",
+    "cpu": "0",
+    "traversal": "",
+    "ofm_block": "xx",
+    "ifm_block": "xx",
+    "ofm_ublock": "xx",
+    "kernel": "1x1",
+    "stride": "1x1",
+    "npu_ifm_hwc": "37x37x96",
+    "npu_ofm_hwc": "37x37x96",
+    "ifm_memory": "Dram",
+    "ofm_memory": "Dram",
+    "fused_names": "1",
+    "vela_mac_cycles": "",
+    "vela_npu_cycles": "0"
+   }
+  ],
+  "kernels": [
+   {
+    "ofm": [
+     37,
+     37,
+     16
+    ],
+    "ifm_depth": 136,
+    "offset": 380,
+    "kind": "CONV"
+   },
+   {
+    "ofm": [
+     37,
+     37,
+     80
+    ],
+    "ifm_depth": 136,
+    "offset": 512,
+    "kind": "CONV"
+   }
+  ],
+  "kernel_kinds": [
+   "CONV",
+   "CONV"
+  ],
+  "drwl_sha256": "28c4e710e7b8c285dc33cac8a87e33f5eebe299cec4bbdd2c755b9f404105820",
+  "golden_sha256": "043e88f46fc932ac094a1e316d8cbf012ffa95d2099f02bd08daf3bef76a97cc",
+  "drwl_vela_sha256": "5b4e65021859b81df3fd35ce5bfb11782f7da993456bd8e7fecc13a7c8a4e944",
+  "drwl_cms_sha256": "11a29c3623bde3a7fa487f395f5075d5c6a7e7800b4347cddb6848e748108231",
+  "fast_size": 17488,
+  "arena_size": 317616,
+  "model_len": 19024,
+  "placement": 0,
+  "n_in": 1,
+  "n_out": 1,
+  "ta_profile": 1,
+  "fits": true,
+  "second": {
+   "model_sha256": "0d6302f0cf635f79e81215680d6a9070d22ee43234163f28cc5f769a04288f27",
+   "ifm_sha256": "e0b4d2e8a6e97f6c6a668ac03a60e478bfd0500f19b42dd66c967b97afeb10d8",
+   "ref_sha256": "043e88f46fc932ac094a1e316d8cbf012ffa95d2099f02bd08daf3bef76a97cc",
+   "vela_sha256": "5b4e65021859b81df3fd35ce5bfb11782f7da993456bd8e7fecc13a7c8a4e944",
+   "cms_sha256": "11a29c3623bde3a7fa487f395f5075d5c6a7e7800b4347cddb6848e748108231",
+   "drwl_sha256": "28c4e710e7b8c285dc33cac8a87e33f5eebe299cec4bbdd2c755b9f404105820",
+   "rows": [
+    {
+     "npu_op": "Conv2D",
+     "tflite_op": "CONV_2D",
+     "cms_offsets": "380 512",
+     "mac_count": "17873664",
+     "vela_op_cycles": "59374",
+     "cpu": "0",
+     "traversal": "DepthFirst",
+     "ofm_block": "2x38x96",
+     "ifm_block": "2x38x64",
+     "ofm_ublock": "2x2x32",
+     "kernel": "1x1",
+     "stride": "1x1",
+     "npu_ifm_hwc": "37x37x136",
+     "npu_ofm_hwc": "37x37x96",
+     "ifm_memory": "Dram",
+     "ofm_memory": "Dram",
+     "fused_names": "1",
+     "vela_mac_cycles": "27867",
+     "vela_npu_cycles": "38000"
+    },
+    {
+     "npu_op": "Relu6",
+     "tflite_op": "CONV_2D",
+     "cms_offsets": "",
+     "mac_count": "0",
+     "vela_op_cycles": "0",
+     "cpu": "0",
+     "traversal": "",
+     "ofm_block": "xx",
+     "ifm_block": "xx",
+     "ofm_ublock": "xx",
+     "kernel": "1x1",
+     "stride": "1x1",
+     "npu_ifm_hwc": "37x37x96",
+     "npu_ofm_hwc": "37x37x96",
+     "ifm_memory": "Dram",
+     "ofm_memory": "Dram",
+     "fused_names": "1",
+     "vela_mac_cycles": "",
+     "vela_npu_cycles": "0"
+    }
+   ],
+   "kernels": [
+    {
+     "ofm": [
+      37,
+      37,
+      16
+     ],
+     "ifm_depth": 136,
+     "offset": 380,
+     "kind": "CONV"
+    },
+    {
+     "ofm": [
+      37,
+      37,
+      80
+     ],
+     "ifm_depth": 136,
+     "offset": 512,
+     "kind": "CONV"
+    }
+   ]
+  },
+  "deterministic": true
+ }
+}

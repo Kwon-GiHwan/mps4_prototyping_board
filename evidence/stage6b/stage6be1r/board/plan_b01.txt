@@ -1,0 +1,2 @@
+# Stage 6B-E1-R boot 1/7: s4c2_conv_cin48, TA profile 1, image 70090f1, DDR/EXT (word 7 = 0)
+428 s4c2_conv_cin48 @/home/gihwan/evsweep_s6be1r/conditions.txt

@@ -1,0 +1,2 @@
+# Stage 6B-E1-R boot 3/7: e1r_c200_h33w33_o96, TA profile 1, image 70090f1, DDR/EXT (word 7 = 0)
+430 e1r_c200_h33w33_o96 @/home/gihwan/evsweep_s6be1r/conditions.txt
