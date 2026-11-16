@@ -1,0 +1,15 @@
+source,shape,ta_profile,image,h1uc,mac_active,vela_conv_mac_cycles,vela_conv_op_cycles,vela_graph_cycles_total,vela_graph_label,npu_active,graph
+Stage6B-B,Stage4K_cin48,1,70090f1,3456.0,3456.0,,,,,22662.0,Conv alone (Stage 4K reference)
+Stage6B-B,G12,1,70090f1,20736.0,20736.0,24290,24290,53052,Vela summary cycles_total,99555.0,"A2 (ADD, Conv, ADD)"
+Stage6B-B,G25,1,70090f1,3900.0,3900.0,6555,7812,14909,Vela summary cycles_total,28902.5,"A2 (ADD, Conv, ADD)"
+Stage6B-B,G40,1,70090f1,8400.0,8400.0,14020,23437,30422,Vela summary cycles_total,46939.5,"A2 (ADD, Conv, ADD)"
+Stage6B-B,G11,1,70090f1,13824.0,13824.0,15074,15074,37273,Vela summary cycles_total,75129.5,"A2 (ADD, Conv, ADD)"
+Stage6B-B,G52,1,70090f1,5184.0,5184.0,7635,8203,15393,Vela summary cycles_total,31147.5,"A2 (ADD, Conv, ADD)"
+Stage6B-B,G57,1,70090f1,1728.0,1728.0,4179,7031,10955,Vela summary cycles_total,19131.0,"A2 (ADD, Conv, ADD)"
+Stage6B-B,G09,1,70090f1,4704.0,4704.0,5954,18750,29928,Vela summary cycles_total,56807.0,"A2 (ADD, Conv, ADD)"
+Stage6B-E1-R,e1r_c200_h37w37_o96,1,70090f1,40432.0,40432,36531,85815,85815,Vela sum of op cycles,104597.5,Conv alone
+Stage6B-E1-R,e1r_c200_h33w33_o96,1,70090f1,32368.0,32368,29619,68481,68481,Vela sum of op cycles,84958.0,Conv alone
+Stage6B-E1-R,e1r_c200_h37w37_o176,1,70090f1,58520.0,58520,68755,171630,171630,Vela sum of op cycles,131055.5,Conv alone
+Stage6B-E1-R,e1r_c200_h29w29_o96,1,70090f1,25200.0,25200,23475,58593,58593,Vela sum of op cycles,65691.5,Conv alone
+Stage6B-E1-R,e1r_c100_h37w37_o96,1,70090f1,20216.0,20216,19203,59374,59374,Vela sum of op cycles,66031.5,Conv alone
+Stage6B-E1-R,e1r_c136_h37w37_o96,1,70090f1,28880.0,28880,27867,59374,59374,Vela sum of op cycles,75277.0,Conv alone
