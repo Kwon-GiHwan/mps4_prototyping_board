@@ -1,0 +1,36 @@
+{
+ "vela_version": "5.0.0",
+ "container": "benchmark-runner /usr/local/lib/python3.10/dist-packages/ethosu",
+ "pypi_sdist": {
+  "file": "ethos_u_vela-5.0.0.tar.gz",
+  "sha256": "2aca4502cf3af2788e067e1604649afe5cc48ee41be609220bda8b801c9df28d"
+ },
+ "pypi_wheel": {
+  "file": "ethos_u_vela-5.0.0-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+  "sha256": "e1dc9c6df646d85aaa1c327af68b7395d6f3650093822906a7a9a6d3ba683eff"
+ },
+ "installed_files": 290,
+ "wheel_files": 287,
+ "identical_files": 287,
+ "differing": [],
+ "only_installed": [
+  "ethosu/vela/compiler_driver.py.bak.dbg",
+  "ethosu/vela/high_level_command_to_npu_op.py.bak.dbg",
+  "ethosu/vela/register_command_stream_generator.py.bak"
+ ],
+ "only_wheel": [],
+ "regor_so_sha256": "840318c0ef34483d4ba03915f9dd049658fb13ae20cfa3b5efb896fea85393bd",
+ "regor_so_equals_wheel": true,
+ "source_files_read": [
+  "ethosu/regor/architecture/ethosu85/ethos_u85_performance.cpp",
+  "ethosu/regor/compiler/network_performance.cpp",
+  "ethosu/regor/compiler/network_performance.hpp",
+  "ethosu/regor/architecture/architecture.cpp",
+  "ethosu/regor/architecture/architecture.hpp",
+  "ethosu/regor/architecture/ethosu85/ethos_u85.cpp",
+  "ethosu/regor/architecture/ethosu85/ethos_u85_interface.hpp",
+  "ethosu/regor/regor.cpp",
+  "ethosu/vela/vela.py"
+ ],
+ "note": "the .so cannot be rebuilt here; the sdist is the source published with the same release as the identical wheel"
+}
