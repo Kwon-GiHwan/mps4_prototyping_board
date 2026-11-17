@@ -37,6 +37,7 @@ class TrackA(unittest.TestCase):
 
     def test_scan_missing_field(self):
         d = pathlib.Path(tempfile.mkdtemp())
+        self.addCleanup(__import__("shutil").rmtree, d, True)
         (d / "a").mkdir()
         (d / "a" / "raw_runs.json").write_text(json.dumps([{}, {"record": {"placement": 0}}, {"record": {}}]))
         orig = E.REPO

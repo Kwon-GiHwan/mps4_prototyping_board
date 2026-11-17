@@ -38,6 +38,7 @@ class Regression(unittest.TestCase):
     def setUp(self):
         import json, shutil, tempfile
         self.d = pathlib.Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, self.d, True)
         shutil.copytree(self.WL, self.d / "wl")
         m = json.loads((self.WL / E.MANIFEST).read_text())
         m["REF"]["boot"], m["W0-P0-L500"]["boot"], m["W0-P1-L500"]["boot"] = 440, 441, 442
@@ -54,6 +55,9 @@ class Regression(unittest.TestCase):
         r = E.config_result(self.RAW, self.d / "wl", "W0-P1-L500")
         self.assertEqual(r["status"], "CONFIG_MISMATCH")
         self.assertIn("identity placement", r["reasons"])
+        # the stage overlay is still wired in (since 6614ce8 the shared path checks the placement too; only the overlay
+        # names a manifest / DRWL header disagreement)
+        self.assertIn("identity placement_manifest_equals_drwl", r["reasons"])
 
     def test_wrong_regioncfg_and_digest(self):
         import json

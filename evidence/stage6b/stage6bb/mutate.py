@@ -21,7 +21,7 @@ MUTATIONS = [
     ('env: wfe condition', A, 'if {r["condition"] for r in rows} != {"wfe"}:', 'if False:'),
     ('env: 1024 MAC', A, 'if (caps.get("npu_config", 0) & 0xF) != LOG2_MACS:', 'if False:'),
     ('env: identity terms', A, 'bad += [f"identity {k}" for k, v in ident["checks"].items() if not v and k not in IDENT_PMU + IDENT_OUTPUT]', 'pass'),
-    ('identity: A2 uses identity_a1', A, 'if m["kind"] == "reference" else AOE.identity_a1(folder, wl, cfg, caps_ref)', 'if True else AOE.identity_a1(folder, wl, cfg, caps_ref)'),
+    ('identity: A2 uses identity_a1', A, 'if m["kind"] == "reference" \\\n        else AOE.identity_a1(folder, wl, cfg, caps_ref, exp)', 'if True \\\n        else AOE.identity_a1(folder, wl, cfg, caps_ref, exp)'),
     ('output: board output', A, 'if not output_ok(folder, wl, cfg, m, s["runs"]) or not all(ident["checks"][k] for k in IDENT_OUTPUT):', 'if not all(ident["checks"][k] for k in IDENT_OUTPUT):'),
     ('output: one CRC', A, 'IDENT_OUTPUT = ("one_crc", "output_len")', 'IDENT_OUTPUT = ("output_len",)'),
     ('output: reference PASS_EXACT', A, '(wl / f"{cfg}.drwl.tflite_ofm.bin").read_bytes(), runs)["verdict"] == "PASS_EXACT"', '(wl / f"{cfg}.drwl.tflite_ofm.bin").read_bytes(), runs)["verdict"] != "FAIL_X"'),
