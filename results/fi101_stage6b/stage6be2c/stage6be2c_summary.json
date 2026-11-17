@@ -1,0 +1,437 @@
+{
+ "contract": "evidence/stage6b/stage6be2c/contract.md",
+ "label": "STATIC_DESIGN (no board)",
+ "invalid": false,
+ "e2b_recheck": {
+  "G12": {
+   "d_board": 58841.5,
+   "r_board": 1.5892045340756613,
+   "d_vela": 30090,
+   "r_vela": 1.5671793711829902,
+   "equals_summary": true
+  },
+  "CONV": {
+   "d_board": 97747.0,
+   "r_board": 1.9363322429078438,
+   "d_vela": 85815,
+   "r_vela": 2.0,
+   "equals_summary": true
+  }
+ },
+ "w1p0_selected": "W1-P0-c0",
+ "compile_ok": {
+  "W0-P0": [
+   true,
+   true
+  ],
+  "W0-P1-est": [
+   true,
+   true
+  ],
+  "W1-P0-c0": [
+   true,
+   true
+  ],
+  "W1-P0-c16384": [
+   true,
+   true
+  ],
+  "W1-P0-c65536": [
+   true,
+   true
+  ],
+  "W1-P1": [
+   true,
+   true
+  ]
+ },
+ "conv_memory": {
+  "W0-P0": [
+   "Dram",
+   "Dram"
+  ],
+  "W0-P1-est": [
+   "Sram",
+   "Sram"
+  ],
+  "W1-P0-c0": [
+   "Dram",
+   "Dram"
+  ],
+  "W1-P0-c16384": [
+   "Sram",
+   "Dram"
+  ],
+  "W1-P0-c65536": [
+   "Sram",
+   "Dram"
+  ],
+  "W1-P1": [
+   "Sram",
+   "Sram"
+  ]
+ },
+ "w0p1_estimator": {
+  "source": "W0-P1-est (Shared_Sram)",
+  "usable": false,
+  "diff": {}
+ },
+ "vela": {
+  "W0-P0": {
+   "estimator_only": true,
+   "cycles_npu_500": 24521,
+   "cycles_sram_access_500": 0,
+   "cycles_dram_access_500": 107812,
+   "cycles_total_500": 107812,
+   "sram_feature_map_read_bytes_500": 0,
+   "sram_feature_map_write_bytes_500": 0,
+   "dram_feature_map_read_bytes_500": 706560,
+   "dram_feature_map_write_bytes_500": 141312,
+   "dram_weight_read_bytes_500": 174752,
+   "sram_weight_read_bytes_500": 0,
+   "cycles_npu_1000": 25540,
+   "cycles_sram_access_1000": 0,
+   "cycles_dram_access_1000": 215624,
+   "cycles_total_1000": 215624,
+   "sram_feature_map_read_bytes_1000": 0,
+   "sram_feature_map_write_bytes_1000": 0,
+   "dram_feature_map_read_bytes_1000": 706560,
+   "dram_feature_map_write_bytes_1000": 141312,
+   "dram_weight_read_bytes_1000": 174752,
+   "sram_weight_read_bytes_1000": 0,
+   "d_vela": 107812,
+   "r_vela": 2.0,
+   "per_op_500": [
+    [
+     "Conv2D",
+     "107812",
+     "24521",
+     "0",
+     "107812"
+    ],
+    [
+     "Relu6",
+     "0",
+     "0",
+     "0",
+     "0"
+    ]
+   ]
+  },
+  "W1-P1": {
+   "estimator_only": true,
+   "cycles_npu_500": 33314,
+   "cycles_sram_access_500": 28800,
+   "cycles_dram_access_500": 44709,
+   "cycles_total_500": 53052,
+   "sram_feature_map_read_bytes_500": 516096,
+   "sram_feature_map_write_bytes_500": 147456,
+   "dram_feature_map_read_bytes_500": 141312,
+   "dram_feature_map_write_bytes_500": 141312,
+   "dram_weight_read_bytes_500": 174752,
+   "sram_weight_read_bytes_500": 0,
+   "cycles_npu_1000": 34564,
+   "cycles_sram_access_1000": 28800,
+   "cycles_dram_access_1000": 82680,
+   "cycles_total_1000": 83142,
+   "sram_feature_map_read_bytes_1000": 516096,
+   "sram_feature_map_write_bytes_1000": 147456,
+   "dram_feature_map_read_bytes_1000": 141312,
+   "dram_feature_map_write_bytes_1000": 141312,
+   "dram_weight_read_bytes_1000": 174752,
+   "sram_weight_read_bytes_1000": 0,
+   "d_vela": 30090,
+   "r_vela": 1.5671793711829902,
+   "per_op_500": [
+    [
+     "Add",
+     "21562",
+     "4608",
+     "3600",
+     "21562"
+    ],
+    [
+     "Conv2D",
+     "24290",
+     "24290",
+     "18000",
+     "16409"
+    ],
+    [
+     "Relu6",
+     "0",
+     "0",
+     "0",
+     "0"
+    ],
+    [
+     "Add",
+     "7200",
+     "4416",
+     "7200",
+     "6738"
+    ]
+   ]
+  },
+  "W1-P0": {
+   "estimator_only": true,
+   "cycles_npu_500": 33374,
+   "cycles_sram_access_500": 0,
+   "cycles_dram_access_500": 100310,
+   "cycles_total_500": 100310,
+   "sram_feature_map_read_bytes_500": 0,
+   "sram_feature_map_write_bytes_500": 0,
+   "dram_feature_map_read_bytes_500": 657408,
+   "dram_feature_map_write_bytes_500": 288768,
+   "dram_weight_read_bytes_500": 174752,
+   "sram_weight_read_bytes_500": 0,
+   "cycles_npu_1000": 34564,
+   "cycles_sram_access_1000": 0,
+   "cycles_dram_access_1000": 200622,
+   "cycles_total_1000": 200622,
+   "sram_feature_map_read_bytes_1000": 0,
+   "sram_feature_map_write_bytes_1000": 0,
+   "dram_feature_map_read_bytes_1000": 657408,
+   "dram_feature_map_write_bytes_1000": 288768,
+   "dram_weight_read_bytes_1000": 174752,
+   "sram_weight_read_bytes_1000": 0,
+   "d_vela": 100312,
+   "r_vela": 2.000019938191606,
+   "per_op_500": [
+    [
+     "Add",
+     "21562",
+     "4608",
+     "0",
+     "21562"
+    ],
+    [
+     "Conv2D",
+     "56249",
+     "24350",
+     "0",
+     "56249"
+    ],
+    [
+     "Relu6",
+     "0",
+     "0",
+     "0",
+     "0"
+    ],
+    [
+     "Add",
+     "22499",
+     "4416",
+     "0",
+     "22499"
+    ]
+   ]
+  },
+  "W0-P1": null
+ },
+ "h1uc": {
+  "W0-P0": 20736.0,
+  "W0-P1": 20736.0,
+  "W1-P1": 20736.0,
+  "W1-P0": 20736.0
+ },
+ "cpu": {
+  "a0_out_equals_a2_conv_out": true,
+  "a0_out_on_a2_conv_input_sha256": "f13d5223df2763afbf27d9e62f1f6c702a7e004976b1b1ba1b6bfcdee02e10de",
+  "a2_conv_input_sha256": "ffe04446225dc8e05faa500130017b894137a6d215de38224cc38c7a13acd691",
+  "a2_conv_out_sha256": "f13d5223df2763afbf27d9e62f1f6c702a7e004976b1b1ba1b6bfcdee02e10de",
+  "a2_out_equals_ref": true,
+  "a2_out_sha256": "f13d5223df2763afbf27d9e62f1f6c702a7e004976b1b1ba1b6bfcdee02e10de",
+  "conv_in_len": 70656,
+  "conv_input_bytes_hex_sha": "ffe04446225dc8e05faa500130017b894137a6d215de38224cc38c7a13acd691",
+  "weights_a0": {
+   "bias": "9abb560ef3783f92fbc9515ee7578ad32fe36f9d5e1578cc3630b3b490732bb1",
+   "weights": "c5f23eaaed6dc5dab9a1c4420a65228f2254e63c52188445193fde6ec1042f09"
+  },
+  "weights_a2": {
+   "bias": "9abb560ef3783f92fbc9515ee7578ad32fe36f9d5e1578cc3630b3b490732bb1",
+   "weights": "c5f23eaaed6dc5dab9a1c4420a65228f2254e63c52188445193fde6ec1042f09"
+  }
+ },
+ "comparisons": {
+  "B_W0 placement (W0-P0 vs W0-P1)": {
+   "cls": "PLACEMENT_ONLY",
+   "numeric_verified": false,
+   "diff": {},
+   "same_ops": true,
+   "weights_equal": true,
+   "memory": [
+    [
+     "Dram",
+     "Dram"
+    ],
+    [
+     "Sram",
+     "Sram"
+    ]
+   ],
+   "same_blob": true,
+   "vela": null
+  },
+  "B_W1 placement (W1-P0 vs W1-P1)": {
+   "cls": "PLACEMENT_ONLY",
+   "numeric_verified": true,
+   "diff": {
+    "ADDRESS": [
+     "NPU_SET_IFM2_BASE0",
+     "NPU_SET_IFM_REGION",
+     "NPU_SET_OFM_REGION"
+    ]
+   },
+   "same_ops": true,
+   "weights_equal": true,
+   "memory": [
+    [
+     "Dram",
+     "Dram"
+    ],
+    [
+     "Sram",
+     "Sram"
+    ]
+   ],
+   "same_blob": false,
+   "vela": {
+    "d_vela": [
+     100312,
+     30090
+    ],
+    "r_vela": [
+     2.000019938191606,
+     1.5671793711829902
+    ]
+   }
+  },
+  "A_P0 wrapper (W0-P0 vs W1-P0)": {
+   "cls": "NOT_CONTROLLED",
+   "numeric_verified": true,
+   "diff": {
+    "DEPENDENCY": [
+     "NPU_SET_BLOCKDEP"
+    ],
+    "ADDRESS": [
+     "NPU_SET_IFM2_BASE0",
+     "NPU_SET_IFM2_BASE1",
+     "NPU_SET_IFM2_BASE2",
+     "NPU_SET_IFM2_BASE3",
+     "NPU_SET_IFM2_REGION",
+     "NPU_SET_IFM_BASE0",
+     "NPU_SET_OFM_BASE0"
+    ],
+    "COMPUTE": [
+     "NPU_SET_IFM2_BROADCAST",
+     "NPU_SET_IFM2_HEIGHT0_M1",
+     "NPU_SET_IFM2_HEIGHT1_M1",
+     "NPU_SET_IFM2_SCALE",
+     "NPU_SET_IFM2_WIDTH0_M1",
+     "NPU_SET_IFM2_ZERO_POINT",
+     "NPU_SET_IFM_BROADCAST",
+     "NPU_SET_IFM_SCALE"
+    ],
+    "LAYOUT": [
+     "NPU_SET_IFM2_PRECISION",
+     "NPU_SET_IFM2_STRIDE_C",
+     "NPU_SET_IFM2_STRIDE_X",
+     "NPU_SET_IFM2_STRIDE_Y",
+     "NPU_SET_IFM_PRECISION",
+     "NPU_SET_IFM_STRIDE_C",
+     "NPU_SET_IFM_STRIDE_X",
+     "NPU_SET_IFM_STRIDE_Y",
+     "NPU_SET_OFM_PRECISION",
+     "NPU_SET_OFM_STRIDE_C",
+     "NPU_SET_OFM_STRIDE_X",
+     "NPU_SET_OFM_STRIDE_Y"
+    ]
+   },
+   "same_ops": false,
+   "weights_equal": true,
+   "memory": [
+    [
+     "Dram",
+     "Dram"
+    ],
+    [
+     "Dram",
+     "Dram"
+    ]
+   ],
+   "same_blob": false,
+   "vela": {
+    "d_vela": [
+     107812,
+     100312
+    ],
+    "r_vela": [
+     2.0,
+     2.000019938191606
+    ]
+   }
+  },
+  "A_P1 wrapper (W0-P1 vs W1-P1)": {
+   "cls": "NOT_CONTROLLED",
+   "numeric_verified": false,
+   "diff": {
+    "DEPENDENCY": [
+     "NPU_SET_BLOCKDEP"
+    ],
+    "ADDRESS": [
+     "NPU_SET_IFM2_BASE0",
+     "NPU_SET_IFM2_BASE1",
+     "NPU_SET_IFM2_BASE2",
+     "NPU_SET_IFM2_BASE3",
+     "NPU_SET_IFM2_REGION",
+     "NPU_SET_IFM_BASE0",
+     "NPU_SET_IFM_REGION",
+     "NPU_SET_OFM_BASE0",
+     "NPU_SET_OFM_REGION"
+    ],
+    "COMPUTE": [
+     "NPU_SET_IFM2_BROADCAST",
+     "NPU_SET_IFM2_HEIGHT0_M1",
+     "NPU_SET_IFM2_HEIGHT1_M1",
+     "NPU_SET_IFM2_SCALE",
+     "NPU_SET_IFM2_WIDTH0_M1",
+     "NPU_SET_IFM2_ZERO_POINT",
+     "NPU_SET_IFM_BROADCAST",
+     "NPU_SET_IFM_SCALE"
+    ],
+    "LAYOUT": [
+     "NPU_SET_IFM2_PRECISION",
+     "NPU_SET_IFM2_STRIDE_C",
+     "NPU_SET_IFM2_STRIDE_X",
+     "NPU_SET_IFM2_STRIDE_Y",
+     "NPU_SET_IFM_PRECISION",
+     "NPU_SET_IFM_STRIDE_C",
+     "NPU_SET_IFM_STRIDE_X",
+     "NPU_SET_IFM_STRIDE_Y",
+     "NPU_SET_OFM_PRECISION",
+     "NPU_SET_OFM_STRIDE_C",
+     "NPU_SET_OFM_STRIDE_X",
+     "NPU_SET_OFM_STRIDE_Y"
+    ]
+   },
+   "same_ops": false,
+   "weights_equal": true,
+   "memory": [
+    [
+     "Sram",
+     "Sram"
+    ],
+    [
+     "Sram",
+     "Sram"
+    ]
+   ],
+   "same_blob": false,
+   "vela": null
+  }
+ },
+ "interaction_identifiable": false,
+ "verdict": "READY_FOR_BOARD_REVIEW"
+}
