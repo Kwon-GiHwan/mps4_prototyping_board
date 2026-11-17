@@ -188,11 +188,13 @@ def expected_identity(wl: pathlib.Path, cfg: str) -> dict:
                 regioncfg=placement_regioncfg(from_header, h["placement"]) if agree else None)
 
 
-def identity_a1(folder: pathlib.Path, wl: pathlib.Path, cfg: str, caps_ref: str | None = None) -> dict:
+def identity_a1(folder: pathlib.Path, wl: pathlib.Path, cfg: str, caps_ref: str | None = None,
+                expected_placement: int = 0) -> dict:
     """K.identity without its fixed REGIONCFG constant, plus, for every RUN (warm-up included): n_base = the expected
     n_base, regioncfg_irq = placement_regioncfg(expected n_base, DRWL placement), qconfig_irq = 3, placement = the
-    DRWL's, and the firmware's REGIONCFG_MATCH flag set."""
-    k = K.identity(folder, wl, cfg, caps_ref)
+    DRWL's, and the firmware's REGIONCFG_MATCH flag set. K's placement term uses `expected_placement` (the frozen
+    manifest's, default 0); with drwl_placement and expected_agree this ties RUN = manifest = DRWL header."""
+    k = K.identity(folder, wl, cfg, caps_ref, expected_placement)
     checks = {n: v for n, v in k["checks"].items() if n != "regioncfg"}
     exp = expected_identity(wl, cfg)
     raw = json.loads((folder / "raw_runs.json").read_text())[1:]

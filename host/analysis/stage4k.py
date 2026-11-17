@@ -221,13 +221,16 @@ def reproduce(now: dict, ref: dict) -> dict:
 
 
 REGIONCFG_DDR, QCONFIG = 0x15F, 3          # region 1 on the EXT port (DDR placement), as the placement A run
+REGIONCFG_N5 = {0: REGIONCFG_DDR, 1: 0x153}  # n_base 5 by placement: region 1 on the EXT (0) or SRAM (1) port
 CAPS_REF = "evidence/stage4_placement/raw/evsweep_s4p_run_a/conds/s4p_conv_base_ddr/capabilities.json"
 
 
-def identity(folder: pathlib.Path, wl: pathlib.Path, cfg: str, caps_ref: str | None = None) -> dict:
+def identity(folder: pathlib.Path, wl: pathlib.Path, cfg: str, caps_ref: str | None = None,
+             expected_placement: int = 0) -> dict:
     """The boot ran this config on the fixed set-up: every RUN (warm-up included) carries this DRWL's model length,
-    schema 4, placement 0 (DDR/EXT), REGIONCFG 0x15F / QCONFIG 3 at the IRQ, one IRQ, one output CRC (so the
-    warm-up RUN's output equals the measured ones, which output_check compares byte by byte with the CPU reference)
+    schema 4, the expected placement (default 0 = DDR/EXT, the only value before 2026-11-17; callers pass the frozen
+    manifest's value, never one read from a RUN), its REGIONCFG (0x15F / 0x153) / QCONFIG 3 at the IRQ, one IRQ, one
+    output CRC (so the warm-up RUN's output equals the measured ones, which output_check compares byte by byte with the CPU reference)
     and the output length of the CPU reference; capabilities.json (TA registers, AXI, MEM_ATTR, fast memory, NPU
     config) equals the placement A boot of the same image."""
     import drwl
@@ -241,8 +244,9 @@ def identity(folder: pathlib.Path, wl: pathlib.Path, cfg: str, caps_ref: str | N
     checks = dict(runs=len(raw) == 10,
                   model_len=bool(recs) and all(r.get("model_len") == model_len for r in recs),
                   schema=all(r.get("schema") == 4 for r in recs),
-                  placement=all(r.get("placement") == 0 for r in recs),
-                  regioncfg=all(r.get("regioncfg_irq") == REGIONCFG_DDR and r.get("qconfig_irq") == QCONFIG for r in recs),
+                  placement=all(r.get("placement") == expected_placement for r in recs),
+                  regioncfg=all(r.get("regioncfg_irq") == REGIONCFG_N5.get(expected_placement) and r.get("qconfig_irq") == QCONFIG
+                                for r in recs),
                   irq=all(r.get("irq_count") == 1 for r in recs),
                   one_crc=len({x.get("output_crc32") for x in raw}) == 1,
                   output_len=all(x.get("output_len") == n_out for x in raw),

@@ -154,7 +154,9 @@ def rows_of(folder: pathlib.Path) -> list[dict]:
 
 
 def identity_of(folder: pathlib.Path, wl: pathlib.Path, cfg: str, m: dict, caps_ref: str) -> dict:
-    return K.identity(folder, wl, cfg, caps_ref) if m["kind"] == "reference" else AOE.identity_a1(folder, wl, cfg, caps_ref)
+    exp = m.get("placement", 0)                  # the frozen manifest's placement (absent before E2D: 0)
+    return K.identity(folder, wl, cfg, caps_ref, exp) if m["kind"] == "reference" \
+        else AOE.identity_a1(folder, wl, cfg, caps_ref, exp)
 
 
 def environment(folder: pathlib.Path, wl: pathlib.Path, cfg: str, m: dict, caps_ref: str, ident: dict) -> list[str]:

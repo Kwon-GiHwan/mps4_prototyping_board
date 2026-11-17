@@ -1,0 +1,4018 @@
+{
+ "folders": {
+  "evidence/stage4ao/raw/evsweep_s4ao_run/conds/s4_conv_base/wfe": {
+   "boot": 379,
+   "cfg": "s4_conv_base",
+   "experiment": "evidence/stage4ao",
+   "k_identity": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "irq": true,
+     "model_len": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "regioncfg": true,
+     "runs": true,
+     "schema": true
+    },
+    "ok": true
+   },
+   "wl": [
+    "evidence/stage4ao/workloads"
+   ]
+  },
+  "evidence/stage4ao/raw/evsweep_s4ao_run/conds/s4ao_act_none/wfe": {
+   "boot": 384,
+   "cfg": "s4ao_act_none",
+   "experiment": "evidence/stage4ao",
+   "k_identity": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "irq": true,
+     "model_len": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "regioncfg": true,
+     "runs": false,
+     "schema": true
+    },
+    "ok": false
+   },
+   "wl": [
+    "evidence/stage4ao/workloads"
+   ]
+  },
+  "evidence/stage4ao/raw/evsweep_s4ao_run/conds/s4ao_conv1x1_h24/wfe": {
+   "boot": 380,
+   "cfg": "s4ao_conv1x1_h24",
+   "experiment": "evidence/stage4ao",
+   "k_identity": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "irq": true,
+     "model_len": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "regioncfg": true,
+     "runs": true,
+     "schema": true
+    },
+    "ok": true
+   },
+   "wl": [
+    "evidence/stage4ao/workloads"
+   ]
+  },
+  "evidence/stage4ao/raw/evsweep_s4ao_run/conds/s4ao_conv1x1_h36/wfe": {
+   "boot": 381,
+   "cfg": "s4ao_conv1x1_h36",
+   "experiment": "evidence/stage4ao",
+   "k_identity": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "irq": true,
+     "model_len": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "regioncfg": true,
+     "runs": true,
+     "schema": true
+    },
+    "ok": true
+   },
+   "wl": [
+    "evidence/stage4ao/workloads"
+   ]
+  },
+  "evidence/stage4ao/raw/evsweep_s4ao_run/conds/s4ao_conv1x1_h54/wfe": {
+   "boot": 382,
+   "cfg": "s4ao_conv1x1_h54",
+   "experiment": "evidence/stage4ao",
+   "k_identity": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "irq": true,
+     "model_len": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "regioncfg": true,
+     "runs": true,
+     "schema": true
+    },
+    "ok": true
+   },
+   "wl": [
+    "evidence/stage4ao/workloads"
+   ]
+  },
+  "evidence/stage4ao/raw/evsweep_s4ao_run/conds/s4ao_conv1x1_h72/wfe": {
+   "boot": 383,
+   "cfg": "s4ao_conv1x1_h72",
+   "experiment": "evidence/stage4ao",
+   "k_identity": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "irq": true,
+     "model_len": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "regioncfg": true,
+     "runs": true,
+     "schema": true
+    },
+    "ok": true
+   },
+   "wl": [
+    "evidence/stage4ao/workloads"
+   ]
+  },
+  "evidence/stage4aoe/raw/evsweep_s4aoe_run/conds/s4ao_conv1x1_h24/wfe": {
+   "boot": 386,
+   "cfg": "s4ao_conv1x1_h24",
+   "experiment": "evidence/stage4aoe",
+   "identity_a1": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "drwl_placement": true,
+     "expected_agree": true,
+     "irq": true,
+     "model_len": true,
+     "n_base": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "qconfig": true,
+     "regioncfg": true,
+     "regioncfg_match_flag": true,
+     "runs": true,
+     "schema": true
+    },
+    "expected": {
+     "agree": true,
+     "from_header": 5,
+     "from_manifest": 5,
+     "n_base": 5,
+     "placement": 0,
+     "regioncfg": 351
+    },
+    "ok": true
+   },
+   "k_identity": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "irq": true,
+     "model_len": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "regioncfg": true,
+     "runs": true,
+     "schema": true
+    },
+    "ok": true
+   },
+   "wl": [
+    "evidence/stage4aoe/workloads",
+    "evidence/stage4ao/workloads"
+   ]
+  },
+  "evidence/stage4aoe/raw/evsweep_s4aoe_run/conds/s4aoe_add_h24/wfe": {
+   "boot": 387,
+   "cfg": "s4aoe_add_h24",
+   "experiment": "evidence/stage4aoe",
+   "identity_a1": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "drwl_placement": true,
+     "expected_agree": true,
+     "irq": true,
+     "model_len": true,
+     "n_base": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "qconfig": true,
+     "regioncfg": true,
+     "regioncfg_match_flag": true,
+     "runs": true,
+     "schema": true
+    },
+    "expected": {
+     "agree": true,
+     "from_header": 6,
+     "from_manifest": 6,
+     "n_base": 6,
+     "placement": 0,
+     "regioncfg": 1375
+    },
+    "ok": true
+   },
+   "k_identity": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "irq": true,
+     "model_len": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "regioncfg": false,
+     "runs": true,
+     "schema": true
+    },
+    "ok": false
+   },
+   "wl": [
+    "evidence/stage4aoe/workloads",
+    "evidence/stage4ao/workloads"
+   ]
+  },
+  "evidence/stage4aoe/raw_a1/evsweep_s4aoe2_run/conds/s4ao_conv1x1_h24/wfe": {
+   "boot": 394,
+   "cfg": "s4ao_conv1x1_h24",
+   "experiment": "evidence/stage4aoe",
+   "identity_a1": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "drwl_placement": true,
+     "expected_agree": true,
+     "irq": true,
+     "model_len": true,
+     "n_base": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "qconfig": true,
+     "regioncfg": true,
+     "regioncfg_match_flag": true,
+     "runs": true,
+     "schema": true
+    },
+    "expected": {
+     "agree": true,
+     "from_header": 5,
+     "from_manifest": 5,
+     "n_base": 5,
+     "placement": 0,
+     "regioncfg": 351
+    },
+    "ok": true
+   },
+   "k_identity": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "irq": true,
+     "model_len": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "regioncfg": true,
+     "runs": true,
+     "schema": true
+    },
+    "ok": true
+   },
+   "wl": [
+    "evidence/stage4aoe/workloads",
+    "evidence/stage4ao/workloads"
+   ]
+  },
+  "evidence/stage4aoe/raw_a1/evsweep_s4aoe2_run/conds/s4aoe_abs_h24/wfe": {
+   "boot": 397,
+   "cfg": "s4aoe_abs_h24",
+   "experiment": "evidence/stage4aoe",
+   "identity_a1": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "drwl_placement": true,
+     "expected_agree": true,
+     "irq": true,
+     "model_len": true,
+     "n_base": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "qconfig": true,
+     "regioncfg": true,
+     "regioncfg_match_flag": true,
+     "runs": true,
+     "schema": true
+    },
+    "expected": {
+     "agree": true,
+     "from_header": 5,
+     "from_manifest": 5,
+     "n_base": 5,
+     "placement": 0,
+     "regioncfg": 351
+    },
+    "ok": true
+   },
+   "k_identity": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "irq": true,
+     "model_len": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "regioncfg": true,
+     "runs": true,
+     "schema": true
+    },
+    "ok": true
+   },
+   "wl": [
+    "evidence/stage4aoe/workloads",
+    "evidence/stage4ao/workloads"
+   ]
+  },
+  "evidence/stage4aoe/raw_a1/evsweep_s4aoe2_run/conds/s4aoe_abs_h72/wfe": {
+   "boot": 401,
+   "cfg": "s4aoe_abs_h72",
+   "experiment": "evidence/stage4aoe",
+   "identity_a1": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "drwl_placement": true,
+     "expected_agree": true,
+     "irq": true,
+     "model_len": true,
+     "n_base": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "qconfig": true,
+     "regioncfg": true,
+     "regioncfg_match_flag": true,
+     "runs": true,
+     "schema": true
+    },
+    "expected": {
+     "agree": true,
+     "from_header": 5,
+     "from_manifest": 5,
+     "n_base": 5,
+     "placement": 0,
+     "regioncfg": 351
+    },
+    "ok": true
+   },
+   "k_identity": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "irq": true,
+     "model_len": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "regioncfg": true,
+     "runs": true,
+     "schema": true
+    },
+    "ok": true
+   },
+   "wl": [
+    "evidence/stage4aoe/workloads",
+    "evidence/stage4ao/workloads"
+   ]
+  },
+  "evidence/stage4aoe/raw_a1/evsweep_s4aoe2_run/conds/s4aoe_add_h24/wfe": {
+   "boot": 395,
+   "cfg": "s4aoe_add_h24",
+   "experiment": "evidence/stage4aoe",
+   "identity_a1": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "drwl_placement": true,
+     "expected_agree": true,
+     "irq": true,
+     "model_len": true,
+     "n_base": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "qconfig": true,
+     "regioncfg": true,
+     "regioncfg_match_flag": true,
+     "runs": true,
+     "schema": true
+    },
+    "expected": {
+     "agree": true,
+     "from_header": 6,
+     "from_manifest": 6,
+     "n_base": 6,
+     "placement": 0,
+     "regioncfg": 1375
+    },
+    "ok": true
+   },
+   "k_identity": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "irq": true,
+     "model_len": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "regioncfg": false,
+     "runs": true,
+     "schema": true
+    },
+    "ok": false
+   },
+   "wl": [
+    "evidence/stage4aoe/workloads",
+    "evidence/stage4ao/workloads"
+   ]
+  },
+  "evidence/stage4aoe/raw_a1/evsweep_s4aoe2_run/conds/s4aoe_add_h72/wfe": {
+   "boot": 399,
+   "cfg": "s4aoe_add_h72",
+   "experiment": "evidence/stage4aoe",
+   "identity_a1": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "drwl_placement": true,
+     "expected_agree": true,
+     "irq": true,
+     "model_len": true,
+     "n_base": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "qconfig": true,
+     "regioncfg": true,
+     "regioncfg_match_flag": true,
+     "runs": true,
+     "schema": true
+    },
+    "expected": {
+     "agree": true,
+     "from_header": 6,
+     "from_manifest": 6,
+     "n_base": 6,
+     "placement": 0,
+     "regioncfg": 1375
+    },
+    "ok": true
+   },
+   "k_identity": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "irq": true,
+     "model_len": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "regioncfg": false,
+     "runs": true,
+     "schema": true
+    },
+    "ok": false
+   },
+   "wl": [
+    "evidence/stage4aoe/workloads",
+    "evidence/stage4ao/workloads"
+   ]
+  },
+  "evidence/stage4aoe/raw_a1/evsweep_s4aoe2_run/conds/s4aoe_add_mul_h24/wfe": {
+   "boot": 398,
+   "cfg": "s4aoe_add_mul_h24",
+   "experiment": "evidence/stage4aoe",
+   "identity_a1": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "drwl_placement": true,
+     "expected_agree": true,
+     "irq": true,
+     "model_len": true,
+     "n_base": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "qconfig": true,
+     "regioncfg": true,
+     "regioncfg_match_flag": true,
+     "runs": true,
+     "schema": true
+    },
+    "expected": {
+     "agree": true,
+     "from_header": 7,
+     "from_manifest": 7,
+     "n_base": 7,
+     "placement": 0,
+     "regioncfg": 5471
+    },
+    "ok": true
+   },
+   "k_identity": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "irq": true,
+     "model_len": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "regioncfg": false,
+     "runs": true,
+     "schema": true
+    },
+    "ok": false
+   },
+   "wl": [
+    "evidence/stage4aoe/workloads",
+    "evidence/stage4ao/workloads"
+   ]
+  },
+  "evidence/stage4aoe/raw_a1/evsweep_s4aoe2_run/conds/s4aoe_mul_h24/wfe": {
+   "boot": 396,
+   "cfg": "s4aoe_mul_h24",
+   "experiment": "evidence/stage4aoe",
+   "identity_a1": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "drwl_placement": true,
+     "expected_agree": true,
+     "irq": true,
+     "model_len": true,
+     "n_base": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "qconfig": true,
+     "regioncfg": true,
+     "regioncfg_match_flag": true,
+     "runs": true,
+     "schema": true
+    },
+    "expected": {
+     "agree": true,
+     "from_header": 6,
+     "from_manifest": 6,
+     "n_base": 6,
+     "placement": 0,
+     "regioncfg": 1375
+    },
+    "ok": true
+   },
+   "k_identity": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "irq": true,
+     "model_len": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "regioncfg": false,
+     "runs": true,
+     "schema": true
+    },
+    "ok": false
+   },
+   "wl": [
+    "evidence/stage4aoe/workloads",
+    "evidence/stage4ao/workloads"
+   ]
+  },
+  "evidence/stage4aoe/raw_a1/evsweep_s4aoe2_run/conds/s4aoe_mul_h72/wfe": {
+   "boot": 400,
+   "cfg": "s4aoe_mul_h72",
+   "experiment": "evidence/stage4aoe",
+   "identity_a1": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "drwl_placement": true,
+     "expected_agree": true,
+     "irq": true,
+     "model_len": true,
+     "n_base": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "qconfig": true,
+     "regioncfg": true,
+     "regioncfg_match_flag": true,
+     "runs": true,
+     "schema": true
+    },
+    "expected": {
+     "agree": true,
+     "from_header": 6,
+     "from_manifest": 6,
+     "n_base": 6,
+     "placement": 0,
+     "regioncfg": 1375
+    },
+    "ok": true
+   },
+   "k_identity": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "irq": true,
+     "model_len": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "regioncfg": false,
+     "runs": true,
+     "schema": true
+    },
+    "ok": false
+   },
+   "wl": [
+    "evidence/stage4aoe/workloads",
+    "evidence/stage4ao/workloads"
+   ]
+  },
+  "evidence/stage4k/raw/evsweep_s4k_run/conds/s4_conv_base/wfe": {
+   "boot": 369,
+   "cfg": "s4_conv_base",
+   "experiment": "evidence/stage4k",
+   "k_identity": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "irq": true,
+     "model_len": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "regioncfg": true,
+     "runs": true,
+     "schema": true
+    },
+    "ok": true
+   },
+   "wl": [
+    "evidence/stage4k/workloads"
+   ]
+  },
+  "evidence/stage4k/raw/evsweep_s4k_run/conds/s4c2_conv_cin32/wfe": {
+   "boot": 371,
+   "cfg": "s4c2_conv_cin32",
+   "experiment": "evidence/stage4k",
+   "k_identity": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "irq": true,
+     "model_len": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "regioncfg": true,
+     "runs": true,
+     "schema": true
+    },
+    "ok": true
+   },
+   "wl": [
+    "evidence/stage4k/workloads"
+   ]
+  },
+  "evidence/stage4k/raw/evsweep_s4k_run/conds/s4c2_conv_cin40/wfe": {
+   "boot": 373,
+   "cfg": "s4c2_conv_cin40",
+   "experiment": "evidence/stage4k",
+   "k_identity": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "irq": true,
+     "model_len": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "regioncfg": true,
+     "runs": true,
+     "schema": true
+    },
+    "ok": true
+   },
+   "wl": [
+    "evidence/stage4k/workloads"
+   ]
+  },
+  "evidence/stage4k/raw/evsweep_s4k_run/conds/s4c2_conv_cin48/wfe": {
+   "boot": 375,
+   "cfg": "s4c2_conv_cin48",
+   "experiment": "evidence/stage4k",
+   "k_identity": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "irq": true,
+     "model_len": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "regioncfg": true,
+     "runs": true,
+     "schema": true
+    },
+    "ok": true
+   },
+   "wl": [
+    "evidence/stage4k/workloads"
+   ]
+  },
+  "evidence/stage4k/raw/evsweep_s4k_run/conds/s4c2_conv_cin64/wfe": {
+   "boot": 377,
+   "cfg": "s4c2_conv_cin64",
+   "experiment": "evidence/stage4k",
+   "k_identity": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "irq": true,
+     "model_len": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "regioncfg": true,
+     "runs": true,
+     "schema": true
+    },
+    "ok": true
+   },
+   "wl": [
+    "evidence/stage4k/workloads"
+   ]
+  },
+  "evidence/stage4k/raw/evsweep_s4k_run/conds/s4k_conv3x3_cin16/wfe": {
+   "boot": 370,
+   "cfg": "s4k_conv3x3_cin16",
+   "experiment": "evidence/stage4k",
+   "k_identity": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "irq": true,
+     "model_len": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "regioncfg": true,
+     "runs": true,
+     "schema": true
+    },
+    "ok": true
+   },
+   "wl": [
+    "evidence/stage4k/workloads"
+   ]
+  },
+  "evidence/stage4k/raw/evsweep_s4k_run/conds/s4k_conv3x3_cin32/wfe": {
+   "boot": 372,
+   "cfg": "s4k_conv3x3_cin32",
+   "experiment": "evidence/stage4k",
+   "k_identity": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "irq": true,
+     "model_len": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "regioncfg": true,
+     "runs": true,
+     "schema": true
+    },
+    "ok": true
+   },
+   "wl": [
+    "evidence/stage4k/workloads"
+   ]
+  },
+  "evidence/stage4k/raw/evsweep_s4k_run/conds/s4k_conv3x3_cin40/wfe": {
+   "boot": 374,
+   "cfg": "s4k_conv3x3_cin40",
+   "experiment": "evidence/stage4k",
+   "k_identity": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "irq": true,
+     "model_len": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "regioncfg": true,
+     "runs": true,
+     "schema": true
+    },
+    "ok": true
+   },
+   "wl": [
+    "evidence/stage4k/workloads"
+   ]
+  },
+  "evidence/stage4k/raw/evsweep_s4k_run/conds/s4k_conv3x3_cin48/wfe": {
+   "boot": 376,
+   "cfg": "s4k_conv3x3_cin48",
+   "experiment": "evidence/stage4k",
+   "k_identity": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "irq": true,
+     "model_len": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "regioncfg": true,
+     "runs": true,
+     "schema": true
+    },
+    "ok": true
+   },
+   "wl": [
+    "evidence/stage4k/workloads"
+   ]
+  },
+  "evidence/stage4k/raw/evsweep_s4k_run/conds/s4k_conv3x3_cin64/wfe": {
+   "boot": 378,
+   "cfg": "s4k_conv3x3_cin64",
+   "experiment": "evidence/stage4k",
+   "k_identity": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "irq": true,
+     "model_len": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "regioncfg": true,
+     "runs": true,
+     "schema": true
+    },
+    "ok": true
+   },
+   "wl": [
+    "evidence/stage4k/workloads"
+   ]
+  },
+  "evidence/stage4wd/raw/evsweep_s4wd_run/conds/s4ao_conv1x1_h24/wfe": {
+   "boot": 402,
+   "cfg": "s4ao_conv1x1_h24",
+   "experiment": "evidence/stage4wd",
+   "identity_a1": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "drwl_placement": true,
+     "expected_agree": true,
+     "irq": true,
+     "model_len": true,
+     "n_base": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "qconfig": true,
+     "regioncfg": true,
+     "regioncfg_match_flag": true,
+     "runs": true,
+     "schema": true
+    },
+    "expected": {
+     "agree": true,
+     "from_header": 5,
+     "from_manifest": 5,
+     "n_base": 5,
+     "placement": 0,
+     "regioncfg": 351
+    },
+    "ok": true
+   },
+   "k_identity": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "irq": true,
+     "model_len": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "regioncfg": true,
+     "runs": true,
+     "schema": true
+    },
+    "ok": true
+   },
+   "wl": [
+    "evidence/stage4wd/workloads",
+    "evidence/stage4ao/workloads",
+    "evidence/stage4wd/board"
+   ]
+  },
+  "evidence/stage4wd/raw/evsweep_s4wd_run/conds/s4ao_conv1x1_h36/wfe": {
+   "boot": 409,
+   "cfg": "s4ao_conv1x1_h36",
+   "experiment": "evidence/stage4wd",
+   "identity_a1": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "drwl_placement": true,
+     "expected_agree": true,
+     "irq": true,
+     "model_len": true,
+     "n_base": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "qconfig": true,
+     "regioncfg": true,
+     "regioncfg_match_flag": true,
+     "runs": true,
+     "schema": true
+    },
+    "expected": {
+     "agree": true,
+     "from_header": 5,
+     "from_manifest": 5,
+     "n_base": 5,
+     "placement": 0,
+     "regioncfg": 351
+    },
+    "ok": true
+   },
+   "k_identity": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "irq": true,
+     "model_len": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "regioncfg": true,
+     "runs": true,
+     "schema": true
+    },
+    "ok": true
+   },
+   "wl": [
+    "evidence/stage4wd/workloads",
+    "evidence/stage4ao/workloads",
+    "evidence/stage4wd/board"
+   ]
+  },
+  "evidence/stage4wd/raw/evsweep_s4wd_run/conds/s4wd_h23/wfe": {
+   "boot": 406,
+   "cfg": "s4wd_h23",
+   "experiment": "evidence/stage4wd",
+   "identity_a1": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "drwl_placement": true,
+     "expected_agree": true,
+     "irq": true,
+     "model_len": true,
+     "n_base": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "qconfig": true,
+     "regioncfg": true,
+     "regioncfg_match_flag": true,
+     "runs": true,
+     "schema": true
+    },
+    "expected": {
+     "agree": true,
+     "from_header": 5,
+     "from_manifest": 5,
+     "n_base": 5,
+     "placement": 0,
+     "regioncfg": 351
+    },
+    "ok": true
+   },
+   "k_identity": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "irq": true,
+     "model_len": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "regioncfg": true,
+     "runs": true,
+     "schema": true
+    },
+    "ok": true
+   },
+   "wl": [
+    "evidence/stage4wd/workloads",
+    "evidence/stage4ao/workloads",
+    "evidence/stage4wd/board"
+   ]
+  },
+  "evidence/stage4wd/raw/evsweep_s4wd_run/conds/s4wd_h32/wfe": {
+   "boot": 407,
+   "cfg": "s4wd_h32",
+   "experiment": "evidence/stage4wd",
+   "identity_a1": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "drwl_placement": true,
+     "expected_agree": true,
+     "irq": true,
+     "model_len": true,
+     "n_base": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "qconfig": true,
+     "regioncfg": true,
+     "regioncfg_match_flag": true,
+     "runs": true,
+     "schema": true
+    },
+    "expected": {
+     "agree": true,
+     "from_header": 5,
+     "from_manifest": 5,
+     "n_base": 5,
+     "placement": 0,
+     "regioncfg": 351
+    },
+    "ok": true
+   },
+   "k_identity": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "irq": true,
+     "model_len": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "regioncfg": true,
+     "runs": true,
+     "schema": true
+    },
+    "ok": true
+   },
+   "wl": [
+    "evidence/stage4wd/workloads",
+    "evidence/stage4ao/workloads",
+    "evidence/stage4wd/board"
+   ]
+  },
+  "evidence/stage4wd/raw/evsweep_s4wd_run/conds/s4wd_h34/wfe": {
+   "boot": 408,
+   "cfg": "s4wd_h34",
+   "experiment": "evidence/stage4wd",
+   "identity_a1": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "drwl_placement": true,
+     "expected_agree": true,
+     "irq": true,
+     "model_len": true,
+     "n_base": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "qconfig": true,
+     "regioncfg": true,
+     "regioncfg_match_flag": true,
+     "runs": true,
+     "schema": true
+    },
+    "expected": {
+     "agree": true,
+     "from_header": 5,
+     "from_manifest": 5,
+     "n_base": 5,
+     "placement": 0,
+     "regioncfg": 351
+    },
+    "ok": true
+   },
+   "k_identity": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "irq": true,
+     "model_len": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "regioncfg": true,
+     "runs": true,
+     "schema": true
+    },
+    "ok": true
+   },
+   "wl": [
+    "evidence/stage4wd/workloads",
+    "evidence/stage4ao/workloads",
+    "evidence/stage4wd/board"
+   ]
+  },
+  "evidence/stage4wd/raw/evsweep_s4wd_run/conds/s4wd_w_small/wfe": {
+   "boot": 403,
+   "cfg": "s4wd_w_small",
+   "experiment": "evidence/stage4wd",
+   "identity_a1": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "drwl_placement": true,
+     "expected_agree": true,
+     "irq": true,
+     "model_len": true,
+     "n_base": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "qconfig": true,
+     "regioncfg": true,
+     "regioncfg_match_flag": true,
+     "runs": true,
+     "schema": true
+    },
+    "expected": {
+     "agree": true,
+     "from_header": 5,
+     "from_manifest": 5,
+     "n_base": 5,
+     "placement": 0,
+     "regioncfg": 351
+    },
+    "ok": true
+   },
+   "k_identity": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "irq": true,
+     "model_len": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "regioncfg": true,
+     "runs": true,
+     "schema": true
+    },
+    "ok": true
+   },
+   "wl": [
+    "evidence/stage4wd/workloads",
+    "evidence/stage4ao/workloads",
+    "evidence/stage4wd/board"
+   ]
+  },
+  "evidence/stage4wd/raw/evsweep_s4wd_run/conds/s4wd_w_sparse75/wfe": {
+   "boot": 404,
+   "cfg": "s4wd_w_sparse75",
+   "experiment": "evidence/stage4wd",
+   "identity_a1": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "drwl_placement": true,
+     "expected_agree": true,
+     "irq": true,
+     "model_len": true,
+     "n_base": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "qconfig": true,
+     "regioncfg": true,
+     "regioncfg_match_flag": true,
+     "runs": true,
+     "schema": true
+    },
+    "expected": {
+     "agree": true,
+     "from_header": 5,
+     "from_manifest": 5,
+     "n_base": 5,
+     "placement": 0,
+     "regioncfg": 351
+    },
+    "ok": true
+   },
+   "k_identity": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "irq": true,
+     "model_len": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "regioncfg": true,
+     "runs": true,
+     "schema": true
+    },
+    "ok": true
+   },
+   "wl": [
+    "evidence/stage4wd/workloads",
+    "evidence/stage4ao/workloads",
+    "evidence/stage4wd/board"
+   ]
+  },
+  "evidence/stage4wd/raw/evsweep_s4wd_run/conds/s4wd_w_sparse90/wfe": {
+   "boot": 405,
+   "cfg": "s4wd_w_sparse90",
+   "experiment": "evidence/stage4wd",
+   "identity_a1": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "drwl_placement": true,
+     "expected_agree": true,
+     "irq": true,
+     "model_len": true,
+     "n_base": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "qconfig": true,
+     "regioncfg": true,
+     "regioncfg_match_flag": true,
+     "runs": true,
+     "schema": true
+    },
+    "expected": {
+     "agree": true,
+     "from_header": 5,
+     "from_manifest": 5,
+     "n_base": 5,
+     "placement": 0,
+     "regioncfg": 351
+    },
+    "ok": true
+   },
+   "k_identity": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "irq": true,
+     "model_len": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "regioncfg": true,
+     "runs": true,
+     "schema": true
+    },
+    "ok": true
+   },
+   "wl": [
+    "evidence/stage4wd/workloads",
+    "evidence/stage4ao/workloads",
+    "evidence/stage4wd/board"
+   ]
+  },
+  "evidence/stage6b/stage6bb/raw/evsweep_s6bb_run/conds/s4c2_conv_cin48/wfe": {
+   "boot": 410,
+   "cfg": "s4c2_conv_cin48",
+   "experiment": "evidence/stage6b/stage6bb",
+   "identity_a1": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "drwl_placement": true,
+     "expected_agree": true,
+     "irq": true,
+     "model_len": true,
+     "n_base": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "qconfig": true,
+     "regioncfg": true,
+     "regioncfg_match_flag": true,
+     "runs": true,
+     "schema": true
+    },
+    "expected": {
+     "agree": true,
+     "from_header": 5,
+     "from_manifest": 5,
+     "n_base": 5,
+     "placement": 0,
+     "regioncfg": 351
+    },
+    "ok": true
+   },
+   "k_identity": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "irq": true,
+     "model_len": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "regioncfg": true,
+     "runs": true,
+     "schema": true
+    },
+    "ok": true
+   },
+   "wl": [
+    "evidence/stage6b/stage6bb/workloads"
+   ]
+  },
+  "evidence/stage6b/stage6bb/raw/evsweep_s6bb_run/conds/s6bb_g09/wfe": {
+   "boot": 419,
+   "cfg": "s6bb_g09",
+   "experiment": "evidence/stage6b/stage6bb",
+   "identity_a1": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "drwl_placement": true,
+     "expected_agree": true,
+     "irq": true,
+     "model_len": true,
+     "n_base": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "qconfig": true,
+     "regioncfg": true,
+     "regioncfg_match_flag": true,
+     "runs": true,
+     "schema": true
+    },
+    "expected": {
+     "agree": true,
+     "from_header": 6,
+     "from_manifest": 6,
+     "n_base": 6,
+     "placement": 0,
+     "regioncfg": 1375
+    },
+    "ok": true
+   },
+   "k_identity": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "irq": true,
+     "model_len": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "regioncfg": false,
+     "runs": true,
+     "schema": true
+    },
+    "ok": false
+   },
+   "wl": [
+    "evidence/stage6b/stage6bb/workloads"
+   ]
+  },
+  "evidence/stage6b/stage6bb/raw/evsweep_s6bb_run/conds/s6bb_g11/wfe": {
+   "boot": 415,
+   "cfg": "s6bb_g11",
+   "experiment": "evidence/stage6b/stage6bb",
+   "identity_a1": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "drwl_placement": true,
+     "expected_agree": true,
+     "irq": true,
+     "model_len": true,
+     "n_base": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "qconfig": true,
+     "regioncfg": true,
+     "regioncfg_match_flag": true,
+     "runs": true,
+     "schema": true
+    },
+    "expected": {
+     "agree": true,
+     "from_header": 6,
+     "from_manifest": 6,
+     "n_base": 6,
+     "placement": 0,
+     "regioncfg": 1375
+    },
+    "ok": true
+   },
+   "k_identity": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "irq": true,
+     "model_len": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "regioncfg": false,
+     "runs": true,
+     "schema": true
+    },
+    "ok": false
+   },
+   "wl": [
+    "evidence/stage6b/stage6bb/workloads"
+   ]
+  },
+  "evidence/stage6b/stage6bb/raw/evsweep_s6bb_run/conds/s6bb_g12/wfe": {
+   "boot": 411,
+   "cfg": "s6bb_g12",
+   "experiment": "evidence/stage6b/stage6bb",
+   "identity_a1": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "drwl_placement": true,
+     "expected_agree": true,
+     "irq": true,
+     "model_len": true,
+     "n_base": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "qconfig": true,
+     "regioncfg": true,
+     "regioncfg_match_flag": true,
+     "runs": true,
+     "schema": true
+    },
+    "expected": {
+     "agree": true,
+     "from_header": 6,
+     "from_manifest": 6,
+     "n_base": 6,
+     "placement": 0,
+     "regioncfg": 1375
+    },
+    "ok": true
+   },
+   "k_identity": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "irq": true,
+     "model_len": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "regioncfg": false,
+     "runs": true,
+     "schema": true
+    },
+    "ok": false
+   },
+   "wl": [
+    "evidence/stage6b/stage6bb/workloads"
+   ]
+  },
+  "evidence/stage6b/stage6bb/raw/evsweep_s6bb_run/conds/s6bb_g25/wfe": {
+   "boot": 412,
+   "cfg": "s6bb_g25",
+   "experiment": "evidence/stage6b/stage6bb",
+   "identity_a1": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "drwl_placement": true,
+     "expected_agree": true,
+     "irq": true,
+     "model_len": true,
+     "n_base": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "qconfig": true,
+     "regioncfg": true,
+     "regioncfg_match_flag": true,
+     "runs": true,
+     "schema": true
+    },
+    "expected": {
+     "agree": true,
+     "from_header": 6,
+     "from_manifest": 6,
+     "n_base": 6,
+     "placement": 0,
+     "regioncfg": 1375
+    },
+    "ok": true
+   },
+   "k_identity": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "irq": true,
+     "model_len": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "regioncfg": false,
+     "runs": true,
+     "schema": true
+    },
+    "ok": false
+   },
+   "wl": [
+    "evidence/stage6b/stage6bb/workloads"
+   ]
+  },
+  "evidence/stage6b/stage6bb/raw/evsweep_s6bb_run/conds/s6bb_g28/wfe": {
+   "boot": 420,
+   "cfg": "s6bb_g28",
+   "experiment": "evidence/stage6b/stage6bb",
+   "identity_a1": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "drwl_placement": true,
+     "expected_agree": true,
+     "irq": true,
+     "model_len": true,
+     "n_base": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "qconfig": true,
+     "regioncfg": true,
+     "regioncfg_match_flag": true,
+     "runs": true,
+     "schema": true
+    },
+    "expected": {
+     "agree": true,
+     "from_header": 6,
+     "from_manifest": 6,
+     "n_base": 6,
+     "placement": 0,
+     "regioncfg": 1375
+    },
+    "ok": true
+   },
+   "k_identity": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "irq": true,
+     "model_len": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "regioncfg": false,
+     "runs": true,
+     "schema": true
+    },
+    "ok": false
+   },
+   "wl": [
+    "evidence/stage6b/stage6bb/workloads"
+   ]
+  },
+  "evidence/stage6b/stage6bb/raw/evsweep_s6bb_run/conds/s6bb_g40/wfe": {
+   "boot": 413,
+   "cfg": "s6bb_g40",
+   "experiment": "evidence/stage6b/stage6bb",
+   "identity_a1": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "drwl_placement": true,
+     "expected_agree": true,
+     "irq": true,
+     "model_len": true,
+     "n_base": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "qconfig": true,
+     "regioncfg": true,
+     "regioncfg_match_flag": true,
+     "runs": true,
+     "schema": true
+    },
+    "expected": {
+     "agree": true,
+     "from_header": 6,
+     "from_manifest": 6,
+     "n_base": 6,
+     "placement": 0,
+     "regioncfg": 1375
+    },
+    "ok": true
+   },
+   "k_identity": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "irq": true,
+     "model_len": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "regioncfg": false,
+     "runs": true,
+     "schema": true
+    },
+    "ok": false
+   },
+   "wl": [
+    "evidence/stage6b/stage6bb/workloads"
+   ]
+  },
+  "evidence/stage6b/stage6bb/raw/evsweep_s6bb_run/conds/s6bb_g52/wfe": {
+   "boot": 417,
+   "cfg": "s6bb_g52",
+   "experiment": "evidence/stage6b/stage6bb",
+   "identity_a1": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "drwl_placement": true,
+     "expected_agree": true,
+     "irq": true,
+     "model_len": true,
+     "n_base": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "qconfig": true,
+     "regioncfg": true,
+     "regioncfg_match_flag": true,
+     "runs": true,
+     "schema": true
+    },
+    "expected": {
+     "agree": true,
+     "from_header": 6,
+     "from_manifest": 6,
+     "n_base": 6,
+     "placement": 0,
+     "regioncfg": 1375
+    },
+    "ok": true
+   },
+   "k_identity": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "irq": true,
+     "model_len": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "regioncfg": false,
+     "runs": true,
+     "schema": true
+    },
+    "ok": false
+   },
+   "wl": [
+    "evidence/stage6b/stage6bb/workloads"
+   ]
+  },
+  "evidence/stage6b/stage6bb/raw/evsweep_s6bb_run/conds/s6bb_g53/wfe": {
+   "boot": 414,
+   "cfg": "s6bb_g53",
+   "experiment": "evidence/stage6b/stage6bb",
+   "identity_a1": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "drwl_placement": true,
+     "expected_agree": true,
+     "irq": true,
+     "model_len": true,
+     "n_base": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "qconfig": true,
+     "regioncfg": true,
+     "regioncfg_match_flag": true,
+     "runs": true,
+     "schema": true
+    },
+    "expected": {
+     "agree": true,
+     "from_header": 6,
+     "from_manifest": 6,
+     "n_base": 6,
+     "placement": 0,
+     "regioncfg": 1375
+    },
+    "ok": true
+   },
+   "k_identity": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "irq": true,
+     "model_len": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "regioncfg": false,
+     "runs": true,
+     "schema": true
+    },
+    "ok": false
+   },
+   "wl": [
+    "evidence/stage6b/stage6bb/workloads"
+   ]
+  },
+  "evidence/stage6b/stage6bb/raw/evsweep_s6bb_run/conds/s6bb_g56/wfe": {
+   "boot": 416,
+   "cfg": "s6bb_g56",
+   "experiment": "evidence/stage6b/stage6bb",
+   "identity_a1": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "drwl_placement": true,
+     "expected_agree": true,
+     "irq": true,
+     "model_len": true,
+     "n_base": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "qconfig": true,
+     "regioncfg": true,
+     "regioncfg_match_flag": true,
+     "runs": true,
+     "schema": true
+    },
+    "expected": {
+     "agree": true,
+     "from_header": 6,
+     "from_manifest": 6,
+     "n_base": 6,
+     "placement": 0,
+     "regioncfg": 1375
+    },
+    "ok": true
+   },
+   "k_identity": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "irq": true,
+     "model_len": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "regioncfg": false,
+     "runs": true,
+     "schema": true
+    },
+    "ok": false
+   },
+   "wl": [
+    "evidence/stage6b/stage6bb/workloads"
+   ]
+  },
+  "evidence/stage6b/stage6bb/raw/evsweep_s6bb_run/conds/s6bb_g57/wfe": {
+   "boot": 418,
+   "cfg": "s6bb_g57",
+   "experiment": "evidence/stage6b/stage6bb",
+   "identity_a1": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "drwl_placement": true,
+     "expected_agree": true,
+     "irq": true,
+     "model_len": true,
+     "n_base": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "qconfig": true,
+     "regioncfg": true,
+     "regioncfg_match_flag": true,
+     "runs": true,
+     "schema": true
+    },
+    "expected": {
+     "agree": true,
+     "from_header": 6,
+     "from_manifest": 6,
+     "n_base": 6,
+     "placement": 0,
+     "regioncfg": 1375
+    },
+    "ok": true
+   },
+   "k_identity": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "irq": true,
+     "model_len": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "regioncfg": false,
+     "runs": true,
+     "schema": true
+    },
+    "ok": false
+   },
+   "wl": [
+    "evidence/stage6b/stage6bb/workloads"
+   ]
+  },
+  "evidence/stage6b/stage6be1/raw/evsweep_s6be1_run/conds/e1_c136_h13w13_o96/wfe": {
+   "boot": 423,
+   "cfg": "e1_c136_h13w13_o96",
+   "experiment": "evidence/stage6b/stage6be1",
+   "identity_a1": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "drwl_placement": true,
+     "expected_agree": true,
+     "irq": true,
+     "model_len": true,
+     "n_base": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "qconfig": true,
+     "regioncfg": true,
+     "regioncfg_match_flag": true,
+     "runs": true,
+     "schema": true
+    },
+    "expected": {
+     "agree": true,
+     "from_header": 5,
+     "from_manifest": 5,
+     "n_base": 5,
+     "placement": 0,
+     "regioncfg": 351
+    },
+    "ok": true
+   },
+   "k_identity": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "irq": true,
+     "model_len": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "regioncfg": true,
+     "runs": true,
+     "schema": true
+    },
+    "ok": true
+   },
+   "wl": [
+    "evidence/stage6b/stage6be1/workloads"
+   ]
+  },
+  "evidence/stage6b/stage6be1/raw/evsweep_s6be1_run/conds/e1_c200_h13w13_o96/wfe": {
+   "boot": 425,
+   "cfg": "e1_c200_h13w13_o96",
+   "experiment": "evidence/stage6b/stage6be1",
+   "identity_a1": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "drwl_placement": true,
+     "expected_agree": true,
+     "irq": true,
+     "model_len": true,
+     "n_base": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "qconfig": true,
+     "regioncfg": true,
+     "regioncfg_match_flag": true,
+     "runs": true,
+     "schema": true
+    },
+    "expected": {
+     "agree": true,
+     "from_header": 5,
+     "from_manifest": 5,
+     "n_base": 5,
+     "placement": 0,
+     "regioncfg": 351
+    },
+    "ok": true
+   },
+   "k_identity": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "irq": true,
+     "model_len": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "regioncfg": true,
+     "runs": true,
+     "schema": true
+    },
+    "ok": true
+   },
+   "wl": [
+    "evidence/stage6b/stage6be1/workloads"
+   ]
+  },
+  "evidence/stage6b/stage6be1/raw/evsweep_s6be1_run/conds/e1_c72_h13w13_o96/wfe": {
+   "boot": 422,
+   "cfg": "e1_c72_h13w13_o96",
+   "experiment": "evidence/stage6b/stage6be1",
+   "identity_a1": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "drwl_placement": true,
+     "expected_agree": true,
+     "irq": true,
+     "model_len": true,
+     "n_base": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "qconfig": true,
+     "regioncfg": true,
+     "regioncfg_match_flag": true,
+     "runs": true,
+     "schema": true
+    },
+    "expected": {
+     "agree": true,
+     "from_header": 5,
+     "from_manifest": 5,
+     "n_base": 5,
+     "placement": 0,
+     "regioncfg": 351
+    },
+    "ok": true
+   },
+   "k_identity": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "irq": true,
+     "model_len": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "regioncfg": true,
+     "runs": true,
+     "schema": true
+    },
+    "ok": true
+   },
+   "wl": [
+    "evidence/stage6b/stage6be1/workloads"
+   ]
+  },
+  "evidence/stage6b/stage6be1/raw/evsweep_s6be1_run/conds/e1_c72_h7w7_o112/wfe": {
+   "boot": 427,
+   "cfg": "e1_c72_h7w7_o112",
+   "experiment": "evidence/stage6b/stage6be1",
+   "identity_a1": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "drwl_placement": true,
+     "expected_agree": true,
+     "irq": true,
+     "model_len": true,
+     "n_base": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "qconfig": true,
+     "regioncfg": true,
+     "regioncfg_match_flag": true,
+     "runs": true,
+     "schema": true
+    },
+    "expected": {
+     "agree": true,
+     "from_header": 5,
+     "from_manifest": 5,
+     "n_base": 5,
+     "placement": 0,
+     "regioncfg": 351
+    },
+    "ok": true
+   },
+   "k_identity": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "irq": true,
+     "model_len": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "regioncfg": true,
+     "runs": true,
+     "schema": true
+    },
+    "ok": true
+   },
+   "wl": [
+    "evidence/stage6b/stage6be1/workloads"
+   ]
+  },
+  "evidence/stage6b/stage6be1/raw/evsweep_s6be1_run/conds/e1_c72_h7w7_o48/wfe": {
+   "boot": 424,
+   "cfg": "e1_c72_h7w7_o48",
+   "experiment": "evidence/stage6b/stage6be1",
+   "identity_a1": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "drwl_placement": true,
+     "expected_agree": true,
+     "irq": true,
+     "model_len": true,
+     "n_base": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "qconfig": true,
+     "regioncfg": true,
+     "regioncfg_match_flag": true,
+     "runs": true,
+     "schema": true
+    },
+    "expected": {
+     "agree": true,
+     "from_header": 5,
+     "from_manifest": 5,
+     "n_base": 5,
+     "placement": 0,
+     "regioncfg": 351
+    },
+    "ok": true
+   },
+   "k_identity": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "irq": true,
+     "model_len": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "regioncfg": true,
+     "runs": true,
+     "schema": true
+    },
+    "ok": true
+   },
+   "wl": [
+    "evidence/stage6b/stage6be1/workloads"
+   ]
+  },
+  "evidence/stage6b/stage6be1/raw/evsweep_s6be1_run/conds/e1_c80_h13w13_o96/wfe": {
+   "boot": 426,
+   "cfg": "e1_c80_h13w13_o96",
+   "experiment": "evidence/stage6b/stage6be1",
+   "identity_a1": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "drwl_placement": true,
+     "expected_agree": true,
+     "irq": true,
+     "model_len": true,
+     "n_base": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "qconfig": true,
+     "regioncfg": true,
+     "regioncfg_match_flag": true,
+     "runs": true,
+     "schema": true
+    },
+    "expected": {
+     "agree": true,
+     "from_header": 5,
+     "from_manifest": 5,
+     "n_base": 5,
+     "placement": 0,
+     "regioncfg": 351
+    },
+    "ok": true
+   },
+   "k_identity": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "irq": true,
+     "model_len": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "regioncfg": true,
+     "runs": true,
+     "schema": true
+    },
+    "ok": true
+   },
+   "wl": [
+    "evidence/stage6b/stage6be1/workloads"
+   ]
+  },
+  "evidence/stage6b/stage6be1/raw/evsweep_s6be1_run/conds/s4c2_conv_cin48/wfe": {
+   "boot": 421,
+   "cfg": "s4c2_conv_cin48",
+   "experiment": "evidence/stage6b/stage6be1",
+   "identity_a1": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "drwl_placement": true,
+     "expected_agree": true,
+     "irq": true,
+     "model_len": true,
+     "n_base": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "qconfig": true,
+     "regioncfg": true,
+     "regioncfg_match_flag": true,
+     "runs": true,
+     "schema": true
+    },
+    "expected": {
+     "agree": true,
+     "from_header": 5,
+     "from_manifest": 5,
+     "n_base": 5,
+     "placement": 0,
+     "regioncfg": 351
+    },
+    "ok": true
+   },
+   "k_identity": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "irq": true,
+     "model_len": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "regioncfg": true,
+     "runs": true,
+     "schema": true
+    },
+    "ok": true
+   },
+   "wl": [
+    "evidence/stage6b/stage6be1/workloads"
+   ]
+  },
+  "evidence/stage6b/stage6be1r/raw/evsweep_s6be1r_run/conds/e1r_c100_h37w37_o96/wfe": {
+   "boot": 433,
+   "cfg": "e1r_c100_h37w37_o96",
+   "experiment": "evidence/stage6b/stage6be1r",
+   "identity_a1": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "drwl_placement": true,
+     "expected_agree": true,
+     "irq": true,
+     "model_len": true,
+     "n_base": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "qconfig": true,
+     "regioncfg": true,
+     "regioncfg_match_flag": true,
+     "runs": true,
+     "schema": true
+    },
+    "expected": {
+     "agree": true,
+     "from_header": 5,
+     "from_manifest": 5,
+     "n_base": 5,
+     "placement": 0,
+     "regioncfg": 351
+    },
+    "ok": true
+   },
+   "k_identity": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "irq": true,
+     "model_len": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "regioncfg": true,
+     "runs": true,
+     "schema": true
+    },
+    "ok": true
+   },
+   "wl": [
+    "evidence/stage6b/stage6be1r/workloads"
+   ]
+  },
+  "evidence/stage6b/stage6be1r/raw/evsweep_s6be1r_run/conds/e1r_c136_h37w37_o96/wfe": {
+   "boot": 434,
+   "cfg": "e1r_c136_h37w37_o96",
+   "experiment": "evidence/stage6b/stage6be1r",
+   "identity_a1": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "drwl_placement": true,
+     "expected_agree": true,
+     "irq": true,
+     "model_len": true,
+     "n_base": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "qconfig": true,
+     "regioncfg": true,
+     "regioncfg_match_flag": true,
+     "runs": true,
+     "schema": true
+    },
+    "expected": {
+     "agree": true,
+     "from_header": 5,
+     "from_manifest": 5,
+     "n_base": 5,
+     "placement": 0,
+     "regioncfg": 351
+    },
+    "ok": true
+   },
+   "k_identity": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "irq": true,
+     "model_len": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "regioncfg": true,
+     "runs": true,
+     "schema": true
+    },
+    "ok": true
+   },
+   "wl": [
+    "evidence/stage6b/stage6be1r/workloads"
+   ]
+  },
+  "evidence/stage6b/stage6be1r/raw/evsweep_s6be1r_run/conds/e1r_c200_h29w29_o96/wfe": {
+   "boot": 432,
+   "cfg": "e1r_c200_h29w29_o96",
+   "experiment": "evidence/stage6b/stage6be1r",
+   "identity_a1": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "drwl_placement": true,
+     "expected_agree": true,
+     "irq": true,
+     "model_len": true,
+     "n_base": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "qconfig": true,
+     "regioncfg": true,
+     "regioncfg_match_flag": true,
+     "runs": true,
+     "schema": true
+    },
+    "expected": {
+     "agree": true,
+     "from_header": 5,
+     "from_manifest": 5,
+     "n_base": 5,
+     "placement": 0,
+     "regioncfg": 351
+    },
+    "ok": true
+   },
+   "k_identity": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "irq": true,
+     "model_len": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "regioncfg": true,
+     "runs": true,
+     "schema": true
+    },
+    "ok": true
+   },
+   "wl": [
+    "evidence/stage6b/stage6be1r/workloads"
+   ]
+  },
+  "evidence/stage6b/stage6be1r/raw/evsweep_s6be1r_run/conds/e1r_c200_h33w33_o96/wfe": {
+   "boot": 430,
+   "cfg": "e1r_c200_h33w33_o96",
+   "experiment": "evidence/stage6b/stage6be1r",
+   "identity_a1": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "drwl_placement": true,
+     "expected_agree": true,
+     "irq": true,
+     "model_len": true,
+     "n_base": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "qconfig": true,
+     "regioncfg": true,
+     "regioncfg_match_flag": true,
+     "runs": true,
+     "schema": true
+    },
+    "expected": {
+     "agree": true,
+     "from_header": 5,
+     "from_manifest": 5,
+     "n_base": 5,
+     "placement": 0,
+     "regioncfg": 351
+    },
+    "ok": true
+   },
+   "k_identity": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "irq": true,
+     "model_len": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "regioncfg": true,
+     "runs": true,
+     "schema": true
+    },
+    "ok": true
+   },
+   "wl": [
+    "evidence/stage6b/stage6be1r/workloads"
+   ]
+  },
+  "evidence/stage6b/stage6be1r/raw/evsweep_s6be1r_run/conds/e1r_c200_h37w37_o176/wfe": {
+   "boot": 431,
+   "cfg": "e1r_c200_h37w37_o176",
+   "experiment": "evidence/stage6b/stage6be1r",
+   "identity_a1": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "drwl_placement": true,
+     "expected_agree": true,
+     "irq": true,
+     "model_len": true,
+     "n_base": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "qconfig": true,
+     "regioncfg": true,
+     "regioncfg_match_flag": true,
+     "runs": true,
+     "schema": true
+    },
+    "expected": {
+     "agree": true,
+     "from_header": 5,
+     "from_manifest": 5,
+     "n_base": 5,
+     "placement": 0,
+     "regioncfg": 351
+    },
+    "ok": true
+   },
+   "k_identity": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "irq": true,
+     "model_len": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "regioncfg": true,
+     "runs": true,
+     "schema": true
+    },
+    "ok": true
+   },
+   "wl": [
+    "evidence/stage6b/stage6be1r/workloads"
+   ]
+  },
+  "evidence/stage6b/stage6be1r/raw/evsweep_s6be1r_run/conds/e1r_c200_h37w37_o96/wfe": {
+   "boot": 429,
+   "cfg": "e1r_c200_h37w37_o96",
+   "experiment": "evidence/stage6b/stage6be1r",
+   "identity_a1": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "drwl_placement": true,
+     "expected_agree": true,
+     "irq": true,
+     "model_len": true,
+     "n_base": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "qconfig": true,
+     "regioncfg": true,
+     "regioncfg_match_flag": true,
+     "runs": true,
+     "schema": true
+    },
+    "expected": {
+     "agree": true,
+     "from_header": 5,
+     "from_manifest": 5,
+     "n_base": 5,
+     "placement": 0,
+     "regioncfg": 351
+    },
+    "ok": true
+   },
+   "k_identity": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "irq": true,
+     "model_len": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "regioncfg": true,
+     "runs": true,
+     "schema": true
+    },
+    "ok": true
+   },
+   "wl": [
+    "evidence/stage6b/stage6be1r/workloads"
+   ]
+  },
+  "evidence/stage6b/stage6be1r/raw/evsweep_s6be1r_run/conds/s4c2_conv_cin48/wfe": {
+   "boot": 428,
+   "cfg": "s4c2_conv_cin48",
+   "experiment": "evidence/stage6b/stage6be1r",
+   "identity_a1": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "drwl_placement": true,
+     "expected_agree": true,
+     "irq": true,
+     "model_len": true,
+     "n_base": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "qconfig": true,
+     "regioncfg": true,
+     "regioncfg_match_flag": true,
+     "runs": true,
+     "schema": true
+    },
+    "expected": {
+     "agree": true,
+     "from_header": 5,
+     "from_manifest": 5,
+     "n_base": 5,
+     "placement": 0,
+     "regioncfg": 351
+    },
+    "ok": true
+   },
+   "k_identity": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "irq": true,
+     "model_len": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "regioncfg": true,
+     "runs": true,
+     "schema": true
+    },
+    "ok": true
+   },
+   "wl": [
+    "evidence/stage6b/stage6be1r/workloads"
+   ]
+  },
+  "evidence/stage6b/stage6be2b/raw/evsweep_s6be2b_run_l1000/conds/e1r_c200_h37w37_o96/wfe": {
+   "boot": 439,
+   "cfg": "e1r_c200_h37w37_o96",
+   "experiment": "evidence/stage6b/stage6be2b",
+   "identity_a1": {
+    "caps_diff": {
+     "ta_ext_rlatency": [
+      500,
+      1000
+     ]
+    },
+    "checks": {
+     "capabilities": false,
+     "drwl_placement": true,
+     "expected_agree": true,
+     "irq": true,
+     "model_len": true,
+     "n_base": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "qconfig": true,
+     "regioncfg": true,
+     "regioncfg_match_flag": true,
+     "runs": true,
+     "schema": true
+    },
+    "expected": {
+     "agree": true,
+     "from_header": 5,
+     "from_manifest": 5,
+     "n_base": 5,
+     "placement": 0,
+     "regioncfg": 351
+    },
+    "ok": false
+   },
+   "identity_of[e2b_manifest.json:CONV-L1000]": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "drwl_placement": true,
+     "expected_agree": true,
+     "irq": true,
+     "model_len": true,
+     "n_base": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "qconfig": true,
+     "regioncfg": true,
+     "regioncfg_match_flag": true,
+     "runs": true,
+     "schema": true
+    },
+    "expected": {
+     "agree": true,
+     "from_header": 5,
+     "from_manifest": 5,
+     "n_base": 5,
+     "placement": 0,
+     "regioncfg": 351
+    },
+    "ok": true
+   },
+   "k_identity": {
+    "caps_diff": {
+     "ta_ext_rlatency": [
+      500,
+      1000
+     ]
+    },
+    "checks": {
+     "capabilities": false,
+     "irq": true,
+     "model_len": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "regioncfg": true,
+     "runs": true,
+     "schema": true
+    },
+    "ok": false
+   },
+   "wl": [
+    "evidence/stage6b/stage6be2b/workloads"
+   ]
+  },
+  "evidence/stage6b/stage6be2b/raw/evsweep_s6be2b_run_l1000/conds/s6bb_g12/wfe": {
+   "boot": 438,
+   "cfg": "s6bb_g12",
+   "experiment": "evidence/stage6b/stage6be2b",
+   "identity_a1": {
+    "caps_diff": {
+     "ta_ext_rlatency": [
+      500,
+      1000
+     ]
+    },
+    "checks": {
+     "capabilities": false,
+     "drwl_placement": true,
+     "expected_agree": true,
+     "irq": true,
+     "model_len": true,
+     "n_base": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "qconfig": true,
+     "regioncfg": true,
+     "regioncfg_match_flag": true,
+     "runs": true,
+     "schema": true
+    },
+    "expected": {
+     "agree": true,
+     "from_header": 6,
+     "from_manifest": 6,
+     "n_base": 6,
+     "placement": 0,
+     "regioncfg": 1375
+    },
+    "ok": false
+   },
+   "identity_of[e2b_manifest.json:G12-L1000]": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "drwl_placement": true,
+     "expected_agree": true,
+     "irq": true,
+     "model_len": true,
+     "n_base": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "qconfig": true,
+     "regioncfg": true,
+     "regioncfg_match_flag": true,
+     "runs": true,
+     "schema": true
+    },
+    "expected": {
+     "agree": true,
+     "from_header": 6,
+     "from_manifest": 6,
+     "n_base": 6,
+     "placement": 0,
+     "regioncfg": 1375
+    },
+    "ok": true
+   },
+   "k_identity": {
+    "caps_diff": {
+     "ta_ext_rlatency": [
+      500,
+      1000
+     ]
+    },
+    "checks": {
+     "capabilities": false,
+     "irq": true,
+     "model_len": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "regioncfg": false,
+     "runs": true,
+     "schema": true
+    },
+    "ok": false
+   },
+   "wl": [
+    "evidence/stage6b/stage6be2b/workloads"
+   ]
+  },
+  "evidence/stage6b/stage6be2b/raw/evsweep_s6be2b_run_l500/conds/e1r_c200_h37w37_o96/wfe": {
+   "boot": 437,
+   "cfg": "e1r_c200_h37w37_o96",
+   "experiment": "evidence/stage6b/stage6be2b",
+   "identity_a1": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "drwl_placement": true,
+     "expected_agree": true,
+     "irq": true,
+     "model_len": true,
+     "n_base": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "qconfig": true,
+     "regioncfg": true,
+     "regioncfg_match_flag": true,
+     "runs": true,
+     "schema": true
+    },
+    "expected": {
+     "agree": true,
+     "from_header": 5,
+     "from_manifest": 5,
+     "n_base": 5,
+     "placement": 0,
+     "regioncfg": 351
+    },
+    "ok": true
+   },
+   "identity_of[e2b_manifest.json:CONV-L500]": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "drwl_placement": true,
+     "expected_agree": true,
+     "irq": true,
+     "model_len": true,
+     "n_base": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "qconfig": true,
+     "regioncfg": true,
+     "regioncfg_match_flag": true,
+     "runs": true,
+     "schema": true
+    },
+    "expected": {
+     "agree": true,
+     "from_header": 5,
+     "from_manifest": 5,
+     "n_base": 5,
+     "placement": 0,
+     "regioncfg": 351
+    },
+    "ok": true
+   },
+   "k_identity": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "irq": true,
+     "model_len": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "regioncfg": true,
+     "runs": true,
+     "schema": true
+    },
+    "ok": true
+   },
+   "wl": [
+    "evidence/stage6b/stage6be2b/workloads"
+   ]
+  },
+  "evidence/stage6b/stage6be2b/raw/evsweep_s6be2b_run_l500/conds/s4c2_conv_cin48/wfe": {
+   "boot": 435,
+   "cfg": "s4c2_conv_cin48",
+   "experiment": "evidence/stage6b/stage6be2b",
+   "identity_a1": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "drwl_placement": true,
+     "expected_agree": true,
+     "irq": true,
+     "model_len": true,
+     "n_base": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "qconfig": true,
+     "regioncfg": true,
+     "regioncfg_match_flag": true,
+     "runs": true,
+     "schema": true
+    },
+    "expected": {
+     "agree": true,
+     "from_header": 5,
+     "from_manifest": 5,
+     "n_base": 5,
+     "placement": 0,
+     "regioncfg": 351
+    },
+    "ok": true
+   },
+   "identity_of[e2b_manifest.json:REF]": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "irq": true,
+     "model_len": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "regioncfg": true,
+     "runs": true,
+     "schema": true
+    },
+    "ok": true
+   },
+   "k_identity": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "irq": true,
+     "model_len": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "regioncfg": true,
+     "runs": true,
+     "schema": true
+    },
+    "ok": true
+   },
+   "wl": [
+    "evidence/stage6b/stage6be2b/workloads"
+   ]
+  },
+  "evidence/stage6b/stage6be2b/raw/evsweep_s6be2b_run_l500/conds/s6bb_g12/wfe": {
+   "boot": 436,
+   "cfg": "s6bb_g12",
+   "experiment": "evidence/stage6b/stage6be2b",
+   "identity_a1": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "drwl_placement": true,
+     "expected_agree": true,
+     "irq": true,
+     "model_len": true,
+     "n_base": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "qconfig": true,
+     "regioncfg": true,
+     "regioncfg_match_flag": true,
+     "runs": true,
+     "schema": true
+    },
+    "expected": {
+     "agree": true,
+     "from_header": 6,
+     "from_manifest": 6,
+     "n_base": 6,
+     "placement": 0,
+     "regioncfg": 1375
+    },
+    "ok": true
+   },
+   "identity_of[e2b_manifest.json:G12-L500]": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "drwl_placement": true,
+     "expected_agree": true,
+     "irq": true,
+     "model_len": true,
+     "n_base": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "qconfig": true,
+     "regioncfg": true,
+     "regioncfg_match_flag": true,
+     "runs": true,
+     "schema": true
+    },
+    "expected": {
+     "agree": true,
+     "from_header": 6,
+     "from_manifest": 6,
+     "n_base": 6,
+     "placement": 0,
+     "regioncfg": 1375
+    },
+    "ok": true
+   },
+   "k_identity": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "irq": true,
+     "model_len": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "regioncfg": false,
+     "runs": true,
+     "schema": true
+    },
+    "ok": false
+   },
+   "wl": [
+    "evidence/stage6b/stage6be2b/workloads"
+   ]
+  },
+  "evidence/stage6b/stage6be2d/raw/evsweep_s6be2d_run_l500/conds/e2d_w0p0/wfe": {
+   "boot": 441,
+   "cfg": "e2d_w0p0",
+   "experiment": "evidence/stage6b/stage6be2d",
+   "identity_a1": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "drwl_placement": true,
+     "expected_agree": true,
+     "irq": true,
+     "model_len": true,
+     "n_base": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "qconfig": true,
+     "regioncfg": true,
+     "regioncfg_match_flag": true,
+     "runs": true,
+     "schema": true
+    },
+    "expected": {
+     "agree": true,
+     "from_header": 5,
+     "from_manifest": 5,
+     "n_base": 5,
+     "placement": 0,
+     "regioncfg": 351
+    },
+    "ok": true
+   },
+   "identity_of[e2d_manifest.json:W0-P0-L500]": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "drwl_placement": true,
+     "expected_agree": true,
+     "irq": true,
+     "model_len": true,
+     "n_base": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "qconfig": true,
+     "regioncfg": true,
+     "regioncfg_match_flag": true,
+     "runs": true,
+     "schema": true
+    },
+    "expected": {
+     "agree": true,
+     "from_header": 5,
+     "from_manifest": 5,
+     "n_base": 5,
+     "placement": 0,
+     "regioncfg": 351
+    },
+    "ok": true
+   },
+   "identity_of[e2d_manifest_a.json:W0-P0-L500]": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "drwl_placement": true,
+     "expected_agree": true,
+     "irq": true,
+     "model_len": true,
+     "n_base": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "qconfig": true,
+     "regioncfg": true,
+     "regioncfg_match_flag": true,
+     "runs": true,
+     "schema": true
+    },
+    "expected": {
+     "agree": true,
+     "from_header": 5,
+     "from_manifest": 5,
+     "n_base": 5,
+     "placement": 0,
+     "regioncfg": 351
+    },
+    "ok": true
+   },
+   "k_identity": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "irq": true,
+     "model_len": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "regioncfg": true,
+     "runs": true,
+     "schema": true
+    },
+    "ok": true
+   },
+   "wl": [
+    "evidence/stage6b/stage6be2d/workloads"
+   ]
+  },
+  "evidence/stage6b/stage6be2d/raw/evsweep_s6be2d_run_l500/conds/e2d_w0p1/wfe": {
+   "boot": 442,
+   "cfg": "e2d_w0p1",
+   "experiment": "evidence/stage6b/stage6be2d",
+   "identity_a1": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "drwl_placement": true,
+     "expected_agree": true,
+     "irq": true,
+     "model_len": true,
+     "n_base": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": false,
+     "qconfig": true,
+     "regioncfg": true,
+     "regioncfg_match_flag": true,
+     "runs": true,
+     "schema": true
+    },
+    "expected": {
+     "agree": true,
+     "from_header": 5,
+     "from_manifest": 5,
+     "n_base": 5,
+     "placement": 1,
+     "regioncfg": 339
+    },
+    "ok": false
+   },
+   "identity_of[e2d_manifest.json:W0-P1-L500]": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "drwl_placement": true,
+     "expected_agree": true,
+     "irq": true,
+     "model_len": true,
+     "n_base": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": false,
+     "qconfig": true,
+     "regioncfg": true,
+     "regioncfg_match_flag": true,
+     "runs": true,
+     "schema": true
+    },
+    "expected": {
+     "agree": true,
+     "from_header": 5,
+     "from_manifest": 5,
+     "n_base": 5,
+     "placement": 1,
+     "regioncfg": 339
+    },
+    "ok": false
+   },
+   "identity_of[e2d_manifest_a.json:W0-P1-L500]": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "drwl_placement": true,
+     "expected_agree": true,
+     "irq": true,
+     "model_len": true,
+     "n_base": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "qconfig": true,
+     "regioncfg": true,
+     "regioncfg_match_flag": true,
+     "runs": true,
+     "schema": true
+    },
+    "expected": {
+     "agree": true,
+     "from_header": 5,
+     "from_manifest": 5,
+     "n_base": 5,
+     "placement": 1,
+     "regioncfg": 339
+    },
+    "ok": true
+   },
+   "k_identity": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "irq": true,
+     "model_len": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": false,
+     "regioncfg": false,
+     "runs": true,
+     "schema": true
+    },
+    "ok": false
+   },
+   "wl": [
+    "evidence/stage6b/stage6be2d/workloads"
+   ]
+  },
+  "evidence/stage6b/stage6be2d/raw/evsweep_s6be2d_run_l500/conds/s4c2_conv_cin48/wfe": {
+   "boot": 440,
+   "cfg": "s4c2_conv_cin48",
+   "experiment": "evidence/stage6b/stage6be2d",
+   "identity_a1": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "drwl_placement": true,
+     "expected_agree": true,
+     "irq": true,
+     "model_len": true,
+     "n_base": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "qconfig": true,
+     "regioncfg": true,
+     "regioncfg_match_flag": true,
+     "runs": true,
+     "schema": true
+    },
+    "expected": {
+     "agree": true,
+     "from_header": 5,
+     "from_manifest": 5,
+     "n_base": 5,
+     "placement": 0,
+     "regioncfg": 351
+    },
+    "ok": true
+   },
+   "identity_of[e2d_manifest.json:REF]": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "irq": true,
+     "model_len": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "regioncfg": true,
+     "runs": true,
+     "schema": true
+    },
+    "ok": true
+   },
+   "k_identity": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "irq": true,
+     "model_len": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "regioncfg": true,
+     "runs": true,
+     "schema": true
+    },
+    "ok": true
+   },
+   "wl": [
+    "evidence/stage6b/stage6be2d/workloads"
+   ]
+  },
+  "evidence/stage6b/stage6be2d/raw_a/evsweep_s6be2d_a_run_l1000/conds/e2d_w0p0/wfe": {
+   "boot": 457,
+   "cfg": "e2d_w0p0",
+   "experiment": "evidence/stage6b/stage6be2d",
+   "identity_a1": {
+    "caps_diff": {
+     "ta_ext_rlatency": [
+      500,
+      1000
+     ]
+    },
+    "checks": {
+     "capabilities": false,
+     "drwl_placement": true,
+     "expected_agree": true,
+     "irq": true,
+     "model_len": true,
+     "n_base": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "qconfig": true,
+     "regioncfg": true,
+     "regioncfg_match_flag": true,
+     "runs": true,
+     "schema": true
+    },
+    "expected": {
+     "agree": true,
+     "from_header": 5,
+     "from_manifest": 5,
+     "n_base": 5,
+     "placement": 0,
+     "regioncfg": 351
+    },
+    "ok": false
+   },
+   "identity_of[e2d_manifest_a.json:W0-P0-L1000]": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "drwl_placement": true,
+     "expected_agree": true,
+     "irq": true,
+     "model_len": true,
+     "n_base": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "qconfig": true,
+     "regioncfg": true,
+     "regioncfg_match_flag": true,
+     "runs": true,
+     "schema": true
+    },
+    "expected": {
+     "agree": true,
+     "from_header": 5,
+     "from_manifest": 5,
+     "n_base": 5,
+     "placement": 0,
+     "regioncfg": 351
+    },
+    "ok": true
+   },
+   "k_identity": {
+    "caps_diff": {
+     "ta_ext_rlatency": [
+      500,
+      1000
+     ]
+    },
+    "checks": {
+     "capabilities": false,
+     "irq": true,
+     "model_len": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "regioncfg": true,
+     "runs": true,
+     "schema": true
+    },
+    "ok": false
+   },
+   "wl": [
+    "evidence/stage6b/stage6be2d/workloads"
+   ]
+  },
+  "evidence/stage6b/stage6be2d/raw_a/evsweep_s6be2d_a_run_l1000/conds/e2d_w0p1/wfe": {
+   "boot": 456,
+   "cfg": "e2d_w0p1",
+   "experiment": "evidence/stage6b/stage6be2d",
+   "identity_a1": {
+    "caps_diff": {
+     "ta_ext_rlatency": [
+      500,
+      1000
+     ]
+    },
+    "checks": {
+     "capabilities": false,
+     "drwl_placement": true,
+     "expected_agree": true,
+     "irq": true,
+     "model_len": true,
+     "n_base": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": false,
+     "qconfig": true,
+     "regioncfg": true,
+     "regioncfg_match_flag": true,
+     "runs": true,
+     "schema": true
+    },
+    "expected": {
+     "agree": true,
+     "from_header": 5,
+     "from_manifest": 5,
+     "n_base": 5,
+     "placement": 1,
+     "regioncfg": 339
+    },
+    "ok": false
+   },
+   "identity_of[e2d_manifest_a.json:W0-P1-L1000]": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "drwl_placement": true,
+     "expected_agree": true,
+     "irq": true,
+     "model_len": true,
+     "n_base": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "qconfig": true,
+     "regioncfg": true,
+     "regioncfg_match_flag": true,
+     "runs": true,
+     "schema": true
+    },
+    "expected": {
+     "agree": true,
+     "from_header": 5,
+     "from_manifest": 5,
+     "n_base": 5,
+     "placement": 1,
+     "regioncfg": 339
+    },
+    "ok": true
+   },
+   "k_identity": {
+    "caps_diff": {
+     "ta_ext_rlatency": [
+      500,
+      1000
+     ]
+    },
+    "checks": {
+     "capabilities": false,
+     "irq": true,
+     "model_len": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": false,
+     "regioncfg": false,
+     "runs": true,
+     "schema": true
+    },
+    "ok": false
+   },
+   "wl": [
+    "evidence/stage6b/stage6be2d/workloads"
+   ]
+  },
+  "evidence/stage6b/stage6be2d/raw_a/evsweep_s6be2d_a_run_l1000/conds/e2d_w1p0/wfe": {
+   "boot": 455,
+   "cfg": "e2d_w1p0",
+   "experiment": "evidence/stage6b/stage6be2d",
+   "identity_a1": {
+    "caps_diff": {
+     "ta_ext_rlatency": [
+      500,
+      1000
+     ]
+    },
+    "checks": {
+     "capabilities": false,
+     "drwl_placement": true,
+     "expected_agree": true,
+     "irq": true,
+     "model_len": true,
+     "n_base": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "qconfig": true,
+     "regioncfg": true,
+     "regioncfg_match_flag": true,
+     "runs": true,
+     "schema": true
+    },
+    "expected": {
+     "agree": true,
+     "from_header": 6,
+     "from_manifest": 6,
+     "n_base": 6,
+     "placement": 0,
+     "regioncfg": 1375
+    },
+    "ok": false
+   },
+   "identity_of[e2d_manifest_a.json:W1-P0-L1000]": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "drwl_placement": true,
+     "expected_agree": true,
+     "irq": true,
+     "model_len": true,
+     "n_base": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "qconfig": true,
+     "regioncfg": true,
+     "regioncfg_match_flag": true,
+     "runs": true,
+     "schema": true
+    },
+    "expected": {
+     "agree": true,
+     "from_header": 6,
+     "from_manifest": 6,
+     "n_base": 6,
+     "placement": 0,
+     "regioncfg": 1375
+    },
+    "ok": true
+   },
+   "k_identity": {
+    "caps_diff": {
+     "ta_ext_rlatency": [
+      500,
+      1000
+     ]
+    },
+    "checks": {
+     "capabilities": false,
+     "irq": true,
+     "model_len": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "regioncfg": false,
+     "runs": true,
+     "schema": true
+    },
+    "ok": false
+   },
+   "wl": [
+    "evidence/stage6b/stage6be2d/workloads"
+   ]
+  },
+  "evidence/stage6b/stage6be2d/raw_a/evsweep_s6be2d_a_run_l1000/conds/e2d_w1p1/wfe": {
+   "boot": 454,
+   "cfg": "e2d_w1p1",
+   "experiment": "evidence/stage6b/stage6be2d",
+   "identity_a1": {
+    "caps_diff": {
+     "ta_ext_rlatency": [
+      500,
+      1000
+     ]
+    },
+    "checks": {
+     "capabilities": false,
+     "drwl_placement": true,
+     "expected_agree": true,
+     "irq": true,
+     "model_len": true,
+     "n_base": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "qconfig": true,
+     "regioncfg": true,
+     "regioncfg_match_flag": true,
+     "runs": true,
+     "schema": true
+    },
+    "expected": {
+     "agree": true,
+     "from_header": 6,
+     "from_manifest": 6,
+     "n_base": 6,
+     "placement": 0,
+     "regioncfg": 1375
+    },
+    "ok": false
+   },
+   "identity_of[e2d_manifest_a.json:W1-P1-L1000]": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "drwl_placement": true,
+     "expected_agree": true,
+     "irq": true,
+     "model_len": true,
+     "n_base": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "qconfig": true,
+     "regioncfg": true,
+     "regioncfg_match_flag": true,
+     "runs": true,
+     "schema": true
+    },
+    "expected": {
+     "agree": true,
+     "from_header": 6,
+     "from_manifest": 6,
+     "n_base": 6,
+     "placement": 0,
+     "regioncfg": 1375
+    },
+    "ok": true
+   },
+   "k_identity": {
+    "caps_diff": {
+     "ta_ext_rlatency": [
+      500,
+      1000
+     ]
+    },
+    "checks": {
+     "capabilities": false,
+     "irq": true,
+     "model_len": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "regioncfg": false,
+     "runs": true,
+     "schema": true
+    },
+    "ok": false
+   },
+   "wl": [
+    "evidence/stage6b/stage6be2d/workloads"
+   ]
+  },
+  "evidence/stage6b/stage6be2d/raw_a/evsweep_s6be2d_a_run_l500/conds/e2d_w0p0/wfe": {
+   "boot": 450,
+   "cfg": "e2d_w0p0",
+   "experiment": "evidence/stage6b/stage6be2d",
+   "identity_a1": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "drwl_placement": true,
+     "expected_agree": true,
+     "irq": true,
+     "model_len": true,
+     "n_base": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "qconfig": true,
+     "regioncfg": true,
+     "regioncfg_match_flag": true,
+     "runs": true,
+     "schema": true
+    },
+    "expected": {
+     "agree": true,
+     "from_header": 5,
+     "from_manifest": 5,
+     "n_base": 5,
+     "placement": 0,
+     "regioncfg": 351
+    },
+    "ok": true
+   },
+   "identity_of[e2d_manifest_a.json:W0-P0-L500]": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "drwl_placement": true,
+     "expected_agree": true,
+     "irq": true,
+     "model_len": true,
+     "n_base": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "qconfig": true,
+     "regioncfg": true,
+     "regioncfg_match_flag": true,
+     "runs": true,
+     "schema": true
+    },
+    "expected": {
+     "agree": true,
+     "from_header": 5,
+     "from_manifest": 5,
+     "n_base": 5,
+     "placement": 0,
+     "regioncfg": 351
+    },
+    "ok": true
+   },
+   "k_identity": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "irq": true,
+     "model_len": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "regioncfg": true,
+     "runs": true,
+     "schema": true
+    },
+    "ok": true
+   },
+   "wl": [
+    "evidence/stage6b/stage6be2d/workloads"
+   ]
+  },
+  "evidence/stage6b/stage6be2d/raw_a/evsweep_s6be2d_a_run_l500/conds/e2d_w0p1/wfe": {
+   "boot": 451,
+   "cfg": "e2d_w0p1",
+   "experiment": "evidence/stage6b/stage6be2d",
+   "identity_a1": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "drwl_placement": true,
+     "expected_agree": true,
+     "irq": true,
+     "model_len": true,
+     "n_base": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": false,
+     "qconfig": true,
+     "regioncfg": true,
+     "regioncfg_match_flag": true,
+     "runs": true,
+     "schema": true
+    },
+    "expected": {
+     "agree": true,
+     "from_header": 5,
+     "from_manifest": 5,
+     "n_base": 5,
+     "placement": 1,
+     "regioncfg": 339
+    },
+    "ok": false
+   },
+   "identity_of[e2d_manifest_a.json:W0-P1-L500]": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "drwl_placement": true,
+     "expected_agree": true,
+     "irq": true,
+     "model_len": true,
+     "n_base": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "qconfig": true,
+     "regioncfg": true,
+     "regioncfg_match_flag": true,
+     "runs": true,
+     "schema": true
+    },
+    "expected": {
+     "agree": true,
+     "from_header": 5,
+     "from_manifest": 5,
+     "n_base": 5,
+     "placement": 1,
+     "regioncfg": 339
+    },
+    "ok": true
+   },
+   "k_identity": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "irq": true,
+     "model_len": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": false,
+     "regioncfg": false,
+     "runs": true,
+     "schema": true
+    },
+    "ok": false
+   },
+   "wl": [
+    "evidence/stage6b/stage6be2d/workloads"
+   ]
+  },
+  "evidence/stage6b/stage6be2d/raw_a/evsweep_s6be2d_a_run_l500/conds/e2d_w1p0/wfe": {
+   "boot": 452,
+   "cfg": "e2d_w1p0",
+   "experiment": "evidence/stage6b/stage6be2d",
+   "identity_a1": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "drwl_placement": true,
+     "expected_agree": true,
+     "irq": true,
+     "model_len": true,
+     "n_base": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "qconfig": true,
+     "regioncfg": true,
+     "regioncfg_match_flag": true,
+     "runs": true,
+     "schema": true
+    },
+    "expected": {
+     "agree": true,
+     "from_header": 6,
+     "from_manifest": 6,
+     "n_base": 6,
+     "placement": 0,
+     "regioncfg": 1375
+    },
+    "ok": true
+   },
+   "identity_of[e2d_manifest_a.json:W1-P0-L500]": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "drwl_placement": true,
+     "expected_agree": true,
+     "irq": true,
+     "model_len": true,
+     "n_base": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "qconfig": true,
+     "regioncfg": true,
+     "regioncfg_match_flag": true,
+     "runs": true,
+     "schema": true
+    },
+    "expected": {
+     "agree": true,
+     "from_header": 6,
+     "from_manifest": 6,
+     "n_base": 6,
+     "placement": 0,
+     "regioncfg": 1375
+    },
+    "ok": true
+   },
+   "k_identity": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "irq": true,
+     "model_len": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "regioncfg": false,
+     "runs": true,
+     "schema": true
+    },
+    "ok": false
+   },
+   "wl": [
+    "evidence/stage6b/stage6be2d/workloads"
+   ]
+  },
+  "evidence/stage6b/stage6be2d/raw_a/evsweep_s6be2d_a_run_l500/conds/e2d_w1p1/wfe": {
+   "boot": 453,
+   "cfg": "e2d_w1p1",
+   "experiment": "evidence/stage6b/stage6be2d",
+   "identity_a1": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "drwl_placement": true,
+     "expected_agree": true,
+     "irq": true,
+     "model_len": true,
+     "n_base": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "qconfig": true,
+     "regioncfg": true,
+     "regioncfg_match_flag": true,
+     "runs": true,
+     "schema": true
+    },
+    "expected": {
+     "agree": true,
+     "from_header": 6,
+     "from_manifest": 6,
+     "n_base": 6,
+     "placement": 0,
+     "regioncfg": 1375
+    },
+    "ok": true
+   },
+   "identity_of[e2d_manifest_a.json:W1-P1-L500]": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "drwl_placement": true,
+     "expected_agree": true,
+     "irq": true,
+     "model_len": true,
+     "n_base": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "qconfig": true,
+     "regioncfg": true,
+     "regioncfg_match_flag": true,
+     "runs": true,
+     "schema": true
+    },
+    "expected": {
+     "agree": true,
+     "from_header": 6,
+     "from_manifest": 6,
+     "n_base": 6,
+     "placement": 0,
+     "regioncfg": 1375
+    },
+    "ok": true
+   },
+   "k_identity": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "irq": true,
+     "model_len": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "regioncfg": false,
+     "runs": true,
+     "schema": true
+    },
+    "ok": false
+   },
+   "wl": [
+    "evidence/stage6b/stage6be2d/workloads"
+   ]
+  },
+  "evidence/stage6b/stage6be2d/raw_a/evsweep_s6be2d_a_run_l500/conds/s4c2_conv_cin48/wfe": {
+   "boot": 449,
+   "cfg": "s4c2_conv_cin48",
+   "experiment": "evidence/stage6b/stage6be2d",
+   "identity_a1": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "drwl_placement": true,
+     "expected_agree": true,
+     "irq": true,
+     "model_len": true,
+     "n_base": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "qconfig": true,
+     "regioncfg": true,
+     "regioncfg_match_flag": true,
+     "runs": true,
+     "schema": true
+    },
+    "expected": {
+     "agree": true,
+     "from_header": 5,
+     "from_manifest": 5,
+     "n_base": 5,
+     "placement": 0,
+     "regioncfg": 351
+    },
+    "ok": true
+   },
+   "identity_of[e2d_manifest_a.json:REF]": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "irq": true,
+     "model_len": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "regioncfg": true,
+     "runs": true,
+     "schema": true
+    },
+    "ok": true
+   },
+   "k_identity": {
+    "caps_diff": {},
+    "checks": {
+     "capabilities": true,
+     "irq": true,
+     "model_len": true,
+     "one_crc": true,
+     "output_len": true,
+     "placement": true,
+     "regioncfg": true,
+     "runs": true,
+     "schema": true
+    },
+    "ok": true
+   },
+   "wl": [
+    "evidence/stage6b/stage6be2d/workloads"
+   ]
+  }
+ },
+ "reference_folders": [
+  "evidence/stage4ao/raw/evsweep_s4ao/ref/wfe",
+  "evidence/stage4aoe/raw/evsweep_s4aoe/ref/wfe",
+  "evidence/stage4aoe/raw_a1/evsweep_s4aoe2/ref/wfe",
+  "evidence/stage4wd/raw/evsweep_s4wd/ref/wfe",
+  "evidence/stage6b/stage6be1r/raw/evsweep_s6be1r/ref/wfe"
+ ]
+}

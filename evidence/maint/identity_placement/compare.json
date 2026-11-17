@@ -1,0 +1,53 @@
+{
+ "errors": [],
+ "expected_changes": [
+  {
+   "flips": {
+    "placement": [
+     false,
+     true
+    ]
+   },
+   "folder": "evidence/stage6b/stage6be2d/raw/evsweep_s6be2d_run_l500/conds/e2d_w0p1/wfe",
+   "function": "identity_of[e2d_manifest_a.json:W0-P1-L500]",
+   "ok": [
+    false,
+    true
+   ]
+  },
+  {
+   "flips": {
+    "placement": [
+     false,
+     true
+    ]
+   },
+   "folder": "evidence/stage6b/stage6be2d/raw_a/evsweep_s6be2d_a_run_l1000/conds/e2d_w0p1/wfe",
+   "function": "identity_of[e2d_manifest_a.json:W0-P1-L1000]",
+   "ok": [
+    false,
+    true
+   ]
+  },
+  {
+   "flips": {
+    "placement": [
+     false,
+     true
+    ]
+   },
+   "folder": "evidence/stage6b/stage6be2d/raw_a/evsweep_s6be2d_a_run_l500/conds/e2d_w0p1/wfe",
+   "function": "identity_of[e2d_manifest_a.json:W0-P1-L500]",
+   "ok": [
+    false,
+    true
+   ]
+  }
+ ],
+ "folders": 76,
+ "identity_results": 155,
+ "reference_folders_not_on_identity_path": 5,
+ "same": 152,
+ "unexpected": [],
+ "verdict": "REGRESSION_PASS"
+}
