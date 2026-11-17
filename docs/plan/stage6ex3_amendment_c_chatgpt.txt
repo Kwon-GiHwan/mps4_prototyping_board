@@ -1,0 +1,507 @@
+Stage 6E-X3 Amendment C — 공식 지시
+Group-Window Stability Correction & Final SERIAL_MASK Execution
+0. 공식 결정
+
+Stage 6E-X3 Amendment B의 실행 결과를 수용한다.
+
+계약: 6b292d8
+
+Preflight: 0ce6071
+
+결과: 9d59bf5
+
+결정 로그: 4d8e770
+
+펌웨어: f0baf8c
+
+기존 boot 487: KWS B0 VALID, G1 PASS
+
+기존 boot 488: KWS B1 VALID, GS PASS
+
+기존 boot 489: KWS B2 UNSTABLE, GS FAIL
+
+기존 boot 489의 실패 판정과 원시 측정은 변경하지 않는다.
+
+Amendment C를 승인한다.
+
+이번 수정은 그룹 계측창의 NPU_ACTIVE 안정성 기준에 한정한다.
+
+신규 실행 예산:
+
+8 boot
+
+120 RUN
+
+측정 96 RUN
+
+Warm-up 24 RUN
+
+Pass A/B/C 모두 유지
+
+X3 전체 누적 상한:
+
+12 boot
+
+180 RUN
+
+Amendment C는 X3의 마지막 보완 실행이다. 추가 Amendment, 재측정, 신규 boot는 자동 승인하지 않는다.
+
+1. 수정할 안정성 기준
+
+기존 GS는 그룹별 NPU_ACTIVE의 RUN 간 range가 중앙값의 5% 이하여야 한다는 조건을 적용했다.
+
+그러나 기존 전체 모델 측정에서도 약 1,000~2,800사이클의 절대 변동이 관측되었으며, 상대 5% 기준은 작은 그룹 계측창에서 실패 가능성이 높았다.
+
+그룹 창 B2–B4의 Pass A NPU_ACTIVE에 한하여 다음 기준을 적용한다.
+
+range = max(measured_runs) - min(measured_runs)
+
+GS_limit = max(0.05 × median_NPU_ACTIVE, model_range_cap)
+
+GS_PASS = range <= GS_limit
+
+모델별 cap:
+
+KWS: 2,423 cycles
+
+AD: 2,596 cycles
+
+이 값은 기존 m7 측정의 세트별 range 최댓값으로 고정한다.
+
+기존 원시 자료와 SHA256을 통해 값의 출처를 검증한다.
+
+다음 규칙을 유지한다.
+
+B0/B1의 기존 안정성 기준은 변경하지 않는다.
+
+그룹 창 B2/B3/B4에만 신규 기준을 적용한다.
+
+MAC_ACTIVE와 MAC_DPU_ACTIVE의 기존 안정성 및 정확성 검증은 유지한다.
+
+Pass B/C의 기존 안정성 검증은 유지한다.
+
+모델별 cap은 보드 결과를 보고 조정하지 않는다.
+
+새 기준의 정상·오류·경계 조건을 테스트한다.
+
+이번 변경은 boot 489를 확인한 뒤 설계한 전향적 Amendment라는 사실을 명시한다.
+
+기존 boot 489를 새 기준으로 재판정하지 않는다.
+
+해석상 주의사항
+
+새 기준은 모델 전체 계측에서 관측된 절대 변동 폭을 그룹 계측창의 허용 기준으로 사용하는 경험적 기준이다.
+
+그룹 창에서도 동일한 변동 메커니즘이 발생한다는 사실은 입증되지 않았다.
+
+따라서 GS PASS를 그룹 NPU_ACTIVE의 높은 정밀도가 검증되었다는 의미로 해석하지 않는다.
+
+그룹별 다음 항목을 반드시 보고한다.
+
+중앙값
+
+최소값 및 최댓값
+
+절대 range
+
+상대 range
+
+적용된 GS_limit
+
+상대 허용폭
+
+Vela 오차 또는 그룹 간 차이가 측정 변동보다 충분히 큰지
+
+측정 변동이 연구 질문의 판별에 필요한 차이보다 크다면, GS PASS이더라도 해당 정량적 가설은 INSUFFICIENT_EVIDENCE로 판정한다.
+
+2. 기존 유효 측정 재사용
+
+다음 결과를 유지한다.
+
+Boot 487 — KWS B0
+
+VALID
+
+G1 PASS
+
+NPU_ACTIVE 91,444.5
+
+기존 m7 결정적 카운터 13개 정확 일치
+
+출력 Golden PASS
+
+Boot 488 — KWS B1
+
+VALID
+
+GS PASS
+
+NPU_ACTIVE 105,074.5
+
+MAC_ACTIVE 56,450
+
+MAC_DPU_ACTIVE 49,495
+
+출력 B0와 동일
+
+PMCR.mask_en=1 확인
+
+이 두 boot는 재측정하지 않는다.
+
+boot 489는 실패 기록으로만 보존한다.
+
+Amendment C의 모델 전체 및 직렬 기준값으로 boot 487·488을 사용한다.
+
+동일 펌웨어, 이미지, TA 및 실행 조건의 무결성을 다시 확인한다.
+
+3. 계약·판정 동결 및 Preflight
+
+신규 보드 실행 전에 다음을 완료한다.
+
+Amendment C 계약 동결
+
+GS 판정 수정
+
+기존 B0/B1 Judge 불변 확인
+
+Pass B/C 안정성 기준 불변 확인
+
+H-S/H-P/H-K/H-A/H-O/H-V 가설 불변 확인
+
+그룹 창의 MAC/DPU 안정성 확인
+
+정상·오류·경계 Mutation
+
+기존 결과 불변성 검사
+
+이미지 및 DRWL digest 검증
+
+출력 Reference와 그룹 구성 확인
+
+새 GS 기준을 제외한 다른 계약 요소는 수정하지 않는다.
+
+테스트와 Mutation 하네스를 통과하지 못하면 보드 실행을 시작하지 않는다.
+
+기존 Stage 6E-X3 Amendment A/B 결과는 불변으로 유지한다.
+
+4. 신규 보드 실행
+
+신규 boot 번호 497–504를 사용한다.
+
+실행 순서는 다음과 같다.
+
+Boot	모델	구성
+497	KWS	B2 — G_V
+498	KWS	B3 — G_0
+499	KWS	B4 — G_R
+500	AD	B0 — 원본
+501	AD	B1 — 직렬 전체
+502	AD	B2 — G_V
+503	AD	B3 — G_0
+504	AD	B4 — G_R
+
+각 boot에서 Pass A/B/C를 사용한다.
+
+각 Pass:
+
+Warm-up 1회
+
+측정 4회
+
+신규 전체:
+
+8 boot
+
+120 RUN
+
+기존 boot 487·488을 포함한 KWS·AD의 전체 측정 구성이 완성되도록 한다.
+
+각 단계의 기존 Gate와 중단 조건을 유지한다.
+
+KWS 그룹 계측에서 완료 경계 또는 PMU_MASK 기능 검증이 실패하면 AD로 진행하지 않는다.
+
+추가 boot 및 재측정은 허용하지 않는다.
+
+5. PMU_MASK 및 그룹 귀속 검증
+
+다음 사항을 반드시 구분하여 판정한다.
+
+PMU_MASK Functionality
+
+실제로 지정한 구간의 PMU 계측을 활성화하거나 비활성화하는가?
+
+Group Partition Consistency
+
+B2/B3/B4의 그룹별 계수와 B1 직렬 전체의 계수가 일관되는가?
+
+Independent Reference Agreement
+
+KWS G_V와 G_0의 MAC_ACTIVE가 기존 독립 기준 및 H1-UC 예측과 일치하는가?
+
+Temporal Attribution Validity
+
+완료 장벽이 각 그룹의 실행 완료를 보장하여 다른 그룹의 활동이 섞이지 않는가?
+
+이 네 가지는 별도로 판정한다.
+
+단순히 그룹 계수 합이 전체 계수와 같다는 이유로 귀속 VALIDATED를 선언하지 않는다.
+
+KERNEL_WAIT n=0이 mem2mem DMA 완료를 보장하지 않는다는 기존 한계를 유지한다.
+
+관련 데이터 전송이 그룹의 완료 경계를 넘는 경우 해당 그룹의 메모리 비용 귀속을 제한한다.
+
+6. Compute / Unit 분석
+
+각 그룹에서 다음을 분석한다.
+
+NPU_ACTIVE
+
+MAC_ACTIVE
+
+MAC_DPU_ACTIVE
+
+AO_ACTIVE
+
+WD_ACTIVE
+
+WD_STALLED
+
+SRAM/EXT traffic
+
+AXI 요청 및 포트 활동
+
+KWS에서 다음을 검증한다.
+
+G_V의 H1-UC 예상 MAC_ACTIVE 11,700
+
+G_0과 기존 F5 독립 측정의 관계
+
+G_R의 잔여 MAC 활동
+
+그룹 계수 합과 B1 직렬 전체 계수
+
+AD에서는 다음을 검증한다.
+
+G_V의 실제 MAC_ACTIVE
+
+G_0의 실제 MAC_ACTIVE
+
+G_R의 실제 MAC_ACTIVE
+
+기존 Compute Residual 33,192사이클과 그룹 실측의 관계
+
+그룹 실측값을 모델 전체의 비직렬 연산별 활동으로 직접 이전하지 않는다.
+
+직렬화가 MAC_ACTIVE 자체를 변경하는 경우 그 결과를 별도로 분석한다.
+
+7. Execution / Pipeline 분석
+
+KWS에서는 기존 결과가 다음과 같다.
+
+원본 NPU_ACTIVE: 91,444.5
+
+직렬 NPU_ACTIVE: 105,074.5
+
+직렬화에 따른 증가: 13,630 cycles, 약 14.9%
+
+이것은 직렬화에 따른 실행시간 변화 관측이다.
+
+13,630사이클을 원래 모델의 순수 커널 간 중첩 이득으로 확정하지 않는다.
+
+AD에서도 동일한 분석을 수행한다.
+
+다음 항목을 비교한다.
+
+원본과 직렬 모델의 실행시간
+
+MAC/DPU/AO/WD 활동 변화
+
+메모리 전송량 변화
+
+AXI 포트별 트래픽 변화
+
+그룹별 실행시간 및 활동
+
+장벽 삽입과 실행 의존성의 영향 후보
+
+원래 실행 구조와 직렬 실행 구조가 다르다는 사실을 모든 모델 수준 결론에 반영한다.
+
+8. Vela Fidelity
+
+Vela 비용 항목을 엄격히 구분한다.
+
+cycles_npu
+
+cycles_total
+
+연산별 Compute cycles
+
+SRAM cycles
+
+DRAM cycles
+
+연산별 Estimated Total cycles
+
+이번 실험의 공식 Vela 비용 비교에서는 사전 동결된 cycles_total 정의를 사용한다.
+
+과거 cycles_npu 기반 Board/Vela 비율과 직접 혼용하지 않는다.
+
+그룹별로 다음을 비교한다.
+
+Vela 예상 비용
+
+직렬 그룹 NPU_ACTIVE
+
+Board/Vela ratio
+
+예측 오차 방향
+
+오차 크기
+
+측정 변동과 오차의 상대적 크기
+
+Vela의 연산별 max 비용 합산과 실제 직렬 실행이 동일한 비용 모델이라고 가정하지 않는다.
+
+그룹별 비용 차이를 Unit/AXI 활동과 연결하되 검증되지 않은 내부 메커니즘은 원인으로 확정하지 않는다.
+
+9. 최종 판정 및 종료
+
+기존 X3 판정 체계를 유지한다.
+
+Measurement Validity
+
+Baseline Reproducibility
+
+PMU_MASK Functionality
+
+Group Attribution
+
+Compute Explanation
+
+Serialization Effect
+
+Vela Fidelity
+
+Amendment C의 수정 범위는 그룹 창 NPU_ACTIVE 안정성 기준뿐이다.
+
+보드 실행 중 새로운 문제를 발견하더라도 계약을 수정하지 않는다.
+
+실험 완료 또는 중단 후에는 다음을 명확히 보고한다.
+
+실제로 검증된 그룹 귀속 수준
+
+KWS·AD의 Compute Residual 개선 여부
+
+원본/직렬 NPU_ACTIVE 차이
+
+Vela 비용 예측과의 관계
+
+아직 설명할 수 없는 Unit/Pipeline 비용
+
+실제 7개 모델에 적용할 수 있는 범위
+
+이번 Amendment C 종료 후 X3는 성공·실패와 관계없이 종료한다.
+
+추가적인 X3 재측정이나 Amendment D를 제안하지 않는다.
+
+남은 연구 질문은 전체 Hardware–Compiler Characterization 관점에서 재평가한다.
+
+10. Research Direction & Guardrails
+
+장기 연구 목표는 Ethos-U85 Hardware–Compiler Performance Analysis다.
+
+연구는 네 축을 균형 있게 유지한다.
+
+Compute/Unit — MAC·DPU·AO·WD, PartKernel·DW·FC의 처리율과 형상 특성
+
+Memory/Pipeline/AXI — 데이터 공급, 재사용, Burst, 요청, 포트, 실행 중첩
+
+Vela Fidelity — 예측 오차의 크기와 방향, 컴파일러 비용 모델의 한계
+
+Model-level — 7개 MLEK 모델의 NPU_ACTIVE 및 효율 설명력
+
+이번 Amendment C는 그룹 계측의 안정성 문제를 해결하고 기존 X3 연구 질문을 최종 검증하기 위한 것이다.
+
+새로운 하드웨어 연구 질문이나 측정 대상을 추가하지 않는다.
+
+실험 종료 후에는 다음을 수행한다.
+
+KWS·AD의 설명력 변화 정리
+
+X3 방법론의 유효 범위와 한계 기록
+
+기존 7개 모델 연구 공백 재평가
+
+H1-UC, SRAM 배치 및 PMU_MASK에 대한 반복 추적 종료
+
+미해결 Unit/AXI 및 Vela Fidelity 질문의 중요도 재평가
+
+새로운 실험은 기존에 검증된 결과를 반복하는 것이 아니라 실제 새로운 Hardware Characterization 또는 Vela Fidelity 근거를 제공해야 한다.
+
+특정 문제 하나가 전체 연구의 진행을 장기간 지연시키지 않도록 한다.
+
+11. User Request & Decision Log
+
+docs/plan/research_direction_and_decision_log.md에 다음 사항을 누적한다.
+
+Amendment B GS FAIL 수용
+
+boot 489 원시 결과 및 실패 판정 보존
+
+KWS B0/B1의 유효 결과 재사용
+
+그룹 창 NPU_ACTIVE 안정성 기준 수정 승인
+
+KWS cap 2,423 / AD cap 2,596
+
+신규 boot 497–504, 총 8 boot / 120 RUN 승인
+
+X3 누적 상한 12 boot / 180 RUN
+
+Amendment C는 마지막 X3 보완 실행
+
+신규 Amendment 및 자동 재측정 금지
+
+cycles_npu와 cycles_total 엄격히 구분
+
+X3 종료 후 전체 연구 방향으로 복귀
+
+사용자에게 선택지를 요구하지 않음
+
+기존 사용자 결정 기록은 삭제하거나 덮어쓰지 않는다.
+
+12. 최종 보고
+
+Amendment C 계약·Preflight·결과 커밋
+
+안정성 기준 변경 및 사전 동결 근거
+
+실제 boot/RUN 및 중단 여부
+
+PMU_MASK 기능 검증
+
+그룹 귀속 검증
+
+KWS·AD 그룹별 MAC/DPU/AO/WD
+
+그룹별 SRAM/EXT 및 AXI
+
+원본과 직렬 NPU_ACTIVE
+
+Compute Residual 재평가
+
+Vela cycles_total 기준 Fidelity
+
+측정 변동성과 결론의 한계
+
+모델 수준 설명력 변화
+
+테스트·Mutation·결과 불변성
+
+연구 방향·결정 로그
+
+X3 최종 판정
+
+후속 연구의 단일 우선순위 권고
+
+최종 지시: Amendment C의 안정성 기준을 사전에 동결하고 Preflight를 완료하라. 이후 boot 497–504에서 최대 8 boot / 120 RUN을 실행하고, 기존 boot 487·488과 통합 분석하라. 이번 실행을 끝으로 X3를 종료하며, 추가 실험 없이 최종 보고하라.
