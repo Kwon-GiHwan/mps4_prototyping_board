@@ -1,0 +1,1224 @@
+{
+ "contract": "evidence/stage6f0/contract.md",
+ "groups": {
+  "ad_medium_int8": {
+   "G_0": {
+    "mac": 16128.0,
+    "npu": 20753.0,
+    "npu_range": 1359,
+    "ops": [
+     0
+    ],
+    "p_over_m": 2.2857142857142856,
+    "predicted": 36864.0,
+    "status": "EXTRAPOLATION_REFUTED"
+   },
+   "G_R": {
+    "mac": 17064.0,
+    "npu": 64766.5,
+    "npu_range": 973,
+    "ops": [
+     1,
+     3,
+     5,
+     7,
+     9,
+     10,
+     12
+    ],
+    "p_over_m": 0.9071729957805907,
+    "predicted": 15480.0,
+    "status": "NOT_TESTABLE"
+   },
+   "G_V": {
+    "mac": 60480.0,
+    "npu": 79780.0,
+    "npu_range": 350,
+    "ops": [
+     2,
+     4,
+     6,
+     8
+    ],
+    "p_over_m": 1.0,
+    "predicted": 60480.0,
+    "status": "PREDICTION_AGREES"
+   }
+  },
+  "kws_micronet_m": {
+   "G_0": {
+    "mac": 26090.0,
+    "npu": 31070.0,
+    "npu_range": 479,
+    "ops": [
+     0
+    ],
+    "p_over_m": 1.0,
+    "predicted": 26090.0,
+    "status": "PREDICTION_AGREES"
+   },
+   "G_R": {
+    "mac": 18660.0,
+    "npu": 47805.0,
+    "npu_range": 550,
+    "ops": [
+     1,
+     3,
+     5,
+     7,
+     8,
+     9,
+     10,
+     12
+    ],
+    "p_over_m": 0.6975817256162915,
+    "predicted": 13016.875,
+    "status": "EXTRAPOLATION_REFUTED"
+   },
+   "G_V": {
+    "mac": 11700.0,
+    "npu": 26117.0,
+    "npu_range": 871,
+    "ops": [
+     2,
+     4,
+     6
+    ],
+    "p_over_m": 1.0,
+    "predicted": 11700.0,
+    "status": "PREDICTION_AGREES"
+   }
+  }
+ },
+ "models": {
+  "ad_medium_int8": {
+   "axi_legacy": {
+    "bytes_per_mac": "0.04016532064557687",
+    "ext_bytes": "705360.0",
+    "ext_rd_burst": "13.274314965371875",
+    "ext_rd_port_imbalance": "0.0008166228109971872",
+    "ext_rd_req_stall": "0.1312468964086746",
+    "sram_bytes": "1798816.0",
+    "sram_rd_burst": "14.189901428284047",
+    "sram_rd_req_stall": "0.000215319643330709",
+    "vela_dram_bytes": "761904.0",
+    "vela_sram_bytes": "2233280.0"
+   },
+   "compute_6d": "NOT_EXPLAINED",
+   "compute_6f": "DECOMPOSED_PARTIALLY_PREDICTED",
+   "coverage": {
+    "D": 1.0,
+    "P": 60480.0,
+    "P_ext_6d": 112824.0,
+    "P_ext_6f": 75960.0,
+    "P_over_M": 0.6456571867794004,
+    "V": 0.6456571867794004,
+    "any_evidence": true,
+    "c": 0.9213528474312682,
+    "extrap_dependence": 0.05909815303836352,
+    "share": {
+     "CLASS": 0.0,
+     "CONFIGURATION": 0.0,
+     "DIRECT_IN_MODEL": 0.9213528474312682,
+     "DIRECT_ISOLATED": 0.0,
+     "EXTRAPOLATED": 0.030716996820362,
+     "REFUTED": 0.028381156218001524,
+     "UNSUPPORTED_OR_UNSTABLE": 0.019548999530368236
+    }
+   },
+   "fidelity_6f": "GROUP_DIRECTION_MEASURED",
+   "groups": {
+    "G_0": {
+     "mac": 16128.0,
+     "npu": 20753.0,
+     "npu_range": 1359,
+     "ops": [
+      0
+     ],
+     "p_over_m": 2.2857142857142856,
+     "predicted": 36864.0,
+     "status": "EXTRAPOLATION_REFUTED"
+    },
+    "G_R": {
+     "mac": 17064.0,
+     "npu": 64766.5,
+     "npu_range": 973,
+     "ops": [
+      1,
+      3,
+      5,
+      7,
+      9,
+      10,
+      12
+     ],
+     "p_over_m": 0.9071729957805907,
+     "predicted": 15480.0,
+     "status": "NOT_TESTABLE"
+    },
+    "G_V": {
+     "mac": 60480.0,
+     "npu": 79780.0,
+     "npu_range": 350,
+     "ops": [
+      2,
+      4,
+      6,
+      8
+     ],
+     "p_over_m": 1.0,
+     "predicted": 60480.0,
+     "status": "PREDICTION_AGREES"
+    }
+   },
+   "mac_active": 93672.0,
+   "npu_active": 145949.5,
+   "npu_range": 1774,
+   "prospective_6d": "NOT_EXPLAINED",
+   "reproduces_6d": true,
+   "runtime_6f": "SERIAL_DECOMPOSITION_ONLY",
+   "runtime_bounds": {
+    "mac_over_npu": 0.6418110373793675,
+    "unit_max_over_npu": 0.6418110373793675
+   },
+   "unit": {
+    "ao_active": 41503.5,
+    "ext_rd": 44084.0,
+    "ext_wr": 1.0,
+    "mac_active": 93672.0,
+    "mac_dpu_active": 93672.0,
+    "sram_rd": 70538.0,
+    "sram_wr": 41888.0,
+    "wd_active": 21319.0,
+    "wd_stalled": 117221.5
+   },
+   "unit_over_npu": {
+    "ao_active": 0.28436890842380413,
+    "mac_active": 0.6418110373793675,
+    "mac_dpu_active": 0.6418110373793675,
+    "wd_active": 0.14607107252851156,
+    "wd_stalled": 0.8031647933017927
+   },
+   "vela": {
+    "abs_error": -2378.5,
+    "board_over_npu": 1.0404378479722263,
+    "board_over_total": 0.9839645919853298,
+    "cancellation": "NO_CANCELLATION_INDICATED",
+    "cls_npu_historical": "ESTIMATE_AGREEMENT",
+    "cls_total": "AGREE",
+    "cycles_npu": 140277.0,
+    "cycles_total": 148328.0,
+    "families": {
+     "AO_ELEMENTWISE": {
+      "mem_share_within": 0.0,
+      "share": 0.009357639825252144
+     },
+     "DF1x1": {
+      "mem_share_within": 0.09773620874538305,
+      "share": 0.565840569548568
+     },
+     "DW": {
+      "mem_share_within": 0.6335569817191754,
+      "share": 0.27733131977778974
+     },
+     "PK3x3": {
+      "mem_share_within": 1.0,
+      "share": 0.14747047084839005
+     }
+    },
+    "mem_dominated_share": 0.3784787767650073,
+    "over_share": 0.03068158196614032,
+    "rel_error": -0.01603540801467019,
+    "under_share": 0.0,
+    "x3_groups": {
+     "G_0": {
+      "cls": "INSUFFICIENT_EVIDENCE",
+      "npu": 20753.0,
+      "npu_range": 1359.0,
+      "ratio": 0.9487519429459632,
+      "vela": 21874.0
+     },
+     "G_R": {
+      "cls": "UNDER",
+      "npu": 64766.5,
+      "npu_range": 973.0,
+      "ratio": 1.186264813084968,
+      "vela": 54597.0
+     },
+     "G_V": {
+      "cls": "UNDER",
+      "npu": 79780.0,
+      "npu_range": 350.0,
+      "ratio": 1.1102606565818223,
+      "vela": 71857.0
+     }
+    }
+   }
+  },
+  "kws_micronet_m": {
+   "axi_legacy": {
+    "bytes_per_mac": "0.05784389553540573",
+    "ext_bytes": "253056.0",
+    "ext_rd_burst": "9.829086389061528",
+    "ext_rd_port_imbalance": "0.027252608283275373",
+    "ext_rd_req_stall": "0.09872807782188037",
+    "sram_bytes": "646784.0",
+    "sram_rd_burst": "6.791729097992208",
+    "sram_rd_req_stall": "0.004283761099629634",
+    "vela_dram_bytes": "319792.0",
+    "vela_sram_bytes": "1007632.0"
+   },
+   "compute_6d": "PARTIALLY_EXPLAINED",
+   "compute_6f": "DECOMPOSED_PARTIALLY_PREDICTED",
+   "coverage": {
+    "D": 1.0,
+    "P": 42571.25,
+    "P_ext_6d": 50806.875,
+    "P_ext_6f": 50806.875,
+    "P_over_M": 0.754140832595217,
+    "V": 0.6694419840566873,
+    "any_evidence": true,
+    "c": 0.6873398082018201,
+    "extrap_dependence": 0.31266019179817994,
+    "share": {
+     "CLASS": 0.03847303018085474,
+     "CONFIGURATION": 0.0,
+     "DIRECT_IN_MODEL": 0.6488667780209654,
+     "DIRECT_ISOLATED": 0.0,
+     "EXTRAPOLATED": 0.31266019179817994,
+     "REFUTED": 0.0,
+     "UNSUPPORTED_OR_UNSTABLE": 0.0
+    }
+   },
+   "fidelity_6f": "GROUP_DIRECTION_MEASURED",
+   "groups": {
+    "G_0": {
+     "mac": 26090.0,
+     "npu": 31070.0,
+     "npu_range": 479,
+     "ops": [
+      0
+     ],
+     "p_over_m": 1.0,
+     "predicted": 26090.0,
+     "status": "PREDICTION_AGREES"
+    },
+    "G_R": {
+     "mac": 18660.0,
+     "npu": 47805.0,
+     "npu_range": 550,
+     "ops": [
+      1,
+      3,
+      5,
+      7,
+      8,
+      9,
+      10,
+      12
+     ],
+     "p_over_m": 0.6975817256162915,
+     "predicted": 13016.875,
+     "status": "EXTRAPOLATION_REFUTED"
+    },
+    "G_V": {
+     "mac": 11700.0,
+     "npu": 26117.0,
+     "npu_range": 871,
+     "ops": [
+      2,
+      4,
+      6
+     ],
+     "p_over_m": 1.0,
+     "predicted": 11700.0,
+     "status": "PREDICTION_AGREES"
+    }
+   },
+   "mac_active": 56450.0,
+   "npu_active": 91824.5,
+   "npu_range": 2423,
+   "prospective_6d": "PARTIALLY_EXPLAINED",
+   "reproduces_6d": true,
+   "runtime_6f": "SERIAL_DECOMPOSITION_ONLY",
+   "runtime_bounds": {
+    "mac_over_npu": 0.6147596774281374,
+    "unit_max_over_npu": 0.6147596774281374
+   },
+   "unit": {
+    "ao_active": 17825.0,
+    "ext_rd": 15815.0,
+    "ext_wr": 1.0,
+    "mac_active": 56450.0,
+    "mac_dpu_active": 49495.0,
+    "sram_rd": 22664.0,
+    "sram_wr": 17760.0,
+    "wd_active": 11415.0,
+    "wd_stalled": 64094.0
+   },
+   "unit_over_npu": {
+    "ao_active": 0.19412030558293267,
+    "mac_active": 0.6147596774281374,
+    "mac_dpu_active": 0.5390173646466901,
+    "wd_active": 0.12431322795114594,
+    "wd_stalled": 0.6980054342795223
+   },
+   "vela": {
+    "abs_error": -10423.5,
+    "board_over_npu": 1.0637192437792502,
+    "board_over_total": 0.8980566857053439,
+    "cancellation": "NO_CANCELLATION_INDICATED",
+    "cls_npu_historical": "ESTIMATE_AGREEMENT",
+    "cls_total": "INSUFFICIENT_EVIDENCE",
+    "cycles_npu": 86324.0,
+    "cycles_total": 102248.0,
+    "families": {
+     "AO_ELEMENTWISE": {
+      "mem_share_within": 0.0,
+      "share": 0.06885220248806823
+     },
+     "DF1x1": {
+      "mem_share_within": 1.0,
+      "share": 0.4354999608794304
+     },
+     "DW": {
+      "mem_share_within": 0.8974761105842877,
+      "share": 0.2681519442923089
+     },
+     "FIRST_CONV": {
+      "mem_share_within": 0.0,
+      "share": 0.22749589234019246
+     }
+    },
+    "mem_dominated_share": 0.6761599248885064,
+    "over_share": 0.04859751180739546,
+    "rel_error": -0.10194331429465613,
+    "under_share": 0.17639096878239835,
+    "x3_groups": {
+     "G_0": {
+      "cls": "UNDER",
+      "npu": 31070.0,
+      "npu_range": 479.0,
+      "ratio": 1.3357121361936288,
+      "vela": 23261.0
+     },
+     "G_R": {
+      "cls": "OVER",
+      "npu": 47805.0,
+      "npu_range": 550.0,
+      "ratio": 0.8605605659664093,
+      "vela": 55551.0
+     },
+     "G_V": {
+      "cls": "INSUFFICIENT_EVIDENCE",
+      "npu": 26117.0,
+      "npu_range": 871.0,
+      "ratio": 1.1143966547192354,
+      "vela": 23436.0
+     }
+    }
+   }
+  },
+  "mobilenet_v2_1.0_224_INT8": {
+   "axi_legacy": {
+    "bytes_per_mac": "0.07572397373573767",
+    "ext_bytes": "5585664.0",
+    "ext_rd_burst": "12.887391434561247",
+    "ext_rd_port_imbalance": "9.627610659424933e-05",
+    "ext_rd_req_stall": "0.09722277746995595",
+    "sram_bytes": "17190256.0",
+    "sram_rd_burst": "10.963100532720786",
+    "sram_rd_req_stall": "0.00023578661849853183",
+    "vela_dram_bytes": "6869120.0",
+    "vela_sram_bytes": "19443134.0"
+   },
+   "compute_6d": "QUALITATIVE_SUPPORT_ONLY",
+   "compute_6f": "QUALITATIVE_SUPPORT_ONLY",
+   "coverage": {
+    "D": 0.0,
+    "P": 103992.0,
+    "P_ext_6d": 462731.0,
+    "P_ext_6f": 462731.0,
+    "P_over_M": 0.18092015414191145,
+    "V": 0.0,
+    "any_evidence": true,
+    "c": 0.1646533824664047,
+    "extrap_dependence": 0.8353466175335953,
+    "share": {
+     "CLASS": 0.025523776613333254,
+     "CONFIGURATION": 0.0,
+     "DIRECT_IN_MODEL": 0.0,
+     "DIRECT_ISOLATED": 0.13912960585307146,
+     "EXTRAPOLATED": 0.8353466175335953,
+     "REFUTED": 0.0,
+     "UNSUPPORTED_OR_UNSTABLE": 0.0
+    }
+   },
+   "fidelity_6f": "FAMILY_DIRECTION_ONLY",
+   "groups": null,
+   "mac_active": 574795.0,
+   "npu_active": 1450096.0,
+   "npu_range": 3643,
+   "prospective_6d": "QUALITATIVE_SUPPORT_ONLY",
+   "reproduces_6d": true,
+   "runtime_6f": "LOWER_BOUND_ONLY",
+   "runtime_bounds": {
+    "mac_over_npu": 0.3963841014663857,
+    "unit_max_over_npu": 0.3963841014663857
+   },
+   "unit": {
+    "ao_active": 440984.5,
+    "ext_rd": 301217.0,
+    "ext_wr": 47887.0,
+    "mac_active": 574795.0,
+    "mac_dpu_active": 496424.0,
+    "sram_rd": 672948.0,
+    "sram_wr": 401443.0,
+    "wd_active": 169343.0,
+    "wd_stalled": 1212443.5
+   },
+   "unit_over_npu": {
+    "ao_active": 0.30410710739151064,
+    "mac_active": 0.3963841014663857,
+    "mac_dpu_active": 0.342338714126513,
+    "wd_active": 0.11678054418466088,
+    "wd_stalled": 0.8361125746157496
+   },
+   "vela": {
+    "abs_error": -908790.0,
+    "board_over_npu": 0.834355206952423,
+    "board_over_total": 0.6147376346292275,
+    "cancellation": "NO_CANCELLATION_INDICATED",
+    "cls_npu_historical": "OVERESTIMATION",
+    "cls_total": "OVER",
+    "cycles_npu": 1737984.0,
+    "cycles_total": 2358886.0,
+    "families": {
+     "AO_ELEMENTWISE": {
+      "mem_share_within": 0.0,
+      "share": 0.006748100586463271
+     },
+     "CPU_OR_SPLIT": {
+      "mem_share_within": 0.014203338391502276,
+      "share": 0.006984228996229577
+     },
+     "DF1x1": {
+      "mem_share_within": 0.9164738819493102,
+      "share": 0.2807359066949399
+     },
+     "DW": {
+      "mem_share_within": 0.8565481188868257,
+      "share": 0.2150616858974957
+     },
+     "PK1x1": {
+      "mem_share_within": 0.9719666258907168,
+      "share": 0.3864048538165897
+     },
+     "PK3x3": {
+      "mem_share_within": 1.0,
+      "share": 0.10406522400828187
+     }
+    },
+    "mem_dominated_share": 0.9212348540794256,
+    "over_share": 0.06887666189039195,
+    "rel_error": -0.38526236537077246,
+    "under_share": 0.20552478946161157,
+    "x3_groups": null
+   }
+  },
+  "rnnoise_INT8": {
+   "axi_legacy": {
+    "bytes_per_mac": "1.5000460023921245",
+    "ext_bytes": "125984.0",
+    "ext_rd_burst": "9.7975",
+    "ext_rd_port_imbalance": "0.009441183975503956",
+    "ext_rd_req_stall": "0.1155172251528237",
+    "sram_bytes": "4448.0",
+    "sram_rd_burst": "1.4444444444444444",
+    "sram_rd_req_stall": "0.0001774168652809753",
+    "vela_dram_bytes": "116500.0",
+    "vela_sram_bytes": "4196.0"
+   },
+   "compute_6d": "QUALITATIVE_SUPPORT_ONLY",
+   "compute_6f": "QUALITATIVE_SUPPORT_ONLY",
+   "coverage": {
+    "D": 0.0,
+    "P": 108.0,
+    "P_ext_6d": 229.0,
+    "P_ext_6f": 229.0,
+    "P_over_M": 0.19708029197080293,
+    "V": 0.0,
+    "any_evidence": true,
+    "c": 0.3179685343637869,
+    "extrap_dependence": 0.30444383107921613,
+    "share": {
+     "CLASS": 0.3179685343637869,
+     "CONFIGURATION": 0.0,
+     "DIRECT_IN_MODEL": 0.0,
+     "DIRECT_ISOLATED": 0.0,
+     "EXTRAPOLATED": 0.30444383107921613,
+     "REFUTED": 0.0,
+     "UNSUPPORTED_OR_UNSTABLE": 0.37758763455699695
+    }
+   },
+   "fidelity_6f": "FAMILY_DIRECTION_ONLY",
+   "groups": null,
+   "mac_active": 548.0,
+   "npu_active": 50508.0,
+   "npu_range": 2079,
+   "prospective_6d": "QUALITATIVE_SUPPORT_ONLY",
+   "reproduces_6d": true,
+   "runtime_6f": "LOWER_BOUND_ONLY",
+   "runtime_bounds": {
+    "mac_over_npu": 0.01084976637364378,
+    "unit_max_over_npu": 0.05573374514928328
+   },
+   "unit": {
+    "ao_active": 300.0,
+    "ext_rd": 7838.0,
+    "ext_wr": 36.0,
+    "mac_active": 548.0,
+    "mac_dpu_active": 428.0,
+    "sram_rd": 143.0,
+    "sram_wr": 135.0,
+    "wd_active": 2815.0,
+    "wd_stalled": 12573.0
+   },
+   "unit_over_npu": {
+    "ao_active": 0.005939653124257543,
+    "mac_active": 0.01084976637364378,
+    "mac_dpu_active": 0.008473905123940762,
+    "wd_active": 0.05573374514928328,
+    "wd_stalled": 0.24893086243763365
+   },
+   "vela": {
+    "abs_error": 17468.0,
+    "board_over_npu": 1.6119231505712643,
+    "board_over_total": 1.5286924939467312,
+    "cancellation": "NO_CANCELLATION_INDICATED",
+    "cls_npu_historical": "UNDERESTIMATION",
+    "cls_total": "UNDER",
+    "cycles_npu": 31334.0,
+    "cycles_total": 33040.0,
+    "families": {
+     "AO_ELEMENTWISE": {
+      "mem_share_within": 0.1002290950744559,
+      "share": 0.05284503631961259
+     },
+     "CPU_OR_SPLIT": {
+      "mem_share_within": 0.0,
+      "share": 0.012076271186440678
+     },
+     "FC": {
+      "mem_share_within": 0.328661595727464,
+      "share": 0.9350786924939467
+     }
+    },
+    "mem_dominated_share": 0.31262106537530265,
+    "over_share": 0.0,
+    "rel_error": 0.5286924939467312,
+    "under_share": 1.0,
+    "x3_groups": null
+   }
+  },
+  "vww4_128_128_INT8": {
+   "axi_legacy": {
+    "bytes_per_mac": "0.13012661454792657",
+    "ext_bytes": "380192.0",
+    "ext_rd_burst": "7.543174603174603",
+    "ext_rd_port_imbalance": "0.003998148226084761",
+    "ext_rd_req_stall": "0.09928264994231678",
+    "sram_bytes": "2069936.0",
+    "sram_rd_burst": "9.318010752688172",
+    "sram_rd_req_stall": "0.006298963800472851",
+    "vela_dram_bytes": "615832.0",
+    "vela_sram_bytes": "2496880.0"
+   },
+   "compute_6d": "QUALITATIVE_SUPPORT_ONLY",
+   "compute_6f": "QUALITATIVE_SUPPORT_ONLY",
+   "coverage": {
+    "D": 0.0,
+    "P": 6660.0,
+    "P_ext_6d": 31024.0,
+    "P_ext_6f": 31024.0,
+    "P_over_M": 0.1178510758776897,
+    "V": 0.0,
+    "any_evidence": true,
+    "c": 0.0991162474507138,
+    "extrap_dependence": 0.7264174031271244,
+    "share": {
+     "CLASS": 0.03254928619986404,
+     "CONFIGURATION": 0.0,
+     "DIRECT_IN_MODEL": 0.0,
+     "DIRECT_ISOLATED": 0.06656696125084977,
+     "EXTRAPOLATED": 0.7264174031271244,
+     "REFUTED": 0.0,
+     "UNSUPPORTED_OR_UNSTABLE": 0.1596736913664174
+    }
+   },
+   "fidelity_6f": "FAMILY_DIRECTION_ONLY",
+   "groups": null,
+   "mac_active": 56512.0,
+   "npu_active": 234669.0,
+   "npu_range": 2924,
+   "prospective_6d": "QUALITATIVE_SUPPORT_ONLY",
+   "reproduces_6d": true,
+   "runtime_6f": "LOWER_BOUND_ONLY",
+   "runtime_bounds": {
+    "mac_over_npu": 0.24081578734302359,
+    "unit_max_over_npu": 0.27508959427960233
+   },
+   "unit": {
+    "ao_active": 64555.0,
+    "ext_rd": 23761.0,
+    "ext_wr": 1.0,
+    "mac_active": 56512.0,
+    "mac_dpu_active": 43612.0,
+    "sram_rd": 69326.0,
+    "sram_wr": 60045.0,
+    "wd_active": 13413.0,
+    "wd_stalled": 134171.5
+   },
+   "unit_over_npu": {
+    "ao_active": 0.27508959427960233,
+    "mac_active": 0.24081578734302359,
+    "mac_dpu_active": 0.1858447430210211,
+    "wd_active": 0.05715710213108677,
+    "wd_stalled": 0.5717478661433764
+   },
+   "vela": {
+    "abs_error": -28742.0,
+    "board_over_npu": 1.0547964293098644,
+    "board_over_total": 0.8908853464737615,
+    "cancellation": "NO_CANCELLATION_INDICATED",
+    "cls_npu_historical": "ESTIMATE_AGREEMENT",
+    "cls_total": "INSUFFICIENT_EVIDENCE",
+    "cycles_npu": 222478.0,
+    "cycles_total": 263411.0,
+    "families": {
+     "AO_ELEMENTWISE": {
+      "mem_share_within": 0.8775176918889493,
+      "share": 0.020921677530551117
+     },
+     "CPU_OR_SPLIT": {
+      "mem_share_within": 0.5490110845468377,
+      "share": 0.1572030021525297
+     },
+     "DF1x1": {
+      "mem_share_within": 0.6779013835396797,
+      "share": 0.2296677056007532
+     },
+     "DW": {
+      "mem_share_within": 0.5385395537525355,
+      "share": 0.2732535847022334
+     },
+     "PK1x1": {
+      "mem_share_within": 0.6856320022477435,
+      "share": 0.216186871467023
+     },
+     "PK3x3": {
+      "mem_share_within": 1.0,
+      "share": 0.10276715854690958
+     }
+    },
+    "mem_dominated_share": 0.6585070479213093,
+    "over_share": 0.08773623385452073,
+    "rel_error": -0.10911465352623846,
+    "under_share": 0.23189666893269884,
+    "x3_groups": null
+   }
+  },
+  "wav2letter_pruned_int8": {
+   "axi_legacy": {
+    "bytes_per_mac": "0.010815907201688409",
+    "ext_bytes": "29694832.0",
+    "ext_rd_burst": "15.250794968657894",
+    "ext_rd_port_imbalance": "1.1976817237035367e-05",
+    "ext_rd_req_stall": "0.18241577554160066",
+    "sram_bytes": "8064560.0",
+    "sram_rd_burst": "13.333093400898306",
+    "sram_rd_req_stall": "2.7844857654747096e-06",
+    "vela_dram_bytes": "33403744.0",
+    "vela_sram_bytes": "12143796.0"
+   },
+   "compute_6d": "PARTIALLY_EXPLAINED",
+   "compute_6f": "PARTIALLY_EXPLAINED",
+   "coverage": {
+    "D": 0.0,
+    "P": 2386944.0,
+    "P_ext_6d": 2983680.0,
+    "P_ext_6f": 2983680.0,
+    "P_over_M": 0.6777621229132131,
+    "V": 0.0,
+    "any_evidence": true,
+    "c": 0.6782966275939547,
+    "extrap_dependence": 0.3217033724060453,
+    "share": {
+     "CLASS": 0.0,
+     "CONFIGURATION": 0.6782966275939547,
+     "DIRECT_IN_MODEL": 0.0,
+     "DIRECT_ISOLATED": 0.0,
+     "EXTRAPOLATED": 0.3217033724060453,
+     "REFUTED": 0.0,
+     "UNSUPPORTED_OR_UNSTABLE": 0.0
+    }
+   },
+   "fidelity_6f": "FAMILY_DIRECTION_ONLY",
+   "groups": null,
+   "mac_active": 3521802.0,
+   "npu_active": 4133297.5,
+   "npu_range": 2571,
+   "prospective_6d": "PARTIALLY_EXPLAINED",
+   "reproduces_6d": true,
+   "runtime_6f": "LOWER_BOUND_ONLY",
+   "runtime_bounds": {
+    "mac_over_npu": 0.8520562577457829,
+    "unit_max_over_npu": 0.8520562577457829
+   },
+   "unit": {
+    "ao_active": 59762.0,
+    "ext_rd": 1836882.0,
+    "ext_wr": 19045.0,
+    "mac_active": 3521802.0,
+    "mac_dpu_active": 3408076.0,
+    "sram_rd": 463085.0,
+    "sram_wr": 40950.0,
+    "wd_active": 1133549.0,
+    "wd_stalled": 2982162.5
+   },
+   "unit_over_npu": {
+    "ao_active": 0.014458673734469876,
+    "mac_active": 0.8520562577457829,
+    "mac_dpu_active": 0.8245416643733,
+    "wd_active": 0.2742481033605735,
+    "wd_stalled": 0.7214971823344436
+   },
+   "vela": {
+    "abs_error": -1628057.5,
+    "board_over_npu": 0.7897701271318007,
+    "board_over_total": 0.7174176040184991,
+    "cancellation": "NO_CANCELLATION_INDICATED",
+    "cls_npu_historical": "OVERESTIMATION",
+    "cls_total": "OVER",
+    "cycles_npu": 5233545.0,
+    "cycles_total": 5761355.0,
+    "families": {
+     "CPU_OR_SPLIT": {
+      "mem_share_within": 0.32196969696969696,
+      "share": 0.0019703698175168862
+     },
+     "DF1x1": {
+      "mem_share_within": 0.07164713023788156,
+      "share": 0.11237339132894952
+     },
+     "PK1D": {
+      "mem_share_within": 0.11464788401161766,
+      "share": 0.8856562388535336
+     }
+    },
+    "mem_dominated_share": 0.11022424412312729,
+    "over_share": 0.8279670178264833,
+    "rel_error": -0.28258239598150087,
+    "under_share": 0.0,
+    "x3_groups": null
+   }
+  },
+  "yolo-fastest_192_face_v4": {
+   "axi_legacy": {
+    "bytes_per_mac": "0.18692239695754959",
+    "ext_bytes": "477824.0",
+    "ext_rd_burst": "7.323933117045171",
+    "ext_rd_port_imbalance": "0.0013970763621494531",
+    "ext_rd_req_stall": "0.05951852445735101",
+    "sram_bytes": "6796448.0",
+    "sram_rd_burst": "10.373511447027289",
+    "sram_rd_req_stall": "0.0009517940834824468",
+    "vela_dram_bytes": "792224.0",
+    "vela_sram_bytes": "7525472.0"
+   },
+   "compute_6d": "QUALITATIVE_SUPPORT_ONLY",
+   "compute_6f": "QUALITATIVE_SUPPORT_ONLY",
+   "coverage": {
+    "D": 0.0,
+    "P": 76752.0,
+    "P_ext_6d": 129199.5,
+    "P_ext_6f": 129199.5,
+    "P_over_M": 0.4473352916491817,
+    "V": 0.0,
+    "any_evidence": true,
+    "c": 0.17938945420906566,
+    "extrap_dependence": 0.8206105457909343,
+    "share": {
+     "CLASS": 0.1396040703052729,
+     "CONFIGURATION": 0.039785383903792784,
+     "DIRECT_IN_MODEL": 0.0,
+     "DIRECT_ISOLATED": 0.0,
+     "EXTRAPOLATED": 0.8206105457909343,
+     "REFUTED": 0.0,
+     "UNSUPPORTED_OR_UNSTABLE": 0.0
+    }
+   },
+   "fidelity_6f": "FAMILY_DIRECTION_ONLY",
+   "groups": null,
+   "mac_active": 171576.0,
+   "npu_active": 447601.5,
+   "npu_range": 2866,
+   "prospective_6d": "QUALITATIVE_SUPPORT_ONLY",
+   "reproduces_6d": true,
+   "runtime_6f": "LOWER_BOUND_ONLY",
+   "runtime_bounds": {
+    "mac_over_npu": 0.38332311218796183,
+    "unit_max_over_npu": 0.46231971966135055
+   },
+   "unit": {
+    "ao_active": 206935.0,
+    "ext_rd": 29347.0,
+    "ext_wr": 517.0,
+    "mac_active": 171576.0,
+    "mac_dpu_active": 128487.0,
+    "sram_rd": 236070.0,
+    "sram_wr": 188708.0,
+    "wd_active": 27266.5,
+    "wd_stalled": 323342.0
+   },
+   "unit_over_npu": {
+    "ao_active": 0.46231971966135055,
+    "mac_active": 0.38332311218796183,
+    "mac_dpu_active": 0.2870566787644814,
+    "wd_active": 0.060916909349052674,
+    "wd_stalled": 0.7223881063848088
+   },
+   "vela": {
+    "abs_error": -137158.5,
+    "board_over_npu": 0.9353364148901047,
+    "board_over_total": 0.7654447978657911,
+    "cancellation": "CANCELLATION_POSSIBLE",
+    "cls_npu_historical": "ESTIMATE_AGREEMENT",
+    "cls_total": "OVER",
+    "cycles_npu": 478546.0,
+    "cycles_total": 584760.0,
+    "families": {
+     "AO_ELEMENTWISE": {
+      "mem_share_within": 0.2494802494802495,
+      "share": 0.02467679047814488
+     },
+     "CPU_OR_SPLIT": {
+      "mem_share_within": 0.13823469178783535,
+      "share": 0.008350434366235721
+     },
+     "DF1x1": {
+      "mem_share_within": 0.48944281524926686,
+      "share": 0.163280662151994
+     },
+     "DW": {
+      "mem_share_within": 0.1983932687111964,
+      "share": 0.31014775292427665
+     },
+     "PK1x1": {
+      "mem_share_within": 0.8471963858623439,
+      "share": 0.3925422395512689
+     },
+     "PK3x3": {
+      "mem_share_within": 1.0,
+      "share": 0.1010021205280799
+     }
+    },
+    "mem_dominated_share": 0.582320952185512,
+    "over_share": 0.2140018501387604,
+    "rel_error": -0.2345552021342089,
+    "under_share": 0.3426753006475486,
+    "x3_groups": null
+   }
+  }
+ },
+ "recommendation": {
+  "recommendation": "X_LAT",
+  "table": [
+   {
+    "boots": 12,
+    "criteria": {
+     "a": true,
+     "b": true,
+     "c": true,
+     "d": true,
+     "e": true,
+     "f": true,
+     "g": true,
+     "h": false,
+     "i": true,
+     "j": true
+    },
+    "eligible": true,
+    "excluded": false,
+    "name": "X_LAT",
+    "score": 9
+   },
+   {
+    "boots": 6,
+    "criteria": {
+     "a": true,
+     "b": true,
+     "c": true,
+     "d": true,
+     "e": true,
+     "f": true,
+     "g": false,
+     "h": false,
+     "i": true,
+     "j": true
+    },
+    "eligible": true,
+    "excluded": false,
+    "name": "X_FIRST",
+    "score": 8
+   },
+   {
+    "boots": 6,
+    "criteria": {
+     "a": true,
+     "b": true,
+     "c": true,
+     "d": true,
+     "e": true,
+     "f": true,
+     "g": false,
+     "h": false,
+     "i": true,
+     "j": true
+    },
+    "eligible": true,
+    "excluded": false,
+    "name": "X_DW",
+    "score": 8
+   },
+   {
+    "boots": 9,
+    "criteria": {
+     "a": false,
+     "b": true,
+     "c": false,
+     "d": false,
+     "e": true,
+     "f": true,
+     "g": false,
+     "h": false,
+     "i": false,
+     "j": true
+    },
+    "eligible": false,
+    "excluded": false,
+    "name": "G_DF_EXT",
+    "score": 4
+   },
+   {
+    "boots": 25,
+    "criteria": {
+     "a": false,
+     "b": true,
+     "c": true,
+     "d": false,
+     "e": true,
+     "f": true,
+     "g": true,
+     "h": true,
+     "i": false,
+     "j": true
+    },
+    "eligible": false,
+    "excluded": false,
+    "name": "X3_5M",
+    "score": 7
+   },
+   {
+    "boots": 4,
+    "criteria": {
+     "a": true,
+     "b": false,
+     "c": false,
+     "d": true,
+     "e": true,
+     "f": true,
+     "g": true,
+     "h": false,
+     "i": false,
+     "j": false
+    },
+    "eligible": false,
+    "excluded": true,
+    "name": "X_BARRIER",
+    "score": 5
+   }
+  ]
+ },
+ "serial": {
+  "ad_medium_int8": {
+   "events": {
+    "ao": {
+     "delta": -2.0,
+     "orig": 41481.0,
+     "serial": 41479.0
+    },
+    "axi_387": {
+     "delta": 3441.5,
+     "orig": 40902.0,
+     "serial": 44343.5
+    },
+    "dpu": {
+     "delta": 0.0,
+     "orig": 93672.0,
+     "serial": 93672.0
+    },
+    "ev640": {
+     "delta": -10.0,
+     "orig": 1656.0,
+     "serial": 1646.0
+    },
+    "ev642": {
+     "delta": -18.0,
+     "orig": 22042.0,
+     "serial": 22024.0
+    },
+    "ev656": {
+     "delta": 8.0,
+     "orig": 1663.0,
+     "serial": 1671.0
+    },
+    "ev658": {
+     "delta": 17.0,
+     "orig": 22042.0,
+     "serial": 22059.0
+    },
+    "ext_rd": {
+     "delta": -1.0,
+     "orig": 44084.0,
+     "serial": 44083.0
+    },
+    "mac": {
+     "delta": 0.0,
+     "orig": 93672.0,
+     "serial": 93672.0
+    },
+    "npu_active": {
+     "delta": 18156.0,
+     "orig": 146136.5,
+     "serial": 164292.5
+    },
+    "sram_rd": {
+     "delta": 0.0,
+     "orig": 70538.0,
+     "serial": 70538.0
+    },
+    "sram_wr": {
+     "delta": 0.0,
+     "orig": 41888.0,
+     "serial": 41888.0
+    },
+    "wd": {
+     "delta": -923.5,
+     "orig": 21537.5,
+     "serial": 20614.0
+    },
+    "wd_stalled": {
+     "delta": 1903.0,
+     "orig": 117283.5,
+     "serial": 119186.5
+    }
+   },
+   "group_sum": 165299.5,
+   "partition_holds": true,
+   "partition_tol": 5075.0,
+   "ratios": {
+    "(S-orig)/S": 0.11592896530237538,
+    "(S-orig)/orig": 0.13113082631649178,
+    "(S-serial)/serial": 0.0061293120501544505,
+    "(serial-orig)/orig": 0.12424000848521759
+   },
+   "schedule_invariant_mac": true
+  },
+  "kws_micronet_m": {
+   "events": {
+    "ao": {
+     "delta": -44.5,
+     "orig": 17825.0,
+     "serial": 17780.5
+    },
+    "axi_387": {
+     "delta": 673.0,
+     "orig": 19304.5,
+     "serial": 19977.5
+    },
+    "dpu": {
+     "delta": 0.0,
+     "orig": 49495.0,
+     "serial": 49495.0
+    },
+    "ev640": {
+     "delta": 68.0,
+     "orig": 754.0,
+     "serial": 822.0
+    },
+    "ev642": {
+     "delta": 99.0,
+     "orig": 7832.0,
+     "serial": 7931.0
+    },
+    "ev656": {
+     "delta": -65.0,
+     "orig": 853.0,
+     "serial": 788.0
+    },
+    "ev658": {
+     "delta": -100.0,
+     "orig": 7983.0,
+     "serial": 7883.0
+    },
+    "ext_rd": {
+     "delta": -1.0,
+     "orig": 15815.0,
+     "serial": 15814.0
+    },
+    "mac": {
+     "delta": 0.0,
+     "orig": 56450.0,
+     "serial": 56450.0
+    },
+    "npu_active": {
+     "delta": 13630.0,
+     "orig": 91444.5,
+     "serial": 105074.5
+    },
+    "sram_rd": {
+     "delta": 0.0,
+     "orig": 22664.0,
+     "serial": 22664.0
+    },
+    "sram_wr": {
+     "delta": 0.0,
+     "orig": 17760.0,
+     "serial": 17760.0
+    },
+    "wd": {
+     "delta": -258.0,
+     "orig": 11383.5,
+     "serial": 11125.5
+    },
+    "wd_stalled": {
+     "delta": -1362.5,
+     "orig": 64319.0,
+     "serial": 62956.5
+    }
+   },
+   "group_sum": 104992.0,
+   "partition_holds": true,
+   "partition_tol": 4069.0,
+   "ratios": {
+    "(S-orig)/S": 0.12903364065833586,
+    "(S-orig)/orig": 0.14814997074728387,
+    "(S-serial)/serial": -0.0007851571979880942,
+    "(serial-orig)/orig": 0.149052157319467
+   },
+   "schedule_invariant_mac": true
+  }
+ },
+ "x3_ta": "TA profile 1; EXT RLATENCY 500; image f0baf8c (bram 9b1844a3), placement 0"
+}
