@@ -1,0 +1,2 @@
+# Stage 6C (evidence/stage6c/contract.md): WAIT_WFE, no trace, passes A, B, C
+wfe 0 0 off 1,2,3
