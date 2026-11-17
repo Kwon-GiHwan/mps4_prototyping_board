@@ -1,0 +1,205 @@
+=== 2026-11-17T20:42:14Z step 4: user python3 mcc.py USB_ON 4 && sleep 5 && test -e /dev/sdb1
+USB_ON
+Enabling debug USB...
+
+Cmd> 
+=== 2026-11-17T20:42:24Z step 5: deploy_mlek /home/gihwan/evsweep_x3c_img /home/gihwan/evsweep/evidence_x3c
+images.txt: OK
+APP.BIN: OK
+VECTORS.BIN: OK
+DDR.BIN: OK
+DEPLOY VERIFIED: source == destination
+3b4af743c13aa25f4335a30b739f196187ed023ea9f3f1d3a372a851b9c630c3  boot.bin
+9b1844a3fde3443779d341f890cd2d106ab92e593020f8e336fbc5f991dd740f  bram.bin
+374708fff7719dd5979ec875d56cd2286f6d3cf7ec317a3b25632aab28ec37bb  ddr.bin
+af688281435a73dda3b2247845149817ecc7a9bbdff5a3ccd2e4dfa52875423f  images.txt
+DEPLOY DONE: unmounted, safe to REBOOT
+=== 2026-11-17T20:42:25Z step 6: user OUTPUTS=1 STOP_ON_INVALID=1 RUN_TIMEOUT=600 sh run_driver_campaign.sh /home/gihwan/evsweep_x3c_img /home/gihwan/evsweep_x3c_run /home/gihwan/evsweep_x3c_img/ids.txt /home/gihwan/evsweep_x3c_img/plan_c01.txt 5
+mcc boot log: 10551 bytes -> /home/gihwan/evsweep_x3c_run/conds/x3_kws_B2/mcc_boot.log
+Image loaded from \SOFTWARE\boot.bin
+Image loaded from \SOFTWARE\bram.bin
+Image loaded from \SOFTWARE\ddr.bin
+DDR memory test at 0x70000000: PASSED
+Clearing SCC CPUWAIT (0xFFFFFFFF80000000:0x00000000)
+--- boot497 x3_kws_B2 @/home/gihwan/evsweep_x3c_img/conditions.txt campaign exit=0
+15
+CAMPAIGN DONE
+=== 2026-11-17T20:45:30Z step 7: user python3 host/analysis/stage6ex3.py boot-check b=/home/gihwan/evsweep_x3b_run,c=/home/gihwan/evsweep_x3c_run /home/gihwan/evsweep_x3c_img /home/gihwan/evsweep_x3_ref/m7 /home/gihwan/evsweep_x3_ref/caps_14077be.json x3_kws_B2
+{
+ "key": "x3_kws_B2",
+ "status": "VALID",
+ "reasons": []
+}
+=== 2026-11-17T20:45:30Z step 8: user OUTPUTS=1 STOP_ON_INVALID=1 RUN_TIMEOUT=600 sh run_driver_campaign.sh /home/gihwan/evsweep_x3c_img /home/gihwan/evsweep_x3c_run /home/gihwan/evsweep_x3c_img/ids.txt /home/gihwan/evsweep_x3c_img/plan_c02.txt 5
+mcc boot log: 10390 bytes -> /home/gihwan/evsweep_x3c_run/conds/x3_kws_B3/mcc_boot.log
+Image loaded from \SOFTWARE\boot.bin
+Image loaded from \SOFTWARE\bram.bin
+Image loaded from \SOFTWARE\ddr.bin
+DDR memory test at 0x70000000: PASSED
+Clearing SCC CPUWAIT (0xFFFFFFFF80000000:0x00000000)
+--- boot498 x3_kws_B3 @/home/gihwan/evsweep_x3c_img/conditions.txt campaign exit=0
+15
+CAMPAIGN DONE
+=== 2026-11-17T20:48:35Z step 9: user python3 host/analysis/stage6ex3.py boot-check b=/home/gihwan/evsweep_x3b_run,c=/home/gihwan/evsweep_x3c_run /home/gihwan/evsweep_x3c_img /home/gihwan/evsweep_x3_ref/m7 /home/gihwan/evsweep_x3_ref/caps_14077be.json x3_kws_B3
+{
+ "key": "x3_kws_B3",
+ "status": "VALID",
+ "reasons": []
+}
+=== 2026-11-17T20:48:35Z step 10: user OUTPUTS=1 STOP_ON_INVALID=1 RUN_TIMEOUT=600 sh run_driver_campaign.sh /home/gihwan/evsweep_x3c_img /home/gihwan/evsweep_x3c_run /home/gihwan/evsweep_x3c_img/ids.txt /home/gihwan/evsweep_x3c_img/plan_c03.txt 5
+mcc boot log: 10390 bytes -> /home/gihwan/evsweep_x3c_run/conds/x3_kws_B4/mcc_boot.log
+Image loaded from \SOFTWARE\boot.bin
+Image loaded from \SOFTWARE\bram.bin
+Image loaded from \SOFTWARE\ddr.bin
+DDR memory test at 0x70000000: PASSED
+Clearing SCC CPUWAIT (0xFFFFFFFF80000000:0x00000000)
+--- boot499 x3_kws_B4 @/home/gihwan/evsweep_x3c_img/conditions.txt campaign exit=0
+15
+CAMPAIGN DONE
+=== 2026-11-17T20:51:39Z step 11: user python3 host/analysis/stage6ex3.py boot-check b=/home/gihwan/evsweep_x3b_run,c=/home/gihwan/evsweep_x3c_run /home/gihwan/evsweep_x3c_img /home/gihwan/evsweep_x3_ref/m7 /home/gihwan/evsweep_x3_ref/caps_14077be.json x3_kws_B4
+{
+ "key": "x3_kws_B4",
+ "status": "VALID",
+ "reasons": []
+}
+=== 2026-11-17T20:51:40Z step 12: user python3 host/analysis/stage6ex3.py gate-gm b=/home/gihwan/evsweep_x3b_run,c=/home/gihwan/evsweep_x3c_run /home/gihwan/evsweep_x3c_img /home/gihwan/evsweep_x3_ref/m7 /home/gihwan/evsweep_x3_ref/caps_14077be.json kws_micronet_m
+{
+ "verdict": "PASS",
+ "m2": {
+  "holds": true,
+  "each": {
+   "B2": true,
+   "B3": true,
+   "B4": true
+  }
+ },
+ "m3": {
+  "35": {
+   "holds": true,
+   "whole": 105074.5,
+   "sum": 104992.0,
+   "tol": 4069.0
+  },
+  "48": {
+   "holds": true,
+   "whole": 56450.0,
+   "sum": 56450.0,
+   "tol": 564.5
+  }
+ },
+ "m4": true,
+ "mac_g0": 26090.0
+}
+=== 2026-11-17T20:51:40Z step 13: user OUTPUTS=1 STOP_ON_INVALID=1 RUN_TIMEOUT=600 sh run_driver_campaign.sh /home/gihwan/evsweep_x3c_img /home/gihwan/evsweep_x3c_run /home/gihwan/evsweep_x3c_img/ids.txt /home/gihwan/evsweep_x3c_img/plan_c04.txt 5
+mcc boot log: 10390 bytes -> /home/gihwan/evsweep_x3c_run/conds/x3_ad_B0/mcc_boot.log
+Image loaded from \SOFTWARE\boot.bin
+Image loaded from \SOFTWARE\bram.bin
+Image loaded from \SOFTWARE\ddr.bin
+DDR memory test at 0x70000000: PASSED
+Clearing SCC CPUWAIT (0xFFFFFFFF80000000:0x00000000)
+--- boot500 x3_ad_B0 @/home/gihwan/evsweep_x3c_img/conditions.txt campaign exit=0
+15
+CAMPAIGN DONE
+=== 2026-11-17T20:55:27Z step 14: user python3 host/analysis/stage6ex3.py boot-check b=/home/gihwan/evsweep_x3b_run,c=/home/gihwan/evsweep_x3c_run /home/gihwan/evsweep_x3c_img /home/gihwan/evsweep_x3_ref/m7 /home/gihwan/evsweep_x3_ref/caps_14077be.json x3_ad_B0
+{
+ "key": "x3_ad_B0",
+ "status": "VALID",
+ "reasons": []
+}
+=== 2026-11-17T20:55:27Z step 15: user python3 host/analysis/stage6ex3.py gate-g1 b=/home/gihwan/evsweep_x3b_run,c=/home/gihwan/evsweep_x3c_run /home/gihwan/evsweep_x3c_img /home/gihwan/evsweep_x3_ref/m7 /home/gihwan/evsweep_x3_ref/caps_14077be.json ad_medium_int8
+{
+ "verdict": "PASS",
+ "reasons": [],
+ "npu": {
+  "b0": 146136.5,
+  "m7": 145949.5,
+  "delta": 187.0,
+  "tolerance": 3613.0,
+  "range_b0": 1839.0,
+  "range_m7": 1774.0,
+  "range_cap": 2596.0
+ }
+}
+=== 2026-11-17T20:55:27Z step 16: user OUTPUTS=1 STOP_ON_INVALID=1 RUN_TIMEOUT=600 sh run_driver_campaign.sh /home/gihwan/evsweep_x3c_img /home/gihwan/evsweep_x3c_run /home/gihwan/evsweep_x3c_img/ids.txt /home/gihwan/evsweep_x3c_img/plan_c05.txt 5
+mcc boot log: 10390 bytes -> /home/gihwan/evsweep_x3c_run/conds/x3_ad_B1/mcc_boot.log
+Image loaded from \SOFTWARE\boot.bin
+Image loaded from \SOFTWARE\bram.bin
+Image loaded from \SOFTWARE\ddr.bin
+DDR memory test at 0x70000000: PASSED
+Clearing SCC CPUWAIT (0xFFFFFFFF80000000:0x00000000)
+--- boot501 x3_ad_B1 @/home/gihwan/evsweep_x3c_img/conditions.txt campaign exit=0
+15
+CAMPAIGN DONE
+=== 2026-11-17T20:59:15Z step 17: user python3 host/analysis/stage6ex3.py boot-check b=/home/gihwan/evsweep_x3b_run,c=/home/gihwan/evsweep_x3c_run /home/gihwan/evsweep_x3c_img /home/gihwan/evsweep_x3_ref/m7 /home/gihwan/evsweep_x3_ref/caps_14077be.json x3_ad_B1
+{
+ "key": "x3_ad_B1",
+ "status": "VALID",
+ "reasons": []
+}
+=== 2026-11-17T20:59:15Z step 18: user OUTPUTS=1 STOP_ON_INVALID=1 RUN_TIMEOUT=600 sh run_driver_campaign.sh /home/gihwan/evsweep_x3c_img /home/gihwan/evsweep_x3c_run /home/gihwan/evsweep_x3c_img/ids.txt /home/gihwan/evsweep_x3c_img/plan_c06.txt 5
+mcc boot log: 10390 bytes -> /home/gihwan/evsweep_x3c_run/conds/x3_ad_B2/mcc_boot.log
+Image loaded from \SOFTWARE\boot.bin
+Image loaded from \SOFTWARE\bram.bin
+Image loaded from \SOFTWARE\ddr.bin
+DDR memory test at 0x70000000: PASSED
+Clearing SCC CPUWAIT (0xFFFFFFFF80000000:0x00000000)
+--- boot502 x3_ad_B2 @/home/gihwan/evsweep_x3c_img/conditions.txt campaign exit=0
+15
+CAMPAIGN DONE
+=== 2026-11-17T21:03:03Z step 19: user python3 host/analysis/stage6ex3.py boot-check b=/home/gihwan/evsweep_x3b_run,c=/home/gihwan/evsweep_x3c_run /home/gihwan/evsweep_x3c_img /home/gihwan/evsweep_x3_ref/m7 /home/gihwan/evsweep_x3_ref/caps_14077be.json x3_ad_B2
+{
+ "key": "x3_ad_B2",
+ "status": "VALID",
+ "reasons": []
+}
+=== 2026-11-17T21:03:03Z step 20: user OUTPUTS=1 STOP_ON_INVALID=1 RUN_TIMEOUT=600 sh run_driver_campaign.sh /home/gihwan/evsweep_x3c_img /home/gihwan/evsweep_x3c_run /home/gihwan/evsweep_x3c_img/ids.txt /home/gihwan/evsweep_x3c_img/plan_c07.txt 5
+mcc boot log: 10390 bytes -> /home/gihwan/evsweep_x3c_run/conds/x3_ad_B3/mcc_boot.log
+Image loaded from \SOFTWARE\boot.bin
+Image loaded from \SOFTWARE\bram.bin
+Image loaded from \SOFTWARE\ddr.bin
+DDR memory test at 0x70000000: PASSED
+Clearing SCC CPUWAIT (0xFFFFFFFF80000000:0x00000000)
+--- boot503 x3_ad_B3 @/home/gihwan/evsweep_x3c_img/conditions.txt campaign exit=0
+15
+CAMPAIGN DONE
+=== 2026-11-17T21:06:51Z step 21: user python3 host/analysis/stage6ex3.py boot-check b=/home/gihwan/evsweep_x3b_run,c=/home/gihwan/evsweep_x3c_run /home/gihwan/evsweep_x3c_img /home/gihwan/evsweep_x3_ref/m7 /home/gihwan/evsweep_x3_ref/caps_14077be.json x3_ad_B3
+{
+ "key": "x3_ad_B3",
+ "status": "VALID",
+ "reasons": []
+}
+=== 2026-11-17T21:06:51Z step 22: user OUTPUTS=1 STOP_ON_INVALID=1 RUN_TIMEOUT=600 sh run_driver_campaign.sh /home/gihwan/evsweep_x3c_img /home/gihwan/evsweep_x3c_run /home/gihwan/evsweep_x3c_img/ids.txt /home/gihwan/evsweep_x3c_img/plan_c08.txt 5
+mcc boot log: 10390 bytes -> /home/gihwan/evsweep_x3c_run/conds/x3_ad_B4/mcc_boot.log
+Image loaded from \SOFTWARE\boot.bin
+Image loaded from \SOFTWARE\bram.bin
+Image loaded from \SOFTWARE\ddr.bin
+DDR memory test at 0x70000000: PASSED
+Clearing SCC CPUWAIT (0xFFFFFFFF80000000:0x00000000)
+--- boot504 x3_ad_B4 @/home/gihwan/evsweep_x3c_img/conditions.txt campaign exit=0
+15
+CAMPAIGN DONE
+=== 2026-11-17T21:10:38Z step 23: user python3 host/analysis/stage6ex3.py boot-check b=/home/gihwan/evsweep_x3b_run,c=/home/gihwan/evsweep_x3c_run /home/gihwan/evsweep_x3c_img /home/gihwan/evsweep_x3_ref/m7 /home/gihwan/evsweep_x3_ref/caps_14077be.json x3_ad_B4
+{
+ "key": "x3_ad_B4",
+ "status": "VALID",
+ "reasons": []
+}
+=== 2026-11-17T21:10:38Z step 24: restore_mlek /home/gihwan/evsweep/evidence_x3c /home/gihwan/evsweep_x3c_img
+RESTORE VERIFIED
+cb78a12efd33fa72555b94ee4b8ca6faef4d9504c971c52c6cb47c75096673de  images.txt
+ffa3e5bd0363f791d61f9673074c625865f1e6a8f24e53ee303372c64ef3597d  APP.BIN
+45e943c577e3744104d53cf57c7d0afb369ff68a99e5e6906971d71503f06c92  VECTORS.BIN
+81d37a219a6b4141d0b433796711ab8af2ee2c3c668a28143a3ffe6a574ade98  DDR.BIN
+RESTORE DONE: unmounted, safe to REBOOT then USB_OFF
+=== 2026-11-17T21:10:39Z step 25: user sh postflight.sh
+mcc boot log: 10527 bytes -> /home/gihwan/evsweep/evidence/postflight/mcc_boot.log
+Image loaded from \SOFTWARE\VECTORS.BIN
+Image loaded from \SOFTWARE\APP.BIN
+Image loaded from \SOFTWARE\DDR.BIN
+DDR memory test at 0x70000000: PASSED
+Clearing SCC CPUWAIT (0xFFFFFFFF80000000:0x00000000)
+[functional-v1] PING -> Counters(state=1, version=1, rx_bytes=20, tx_bytes=0, rx_overrun=0, bad_magic=0, bad_version=0, bad_crc=0, length_error=0, sequence_error=0, parser_resync=0)
+
+Cmd> 
+POSTFLIGHT DONE: card withdrawn, board on restored image
+=== 2026-11-17T21:13:20Z SESSION DONE

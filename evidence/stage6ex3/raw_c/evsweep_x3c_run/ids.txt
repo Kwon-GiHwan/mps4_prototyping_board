@@ -1,0 +1,4 @@
+# Stage 6E-X3 sets (= Stage 6C): 1 = pass A (units), 2 = pass B (traffic), 3 = pass C (requests / ports)
+35 48 51 53 55 64 80 81
+35 128 130 132 135 384 386 391
+35 131 142 387 640 642 656 658
