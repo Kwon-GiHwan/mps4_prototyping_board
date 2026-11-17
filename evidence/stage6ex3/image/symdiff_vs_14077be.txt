@@ -1,0 +1,33 @@
+ec0e8c3b067525e91028b20a2c48d649fe5e0c8ce5da039bb52b0c86d2669939  /work/s6be2ed_img_l500/image/bram.bin
+980c980
+< T drwl_parse 00000108
+---
+> T drwl_parse 00000118
+982c982
+< T ethosu_address_remap 00000130
+---
+> T ethosu_address_remap 00000138
+1064c1064
+< T pmu_session_arm 000000bc
+---
+> T pmu_session_arm 000000d0
+1068a1069
+> T pmu_session_set_mask_en 00000014
+1076c1077
+< T record_serialise 000009d6
+---
+> T record_serialise 00000a0a
+1079c1080
+< T runner_poll 00000ec8
+---
+> T runner_poll 00000edc
+1277a1279
+> b mask_en 00000004
+1284c1286
+< b out.3 00000188
+---
+> b out.3 00000190
+1317c1319
+< b wl 00000094
+---
+> b wl 00000098

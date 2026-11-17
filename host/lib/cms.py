@@ -69,6 +69,39 @@ def gate(stream: bytes, first: int, end: int) -> bytes:
     return insert(stream, at)
 
 
+OP_KERNEL_WAIT = 18   # cmd0, parameter n in bits 31:16 (Vela's KERNEL_WAIT n=1 = 0x00010012; Stage 6E-X3 preflight)
+
+
+def kernel_wait(n: int) -> int:
+    """NPU_OP_KERNEL_WAIT: wait until at most n issued kernel operations are incomplete (TRM 102685; n = 0: all done)."""
+    if not 0 <= n <= 0xFFFF:
+        raise ValueError(f"KERNEL_WAIT n={n}")
+    return OP_KERNEL_WAIT | n << 16
+
+
+def serial_mask(stream: bytes, bits: list[int]) -> bytes:
+    """Stage 6E-X3: at every boundary (start, and right after each kernel op instruction) insert KERNEL_WAIT n=0 then
+    PMU_MASK: bits[i] for kernel op i (window i = op i's setup and execution, closed by the next KERNEL_WAIT), and
+    PMU_MASK(0) after the last op. Only these words are added; strip_serial() recovers the stream byte for byte."""
+    b = boundaries(stream)
+    n = len(b) - 1
+    if len(bits) != n or any(x not in (0, 1) for x in bits):
+        raise ValueError(f"{len(bits)} mask bits for {n} kernel ops")
+    at = {b[i]: [kernel_wait(0), pmu_mask(bits[i])] for i in range(n)}
+    at[b[n]] = [kernel_wait(0), pmu_mask(0)]
+    return insert(stream, at)
+
+
+def strip_serial(stream: bytes) -> bytes:
+    """Remove every KERNEL_WAIT n=0 and PMU_MASK instruction (the words serial_mask adds)."""
+    out = bytearray()
+    for o, w, c, op in instructions(stream):
+        if c == 0 and (w in (kernel_wait(0), pmu_mask(0), pmu_mask(1))):
+            continue
+        out += stream[o:o + (8 if c == 1 else 4)]
+    return bytes(out)
+
+
 def kernel_types(stream: bytes) -> list[str]:
     return [KERNEL_OPS[op] for _, _, c, op in instructions(stream) if c == 0 and op in KERNEL_OPS]
 

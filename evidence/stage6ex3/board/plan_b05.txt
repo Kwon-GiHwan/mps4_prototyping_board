@@ -1,0 +1,2 @@
+# Stage 6E-X3 boot 5/10: x3_kws_B4, TA profile 1, runner image f0baf8c (bram 9b1844a3), passes A B C
+481 x3_kws_B4 @/home/gihwan/evsweep_x3_img/conditions.txt

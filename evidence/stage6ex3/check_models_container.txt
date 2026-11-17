@@ -1,0 +1,11 @@
+x3_ad_B0: OK cop1_buffer=1 other_buffers_equal=True tensors_equal=True io_equal=True changed_bytes_in_original_span=[] model_len 462672->462672
+x3_ad_B1: OK cop1_buffer=1 other_buffers_equal=True tensors_equal=True io_equal=True changed_bytes_in_original_span=[460136, 460137] model_len 462672->465320
+x3_ad_B2: OK cop1_buffer=1 other_buffers_equal=True tensors_equal=True io_equal=True changed_bytes_in_original_span=[460136, 460137] model_len 462672->465320
+x3_ad_B3: OK cop1_buffer=1 other_buffers_equal=True tensors_equal=True io_equal=True changed_bytes_in_original_span=[460136, 460137] model_len 462672->465320
+x3_ad_B4: OK cop1_buffer=1 other_buffers_equal=True tensors_equal=True io_equal=True changed_bytes_in_original_span=[460136, 460137] model_len 462672->465320
+x3_kws_B0: OK cop1_buffer=1 other_buffers_equal=True tensors_equal=True io_equal=True changed_bytes_in_original_span=[] model_len 149440->149440
+x3_kws_B1: OK cop1_buffer=1 other_buffers_equal=True tensors_equal=True io_equal=True changed_bytes_in_original_span=[146808, 146809] model_len 149440->152180
+x3_kws_B2: OK cop1_buffer=1 other_buffers_equal=True tensors_equal=True io_equal=True changed_bytes_in_original_span=[146808, 146809] model_len 149440->152180
+x3_kws_B3: OK cop1_buffer=1 other_buffers_equal=True tensors_equal=True io_equal=True changed_bytes_in_original_span=[146808, 146809] model_len 149440->152180
+x3_kws_B4: OK cop1_buffer=1 other_buffers_equal=True tensors_equal=True io_equal=True changed_bytes_in_original_span=[146808, 146809] model_len 149440->152180
+ALL OK

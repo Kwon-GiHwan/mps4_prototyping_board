@@ -63,7 +63,7 @@ def main():
         print(lines[-1], flush=True)
     g = green()
     lines.append(f"after restore: {'GREEN' if g else 'RED'}")
-    (pathlib.Path(__file__).parent / "mutation.txt").write_text("\n".join(lines) + "\n")
+    (pathlib.Path(__file__).parent / "mutation_fw.txt").write_text("\n".join(lines) + "\n")
     print(lines[-1])
     return 1 if bad or not g else 0
 
