@@ -121,6 +121,14 @@ class Placement(unittest.TestCase):
         self.assertLess(remap.index("placement_weights_prepare("), remap.index("pmu_session_arm(&cnten)"))
         self.assertLess(remap.index("if (index == -1)"), remap.index("placement_weights_prepare("))
         self.assertIn("SCB_CleanInvalidateDCache();", h)
+        self.assertIn("if (placement_get() == PLACEMENT_SRAM_W && j->num_base_addr > 0) {\n"
+                      "            (void)placement_weights_prepare((uintptr_t)j->base_addr[0], (uint32_t)j->base_addr_size[0], weights_sync);", remap)
+        # every load drops the previous copy, after the arena is placed and checked, before the model is placed
+        r = SRC["runner.c"]
+        load = r[r.index("static uint32_t place_and_load(void)"):r.index("static void load_end(void)")]
+        self.assertIn("placement_weights_reset(arena_base, P->arena_len, limit);", load)
+        self.assertLess(load.index("placement_mem_check("), load.index("placement_weights_reset("))
+        self.assertLess(load.index("placement_weights_reset("), load.index("P->place_model("))
         irq = h[h.index("void ethosu_irq_handler("):]
         # the PMU snapshot stays the first read at the IRQ; the region read-back comes after it
         self.assertLess(irq.index("pmu_session_snapshot(&s)"), irq.index("npu_word(NPU_OFF_REGIONCFG)"))

@@ -1,0 +1,2 @@
+# Stage 6B-E2E-D boot 1/5: REF, TA profile 1 with EXT RLATENCY 500, new L500 image (14077be, bram ec0e8c3b)
+463 s4c2_conv_cin48 @/home/gihwan/evsweep_s6be2ed_l500/conditions.txt

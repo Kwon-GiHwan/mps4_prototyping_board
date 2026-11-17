@@ -1,0 +1,23 @@
+{
+ "e2eb_b3": {
+  "custom_op_inputs": 6,
+  "custom_op_outputs": 1,
+  "drwl_sha256": "7b2cedd5d42dcf28547f35d0a049a9bfe5c3395eec40f33fd70592e125a13125",
+  "n_base": 6,
+  "placement": 1
+ },
+ "e2ed_b3w": {
+  "custom_op_inputs": 6,
+  "custom_op_outputs": 1,
+  "drwl_sha256": "51ff7a4a540dc1fdb2a6dad72cbca2286e855bfd53961cb4a5dad4e4ce197918",
+  "n_base": 6,
+  "placement": 2
+ },
+ "s4c2_conv_cin48": {
+  "custom_op_inputs": 5,
+  "custom_op_outputs": 1,
+  "drwl_sha256": "6eb390be2874088b53970ab4f859962d5bb0b16b4e060e2e460d86840f4339d7",
+  "n_base": 5,
+  "placement": 0
+ }
+}
