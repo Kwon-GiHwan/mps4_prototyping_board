@@ -1,0 +1,47 @@
+=== 2026-11-17T19:59:34Z step 4: user python3 mcc.py USB_ON 4 && sleep 5 && test -e /dev/sdb1
+USB_ON
+Enabling debug USB...
+
+Cmd> 
+=== 2026-11-17T19:59:44Z step 5: deploy_mlek /home/gihwan/evsweep_x3_img /home/gihwan/evsweep/evidence_x3
+images.txt: OK
+APP.BIN: OK
+VECTORS.BIN: OK
+DDR.BIN: OK
+DEPLOY VERIFIED: source == destination
+3b4af743c13aa25f4335a30b739f196187ed023ea9f3f1d3a372a851b9c630c3  boot.bin
+9b1844a3fde3443779d341f890cd2d106ab92e593020f8e336fbc5f991dd740f  bram.bin
+374708fff7719dd5979ec875d56cd2286f6d3cf7ec317a3b25632aab28ec37bb  ddr.bin
+af688281435a73dda3b2247845149817ecc7a9bbdff5a3ccd2e4dfa52875423f  images.txt
+DEPLOY DONE: unmounted, safe to REBOOT
+=== 2026-11-17T19:59:44Z step 6: user OUTPUTS=1 STOP_ON_INVALID=1 RUN_TIMEOUT=600 sh run_driver_campaign.sh /home/gihwan/evsweep_x3_img /home/gihwan/evsweep_x3_run /home/gihwan/evsweep_x3_img/ids.txt /home/gihwan/evsweep_x3_img/plan_b01.txt 5
+mcc boot log: 10551 bytes -> /home/gihwan/evsweep_x3_run/conds/x3_kws_B0/mcc_boot.log
+Image loaded from \SOFTWARE\boot.bin
+Image loaded from \SOFTWARE\bram.bin
+Image loaded from \SOFTWARE\ddr.bin
+DDR memory test at 0x70000000: PASSED
+Clearing SCC CPUWAIT (0xFFFFFFFF80000000:0x00000000)
+--- boot477 x3_kws_B0 @/home/gihwan/evsweep_x3_img/conditions.txt campaign exit=0
+15
+CAMPAIGN DONE
+=== 2026-11-17T20:02:49Z step 7: user python3 host/analysis/stage6ex3.py boot-check /home/gihwan/evsweep_x3_run /home/gihwan/evsweep_x3_img /home/gihwan/evsweep_x3_ref/m7 /home/gihwan/evsweep_x3_ref/caps_14077be.json x3_kws_B0
+{
+ "key": "x3_kws_B0",
+ "status": "VALID",
+ "reasons": []
+}
+=== 2026-11-17T20:02:49Z step 8: user python3 host/analysis/stage6ex3.py gate-g1 /home/gihwan/evsweep_x3_run /home/gihwan/evsweep_x3_img /home/gihwan/evsweep_x3_ref/m7 /home/gihwan/evsweep_x3_ref/caps_14077be.json kws_micronet_m
+{
+ "verdict": "FAIL",
+ "reasons": [
+  "NPU_ACTIVE 90380.5 vs m7 91824.5"
+ ]
+}
+=== 2026-11-17T20:02:49Z SESSION FAILED at step 8 (rc=1)
+=== 2026-11-17T20:02:49Z recovery: restore_mlek /home/gihwan/evsweep/evidence_x3 /home/gihwan/evsweep_x3_img
+RESTORE VERIFIED
+cb78a12efd33fa72555b94ee4b8ca6faef4d9504c971c52c6cb47c75096673de  images.txt
+ffa3e5bd0363f791d61f9673074c625865f1e6a8f24e53ee303372c64ef3597d  APP.BIN
+45e943c577e3744104d53cf57c7d0afb369ff68a99e5e6906971d71503f06c92  VECTORS.BIN
+81d37a219a6b4141d0b433796711ab8af2ee2c3c668a28143a3ffe6a574ade98  DDR.BIN
+RESTORE DONE: unmounted, safe to REBOOT then USB_OFF
