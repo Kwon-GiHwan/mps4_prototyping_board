@@ -92,6 +92,16 @@ def _ext_scale(scale, n):
     return (scale + [scale[-1]] * n)[:max(n, len(scale))] if len(scale) > 1 else scale
 
 
+def _ext_q(t: dict, n: int) -> dict:
+    """Per-channel quantization extended to n channels (scale and zero point together; erratum 2026-11-18: the first
+    version extended the scales only and TFLite refused the DW c16 model)."""
+    return dict(t, scale=_ext_scale(t["scale"], n), zp=_ext_scale(t["zp"], n))
+
+
+def _dup_q(t: dict) -> dict:
+    return dict(t, scale=t["scale"] * 2 if len(t["scale"]) > 1 else t["scale"], zp=t["zp"] * 2 if len(t["zp"]) > 1 else t["zp"])
+
+
 def variant(src: dict, v: str | None) -> dict:
     """One variable changed; the source tensors otherwise byte for byte. Returns a new dict."""
     if v is None:
@@ -108,17 +118,17 @@ def variant(src: dict, v: str | None) -> dict:
     elif v == "cout2" and src["kind"] in ("conv", "fc"):
         w = np.concatenate([w, w], axis=0); ofm[-1] *= 2
         b = np.concatenate([b, b]) if b is not None else None
-        s["w"]["scale"] = src["w"]["scale"] * 2 if len(src["w"]["scale"]) > 1 else src["w"]["scale"]
+        s["w"] = _dup_q(src["w"])
         if s["b"]:
-            s["b"]["scale"] = src["b"]["scale"] * 2 if len(src["b"]["scale"]) > 1 else src["b"]["scale"]
+            s["b"] = _dup_q(src["b"])
     elif v == "c16" and src["kind"] == "dw":
         c = w.shape[-1]; new = -(-c // 16) * 16
         w = np.concatenate([w, rng.integers(-127, 128, size=w.shape[:-1] + (new - c,), dtype=np.int8)], axis=-1)
         b = np.concatenate([b, rng.integers(-1024, 1025, size=new - c, dtype=np.int32)]) if b is not None else None
         ifm[-1] = new; ofm[-1] = new
-        s["w"]["scale"] = _ext_scale(src["w"]["scale"], new)
+        s["w"] = _ext_q(src["w"], new)
         if s["b"]:
-            s["b"]["scale"] = _ext_scale(src["b"]["scale"], new)
+            s["b"] = _ext_q(src["b"], new)
     elif v == "k5" and src["kind"] == "dw":
         w = rng.integers(-127, 128, size=(w.shape[0], 5, 5, w.shape[3]), dtype=np.int8)
     else:
