@@ -1,0 +1,252 @@
+{
+ "REF": {
+  "boot": 468,
+  "caps_ref": "caps_l500.json",
+  "cin": 48,
+  "config": "s4c2_conv_cin48",
+  "drwl_sha256": "6eb390be2874088b53970ab4f859962d5bb0b16b4e060e2e460d86840f4339d7",
+  "image": {
+   "boot_sha256": "751a1bf283713f0ce13a60d5744ed9dfeb8e5cfd57665493a9de1bed1a8a45ad",
+   "bram_sha256": "ec0e8c3b067525e91028b20a2c48d649fe5e0c8ce5da039bb52b0c86d2669939",
+   "ddr_sha256": "374708fff7719dd5979ec875d56cd2286f6d3cf7ec317a3b25632aab28ec37bb",
+   "images_txt_sha256": "af688281435a73dda3b2247845149817ecc7a9bbdff5a3ccd2e4dfa52875423f"
+  },
+  "kind": "reference",
+  "latency": 500,
+  "n_mac": 2654208,
+  "placement": 0,
+  "ta_ext_rlatency": 500
+ },
+ "s6c_f1_cin16": {
+  "boot": 470,
+  "caps_ref": "caps_l500.json",
+  "cin": 16,
+  "config": "s6c_f1_cin16",
+  "drwl_sha256": "5a00c052e5ae9d05314792311c5e890f7a131f6b6a2f9ff661b9f053fae5342c",
+  "family": "F1",
+  "image": {
+   "boot_sha256": "751a1bf283713f0ce13a60d5744ed9dfeb8e5cfd57665493a9de1bed1a8a45ad",
+   "bram_sha256": "ec0e8c3b067525e91028b20a2c48d649fe5e0c8ce5da039bb52b0c86d2669939",
+   "ddr_sha256": "374708fff7719dd5979ec875d56cd2286f6d3cf7ec317a3b25632aab28ec37bb",
+   "images_txt_sha256": "af688281435a73dda3b2247845149817ecc7a9bbdff5a3ccd2e4dfa52875423f"
+  },
+  "kind": "op",
+  "latency": 500,
+  "n_mac": 3538944,
+  "placement": 0,
+  "ta_ext_rlatency": 500,
+  "vela": {
+   "dram_ac": 56249,
+   "mac_cycles": 18900,
+   "npu_cycles": 27711,
+   "ofm_block": "8x32x32",
+   "ofm_ublock": "2x2x32",
+   "op_cycles": 56249,
+   "sram_ac": 2221,
+   "traversal": "PartKernel"
+  }
+ },
+ "s6c_f1_rep": {
+  "boot": 469,
+  "caps_ref": "caps_l500.json",
+  "cin": 4,
+  "config": "s6c_f1_rep",
+  "drwl_sha256": "a1b054c4a191317aa23c7cd923f4e2fe68a9e95f778498e02a4ce13b9211f9ab",
+  "family": "F1",
+  "image": {
+   "boot_sha256": "751a1bf283713f0ce13a60d5744ed9dfeb8e5cfd57665493a9de1bed1a8a45ad",
+   "bram_sha256": "ec0e8c3b067525e91028b20a2c48d649fe5e0c8ce5da039bb52b0c86d2669939",
+   "ddr_sha256": "374708fff7719dd5979ec875d56cd2286f6d3cf7ec317a3b25632aab28ec37bb",
+   "images_txt_sha256": "af688281435a73dda3b2247845149817ecc7a9bbdff5a3ccd2e4dfa52875423f"
+  },
+  "kind": "op",
+  "latency": 500,
+  "n_mac": 884736,
+  "placement": 0,
+  "ta_ext_rlatency": 500,
+  "vela": {
+   "dram_ac": 56249,
+   "mac_cycles": 9684,
+   "npu_cycles": 26884,
+   "ofm_block": "8x32x32",
+   "ofm_ublock": "2x2x32",
+   "op_cycles": 56249,
+   "sram_ac": 1518,
+   "traversal": "PartKernel"
+  }
+ },
+ "s6c_f2_c16": {
+  "boot": 472,
+  "caps_ref": "caps_l500.json",
+  "cin": 16,
+  "config": "s6c_f2_c16",
+  "drwl_sha256": "23cbc089847f943c46be4207fa0c6bb5210aea0444b9d194af035434194b2a07",
+  "family": "F2",
+  "image": {
+   "boot_sha256": "751a1bf283713f0ce13a60d5744ed9dfeb8e5cfd57665493a9de1bed1a8a45ad",
+   "bram_sha256": "ec0e8c3b067525e91028b20a2c48d649fe5e0c8ce5da039bb52b0c86d2669939",
+   "ddr_sha256": "374708fff7719dd5979ec875d56cd2286f6d3cf7ec317a3b25632aab28ec37bb",
+   "images_txt_sha256": "af688281435a73dda3b2247845149817ecc7a9bbdff5a3ccd2e4dfa52875423f"
+  },
+  "kind": "op",
+  "latency": 500,
+  "n_mac": 1327104,
+  "placement": 0,
+  "ta_ext_rlatency": 500,
+  "vela": {
+   "dram_ac": 35000,
+   "mac_cycles": 14544,
+   "npu_cycles": 15303,
+   "ofm_block": "30x24x16",
+   "ofm_ublock": "2x4x16",
+   "op_cycles": 35000,
+   "sram_ac": 250,
+   "traversal": "Depthwise"
+  }
+ },
+ "s6c_f2_rep": {
+  "boot": 471,
+  "caps_ref": "caps_l500.json",
+  "cin": 8,
+  "config": "s6c_f2_rep",
+  "drwl_sha256": "61466c048d42a1dbafdfdace7d7b1499a8063c967c29573d023f9040e9913654",
+  "family": "F2",
+  "image": {
+   "boot_sha256": "751a1bf283713f0ce13a60d5744ed9dfeb8e5cfd57665493a9de1bed1a8a45ad",
+   "bram_sha256": "ec0e8c3b067525e91028b20a2c48d649fe5e0c8ce5da039bb52b0c86d2669939",
+   "ddr_sha256": "374708fff7719dd5979ec875d56cd2286f6d3cf7ec317a3b25632aab28ec37bb",
+   "images_txt_sha256": "af688281435a73dda3b2247845149817ecc7a9bbdff5a3ccd2e4dfa52875423f"
+  },
+  "kind": "op",
+  "latency": 500,
+  "n_mac": 663552,
+  "placement": 0,
+  "ta_ext_rlatency": 500,
+  "vela": {
+   "dram_ac": 140000,
+   "mac_cycles": 14184,
+   "npu_cycles": 22974,
+   "ofm_block": "30x24x16",
+   "ofm_ublock": "2x4x16",
+   "op_cycles": 140000,
+   "sram_ac": 150,
+   "traversal": "Depthwise"
+  }
+ },
+ "s6c_f3_cin16": {
+  "boot": 474,
+  "caps_ref": "caps_l500.json",
+  "cin": 128,
+  "config": "s6c_f3_cin16",
+  "drwl_sha256": "8e48d7f1b70e72989bb786d55e539eb2cbeb02b26ba29d1eee2f1456083f9ab1",
+  "family": "F3",
+  "image": {
+   "boot_sha256": "751a1bf283713f0ce13a60d5744ed9dfeb8e5cfd57665493a9de1bed1a8a45ad",
+   "bram_sha256": "ec0e8c3b067525e91028b20a2c48d649fe5e0c8ce5da039bb52b0c86d2669939",
+   "ddr_sha256": "374708fff7719dd5979ec875d56cd2286f6d3cf7ec317a3b25632aab28ec37bb",
+   "images_txt_sha256": "af688281435a73dda3b2247845149817ecc7a9bbdff5a3ccd2e4dfa52875423f"
+  },
+  "kind": "op",
+  "latency": 500,
+  "n_mac": 36864,
+  "placement": 0,
+  "ta_ext_rlatency": 500,
+  "vela": {
+   "dram_ac": 7031,
+   "mac_cycles": 7929,
+   "npu_cycles": 7929,
+   "ofm_block": "2x2x288",
+   "ofm_ublock": "2x2x32",
+   "op_cycles": 7929,
+   "sram_ac": 0,
+   "traversal": "DepthFirst"
+  }
+ },
+ "s6c_f3_rep": {
+  "boot": 473,
+  "caps_ref": "caps_l500.json",
+  "cin": 114,
+  "config": "s6c_f3_rep",
+  "drwl_sha256": "2c952744b86bdc2373e08256ba167074af3ab474ff21e8b19e38244802f45d83",
+  "family": "F3",
+  "image": {
+   "boot_sha256": "751a1bf283713f0ce13a60d5744ed9dfeb8e5cfd57665493a9de1bed1a8a45ad",
+   "bram_sha256": "ec0e8c3b067525e91028b20a2c48d649fe5e0c8ce5da039bb52b0c86d2669939",
+   "ddr_sha256": "374708fff7719dd5979ec875d56cd2286f6d3cf7ec317a3b25632aab28ec37bb",
+   "images_txt_sha256": "af688281435a73dda3b2247845149817ecc7a9bbdff5a3ccd2e4dfa52875423f"
+  },
+  "kind": "op",
+  "latency": 500,
+  "n_mac": 32832,
+  "placement": 0,
+  "ta_ext_rlatency": 500,
+  "vela": {
+   "dram_ac": 7031,
+   "mac_cycles": 7929,
+   "npu_cycles": 7929,
+   "ofm_block": "2x2x288",
+   "ofm_ublock": "2x2x32",
+   "op_cycles": 7929,
+   "sram_ac": 0,
+   "traversal": "DepthFirst"
+  }
+ },
+ "s6c_f4_rep": {
+  "boot": 475,
+  "caps_ref": "caps_l500.json",
+  "cin": 250,
+  "config": "s6c_f4_rep",
+  "drwl_sha256": "9289007cdd8908ffb4f6483cb67bdfbb070a63cce02ea92d0ee0ca1bd6f0f65e",
+  "family": "F4",
+  "image": {
+   "boot_sha256": "751a1bf283713f0ce13a60d5744ed9dfeb8e5cfd57665493a9de1bed1a8a45ad",
+   "bram_sha256": "ec0e8c3b067525e91028b20a2c48d649fe5e0c8ce5da039bb52b0c86d2669939",
+   "ddr_sha256": "374708fff7719dd5979ec875d56cd2286f6d3cf7ec317a3b25632aab28ec37bb",
+   "images_txt_sha256": "af688281435a73dda3b2247845149817ecc7a9bbdff5a3ccd2e4dfa52875423f"
+  },
+  "kind": "op",
+  "latency": 500,
+  "n_mac": 2368000000,
+  "placement": 0,
+  "ta_ext_rlatency": 500,
+  "vela": {
+   "dram_ac": 4716796,
+   "mac_cycles": 3639123,
+   "npu_cycles": 3662770,
+   "ofm_block": "1x84x96",
+   "ofm_ublock": "1x4x32",
+   "op_cycles": 4716796,
+   "sram_ac": 0,
+   "traversal": "PartKernel"
+  }
+ },
+ "s6c_f5_rep": {
+  "boot": 476,
+  "caps_ref": "caps_l500.json",
+  "cin": 1,
+  "config": "s6c_f5_rep",
+  "drwl_sha256": "263513949a15509cb0b04ca69201f4e482b0b6a42026266b5a61ae298832e22b",
+  "family": "F5",
+  "image": {
+   "boot_sha256": "751a1bf283713f0ce13a60d5744ed9dfeb8e5cfd57665493a9de1bed1a8a45ad",
+   "bram_sha256": "ec0e8c3b067525e91028b20a2c48d649fe5e0c8ce5da039bb52b0c86d2669939",
+   "ddr_sha256": "374708fff7719dd5979ec875d56cd2286f6d3cf7ec317a3b25632aab28ec37bb",
+   "images_txt_sha256": "af688281435a73dda3b2247845149817ecc7a9bbdff5a3ccd2e4dfa52875423f"
+  },
+  "kind": "op",
+  "latency": 500,
+  "n_mac": 2744000,
+  "placement": 0,
+  "ta_ext_rlatency": 500,
+  "vela": {
+   "dram_ac": 15238,
+   "mac_cycles": 13125,
+   "npu_cycles": 23501,
+   "ofm_block": "24x10x32",
+   "ofm_ublock": "2x2x32",
+   "op_cycles": 23501,
+   "sram_ac": 1422,
+   "traversal": "PartKernel"
+  }
+ }
+}

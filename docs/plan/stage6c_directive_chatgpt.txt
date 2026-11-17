@@ -1,0 +1,515 @@
+Stage 6C 공식 지시
+Operator/Unit Hardware Characterization & Vela Fidelity — Board Measurement
+0. 공식 승인
+
+Stage 6C-0의 결과를 수용한다.
+
+계약·규칙 동결: 74aa09d
+
+결과: da60114
+
+컴파일 정오표: 93d4fbc
+
+E2E-D 결과: 2e7bd42
+
+연구 방향 및 사용자 결정 기록: docs/plan/research_direction_and_decision_log.md
+
+Stage 6C의 보드 측정을 승인한다.
+
+확정 예산:
+
+9 boot
+
+135 RUN
+
+측정 RUN 108
+
+Warm-up RUN 27
+
+Pass A, B, C 모두 실행
+
+TA profile 1 고정
+
+Runner 이미지 14077be
+
+Placement 0
+
+PMCLUT 미사용
+
+이번 승인에는 새로운 TA 지연 변형, SRAM 배치 실험, PMCAXI_CHAN 구현 및 추가 형상 측정이 포함되지 않는다.
+
+기존 결과를 변경하지 않는다.
+
+1. 연구 목적
+
+이번 Stage 6C의 목적은 세 가지다.
+
+RQ-C1. Compute/Unit Characterization
+
+실제 MLEK 모델의 대표 연산에서 MAC·DPU·AO·WD 활동 및 유효 처리율이 연산 종류와 텐서 형상에 따라 어떻게 달라지는가?
+
+RQ-C2. Memory/Pipeline/AXI Characterization
+
+동일 연산의 처리 활동과 전체 NPU_ACTIVE 사이에 어떤 차이가 있으며, SRAM/EXT 트래픽·요청·포트 활동은 그 차이와 어떻게 연결되는가?
+
+RQ-C3. Vela Fidelity
+
+Vela의 Compute/SRAM/DRAM 비용 모델은 실제 연산별 NPU_ACTIVE와 성능 변화의 방향·크기를 얼마나 정확히 예측하는가?
+
+이번 실험은 H1-UC를 반복 검증하거나 SRAM 배치의 당연한 성능 이득을 재확인하기 위한 실험이 아니다.
+
+2. 확정 측정 대상
+
+Stage 6C-0의 동결된 선정 결과를 유지한다.
+
+ID	연산	원본 모델	대표 형상
+F1	1×1 PartKernel	YOLO op9	96×96×4 → 24
+F2	Depthwise	YOLO op3	96×96×8
+F3	FC	RNNoise op46	114 → 288
+F4	1×32 PartKernel	Wav2Letter op17	1×148×250 → 2000
+F5	첫 Conv, Cin=1	KWS op0	49×10×1 → 140, 10×4
+
+추가 통제 형상:
+
+F1: Cin 4 → 16
+
+F2: Channel 8 → 16
+
+F3: Cin 114 → 128
+
+F4와 F5는 대표 형상만 측정한다.
+
+총 8개 측정 구성과 REF 1개를 사용한다.
+
+대표 형상과 원본 MLEK 모델 사이의 traversal, block, ublock 및 kernel mapping 동일성을 검증한다.
+
+단독 연산의 Graph I/O가 DRAM이고 원본 모델에서는 SRAM인 경우가 많다는 점을 반드시 기록한다.
+
+독립 연산의 NPU_ACTIVE를 원본 모델의 연산별 실행시간으로 직접 귀속하지 않는다.
+
+3. 사전 계약 검증 및 Preflight
+
+보드 실행 전에 다음 사항을 검증한다.
+
+컴파일 무결성
+
+동일 입력에 대한 컴파일 결과 재현
+
+원본 MLEK 텐서 및 양자화 파라미터 일치
+
+Per-channel zero point 확장 수정 반영
+
+대표·통제 형상의 Vela mapping 일치
+
+Weight/Scale 및 Command stream 무결성
+
+입력·출력 Reference 검증
+
+가설 검증 가능성
+
+F1·F2·F3의 MAC_ACTIVE 동일성 가설은 사전 동결한 허용 기준으로 판정한다.
+
+특히 F2에서 Vela 예상 비용이 4배 달라지는 이유를 컴파일 산출물에서 확인한다.
+
+이 차이를 MAC 처리 비용 변화라고 미리 해석하지 않는다.
+
+F1·F2와 F3·F4의 NPU_ACTIVE/MAC_ACTIVE 비교는 관측적 비교로 분류한다.
+
+서로 다른 연산과 메모리 접근 조건 사이의 차이를 단일 Unit 병목의 인과적 증거로 사용하지 않는다.
+
+F4·F5는 통제 형상이 없으므로 형상 민감도에 대한 직접적인 인과 판정 대상에서 제외한다.
+
+이 사항들은 기존 가설을 사후 변경하는 것이 아니라 판정의 적용 범위를 명확히 하는 것이다.
+
+기존 동결 가설의 의미나 수치 기준을 변경해야 한다면 보드 실행 전 Amendment를 별도 커밋하고 변경 이유를 기록한다.
+
+Runner 및 PMU
+
+TA profile 1 확인
+
+Placement 0 확인
+
+Pass별 이벤트 지원 여부 확인
+
+PMU counter 8개 제한 확인
+
+Pass 간 공통 NPU_ACTIVE 확인
+
+Counter overflow 및 event mapping 검증
+
+REF 측정 및 출력 검증
+
+Preflight 실패 시 보드를 실행하지 않는다.
+
+4. 확정 PMU Pass
+
+Pass A — Compute/Unit
+
+기존 Stage 6C-0에서 정의한 Unit 계측 Pass를 사용한다.
+
+주요 분석 항목:
+
+NPU_ACTIVE
+
+MAC_ACTIVE
+
+MAC_DPU_ACTIVE
+
+AO_ACTIVE
+
+WD_ACTIVE
+
+WD_STALLED
+
+Pass B — Memory Traffic
+
+기존 동결 Pass B를 사용한다.
+
+주요 분석 항목:
+
+SRAM/EXT read/write
+
+전송 beat 및 bytes
+
+기존 검증된 요청 관련 지표
+
+Pass C — AXI Request/Port
+
+다음 이벤트를 사용한다.
+
+35, 131, 142, 387, 640, 642, 656, 658
+
+모두 Stage 6C-0에서 FI101 VERIFIED로 분류한 이벤트다.
+
+Pass C는 포트별 트래픽과 요청 정체의 관계를 분석하기 위한 것이다.
+
+포트별 전송량을 실제 AXI 물리 대역폭 이용률과 혼동하지 않는다.
+
+387은 ARVALID와 ARREADY의 핸드셰이크 정체 관련 관측이며, 메모리 응답 서비스 대기시간 자체가 아니다.
+
+세 Pass의 측정창, 실행 구성 및 입력 데이터는 동일하게 유지한다.
+
+5. 보드 실행
+
+총 9 boot를 실행한다.
+
+REF 1개
+
+F1 대표·통제 2개
+
+F2 대표·통제 2개
+
+F3 대표·통제 2개
+
+F4 대표 1개
+
+F5 대표 1개
+
+각 boot에서 Pass A/B/C를 순차 실행한다.
+
+Pass당:
+
+Warm-up 1 RUN
+
+측정 4 RUN
+
+따라서 각 boot는 총 15 RUN이다.
+
+총계:
+
+Warm-up 27
+
+측정 108
+
+전체 135
+
+실행 순서는 REF → F1 대표 → F1 통제 → F2 대표 → F2 통제 → F3 대표 → F3 통제 → F4 대표 → F5 대표로 고정한다.
+
+실행 순서와 각 Pass의 측정 조건을 사전에 동결한다.
+
+REF 실패 또는 실행 구성 불일치 시 기존 계약의 중단 규칙을 따른다.
+
+예산 초과 재측정은 승인하지 않는다.
+
+6. 결과 분석
+6.1 Compute / Unit
+
+각 구성에 대해 다음을 계산한다.
+
+MAC_ACTIVE
+
+MAC_DPU_ACTIVE
+
+MACs/MAC_ACTIVE
+
+N_MAC/(1024 × MAC_ACTIVE)
+
+AO_ACTIVE
+
+WD_ACTIVE
+
+WD_STALLED
+
+NPU_ACTIVE
+
+연산군별로 실제 MAC 처리율과 Unit 활동 패턴을 비교한다.
+
+MAC/DPU 비율과 처리율의 차이가 발생하는 경우 Vela kernel mapping, channel alignment, block 및 ublock을 함께 확인한다.
+
+6.2 Memory / AXI
+
+각 구성에 대해 다음을 정리한다.
+
+SRAM/EXT 전송량
+
+Read/write 요청 관련 지표
+
+EXT0/EXT1 포트별 트래픽
+
+관측 평균 대역폭
+
+요청 정체 관련 이벤트
+
+전송량의 차이가 실제 계산량, Weight 재사용, IFM/OFM 형상, 컴파일 배치 중 무엇과 관련되는지 검토한다.
+
+실제 서비스 시간, 포트 물리 대역폭 및 Outstanding 시간적 분포가 측정되지 않았다면 해당 원인은 미해결로 유지한다.
+
+6.3 NPU_ACTIVE
+
+다음 관계를 분석한다.
+
+MAC_ACTIVE 대비 NPU_ACTIVE
+
+AO_ACTIVE 대비 NPU_ACTIVE
+
+WD_ACTIVE 및 WD_STALLED 변화
+
+SRAM/EXT traffic 및 요청 수
+
+Vela 예상 비용
+
+Unit 카운터는 중첩될 수 있으므로 합산하여 전체 실행시간을 분해하지 않는다.
+
+동일 MAC_ACTIVE에서도 NPU_ACTIVE가 달라진다면, 동반된 메모리·AO·WD·실행 구성 변화를 분석한다.
+
+관측만으로 원인을 확정하지 않는다.
+
+6.4 Vela Fidelity
+
+각 구성의 다음 항목을 비교한다.
+
+Vela Compute cycles
+
+Vela SRAM cycles
+
+Vela DRAM cycles
+
+Vela Total cycles
+
+실제 NPU_ACTIVE
+
+Board/Vela ratio
+
+절대 및 상대 예측 오차
+
+대표·통제 쌍에서는 실제 성능 변화와 Vela 예상 변화의 방향 및 크기를 비교한다.
+
+특히 다음 기존 가설을 검증한다.
+
+F1·F2의 NHWC IFM read 관련 과대예측 후보
+
+F3의 FC 과소예측 후보
+
+F2의 Vela 예상 비용 4배 변화
+
+F4의 1×32 PartKernel 처리율
+
+F5의 Cin=1 첫 Conv 처리 특성
+
+사전 예측과 다른 결과가 나오더라도 원본 가설을 변경하지 않는다.
+
+7. 결과 판정
+
+각 형상에 대해 별도로 판정한다.
+
+Measurement
+
+VALID
+
+PARTIAL_VALID
+
+MEASUREMENT_INVALID
+
+Compute Characterization
+
+PREDICTION_SUPPORTED
+
+PREDICTION_REFUTED
+
+INSUFFICIENT_EVIDENCE
+
+Pipeline / Memory
+
+CONTROLLED_EFFECT_OBSERVED
+
+ASSOCIATION_ONLY
+
+MECHANISM_UNRESOLVED
+
+Vela Fidelity
+
+ESTIMATE_AGREEMENT
+
+OVERESTIMATION
+
+UNDERESTIMATION
+
+INSUFFICIENT_EVIDENCE
+
+수치 임계값과 판정 기준은 기존 Stage 6C-0 계약을 우선 사용하고, 누락된 필수 기준은 측정 전에 동결한다.
+
+측정 결과를 본 뒤 임계값을 변경하지 않는다.
+
+연산별 처리율, Unit 활동, 메모리 접근 특성, Vela 오차 및 적용 범위를 확보하면 해당 연산군의 Characterization을 종료한다.
+
+예상과 다른 결과가 나오더라도 자동으로 추가 보드 실험을 시작하지 않는다.
+
+8. 모델 수준 설명력 연결
+
+Stage 6-M의 기존 판정은 유지한다.
+
+COVERAGE_EXPANDED_NOT_EXPLAINED
+
+이번 결과로 다음 항목의 설명 범위를 평가한다.
+
+YOLO: PartKernel 및 DW
+
+RNNoise: FC
+
+Wav2Letter: 1×32 PartKernel
+
+KWS: Cin=1 첫 Conv
+
+VWW4·MobileNetV2·AD는 기존 관측과 새 연산군 Characterization의 적용 가능성을 평가한다.
+
+모델별 N_MAC Coverage와 실제 NPU_ACTIVE 설명력을 구분한다.
+
+단독 연산의 메모리 배치가 원본 모델과 다르면 실제 실행시간 기여를 직접 추정하지 않는다.
+
+9. 무결성 및 종료
+
+기존 결과 불변
+
+Raw data SHA256
+
+계약·Judge 사전 동결
+
+테스트 및 mutation
+
+분석 재현성 확인
+
+실행 이미지 복원
+
+RESTORE VERIFIED
+
+Postflight 확인
+
+로컬 커밋
+
+Push 금지
+
+Stage 6C 보드 측정이 끝나면 신규 실험을 자동으로 확장하지 않는다.
+
+다음 단계는 Stage 6C 결과를 실제 7개 모델의 성능 설명력과 연결하는 통합 재평가다.
+
+10. Research Direction & Guardrails
+
+본 연구의 최종 목표는 Ethos-U85 Hardware–Compiler Performance Analysis다.
+
+다음 네 축을 균형 있게 유지한다.
+
+Compute/Unit — MAC, DPU, AO, WD, PartKernel, DW, FC
+
+Memory/Pipeline/AXI — 데이터 공급, 재사용, 트래픽, 요청, Burst, 포트, 중첩
+
+Vela Fidelity — 실제 실행시간과 예측 비용의 차이 및 원인
+
+Model-level — 7개 MLEK 모델의 실행시간과 효율 설명력
+
+이번 Stage 6C는 기존에 충분히 검증되지 않은 연산군의 하드웨어 처리 특성을 확보하고, 그 결과가 Vela Fidelity 및 실제 모델 설명에 연결되는지 확인하기 위해 수행한다.
+
+기존 H1-UC 및 EXT latency placement 실험을 반복하지 않는다.
+
+새로운 이상 현상은 중요도를 평가해 기록하되, 특정 현상 하나를 무제한 추적하지 않는다.
+
+검증되지 않은 내부 메커니즘을 원인으로 확정하지 않는다.
+
+각 연산군의 종료 조건을 만족하면 다음 연구 축으로 이동한다.
+
+Stage 6C 완료 후에는 실제 모델 수준의 설명력 재평가를 우선한다.
+
+11. User Request & Decision Log
+
+docs/plan/research_direction_and_decision_log.md를 갱신한다.
+
+이번 사용자 결정:
+
+Stage 6C 보드 측정 승인
+
+9 boot / 135 RUN 확정
+
+Pass A/B/C 모두 실행
+
+TA profile 1 고정
+
+F1~F5 대표 형상 및 F1~F3 통제 형상 사용
+
+특정 연산·메모리 배치에 과도하게 집중하지 않음
+
+Hardware Characterization과 Vela Fidelity를 병행
+
+결과를 실제 7개 모델의 설명력으로 연결
+
+다음 단계 자동 확장 금지
+
+사용자에게 선택지를 요구하지 않고 승인된 작업을 진행
+
+기존 결정 이력을 삭제하지 않는다.
+
+12. 최종 보고
+
+ChatGPT에 다음 내용을 보고한다.
+
+계약·Preflight·결과 커밋
+
+실제 boot/RUN 및 측정 유효성
+
+F1~F5의 MAC/DPU/AO/WD 활동
+
+연산군별 처리율
+
+SRAM/EXT 트래픽과 AXI 요청·포트 활동
+
+NPU_ACTIVE 및 Unit 활동 관계
+
+F1~F3 통제 실험의 변화
+
+Vela 예상값과 실제 실행시간 오차
+
+사전 가설 지지·반례
+
+실제 모델에 적용 가능한 설명 범위
+
+미해결 메커니즘
+
+테스트·Mutation·원본 불변성
+
+연구 방향·사용자 결정 기록
+
+Stage 6C 종료 가능성
+
+최종 판정
+
+이번 지시의 목표는 Stage 6C의 9 boot / 135 RUN을 계약에 따라 완료하고, Hardware Characterization·AXI·Vela Fidelity 결과를 통합 보고하는 것이다.
+
+보드 결과를 확인하기 전까지 판정 기준을 동결하고, 실행 후 추가 실험을 임의로 시작하지 않는다.

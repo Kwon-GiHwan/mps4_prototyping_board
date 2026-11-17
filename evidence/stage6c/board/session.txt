@@ -1,0 +1,24 @@
+# Owner-approved (Stage 6C, ChatGPT decision 2026-11-18) sudo session: boots 468-476, evidence/stage6c/contract.md.
+# New runner image 14077be L500 (TA profile 1, EXT RLATENCY 500), placement 0; passes A, B, C; one image, no swap.
+user python3 mcc.py USB_ON 4 && sleep 5 && test -e /dev/sdb1
+deploy_mlek /home/gihwan/evsweep_s6c_l500 /home/gihwan/evsweep/evidence_s6c_l500
+user OUTPUTS=1 STOP_ON_INVALID=1 RUN_TIMEOUT=600 sh run_driver_campaign.sh /home/gihwan/evsweep_s6c_l500 /home/gihwan/evsweep_s6c_run /home/gihwan/evsweep_s6c_l500/ids.txt /home/gihwan/evsweep_s6c_l500/plan_b01.txt 5
+user python3 host/analysis/stage6c.py repro-gate /home/gihwan/evsweep_s6c_run /home/gihwan/evsweep_s6c_wl /home/gihwan/evsweep_s6be1r/ref/wfe
+user OUTPUTS=1 STOP_ON_INVALID=1 RUN_TIMEOUT=600 sh run_driver_campaign.sh /home/gihwan/evsweep_s6c_l500 /home/gihwan/evsweep_s6c_run /home/gihwan/evsweep_s6c_l500/ids.txt /home/gihwan/evsweep_s6c_l500/plan_b02.txt 5
+user python3 host/analysis/stage6c.py boot-check /home/gihwan/evsweep_s6c_run /home/gihwan/evsweep_s6c_wl s6c_f1_rep
+user OUTPUTS=1 STOP_ON_INVALID=1 RUN_TIMEOUT=600 sh run_driver_campaign.sh /home/gihwan/evsweep_s6c_l500 /home/gihwan/evsweep_s6c_run /home/gihwan/evsweep_s6c_l500/ids.txt /home/gihwan/evsweep_s6c_l500/plan_b03.txt 5
+user python3 host/analysis/stage6c.py boot-check /home/gihwan/evsweep_s6c_run /home/gihwan/evsweep_s6c_wl s6c_f1_cin16
+user OUTPUTS=1 STOP_ON_INVALID=1 RUN_TIMEOUT=600 sh run_driver_campaign.sh /home/gihwan/evsweep_s6c_l500 /home/gihwan/evsweep_s6c_run /home/gihwan/evsweep_s6c_l500/ids.txt /home/gihwan/evsweep_s6c_l500/plan_b04.txt 5
+user python3 host/analysis/stage6c.py boot-check /home/gihwan/evsweep_s6c_run /home/gihwan/evsweep_s6c_wl s6c_f2_rep
+user OUTPUTS=1 STOP_ON_INVALID=1 RUN_TIMEOUT=600 sh run_driver_campaign.sh /home/gihwan/evsweep_s6c_l500 /home/gihwan/evsweep_s6c_run /home/gihwan/evsweep_s6c_l500/ids.txt /home/gihwan/evsweep_s6c_l500/plan_b05.txt 5
+user python3 host/analysis/stage6c.py boot-check /home/gihwan/evsweep_s6c_run /home/gihwan/evsweep_s6c_wl s6c_f2_c16
+user OUTPUTS=1 STOP_ON_INVALID=1 RUN_TIMEOUT=600 sh run_driver_campaign.sh /home/gihwan/evsweep_s6c_l500 /home/gihwan/evsweep_s6c_run /home/gihwan/evsweep_s6c_l500/ids.txt /home/gihwan/evsweep_s6c_l500/plan_b06.txt 5
+user python3 host/analysis/stage6c.py boot-check /home/gihwan/evsweep_s6c_run /home/gihwan/evsweep_s6c_wl s6c_f3_rep
+user OUTPUTS=1 STOP_ON_INVALID=1 RUN_TIMEOUT=600 sh run_driver_campaign.sh /home/gihwan/evsweep_s6c_l500 /home/gihwan/evsweep_s6c_run /home/gihwan/evsweep_s6c_l500/ids.txt /home/gihwan/evsweep_s6c_l500/plan_b07.txt 5
+user python3 host/analysis/stage6c.py boot-check /home/gihwan/evsweep_s6c_run /home/gihwan/evsweep_s6c_wl s6c_f3_cin16
+user OUTPUTS=1 STOP_ON_INVALID=1 RUN_TIMEOUT=600 sh run_driver_campaign.sh /home/gihwan/evsweep_s6c_l500 /home/gihwan/evsweep_s6c_run /home/gihwan/evsweep_s6c_l500/ids.txt /home/gihwan/evsweep_s6c_l500/plan_b08.txt 5
+user python3 host/analysis/stage6c.py boot-check /home/gihwan/evsweep_s6c_run /home/gihwan/evsweep_s6c_wl s6c_f4_rep
+user OUTPUTS=1 STOP_ON_INVALID=1 RUN_TIMEOUT=600 sh run_driver_campaign.sh /home/gihwan/evsweep_s6c_l500 /home/gihwan/evsweep_s6c_run /home/gihwan/evsweep_s6c_l500/ids.txt /home/gihwan/evsweep_s6c_l500/plan_b09.txt 5
+user python3 host/analysis/stage6c.py boot-check /home/gihwan/evsweep_s6c_run /home/gihwan/evsweep_s6c_wl s6c_f5_rep
+restore_mlek /home/gihwan/evsweep/evidence_s6c_l500 /home/gihwan/evsweep_s6c_l500
+user sh postflight.sh

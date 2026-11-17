@@ -1,0 +1,2 @@
+# Stage 6C boot 7/9: s6c_f3_cin16, TA profile 1, runner image 14077be, passes A B C
+474 s6c_f3_cin16 @/home/gihwan/evsweep_s6c_l500/conditions.txt
