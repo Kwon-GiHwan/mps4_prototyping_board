@@ -1,0 +1,2 @@
+# Stage 6B-E2E-B (evidence/stage6b/stage6be2eb/contract.md), as Stage 4 / 6B-B / E1-R / E2B: WAIT_WFE, no trace, both passes
+wfe 0 0 off 1,2

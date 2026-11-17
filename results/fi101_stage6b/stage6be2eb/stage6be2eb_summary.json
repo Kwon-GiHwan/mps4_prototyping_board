@@ -1,0 +1,565 @@
+{
+ "contract": "evidence/stage6b/stage6be2eb/contract.md",
+ "ta": "TA profile 1; EXT RLATENCY 500 (image 70090f1) / 1000 (L1000 image, bram fd478e2d)",
+ "reference_gate": {
+  "verdict": "PASS",
+  "same_binary": true,
+  "reproduce": {
+   "ok": true,
+   "checks": {
+    "mac": true,
+    "dpu": true,
+    "output": true,
+    "constant_counters": true,
+    "npu_active": true
+   },
+   "differing_constant_counters": {},
+   "npu_active": [
+    22251.0,
+    23026.5
+   ],
+   "tolerance": 846,
+   "compared": 10
+  }
+ },
+ "results": {
+  "B0-L1000": {
+   "key": "B0-L1000",
+   "config": "e2d_w1p1",
+   "metrics": {
+    "n_mac": 19501056,
+    "npu_active": 159122.5,
+    "npu_active_range": 1642,
+    "npu_active_pass_b": 160173.5,
+    "mac_active": 20736.0,
+    "mac_dpu_active": 20736.0,
+    "ao_active": 14921.0,
+    "wd_active": 3571.0,
+    "wd_stalled": 42774.0,
+    "reserved_53": 17119.0,
+    "reserved_55": 1151.0,
+    "pass_b": {
+     "128": 1568.0,
+     "130": 25088.0,
+     "132": 576.0,
+     "135": 9216.0,
+     "384": 10417.0,
+     "386": 27066.0,
+     "391": 7872.0
+    },
+    "mac_activity": 0.13031469465349024,
+    "macs_per_mac_active": 940.4444444444445,
+    "eff_1024": 0.9184027777777778,
+    "dpu_over_mac": 1.0,
+    "macs_per_1024_npu_active": 0.11968137755502836,
+    "stage4k_nearest": 768,
+    "rate_over_640": 1.4694444444444446,
+    "rate_over_768": 1.224537037037037,
+    "c16_rate_768": 736.0,
+    "rate_over_c16_768": 1.277777777777778
+   },
+   "traffic": {
+    "sram_rd_beats": 25088.0,
+    "sram_rd_trans": 1568.0,
+    "sram_wr_beats": 9216.0,
+    "sram_wr_trans": 576.0,
+    "ext_rd_beats": 27066.0,
+    "ext_rd_trans": 10417.0,
+    "ext_wr_beats": 7872.0
+   },
+   "layout": {
+    "ok": true,
+    "checks": {
+     "arena_where": true,
+     "arena_inside": true,
+     "fast_inside": true,
+     "fast_disjoint": true,
+     "weights_ddr": true,
+     "io_in_arena": true
+    }
+   },
+   "arena_base": 1879140208,
+   "output_sha256": "b9341e6f7af83862c58793b496c2a79d01d5c032e124cfb000d74b353ecf8e92",
+   "status": "VALID",
+   "reasons": []
+  },
+  "B0-L500": {
+   "key": "B0-L500",
+   "config": "e2d_w1p1",
+   "metrics": {
+    "n_mac": 19501056,
+    "npu_active": 99044.0,
+    "npu_active_range": 326,
+    "npu_active_pass_b": 99718.0,
+    "mac_active": 20736.0,
+    "mac_dpu_active": 20736.0,
+    "ao_active": 14974.5,
+    "wd_active": 5900.0,
+    "wd_stalled": 23662.0,
+    "reserved_53": 3266.0,
+    "reserved_55": 1681.0,
+    "pass_b": {
+     "128": 1568.0,
+     "130": 25088.0,
+     "132": 576.0,
+     "135": 9216.0,
+     "384": 10417.0,
+     "386": 27066.0,
+     "391": 7872.0
+    },
+    "mac_activity": 0.20936149590081177,
+    "macs_per_mac_active": 940.4444444444445,
+    "eff_1024": 0.9184027777777778,
+    "dpu_over_mac": 1.0,
+    "macs_per_1024_npu_active": 0.19227817939501635,
+    "stage4k_nearest": 768,
+    "rate_over_640": 1.4694444444444446,
+    "rate_over_768": 1.224537037037037,
+    "c16_rate_768": 736.0,
+    "rate_over_c16_768": 1.277777777777778
+   },
+   "traffic": {
+    "sram_rd_beats": 25088.0,
+    "sram_rd_trans": 1568.0,
+    "sram_wr_beats": 9216.0,
+    "sram_wr_trans": 576.0,
+    "ext_rd_beats": 27066.0,
+    "ext_rd_trans": 10417.0,
+    "ext_wr_beats": 7872.0
+   },
+   "layout": {
+    "ok": true,
+    "checks": {
+     "arena_where": true,
+     "arena_inside": true,
+     "fast_inside": true,
+     "fast_disjoint": true,
+     "weights_ddr": true,
+     "io_in_arena": true
+    }
+   },
+   "arena_base": 1879140208,
+   "output_sha256": "b9341e6f7af83862c58793b496c2a79d01d5c032e124cfb000d74b353ecf8e92",
+   "status": "VALID",
+   "reasons": []
+  },
+  "B3-L1000": {
+   "key": "B3-L1000",
+   "config": "e2eb_b3",
+   "metrics": {
+    "n_mac": 19501056,
+    "npu_active": 72526.5,
+    "npu_active_range": 1189,
+    "npu_active_pass_b": 72406.0,
+    "mac_active": 20736.0,
+    "mac_dpu_active": 20736.0,
+    "ao_active": 14922.0,
+    "wd_active": 3581.0,
+    "wd_stalled": 34884.0,
+    "reserved_53": 15798.5,
+    "reserved_55": 1122.0,
+    "pass_b": {
+     "128": 11192.0,
+     "130": 40832.0,
+     "132": 5388.0,
+     "135": 17088.0,
+     "384": 793.0,
+     "386": 11322.0,
+     "391": 0.0
+    },
+    "mac_activity": 0.2859092883290935,
+    "macs_per_mac_active": 940.4444444444445,
+    "eff_1024": 0.9184027777777778,
+    "dpu_over_mac": 1.0,
+    "macs_per_1024_npu_active": 0.2625798845939071,
+    "stage4k_nearest": 768,
+    "rate_over_640": 1.4694444444444446,
+    "rate_over_768": 1.224537037037037,
+    "c16_rate_768": 736.0,
+    "rate_over_c16_768": 1.277777777777778
+   },
+   "traffic": {
+    "sram_rd_beats": 40832.0,
+    "sram_rd_trans": 11192.0,
+    "sram_wr_beats": 17088.0,
+    "sram_wr_trans": 5388.0,
+    "ext_rd_beats": 11322.0,
+    "ext_rd_trans": 793.0,
+    "ext_wr_beats": 0.0
+   },
+   "layout": {
+    "ok": true,
+    "checks": {
+     "arena_where": true,
+     "arena_inside": true,
+     "fast_inside": true,
+     "fast_disjoint": true,
+     "weights_ddr": true,
+     "io_in_arena": true
+    }
+   },
+   "arena_base": 822568816,
+   "output_sha256": "b9341e6f7af83862c58793b496c2a79d01d5c032e124cfb000d74b353ecf8e92",
+   "status": "VALID",
+   "reasons": []
+  },
+  "B3-L500": {
+   "key": "B3-L500",
+   "config": "e2eb_b3",
+   "metrics": {
+    "n_mac": 19501056,
+    "npu_active": 60320.0,
+    "npu_active_range": 1197,
+    "npu_active_pass_b": 60453.5,
+    "mac_active": 20736.0,
+    "mac_dpu_active": 20736.0,
+    "ao_active": 14921.0,
+    "wd_active": 5882.5,
+    "wd_stalled": 21348.5,
+    "reserved_53": 2975.0,
+    "reserved_55": 2282.0,
+    "pass_b": {
+     "128": 11192.0,
+     "130": 40832.0,
+     "132": 5388.0,
+     "135": 17088.0,
+     "384": 793.0,
+     "386": 11322.0,
+     "391": 0.0
+    },
+    "mac_activity": 0.3437665782493369,
+    "macs_per_mac_active": 940.4444444444445,
+    "eff_1024": 0.9184027777777778,
+    "dpu_over_mac": 1.0,
+    "macs_per_1024_npu_active": 0.3157161803713528,
+    "stage4k_nearest": 768,
+    "rate_over_640": 1.4694444444444446,
+    "rate_over_768": 1.224537037037037,
+    "c16_rate_768": 736.0,
+    "rate_over_c16_768": 1.277777777777778
+   },
+   "traffic": {
+    "sram_rd_beats": 40832.0,
+    "sram_rd_trans": 11192.0,
+    "sram_wr_beats": 17088.0,
+    "sram_wr_trans": 5388.0,
+    "ext_rd_beats": 11322.0,
+    "ext_rd_trans": 793.0,
+    "ext_wr_beats": 0.0
+   },
+   "layout": {
+    "ok": true,
+    "checks": {
+     "arena_where": true,
+     "arena_inside": true,
+     "fast_inside": true,
+     "fast_disjoint": true,
+     "weights_ddr": true,
+     "io_in_arena": true
+    }
+   },
+   "arena_base": 822568816,
+   "output_sha256": "b9341e6f7af83862c58793b496c2a79d01d5c032e124cfb000d74b353ecf8e92",
+   "status": "VALID",
+   "reasons": []
+  },
+  "REF": {
+   "key": "REF",
+   "config": "s4c2_conv_cin48",
+   "metrics": {
+    "n_mac": 2654208,
+    "npu_active": 23026.5,
+    "npu_active_range": 846,
+    "npu_active_pass_b": 22561.5,
+    "mac_active": 3456.0,
+    "mac_dpu_active": 3456.0,
+    "ao_active": 3535.5,
+    "wd_active": 1781.0,
+    "wd_stalled": 10412.5,
+    "reserved_53": 0.0,
+    "reserved_55": 9028.5,
+    "pass_b": {
+     "128": 400.0,
+     "130": 3520.0,
+     "132": 29.0,
+     "135": 440.0,
+     "384": 327.0,
+     "386": 3929.0,
+     "391": 3456.0
+    },
+    "mac_activity": 0.15008794215360563,
+    "macs_per_mac_active": 768.0,
+    "eff_1024": 0.75,
+    "dpu_over_mac": 1.0,
+    "macs_per_1024_npu_active": 0.11256595661520422,
+    "stage4k_nearest": 768,
+    "rate_over_640": 1.2,
+    "rate_over_768": 1.0,
+    "c16_rate_768": 768.0,
+    "rate_over_c16_768": 1.0
+   },
+   "traffic": {
+    "sram_rd_beats": 3520.0,
+    "sram_rd_trans": 400.0,
+    "sram_wr_beats": 440.0,
+    "sram_wr_trans": 29.0,
+    "ext_rd_beats": 3929.0,
+    "ext_rd_trans": 327.0,
+    "ext_wr_beats": 3456.0
+   },
+   "layout": {
+    "ok": true,
+    "checks": {
+     "arena_where": true,
+     "arena_inside": true,
+     "fast_inside": true,
+     "fast_disjoint": true,
+     "weights_ddr": true,
+     "io_in_arena": true
+    }
+   },
+   "arena_base": 1879056768,
+   "output_sha256": "86d13e7c6cae01b38808007412a92bade84299f9c56149d5555ab709edf52ddc",
+   "status": "VALID",
+   "reasons": []
+  }
+ },
+ "mac_equals_h1uc": {
+  "B0-L1000": true,
+  "B0-L500": true,
+  "B3-L1000": true,
+  "B3-L500": true
+ },
+ "effects": {
+  "usable": true,
+  "pe": {
+   "500": 38724.0,
+   "1000": 86596.0
+  },
+  "tol_pe": {
+   "500": 1523,
+   "1000": 2831
+  },
+  "le": {
+   "B0": 60078.5,
+   "B3": 12206.5
+  },
+  "tol_le": {
+   "B0": 1968,
+   "B3": 2386
+  },
+  "interaction": 47872.0,
+  "tol_interaction": 4354,
+  "le_share_removed": 0.7968241550637916,
+  "ratio": {
+   "B0": 1.6065839424902064,
+   "B3": 1.202362400530504
+  }
+ },
+ "ext_traffic": {
+  "B0": {
+   "500": {
+    "sram_rd_beats": 25088.0,
+    "sram_rd_trans": 1568.0,
+    "sram_wr_beats": 9216.0,
+    "sram_wr_trans": 576.0,
+    "ext_rd_beats": 27066.0,
+    "ext_rd_trans": 10417.0,
+    "ext_wr_beats": 7872.0,
+    "expected_ext_rd": 27066.0,
+    "within": true
+   },
+   "1000": {
+    "sram_rd_beats": 25088.0,
+    "sram_rd_trans": 1568.0,
+    "sram_wr_beats": 9216.0,
+    "sram_wr_trans": 576.0,
+    "ext_rd_beats": 27066.0,
+    "ext_rd_trans": 10417.0,
+    "ext_wr_beats": 7872.0,
+    "expected_ext_rd": 27066.0,
+    "within": true
+   }
+  },
+  "B3": {
+   "500": {
+    "sram_rd_beats": 40832.0,
+    "sram_rd_trans": 11192.0,
+    "sram_wr_beats": 17088.0,
+    "sram_wr_trans": 5388.0,
+    "ext_rd_beats": 11322.0,
+    "ext_rd_trans": 793.0,
+    "ext_wr_beats": 0.0,
+    "expected_ext_rd": 11321.25,
+    "within": true
+   },
+   "1000": {
+    "sram_rd_beats": 40832.0,
+    "sram_rd_trans": 11192.0,
+    "sram_wr_beats": 17088.0,
+    "sram_wr_trans": 5388.0,
+    "ext_rd_beats": 11322.0,
+    "ext_rd_trans": 793.0,
+    "ext_wr_beats": 0.0,
+    "expected_ext_rd": 11321.25,
+    "within": true
+   }
+  }
+ },
+ "activity": {
+  "500": {
+   "B0": {
+    "npu_active": 99044.0,
+    "mac_active": 20736.0,
+    "mac_dpu_active": 20736.0,
+    "ao_active": 14974.5,
+    "wd_active": 5900.0,
+    "wd_stalled": 23662.0,
+    "sram_rd_beats": 25088.0,
+    "sram_rd_trans": 1568.0,
+    "sram_wr_beats": 9216.0,
+    "sram_wr_trans": 576.0,
+    "ext_rd_beats": 27066.0,
+    "ext_rd_trans": 10417.0,
+    "ext_wr_beats": 7872.0
+   },
+   "B3": {
+    "npu_active": 60320.0,
+    "mac_active": 20736.0,
+    "mac_dpu_active": 20736.0,
+    "ao_active": 14921.0,
+    "wd_active": 5882.5,
+    "wd_stalled": 21348.5,
+    "sram_rd_beats": 40832.0,
+    "sram_rd_trans": 11192.0,
+    "sram_wr_beats": 17088.0,
+    "sram_wr_trans": 5388.0,
+    "ext_rd_beats": 11322.0,
+    "ext_rd_trans": 793.0,
+    "ext_wr_beats": 0.0
+   },
+   "delta": {
+    "npu_active": -38724.0,
+    "mac_active": 0.0,
+    "mac_dpu_active": 0.0,
+    "ao_active": -53.5,
+    "wd_active": -17.5,
+    "wd_stalled": -2313.5,
+    "sram_rd_beats": 15744.0,
+    "sram_rd_trans": 9624.0,
+    "sram_wr_beats": 7872.0,
+    "sram_wr_trans": 4812.0,
+    "ext_rd_beats": -15744.0,
+    "ext_rd_trans": -9624.0,
+    "ext_wr_beats": -7872.0
+   },
+   "read_total": {
+    "B0": 52154.0,
+    "B3": 52154.0
+   },
+   "write_total": {
+    "B0": 17088.0,
+    "B3": 17088.0
+   }
+  },
+  "1000": {
+   "B0": {
+    "npu_active": 159122.5,
+    "mac_active": 20736.0,
+    "mac_dpu_active": 20736.0,
+    "ao_active": 14921.0,
+    "wd_active": 3571.0,
+    "wd_stalled": 42774.0,
+    "sram_rd_beats": 25088.0,
+    "sram_rd_trans": 1568.0,
+    "sram_wr_beats": 9216.0,
+    "sram_wr_trans": 576.0,
+    "ext_rd_beats": 27066.0,
+    "ext_rd_trans": 10417.0,
+    "ext_wr_beats": 7872.0
+   },
+   "B3": {
+    "npu_active": 72526.5,
+    "mac_active": 20736.0,
+    "mac_dpu_active": 20736.0,
+    "ao_active": 14922.0,
+    "wd_active": 3581.0,
+    "wd_stalled": 34884.0,
+    "sram_rd_beats": 40832.0,
+    "sram_rd_trans": 11192.0,
+    "sram_wr_beats": 17088.0,
+    "sram_wr_trans": 5388.0,
+    "ext_rd_beats": 11322.0,
+    "ext_rd_trans": 793.0,
+    "ext_wr_beats": 0.0
+   },
+   "delta": {
+    "npu_active": -86596.0,
+    "mac_active": 0.0,
+    "mac_dpu_active": 0.0,
+    "ao_active": 1.0,
+    "wd_active": 10.0,
+    "wd_stalled": -7890.0,
+    "sram_rd_beats": 15744.0,
+    "sram_rd_trans": 9624.0,
+    "sram_wr_beats": 7872.0,
+    "sram_wr_trans": 4812.0,
+    "ext_rd_beats": -15744.0,
+    "ext_rd_trans": -9624.0,
+    "ext_wr_beats": -7872.0
+   },
+   "read_total": {
+    "B0": 52154.0,
+    "B3": 52154.0
+   },
+   "write_total": {
+    "B0": 17088.0,
+    "B3": 17088.0
+   }
+  }
+ },
+ "vela_b0": {
+  "500": {
+   "vela": 53052,
+   "board": 99044.0,
+   "board_over_vela": 1.8669230189248285
+  },
+  "1000": {
+   "vela": 83142,
+   "board": 159122.5,
+   "board_over_vela": 1.9138642322773087
+  }
+ },
+ "b0_vs_e2d": {
+  "500": {
+   "e2d": 99233.5,
+   "now": 99044.0,
+   "within": true
+  },
+  "1000": {
+   "e2d": 158505.0,
+   "now": 159122.5,
+   "within": true
+  }
+ },
+ "vela_le_b0": {
+  "vela": 30090,
+  "board": 60078.5
+ },
+ "verdicts": {
+  "measurement_validity": "VALID",
+  "graph_io_placement": "IO_PLACEMENT_EFFECT_OBSERVED",
+  "latency_sensitivity": "IO_SENSITIVITY_REDUCED",
+  "residual_ext_path": "WEIGHT_AND_COMMAND_EXT_PATH_CONFIRMED",
+  "residual_latency_response": "RESIDUAL_RESPONSE_OBSERVED",
+  "pipeline_mechanism": "MECHANISM_UNRESOLVED"
+ },
+ "b3_vela": "NO_COMPARABLE_VELA_ESTIMATE",
+ "limits": [
+  "one boot per condition; no boot repetition",
+  "graph input and output move together (B1/B2 UNAVAILABLE)",
+  "weight supply and command-stream fetch stay on EXT in both; not separable here",
+  "physical memory, AXI port and TA (SRAM vs EXT) change together with the placement",
+  "drift checked once by REF; L500 B0->B3, L1000 B3->B0 does not remove it"
+ ]
+}
