@@ -9,6 +9,7 @@ and latency (the corrected expectation). Output: one JSON per code tree; the rep
 
   regression.py <code root> <repo root (data)> <out.json>
 """
+import atexit
 import csv
 import json
 import pathlib
@@ -54,6 +55,7 @@ def merged(dirs: list[pathlib.Path]) -> pathlib.Path:
     if len(dirs) == 1:
         return dirs[0]
     tmp = pathlib.Path(tempfile.mkdtemp())
+    atexit.register(shutil.rmtree, tmp, True)
     for d in dirs:
         for f in d.iterdir():
             if f.is_file() and not (tmp / f.name).exists():

@@ -25,6 +25,12 @@ DRAM, SRAM = RAW / "e2d_w0p0/wfe", RAW / "e2d_w0p1/wfe"
 MAINT = REPO / "evidence/maint/identity_placement"
 
 
+def tmp(case: unittest.TestCase) -> pathlib.Path:
+    d = pathlib.Path(tempfile.mkdtemp())
+    case.addCleanup(shutil.rmtree, d, True)
+    return d
+
+
 def k(folder, cfg, *exp):
     return K.identity(folder, WL, cfg, CAPS, *exp)
 
@@ -54,7 +60,7 @@ class ExpectedObserved(unittest.TestCase):
         self.assertFalse(k(SRAM, "e2d_w0p1", 2)["checks"]["regioncfg"])
 
     def test_one_run_off(self):
-        d = pathlib.Path(tempfile.mkdtemp()) / "wfe"
+        d = tmp(self) / "wfe"
         shutil.copytree(SRAM, d)
         runs = json.loads((d / "raw_runs.json").read_text())
         runs[-1]["record"]["placement"] = 0
@@ -64,7 +70,7 @@ class ExpectedObserved(unittest.TestCase):
 
 class RegionCfg(unittest.TestCase):
     def test_wrong_regioncfg(self):
-        d = pathlib.Path(tempfile.mkdtemp()) / "wfe"
+        d = tmp(self) / "wfe"
         shutil.copytree(SRAM, d)
         runs = json.loads((d / "raw_runs.json").read_text())
         for x in runs[1:]:
@@ -131,7 +137,7 @@ class AllCallPaths(unittest.TestCase):
     """Every identity-path folder, judged with the current code, against the committed before-change results: only
     the three W0-P1 placement terms under a placement-1 manifest entry may change (False -> True)."""
     def test_regression(self):
-        d = pathlib.Path(tempfile.mkdtemp())
+        d = tmp(self)
         subprocess.run([sys.executable, str(MAINT / "regression.py"), str(REPO), str(REPO), str(d / "after.json")],
                        check=True, capture_output=True)
         p = subprocess.run([sys.executable, str(MAINT / "compare.py"), str(MAINT / "before.json"), str(d / "after.json"),
@@ -145,7 +151,7 @@ class AllCallPaths(unittest.TestCase):
 class CompareGate(unittest.TestCase):
     """compare.py itself: an unexpected difference must give REGRESSION_FAIL (exit 1)."""
     def run_cmp(self, after: dict) -> tuple[int, dict]:
-        d = pathlib.Path(tempfile.mkdtemp())
+        d = tmp(self)
         (d / "a.json").write_text(json.dumps(after))
         p = subprocess.run([sys.executable, str(MAINT / "compare.py"), str(MAINT / "before.json"), str(d / "a.json"),
                             str(d / "c.json")], capture_output=True)
