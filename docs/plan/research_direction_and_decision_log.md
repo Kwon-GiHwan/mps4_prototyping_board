@@ -41,7 +41,7 @@
 | E2E-C | READY_FOR_TARGETED_BOARD_REVIEW(방법 B) | `d94840d` |
 | E2E-D | VALID, WEIGHT_SCALE_REMAP_CONFIRMED, B3_REPRODUCED, WEIGHT_PATH_DOMINANT_RESPONSE(R 0.064), MECHANISM_UNRESOLVED; L500에서 B3w +3,840 느림 | 결과 커밋 참조 |
 | Stage 6C-0 | 완료(보드 없음): 통합 95행·21쌍·Vela 57행, F1–F5 선정, 8형상 컴파일 검증, 6C 보드 초안 9 boot(승인 대기) | 74aa09d 동결 |
-| Stage 6F-0 | 완료(보드 없음): kws·ad DECOMPOSED_PARTIALLY_PREDICTED(V 0.669/0.646, D 1), 나머지 6D 판정 재현; Runtime 7개 모두 미설명(kws·ad 직렬 분해만, 나머지 하한만); Vela cycles_total 기준 OVER 4·UNDER 1·경계 2; 권고 X_LAT(12 boot, 승인 대기) | 동결 757da42 |
+| Stage 6F-0 | 완료(보드 없음): kws·ad DECOMPOSED_PARTIALLY_PREDICTED(V 0.669/0.646, D 1), 나머지 6D 판정 재현; Runtime 7개 모두 미설명(kws·ad 직렬 분해만, 나머지 하한만); Vela cycles_total 기준 OVER 3·AGREE 1·UNDER 1·경계 2; 권고 X_LAT(12 boot, 승인 대기) | 동결 757da42 |
 
 ## 다음 순서 (ChatGPT 2026-11-18)
 

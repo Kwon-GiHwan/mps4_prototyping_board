@@ -151,7 +151,7 @@
 
 **정정의 의미**:
 - cycles_total 기준으로 보면 yolo가 AGREEMENT → OVER로 바뀌고, kws·vww4는 경계 안(INSUFFICIENT)이 된다.
-- 7개 중 4개가 과대예측(보드가 더 빠름), 1개가 과소예측(rnnoise)이다.
+- 분류는 OVER 3(mobilenet·yolo·wav2letter), AGREE 1(ad), UNDER 1(rnnoise), INSUFFICIENT 2(kws·vww4)다. 비율 자체가 1 미만인 모델은 rnnoise를 뺀 6개다.
 - 6D의 cycles_npu 분류는 바꾸지 않고 역사값으로 둔다.
 
 **어떤 항이 Vela 값을 정하는가**:
