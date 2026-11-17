@@ -1,0 +1,2 @@
+# Stage 6B-E2E-B boot 4/5: B3, TA profile 1 with EXT RLATENCY 1000, L1000 image (bram fd478e2d)
+461 e2eb_b3 @/home/gihwan/evsweep_s6be2eb_l1000/conditions.txt
