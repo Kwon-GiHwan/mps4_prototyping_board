@@ -1,0 +1,467 @@
+Stage 6E-0 공식 지시
+Model-Level Execution Cost Attribution & Compiler Fidelity — Static Feasibility Study
+0. 공식 결정
+
+Stage 6D 결과를 수용한다.
+
+계약: 82a398c
+
+결과: aad5265
+
+결정 로그: e1ae397
+
+기존 Stage 6-M 판정 유지: COVERAGE_EXPANDED_NOT_EXPLAINED
+
+다음 작업은 Stage 6E-0으로 확정한다.
+
+Stage 6D에서 제안한 G_DF_EXT는 유효한 후보로 보존하지만, 현재 보드 측정은 승인하지 않는다.
+
+이번 단계는 보드 없는 정적 분석과 실험 설계만 수행한다.
+
+목표는 실제 7개 MLEK 모델의 NPU_ACTIVE 및 Vela 예측 오차를 설명하기 위해, 기존 독립 연산 Characterization을 모델 실행과 연결할 수 있는 검증 방법을 확립하는 것이다.
+
+신규 보드 실행, TA 변경, 펌웨어 배포, 기존 결과 수정은 승인하지 않는다.
+
+1. 연구 질문
+
+RQ-E1 — Compute Cost Attribution
+
+독립 연산에서 측정한 MAC_ACTIVE와 실제 모델의 MAC_ACTIVE 사이에 발생하는 차이를 어떤 조건에서 설명할 수 있는가?
+
+RQ-E2 — Execution Overlap
+
+실제 모델의 연산 간 실행 중첩, 데이터 의존성 및 DMA 활동이 NPU_ACTIVE에 미치는 영향을 기존 계측과 실행 구조로 구분할 수 있는가?
+
+RQ-E3 — Vela Fidelity
+
+Vela의 연산별 Compute/SRAM/DRAM 비용과 실제 모델의 실행시간 오차를 연결할 수 있는 검증 가능한 방법이 있는가?
+
+RQ-E4 — Model-Level Generalization
+
+현재 Hardware Characterization의 적용 범위를 넓히는 것과 실제 모델 실행시간 설명력을 개선하는 것 중 어떤 연구 공백이 더 중요한가?
+
+2. Phase 0 — 기존 데이터 및 판정 보존
+
+다음 자료를 사용한다.
+
+Stage 2B의 연산별 PMU 귀속 실패 결과
+
+Stage 3 Memory/AXI 계측
+
+Stage 4 Unit Characterization
+
+Stage 6B H1-UC
+
+Stage 6-M
+
+Stage 6C
+
+Stage 6D
+
+E2 계열 Vela/Memory 실험
+
+Vela 5.0.0 컴파일 산출물
+
+기존 MLEK Runner 및 PMU 계측 코드
+
+모든 기존 결과와 공식 판정을 보존한다.
+
+측정 조건이 다른 데이터는 직접 비교하지 않는다.
+
+Stage 2B의 비동기 실행 중첩 문제를 해결했다고 가정하지 않는다.
+
+3. Phase 1 — 모델별 설명되지 않은 비용 분리
+
+7개 모델 각각에 대해 다음 항목을 정리한다.
+
+실제 NPU_ACTIVE
+
+실제 MAC_ACTIVE
+
+MAC_DPU_ACTIVE
+
+AO_ACTIVE
+
+WD_ACTIVE / WD_STALLED
+
+SRAM/EXT 전송량
+
+AXI 요청·포트 활동
+
+Vela 예상 실행시간
+
+기존 독립 연산 기반 MAC_ACTIVE 예측
+
+예측과 측정 사이의 차이
+
+다음 차이를 명확하게 구분한다.
+
+Compute Prediction Residual
+
+실제 MAC_ACTIVE와 독립 연산 기반 MAC_ACTIVE 예측 합의 차이.
+
+Execution Cost Residual
+
+실제 NPU_ACTIVE와 유효한 실행시간 예측값의 차이.
+
+Vela Prediction Error
+
+실제 NPU_ACTIVE와 Vela 예상 실행시간의 차이.
+
+세 지표는 서로 다른 개념이다.
+
+MAC_ACTIVE 예측 오차를 NPU_ACTIVE 예측 오차와 혼동하지 않는다.
+
+유효한 모델 수준 실행시간 예측기가 없다면 Execution Cost Residual을 임의로 계산하지 않는다.
+
+4. Phase 2 — AD 잔여 MAC_ACTIVE 분석
+
+AD는 기존 Characterization Coverage가 높음에도 MAC_ACTIVE 예측 합이 모델 측정값보다 크게 작은 사례다.
+
+따라서 우선 진단 대상으로 사용한다.
+
+단, AD 하나의 문제에 연구 전체를 종속시키지 않는다.
+
+다음 항목을 확인한다.
+
+원본 모델의 Vela kernel 구성
+
+DepthFirst / PartKernel 분포
+
+Cin/Cout 및 OFM block
+
+H1-UC 적용 가능 범위
+
+모델 내부 연산과 독립 재구성의 차이
+
+Weight/Scale 및 IFM/OFM 배치
+
+Fused activation
+
+Vela kernel 분할 및 실행 반복
+
+TFLite N_MAC과 Vela mac_count의 차이
+
+PMU 측정창과 실행 반복 수
+
+독립 연산 계수 합산의 유효성
+
+우선 기존 자료만으로 설명 가능한 차이를 확인한다.
+
+특히 MAC_ACTIVE는 처리부가 활성화된 사이클이므로 연산별 실행 구간의 중첩이나 계측 경계가 존재할 경우 단순 합산이 가능한지 검증한다.
+
+기존 Stage 2B에서 실패한 귀속 방식을 재사용하지 않는다.
+
+설명되지 않은 차이를 임의로 Padding, DMA 또는 WD Stall에 귀속하지 않는다.
+
+5. Phase 3 — 실제 모델의 실행 구조와 계측 가능성
+
+기존 Runner 및 Vela 산출물을 조사한다.
+
+다음 사항을 확인한다.
+
+Command Execution
+
+Command stream 구조
+
+Kernel 실행 순서
+
+연산 간 의존성
+
+Command queue 및 실행 완료 경계
+
+가능한 동기화 지점
+
+Compute Units
+
+MAC/DPU 활동 계측 범위
+
+AO/WD와의 동시 활동
+
+연산 단위 활동을 직접 구분할 수 있는지
+
+Memory / AXI
+
+DMA 요청과 연산 실행의 중첩
+
+입력·가중치·출력 공급 경로
+
+AXI 요청·응답 이벤트의 계측 가능성
+
+포트별 활동과 실행시간 연결 가능성
+
+Instrumentation
+
+기존 PMU의 한계
+
+기존 Stage 2B 실패 원인
+
+추가 계측 없이 가능한 분석
+
+계측 변경이 필요한 경우의 구현 범위
+
+PMU 카운터를 더 많이 수집하는 것만으로 연산별 시간 귀속이 가능하다고 가정하지 않는다.
+
+공개 하드웨어 인터페이스에서 실제로 식별 가능한 범위를 조사한다.
+
+6. Phase 4 — Vela 비용 모델과 모델 실행 연결
+
+Vela 5.0.0의 실제 비용 계산 구조를 기준으로 분석한다.
+
+다음 항목을 비교한다.
+
+Compute 비용
+
+SRAM 접근 비용
+
+DRAM 접근 비용
+
+연산별 최대 비용 선택
+
+연산별 비용 합산
+
+실제 Command stream 및 Kernel mapping
+
+모델 전체의 NPU_ACTIVE
+
+특히 다음 사례를 포함한다.
+
+AD
+
+높은 Compute Coverage에도 남은 MAC_ACTIVE 예측 차이.
+
+RNNoise
+
+FC 중심 실행 구성과 Vela 과소예측.
+
+Wav2Letter
+
+높은 MAC 효율과 Vela 과대예측.
+
+YOLO / VWW4
+
+PartKernel·Depthwise·AO 활동과 Vela 비용의 관계.
+
+MobileNetV2
+
+기존 DepthFirst Characterization의 설명 범위와 Vela 과대예측.
+
+KWS
+
+첫 Conv의 낮은 처리 효율과 모델 전체 MAC_ACTIVE 차이.
+
+Vela 오차를 단일 보정계수로 맞히지 않는다.
+
+기존 F2 Depthwise의 Vela 성능 변화 방향 반대 사례를 중요한 반례로 보존한다.
+
+단, F2만을 위한 신규 실험으로 이번 단계를 변경하지 않는다.
+
+7. Phase 5 — 다음 보드 실험의 식별력 평가
+
+이번 단계에서는 모델 수준 설명력을 실제로 개선할 수 있는 단일 후속 실험을 설계한다.
+
+다음 조건을 모두 검토한다.
+
+어떤 모델 수준 미해결 비용을 설명하려는가?
+
+기존 Characterization으로 해결할 수 없는 이유는 무엇인가?
+
+통제 가능한 독립 변수가 있는가?
+
+경쟁 가설이 서로 다른 관측 결과를 예측하는가?
+
+NPU_ACTIVE와 Unit/AXI 계측을 함께 확보할 수 있는가?
+
+Vela 예상값과 직접 비교할 수 있는가?
+
+기존 Stage 2B 귀속 오류를 피할 수 있는가?
+
+실제 모델의 실행 조건을 얼마나 보존하는가?
+
+실험 이후 다른 모델에 적용 가능한가?
+
+어떤 결과가 나오면 실험을 종료하는가?
+
+G_DF_EXT를 기존 후보로 평가하되, 높은 MAC Coverage 증가만으로 자동 선정하지 않는다.
+
+새로운 형상 측정이 모델 전체 실행시간의 설명력을 개선하지 못한다면 해당 한계를 명시한다.
+
+반대로 기존 하드웨어 Characterization의 적용 범위가 핵심 장애물이라는 근거가 확보되면 이를 정당한 후속 실험 대상으로 인정한다.
+
+후속 실험은 하나만 권고한다.
+
+8. 결과 판정
+
+다음 항목을 별도로 판정한다.
+
+Compute Attribution
+
+EXPLAINED_WITH_EXISTING_DATA
+
+PARTIALLY_EXPLAINED
+
+NOT_IDENTIFIABLE
+
+Execution Cost
+
+MEASURABLE_WITH_EXISTING_INSTRUMENTATION
+
+REQUIRES_CONTROLLED_EXPERIMENT
+
+NOT_IDENTIFIABLE
+
+Vela Fidelity
+
+TESTABLE_MECHANISM_IDENTIFIED
+
+DISCREPANCY_CHARACTERIZED
+
+CAUSE_UNRESOLVED
+
+Next Experiment
+
+READY_FOR_BOARD_REVIEW
+
+STATIC_DESIGN_INCOMPLETE
+
+INSUFFICIENT_IDENTIFIABILITY
+
+판정 기준은 분석 전에 동결한다.
+
+실제 보드 실행은 별도 승인 전까지 수행하지 않는다.
+
+9. 산출물
+
+7개 모델의 Compute/Execution/Vela 차이 비교표
+
+AD의 MAC_ACTIVE 잔여 차이 진단
+
+Stage 2B 실패 원인과 재발 방지 조건
+
+실제 모델 실행 구조 및 계측 가능성 조사
+
+Unit/AXI 활동과 실행시간의 연결 가능 범위
+
+Vela 비용 모델의 검증 가능한 오차 원인
+
+기존 Characterization의 적용 범위 평가
+
+단일 후속 실험의 정적 설계 및 예산
+
+연구 방향 및 사용자 결정 로그
+
+기존 결과 불변성을 유지한다.
+
+분석 코드·선정 규칙·판정 기준은 결과 계산 전에 동결한다.
+
+테스트, mutation 및 재현성 검증을 수행한다.
+
+로컬 커밋하고 push하지 않는다.
+
+10. Research Direction & Guardrails
+
+본 연구의 장기 목표는 Ethos-U85 Hardware–Compiler Performance Analysis다.
+
+다음 네 축을 균형 있게 유지한다.
+
+Compute/Unit
+
+MAC·DPU·AO·WD, PartKernel·DW·FC의 처리율과 실제 실행 조건.
+
+Memory/Pipeline/AXI
+
+데이터 공급, 재사용, Burst, 요청, 포트, 실행 중첩과 전체 실행시간의 관계.
+
+Vela Compiler Fidelity
+
+Compute/Memory 비용 모델의 정확도, 과대·과소예측 및 성능 변화의 방향과 크기.
+
+Model-level Explainability
+
+7개 MLEK 모델의 NPU_ACTIVE와 실행 효율 차이에 대한 설명력.
+
+이번 Stage 6E-0은 새로운 하드웨어 측정을 무조건 추가하기 위한 단계가 아니다.
+
+기존 독립 연산 Characterization과 실제 모델의 실행시간 사이에 존재하는 설명 공백을 검증 가능한 연구 질문으로 전환하기 위한 단계다.
+
+H1-UC 외삽, SRAM 배치, AD 잔여 비용, F2 Vela 반례 등 특정 문제 하나에 지나치게 집중하지 않는다.
+
+각 후속 실험은 다음을 명시해야 한다.
+
+왜 필요한가?
+
+기존 결과와 무엇이 다른가?
+
+어떤 새로운 하드웨어 특성을 규명하는가?
+
+Vela Fidelity에 어떤 근거를 추가하는가?
+
+실제 모델 설명력에 어떻게 연결되는가?
+
+언제 종료하는가?
+
+종료 후 전체 연구로 어떻게 복귀하는가?
+
+검증 가능한 새로운 현상이 있다면 실험은 계속한다.
+
+다만 이미 검증한 결과를 반복하거나, 특정 태스크의 세부 원인만 무제한 추적하지 않는다.
+
+11. User Request & Decision Log
+
+docs/plan/research_direction_and_decision_log.md를 갱신한다.
+
+이번 결정:
+
+Stage 6D 결과 수용
+
+COVERAGE_EXPANDED_NOT_EXPLAINED 유지
+
+G_DF_EXT 즉시 보드 측정 미승인
+
+G_DF_EXT를 유효한 후속 후보로 보존
+
+Stage 6E-0 정적 분석 승인
+
+모델 수준 NPU_ACTIVE 설명력과 Vela Fidelity를 우선 평가
+
+Hardware Characterization 연구 지속
+
+특정 H1-UC 또는 SRAM 배치 실험에 과도하게 집중하지 않음
+
+다음 후속 실험은 식별력을 기준으로 하나만 권고
+
+사용자에게 선택지를 요구하지 않음
+
+기존 결정 이력을 보존한다.
+
+12. 최종 보고
+
+계약·결과 커밋
+
+데이터 범위 및 검증 상태
+
+모델별 Compute/Execution/Vela 차이
+
+AD 잔여 MAC_ACTIVE 분석
+
+Stage 2B 귀속 실패와 현재 계측 한계
+
+실제 모델 실행 구조 분석
+
+Unit/AXI 활동의 시간적 귀속 가능성
+
+Vela 비용 모델의 미해결 원인
+
+기존 Characterization의 적용 범위
+
+후속 실험의 식별력
+
+단일 실험 권고 및 보드 예산
+
+연구 방향·결정 로그
+
+테스트·Mutation·원본 불변성
+
+최종 판정
+
+최종 지시: Stage 6E-0을 보드 없이 수행하고, 모델 수준 실행시간 설명력과 Vela 예측 오차를 실제로 검증할 수 있는 단일 후속 실험을 설계하여 보고하라. 보드 측정은 별도 승인 전까지 진행하지 않는다.
