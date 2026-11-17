@@ -1,0 +1,2 @@
+# Stage 6B-E2D Amendment A boot 7/9: W1-P0, TA profile 1 with EXT RLATENCY 1000, image L1000 (bram fd478e2d)
+455 e2d_w1p0 @/home/gihwan/evsweep_s6be2d_a_l1000/conditions.txt

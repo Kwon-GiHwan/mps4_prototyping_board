@@ -1,0 +1,27 @@
+# Owner-approved (Stage 6B-E2D Amendment A, 2026-11-17) sudo session: boots 449-457, evidence/stage6b/stage6be2d/amendment_a.md.
+# L500 (70090f1): REF, W0-P0, W0-P1, W1-P0, W1-P1; restore; L1000 (EXT RLATENCY 1000): W1-P1, W1-P0, W0-P1, W0-P0; restore; postflight.
+user python3 mcc.py USB_ON 4 && sleep 5 && test -e /dev/sdb1
+deploy_mlek /home/gihwan/evsweep_s6be2d_a_l500 /home/gihwan/evsweep/evidence_s6be2d_a_l500
+user OUTPUTS=1 STOP_ON_INVALID=1 sh run_driver_campaign.sh /home/gihwan/evsweep_s6be2d_a_l500 /home/gihwan/evsweep_s6be2d_a_run_l500 /home/gihwan/evsweep_s6be2d_a_l500/ids.txt /home/gihwan/evsweep_s6be2d_a_l500/plan_b01.txt 5
+user python3 host/analysis/stage6be2d.py repro-gate /home/gihwan/evsweep_s6be2d_a_run_l500 /home/gihwan/evsweep_s6be2d_a_wl /home/gihwan/evsweep_s6be1r/ref/wfe
+user OUTPUTS=1 STOP_ON_INVALID=1 sh run_driver_campaign.sh /home/gihwan/evsweep_s6be2d_a_l500 /home/gihwan/evsweep_s6be2d_a_run_l500 /home/gihwan/evsweep_s6be2d_a_l500/ids.txt /home/gihwan/evsweep_s6be2d_a_l500/plan_b02.txt 5
+user python3 host/analysis/stage6be2d.py boot-check /home/gihwan/evsweep_s6be2d_a_run_l500 /home/gihwan/evsweep_s6be2d_a_wl W0-P0-L500
+user OUTPUTS=1 STOP_ON_INVALID=1 sh run_driver_campaign.sh /home/gihwan/evsweep_s6be2d_a_l500 /home/gihwan/evsweep_s6be2d_a_run_l500 /home/gihwan/evsweep_s6be2d_a_l500/ids.txt /home/gihwan/evsweep_s6be2d_a_l500/plan_b03.txt 5
+user python3 host/analysis/stage6be2d.py boot-check /home/gihwan/evsweep_s6be2d_a_run_l500 /home/gihwan/evsweep_s6be2d_a_wl W0-P1-L500
+user OUTPUTS=1 STOP_ON_INVALID=1 sh run_driver_campaign.sh /home/gihwan/evsweep_s6be2d_a_l500 /home/gihwan/evsweep_s6be2d_a_run_l500 /home/gihwan/evsweep_s6be2d_a_l500/ids.txt /home/gihwan/evsweep_s6be2d_a_l500/plan_b04.txt 5
+user python3 host/analysis/stage6be2d.py boot-check /home/gihwan/evsweep_s6be2d_a_run_l500 /home/gihwan/evsweep_s6be2d_a_wl W1-P0-L500
+user OUTPUTS=1 STOP_ON_INVALID=1 sh run_driver_campaign.sh /home/gihwan/evsweep_s6be2d_a_l500 /home/gihwan/evsweep_s6be2d_a_run_l500 /home/gihwan/evsweep_s6be2d_a_l500/ids.txt /home/gihwan/evsweep_s6be2d_a_l500/plan_b05.txt 5
+user python3 host/analysis/stage6be2d.py boot-check /home/gihwan/evsweep_s6be2d_a_run_l500 /home/gihwan/evsweep_s6be2d_a_wl W1-P1-L500
+restore_mlek /home/gihwan/evsweep/evidence_s6be2d_a_l500 /home/gihwan/evsweep_s6be2d_a_l500
+user python3 mcc.py USB_ON 4 && sleep 5 && test -e /dev/sdb1
+deploy_mlek /home/gihwan/evsweep_s6be2d_a_l1000 /home/gihwan/evsweep/evidence_s6be2d_a_l1000
+user OUTPUTS=1 STOP_ON_INVALID=1 sh run_driver_campaign.sh /home/gihwan/evsweep_s6be2d_a_l1000 /home/gihwan/evsweep_s6be2d_a_run_l1000 /home/gihwan/evsweep_s6be2d_a_l1000/ids.txt /home/gihwan/evsweep_s6be2d_a_l1000/plan_b06.txt 5
+user python3 host/analysis/stage6be2d.py boot-check /home/gihwan/evsweep_s6be2d_a_run_l1000 /home/gihwan/evsweep_s6be2d_a_wl W1-P1-L1000
+user OUTPUTS=1 STOP_ON_INVALID=1 sh run_driver_campaign.sh /home/gihwan/evsweep_s6be2d_a_l1000 /home/gihwan/evsweep_s6be2d_a_run_l1000 /home/gihwan/evsweep_s6be2d_a_l1000/ids.txt /home/gihwan/evsweep_s6be2d_a_l1000/plan_b07.txt 5
+user python3 host/analysis/stage6be2d.py boot-check /home/gihwan/evsweep_s6be2d_a_run_l1000 /home/gihwan/evsweep_s6be2d_a_wl W1-P0-L1000
+user OUTPUTS=1 STOP_ON_INVALID=1 sh run_driver_campaign.sh /home/gihwan/evsweep_s6be2d_a_l1000 /home/gihwan/evsweep_s6be2d_a_run_l1000 /home/gihwan/evsweep_s6be2d_a_l1000/ids.txt /home/gihwan/evsweep_s6be2d_a_l1000/plan_b08.txt 5
+user python3 host/analysis/stage6be2d.py boot-check /home/gihwan/evsweep_s6be2d_a_run_l1000 /home/gihwan/evsweep_s6be2d_a_wl W0-P1-L1000
+user OUTPUTS=1 STOP_ON_INVALID=1 sh run_driver_campaign.sh /home/gihwan/evsweep_s6be2d_a_l1000 /home/gihwan/evsweep_s6be2d_a_run_l1000 /home/gihwan/evsweep_s6be2d_a_l1000/ids.txt /home/gihwan/evsweep_s6be2d_a_l1000/plan_b09.txt 5
+user python3 host/analysis/stage6be2d.py boot-check /home/gihwan/evsweep_s6be2d_a_run_l1000 /home/gihwan/evsweep_s6be2d_a_wl W0-P0-L1000
+restore_mlek /home/gihwan/evsweep/evidence_s6be2d_a_l1000 /home/gihwan/evsweep_s6be2d_a_l1000
+user sh postflight.sh

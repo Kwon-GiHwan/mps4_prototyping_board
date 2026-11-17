@@ -19,7 +19,7 @@ import stage4k as K  # noqa: E402
 import stage6bb as BB  # noqa: E402
 import stage6be2b as E2B  # noqa: E402
 
-MANIFEST = "e2d_manifest.json"
+MANIFEST = "e2d_manifest_a.json"        # Amendment A; the original e2d_manifest.json (boots 440-448) is kept
 H1UC = 20736
 MODEL_TOL = 0.15
 NOISE_FLOOR = 0.01
@@ -27,8 +27,9 @@ VELA = {"W1-P0": (100310, 200622), "W1-P1": (53052, 83142), "W0-P0": (107812, 21
 PE_VELA = {500: 47258, 1000: 117480}
 INTERACTION_VELA = 70222
 CELLS = ("W0-P0", "W0-P1", "W1-P0", "W1-P1")
-ORDER = [("REF", 500, 440), ("W0-P0", 500, 441), ("W0-P1", 500, 442), ("W1-P0", 500, 443), ("W1-P1", 500, 444),
-         ("W1-P1", 1000, 445), ("W1-P0", 1000, 446), ("W0-P1", 1000, 447), ("W0-P0", 1000, 448)]
+ORDER = [("REF", 500, 449), ("W0-P0", 500, 450), ("W0-P1", 500, 451), ("W1-P0", 500, 452), ("W1-P1", 500, 453),
+         ("W1-P1", 1000, 454), ("W1-P0", 1000, 455), ("W0-P1", 1000, 456), ("W0-P0", 1000, 457)]   # Amendment A (was 440-448)
+PLACEMENT = {"REF": 0, "W0-P0": 0, "W0-P1": 1, "W1-P0": 0, "W1-P1": 0}                       # frozen expected placement
 DRWL = {"REF": "s4c2_conv_cin48", "W0-P0": "e2d_w0p0", "W0-P1": "e2d_w0p1", "W1-P0": "e2d_w1p0", "W1-P1": "e2d_w1p1"}
 STOP = ("CONFIG_MISMATCH", "UNMEASURED")
 
@@ -76,6 +77,16 @@ def mechanism() -> str:
     return "MECHANISM_UNRESOLVED"     # contract §5: no measurement here separates DMA overlap from AO/WD backpressure
 
 
+def placement_identity(ident: dict, records: list[dict], expected: int) -> dict:
+    """Amendment A (POSTHOC_JUDGE_CORRECTION): stage4k.identity's fixed `placement == 0` term is replaced, in this stage
+    only, by `every RUN's placement == the frozen manifest's expected placement`, and the manifest's placement must equal
+    the DRWL header's (identity_a1 `expected.placement`). Every other identity term is kept as it is."""
+    checks = dict(ident["checks"])
+    checks["placement"] = bool(records) and {r.get("placement") for r in records} == {expected}
+    checks["placement_manifest_equals_drwl"] = ident.get("expected", {}).get("placement", expected) == expected
+    return dict(ident, checks=checks)
+
+
 # ---- board results ----------------------------------------------------------------------------------------------------
 def config_result(root: pathlib.Path, wl: pathlib.Path, k: str) -> dict:
     m = json.loads((wl / MANIFEST).read_text())[k]
@@ -84,7 +95,8 @@ def config_result(root: pathlib.Path, wl: pathlib.Path, k: str) -> dict:
     base = dict(key=k, config=cfg)
     if not (folder / "raw_runs.json").exists() or not (folder / "runs.csv").exists():
         return dict(base, status="UNMEASURED", reasons=["no raw data"])
-    ident = BB.identity_of(folder, wl, cfg, m, str(wl / m["caps_ref"]))
+    ident = placement_identity(BB.identity_of(folder, wl, cfg, m, str(wl / m["caps_ref"])),
+                               [x["record"] for x in json.loads((folder / "raw_runs.json").read_text())[1:]], m["placement"])
     env = E2B.environment(folder, m, ident)
     if env:
         return dict(base, status="CONFIG_MISMATCH", reasons=env)
@@ -182,6 +194,8 @@ def judge(root500: str, root1000: str, wl: str, ref: str, out: str) -> dict:
 
 # ---- manifest -----------------------------------------------------------------------------------------------------------
 def manifest(wl: str, l1000_sha: str) -> dict:
+    sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "lib"))
+    import drwl
     wlp = pathlib.Path(wl)
     img = dict(reversed(line.split()) for line in pathlib.Path(l1000_sha).read_text().splitlines())
     image_l1000 = dict(boot_sha256=img["boot.bin"], bram_sha256=img["bram.bin"], ddr_sha256=img["ddr.bin"], images_txt_sha256=img["images.txt"])
@@ -191,7 +205,11 @@ def manifest(wl: str, l1000_sha: str) -> dict:
         cfg = DRWL[cell]
         m = dict(kind="reference", n_mac=k4["n_mac"], cin=48, internal_conv="CONV_OUTPUT_OBSERVED") if cell == "REF" else \
             dict(kind="A2" if cell.startswith("W1") else "A0", n_mac=19501056, cin=276, internal_conv="INTERNAL_CONV_NOT_OBSERVED")
-        out[key(cell, lat)] = dict(m, cell=cell, config=cfg, boot=boot, latency=lat, drwl_sha256=BB.sha(wlp / f"{cfg}.drwl"),
+        hdr = drwl.parse((wlp / f"{cfg}.drwl").read_bytes())["placement"]
+        if hdr != PLACEMENT[cell]:
+            raise SystemExit(f"{cfg}: DRWL placement {hdr} != frozen {PLACEMENT[cell]}")
+        out[key(cell, lat)] = dict(m, cell=cell, config=cfg, boot=boot, latency=lat, placement=PLACEMENT[cell],
+                                   drwl_sha256=BB.sha(wlp / f"{cfg}.drwl"),
                                    image=E2B.IMAGE_L500 if lat == 500 else image_l1000, ta_ext_rlatency=lat,
                                    caps_ref="caps_l500.json" if lat == 500 else "caps_l1000.json")
     (wlp / MANIFEST).write_text(json.dumps(out, indent=1, sort_keys=True))

@@ -11,12 +11,85 @@ def res(npu, rng, mac=20736, status="VALID"):
     return dict(status=status, reasons=[], metrics=dict(npu_active=npu, npu_active_range=rng, mac_active=mac))
 
 
+class PlacementIdentity(unittest.TestCase):
+    """Amendment A: placement = the frozen manifest's expected placement (and the DRWL's), every other term unchanged."""
+    def ident(self, exp_drwl):
+        return dict(checks=dict(placement=False, regioncfg=True, n_base=True), expected=dict(placement=exp_drwl))
+
+    def test_cases(self):
+        rec = lambda p: [dict(placement=p)] * 10
+        self.assertTrue(E.placement_identity(self.ident(0), rec(0), 0)["checks"]["placement"])         # DRAM / DRAM
+        self.assertTrue(E.placement_identity(self.ident(1), rec(1), 1)["checks"]["placement"])         # SRAM / SRAM
+        self.assertFalse(E.placement_identity(self.ident(0), rec(1), 0)["checks"]["placement"])        # DRAM expected, SRAM seen
+        self.assertFalse(E.placement_identity(self.ident(1), rec(0), 1)["checks"]["placement"])        # SRAM expected, DRAM seen
+        self.assertFalse(E.placement_identity(self.ident(1), rec(1)[:9] + [dict(placement=0)], 1)["checks"]["placement"])
+        self.assertFalse(E.placement_identity(self.ident(1), [], 1)["checks"]["placement"])
+        self.assertFalse(E.placement_identity(self.ident(0), rec(1), 1)["checks"]["placement_manifest_equals_drwl"])
+        kept = E.placement_identity(dict(checks=dict(placement=True, regioncfg=False), expected=dict(placement=1)), rec(1), 1)
+        self.assertFalse(kept["checks"]["regioncfg"])                                                  # other terms untouched
+
+
+class Regression(unittest.TestCase):
+    """Boots 440-442 (original session, kept unchanged) judged with the corrected code and a manifest copy whose boot
+    numbers are 440-442: W0-P1 must now be VALID; swapping the expected placement must give CONFIG_MISMATCH."""
+    RAW = pathlib.Path(__file__).resolve().parents[2] / "evidence/stage6b/stage6be2d/raw/evsweep_s6be2d_run_l500"
+    WL = pathlib.Path(__file__).resolve().parents[2] / "evidence/stage6b/stage6be2d/workloads"
+
+    def setUp(self):
+        import json, shutil, tempfile
+        self.d = pathlib.Path(tempfile.mkdtemp())
+        shutil.copytree(self.WL, self.d / "wl")
+        m = json.loads((self.WL / E.MANIFEST).read_text())
+        m["REF"]["boot"], m["W0-P0-L500"]["boot"], m["W0-P1-L500"]["boot"] = 440, 441, 442
+        self.m = m
+        (self.d / "wl" / E.MANIFEST).write_text(json.dumps(m))
+
+    def test_boot442(self):
+        import json
+        self.assertEqual(E.config_result(self.RAW, self.d / "wl", "W0-P1-L500")["status"], "VALID")
+        self.assertEqual(E.config_result(self.RAW, self.d / "wl", "W0-P0-L500")["status"], "VALID")
+        self.assertEqual(E.config_result(self.RAW, self.d / "wl", "REF")["status"], "VALID")
+        self.m["W0-P1-L500"]["placement"] = 0
+        (self.d / "wl" / E.MANIFEST).write_text(json.dumps(self.m))
+        r = E.config_result(self.RAW, self.d / "wl", "W0-P1-L500")
+        self.assertEqual(r["status"], "CONFIG_MISMATCH")
+        self.assertIn("identity placement", r["reasons"])
+
+    def test_wrong_regioncfg_and_digest(self):
+        import json
+        m = dict(self.m)
+        m["W0-P0-L500"] = dict(m["W0-P0-L500"], config="e2d_w0p1", drwl_sha256=m["W0-P1-L500"]["drwl_sha256"], boot=441)
+        (self.d / "wl" / E.MANIFEST).write_text(json.dumps(m))
+        r = E.config_result(self.RAW, self.d / "wl", "W0-P0-L500")      # boot 442's folder under a DRAM expectation
+        self.assertEqual(r["status"], "CONFIG_MISMATCH")
+        self.assertTrue({"identity placement", "boot index"} <= set(r["reasons"]))
+        m["W0-P1-L500"] = dict(self.m["W0-P1-L500"], drwl_sha256="0" * 64)
+        (self.d / "wl" / E.MANIFEST).write_text(json.dumps(m))
+        self.assertIn("workload sha256", E.config_result(self.RAW, self.d / "wl", "W0-P1-L500")["reasons"])
+
+
+class RegionCfg(Regression):
+    def test_wrong_regioncfg(self):
+        import json, shutil
+        raw = self.d / "raw"
+        shutil.copytree(self.RAW, raw)
+        f = raw / "conds/e2d_w0p1/wfe/raw_runs.json"
+        runs = json.loads(f.read_text())
+        for x in runs[1:]:
+            x["record"]["regioncfg_irq"] = 0x15F          # the DDR value, while placement 1 expects 0x153
+        f.write_text(json.dumps(runs))
+        r = E.config_result(raw, self.d / "wl", "W0-P1-L500")
+        self.assertEqual(r["status"], "CONFIG_MISMATCH")
+        self.assertIn("identity regioncfg", r["reasons"])
+
+
 class Rules(unittest.TestCase):
     def test_constants(self):
         self.assertEqual(E.PE_VELA, {500: 100310 - 53052, 1000: 200622 - 83142})
         self.assertEqual(E.INTERACTION_VELA, (200622 - 100310) - (83142 - 53052))
         self.assertEqual(E.H1UC, 20736)
-        self.assertEqual([b for _, _, b in E.ORDER], list(range(440, 449)))
+        self.assertEqual([b for _, _, b in E.ORDER], list(range(449, 458)))       # Amendment A
+        self.assertEqual(E.PLACEMENT, {"REF": 0, "W0-P0": 0, "W0-P1": 1, "W1-P0": 0, "W1-P1": 0})
         self.assertEqual([(c, L) for c, L, _ in E.ORDER][1:5], [("W0-P0", 500), ("W0-P1", 500), ("W1-P0", 500), ("W1-P1", 500)])
         self.assertEqual([(c, L) for c, L, _ in E.ORDER][5:], [("W1-P1", 1000), ("W1-P0", 1000), ("W0-P1", 1000), ("W0-P0", 1000)])
 
