@@ -64,16 +64,19 @@ def write_boot(root, k, e, crc=7, crc_fn=None, per_run=None, rows_over=None, cap
     (folder.parent / "capabilities.json").write_text(json.dumps(caps or CAPS))
 
 
-def write_m7(root, model, npu, mac, dpu, warm=None):
+def write_m7(root, model, npu, mac, dpu, warm=None, spread=0, vary=None):
     """m7 layout: set 1 = BASE (35 17; NPU_ACTIVE differs from pass A on purpose), set 2 = pass A, 3 = pass B, 4/7/8 hold
     pass C's events; reps 1-2 warm-up (values from `warm` if given)."""
     raw = [dict(ping=1)]
     sets = {1: [35, 17], 2: X.PASS_A, 3: X.PASS_B, 4: [35, 131, 142, 387], 7: [35, 642, 658], 8: [35, 640, 656]}
     for s, codes in sets.items():
         for rep in range(1, 11):
-            e = ev(npu + (2000 if s == 1 else 0), mac, dpu, {17: 1})
+            e = ev(npu + (2000 if s == 1 else 0) + (spread // 2 if rep == 3 else -spread // 2 if rep == 4 else 0), mac, dpu,
+                   {17: 1})
             if rep <= 2 and warm:
                 e.update(warm)
+            if vary and rep in (3, 4):
+                e.update({c: d + (1 if rep == 3 else -1) for c, d in vary.items()})
             raw.append(dict(set_id=s, rep=rep, record=dict(event_count=len(codes), **{f"event_code{i}": c for i, c in enumerate(codes)},
                                                           **{f"ev_irq{i}": e[c] for i, c in enumerate(codes)})))
     (root / model).mkdir(parents=True, exist_ok=True)
@@ -166,26 +169,43 @@ class Validity(Base):
 
 
 class Gates(Base):
-    def test_g1(self):
+    def test_g1(self):                                                         # amendment B rule
+        write_m7(self.m7, "kws_micronet_m", KWS["npu"], KWS["mac"], KWS["dpu"], spread=2000)
         ref = X.m7_ref(self.m7, "kws_micronet_m")
-        for npu, want in ((91910, "PASS"), (90090, "PASS"), (91911, "FAIL"), (90089, "FAIL")):
-            shutil.rmtree(self.root, ignore_errors=True)
-            write_boot(self.root, "x3_kws_B0", ev(npu, KWS["mac"], KWS["dpu"]))
-            self.assertEqual(X.g1(self.res("x3_kws_B0"), ref)["verdict"], want, npu)
-        for c, v, want in ((48, 56450 + 565, "FAIL"), (48, 56450 + 564, "PASS"), (642, 7832 + 79, "FAIL"),
-                           (391, 2, "FAIL"), (387, 17579 + 175, "PASS")):
-            shutil.rmtree(self.root, ignore_errors=True)
-            write_boot(self.root, "x3_kws_B0", ev(91000, KWS["mac"], KWS["dpu"], {c: v}))
-            self.assertEqual(X.g1(self.res("x3_kws_B0"), ref)["verdict"], want, (c, v))
-        shutil.rmtree(self.root)
+        self.assertEqual((ref["events"][35], ref["npu_range_cap"]), ((91000.0, 2000.0), 2000.0))
+        spread = lambda s, r: {35: 91000 + (750 if r == 2 else -750 if r == 3 else 0)} if s == 1 else None  # noqa: E731
+        g = lambda npu, sp=spread, extra=None: self.g1_of(ev(npu, KWS["mac"], KWS["dpu"], extra), sp, ref, npu)  # noqa: E731
+        self.assertEqual(g(91000)["npu"]["tolerance"], 3500.0)                    # range_m7 2000 + range_B0 1500
+        for npu, want in ((94500, "PASS"), (87500, "PASS"), (94501, "FAIL"), (87499, "FAIL")):
+            self.assertEqual(g(npu)["verdict"], want, npu)
+        flat = lambda s, r: None  # noqa: E731
+        self.assertEqual(g(93000, flat)["npu"]["tolerance"], 2000.0)            # max(1 % = 910, 2000 + 0)
+        big = lambda s, r: {35: 91000 + (1001 if r == 2 else -1000 if r == 3 else 0)} if s == 1 else None  # noqa: E731
+        r = g(91000, big)
+        self.assertEqual(r["verdict"], "FAIL")                                    # range 2001 > m7 cap 2000
+        self.assertIn("range", " ".join(r["reasons"]))
+        for c, v, want in ((48, KWS["mac"] + 1, "FAIL"), (51, KWS["dpu"] - 1, "FAIL"), (642, 7833, "FAIL"),
+                           (130, 22665, "FAIL"), (391, 2, "FAIL"), (656, 852, "FAIL"), (387, 17579 + 175, "PASS"),
+                           (64, 17825 + 179, "FAIL"), (64, 17825 + 178, "PASS"), (142, 5, "PASS"), (142, 6, "FAIL")):
+            self.assertEqual(g(91000, flat, {c: v})["verdict"], want, (c, v))
+        port = lambda s, r: {642: 7833} if s == 3 and r == 4 else None  # noqa: E731
+        self.assertEqual(g(91000, port)["verdict"], "FAIL")                       # a deterministic counter varying
+        shutil.rmtree(self.root, ignore_errors=True)
         write_boot(self.root, "x3_kws_B0", ev(**KWS), rec_over=dict(ofm_mismatch=1))
         self.assertEqual(X.g1(self.res("x3_kws_B0"), ref)["verdict"], "FAIL")
         write_m7(self.m7, "kws_micronet_m", KWS["npu"], KWS["mac"], KWS["dpu"], warm={642: 9000, 35: 99000})
         ref = X.m7_ref(self.m7, "kws_micronet_m")                             # m7 warm-up RUNs are not reference
-        self.assertEqual((ref["events"][642], ref["events"][35]), ((7832.0, 0.0), (91000.0, 0.0)))
-        shutil.rmtree(self.root)
-        write_boot(self.root, "x3_kws_B0", ev(91000, KWS["mac"], KWS["dpu"], {642: 7832 + 79}))
-        self.assertEqual(X.g1(self.res("x3_kws_B0"), ref)["verdict"], "FAIL")
+        self.assertEqual((ref["events"][642], ref["events"][35], ref["npu_range_cap"]), ((7832.0, 0.0), (91000.0, 0.0), 0.0))
+        self.assertEqual(g(91000, flat)["verdict"], "PASS")
+        write_m7(self.m7, "kws_micronet_m", KWS["npu"], KWS["mac"], KWS["dpu"], vary={642: 7832})
+        ref = X.m7_ref(self.m7, "kws_micronet_m")                             # reference itself not deterministic
+        self.assertEqual(ref["events"][642], (7832.0, 2.0))
+        self.assertEqual(g(91000, flat)["verdict"], "FAIL")
+
+    def g1_of(self, e, per_run, ref, npu):
+        shutil.rmtree(self.root, ignore_errors=True)
+        write_boot(self.root, "x3_kws_B0", e, per_run=(lambda s, r: {35: npu - 91000 + per_run(s, r)[35]} if per_run(s, r) and 35 in per_run(s, r) else per_run(s, r)))
+        return X.g1(self.res("x3_kws_B0"), ref)
 
     def kws_serial(self, b2, b3, b4, b1=(95000, 56450)):
         write_boot(self.root, "x3_kws_B0", ev(**KWS))
@@ -280,7 +300,8 @@ class Judge(Base):
 
     def test_good(self):
         s = self.run_all(GOOD)
-        self.assertEqual(s["verdicts"], dict(measurement="VALID", group_attribution="VALIDATED",
+        self.assertEqual(s["verdicts"], dict(measurement="VALID", baseline_reproducibility=dict(kws_micronet_m="REPRODUCED", ad_medium_int8="REPRODUCED"),
+                                             pmu_mask_functionality="FUNCTIONAL", group_attribution="VALIDATED",
                                              compute_explanation="RESIDUAL_REDUCED", serialization="SCHEDULE_EFFECT_OBSERVED",
                                              vela_fidelity="GROUP_DISCREPANCY_REMAINS"))
         self.assertEqual(s["hypotheses"]["h_a"]["verdict"], "H_A1_SUPPORTED")
@@ -303,7 +324,8 @@ class Judge(Base):
     def test_invalid(self):
         v = dict(GOOD, x3_kws_B3=(30000, 27000), x3_kws_B4=(45000, 17750))   # op0 window != isolated F5
         s = self.run_all(v)
-        self.assertEqual(s["verdicts"], dict(measurement="MEASUREMENT_INVALID", group_attribution="INVALID",
+        self.assertEqual(s["verdicts"], dict(measurement="MEASUREMENT_INVALID", baseline_reproducibility=dict(kws_micronet_m="REPRODUCED", ad_medium_int8="REPRODUCED"),
+                                             pmu_mask_functionality="FUNCTIONAL", group_attribution="INVALID",
                                              compute_explanation="INSUFFICIENT_EVIDENCE",
                                              serialization="SCHEDULE_EFFECT_OBSERVED", vela_fidelity="INSUFFICIENT_EVIDENCE"))
 
@@ -352,7 +374,28 @@ class Judge(Base):
         shutil.rmtree(self.root)
         s = self.run_all(dict(GOOD, x3_ad_B0=(150000, 93672)))                  # ad B0 not reproduced
         self.assertEqual(s["gates"]["ad_medium_int8"]["g1"]["verdict"], "FAIL")
+        self.assertEqual(s["verdicts"]["baseline_reproducibility"],
+                         dict(kws_micronet_m="REPRODUCED", ad_medium_int8="NOT_REPRODUCED"))
         self.assertEqual(s["verdicts"]["measurement"], "MEASUREMENT_INVALID")
+
+    def test_mask_functionality(self):
+        inert = dict(GOOD, x3_kws_B2=(95000, 56450), x3_kws_B3=(95000, 56450), x3_kws_B4=(95000, 56450))
+        s = self.run_all(inert)
+        self.assertEqual((s["verdicts"]["pmu_mask_functionality"], s["verdicts"]["group_attribution"]),
+                         ("NOT_FUNCTIONAL", "INVALID"))
+        shutil.rmtree(self.root)
+        write_boot(self.root, "x3_kws_B0", ev(**KWS))
+        s = X.judge(self.root, WL, self.m7, CAPS, VELA)
+        self.assertEqual(s["verdicts"]["pmu_mask_functionality"], "INSUFFICIENT_EVIDENCE")
+        self.assertEqual(s["verdicts"]["baseline_reproducibility"],
+                         dict(kws_micronet_m="REPRODUCED", ad_medium_int8="INSUFFICIENT_EVIDENCE"))
+        shutil.rmtree(self.root)                                              # only M2 broken (an empty window)
+        s = self.run_all(dict(GOOD, x3_kws_B2=(0, 0), x3_kws_B4=(65000, 30360)))
+        self.assertEqual(s["gates"]["kws_micronet_m"]["gm"]["m3"][35]["holds"], True)
+        self.assertEqual(s["verdicts"]["pmu_mask_functionality"], "NOT_FUNCTIONAL")
+        shutil.rmtree(self.root)                                              # only M3 broken -> not functional
+        s = self.run_all(dict(GOOD, x3_kws_B4=(50000, 18660)))
+        self.assertEqual(s["verdicts"]["pmu_mask_functionality"], "NOT_FUNCTIONAL")
 
     def test_cli_rc(self):
         cp = self.tmp / "caps.json"
@@ -378,7 +421,8 @@ class Judge(Base):
 class Constants(unittest.TestCase):
     def test_fixed(self):
         self.assertEqual(X.PASS_C, [35, 131, 142, 387, 640, 642, 656, 658])
-        self.assertEqual(list(X.BOOT.values()), list(range(477, 487)))
+        self.assertEqual(list(X.BOOT.values()), list(range(487, 497)))
+        self.assertEqual(X.DETERMINISTIC, (48, 51, 128, 130, 132, 135, 384, 386, 391, 640, 642, 656, 658))
         self.assertEqual((X.NPU_TOL, X.EV_TOL, X.M2_MAX, X.F5_MAC, X.F5_TOL), (0.01, 0.01, 0.95, 26090.0, 0.01))
         self.assertEqual((X.H1UC_KWS, X.H1UC_AD, X.H1UC_TOL, X.VELA_LO, X.VELA_HI), (11700.0, 60480.0, 0.05, 0.9, 1.1))
         self.assertEqual(X.IMAGE["bram_sha256"][:8], "9b1844a3")

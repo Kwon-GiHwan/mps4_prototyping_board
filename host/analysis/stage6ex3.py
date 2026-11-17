@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
-"""Stage 6E-X3 judge (contract evidence/stage6ex3/contract.md): kws/ad, B0 original, B1 serialised, B2-B4 group windows.
+"""Stage 6E-X3 judge (contract evidence/stage6ex3/contract.md + amendment B evidence/stage6ex3/amendment_b.md): kws/ad,
+B0 original, B1 serialised, B2-B4 group windows; amendment B session = boots 487-496 (boot 477 stays judged by the
+amendment A rule, evidence/stage6ex3/result_g1.md).
 
   python3 stage6ex3.py boot-check <run root> <workloads> <m7 root> <caps ref> <key>     rc 1 = stop
   python3 stage6ex3.py gate-g1    <run root> <workloads> <m7 root> <caps ref> <model>   rc 1 = stop
@@ -30,8 +32,10 @@ IMAGE = dict(boot_sha256="3b4af743c13aa25f4335a30b739f196187ed023ea9f3f1d3a372a8
              bram_sha256="9b1844a3fde3443779d341f890cd2d106ab92e593020f8e336fbc5f991dd740f",
              ddr_sha256="374708fff7719dd5979ec875d56cd2286f6d3cf7ec317a3b25632aab28ec37bb",
              images_txt_sha256="af688281435a73dda3b2247845149817ecc7a9bbdff5a3ccd2e4dfa52875423f")
-BOOT = {"x3_kws_B0": 477, "x3_kws_B1": 478, "x3_kws_B2": 479, "x3_kws_B3": 480, "x3_kws_B4": 481,
-        "x3_ad_B0": 482, "x3_ad_B1": 483, "x3_ad_B2": 484, "x3_ad_B3": 485, "x3_ad_B4": 486}
+BOOT = {"x3_kws_B0": 487, "x3_kws_B1": 488, "x3_kws_B2": 489, "x3_kws_B3": 490, "x3_kws_B4": 491,
+        "x3_ad_B0": 492, "x3_ad_B1": 493, "x3_ad_B2": 494, "x3_ad_B3": 495, "x3_ad_B4": 496}
+# amendment B: counters that must equal m7 exactly in G1 (MAC, DPU, SRAM/EXT beats and transactions, per-port EXT)
+DETERMINISTIC = (48, 51, 128, 130, 132, 135, 384, 386, 391, 640, 642, 656, 658)
 MODEL_KEY = {"kws_micronet_m": "kws", "ad_medium_int8": "ad"}
 SCHEMA, RECORD_FIELDS, LOG2_MACS, EXT_RLATENCY = 5, 92, 10, 500
 MASK_EN = 0x8
@@ -92,7 +96,8 @@ def m7_ref(m7_root: pathlib.Path, model: str) -> dict:
         any_set.setdefault(c, v)
     ref = {c: med_range(v) for c, v in any_set.items()}
     ref[35] = pa[35]                                                         # NPU_ACTIVE: pass A against pass A
-    return dict(events=ref)
+    cap = max(max(v) - min(v) for (s, c), v in ev.items() if c == 35)       # largest m7 per-set NPU_ACTIVE range
+    return dict(events=ref, npu_range_cap=float(cap))
 
 
 def identity(d: dict, m: dict, k: str, caps_ref: dict, model_len: int) -> list[str]:
@@ -210,23 +215,33 @@ def val(r: dict, s: int, c: int):
 
 # ---- gates -------------------------------------------------------------------------------------------------------
 def g1(b0: dict, ref: dict) -> dict:
-    """Original reproduction of one model's B0 against m7."""
+    """Original reproduction of one model's B0 against m7 (amendment B): NPU_ACTIVE within max(1 % of m7,
+    range_m7 + range_B0) with range_B0 <= the largest m7 per-set range; deterministic counters exactly equal (every
+    measured RUN, m7 range 0); the other counters within max(1 %, range sum)."""
     if b0["status"] != "VALID":
         return dict(verdict="FAIL", why=f"B0 {b0['status']}", reasons=b0["reasons"])
     bad = []
-    npu, _ = val(b0, 1, 35)
-    rn, _ = ref["events"][35]
-    if npu is None or rn is None or abs(npu - rn) > NPU_TOL * rn:
-        bad.append(f"NPU_ACTIVE {npu} vs m7 {rn}")
+    npu, rb = val(b0, 1, 35)
+    rn, rm = ref["events"][35]
+    tol = max(NPU_TOL * rn, rm + rb) if rn is not None and rb is not None else None
+    if npu is None or rn is None or abs(npu - rn) > tol:
+        bad.append(f"NPU_ACTIVE {npu} vs m7 {rn} (tolerance {tol})")
+    if rb is None or rb > ref["npu_range_cap"]:
+        bad.append(f"NPU_ACTIVE range {rb} > m7 largest set range {ref['npu_range_cap']}")
     for s, codes in SETS.items():
         for c in codes:
             if c == 35 or c not in ref["events"]:
                 continue
             v, rv = val(b0, s, c)
-            mv, rm = ref["events"][c]
-            if v is None or abs(v - mv) > max(EV_TOL * mv, rm + rv):
+            mv, rmv = ref["events"][c]
+            if c in DETERMINISTIC:
+                if v is None or v != mv or rv != 0 or rmv != 0:
+                    bad.append(f"deterministic event {c} {v} (range {rv}) vs m7 {mv} (range {rmv})")
+            elif v is None or abs(v - mv) > max(EV_TOL * mv, rmv + rv):
                 bad.append(f"event {c} {v} vs m7 {mv}")
-    return dict(verdict="FAIL" if bad else "PASS", reasons=bad)
+    return dict(verdict="FAIL" if bad else "PASS", reasons=bad,
+                npu=dict(b0=npu, m7=rn, delta=None if npu is None or rn is None else npu - rn, tolerance=tol,
+                         range_b0=rb, range_m7=rm, range_cap=ref["npu_range_cap"]))
 
 
 def partition(res: dict, model: str, code: int) -> dict:
@@ -366,10 +381,11 @@ def judge(root, wl, m7, caps_ref, vela_dir) -> dict:
             g_ratio[g] = dict(ratio=r, cls=vela_cls(r) if r else None)
         n0, _ = val(res[key(m, "B0")], 1, 35)
         n1, _ = val(res[key(m, "B1")], 1, 35)
-        vela[m] = dict(vela=vg, groups=g_ratio,
+        vela[m] = dict(vela=vg, groups=g_ratio, official_denominator="cycles_total (sum of per-layer Op Cycles)",
                        orig_over_total=n0 / vg["cycles_total"] if n0 else None,
                        serial_over_total=n1 / vg["cycles_total"] if n1 else None,
-                       orig_over_npu_term=n0 / vg["cycles_npu"] if n0 else None)
+                       orig_over_npu_term=n0 / vg["cycles_npu"] if n0 else None,
+                       serial_over_npu_term=n1 / vg["cycles_npu"] if n1 else None)
     if not att_ok:
         vf = "INSUFFICIENT_EVIDENCE"
     else:
@@ -385,15 +401,23 @@ def judge(root, wl, m7, caps_ref, vela_dir) -> dict:
         meas = "VALID"
     else:
         meas = "PARTIAL_VALID"
-    return dict(contract="evidence/stage6ex3/contract.md",
+    repro = {m: "INSUFFICIENT_EVIDENCE" if res[key(m, "B0")]["status"] == "UNMEASURED" else
+             ("REPRODUCED" if gates[m]["g1"]["verdict"] == "PASS" else "NOT_REPRODUCED") for m in models}
+    kg = gates["kws_micronet_m"]["gm"]
+    if "m2" not in kg:
+        mask = "INSUFFICIENT_EVIDENCE"
+    else:
+        mask = "FUNCTIONAL" if kg["m2"]["holds"] and all(x["holds"] for x in kg["m3"].values()) else "NOT_FUNCTIONAL"
+    return dict(contract="evidence/stage6ex3/contract.md + amendment_b.md",
                 ta="TA profile 1; EXT RLATENCY 500; image f0baf8c (bram 9b1844a3), placement 0",
                 results=res, gates=gates, gs=gs,
                 hypotheses=dict(h_s={m: h_s(res, m) for m in models},
                                 h_p={m: {c: partition(res, m, c) for c in (35, 48, 51, 64, 80)} for m in models},
                                 h_k=hk, h_a=ha, h_o=ho),
                 vela=vela,
-                verdicts=dict(measurement=meas, group_attribution=attribution, compute_explanation=compute,
-                              serialization=serial, vela_fidelity=vf))
+                verdicts=dict(measurement=meas, baseline_reproducibility=repro, pmu_mask_functionality=mask,
+                              group_attribution=attribution, compute_explanation=compute, serialization=serial,
+                              vela_fidelity=vf))
 
 
 def main(argv: list) -> int:
