@@ -1,0 +1,25 @@
+# Owner-approved (Stage 6E-X3 amendment C, ChatGPT decision 2026-11-18; final X3 run) sudo session: boots 497-504, evidence/stage6ex3/amendment_c.md.
+# Runner image f0baf8c, L500 (TA profile 1, EXT RLATENCY 500), placement 0; passes A, B, C. kws B0/B1 = boots 487/488 in /home/gihwan/evsweep_x3b_run.
+# Gates stop the session (rc 1): boot-check after every boot, GM after kws B4 (before ad), G1 after ad B0.
+user python3 mcc.py USB_ON 4 && sleep 5 && test -e /dev/sdb1
+deploy_mlek /home/gihwan/evsweep_x3c_img /home/gihwan/evsweep/evidence_x3c
+user OUTPUTS=1 STOP_ON_INVALID=1 RUN_TIMEOUT=600 sh run_driver_campaign.sh /home/gihwan/evsweep_x3c_img /home/gihwan/evsweep_x3c_run /home/gihwan/evsweep_x3c_img/ids.txt /home/gihwan/evsweep_x3c_img/plan_c01.txt 5
+user python3 host/analysis/stage6ex3.py boot-check b=/home/gihwan/evsweep_x3b_run,c=/home/gihwan/evsweep_x3c_run /home/gihwan/evsweep_x3c_img /home/gihwan/evsweep_x3_ref/m7 /home/gihwan/evsweep_x3_ref/caps_14077be.json x3_kws_B2
+user OUTPUTS=1 STOP_ON_INVALID=1 RUN_TIMEOUT=600 sh run_driver_campaign.sh /home/gihwan/evsweep_x3c_img /home/gihwan/evsweep_x3c_run /home/gihwan/evsweep_x3c_img/ids.txt /home/gihwan/evsweep_x3c_img/plan_c02.txt 5
+user python3 host/analysis/stage6ex3.py boot-check b=/home/gihwan/evsweep_x3b_run,c=/home/gihwan/evsweep_x3c_run /home/gihwan/evsweep_x3c_img /home/gihwan/evsweep_x3_ref/m7 /home/gihwan/evsweep_x3_ref/caps_14077be.json x3_kws_B3
+user OUTPUTS=1 STOP_ON_INVALID=1 RUN_TIMEOUT=600 sh run_driver_campaign.sh /home/gihwan/evsweep_x3c_img /home/gihwan/evsweep_x3c_run /home/gihwan/evsweep_x3c_img/ids.txt /home/gihwan/evsweep_x3c_img/plan_c03.txt 5
+user python3 host/analysis/stage6ex3.py boot-check b=/home/gihwan/evsweep_x3b_run,c=/home/gihwan/evsweep_x3c_run /home/gihwan/evsweep_x3c_img /home/gihwan/evsweep_x3_ref/m7 /home/gihwan/evsweep_x3_ref/caps_14077be.json x3_kws_B4
+user python3 host/analysis/stage6ex3.py gate-gm b=/home/gihwan/evsweep_x3b_run,c=/home/gihwan/evsweep_x3c_run /home/gihwan/evsweep_x3c_img /home/gihwan/evsweep_x3_ref/m7 /home/gihwan/evsweep_x3_ref/caps_14077be.json kws_micronet_m
+user OUTPUTS=1 STOP_ON_INVALID=1 RUN_TIMEOUT=600 sh run_driver_campaign.sh /home/gihwan/evsweep_x3c_img /home/gihwan/evsweep_x3c_run /home/gihwan/evsweep_x3c_img/ids.txt /home/gihwan/evsweep_x3c_img/plan_c04.txt 5
+user python3 host/analysis/stage6ex3.py boot-check b=/home/gihwan/evsweep_x3b_run,c=/home/gihwan/evsweep_x3c_run /home/gihwan/evsweep_x3c_img /home/gihwan/evsweep_x3_ref/m7 /home/gihwan/evsweep_x3_ref/caps_14077be.json x3_ad_B0
+user python3 host/analysis/stage6ex3.py gate-g1 b=/home/gihwan/evsweep_x3b_run,c=/home/gihwan/evsweep_x3c_run /home/gihwan/evsweep_x3c_img /home/gihwan/evsweep_x3_ref/m7 /home/gihwan/evsweep_x3_ref/caps_14077be.json ad_medium_int8
+user OUTPUTS=1 STOP_ON_INVALID=1 RUN_TIMEOUT=600 sh run_driver_campaign.sh /home/gihwan/evsweep_x3c_img /home/gihwan/evsweep_x3c_run /home/gihwan/evsweep_x3c_img/ids.txt /home/gihwan/evsweep_x3c_img/plan_c05.txt 5
+user python3 host/analysis/stage6ex3.py boot-check b=/home/gihwan/evsweep_x3b_run,c=/home/gihwan/evsweep_x3c_run /home/gihwan/evsweep_x3c_img /home/gihwan/evsweep_x3_ref/m7 /home/gihwan/evsweep_x3_ref/caps_14077be.json x3_ad_B1
+user OUTPUTS=1 STOP_ON_INVALID=1 RUN_TIMEOUT=600 sh run_driver_campaign.sh /home/gihwan/evsweep_x3c_img /home/gihwan/evsweep_x3c_run /home/gihwan/evsweep_x3c_img/ids.txt /home/gihwan/evsweep_x3c_img/plan_c06.txt 5
+user python3 host/analysis/stage6ex3.py boot-check b=/home/gihwan/evsweep_x3b_run,c=/home/gihwan/evsweep_x3c_run /home/gihwan/evsweep_x3c_img /home/gihwan/evsweep_x3_ref/m7 /home/gihwan/evsweep_x3_ref/caps_14077be.json x3_ad_B2
+user OUTPUTS=1 STOP_ON_INVALID=1 RUN_TIMEOUT=600 sh run_driver_campaign.sh /home/gihwan/evsweep_x3c_img /home/gihwan/evsweep_x3c_run /home/gihwan/evsweep_x3c_img/ids.txt /home/gihwan/evsweep_x3c_img/plan_c07.txt 5
+user python3 host/analysis/stage6ex3.py boot-check b=/home/gihwan/evsweep_x3b_run,c=/home/gihwan/evsweep_x3c_run /home/gihwan/evsweep_x3c_img /home/gihwan/evsweep_x3_ref/m7 /home/gihwan/evsweep_x3_ref/caps_14077be.json x3_ad_B3
+user OUTPUTS=1 STOP_ON_INVALID=1 RUN_TIMEOUT=600 sh run_driver_campaign.sh /home/gihwan/evsweep_x3c_img /home/gihwan/evsweep_x3c_run /home/gihwan/evsweep_x3c_img/ids.txt /home/gihwan/evsweep_x3c_img/plan_c08.txt 5
+user python3 host/analysis/stage6ex3.py boot-check b=/home/gihwan/evsweep_x3b_run,c=/home/gihwan/evsweep_x3c_run /home/gihwan/evsweep_x3c_img /home/gihwan/evsweep_x3_ref/m7 /home/gihwan/evsweep_x3_ref/caps_14077be.json x3_ad_B4
+restore_mlek /home/gihwan/evsweep/evidence_x3c /home/gihwan/evsweep_x3c_img
+user sh postflight.sh

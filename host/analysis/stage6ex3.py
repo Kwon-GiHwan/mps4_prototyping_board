@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 """Stage 6E-X3 judge (contract evidence/stage6ex3/contract.md + amendment B evidence/stage6ex3/amendment_b.md): kws/ad,
-B0 original, B1 serialised, B2-B4 group windows; amendment B session = boots 487-496 (boot 477 stays judged by the
-amendment A rule, evidence/stage6ex3/result_g1.md).
+B0 original, B1 serialised, B2-B4 group windows; amendment C (evidence/stage6ex3/amendment_c.md): kws B0/B1 = boots
+487/488 of the amendment B run (root "b"), the rest = boots 497-504 (root "c"); boots 477 and 489 stay judged by their
+own rules (result_g1.md, result_b.md).
 
-  python3 stage6ex3.py boot-check <run root> <workloads> <m7 root> <caps ref> <key>     rc 1 = stop
-  python3 stage6ex3.py gate-g1    <run root> <workloads> <m7 root> <caps ref> <model>   rc 1 = stop
-  python3 stage6ex3.py gate-gm    <run root> <workloads> <m7 root> <caps ref> <model>   rc 1 = stop (kws)
-  python3 stage6ex3.py judge      <run root> <workloads> <m7 root> <caps ref> <vela dir> <out dir>
+  <roots> = b=<amendment B run root>,c=<amendment C run root>   (or one path holding every key)
+  python3 stage6ex3.py boot-check <roots> <workloads> <m7 root> <caps ref> <key>     rc 1 = stop
+  python3 stage6ex3.py gate-g1    <roots> <workloads> <m7 root> <caps ref> <model>   rc 1 = stop
+  python3 stage6ex3.py gate-gm    <roots> <workloads> <m7 root> <caps ref> <model>   rc 1 = stop (kws)
+  python3 stage6ex3.py judge      <roots> <workloads> <m7 root> <caps ref> <vela dir> <out dir>
 """
 from __future__ import annotations
 
@@ -32,8 +34,11 @@ IMAGE = dict(boot_sha256="3b4af743c13aa25f4335a30b739f196187ed023ea9f3f1d3a372a8
              bram_sha256="9b1844a3fde3443779d341f890cd2d106ab92e593020f8e336fbc5f991dd740f",
              ddr_sha256="374708fff7719dd5979ec875d56cd2286f6d3cf7ec317a3b25632aab28ec37bb",
              images_txt_sha256="af688281435a73dda3b2247845149817ecc7a9bbdff5a3ccd2e4dfa52875423f")
-BOOT = {"x3_kws_B0": 487, "x3_kws_B1": 488, "x3_kws_B2": 489, "x3_kws_B3": 490, "x3_kws_B4": 491,
-        "x3_ad_B0": 492, "x3_ad_B1": 493, "x3_ad_B2": 494, "x3_ad_B3": 495, "x3_ad_B4": 496}
+BOOT = {"x3_kws_B0": 487, "x3_kws_B1": 488, "x3_kws_B2": 497, "x3_kws_B3": 498, "x3_kws_B4": 499,
+        "x3_ad_B0": 500, "x3_ad_B1": 501, "x3_ad_B2": 502, "x3_ad_B3": 503, "x3_ad_B4": 504}
+KEY_ROOT = {k: "b" if k in ("x3_kws_B0", "x3_kws_B1") else "c" for k in BOOT}
+GROUP_COND = ("B2", "B3", "B4")
+GROUP_CAP = {"kws_micronet_m": 2423.0, "ad_medium_int8": 2596.0}   # amendment C: largest m7 per-set NPU_ACTIVE range
 # amendment B: counters that must equal m7 exactly in G1 (MAC, DPU, SRAM/EXT beats and transactions, per-port EXT)
 DETERMINISTIC = (48, 51, 128, 130, 132, 135, 384, 386, 391, 640, 642, 656, 658)
 MODEL_KEY = {"kws_micronet_m": "kws", "ad_medium_int8": "ad"}
@@ -47,6 +52,10 @@ F5_MAC, F5_TOL = 26090.0, 0.01        # 6C F5 (kws op0 isolated), M4 / H-K G_0
 H1UC_KWS, H1UC_AD, H1UC_TOL = 11700.0, 60480.0, 0.05
 VELA_LO, VELA_HI = 0.9, 1.1
 STOP = ("UNMEASURED", "CONFIG_MISMATCH", "INVALID_OUTPUT")
+
+
+def root_of(roots, k: str) -> pathlib.Path:
+    return pathlib.Path(roots[KEY_ROOT[k]]) if isinstance(roots, dict) else pathlib.Path(roots)
 
 
 def key(model: str, cond: str) -> str:
@@ -145,8 +154,8 @@ def output_bad(d: dict, crc_ref) -> list[str]:
     return bad
 
 
-def b0_crc(root: pathlib.Path, model: str):
-    p = root / "conds" / key(model, "B0") / "wfe" / "raw_runs.json"
+def b0_crc(root, model: str):
+    p = root_of(root, key(model, "B0")) / "conds" / key(model, "B0") / "wfe" / "raw_runs.json"
     if not p.exists():
         return "MISSING"
     crcs = {x.get("output_crc32") for x in json.loads(p.read_text())[1:]}
@@ -170,7 +179,8 @@ def pmu_bad(d: dict) -> list[str]:
     return sorted(set(bad))
 
 
-def unstable(st: dict, raw: list) -> list[str]:
+def unstable(st: dict, raw: list, cap: float | None = None) -> list[str]:
+    """cap: amendment C group windows (B2-B4) — pass A NPU_ACTIVE range limit max(5 %, cap) instead of 5 %."""
     bad = []
     for c in (48, 51):
         vals = {events_of(x["record"]).get(c) for x in raw if x["set_id"] == 1 and x["rep"] >= 2}
@@ -181,14 +191,14 @@ def unstable(st: dict, raw: list) -> list[str]:
         x, rx = st[s][35]
         if a is None or x is None or abs(x - a) > max(UNSTABLE_REL * a, ra + rx):
             bad.append(f"NPU_ACTIVE pass A vs pass {'B' if s == 2 else 'C'}")
-    if a and ra > UNSTABLE_REL * a:
+    if a and ra > (max(UNSTABLE_REL * a, cap) if cap is not None else UNSTABLE_REL * a):
         bad.append("NPU_ACTIVE pass A range")
     return bad
 
 
-def config_result(root: pathlib.Path, wl: pathlib.Path, m7: pathlib.Path, caps_ref: dict, k: str) -> dict:
+def config_result(root, wl: pathlib.Path, m7: pathlib.Path, caps_ref: dict, k: str) -> dict:
     m = json.loads((wl / MANIFEST).read_text())[k]
-    folder = root / "conds" / k / "wfe"
+    folder = root_of(root, k) / "conds" / k / "wfe"
     base = dict(key=k, model=m["model"], cond=m["cond"])
     if not (folder / "raw_runs.json").exists() or not (folder / "runs.csv").exists():
         return dict(base, status="UNMEASURED", reasons=["no raw data"])
@@ -205,7 +215,15 @@ def config_result(root: pathlib.Path, wl: pathlib.Path, m7: pathlib.Path, caps_r
         return dict(base, status="INVALID_PMU", reasons=pb)
     st = stats(d["raw"])
     res = dict(base, stats={s: {str(c): v for c, v in e.items()} for s, e in st.items()})
-    u = unstable(st, d["raw"])
+    cap = GROUP_CAP[m["model"]] if m["cond"] in GROUP_COND else None
+    if cap is not None:
+        a = [events_of(x["record"])[35] for x in d["raw"] if x["set_id"] == 1 and x["rep"] >= 2]
+        med = st[1][35][0]
+        lim = max(UNSTABLE_REL * med, cap)
+        res["window_npu"] = dict(median=med, min=min(a), max=max(a), range=max(a) - min(a),
+                                 rel_range=(max(a) - min(a)) / med if med else None, gs_limit=lim,
+                                 rel_limit=lim / med if med else None)
+    u = unstable(st, d["raw"], cap)
     return dict(res, status="UNSTABLE" if u else "VALID", reasons=u)
 
 
@@ -321,6 +339,13 @@ def vela_cls(r: float) -> str:
     return "OVER" if r < VELA_LO else "UNDER" if r > VELA_HI else "AGREE"
 
 
+def vela_cls_noise(npu: float, rng: float, vela: float) -> str:
+    """Amendment C: a class boundary (0.9 or 1.1 x Vela) within the measured range of the median -> undecidable."""
+    if rng > 0 and any(abs(npu - b * vela) <= rng for b in (VELA_LO, VELA_HI)):
+        return "INSUFFICIENT_EVIDENCE"
+    return vela_cls(npu / vela)
+
+
 def vela_groups(vela_dir: pathlib.Path, model: str, groups_tfl: dict) -> dict:
     """Group sums of Vela per-layer terms; rows with Op Cycles > 0 in TFLite order."""
     with (vela_dir / f"out_{model}" / f"{model}_per-layer.csv").open(newline="") as f:
@@ -346,7 +371,7 @@ def tflite_groups(m: dict) -> dict:
 
 
 def judge(root, wl, m7, caps_ref, vela_dir) -> dict:
-    root, wl, m7, vela_dir = map(pathlib.Path, (root, wl, m7, vela_dir))
+    wl, m7, vela_dir = map(pathlib.Path, (wl, m7, vela_dir))
     man = json.loads((wl / MANIFEST).read_text())
     res = {k: config_result(root, wl, m7, caps_ref, k) for k in BOOT}
     models = ("kws_micronet_m", "ad_medium_int8")
@@ -376,9 +401,10 @@ def judge(root, wl, m7, caps_ref, vela_dir) -> dict:
         vg = vela_groups(vela_dir, m, tflite_groups(man[key(m, "B0")]))
         g_ratio = {}
         for g, c in (("G_V", "B2"), ("G_0", "B3"), ("G_R", "B4")):
-            npu, _ = val(res[key(m, c)], 1, 35)
-            r = npu / vg["groups"][g]["op_cycles"] if npu else None
-            g_ratio[g] = dict(ratio=r, cls=vela_cls(r) if r else None)
+            npu, rng = val(res[key(m, c)], 1, 35)
+            v = vg["groups"][g]["op_cycles"]
+            r = npu / v if npu else None
+            g_ratio[g] = dict(ratio=r, cls=vela_cls_noise(npu, rng, v) if r else None, npu=npu, npu_range=rng, vela=v)
         n0, _ = val(res[key(m, "B0")], 1, 35)
         n1, _ = val(res[key(m, "B1")], 1, 35)
         vela[m] = dict(vela=vg, groups=g_ratio, official_denominator="cycles_total (sum of per-layer Op Cycles)",
@@ -386,7 +412,7 @@ def judge(root, wl, m7, caps_ref, vela_dir) -> dict:
                        serial_over_total=n1 / vg["cycles_total"] if n1 else None,
                        orig_over_npu_term=n0 / vg["cycles_npu"] if n0 else None,
                        serial_over_npu_term=n1 / vg["cycles_npu"] if n1 else None)
-    if not att_ok:
+    if not att_ok or any(g["cls"] in (None, "INSUFFICIENT_EVIDENCE") for v in vela.values() for g in v["groups"].values()):
         vf = "INSUFFICIENT_EVIDENCE"
     else:
         closer = all(v["orig_over_total"] and v["serial_over_total"] and
@@ -404,10 +430,21 @@ def judge(root, wl, m7, caps_ref, vela_dir) -> dict:
     repro = {m: "INSUFFICIENT_EVIDENCE" if res[key(m, "B0")]["status"] == "UNMEASURED" else
              ("REPRODUCED" if gates[m]["g1"]["verdict"] == "PASS" else "NOT_REPRODUCED") for m in models}
     kg = gates["kws_micronet_m"]["gm"]
-    if "m2" not in kg:
-        mask = "INSUFFICIENT_EVIDENCE"
-    else:
-        mask = "FUNCTIONAL" if kg["m2"]["holds"] and all(x["holds"] for x in kg["m3"].values()) else "NOT_FUNCTIONAL"
+    mask = "INSUFFICIENT_EVIDENCE" if "m2" not in kg else ("FUNCTIONAL" if kg["m2"]["holds"] else "NOT_FUNCTIONAL")
+    part = {}
+    for m in models:
+        g = gates[m]["gm"]
+        part[m] = "INSUFFICIENT_EVIDENCE" if "m3" not in g else (
+            "CONSISTENT" if all(x["holds"] for x in g["m3"].values()) else "INCONSISTENT")
+    ind = "INSUFFICIENT_EVIDENCE" if "INSUFFICIENT_EVIDENCE" in (hk["G_0"], hk["G_V"]) else (
+        "AGREES" if hk["G_0"] == hk["G_V"] == "SUPPORTED" else "DISAGREES")
+    exact = []
+    for m in models:
+        w, _ = val(res[key(m, "B1")], 1, 48)
+        ps = [val(res[key(m, c)], 1, 48)[0] for c in GROUP_COND]
+        exact.append(None if w is None or None in ps else sum(ps) == w)
+    temporal = "INSUFFICIENT_EVIDENCE" if ind == "INSUFFICIENT_EVIDENCE" or None in exact else (
+        "VALIDATED_FOR_KERNEL_UNITS" if ind == "AGREES" and all(exact) else "NOT_VALIDATED")
     return dict(contract="evidence/stage6ex3/contract.md + amendment_b.md",
                 ta="TA profile 1; EXT RLATENCY 500; image f0baf8c (bram 9b1844a3), placement 0",
                 results=res, gates=gates, gs=gs,
@@ -415,17 +452,19 @@ def judge(root, wl, m7, caps_ref, vela_dir) -> dict:
                                 h_p={m: {c: partition(res, m, c) for c in (35, 48, 51, 64, 80)} for m in models},
                                 h_k=hk, h_a=ha, h_o=ho),
                 vela=vela,
+                mac_partition_exact=dict(zip(models, exact)),
                 verdicts=dict(measurement=meas, baseline_reproducibility=repro, pmu_mask_functionality=mask,
-                              group_attribution=attribution, compute_explanation=compute, serialization=serial,
-                              vela_fidelity=vf))
+                              group_partition_consistency=part, independent_reference_agreement=ind,
+                              temporal_attribution_validity=temporal, group_attribution=attribution,
+                              compute_explanation=compute, serialization=serial, vela_fidelity=vf))
 
 
 def main(argv: list) -> int:
     if len(argv) < 7:
         print(__doc__)
         return 2
-    cmd, root, wl, m7, caps_ref = argv[1], pathlib.Path(argv[2]), pathlib.Path(argv[3]), pathlib.Path(argv[4]), \
-        json.loads(pathlib.Path(argv[5]).read_text())
+    root = dict(x.split("=", 1) for x in argv[2].split(",")) if "=" in argv[2] else pathlib.Path(argv[2])
+    cmd, wl, m7, caps_ref = argv[1], pathlib.Path(argv[3]), pathlib.Path(argv[4]), json.loads(pathlib.Path(argv[5]).read_text())
     if cmd == "boot-check":
         r = config_result(root, wl, m7, caps_ref, argv[6])
         print(json.dumps(dict(key=argv[6], status=r["status"], reasons=r["reasons"]), indent=1))

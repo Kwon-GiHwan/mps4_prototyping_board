@@ -301,7 +301,10 @@ class Judge(Base):
     def test_good(self):
         s = self.run_all(GOOD)
         self.assertEqual(s["verdicts"], dict(measurement="VALID", baseline_reproducibility=dict(kws_micronet_m="REPRODUCED", ad_medium_int8="REPRODUCED"),
-                                             pmu_mask_functionality="FUNCTIONAL", group_attribution="VALIDATED",
+                                             pmu_mask_functionality="FUNCTIONAL",
+                                             group_partition_consistency=dict(kws_micronet_m="CONSISTENT", ad_medium_int8="CONSISTENT"),
+                                             independent_reference_agreement="AGREES",
+                                             temporal_attribution_validity="VALIDATED_FOR_KERNEL_UNITS", group_attribution="VALIDATED",
                                              compute_explanation="RESIDUAL_REDUCED", serialization="SCHEDULE_EFFECT_OBSERVED",
                                              vela_fidelity="GROUP_DISCREPANCY_REMAINS"))
         self.assertEqual(s["hypotheses"]["h_a"]["verdict"], "H_A1_SUPPORTED")
@@ -325,7 +328,10 @@ class Judge(Base):
         v = dict(GOOD, x3_kws_B3=(30000, 27000), x3_kws_B4=(45000, 17750))   # op0 window != isolated F5
         s = self.run_all(v)
         self.assertEqual(s["verdicts"], dict(measurement="MEASUREMENT_INVALID", baseline_reproducibility=dict(kws_micronet_m="REPRODUCED", ad_medium_int8="REPRODUCED"),
-                                             pmu_mask_functionality="FUNCTIONAL", group_attribution="INVALID",
+                                             pmu_mask_functionality="FUNCTIONAL",
+                                             group_partition_consistency=dict(kws_micronet_m="CONSISTENT", ad_medium_int8="CONSISTENT"),
+                                             independent_reference_agreement="DISAGREES",
+                                             temporal_attribution_validity="NOT_VALIDATED", group_attribution="INVALID",
                                              compute_explanation="INSUFFICIENT_EVIDENCE",
                                              serialization="SCHEDULE_EFFECT_OBSERVED", vela_fidelity="INSUFFICIENT_EVIDENCE"))
 
@@ -393,9 +399,19 @@ class Judge(Base):
         s = self.run_all(dict(GOOD, x3_kws_B2=(0, 0), x3_kws_B4=(65000, 30360)))
         self.assertEqual(s["gates"]["kws_micronet_m"]["gm"]["m3"][35]["holds"], True)
         self.assertEqual(s["verdicts"]["pmu_mask_functionality"], "NOT_FUNCTIONAL")
-        shutil.rmtree(self.root)                                              # only M3 broken -> not functional
+        shutil.rmtree(self.root)                                              # only M3 broken: mask works, partition not
         s = self.run_all(dict(GOOD, x3_kws_B4=(50000, 18660)))
-        self.assertEqual(s["verdicts"]["pmu_mask_functionality"], "NOT_FUNCTIONAL")
+        self.assertEqual((s["verdicts"]["pmu_mask_functionality"], s["verdicts"]["group_partition_consistency"]["kws_micronet_m"]),
+                         ("FUNCTIONAL", "INCONSISTENT"))
+        shutil.rmtree(self.root)                                              # MAC sum off by one -> not exact
+        s = self.run_all(dict(GOOD, x3_ad_B4=(50000, 13193)))
+        self.assertEqual((s["mac_partition_exact"]["ad_medium_int8"], s["verdicts"]["temporal_attribution_validity"]),
+                         (False, "NOT_VALIDATED"))
+        shutil.rmtree(self.root)
+        v = dict(GOOD)
+        del v["x3_ad_B3"]
+        s = self.run_all(v)
+        self.assertEqual(s["verdicts"]["temporal_attribution_validity"], "INSUFFICIENT_EVIDENCE")
 
     def test_cli_rc(self):
         cp = self.tmp / "caps.json"
@@ -418,10 +434,92 @@ class Judge(Base):
         self.assertEqual(a("gate-gm", "kws_micronet_m"), 1)
 
 
+class AmendmentC(Base):
+    def test_group_window_cap(self):
+        jitter = lambda d: (lambda s, r: {35: 25000 + (d if r == 2 else 0)} if s == 1 else None)  # noqa: E731
+        write_boot(self.root, "x3_kws_B0", ev(**KWS))
+        for d, want in ((2423, "VALID"), (2424, "UNSTABLE")):                  # 5 % of 25,000 = 1,250 < cap 2,423
+            write_boot(self.root, "x3_kws_B2", ev(25000, 11700, 11700), per_run=jitter(d))
+            r = self.res("x3_kws_B2")
+            self.assertEqual(r["status"], want, d)
+            self.assertEqual((r["window_npu"]["range"], r["window_npu"]["gs_limit"]), (float(d), 2423.0))
+        write_boot(self.root, "x3_ad_B2", ev(25000, 60480, 60480), per_run=jitter(2596))
+        write_boot(self.root, "x3_ad_B0", ev(146000, 93672, 93672))
+        self.assertEqual(self.res("x3_ad_B2")["status"], "VALID")
+        write_boot(self.root, "x3_ad_B2", ev(25000, 60480, 60480), per_run=jitter(2597))
+        self.assertEqual(self.res("x3_ad_B2")["status"], "UNSTABLE")
+        big = lambda s, r: {35: 100000 + (5001 if r == 2 else 0)} if s == 1 else None  # noqa: E731
+        write_boot(self.root, "x3_kws_B4", ev(100000, 18660, 18660), per_run=big)  # 5 % above cap at large window
+        self.assertEqual(self.res("x3_kws_B4")["status"], "UNSTABLE")
+        mid = lambda s, r: {35: 100000 + (4000 if r == 2 else 0)} if s == 1 else None  # noqa: E731
+        write_boot(self.root, "x3_kws_B4", ev(100000, 18660, 18660), per_run=mid)  # cap < range < 5 %: the 5 % holds
+        self.assertEqual(self.res("x3_kws_B4")["status"], "VALID")
+        write_boot(self.root, "x3_kws_B1", ev(25000, 56450, 56450), per_run=jitter(1300))   # B1 keeps 5 %
+        self.assertEqual(self.res("x3_kws_B1")["status"], "UNSTABLE")
+        self.assertNotIn("window_npu", self.res("x3_kws_B1"))
+
+    def test_roots(self):
+        rb, rc = self.tmp / "b", self.tmp / "c"
+        write_boot(rb, "x3_kws_B0", ev(**KWS), crc=5)
+        write_boot(rc, "x3_kws_B0", ev(**KWS), crc=6)                          # a stray copy in root c is ignored
+        write_boot(rc, "x3_kws_B2", ev(25000, 11700, 11700), crc=5)
+        roots = {"b": rb, "c": rc}
+        self.assertEqual(X.config_result(roots, WL, self.m7, CAPS, "x3_kws_B2")["status"], "VALID")   # CRC = root b B0
+        write_boot(rb, "x3_kws_B2", ev(25000, 11700, 11700), crc=5)
+        shutil.rmtree(rc / "conds" / "x3_kws_B2")
+        self.assertEqual(X.config_result(roots, WL, self.m7, CAPS, "x3_kws_B2")["status"], "UNMEASURED")
+
+    def test_vela_noise(self):
+        self.assertEqual(X.vela_cls_noise(9000, 0, 10000), "AGREE")
+        self.assertEqual(X.vela_cls_noise(8999, 0, 10000), "OVER")
+        self.assertEqual(X.vela_cls_noise(8800, 199, 10000), "OVER")
+        self.assertEqual(X.vela_cls_noise(8800, 200, 10000), "INSUFFICIENT_EVIDENCE")
+        self.assertEqual(X.vela_cls_noise(11200, 200, 10000), "INSUFFICIENT_EVIDENCE")
+        self.assertEqual(X.vela_cls_noise(11201, 200, 10000), "UNDER")
+        self.assertEqual(X.vela_cls_noise(11300, 199, 10000), "UNDER")
+        self.assertEqual(X.vela_cls_noise(10000, 999, 10000), "AGREE")
+
+    def test_vela_noise_verdict(self):
+        noisy = lambda s, r: {35: 23436 * 0.9 + (2000 if r == 2 else 0)} if s == 1 else None  # noqa: E731
+        for k, (n, m) in GOOD.items():
+            write_boot(self.root, k, ev(n, m, KWS["dpu"] if k == "x3_kws_B0" else m))
+        s = X.judge(self.root, WL, self.m7, CAPS, VELA)
+        self.assertNotEqual(s["verdicts"]["vela_fidelity"], "INSUFFICIENT_EVIDENCE")
+        write_boot(self.root, "x3_kws_B2", ev(round(23436 * 0.9), 11700, 11700), per_run=lambda s, r: {35: round(23436 * 0.9) + (1000 if r == 2 else 0)} if s == 1 else None)
+        write_boot(self.root, "x3_kws_B4", ev(95000 - round(23436 * 0.9) - 30000, 18660, 18660))
+        s = X.judge(self.root, WL, self.m7, CAPS, VELA)
+        self.assertEqual(s["vela"]["kws_micronet_m"]["groups"]["G_V"]["cls"], "INSUFFICIENT_EVIDENCE")
+        self.assertEqual(s["verdicts"]["vela_fidelity"], "INSUFFICIENT_EVIDENCE")
+        del noisy
+
+    def test_real_boots_487_488(self):                                          # reused amendment B data
+        rb = REPO / "evidence/stage6ex3/raw_b/evsweep_x3b_run"
+        caps = json.loads((REPO / "evidence/stage6c/raw/evsweep_s6c_run/conds/s4c2_conv_cin48/capabilities.json").read_text())
+        m7 = REPO / "evidence/driver_m7/raw/wfe"
+        roots = {"b": rb, "c": self.tmp / "none"}
+        b0 = X.config_result(roots, WL, m7, caps, "x3_kws_B0")
+        self.assertEqual((b0["status"], X.g1(b0, X.m7_ref(m7, "kws_micronet_m"))["verdict"]), ("VALID", "PASS"))
+        self.assertEqual(X.config_result(roots, WL, m7, caps, "x3_kws_B1")["status"], "VALID")
+        old = X.config_result(rb, WL, m7, caps, "x3_kws_B2")                    # boot 489 is not kws B2 (497) here
+        self.assertEqual(old["status"], "CONFIG_MISMATCH")
+        self.assertIn("boot index", old["reasons"])
+
+
 class Constants(unittest.TestCase):
     def test_fixed(self):
         self.assertEqual(X.PASS_C, [35, 131, 142, 387, 640, 642, 656, 658])
-        self.assertEqual(list(X.BOOT.values()), list(range(487, 497)))
+        self.assertEqual(list(X.BOOT.values()), [487, 488] + list(range(497, 505)))
+        self.assertEqual({k for k, v in X.KEY_ROOT.items() if v == "b"}, {"x3_kws_B0", "x3_kws_B1"})
+        self.assertEqual(X.GROUP_CAP, {"kws_micronet_m": 2423.0, "ad_medium_int8": 2596.0})
+        self.assertEqual(X.GROUP_COND, ("B2", "B3", "B4"))
+
+    def test_group_cap_from_m7(self):                                            # source of the frozen caps
+        m7 = REPO / "evidence/driver_m7/raw/wfe"
+        import hashlib
+        self.assertEqual(hashlib.sha256((m7 / "kws_micronet_m/raw_runs.json").read_bytes()).hexdigest()[:12], "0217993436f8")
+        self.assertEqual(hashlib.sha256((m7 / "ad_medium_int8/raw_runs.json").read_bytes()).hexdigest()[:12], "34374320e8f2")
+        for m, cap in X.GROUP_CAP.items():
+            self.assertEqual(X.m7_ref(m7, m)["npu_range_cap"], cap)
         self.assertEqual(X.DETERMINISTIC, (48, 51, 128, 130, 132, 135, 384, 386, 391, 640, 642, 656, 658))
         self.assertEqual((X.NPU_TOL, X.EV_TOL, X.M2_MAX, X.F5_MAC, X.F5_TOL), (0.01, 0.01, 0.95, 26090.0, 0.01))
         self.assertEqual((X.H1UC_KWS, X.H1UC_AD, X.H1UC_TOL, X.VELA_LO, X.VELA_HI), (11700.0, 60480.0, 0.05, 0.9, 1.1))

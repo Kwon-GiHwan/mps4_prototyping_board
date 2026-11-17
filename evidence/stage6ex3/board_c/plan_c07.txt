@@ -1,0 +1,2 @@
+# Stage 6E-X3 amendment C boot 7/8: x3_ad_B3, TA profile 1, runner image f0baf8c (bram 9b1844a3), passes A B C
+503 x3_ad_B3 @/home/gihwan/evsweep_x3c_img/conditions.txt
