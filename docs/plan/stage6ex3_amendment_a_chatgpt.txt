@@ -1,0 +1,375 @@
+Stage 6E-X3 Amendment A — 공식 지시
+PMCR.mask_en 수정 및 SERIAL_MASK 계측 재검증
+0. 공식 결정
+
+Stage 6E-X3의 정적 Preflight 실패를 수용한다.
+
+Preflight: e8f75d3
+
+결정 로그: 6c84ece
+
+실패 원인: Driver Runner의 PMCR.mask_en 미설정
+
+기존 이미지: 14077be
+
+보드 측정: 미실행
+
+PMCR.mask_en 제어를 위한 최소 펌웨어 수정과 기존 X3 실험의 재개를 조건부 승인한다.
+
+기존 X3의 연구 질문, 가설, 그룹 구성 및 측정 예산은 유지한다.
+
+새로운 TA 설정, 추가 모델, 별도 PMU 계측 방식 및 추가 보드 예산은 승인하지 않는다.
+
+이번 변경은 계측 기능 활성화에 한정한다.
+
+1. 펌웨어 수정
+
+Driver Runner에 PMCR.mask_en 제어 기능을 추가한다.
+
+구현 조건:
+
+DRWL 헤더에 명시된 플래그가 있을 때만 mask_en=1로 설정한다.
+
+플래그가 없으면 기존 이미지 14077be와 동일하게 mask_en=0을 유지한다.
+
+PMCR의 기존 Counter Enable 및 Reset 의미를 유지한다.
+
+다른 PMCR 비트를 의도하지 않게 변경하지 않는다.
+
+PMU session arm 시점의 PMCR 값을 기록한다.
+
+측정 종료 및 재초기화 시 플래그 상태가 다음 RUN으로 누출되지 않도록 한다.
+
+기존 Stage 4~6C의 측정 경로와 호환성을 유지한다.
+
+DRWL 헤더의 플래그 비트는 기존 예약 영역 및 다른 Placement/Measurement 필드와 충돌하지 않는지 확인한 뒤 확정한다.
+
+기존 이미지의 기본 실행 동작을 변경하지 않는다.
+
+2. 정적 및 Host 검증
+
+새 이미지 생성 전에 다음을 확인한다.
+
+Flag 0
+
+PMCR.mask_en = 0
+
+기존 PMU 초기화와 동일
+
+기존 PMU_MASK 비활성 동작 유지
+
+Flag 1
+
+PMCR.mask_en = 1
+
+PMU_MASK 명령에 따른 계측 제어 가능
+
+다른 PMCR 필드 보존
+
+추가 검증:
+
+PMCR readback
+
+반복 RUN 간 상태 초기화
+
+Reset/Enable 조합
+
+기존 Runner와의 호환성
+
+DRWL 헤더 파싱
+
+잘못된 플래그 처리
+
+PMU_MASK 시작·종료 인코딩
+
+KERNEL_WAIT 완료 의미
+
+Host 시뮬레이션과 단위 테스트를 수행한다.
+
+기존 테스트와 관련 Mutation 하네스를 재실행한다.
+
+정적 검증이 완료되지 않으면 보드에 진입하지 않는다.
+
+3. 신규 이미지 동등성
+
+기존 14077be를 기준으로 새 이미지를 생성한다.
+
+다음 항목을 확인한다.
+
+변경된 함수 및 심볼
+
+기존 PMU Pass 구성
+
+Runner 측정창
+
+TA profile 1
+
+Placement 0
+
+입력·출력 및 Weight/Scale
+
+Command stream
+
+기존 workload identity
+
+새 이미지에서 Flag 0인 B0 실행은 기존 원본 실행과 동등해야 한다.
+
+단순히 PMCR 값만 같다고 이미지 동등성이 확인된 것으로 처리하지 않는다.
+
+빌드 재현성과 변경된 ELF 심볼 및 바이너리 차이를 기록한다.
+
+4. 보드 진입 Gate
+
+기존 X3의 10 boot 상한을 유지한다.
+
+첫 boot는 KWS B0로 수행한다.
+
+첫 boot에서 다음을 확인한다.
+
+TA profile 1 readback
+
+PMCR.mask_en=0
+
+기존 KWS NPU_ACTIVE 재현
+
+기존 KWS MAC/DPU/AO/WD 활동 재현
+
+SRAM/EXT 전송량 정합성
+
+출력 Golden PASS
+
+Workload identity PASS
+
+기존 driver_m7 및 14077be 기준값과 사전 동결한 허용 기준으로 비교한다.
+
+NPU_ACTIVE의 재현 기준은 ±1%로 한다.
+
+기존 데이터의 변동성과 Runner 차이로 다른 PMU 항목에 별도 허용 기준이 필요한 경우 보드 실행 전에 확정한다.
+
+첫 Gate 실패 시 즉시 중단한다.
+
+5. PMU_MASK 동작 검증 Gate
+
+직렬 그룹 측정으로 진행하기 전에 mask_en=1이 실제 계측을 제어하는지 확인한다.
+
+최소한 다음을 검증한다.
+
+PMCR.mask_en readback = 1
+
+Mask OFF 구간의 해당 PMU 카운터 증가 없음
+
+Mask ON 구간의 PMU 카운터 증가
+
+Mask 경계가 의도한 Command 위치와 일치
+
+KERNEL_WAIT n=0 완료 장벽의 적용
+
+그룹 종료 후 이전 커널의 활동이 다음 창에 섞이지 않음
+
+이 검증은 기존 X3 예산 안에서 수행한다.
+
+필요한 진단 실행은 기존 RUN 및 boot에 포함한다.
+
+별도의 추가 boot를 생성하지 않는다.
+
+단순히 PMCR.mask_en=1인 것만으로 그룹 귀속이 검증됐다고 판정하지 않는다.
+
+특히 PMU_MASK가 명령 처리 시점에 적용되므로 완료 장벽의 위치와 실제 실행 완료 조건을 함께 확인한다.
+
+KERNEL_WAIT가 mem2mem DMA를 기다리지 않는다는 한계를 유지한다.
+
+그룹의 정확한 완료를 보장하지 못하면 해당 그룹은 귀속 유효로 판정하지 않는다.
+
+6. X3 본 실험
+
+모든 Gate를 통과하면 기존 Stage 6E-X3 계약을 그대로 실행한다.
+
+모델:
+
+KWS
+
+AD
+
+구성:
+
+B0 원본
+
+B1 직렬 전체
+
+B2 G_V
+
+B3 G_0
+
+B4 G_R
+
+각 구성에서 Pass A/B/C를 사용한다.
+
+각 Pass:
+
+Warm-up 1
+
+측정 4
+
+총 상한:
+
+10 boot
+
+150 RUN
+
+측정 120
+
+Warm-up 30
+
+기존 가설을 유지한다.
+
+H-S: MAC Schedule Invariance
+
+H-P: Group Partition Validity
+
+H-K: KWS Independent Reference
+
+H-A1/H-A2: AD Compute Residual
+
+H-O: Serialization Effect
+
+H-V: Vela Group Fidelity
+
+기존 계약의 판정 기준을 변경하지 않는다.
+
+추가로 필요한 계측 기능 관련 판정 기준만 Amendment A에서 보드 실행 전에 동결한다.
+
+7. 결과 해석
+
+다음 사항을 반드시 구분한다.
+
+원본 실행
+
+실제 모델의 비직렬 실행 비용.
+
+직렬 실행
+
+KERNEL_WAIT가 삽입된 변경된 실행 스케줄의 비용.
+
+그룹별 실행
+
+직렬 실행에서 완료 경계로 분리한 그룹의 활동 및 비용.
+
+그룹별 비용을 원본 모델의 연산별 실행시간이라고 표현하지 않는다.
+
+원본과 직렬 실행의 NPU_ACTIVE 차이를 순수한 커널 중첩 이득이라고 단정하지 않는다.
+
+Vela의 연산별 비용 합산과 직렬 하드웨어 실행이 반드시 일치한다고 가정하지 않는다.
+
+그룹별 MAC/DPU/AO/WD와 메모리 트래픽이 모델 전체 계수와 일관되는지 확인한다.
+
+합계 일치는 필요한 검증이지만 귀속 정확성의 충분조건은 아니다.
+
+8. 실패 및 종료 조건
+
+다음 중 하나라도 발생하면 해당 Gate에서 중단한다.
+
+Flag 0의 기존 실행 재현 실패
+
+Flag 1의 PMCR.mask_en 활성화 실패
+
+PMU_MASK OFF/ON 동작 실패
+
+KERNEL_WAIT 완료 의미 불충분
+
+그룹 측정창의 실행 완료 보장 실패
+
+원본/직렬 출력 불일치
+
+기존 Stage 2B와 같은 귀속 오류 재발
+
+사전 동결한 측정 안정성 기준 실패
+
+실패 시 신규 계측 방식을 즉시 설계하거나 추가 보드 실험을 시작하지 않는다.
+
+원인과 검증 수준을 기록하고 보고한다.
+
+성공 시 기존 X3 분석 및 종료 조건을 따른다.
+
+9. Research Direction & Guardrails
+
+장기 목표는 Ethos-U85 Hardware–Compiler Performance Analysis다.
+
+다음 네 축을 유지한다.
+
+Compute/Unit: MAC·DPU·AO·WD, PartKernel·DW·FC
+
+Memory/Pipeline/AXI: 데이터 공급, 재사용, 요청, Burst, 포트, 중첩
+
+Vela Fidelity: 비용 모델의 과대·과소예측 및 변화 방향
+
+Model-level: 7개 MLEK 모델의 NPU_ACTIVE와 효율 설명력
+
+이번 Amendment는 새로운 연구 가설을 추가하는 것이 아니라 기존 X3의 계측 기능 결함을 수정하기 위한 것이다.
+
+PMCR.mask_en 수정에 필요한 범위를 넘어 기능을 확장하지 않는다.
+
+X3가 실패하면 동일한 PMU 귀속 문제를 무제한 추적하지 않는다.
+
+X3가 성공하면 KWS·AD의 모델 수준 설명력 재평가를 완료한 뒤 전체 연구 공백으로 복귀한다.
+
+다른 연산군의 Hardware Characterization과 Vela Fidelity 연구도 계속 유지한다.
+
+10. User Request & Decision Log
+
+docs/plan/research_direction_and_decision_log.md에 다음을 누적한다.
+
+X3 정적 Preflight 실패 수용
+
+PMCR.mask_en 미설정 원인 확정
+
+기존 이미지에서 그룹 귀속 불가능
+
+최소 펌웨어 수정 승인
+
+기본 Flag 0의 기존 실행 동작 유지
+
+신규 이미지 동등성 검증 필수
+
+PMU_MASK 실제 동작 검증 필수
+
+X3 예산 10 boot / 150 RUN 유지
+
+추가 모델·TA·boot 미승인
+
+특정 계측 문제에 과도하게 집중하지 않음
+
+사용자에게 선택지를 요구하지 않음
+
+기존 결정과 연구 방향 기록을 보존한다.
+
+11. 최종 보고
+
+펌웨어 변경 커밋
+
+PMCR.mask_en Flag 0/1 검증
+
+기존 이미지 동등성
+
+KERNEL_WAIT/PMU_MASK 의미 검증
+
+사전 계약·Preflight 결과
+
+실제 boot/RUN
+
+그룹별 MAC/DPU/AO/WD
+
+그룹별 SRAM/EXT 및 AXI
+
+원본/직렬 NPU_ACTIVE
+
+Vela 그룹별 비용 비교
+
+KWS·AD 설명력 개선 여부
+
+테스트·Mutation·원본 불변성
+
+연구 방향·결정 로그
+
+최종 판정 및 종료 여부
+
+최종 지시: PMCR.mask_en 제어를 최소 수정으로 구현하고, 정적·Host 검증과 신규 이미지 동등성 검증을 완료하라. 모든 Gate를 통과하면 기존 X3의 10 boot / 150 RUN 안에서 KWS·AD 실험을 실행하고 보고하라.
