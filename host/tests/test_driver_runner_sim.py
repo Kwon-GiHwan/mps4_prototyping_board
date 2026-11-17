@@ -110,7 +110,7 @@ class Session(unittest.TestCase):
         self.assertEqual(l.ping().state, 1)                                    # IDLE
         caps = l.capabilities()
         self.assertEqual((caps["magic"], caps["schema"], caps["record_fields"]),
-                         (record_v2.CAPS_MAGIC, 4, len(record_v2.FIELDS)))
+                         (record_v2.CAPS_MAGIC, 5, len(record_v2.FIELDS)))
         self.assertEqual(l.set_instrumentation_mode(2, [35, 48, 51], 7), (2, 2, 3, 1))
         self.assertEqual(l.set_run_options(driver_link.WAIT_BUSY, 0x00200023), (1, 0x00200023, driver_link.TRACE_OFF))
         golds = [expected_output(IFM, 0, 30), expected_output(IFM, 1, 9)]
@@ -345,6 +345,46 @@ class Session(unittest.TestCase):
         l.load_input(b"")
         l.run()
         self.assertEqual((l.last_measurement.f["ofm_mismatch"], l.last_measurement.f["ofm_max_diff"]), (1, 255))
+
+
+class PmuMaskFlag(unittest.TestCase):                                         # Stage 6E-X3 amendment A
+    """DRWL pmu_flags bit 0 -> PMCR.mask_en at the arm; flag 0 keeps the earlier arm value (0x2001 -> 0x2007 in the fake
+    register file, which keeps the self-clearing reset bits); mask_en never carries over to a flag-0 workload."""
+
+    def tearDown(self):
+        self.l._ser.close()
+
+    def run_blob(self, l, flags):
+        load(l, drwl.pack(simm([40], [30]), [IFM], [expected_output(IFM, 0, 30)], pmu_flags=flags))
+        l.load_input(b"")
+        self.assertEqual(l.run(), 0)
+        return l.last_measurement.f
+
+    def test_flag_0_and_1(self):
+        self.l = l = link()
+        l.set_instrumentation_mode(2, [35], 1)
+        f = self.run_blob(l, 0)
+        self.assertEqual((f["schema"], f["pmu_flags"], f["pmcr_at_arm"], f["pmcr_after_arm"]), (5, 0, 0x2001, 0x2007))
+        f = self.run_blob(l, 1)                                                 # same link: a new load
+        self.assertEqual((f["pmu_flags"], f["pmcr_at_arm"], f["pmcr_after_arm"]), (1, 0x2007, 0x200F))
+        self.assertEqual(l.run(), 0)                                            # a second RUN keeps the flag
+        self.assertEqual(l.last_measurement.f["pmcr_after_arm"], 0x200F)
+        f = self.run_blob(l, 0)                                                 # no carry-over to a flag-0 load
+        self.assertEqual((f["pmu_flags"], f["pmcr_at_arm"], f["pmcr_after_arm"]), (0, 0x200F, 0x2007))
+        self.assertEqual(record_v2.validity(l.last_measurement, [35]), (True, []))
+
+    def test_unknown_flag_refused(self):
+        self.l = l = link()
+        good = drwl.pack(simm([40], [30]), [IFM], [expected_output(IFM, 0, 30)])
+        for word in (2, 0x80000000, 3):
+            bad = bytearray(good)
+            struct.pack_into("<I", bad, 4 * 8, word)
+            l.load_model_begin(len(bad), zlib.crc32(bytes(bad)))
+            l.load_model_chunk(0, bytes(bad))
+            with self.assertRaises(rp.Nack) as c:
+                l.load_model_end()
+            self.assertEqual(c.exception.code, 9)
+            self.assertEqual(l.capabilities()["load_status"], 0x100 + 8)
 
 
 class Failures(unittest.TestCase):
@@ -671,7 +711,7 @@ class Placement(unittest.TestCase):
         self.assertEqual(l.run(), 0)
         f, r = l.last_measurement.f, l.last_measurement
         self.assertEqual((f["schema"], f["placement"], f["regioncfg_irq"], f["qconfig_irq"]),
-                         (4, 0, self.regioncfg(False), 3))
+                         (5, 0, self.regioncfg(False), 3))
         self.assertEqual(self.regioncfg(False), 0x1F)
         self.assertTrue(r.valid_flags & record_v2.REGIONCFG_MATCH)
         self.assertEqual(record_v2.validity(r, [35]), (True, []))

@@ -255,6 +255,7 @@ static uint32_t place_and_load(void)
     uint32_t r, n_in, n_out;
     uintptr_t bad;
     placement_set(PLACEMENT_DDR);
+    pmu_session_set_mask_en(0U);
     if ((r = drwl_parse(P->staging, total_len, &wl)) != 0U) { return LOAD_BAD_DRWL + r; }
     if ((arena_base = arena_of(&r)) == 0U) { return r; }
     if ((r = placement_mem_check(arena_base, P->arena_len, P->dcache_sync, &bad)) != 0U) { return LOAD_MEM_CHECK + r; }
@@ -277,6 +278,7 @@ static uint32_t place_and_load(void)
     }
     if ((r = prepare_io()) != LOAD_OK) { return r; }
     placement_set(wl.placement);
+    pmu_session_set_mask_en(wl.pmu_flags & DRWL_PMU_MASK_EN);
     return LOAD_OK;
 }
 
@@ -327,6 +329,7 @@ static void fill_from_probe(drv_record_t *r, const probe_t *p)
     r->irq_count = p->irq_count; r->arm_count = p->arm_count; r->power_requests = p->power_requests;
     r->job_result = p->job_result; r->status_at_irq = p->status_at_irq; r->qread_at_irq = p->qread_at_irq;
     r->qsize = p->qsize; r->pmcr_at_arm = p->pmcr_at_arm; r->cnten_at_arm = p->cnten_at_arm;
+    r->pmcr_after_arm = p->pmcr_after_arm;
     r->dwt_arm = p->dwt_arm; r->dwt_irq = p->dwt_irq;
     r->ccnt_irq_lo = (uint32_t)p->at_irq.ccnt; r->ccnt_irq_hi = (uint32_t)(p->at_irq.ccnt >> 32);
     r->ovf_irq = p->at_irq.ovf;
@@ -352,6 +355,7 @@ static void fill_config(drv_record_t *r)
     r->event_code6 = pmu_cfg.codes[6]; r->event_code7 = pmu_cfg.codes[7];
     r->model_base = (uint32_t)P->model_base; r->model_len = wl.model.len;
     r->arena_base = (uint32_t)arena_base; r->arena_len = P->arena_len; r->placement = wl.placement;
+    r->pmu_flags = wl.pmu_flags;
 }
 
 static uint32_t flags_of(const drv_record_t *r)

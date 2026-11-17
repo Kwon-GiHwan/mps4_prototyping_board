@@ -30,7 +30,14 @@ uint32_t pmu_session_armed_mask(void)
     return NPU_PMU_PMCNTEN_CYCLE_MASK | ((1U << cfg.count) - 1U);
 }
 
-uint32_t pmu_session_arm(uint32_t *cnten_after)
+static uint32_t mask_en;
+
+void pmu_session_set_mask_en(uint32_t on)
+{
+    mask_en = on ? NPU_PMCR_MASK_EN_MSK : 0U;
+}
+
+uint32_t pmu_session_arm(uint32_t *cnten_after, uint32_t *pmcr_after)
 {
     uint32_t pmcr = *reg(NPU_REG_PMCR);
     *reg(NPU_REG_PMCNTENCLR) = 0xFFFFFFFFU;
@@ -39,8 +46,9 @@ uint32_t pmu_session_arm(uint32_t *cnten_after)
         *reg(NPU_REG_PMEVTYPER_BASE + 4U * i) = cfg.codes[i];
     }
     *reg(NPU_REG_PMCCNTR_CFG) = cfg.pmccntr_cfg;
-    *reg(NPU_REG_PMCR) = (pmcr & ~(NPU_PMCR_EVENT_CNT_RST_MSK | NPU_PMCR_CYCLE_CNT_RST_MSK)) | NPU_PMCR_CNT_EN_MSK
-                         | NPU_PMCR_EVENT_CNT_RST_MSK | NPU_PMCR_CYCLE_CNT_RST_MSK;
+    *reg(NPU_REG_PMCR) = (pmcr & ~(NPU_PMCR_EVENT_CNT_RST_MSK | NPU_PMCR_CYCLE_CNT_RST_MSK | NPU_PMCR_MASK_EN_MSK))
+                         | NPU_PMCR_CNT_EN_MSK | NPU_PMCR_EVENT_CNT_RST_MSK | NPU_PMCR_CYCLE_CNT_RST_MSK | mask_en;
+    *pmcr_after = *reg(NPU_REG_PMCR);
     *reg(NPU_REG_PMCNTENSET) = pmu_session_armed_mask();
     *cnten_after = *reg(NPU_REG_PMCNTENSET);
     return pmcr;

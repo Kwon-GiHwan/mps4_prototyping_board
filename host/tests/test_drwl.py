@@ -97,5 +97,23 @@ class Placement(unittest.TestCase):
         self.assertEqual(D.with_placement(b, 0), a)
 
 
+
+class PmuFlags(unittest.TestCase):                                              # Stage 6E-X3 amendment A
+    def test_word_8(self):
+        import struct as st
+        m, i, g = b"M" * 20, [b"I" * 5], [b"G" * 7]
+        b0, b1 = D.pack(m, i, g), D.pack(m, i, g, pmu_flags=1)
+        self.assertEqual(st.unpack_from("<I", b0, 32)[0], 0)
+        self.assertEqual(st.unpack_from("<I", b1, 32)[0], 1)
+        self.assertEqual(b0[:32] + b0[36:], b1[:32] + b1[36:])                 # only word 8 differs
+        self.assertEqual((D.parse(b0)["pmu_flags"], D.parse(b1)["pmu_flags"]), (0, 1))
+        self.assertEqual(D.PMU_FLAGS_WORD, 8)
+        for bad in (2, 4, 0x80000000):
+            with self.assertRaises(ValueError):
+                D.pack(m, i, g, pmu_flags=bad)
+            x = bytearray(b0); st.pack_into("<I", x, 32, bad)
+            with self.assertRaises(ValueError):
+                D.parse(bytes(x))
+
 if __name__ == "__main__":
     unittest.main()

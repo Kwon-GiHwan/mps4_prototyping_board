@@ -118,7 +118,7 @@ class Placement(unittest.TestCase):
         remap = h[h.index("uint64_t ethosu_address_remap("):h.index("unsigned int ethosu_config_select(")]
         self.assertEqual(remap.count("return placement_weights();"), 1)
         self.assertIn("if (index == 0 && placement_weights() != 0U) {\n        return placement_weights();", remap)
-        self.assertLess(remap.index("placement_weights_prepare("), remap.index("pmu_session_arm(&cnten)"))
+        self.assertLess(remap.index("placement_weights_prepare("), remap.index("pmu_session_arm(&cnten, &pmcr_after)"))
         self.assertLess(remap.index("if (index == -1)"), remap.index("placement_weights_prepare("))
         self.assertIn("SCB_CleanInvalidateDCache();", h)
         self.assertIn("if (placement_get() == PLACEMENT_SRAM_W && j->num_base_addr > 0) {\n"
@@ -230,6 +230,29 @@ class Commands(unittest.TestCase):
                           define("NPU_OFF_QREAD", INC["trace.h"]), define("NPU_OFF_QSIZE", INC["trace.h"])),
                          (0x00, 0x04, 0x18, 0x20))
 
+
+
+class PmuMaskFlagContract(unittest.TestCase):                                   # Stage 6E-X3 amendment A
+    def test_firmware_and_host_agree(self):
+        src = REPO / "firmware" / "driver_runner" / "use_case" / "pmu_runner"
+        w = (src / "include" / "workload.h").read_text()
+        self.assertIn("#define DRWL_PMU_FLAGS_WORD 8U", w)
+        self.assertIn("#define DRWL_PMU_MASK_EN    1U", w)
+        self.assertIn("#define DRWL_PMU_FLAGS_KNOWN DRWL_PMU_MASK_EN", w)
+        self.assertEqual((drwl.PMU_FLAGS_WORD, drwl.PMU_MASK_EN, drwl.PMU_FLAGS_KNOWN), (8, 1, 1))
+        c = (src / "src" / "workload.c").read_text()
+        self.assertIn("if ((w->pmu_flags & ~DRWL_PMU_FLAGS_KNOWN) != 0U) { return 8U; }", c)
+        s = (src / "src" / "pmu_session.c").read_text()
+        self.assertIn("NPU_PMCR_CYCLE_CNT_RST_MSK | NPU_PMCR_MASK_EN_MSK))", s)          # mask_en cleared first
+        self.assertIn("| NPU_PMCR_CNT_EN_MSK | NPU_PMCR_EVENT_CNT_RST_MSK | NPU_PMCR_CYCLE_CNT_RST_MSK | mask_en;", s)
+        self.assertIn("*pmcr_after = *reg(NPU_REG_PMCR);", s)
+        r = (src / "src" / "runner.c").read_text()
+        load = r[r.index("static uint32_t place_and_load(void)"):]
+        load = load[:load.index("return LOAD_OK;")]
+        self.assertLess(load.index("pmu_session_set_mask_en(0U);"), load.index("drwl_parse("))
+        self.assertLess(load.index("placement_set(wl.placement);"), load.index("pmu_session_set_mask_en(wl.pmu_flags & DRWL_PMU_MASK_EN);"))
+        self.assertIn("r->pmu_flags = wl.pmu_flags;", r)
+        self.assertIn("r->pmcr_after_arm = p->pmcr_after_arm;", r)
 
 if __name__ == "__main__":
     unittest.main()

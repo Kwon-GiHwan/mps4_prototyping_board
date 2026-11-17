@@ -32,8 +32,11 @@ void pmu_session_bind(volatile void *npu_base);
 /* 0 = accepted; refuses more than PMU_SLOTS events or an id above 10 bits. Touches no register. */
 uint32_t pmu_session_configure(const pmu_config_t *cfg);
 /* Stop, clear overflow, program event types and PMCCNTR_CFG, reset all counters, enable the configured slots and the
- * cycle counter, keep PMCR.cnt_en set. Returns PMCR as read before the arm (the record keeps it). */
-uint32_t pmu_session_arm(uint32_t *cnten_after);
+ * cycle counter, keep PMCR.cnt_en set; PMCR.mask_en = the value set by pmu_session_set_mask_en (cleared otherwise).
+ * Returns PMCR as read before the arm; *pmcr_after = PMCR read back after the write (the record keeps both). */
+uint32_t pmu_session_arm(uint32_t *cnten_after, uint32_t *pmcr_after);
+/* PMCR.mask_en for the following arms (0 or 1); the runner sets it per loaded workload (DRWL pmu_flags). */
+void pmu_session_set_mask_en(uint32_t on);
 void pmu_session_snapshot(pmu_snapshot_t *s);
 /* The armed event counters only (slots 0..count-1, no cycle counter, no overflow): the QREAD sampler's read while the
  * NPU runs (trace.c). Returns the slot count. */

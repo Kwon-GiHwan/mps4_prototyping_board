@@ -40,6 +40,8 @@ uint32_t drwl_parse(const uint8_t *blob, uint32_t len, drwl_t *w)
     }
     w->placement = rd32(blob + 28);
     if (w->placement >= PLACEMENT_MODES) { return 7U; }
+    w->pmu_flags = rd32(blob + 4U * DRWL_PMU_FLAGS_WORD);
+    if ((w->pmu_flags & ~DRWL_PMU_FLAGS_KNOWN) != 0U) { return 8U; }
     return 0U;
 }
 

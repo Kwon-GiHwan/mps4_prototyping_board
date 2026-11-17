@@ -46,7 +46,7 @@ uint64_t ethosu_address_remap(uint64_t address, int index)
 {
     if (index == -1) {
         struct ethosu_job *j = &ethosu_drv.job;
-        uint32_t cnten;
+        uint32_t cnten, pmcr_after;
         if (placement_get() == PLACEMENT_SRAM_W && j->num_base_addr > 0) {
             (void)placement_weights_prepare((uintptr_t)j->base_addr[0], (uint32_t)j->base_addr_size[0], weights_sync);
         }
@@ -59,7 +59,8 @@ uint64_t ethosu_address_remap(uint64_t address, int index)
             probe.base[0] = (uint32_t)placement_weights();     /* the address written to BASEP0 */
         }
         probe.power_requests = ethosu_drv.power_request_counter;
-        probe.pmcr_at_arm = pmu_session_arm(&cnten);
+        probe.pmcr_at_arm = pmu_session_arm(&cnten, &pmcr_after);
+        probe.pmcr_after_arm = pmcr_after;
         probe.cnten_at_arm = cnten;
         probe.arm_count++;
         probe.dwt_arm = read_timestamp();

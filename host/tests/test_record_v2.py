@@ -6,8 +6,8 @@ import runner_proto as rp
 V4_TAIL = ["regioncfg_irq", "qconfig_irq", "placement"]   # docs/plan/stage4_memory_placement_plan.md F4
 
 
-def payload(fields=None, flags=None, rc=0, total=None, magic=R.MAGIC, schema=4):
-    names = R.FIELDS if schema == 4 else R.FIELDS[:-len(V4_TAIL)]
+def payload(fields=None, flags=None, rc=0, total=None, magic=R.MAGIC, schema=5):
+    names = R.SCHEMA_FIELDS[schema]
     if flags is None:
         flags = R.REQUIRED | (R.REGIONCFG_MATCH if schema >= 4 else 0)
     f = dict.fromkeys(names, 0); f.update(schema=schema, event_count=2, event_code0=35, event_code1=48)
@@ -38,11 +38,22 @@ class Parse(unittest.TestCase):
                 R.parse(bad)
 
     def test_schema_4_adds_three_fields_at_the_end(self):
-        self.assertEqual(R.FIELDS[-3:], V4_TAIL)
-        self.assertEqual(R.SCHEMA, 4)
-        self.assertEqual(R.HEADER_WORDS + len(R.FIELDS), 98)                   # 95 words before (image 83398c7)
-        r = R.parse(payload(dict(regioncfg_irq=0x153, qconfig_irq=3, placement=1)))
+        self.assertEqual(R.FIELDS_V4[-3:], V4_TAIL)
+        self.assertEqual(R.HEADER_WORDS + len(R.FIELDS_V4), 98)                # 95 words before (image 83398c7)
+        r = R.parse(payload(dict(regioncfg_irq=0x153, qconfig_irq=3, placement=1), schema=4))
         self.assertEqual((r.f["regioncfg_irq"], r.f["qconfig_irq"], r.f["placement"]), (0x153, 3, 1))
+        self.assertNotIn("pmu_flags", r.f)
+        self.assertEqual(R.validity(r, [35, 48]), (True, []))                  # every archived schema-4 RUN
+
+    def test_schema_5_adds_two_fields_at_the_end(self):                        # Stage 6E-X3 amendment A
+        self.assertEqual(R.SCHEMA, 5)
+        self.assertEqual(R.FIELDS[-2:], ["pmu_flags", "pmcr_after_arm"])
+        self.assertEqual(R.FIELDS[:-2], R.FIELDS_V4)
+        self.assertEqual(R.HEADER_WORDS + len(R.FIELDS), 100)
+        r = R.parse(payload(dict(pmu_flags=1, pmcr_after_arm=0x400F)))
+        self.assertEqual((r.f["schema"], r.f["pmu_flags"], r.f["pmcr_after_arm"]), (5, 1, 0x400F))
+        with self.assertRaises(rp.ProtocolError):
+            R.parse(payload(dict(schema=4)))                                   # schema word vs record length
 
     def test_schema_3_records_still_parse(self):                               # every archived driver-runner RUN
         r = R.parse(payload(dict(arena_base=0x700015C0), schema=3))

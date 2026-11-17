@@ -13,7 +13,8 @@ import runner_proto
 MAGIC = 0x32454D52        # 'RME2'
 ABI_VERSION = 2
 HEADER_WORDS = 8
-SCHEMA = 4                # 3: trace_words .. trace_id (checked trace modes); 4: regioncfg_irq .. placement
+SCHEMA = 5                # 3: trace_words .. trace_id (checked trace modes); 4: regioncfg_irq .. placement;
+                          # 5: pmu_flags, pmcr_after_arm (Stage 6E-X3 amendment A)
 CAPS_MAGIC = 0x31435244   # 'DRC1'
 
 
@@ -30,8 +31,9 @@ FIELDS_V3 = (["schema", "build_id", "instr_mode", "event_set_id", "event_count"]
              "model_base", "model_len", "arena_base", "arena_len", "n_base"] + _eight("base") + _eight("base_size")
           + ["samples", "sample_dropped", "trace_config", "trace_words_per_sample", "trace_polls", "trace_hook_calls",
              "trace_words", "trace_rejected", "trace_unaccepted", "trace_id"])
-FIELDS = FIELDS_V3 + ["regioncfg_irq", "qconfig_irq", "placement"]
-SCHEMA_FIELDS = {3: FIELDS_V3, 4: FIELDS}   # schema 3: images before the placement fields (83398c7 and earlier)
+FIELDS_V4 = FIELDS_V3 + ["regioncfg_irq", "qconfig_irq", "placement"]
+FIELDS = FIELDS_V4 + ["pmu_flags", "pmcr_after_arm"]
+SCHEMA_FIELDS = {3: FIELDS_V3, 4: FIELDS_V4, 5: FIELDS}   # schema 3: images before the placement fields (83398c7 and earlier)
 
 TA11 = ("maxr", "maxw", "maxrw", "rlatency", "wlatency", "pulse_on", "pulse_off", "bwcap", "perfctrl", "mode",
         "histbin")
@@ -71,7 +73,7 @@ class Record:
 
 
 def parse(payload: bytes) -> Record:
-    """Validates header, size and CRC (the v1 rule), then names every field. Schema 3 (no placement fields) and 4."""
+    """Validates header, size and CRC (the v1 rule), then names every field. Schema 3 (no placement fields), 4 and 5 (pmu_flags, pmcr_after_arm)."""
     if len(payload) < 4 * HEADER_WORDS:
         raise runner_proto.ProtocolError("record v2 shorter than its header")
     magic, ver, total, hw, seq, flags, rc, crc = struct.unpack_from("<8I", payload)

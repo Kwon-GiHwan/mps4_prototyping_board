@@ -165,7 +165,7 @@ uint32_t sim_npu_read(uint32_t off)
 
 static uint32_t invoke(void)
 {
-    uint32_t cnten;
+    uint32_t cnten, pmcr_after;
     if (getenv("SIM_INVOKE_FAIL")) { return 0u; }
     probe.n_base = 3;
     probe.base[0] = 0x70000010u; probe.base[1] = 0x70100000u; probe.base[2] = 0x31000000u;
@@ -175,7 +175,8 @@ static uint32_t invoke(void)
     REG(0x3Cu) = 0u;
     for (int i = 0; i < 3; i++) { REG(0x3Cu) |= placement_config_select(i, placement_effective()) << (2 * i); }
     probe.power_requests = 2u;
-    probe.pmcr_at_arm = pmu_session_arm(&cnten);
+    probe.pmcr_at_arm = pmu_session_arm(&cnten, &pmcr_after);
+    probe.pmcr_after_arm = pmcr_after;
     probe.cnten_at_arm = cnten;
     probe.arm_count++;
     probe.dwt_arm = clock_now;

@@ -20,7 +20,7 @@ typedef struct {
     uint32_t wait_mode;
     uint32_t arm_count, irq_count;
     uint32_t dwt_arm, dwt_irq;
-    uint32_t pmcr_at_arm, cnten_at_arm;
+    uint32_t pmcr_at_arm, cnten_at_arm, pmcr_after_arm;
     pmu_snapshot_t at_irq;
     uint32_t status_at_irq, qread_at_irq, qsize;
     uint32_t regioncfg_irq, qconfig_irq;   /* the job's region/port configuration, read at the IRQ */

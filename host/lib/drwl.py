@@ -7,7 +7,8 @@ host/tests/test_driver_runner_contract.py requires the two to agree. Neither imp
 
 Little-endian u32 words:
   words 0..15  header (HEADER_FIELDS; word 7 = placement: 0 = DDR arena, the default of every earlier blob, 1 = SRAM arena
-               (firmware placement.h); the rest 0)
+               (firmware placement.h); word 8 = pmu_flags: bit 0 = PMCR.mask_en for NPU_OP_PMU_MASK (Stage 6E-X3
+               amendment A), 0 in every earlier blob; the rest 0)
   words 16..   IO table: per input (data_off, len), then per output (golden_off, len)
   then the model, every IFM, every golden, each 16-byte aligned
 """
@@ -21,23 +22,28 @@ HEADER_WORDS = 16
 IO_WORD = HEADER_WORDS
 IO_MAX = 8           # per side: up to 8 inputs and up to 8 outputs (rnnoise has 4 and 5)
 ALIGN = 16
-HEADER_FIELDS = ("magic", "version", "total_len", "model_off", "model_len", "n_in", "n_out", "placement")
+HEADER_FIELDS = ("magic", "version", "total_len", "model_off", "model_len", "n_in", "n_out", "placement", "pmu_flags")
 PLACEMENT_DDR, PLACEMENT_SRAM, PLACEMENT_SRAM_W = 0, 1, 2   # 2: graph IO in SRAM + region 0 copy in SRAM (E2E-D)
 PLACEMENTS = {"ddr": PLACEMENT_DDR, "sram": PLACEMENT_SRAM, "sram_w": PLACEMENT_SRAM_W}
 PLACEMENT_WORD = HEADER_FIELDS.index("placement")
+PMU_FLAGS_WORD = HEADER_FIELDS.index("pmu_flags")
+PMU_MASK_EN = 1             # pmu_flags bit 0
+PMU_FLAGS_KNOWN = PMU_MASK_EN
 
 
 def align(n: int, a: int = ALIGN) -> int:
     return (n + a - 1) // a * a
 
 
-def pack(model: bytes, ifms: list[bytes], goldens: list[bytes], placement: int = PLACEMENT_DDR) -> bytes:
+def pack(model: bytes, ifms: list[bytes], goldens: list[bytes], placement: int = PLACEMENT_DDR, pmu_flags: int = 0) -> bytes:
     if not model or not ifms or not goldens:
         raise ValueError("a model, at least one IFM and one golden are needed")
     if len(ifms) > IO_MAX or len(goldens) > IO_MAX:
         raise ValueError(f"{len(ifms)} IFMs / {len(goldens)} OFMs: at most {IO_MAX} each")
     if placement not in PLACEMENTS.values():
         raise ValueError(f"placement {placement}")
+    if pmu_flags & ~PMU_FLAGS_KNOWN:
+        raise ValueError(f"pmu_flags {pmu_flags:#x}")
     off = align(4 * (HEADER_WORDS + 2 * (len(ifms) + len(goldens))))
     places = []
     for b in [model] + ifms + goldens:
@@ -45,7 +51,7 @@ def pack(model: bytes, ifms: list[bytes], goldens: list[bytes], placement: int =
         off = align(off + len(b))
     blob = bytearray(off)
     fields = dict(magic=MAGIC, version=VERSION, total_len=off, model_off=places[0], model_len=len(model),
-                  n_in=len(ifms), n_out=len(goldens), placement=placement)
+                  n_in=len(ifms), n_out=len(goldens), placement=placement, pmu_flags=pmu_flags)
     struct.pack_into(f"<{len(HEADER_FIELDS)}I", blob, 0, *(fields[f] for f in HEADER_FIELDS))
     table = [w for p, b in zip(places[1:], ifms + goldens) for w in (p, len(b))]
     struct.pack_into(f"<{len(table)}I", blob, 4 * IO_WORD, *table)
@@ -73,6 +79,8 @@ def parse(blob: bytes) -> dict:
             raise ValueError(f"section ({o}, {ln}) misplaced")
     if h["placement"] not in PLACEMENTS.values():
         raise ValueError(f"placement {h['placement']}")
+    if h["pmu_flags"] & ~PMU_FLAGS_KNOWN:
+        raise ValueError(f"pmu_flags {h['pmu_flags']:#x}")
     h["inputs"], h["outputs"] = ents[1:1 + h["n_in"]], ents[1 + h["n_in"]:]
     return h
 

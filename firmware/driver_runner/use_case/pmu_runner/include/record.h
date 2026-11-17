@@ -14,7 +14,8 @@
 #define RECORD_MAGIC        0x32454D52U   /* 'RME2' */
 #define RECORD_ABI_VERSION  2U
 #define RECORD_HEADER_WORDS 8U
-#define RECORD_SCHEMA       4U   /* 3: trace_words .. trace_id (checked trace modes); 4: regioncfg_irq .. placement */
+#define RECORD_SCHEMA       5U   /* 3: trace_words .. trace_id (checked trace modes); 4: regioncfg_irq .. placement;
+                                    5: pmu_flags, pmcr_after_arm (Stage 6E-X3 amendment A) */
 
 #define DRV_EV8(X, p) X(p##0) X(p##1) X(p##2) X(p##3) X(p##4) X(p##5) X(p##6) X(p##7)
 
@@ -29,7 +30,7 @@
     X(model_base) X(model_len) X(arena_base) X(arena_len) X(n_base) DRV_EV8(X, base) DRV_EV8(X, base_size) \
     X(samples) X(sample_dropped) X(trace_config) X(trace_words_per_sample) X(trace_polls) X(trace_hook_calls) \
     X(trace_words) X(trace_rejected) X(trace_unaccepted) X(trace_id) \
-    X(regioncfg_irq) X(qconfig_irq) X(placement)
+    X(regioncfg_irq) X(qconfig_irq) X(placement) X(pmu_flags) X(pmcr_after_arm)
 
 #define DRV_FIELD_DECL(name) uint32_t name;
 typedef struct { DRV_RECORD_FIELDS(DRV_FIELD_DECL) } drv_record_t;
