@@ -1,30 +1,17 @@
-# Stage 6E-X3 Preflight (2026-11-18, 보드 실행 전) — **FAIL: PMU_MASK가 승인된 이미지에서 동작하지 않음**
+# Stage 6E-X3 Preflight (amendment A) — 2026-11-18, before boot 477
 
-지시: `docs/plan/stage6ex3_directive_chatgpt.txt` §3·§6("Preflight 실패 시 보드 실행을 중단하고 실패 원인만 보고").
-보드 실행, 이미지 빌드, DRWL 생성은 하지 않았다. 계약 동결 전 단계에서 중단한다.
+이전 정적 preflight `e8f75d3`의 결과는 FAIL이었다(mask_en 미설정). 이 문서는 amendment A 수정 뒤의 preflight이며 결과는 **PASS**다. 모든 항목은 실제로 실행해서 확인했다.
 
-## 실패 원인 (정적, 기존 원시 자료로 확인)
-
-| 근거 | 내용 |
-|---|---|
-| 하드웨어 조건 | NPU_OP_PMU_MASK는 PMCR.mask_en(bit 3, `0x8`, `firmware/common/npu_pmu_regs.h:46-47`)이 1일 때만 계수를 막는다(`host/lib/cms.py` 머리말; legacy runner는 `firmware/runner/pmwl.c:134`에서 knob으로 설정) |
-| driver runner 코드 | `firmware/driver_runner/use_case/pmu_runner/src/pmu_session.c` `pmu_session_arm`: PMCR = (읽은 값 & ~reset) \| CNT_EN \| reset. mask_en을 설정하는 경로가 없다 |
-| 기록된 값 | Stage 6C raw(이미지 `14077be`) 135/135 RUN의 `pmcr_at_arm` = 16,385 = `0x4001` → mask_en = 0. NPU soft reset 뒤 값이며 arm은 이를 유지한다 |
-| 결론 | 이미지 `14077be`에서는 PMU_MASK 명령이 계수에 영향을 주지 않는다. B2–B4 그룹 창은 B1과 같은 전체 계수를 낸다 → 그룹 귀속 불가 |
-
-## 6E-0 판단 오류 (정정 기록: `evidence/stage6e0/erratum_mask_en.md`)
-
-6E-0 구현 표의 "runner 펌웨어(변경 불필요) EXISTS"와 "driver runner에서 PMU_MASK 동작 NEEDS_BOARD_PRECHECK"는 틀렸다.
-PMU_MASK가 동작하지 않는다는 것은 보드 없이 코드와 기록값으로 확정할 수 있었다. 확인하지 않은 것이 원인이다.
-
-## 정적으로 확인된 나머지 (참고, 판정 아님)
-
-| 항목 | 결과 |
-|---|---|
-| KERNEL_WAIT 인코딩 | yolo 원본 스트림(`evidence/qread_pilot/workloads/…cms.bin`)의 KERNEL_WAIT 11개 = `0x00010012`(cmd0 opcode 18, n=1 at bits 31:16) → n=0은 `0x00000012`. 2B-3 표의 수(yolo 11)와 일치 |
-| KERNEL_WAIT 의미(TRM 102685, 2B-3 인용) | "Wait for n or fewer kernel operations to be remaining before starting the next command"; n=0은 이전 커널 전부 완료 대기. mem2mem DMA는 기다리지 않음(DMA_WAIT 별도) |
-| 직렬화만(B0·B1) | PMU_MASK 없이 KERNEL_WAIT만 쓰면 이미지 `14077be`에서도 가능(펌웨어는 명령 스트림을 검사하지 않음). 단 이번 지시의 B0–B4 구성 전체는 아님 |
-
-## 판정
-
-`PREFLIGHT_FAIL`(PMU_MASK 경계 검증 불가: 승인 이미지에서 mask_en = 0). 보드 실행 시작 안 함.
+| # | 항목 | 확인 | 결과 |
+|---|---|---|---|
+| 1 | 동결 | 계약·판정·워크로드·세션 `1d6e715`. test.sh ALL PASS, mutation 70/70(판정·스트림 편집), 14/14(펌웨어) | PASS |
+| 2 | 펌웨어 수정 | `f0baf8c`. host sim: flag 0 → PMCR 0x2001 → 0x2007(mask_en 0), flag 1 → 0x200F(다른 비트 보존), flag 1 다음 flag 0 load → mask_en 0(누출 없음), 반복 RUN 유지, 알 수 없는 비트 → load 0x108. record schema 5(pmu_flags, pmcr_after_arm), schema 3·4 파싱 유지 | PASS |
+| 3 | 이미지 | 컨테이너 빌드 2회 동일: boot `3b4af743`, bram `9b1844a3`, images.txt `af688281`(14077be와 같음). ddr.bin은 빌드 결과 0 B → 기존과 같은 16 B 0(`374708ff`) 사용. ELF 심볼 차이(`image/symdiff_vs_14077be.txt`)는 의도한 변경뿐이다: drwl_parse, ethosu_address_remap, pmu_session_arm, pmu_session_set_mask_en·mask_en(신규), record_serialise, runner_poll, out.3(+8 B), wl(+4 B). 빌드 gate(driver hook, SRAM 배치) OK | PASS |
+| 4 | KERNEL_WAIT | 인코딩: Vela 원본 yolo 스트림의 KERNEL_WAIT n=1 = `0x00010012` → n=0 `0x00000012`. 의미(TRM 102685, 2B-3 인용): "Wait for n or fewer kernel operations to be remaining before starting the next command"; mem2mem DMA는 기다리지 않음 → 계약 §1 한계로 기록 | PASS(정적) |
+| 5 | PMU_MASK | PMCR.mask_en은 DRWL pmu_flags로 켜진다(2). 실제 계수 제어는 정적으로 증명할 수 없어 세션 안 GM gate(M2·M3·M4)로 판정하며, 실패하면 ad 전에 멈춘다. 경계 위치는 독립값(6C F5 26,090)으로 확인한다 | 세션 gate |
+| 6 | 워크로드 | B0 = m7 DRWL 바이트 그대로(kws `c77bf2b7`, ad `9d8b45ad`). B1–B4: 삽입 단어를 빼면 원래 스트림과 동일(8/8). 컨테이너 tflite 독립 확인 10/10: 단일 ethos-u op, 다른 버퍼·텐서·연산 I/O 동일, 원래 범위에서 바뀐 바이트는 Buffer.data 오프셋 2바이트. IFM·golden·placement 동일. 그룹이 겹치지 않고 모두 덮음 | PASS |
+| 7 | Vela 근거 | `vela --verbose-performance` 같은 옵션. 명령 스트림 = m7(`21564a54`, `093dcda9`). per-layer Op Cycles 합 = cycles_total(kws 102,248, ad 148,328) | PASS |
+| 8 | digest | 보드 staging 28개(이미지 4, DRWL 10, manifest, ids, conditions, plan 10, session) = Mac. 보드 코드 79개(host/analysis·lib·board) = Mac. m7 기준 raw 2개, caps 기준(6C boot 468, 14077be TA profile 1) = Mac | PASS |
+| 9 | 판정 경로 | 보드(Python 3.12)에서 빈 run root로 boot-check → UNMEASURED rc 1, gate-g1 → FAIL. 세션 중단 경로 동작 | PASS |
+| 10 | 보드 상태 | 보드 runs.csv 전체 최대 host_boot_index 476(477–486 미사용). 카드 마운트 0, /dev/sdb1 없음(USB off), `evidence_m6` 있음, x3 경로 없음. 디스크 여유 2.3 GB. `sudo_session.sh --check` OK(Mac·보드) | PASS |
+| 11 | G1 기준값 | m7 pass A(65cf963, TA profile 1) 중앙값: kws NPU 91,824.5(±1 % = ±918), MAC 56,450, DPU 49,495; ad NPU 145,949.5(±1 % = ±1,459), MAC 93,672, DPU 93,672 | 기록 |
