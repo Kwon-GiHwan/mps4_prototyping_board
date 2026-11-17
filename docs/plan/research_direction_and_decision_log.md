@@ -48,3 +48,10 @@
 2. 기존 Unit/AXI/Vela 결과 통합(Stage 6C-0)
 3. Stage 6C — PartKernel·DW·FC 등 미해결 연산의 Unit 특성과 Vela 예측
 4. 7개 MLEK 모델 수준 재평가
+
+## 결정 기록 (누적)
+
+| 날짜 | 출처 | 결정 |
+|---|---|---|
+| 2026-11-18 | ChatGPT("E2E-D 결과 수용 및 Stage 6C-0 진행 지시") | E2E-D 종료, 판정 유지. Graph I/O와 Weight/Scale 경로의 EXT 지연 민감도 변화를 Hardware Memory Characterization의 검증된 결과로 정리. TA 지연 민감도를 Unit 대기시간이나 AXI 물리 활용률로 해석하지 않음. B3w가 L500에서 느린 현상은 미해결로 보존하고 신규 보드 실험은 미승인. Stage 6C-0을 동결 계약대로 완료하되, E2E-D가 선정 규칙에 영향을 주면 Amendment로 기록. 완료 후 통합 결과·신규 실험 필요성·최소 보드 예산·모델 설명력 기여를 보고하고 승인을 기다림. 신규 보드 측정·E3·메모리 배치 실험은 시작하지 않음 |
+| 2026-11-18 | ChatGPT | 이후 모든 공식 지시에 Research Direction & Guardrails와 User Request & Decision Log 유지 지시를 포함 |
