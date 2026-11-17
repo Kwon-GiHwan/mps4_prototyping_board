@@ -1,0 +1,54 @@
+{
+ "CONV": {
+  "cms_sha256": "87489c127c821e7d3694519eaccf7bf4c1a33b79a9e13479f242a0fe87b5c5ee",
+  "components": {
+   "1000": {
+    "cycles_dram_access": 171630,
+    "cycles_npu": 75608,
+    "cycles_sram_access": 21671,
+    "cycles_total": 171630
+   },
+   "500": {
+    "cycles_dram_access": 85815,
+    "cycles_npu": 40262,
+    "cycles_sram_access": 21671,
+    "cycles_total": 85815
+   }
+  },
+  "d_vela": 85815,
+  "estimator_only": true,
+  "r_vela": 2.0,
+  "slope_vela": 171.63,
+  "source": "evidence/stage6b/stage6be2a/facts/vela_targets.json (base vs E2A_Dram_read_latency_1000)",
+  "target": "e1r_c200_h37w37_o96",
+  "v1000": 171630,
+  "v500": 85815,
+  "vela_sha256": "7587edac95344d277171d081a9cf49e40cb8ebd4ceea608790af04d393234227"
+ },
+ "G12": {
+  "cms_sha256": "909c9a2aef1260965a4b01c24fd3464aacaeacd90af5608ac3ab73eac278ecd6",
+  "components": {
+   "1000": {
+    "cycles_dram_access": 82680,
+    "cycles_npu": 34564,
+    "cycles_sram_access": 28800,
+    "cycles_total": 83142
+   },
+   "500": {
+    "cycles_dram_access": 44709,
+    "cycles_npu": 33314,
+    "cycles_sram_access": 28800,
+    "cycles_total": 53052
+   }
+  },
+  "d_vela": 30090,
+  "estimator_only": true,
+  "r_vela": 1.5671793711829902,
+  "slope_vela": 60.18,
+  "source": "evidence/stage6b/stage6be2a/facts/vela_targets.json (base vs E2A_Dram_read_latency_1000)",
+  "target": "G12",
+  "v1000": 83142,
+  "v500": 53052,
+  "vela_sha256": "95cf070b8da226167e984817f0a093a63b3a246f8d7da26d267ac52eba1b620b"
+ }
+}

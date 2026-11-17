@@ -1,0 +1,2 @@
+# Stage 6B-E2B boot 1/5: REF s4c2_conv_cin48, TA profile 1 (EXT RLATENCY 500), image 70090f1, DDR/EXT
+435 s4c2_conv_cin48 @/home/gihwan/evsweep_s6be2b_l500/conditions.txt

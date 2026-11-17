@@ -1,0 +1,2 @@
+# Stage 6B-E2B boot 4/5: G12-L1000 s6bb_g12, TA profile 1 with EXT RLATENCY 1000, image L1000 (bram fd478e2d), DDR/EXT
+438 s6bb_g12 @/home/gihwan/evsweep_s6be2b_l1000/conditions.txt

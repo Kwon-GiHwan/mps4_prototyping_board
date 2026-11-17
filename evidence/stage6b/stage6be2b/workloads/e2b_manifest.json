@@ -1,0 +1,238 @@
+{
+ "CONV-L1000": {
+  "boot": 439,
+  "caps_ref": "caps_l1000.json",
+  "cin": 200,
+  "config": "e1r_c200_h37w37_o96",
+  "cout": 96,
+  "drwl_sha256": "924cab4f869759fe9d35e385017527659c8bebe4830e0ae4a7c1a97aa929585b",
+  "golden_sha256": "d7528e23ac1eb82186e4b6f04f1cdd83b81ceb45638049b6fda928581cea91b2",
+  "group": "e1r_c200_h37w37_o96",
+  "ifm_block": "2x38x64",
+  "ifm_hwc": "37x37x200",
+  "image": {
+   "boot_sha256": "718c456283bfd44863d5fb697360b680ff4dc6b297cc0dc74d7ed78a6ca7ef59",
+   "bram_sha256": "fd478e2d6e41376398383fd72291590f27a411ac05ff20f85652473e25a45842",
+   "ddr_sha256": "374708fff7719dd5979ec875d56cd2286f6d3cf7ec317a3b25632aab28ec37bb",
+   "images_txt_sha256": "af688281435a73dda3b2247845149817ecc7a9bbdff5a3ccd2e4dfa52875423f"
+  },
+  "internal_conv": "CONV_OUTPUT_OBSERVED",
+  "kind": "E1",
+  "latency": 1000,
+  "n_base": 5,
+  "n_mac": 26284800,
+  "ofm_block": "2x38x96",
+  "ofm_hwc": "37x37x96",
+  "ofm_ublock": "2x2x32",
+  "order": 1,
+  "output_check": "output.bin = golden (BUILTIN_REF)",
+  "placement": 0,
+  "ta_ext_rlatency": 1000,
+  "traversal": "DepthFirst",
+  "vela": {
+   "status": "NOT_COMPARABLE",
+   "why": "E1 measures MAC_ACTIVE only (Vela fidelity is E2)"
+  }
+ },
+ "CONV-L500": {
+  "boot": 437,
+  "caps_ref": "caps_l500.json",
+  "cin": 200,
+  "config": "e1r_c200_h37w37_o96",
+  "cout": 96,
+  "drwl_sha256": "924cab4f869759fe9d35e385017527659c8bebe4830e0ae4a7c1a97aa929585b",
+  "golden_sha256": "d7528e23ac1eb82186e4b6f04f1cdd83b81ceb45638049b6fda928581cea91b2",
+  "group": "e1r_c200_h37w37_o96",
+  "history": "evidence/stage6b/stage6be1r/raw/evsweep_s6be1r_run/conds/e1r_c200_h37w37_o96/wfe",
+  "history_boot": 429,
+  "ifm_block": "2x38x64",
+  "ifm_hwc": "37x37x200",
+  "image": {
+   "boot_sha256": "718c456283bfd44863d5fb697360b680ff4dc6b297cc0dc74d7ed78a6ca7ef59",
+   "bram_sha256": "c80e77df9fe14b908966a5cebc5045cca93c5fd98bcea50fb1a7aef35f9fe99c",
+   "ddr_sha256": "374708fff7719dd5979ec875d56cd2286f6d3cf7ec317a3b25632aab28ec37bb",
+   "images_txt_sha256": "af688281435a73dda3b2247845149817ecc7a9bbdff5a3ccd2e4dfa52875423f"
+  },
+  "internal_conv": "CONV_OUTPUT_OBSERVED",
+  "kind": "E1",
+  "latency": 500,
+  "n_base": 5,
+  "n_mac": 26284800,
+  "ofm_block": "2x38x96",
+  "ofm_hwc": "37x37x96",
+  "ofm_ublock": "2x2x32",
+  "order": 1,
+  "output_check": "output.bin = golden (BUILTIN_REF)",
+  "placement": 0,
+  "ta_ext_rlatency": 500,
+  "traversal": "DepthFirst",
+  "vela": {
+   "status": "NOT_COMPARABLE",
+   "why": "E1 measures MAC_ACTIVE only (Vela fidelity is E2)"
+  }
+ },
+ "G12-L1000": {
+  "boot": 438,
+  "caps_ref": "caps_l1000.json",
+  "cin": 276,
+  "cin_mod16": 4,
+  "cms_sha256": "909c9a2aef1260965a4b01c24fd3464aacaeacd90af5608ac3ab73eac278ecd6",
+  "config": "s6bb_g12",
+  "cout": 276,
+  "cout_mod16": 4,
+  "drwl_sha256": "928296b1c235f1b22ce69d29900561d937818ffa655e1ec335e90ee3b1992c5f",
+  "golden_sha256": "b9341e6f7af83862c58793b496c2a79d01d5c032e124cfb000d74b353ecf8e92",
+  "group": "G12",
+  "ifm_block": "8x16x64",
+  "ifm_hwc": "16x16x276",
+  "ifm_memory": "Sram",
+  "ifm_sha256": "33658e2f25e8028ec29d71e5e7090ef4200403fd779db4f8f409de3efc4a5f78",
+  "image": {
+   "boot_sha256": "718c456283bfd44863d5fb697360b680ff4dc6b297cc0dc74d7ed78a6ca7ef59",
+   "bram_sha256": "fd478e2d6e41376398383fd72291590f27a411ac05ff20f85652473e25a45842",
+   "ddr_sha256": "374708fff7719dd5979ec875d56cd2286f6d3cf7ec317a3b25632aab28ec37bb",
+   "images_txt_sha256": "af688281435a73dda3b2247845149817ecc7a9bbdff5a3ccd2e4dfa52875423f"
+  },
+  "input": {
+   "b_input": "filled with the IFM zero point",
+   "dtype": "int8",
+   "fixture_ifm_sha256": "33658e2f25e8028ec29d71e5e7090ef4200403fd779db4f8f409de3efc4a5f78",
+   "kind": "MLEK model-internal Conv input (Amendment B fixture)",
+   "mlek_input_sha256": "89ce99eb736e413e302d18227b4eaa23530b3f9d1524a5210b813851e759165b",
+   "model": "ad_medium_int8",
+   "op_index": 4,
+   "scale": [
+    0.0235294122248888
+   ],
+   "shape": [
+    1,
+    16,
+    16,
+    276
+   ],
+   "zero_point": [
+    -128
+   ]
+  },
+  "internal_conv": "INTERNAL_CONV_NOT_OBSERVED",
+  "kind": "A2",
+  "latency": 1000,
+  "n_base": 6,
+  "n_conv_kernels": 1,
+  "n_mac": 19501056,
+  "ofm_block": "8x16x64",
+  "ofm_hwc": "16x16x276",
+  "ofm_memory": "Sram",
+  "ofm_ublock": "2x2x32",
+  "order": 1,
+  "output_check": "output.bin = golden (BUILTIN_REF on the fixture input), every RUN output_match",
+  "placement": 0,
+  "spatial_blocks": 10,
+  "ta_ext_rlatency": 1000,
+  "tflite_ofm_sha256": "b9341e6f7af83862c58793b496c2a79d01d5c032e124cfb000d74b353ecf8e92",
+  "traversal": "DepthFirst",
+  "vela": {
+   "conv_mac_cycles": 24290,
+   "conv_op_cycles": 24290,
+   "core_clock": "1000000000.0",
+   "cycles_total": 53052,
+   "scope": "A2 graph (Vela summary cycles_total)",
+   "system_config": "Ethos_U85_SYS_DRAM_Mid_1024",
+   "vela_sha256": "95cf070b8da226167e984817f0a093a63b3a246f8d7da26d267ac52eba1b620b"
+  },
+  "vela_sha256": "95cf070b8da226167e984817f0a093a63b3a246f8d7da26d267ac52eba1b620b",
+  "weight_bytes": 87376
+ },
+ "G12-L500": {
+  "boot": 436,
+  "caps_ref": "caps_l500.json",
+  "cin": 276,
+  "cin_mod16": 4,
+  "cms_sha256": "909c9a2aef1260965a4b01c24fd3464aacaeacd90af5608ac3ab73eac278ecd6",
+  "config": "s6bb_g12",
+  "cout": 276,
+  "cout_mod16": 4,
+  "drwl_sha256": "928296b1c235f1b22ce69d29900561d937818ffa655e1ec335e90ee3b1992c5f",
+  "golden_sha256": "b9341e6f7af83862c58793b496c2a79d01d5c032e124cfb000d74b353ecf8e92",
+  "group": "G12",
+  "history": "evidence/stage6b/stage6bb/raw/evsweep_s6bb_run/conds/s6bb_g12/wfe",
+  "history_boot": 411,
+  "ifm_block": "8x16x64",
+  "ifm_hwc": "16x16x276",
+  "ifm_memory": "Sram",
+  "ifm_sha256": "33658e2f25e8028ec29d71e5e7090ef4200403fd779db4f8f409de3efc4a5f78",
+  "image": {
+   "boot_sha256": "718c456283bfd44863d5fb697360b680ff4dc6b297cc0dc74d7ed78a6ca7ef59",
+   "bram_sha256": "c80e77df9fe14b908966a5cebc5045cca93c5fd98bcea50fb1a7aef35f9fe99c",
+   "ddr_sha256": "374708fff7719dd5979ec875d56cd2286f6d3cf7ec317a3b25632aab28ec37bb",
+   "images_txt_sha256": "af688281435a73dda3b2247845149817ecc7a9bbdff5a3ccd2e4dfa52875423f"
+  },
+  "input": {
+   "b_input": "filled with the IFM zero point",
+   "dtype": "int8",
+   "fixture_ifm_sha256": "33658e2f25e8028ec29d71e5e7090ef4200403fd779db4f8f409de3efc4a5f78",
+   "kind": "MLEK model-internal Conv input (Amendment B fixture)",
+   "mlek_input_sha256": "89ce99eb736e413e302d18227b4eaa23530b3f9d1524a5210b813851e759165b",
+   "model": "ad_medium_int8",
+   "op_index": 4,
+   "scale": [
+    0.0235294122248888
+   ],
+   "shape": [
+    1,
+    16,
+    16,
+    276
+   ],
+   "zero_point": [
+    -128
+   ]
+  },
+  "internal_conv": "INTERNAL_CONV_NOT_OBSERVED",
+  "kind": "A2",
+  "latency": 500,
+  "n_base": 6,
+  "n_conv_kernels": 1,
+  "n_mac": 19501056,
+  "ofm_block": "8x16x64",
+  "ofm_hwc": "16x16x276",
+  "ofm_memory": "Sram",
+  "ofm_ublock": "2x2x32",
+  "order": 1,
+  "output_check": "output.bin = golden (BUILTIN_REF on the fixture input), every RUN output_match",
+  "placement": 0,
+  "spatial_blocks": 10,
+  "ta_ext_rlatency": 500,
+  "tflite_ofm_sha256": "b9341e6f7af83862c58793b496c2a79d01d5c032e124cfb000d74b353ecf8e92",
+  "traversal": "DepthFirst",
+  "vela": {
+   "conv_mac_cycles": 24290,
+   "conv_op_cycles": 24290,
+   "core_clock": "1000000000.0",
+   "cycles_total": 53052,
+   "scope": "A2 graph (Vela summary cycles_total)",
+   "system_config": "Ethos_U85_SYS_DRAM_Mid_1024",
+   "vela_sha256": "95cf070b8da226167e984817f0a093a63b3a246f8d7da26d267ac52eba1b620b"
+  },
+  "vela_sha256": "95cf070b8da226167e984817f0a093a63b3a246f8d7da26d267ac52eba1b620b",
+  "weight_bytes": 87376
+ },
+ "REF": {
+  "boot": 435,
+  "caps_ref": "caps_l500.json",
+  "cin": 48,
+  "config": "s4c2_conv_cin48",
+  "drwl_sha256": "6eb390be2874088b53970ab4f859962d5bb0b16b4e060e2e460d86840f4339d7",
+  "image": {
+   "boot_sha256": "718c456283bfd44863d5fb697360b680ff4dc6b297cc0dc74d7ed78a6ca7ef59",
+   "bram_sha256": "c80e77df9fe14b908966a5cebc5045cca93c5fd98bcea50fb1a7aef35f9fe99c",
+   "ddr_sha256": "374708fff7719dd5979ec875d56cd2286f6d3cf7ec317a3b25632aab28ec37bb",
+   "images_txt_sha256": "af688281435a73dda3b2247845149817ecc7a9bbdff5a3ccd2e4dfa52875423f"
+  },
+  "internal_conv": "CONV_OUTPUT_OBSERVED",
+  "kind": "reference",
+  "latency": 500,
+  "n_mac": 2654208,
+  "ta_ext_rlatency": 500
+ }
+}

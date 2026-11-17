@@ -1,0 +1,2 @@
+# Stage 6B-E2B boot 2/5: G12-L500 s6bb_g12, EXT RLATENCY 500, image 70090f1, DDR/EXT
+436 s6bb_g12 @/home/gihwan/evsweep_s6be2b_l500/conditions.txt

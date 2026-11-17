@@ -1,0 +1,21 @@
+# Owner-approved (Stage 6B-E2B 공식 지시, 2026-11-17) sudo session: boots 435-439, contract evidence/stage6b/stage6be2b/contract.md.
+# L500 = image 70090f1 (TA profile 1, EXT RLATENCY 500): REF, G12, CONV; restore; L1000 = same source, only EXT RLATENCY 1000
+# (bram fd478e2d): G12, CONV; restore; postflight. repro-gate after boot 435, boot-check after the others (rc 1 on CONFIG_MISMATCH /
+# UNMEASURED, incl. the TA EXT RLATENCY read-back). A failing step stops the session and restores the card.
+user python3 mcc.py USB_ON 4 && sleep 5 && test -e /dev/sdb1
+deploy_mlek /home/gihwan/evsweep_s6be2b_l500 /home/gihwan/evsweep/evidence_s6be2b_l500
+user OUTPUTS=1 STOP_ON_INVALID=1 sh run_driver_campaign.sh /home/gihwan/evsweep_s6be2b_l500 /home/gihwan/evsweep_s6be2b_run_l500 /home/gihwan/evsweep_s6be2b_l500/ids.txt /home/gihwan/evsweep_s6be2b_l500/plan_b01.txt 5
+user python3 host/analysis/stage6be2b.py repro-gate /home/gihwan/evsweep_s6be2b_run_l500 /home/gihwan/evsweep_s6be2b_wl /home/gihwan/evsweep_s6be1r/ref/wfe
+user OUTPUTS=1 STOP_ON_INVALID=1 sh run_driver_campaign.sh /home/gihwan/evsweep_s6be2b_l500 /home/gihwan/evsweep_s6be2b_run_l500 /home/gihwan/evsweep_s6be2b_l500/ids.txt /home/gihwan/evsweep_s6be2b_l500/plan_b02.txt 5
+user python3 host/analysis/stage6be2b.py boot-check /home/gihwan/evsweep_s6be2b_run_l500 /home/gihwan/evsweep_s6be2b_wl G12-L500
+user OUTPUTS=1 STOP_ON_INVALID=1 sh run_driver_campaign.sh /home/gihwan/evsweep_s6be2b_l500 /home/gihwan/evsweep_s6be2b_run_l500 /home/gihwan/evsweep_s6be2b_l500/ids.txt /home/gihwan/evsweep_s6be2b_l500/plan_b03.txt 5
+user python3 host/analysis/stage6be2b.py boot-check /home/gihwan/evsweep_s6be2b_run_l500 /home/gihwan/evsweep_s6be2b_wl CONV-L500
+restore_mlek /home/gihwan/evsweep/evidence_s6be2b_l500 /home/gihwan/evsweep_s6be2b_l500
+user python3 mcc.py USB_ON 4 && sleep 5 && test -e /dev/sdb1
+deploy_mlek /home/gihwan/evsweep_s6be2b_l1000 /home/gihwan/evsweep/evidence_s6be2b_l1000
+user OUTPUTS=1 STOP_ON_INVALID=1 sh run_driver_campaign.sh /home/gihwan/evsweep_s6be2b_l1000 /home/gihwan/evsweep_s6be2b_run_l1000 /home/gihwan/evsweep_s6be2b_l1000/ids.txt /home/gihwan/evsweep_s6be2b_l1000/plan_b04.txt 5
+user python3 host/analysis/stage6be2b.py boot-check /home/gihwan/evsweep_s6be2b_run_l1000 /home/gihwan/evsweep_s6be2b_wl G12-L1000
+user OUTPUTS=1 STOP_ON_INVALID=1 sh run_driver_campaign.sh /home/gihwan/evsweep_s6be2b_l1000 /home/gihwan/evsweep_s6be2b_run_l1000 /home/gihwan/evsweep_s6be2b_l1000/ids.txt /home/gihwan/evsweep_s6be2b_l1000/plan_b05.txt 5
+user python3 host/analysis/stage6be2b.py boot-check /home/gihwan/evsweep_s6be2b_run_l1000 /home/gihwan/evsweep_s6be2b_wl CONV-L1000
+restore_mlek /home/gihwan/evsweep/evidence_s6be2b_l1000 /home/gihwan/evsweep_s6be2b_l1000
+user sh postflight.sh

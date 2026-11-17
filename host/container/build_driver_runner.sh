@@ -4,6 +4,8 @@
 #   sh build_driver_runner.sh <repo copy with firmware/driver_runner and firmware/common> <out dir (new)>
 # The MLEK tree is not modified (checked before and after). Kept: the image set (boot.bin bram.bin ddr.bin images.txt
 # if produced), the ELF, the map, the logs and the digests; the build tree is deleted (small board-host disk).
+# DRV_EXTRA_CMAKE (default empty: the command is unchanged) adds cache options, e.g. Stage 6B-E2B's -DEXT_RLATENCY=1000
+# (an MLEK TA_CONFIG_FILE cache variable; the MLEK tree stays untouched).
 set -u
 SRC="$1"; OUT="$2"
 M=/opt/arm/ml-embedded-evaluation-kit; B="$OUT/build"
@@ -16,7 +18,7 @@ cmake -B "$B" -S "$M" -DCMAKE_TOOLCHAIN_FILE=$M/scripts/cmake/toolchains/bare-me
   -DTARGET_SUBSYSTEM=sse-320 -DFPGA_PLATFORM_SSE_320=ON -DETHOS_U_NPU_ID=U85 -DETHOS_U_NPU_CONFIG_ID=Z1024 \
   -DETHOS_U_NPU_MEMORY_MODE=Dedicated_Sram -DETHOS_U_NPU_ENABLED=ON \
   -DUSE_CASES_SEARCH_DIR_LIST="$SRC/firmware/driver_runner/use_case" -DUSE_CASE_BUILD=pmu_runner \
-  -Dpmu_runner_ACTIVATION_BUF_SZ=0x00200000 > "$OUT/cmake.log" 2>&1 || { echo "FAIL: cmake (see cmake.log)"; exit 1; }
+  -Dpmu_runner_ACTIVATION_BUF_SZ=0x00200000 ${DRV_EXTRA_CMAKE:-} > "$OUT/cmake.log" 2>&1 || { echo "FAIL: cmake (see cmake.log)"; exit 1; }
 cmake --build "$B" -j8 > "$OUT/build.log" 2>&1 || { echo "FAIL: build (see build.log)"; tail -30 "$OUT/build.log"; exit 1; }
 git diff --quiet -- source scripts && git -C dependencies/core-driver diff --quiet || { echo "FAIL: MLEK tree changed by the build"; exit 1; }
 cp "$B"/bin/mlek_pmu_runner.axf "$B"/bin/mlek_pmu_runner.map "$OUT/" || exit 1

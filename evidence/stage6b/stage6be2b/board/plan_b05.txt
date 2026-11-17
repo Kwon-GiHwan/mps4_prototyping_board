@@ -1,0 +1,2 @@
+# Stage 6B-E2B boot 5/5: CONV-L1000 e1r_c200_h37w37_o96, EXT RLATENCY 1000, image L1000, DDR/EXT
+439 e1r_c200_h37w37_o96 @/home/gihwan/evsweep_s6be2b_l1000/conditions.txt

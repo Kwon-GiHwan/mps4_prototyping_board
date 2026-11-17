@@ -1,0 +1,23 @@
+{
+ "e1r_c200_h37w37_o96": {
+  "custom_op_inputs": 5,
+  "custom_op_outputs": 1,
+  "drwl_sha256": "924cab4f869759fe9d35e385017527659c8bebe4830e0ae4a7c1a97aa929585b",
+  "n_base": 5,
+  "placement": 0
+ },
+ "s4c2_conv_cin48": {
+  "custom_op_inputs": 5,
+  "custom_op_outputs": 1,
+  "drwl_sha256": "6eb390be2874088b53970ab4f859962d5bb0b16b4e060e2e460d86840f4339d7",
+  "n_base": 5,
+  "placement": 0
+ },
+ "s6bb_g12": {
+  "custom_op_inputs": 6,
+  "custom_op_outputs": 1,
+  "drwl_sha256": "928296b1c235f1b22ce69d29900561d937818ffa655e1ec335e90ee3b1992c5f",
+  "n_base": 6,
+  "placement": 0
+ }
+}
