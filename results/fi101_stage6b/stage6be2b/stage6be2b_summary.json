@@ -1,0 +1,419 @@
+{
+ "contract": "evidence/stage6b/stage6be2b/contract.md",
+ "ta": "TA profile 1; EXT RLATENCY 500 (image 70090f1) vs 1000 (image L1000)",
+ "reference_gate": {
+  "verdict": "PASS",
+  "same_binary": true,
+  "reproduce": {
+   "ok": true,
+   "checks": {
+    "mac": true,
+    "dpu": true,
+    "output": true,
+    "constant_counters": true,
+    "npu_active": true
+   },
+   "differing_constant_counters": {},
+   "npu_active": [
+    22251.0,
+    22368.5
+   ],
+   "tolerance": 653,
+   "compared": 10
+  }
+ },
+ "results": {
+  "REF": {
+   "key": "REF",
+   "config": "s4c2_conv_cin48",
+   "metrics": {
+    "n_mac": 2654208,
+    "npu_active": 22368.5,
+    "npu_active_range": 653,
+    "npu_active_pass_b": 22253.0,
+    "mac_active": 3456.0,
+    "mac_dpu_active": 3456.0,
+    "ao_active": 3527.5,
+    "wd_active": 1781.0,
+    "wd_stalled": 9453.0,
+    "reserved_53": 0.0,
+    "reserved_55": 7712.0,
+    "pass_b": {
+     "128": 400.0,
+     "130": 3520.0,
+     "132": 29.0,
+     "135": 440.0,
+     "384": 327.0,
+     "386": 3929.0,
+     "391": 3456.0
+    },
+    "mac_activity": 0.1545029841071149,
+    "macs_per_mac_active": 768.0,
+    "eff_1024": 0.75,
+    "dpu_over_mac": 1.0,
+    "macs_per_1024_npu_active": 0.11587723808033619,
+    "stage4k_nearest": 768,
+    "rate_over_640": 1.2,
+    "rate_over_768": 1.0,
+    "c16_rate_768": 768.0,
+    "rate_over_c16_768": 1.0
+   },
+   "beats": {
+    "128": 400.0,
+    "130": 3520.0,
+    "132": 29.0,
+    "135": 440.0,
+    "384": 327.0,
+    "386": 3929.0,
+    "391": 3456.0
+   },
+   "mac_active_runs": [
+    3456,
+    3456,
+    3456,
+    3456
+   ],
+   "mac_dpu_active_runs": [
+    3456,
+    3456,
+    3456,
+    3456
+   ],
+   "output_sha256": "86d13e7c6cae01b38808007412a92bade84299f9c56149d5555ab709edf52ddc",
+   "status": "VALID",
+   "reasons": []
+  },
+  "G12-L500": {
+   "key": "G12-L500",
+   "config": "s6bb_g12",
+   "metrics": {
+    "n_mac": 19501056,
+    "npu_active": 99866.0,
+    "npu_active_range": 860,
+    "npu_active_pass_b": 99232.5,
+    "mac_active": 20736.0,
+    "mac_dpu_active": 20736.0,
+    "ao_active": 14920.0,
+    "wd_active": 5815.5,
+    "wd_stalled": 24509.5,
+    "reserved_53": 3635.0,
+    "reserved_55": 2204.0,
+    "pass_b": {
+     "128": 1568.0,
+     "130": 25088.0,
+     "132": 576.0,
+     "135": 9216.0,
+     "384": 10417.0,
+     "386": 27066.0,
+     "391": 7872.0
+    },
+    "mac_activity": 0.20763823523521518,
+    "macs_per_mac_active": 940.4444444444445,
+    "eff_1024": 0.9184027777777778,
+    "dpu_over_mac": 1.0,
+    "macs_per_1024_npu_active": 0.1906955320128973,
+    "stage4k_nearest": 768,
+    "rate_over_640": 1.4694444444444446,
+    "rate_over_768": 1.224537037037037,
+    "c16_rate_768": 736.0,
+    "rate_over_c16_768": 1.277777777777778
+   },
+   "beats": {
+    "128": 1568.0,
+    "130": 25088.0,
+    "132": 576.0,
+    "135": 9216.0,
+    "384": 10417.0,
+    "386": 27066.0,
+    "391": 7872.0
+   },
+   "mac_active_runs": [
+    20736,
+    20736,
+    20736,
+    20736
+   ],
+   "mac_dpu_active_runs": [
+    20736,
+    20736,
+    20736,
+    20736
+   ],
+   "output_sha256": "b9341e6f7af83862c58793b496c2a79d01d5c032e124cfb000d74b353ecf8e92",
+   "status": "VALID",
+   "reasons": []
+  },
+  "CONV-L500": {
+   "key": "CONV-L500",
+   "config": "e1r_c200_h37w37_o96",
+   "metrics": {
+    "n_mac": 26284800,
+    "npu_active": 104393.5,
+    "npu_active_range": 624,
+    "npu_active_pass_b": 104489.5,
+    "mac_active": 40432.0,
+    "mac_dpu_active": 36100.0,
+    "ao_active": 8429.0,
+    "wd_active": 17503.0,
+    "wd_stalled": 83833.0,
+    "reserved_53": 4.0,
+    "reserved_55": 60976.0,
+    "pass_b": {
+     "128": 2242.0,
+     "130": 29260.0,
+     "132": 97.0,
+     "135": 1540.0,
+     "384": 12857.0,
+     "386": 41271.0,
+     "391": 8214.0
+    },
+    "mac_activity": 0.3873038072293773,
+    "macs_per_mac_active": 650.0989315393748,
+    "eff_1024": 0.6348622378314207,
+    "dpu_over_mac": 0.8928571428571429,
+    "macs_per_1024_npu_active": 0.24588456177827164,
+    "stage4k_nearest": 640,
+    "rate_over_640": 1.0157795805302732,
+    "rate_over_768": 0.8464829837752276,
+    "c16_rate_768": 738.4615384615385,
+    "rate_over_c16_768": 0.8803423031262367
+   },
+   "beats": {
+    "128": 2242.0,
+    "130": 29260.0,
+    "132": 97.0,
+    "135": 1540.0,
+    "384": 12857.0,
+    "386": 41271.0,
+    "391": 8214.0
+   },
+   "mac_active_runs": [
+    40432,
+    40432,
+    40432,
+    40432
+   ],
+   "mac_dpu_active_runs": [
+    36100,
+    36100,
+    36100,
+    36100
+   ],
+   "output_sha256": "d7528e23ac1eb82186e4b6f04f1cdd83b81ceb45638049b6fda928581cea91b2",
+   "status": "VALID",
+   "reasons": []
+  },
+  "G12-L1000": {
+   "key": "G12-L1000",
+   "config": "s6bb_g12",
+   "metrics": {
+    "n_mac": 19501056,
+    "npu_active": 158707.5,
+    "npu_active_range": 1071,
+    "npu_active_pass_b": 159641.5,
+    "mac_active": 20736.0,
+    "mac_dpu_active": 20736.0,
+    "ao_active": 14921.0,
+    "wd_active": 3595.0,
+    "wd_stalled": 42749.0,
+    "reserved_53": 17126.0,
+    "reserved_55": 1151.0,
+    "pass_b": {
+     "128": 1568.0,
+     "130": 25088.0,
+     "132": 576.0,
+     "135": 9216.0,
+     "384": 10417.0,
+     "386": 27066.0,
+     "391": 7872.0
+    },
+    "mac_activity": 0.1306554510656396,
+    "macs_per_mac_active": 940.4444444444445,
+    "eff_1024": 0.9184027777777778,
+    "dpu_over_mac": 1.0,
+    "macs_per_1024_npu_active": 0.11999432919049194,
+    "stage4k_nearest": 768,
+    "rate_over_640": 1.4694444444444446,
+    "rate_over_768": 1.224537037037037,
+    "c16_rate_768": 736.0,
+    "rate_over_c16_768": 1.277777777777778
+   },
+   "beats": {
+    "128": 1568.0,
+    "130": 25088.0,
+    "132": 576.0,
+    "135": 9216.0,
+    "384": 10417.0,
+    "386": 27066.0,
+    "391": 7872.0
+   },
+   "mac_active_runs": [
+    20736,
+    20736,
+    20736,
+    20736
+   ],
+   "mac_dpu_active_runs": [
+    20736,
+    20736,
+    20736,
+    20736
+   ],
+   "output_sha256": "b9341e6f7af83862c58793b496c2a79d01d5c032e124cfb000d74b353ecf8e92",
+   "status": "VALID",
+   "reasons": []
+  },
+  "CONV-L1000": {
+   "key": "CONV-L1000",
+   "config": "e1r_c200_h37w37_o96",
+   "metrics": {
+    "n_mac": 26284800,
+    "npu_active": 202140.5,
+    "npu_active_range": 913,
+    "npu_active_pass_b": 201007.0,
+    "mac_active": 40432.0,
+    "mac_dpu_active": 36100.0,
+    "ao_active": 8431.5,
+    "wd_active": 17504.0,
+    "wd_stalled": 179647.0,
+    "reserved_53": 0.0,
+    "reserved_55": 156793.0,
+    "pass_b": {
+     "128": 2242.0,
+     "130": 29260.0,
+     "132": 97.0,
+     "135": 1540.0,
+     "384": 12857.0,
+     "386": 41271.0,
+     "391": 8214.0
+    },
+    "mac_activity": 0.20001929351119643,
+    "macs_per_mac_active": 650.0989315393748,
+    "eff_1024": 0.6348622378314207,
+    "dpu_over_mac": 0.8928571428571429,
+    "macs_per_1024_npu_active": 0.12698469628797793,
+    "stage4k_nearest": 640,
+    "rate_over_640": 1.0157795805302732,
+    "rate_over_768": 0.8464829837752276,
+    "c16_rate_768": 738.4615384615385,
+    "rate_over_c16_768": 0.8803423031262367
+   },
+   "beats": {
+    "128": 2242.0,
+    "130": 29260.0,
+    "132": 97.0,
+    "135": 1540.0,
+    "384": 12857.0,
+    "386": 41271.0,
+    "391": 8214.0
+   },
+   "mac_active_runs": [
+    40432,
+    40432,
+    40432,
+    40432
+   ],
+   "mac_dpu_active_runs": [
+    36100,
+    36100,
+    36100,
+    36100
+   ],
+   "output_sha256": "d7528e23ac1eb82186e4b6f04f1cdd83b81ceb45638049b6fda928581cea91b2",
+   "status": "VALID",
+   "reasons": []
+  }
+ },
+ "workloads": {
+  "G12": {
+   "statuses": [
+    "VALID",
+    "VALID"
+   ],
+   "b500": 99866.0,
+   "b1000": 158707.5,
+   "v500": 53052,
+   "v1000": 83142,
+   "d_board": 58841.5,
+   "d_vela": 30090,
+   "r_board": 1.5892045340756613,
+   "r_vela": 1.5671793711829902,
+   "slope_board": 117.683,
+   "slope_vela": 60.18,
+   "tol": 1931,
+   "primary": "DISCREPANT",
+   "secondary": "CONSISTENT",
+   "abs_err_500": 0.8824172509990198,
+   "abs_err_1000": 0.9088727718842462
+  },
+  "CONV": {
+   "statuses": [
+    "VALID",
+    "VALID"
+   ],
+   "b500": 104393.5,
+   "b1000": 202140.5,
+   "v500": 85815,
+   "v1000": 171630,
+   "d_board": 97747.0,
+   "d_vela": 85815,
+   "r_board": 1.9363322429078438,
+   "r_vela": 2.0,
+   "slope_board": 195.494,
+   "slope_vela": 171.63,
+   "tol": 1537,
+   "primary": "CONSISTENT",
+   "secondary": "CONSISTENT",
+   "abs_err_500": 0.21649478529394628,
+   "abs_err_1000": 0.17776903804696148
+  }
+ },
+ "auxiliary": {
+  "G12": {
+   "cls": "MEMORY_SERVICE_RESPONSE",
+   "same_mac": true,
+   "same_dpu": true,
+   "beat_rel_change": {
+    "130": 0.0,
+    "135": 0.0,
+    "386": 0.0,
+    "391": 0.0
+   }
+  },
+  "CONV": {
+   "cls": "MEMORY_SERVICE_RESPONSE",
+   "same_mac": true,
+   "same_dpu": true,
+   "beat_rel_change": {
+    "130": 0.0,
+    "135": 0.0,
+    "386": 0.0,
+    "391": 0.0
+   }
+  }
+ },
+ "history": {
+  "G12": {
+   "old_boot": 411,
+   "old": 99555.0,
+   "old_range": 886,
+   "new": 99866.0,
+   "new_range": 860,
+   "cls": "REPRODUCED"
+  },
+  "CONV": {
+   "old_boot": 429,
+   "old": 104597.5,
+   "old_range": 503,
+   "new": 104393.5,
+   "new_range": 624,
+   "cls": "REPRODUCED"
+  }
+ },
+ "verdict": "SENSITIVITY_DISCREPANCY_OBSERVED",
+ "limits": [
+  "one boot per condition: no independent boot repetition, no statistical causal claim",
+  "L1000 boots follow the L500 boots in time; drift checked once by REF",
+  "one latency variable: no separation of individual memory/pipeline contributions"
+ ]
+}
