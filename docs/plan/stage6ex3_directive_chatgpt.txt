@@ -1,0 +1,628 @@
+Stage 6E-X3 공식 지시
+Kernel Serialization, Group-Level PMU Attribution & Vela Fidelity
+0. 공식 결정
+
+Stage 6E-0 결과를 수용한다.
+
+계약: 034ef0e
+
+결과: 16f8127
+
+결정 로그: 4728f62
+
+최종 설계 판정: READY_FOR_BOARD_REVIEW
+
+X3 SERIAL_MASK 실험을 조건부 승인한다.
+
+확정 상한:
+
+10 boot
+
+150 RUN
+
+측정 RUN 120
+
+Warm-up RUN 30
+
+Pass A/B/C 모두 사용
+
+TA profile 1
+
+EXT RLATENCY 500
+
+FI101 1024 MAC
+
+Runner 기반 이미지 14077be
+
+승인 범위는 KWS와 AD 두 모델에 한정한다.
+
+보드 실행 전에 직렬화, PMU_MASK, KERNEL_WAIT 및 출력 동등성의 정적·동적 Preflight를 통과해야 한다.
+
+Preflight 실패 시 보드 실행을 중단하고 실패 원인만 보고한다.
+
+추가 모델, 추가 boot, 추가 계측 방식, 신규 TA 설정은 승인하지 않는다.
+
+1. 연구 목적
+
+이번 실험의 핵심은 실제 모델의 실행 비용을 그룹별로 관측할 수 있는 방법을 검증하는 것이다.
+
+세 가지를 구분한다.
+
+Compute Attribution
+
+완료 장벽으로 구분한 그룹의 MAC/DPU/AO/WD 활동이 실제 모델 전체 활동과 어떤 관계를 갖는가?
+
+Execution Serialization
+
+커널 실행을 직렬화하면 NPU_ACTIVE와 Unit 활동이 어떻게 변화하는가?
+
+Vela Fidelity
+
+직렬화 조건의 그룹별 실행 비용은 Vela의 연산별 비용 예측과 얼마나 일치하는가?
+
+이 실험은 원본 모델의 연산별 실행시간을 직접 복원하는 실험이 아니다.
+
+직렬화된 모델은 원본과 다른 실행 스케줄을 가진다.
+
+2. 실험 구성
+
+KWS와 AD 각각 다음 다섯 구성을 사용한다.
+
+구성	목적
+B0	원본 실행
+B1	모든 커널 앞에 KERNEL_WAIT n=0을 삽입한 직렬 실행
+B2	G_V — 기존 DF EXACT 그룹
+B3	G_0 — 첫 연산 op0
+B4	G_R — 나머지 연산
+
+총 10 boot.
+
+각 구성에서 Pass A/B/C를 실행한다.
+
+Pass당 Warm-up 1회, 측정 4회.
+
+그룹 구성은 Stage 6E-0에서 동결한 연산 분류와 명령 스트림 분석을 따른다.
+
+그룹의 연산 집합이 겹치거나 누락되지 않는지 검증한다.
+
+B2/B3/B4는 동일한 직렬 실행 스트림을 사용하고 PMU 측정 구간만 변경해야 한다.
+
+그룹별 스트림 자체가 달라지면 동일 실행의 비용 분해로 인정하지 않는다.
+
+3. Phase 0 — 실행 의미 및 PMU 계측 검증
+
+이번 실험에서 가장 중요한 사전 조건이다.
+
+3.1 KERNEL_WAIT 의미 검증
+
+다음 사항을 확인한다.
+
+KERNEL_WAIT n=0의 실제 완료 보장 의미
+
+모든 관련 커널의 완료를 기다리는지
+
+DMA 및 내부 Unit의 완료 범위
+
+명령 큐와 실행 완료의 관계
+
+PMU_MASK 적용 시점
+
+KERNEL_WAIT와 PMU_MASK의 순서
+
+공개 명세 및 실제 Driver 구현을 대조한다.
+
+KERNEL_WAIT가 의도한 실행 완료 장벽을 보장하지 않는다면 실험을 진행하지 않는다.
+
+3.2 PMU_MASK 경계 검증
+
+그룹별 PMU_MASK의 시작·종료가 완료 장벽과 정확히 연결되는지 확인한다.
+
+특히 다음을 검증한다.
+
+앞 그룹의 미완료 실행이 다음 그룹에 포함되지 않는가?
+
+마지막 그룹의 실행이 측정 종료 전에 완료되는가?
+
+PMU_MASK 명령 처리 시점과 실제 Unit 활동 시점이 구분되는가?
+
+그룹별 계수 합산이 구조적으로 유효한가?
+
+장벽 및 명령 처리 오버헤드는 어떻게 처리되는가?
+
+합계가 모델 전체 계수와 일치한다는 이유만으로 연산별 귀속이 정확하다고 판정하지 않는다.
+
+독립 연산의 알려진 활동량을 이용한 별도 검증을 요구한다.
+
+3.3 직렬 실행의 정확성
+
+원본과 직렬 실행에서 다음을 확인한다.
+
+동일 입력
+
+동일 Weight/Scale
+
+동일 연산 결과
+
+동일 최종 출력
+
+동일 커널 구성
+
+동일 메모리 배치
+
+동일 계산 명령
+
+KERNEL_WAIT와 계측 명령 외의 변경 없음
+
+명령 재직렬화 과정에서 연산 순서, 메모리 주소 또는 실행 구성이 변경되면 실패로 처리한다.
+
+4. Phase 1 — 사전 가설 및 판정 동결
+
+Stage 6E-0의 기존 가설을 유지한다.
+
+H-S: MAC Schedule Invariance
+
+원본과 직렬 실행의 MAC_ACTIVE가 ±1% 범위에서 일치하는가?
+
+불일치하면 직렬화가 계산부의 활동에도 영향을 주는 것으로 판정한다.
+
+H-P: Group Partition Validity
+
+그룹별 PMU 계수 합과 직렬 모델 전체 계수가 ±1% 범위에서 일치하는가?
+
+이것은 필요한 일관성 검사이지만, 단독으로 귀속 정확성을 증명하지 않는다.
+
+H-K: KWS Independent Reference
+
+KWS op0 및 기존 DF EXACT 그룹의 활동이 독립 측정 또는 검증된 H1-UC 예측과 일치하는가?
+
+기준:
+
+독립 F5: MAC_ACTIVE 26,090
+
+DF EXACT: H1-UC 11,700
+
+기존 계약의 ±1% / ±5% 기준 유지
+
+독립 형상과 모델 내부 실행 구성이 달라질 경우 비교 가능성을 별도로 판정한다.
+
+H-A1 / H-A2: AD Residual
+
+AD의 MAC_ACTIVE 잔여 차이가 검증되지 않은 연산군에 집중되는지, 검증된 연산군에서도 발생하는지 확인한다.
+
+H-O: Serialization Effect
+
+원본과 직렬 실행의 NPU_ACTIVE 차이를 측정한다.
+
+Serialization_Delta = NPU_ACTIVE_serial - NPU_ACTIVE_original
+
+양수이면 직렬화로 실행시간이 증가한 것이다.
+
+그러나 증가분 전체를 원래 실행의 순수 커널 간 중첩 이득이라고 단정하지 않는다.
+
+장벽 자체의 비용, 명령 처리, DMA 스케줄 및 버퍼 동작 변화가 포함될 수 있다.
+
+H-V: Vela Group Fidelity
+
+직렬 실행 그룹의 NPU_ACTIVE와 대응하는 Vela 연산별 예상 비용 합을 비교한다.
+
+Vela 연산과 PMU 그룹의 대응이 불명확한 경우 정량 비교를 수행하지 않는다.
+
+모든 판정 규칙은 보드 결과를 보기 전에 동결한다.
+
+5. Phase 2 — 펌웨어 및 스트림 구성
+
+Stage 6E-0에서 확인한 기존 기능을 우선 사용한다.
+
+KERNEL_WAIT 삽입
+
+PMU_MASK
+
+COP1 추출
+
+DRWL 구성
+
+기존 Runner
+
+기존 PMU Pass
+
+신규 구현은 승인된 범위로 제한한다.
+
+KERNEL_WAIT 인코딩
+
+COP1 교체 및 TFLite 재직렬화
+
+그룹별 PMU 창
+
+판정 및 검증 코드
+
+기존 Driver의 실행 의미를 변경하지 않는다.
+
+B0 원본은 기존 모델 실행 결과를 재현해야 한다.
+
+B1~B4는 직렬화 및 PMU 계측에 필요한 변경만 포함한다.
+
+모든 생성 산출물의 digest와 변경 내용을 기록한다.
+
+6. Phase 3 — Preflight 및 중단 조건
+
+보드 실행 전에 다음을 모두 확인한다.
+
+KERNEL_WAIT의 완료 보장
+
+PMU_MASK 경계의 정확성
+
+원본/직렬 스트림의 연산 동일성
+
+그룹별 연산 분할의 완전성
+
+출력 Reference 검증
+
+기존 KWS·AD 원본 실행 재현 기준
+
+PMU 이벤트 지원 및 Pass 구성
+
+TA profile 1 확인
+
+이미지·Runner 무결성
+
+기존 Stage 2B 귀속 오류 재발 방지
+
+특히 그룹 측정의 종료 지점에서 실제 실행 완료가 보장되는지 확인한다.
+
+PMU_MASK 종료가 단순히 명령 처리 시점에 발생하는 경우에는 완료 장벽이 먼저 실행되어야 한다.
+
+Preflight에서 그룹별 PMU 귀속을 신뢰할 수 없다고 판정하면 보드 실행을 시작하지 않는다.
+
+첫 REF 또는 원본 실행에서 기존 모델 결과가 재현되지 않으면 즉시 중단한다.
+
+직렬 실행 출력이 원본과 다르면 중단한다.
+
+그룹별 측정창이 의도한 범위를 측정하지 못한다면 후속 boot를 진행하지 않는다.
+
+7. Phase 4 — 보드 실행
+
+총 10 boot를 수행한다.
+
+모델별 순서는 다음과 같다.
+
+KWS
+
+B0 원본
+
+B1 직렬 전체
+
+B2 G_V
+
+B3 G_0
+
+B4 G_R
+
+AD
+
+B0 원본
+
+B1 직렬 전체
+
+B2 G_V
+
+B3 G_0
+
+B4 G_R
+
+각 boot에서 Pass A/B/C를 순차 실행한다.
+
+Pass당:
+
+Warm-up 1 RUN
+
+측정 4 RUN
+
+총 150 RUN.
+
+모든 RUN에서 입력·출력 검증과 workload identity를 확인한다.
+
+측정 조건을 변경하지 않는다.
+
+실행 중 판정 기준을 수정하지 않는다.
+
+추가 boot 또는 재측정은 수행하지 않는다.
+
+종료 후 이미지 복원 및 postflight를 검증한다.
+
+8. Phase 5 — Compute Attribution 분석
+
+각 모델에서 다음을 계산한다.
+
+원본 MAC_ACTIVE
+
+직렬 MAC_ACTIVE
+
+그룹별 MAC_ACTIVE
+
+MAC_DPU_ACTIVE
+
+AO_ACTIVE
+
+WD_ACTIVE
+
+WD_STALLED
+
+그룹별 계수 합과 직렬 전체 계수를 비교한다.
+
+KWS의 독립 기준 형상과 그룹 계수를 비교한다.
+
+AD에서는 기존 Compute Residual 33,192사이클의 원인 후보를 분석한다.
+
+다음 결과를 구분한다.
+
+검증된 연산군의 계산 비용 불일치
+
+미검증 연산군의 계산 비용
+
+모델 내부 실행 문맥 차이
+
+계측 구조 문제
+
+원인 미분리
+
+직렬 그룹별 계수를 원본 비직렬 모델의 연산별 비용이라고 표현하지 않는다.
+
+9. Phase 6 — Execution / Pipeline 분석
+
+다음 항목을 비교한다.
+
+원본 NPU_ACTIVE
+
+직렬 NPU_ACTIVE
+
+그룹별 NPU_ACTIVE
+
+MAC/DPU/AO/WD 활동
+
+SRAM/EXT 트래픽
+
+AXI 요청 및 포트 활동
+
+직렬화에 따른 NPU_ACTIVE 변화가 발생하면 Unit 활동과 메모리 접근 구조가 함께 변했는지 확인한다.
+
+계산 활동이 동일하고 전송량도 동일한 조건에서 NPU_ACTIVE가 변했다면 실행 스케줄 및 의존성 효과의 근거로 평가한다.
+
+그러나 장벽·명령 처리 오버헤드를 배제하지 못하면 순수 중첩 이득으로 확정하지 않는다.
+
+10. Phase 7 — Vela Fidelity 분석
+
+각 그룹에 대해 다음을 비교한다.
+
+Vela Compute cycles
+
+Vela SRAM cycles
+
+Vela DRAM cycles
+
+Vela op cycles
+
+직렬 그룹 NPU_ACTIVE
+
+그룹별 Board/Vela ratio
+
+연산별 비용 항과 그룹별 실제 비용을 구분한다.
+
+특히 다음을 분석한다.
+
+Compute 비용이 지배적인 그룹
+
+SRAM 비용이 지배적인 그룹
+
+DRAM 비용이 지배적인 그룹
+
+연산 내부 비용과 그룹 간 실행 중첩의 차이
+
+직렬화가 Vela 예측 오차를 줄이는지
+
+Vela가 직렬 실행을 정확히 예측한다고 가정하지 않는다.
+
+원본 모델의 Vela 예상값과 직렬 실행의 측정값을 비교할 때 실행 조건이 다르다는 사실을 명시한다.
+
+직렬화가 Vela 오차를 줄이지 못하는 경우도 중요한 반례로 기록한다.
+
+11. Phase 8 — 모델 설명력 재평가
+
+Stage 6D 및 6E-0의 기존 판정을 보존한다.
+
+KWS와 AD에 대해 다음을 재평가한다.
+
+MAC_ACTIVE 예측 잔차
+
+검증된 연산군의 실제 그룹 비용
+
+미검증 연산군의 기여
+
+원본과 직렬 실행의 실행시간 차이
+
+Vela 비용 항과 그룹별 실측 차이
+
+전체 NPU_ACTIVE 설명 가능 범위
+
+그룹 측정이 유효하지 않으면 정량 설명력을 개선했다고 판정하지 않는다.
+
+KWS·AD에서 검증한 방법을 다른 모델에 적용할 수 있는지 평가하되, 이번 단계에서 추가 모델을 실행하지 않는다.
+
+12. 최종 판정
+
+다음 항목을 별도로 판정한다.
+
+Measurement
+
+VALID
+
+PARTIAL_VALID
+
+MEASUREMENT_INVALID
+
+Group Attribution
+
+VALIDATED
+
+PARTIALLY_VALIDATED
+
+INVALID
+
+Compute Explanation
+
+RESIDUAL_REDUCED
+
+RESIDUAL_UNCHANGED
+
+INSUFFICIENT_EVIDENCE
+
+Serialization
+
+SCHEDULE_EFFECT_OBSERVED
+
+NO_SIGNIFICANT_EFFECT
+
+INSUFFICIENT_EVIDENCE
+
+Vela Fidelity
+
+GROUP_FIDELITY_IMPROVED
+
+GROUP_DISCREPANCY_REMAINS
+
+INSUFFICIENT_EVIDENCE
+
+기존 Stage 6E-0에서 동결한 허용 기준을 우선 사용한다.
+
+새로운 필수 판정 기준은 측정 전에 동결한다.
+
+사후적으로 가설이나 임계값을 변경하지 않는다.
+
+13. 종료 조건
+
+이번 X3는 최대 10 boot로 종료한다.
+
+그룹별 PMU 귀속이 검증되면 KWS·AD의 모델 수준 설명력을 재평가한다.
+
+귀속이 실패하면 실패 원인을 기록하고 기존 Stage 2B의 한계를 유지한다.
+
+귀속 실패를 이유로 즉시 다른 PMU 방식이나 추가 모델 실험을 시작하지 않는다.
+
+실험 이후에는 다음을 평가한다.
+
+실제 모델의 MAC_ACTIVE 설명력 증가
+
+NPU_ACTIVE의 그룹별 비용 분석 가능성
+
+Vela 예측 오차의 원인 식별 가능성
+
+다른 모델로의 적용 가능성
+
+여전히 부족한 Hardware Characterization
+
+G_DF_EXT, F2 Vela 반례, AO-1, WD-1/2는 기존 미해결 항목으로 보존한다.
+
+14. Research Direction & Guardrails
+
+장기 연구 목표는 Ethos-U85 Hardware–Compiler Performance Analysis다.
+
+다음 네 축을 균형 있게 유지한다.
+
+Compute/Unit: MAC·DPU·AO·WD, PartKernel·DW·FC
+
+Memory/Pipeline/AXI: 데이터 공급, 재사용, 요청, Burst, 포트, 중첩
+
+Vela Fidelity: 비용 예측 오차의 원인과 성능 변화 방향·크기
+
+Model-level: 7개 MLEK 모델의 NPU_ACTIVE 및 효율 설명력
+
+이번 실험은 기존 독립 연산 Characterization과 실제 모델 실행시간을 연결할 수 있는지를 검증하기 위한 것이다.
+
+특정 AD 잔차, H1-UC, SRAM 배치 또는 WD_STALLED 하나에 연구를 종속시키지 않는다.
+
+새로운 실험을 추가할 때는 다음을 명시한다.
+
+왜 필요한가?
+
+기존 실험과 무엇이 다른가?
+
+어떤 하드웨어 특성을 새롭게 규명하는가?
+
+Vela Fidelity에 어떤 근거를 추가하는가?
+
+실제 모델 설명력에 어떻게 연결되는가?
+
+언제 종료하는가?
+
+종료 후 전체 연구로 어떻게 복귀하는가?
+
+실험이 성공하면 모델 수준 재평가로 연결한다.
+
+실험이 실패하면 측정 방법의 한계를 기록하고 다른 연구 축의 우선순위를 재검토한다.
+
+하나의 계측 문제를 무제한 추적하지 않는다.
+
+15. User Request & Decision Log
+
+docs/plan/research_direction_and_decision_log.md에 이번 결정을 누적한다.
+
+Stage 6E-0 결과 수용
+
+X3 SERIAL_MASK 조건부 승인
+
+10 boot / 150 RUN 확정
+
+Pass A/B/C 사용
+
+KWS·AD만 측정
+
+완료 장벽과 PMU_MASK의 정확한 계측 의미 검증 필수
+
+원본과 직렬 실행의 차이를 순수 중첩 이득으로 단정하지 않음
+
+Vela의 직렬 실행 예측 정확도를 가정하지 않음
+
+기존 Stage 2B 귀속 오류 재발 방지
+
+추가 모델·형상·TA 변형 미승인
+
+결과 이후 모델 수준 설명력 재평가
+
+사용자에게 선택지를 요구하지 않음
+
+기존 결정과 연구 방향 기록을 삭제하지 않는다.
+
+16. 최종 보고
+
+계약·Preflight·결과 커밋
+
+KERNEL_WAIT 및 PMU_MASK 검증
+
+원본/직렬 스트림 동등성
+
+실제 boot/RUN 및 유효성
+
+KWS·AD 그룹별 MAC/DPU/AO/WD
+
+그룹별 SRAM/EXT 및 AXI
+
+원본과 직렬 실행의 NPU_ACTIVE
+
+그룹 계수 합산 검증
+
+독립 연산 기준과 그룹 측정 비교
+
+AD Compute Residual 분석
+
+Vela 그룹별 비용 비교
+
+모델 수준 설명력 개선 여부
+
+미해결 메커니즘
+
+테스트·Mutation·원본 불변성
+
+연구 방향·결정 로그
+
+최종 판정 및 후속 연구 우선순위
+
+최종 지시: X3 SERIAL_MASK의 사전 검증과 계약 동결을 완료하고, 모든 Gate를 통과하면 KWS·AD에 대해 최대 10 boot / 150 RUN을 실행하라. 결과를 통합 분석한 뒤 추가 보드 실험 없이 보고하라.
