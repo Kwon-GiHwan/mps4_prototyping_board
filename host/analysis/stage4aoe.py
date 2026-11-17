@@ -46,6 +46,7 @@ AB_REL = 0.05
 # Amendment A1 (evidence/stage4aoe/contract_a1.md): REGIONCFG per the firmware's rule (placement.h / placement.c),
 # with n_base expected from the DRWL, not from the RUN record. Values typed from the firmware header.
 REGION0, REGION1_DDR, REGION1_SRAM, REGION2_7 = 3, 3, 0, 1
+REGION0_SRAM = 0                       # placement 2 (PLACEMENT_SRAM_W, Stage 6B-E2E-D): region 0 on the SRAM port too
 QCONFIG = 3
 REGIONCFG_MATCH = 1 << 6          # record.h REC_REGIONCFG_MATCH
 MANIFEST = "expected_identity.json"
@@ -170,7 +171,8 @@ def output_exact(folder: pathlib.Path, golden: bytes, runs: dict) -> bool:
 
 def placement_regioncfg(n_base: int, placement: int) -> int:
     """firmware placement_regioncfg: 2 bits per region for the first min(n_base, 8) regions."""
-    sel = lambda i: REGION0 if i == 0 else (REGION1_SRAM if placement == 1 else REGION1_DDR) if i == 1 else REGION2_7
+    sel = lambda i: (REGION0_SRAM if placement == 2 else REGION0) if i == 0 else \
+        (REGION1_SRAM if placement in (1, 2) else REGION1_DDR) if i == 1 else REGION2_7
     return sum(sel(i) << (2 * i) for i in range(min(n_base, 8)))
 
 

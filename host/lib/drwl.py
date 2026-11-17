@@ -22,8 +22,8 @@ IO_WORD = HEADER_WORDS
 IO_MAX = 8           # per side: up to 8 inputs and up to 8 outputs (rnnoise has 4 and 5)
 ALIGN = 16
 HEADER_FIELDS = ("magic", "version", "total_len", "model_off", "model_len", "n_in", "n_out", "placement")
-PLACEMENT_DDR, PLACEMENT_SRAM = 0, 1
-PLACEMENTS = {"ddr": PLACEMENT_DDR, "sram": PLACEMENT_SRAM}
+PLACEMENT_DDR, PLACEMENT_SRAM, PLACEMENT_SRAM_W = 0, 1, 2   # 2: graph IO in SRAM + region 0 copy in SRAM (E2E-D)
+PLACEMENTS = {"ddr": PLACEMENT_DDR, "sram": PLACEMENT_SRAM, "sram_w": PLACEMENT_SRAM_W}
 PLACEMENT_WORD = HEADER_FIELDS.index("placement")
 
 

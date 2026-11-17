@@ -101,6 +101,8 @@ class Placement(unittest.TestCase):
                           define("PLACEMENT_REGION1_DDR", self.P), define("PLACEMENT_REGION2_7", self.P),
                           define("PLACEMENT_REGION1_SRAM", self.P)), (3, 3, 3, 1, 0))
         self.assertEqual(define("PLACEMENT_SRAM_ALIGN", self.P), 0x10000)
+        self.assertEqual((define("PLACEMENT_SRAM_W", self.P), define("PLACEMENT_REGION0_SRAM", self.P)),
+                         (drwl.PLACEMENT_SRAM_W, 0))
         self.assertEqual((define("NPU_OFF_QCONFIG", INC["probe.h"]), define("NPU_OFF_REGIONCFG", INC["probe.h"])),
                          (0x1C, 0x3C))
         self.assertEqual(define("DRWL_PLACEMENT_WORD", INC["workload.h"]), drwl.PLACEMENT_WORD)
@@ -110,7 +112,15 @@ class Placement(unittest.TestCase):
     def test_hooks(self):
         h = SRC["hooks.c"]
         self.assertIn("unsigned int ethosu_config_select(uint64_t address, int index)", h)   # the driver's prototype
-        self.assertIn("return placement_config_select(index, placement_get());", h)
+        self.assertIn("return placement_config_select(index, placement_effective());", h)
+        # E2E-D: QBASE (index -1) is never remapped; only index 0, only with a valid copy; the copy is made on the QBASE
+        # call before the PMU is armed (outside the measured window)
+        remap = h[h.index("uint64_t ethosu_address_remap("):h.index("unsigned int ethosu_config_select(")]
+        self.assertEqual(remap.count("return placement_weights();"), 1)
+        self.assertIn("if (index == 0 && placement_weights() != 0U) {\n        return placement_weights();", remap)
+        self.assertLess(remap.index("placement_weights_prepare("), remap.index("pmu_session_arm(&cnten)"))
+        self.assertLess(remap.index("if (index == -1)"), remap.index("placement_weights_prepare("))
+        self.assertIn("SCB_CleanInvalidateDCache();", h)
         irq = h[h.index("void ethosu_irq_handler("):]
         # the PMU snapshot stays the first read at the IRQ; the region read-back comes after it
         self.assertLess(irq.index("pmu_session_snapshot(&s)"), irq.index("npu_word(NPU_OFF_REGIONCFG)"))

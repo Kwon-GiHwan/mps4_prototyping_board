@@ -704,6 +704,16 @@ class Placement(unittest.TestCase):
             self.assertEqual(l.get_output(30), bytes([self.POISON]) * 30)
             l._ser.close()
 
+    def test_sram_w_without_copy_is_not_a_valid_run(self):
+        # E2E-D: the simulated driver has no region 0 memory to copy, so PLACEMENT_SRAM_W falls back to PLACEMENT_SRAM
+        # (placement_effective); the RUN records placement 2, REGIONCFG of placement 1 and no REGIONCFG_MATCH
+        l = self.session(self.blob(2))
+        self.assertEqual(l.run(), 0)
+        f = l.last_measurement.f
+        self.assertEqual((f["placement"], f["regioncfg_irq"]), (2, self.regioncfg(True)))
+        self.assertFalse(l.last_measurement.valid_flags & record_v2.REGIONCFG_MATCH)
+        l._ser.close()
+
     def test_port_setting_not_applied_stops(self):
         for env in (dict(SIM_REGIONCFG=hex(self.regioncfg(False))), dict(SIM_QCONFIG="2")):
             l = self.session(self.blob(1), **env)
@@ -724,7 +734,7 @@ class Placement(unittest.TestCase):
 
     def test_load_refusals(self):
         b = bytearray(self.blob(0))
-        for v in (2, 0xFFFFFFFF):
+        for v in (3, 0xFFFFFFFF):                                              # 2 = PLACEMENT_SRAM_W since E2E-D
             struct.pack_into("<I", b, 28, v)
             self.refused(bytes(b), 0x107)                                      # LOAD_BAD_DRWL + 7
         self.refused(self.blob(1), 0x600, SIM_FAST="0x31000")                  # arena past the SRAM end
@@ -746,7 +756,7 @@ class Placement(unittest.TestCase):
             self.assertEqual(l.run(), 0)
             f = l.last_measurement.f
             self.assertEqual((f["placement"], f["regioncfg_irq"]), (placement, self.regioncfg(placement == 1)))
-        b = bytearray(self.blob(0)); struct.pack_into("<I", b, 28, 2)
+        b = bytearray(self.blob(0)); struct.pack_into("<I", b, 28, 3)
         with self.assertRaises(rp.Nack):
             load(l, bytes(b))
         with self.assertRaises(rp.Nack) as c:

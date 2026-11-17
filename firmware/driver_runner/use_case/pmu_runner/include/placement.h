@@ -9,9 +9,13 @@
 
 #include <stdint.h>
 
-#define PLACEMENT_DDR   0U
-#define PLACEMENT_SRAM  1U
-#define PLACEMENT_MODES 2U
+#define PLACEMENT_DDR    0U
+#define PLACEMENT_SRAM   1U
+/* PLACEMENT_SRAM_W (Stage 6B-E2E-D): PLACEMENT_SRAM plus region 0 (weights, scale/bias) read from a copy in on-chip
+ * SRAM on the SRAM port (ethosu_address_remap index 0); QBASE (command stream) and QCONFIG unchanged. Without a valid
+ * copy it falls back to PLACEMENT_SRAM (placement_effective), which REGIONCFG and the REGIONCFG_MATCH flag show. */
+#define PLACEMENT_SRAM_W 2U
+#define PLACEMENT_MODES  3U
 
 /* SRAM arena alignment: 64 KiB, so the arena's low 16 address bits equal the DDR arena's (model_base is 64 KiB aligned). */
 #define PLACEMENT_SRAM_ALIGN 0x10000U
@@ -23,6 +27,7 @@
 #define PLACEMENT_REGION0      3U
 #define PLACEMENT_REGION1_DDR  3U
 #define PLACEMENT_REGION1_SRAM 0U
+#define PLACEMENT_REGION0_SRAM 0U
 #define PLACEMENT_REGION2_7    1U
 uint32_t placement_config_select(int index, uint32_t placement);
 
@@ -42,5 +47,18 @@ uint32_t placement_mem_check(uintptr_t base, uint32_t len, void (*sync)(void), u
 /* The placement of the loaded workload, read by the driver hook (hooks.c ethosu_config_select). */
 void placement_set(uint32_t placement);
 uint32_t placement_get(void);
+
+/* PLACEMENT_SRAM_W region 0 copy: (arena + arena_len rounded up to PLACEMENT_SRAM_ALIGN) + (src's low 16 bits); 0 if
+ * src or len is 0, the address wraps, or [dst, dst + len) does not fit below sram_limit. */
+uintptr_t placement_weight_dst(uintptr_t arena, uint32_t arena_len, uintptr_t sram_limit, uintptr_t src, uint32_t len);
+
+/* The copy of the loaded workload. reset: at every load, no copy. prepare: [src, src + len) copied to
+ * placement_weight_dst, sync() (D-cache clean), compared byte for byte; returns the copy address, 0 if it does not fit
+ * or differs. A repeat with the same src and len keeps the existing copy without copying again. weights: the copy
+ * address, 0 if there is none. effective: PLACEMENT_SRAM_W without a copy is PLACEMENT_SRAM. */
+void placement_weights_reset(uintptr_t arena, uint32_t arena_len, uintptr_t sram_limit);
+uintptr_t placement_weights_prepare(uintptr_t src, uint32_t len, void (*sync)(void));
+uintptr_t placement_weights(void);
+uint32_t placement_effective(void);
 
 #endif

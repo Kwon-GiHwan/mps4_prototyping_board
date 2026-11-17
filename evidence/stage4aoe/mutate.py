@@ -72,7 +72,7 @@ MUTATIONS = [
     ("runner: fetch only on a mismatch", B, 'if ctx["outputs"] and r.f["ofm_mismatch"] != 0:', 'if ctx["outputs"]:'),
     ("A1: region1 DDR value", A, "REGION0, REGION1_DDR, REGION1_SRAM, REGION2_7 = 3, 3, 0, 1", "REGION0, REGION1_DDR, REGION1_SRAM, REGION2_7 = 3, 1, 0, 1"),
     ("A1: n_base cap 8", A, "return sum(sel(i) << (2 * i) for i in range(min(n_base, 8)))", "return sum(sel(i) << (2 * i) for i in range(n_base))"),
-    ("A1: SRAM placement", A, "(REGION1_SRAM if placement == 1 else REGION1_DDR)", "REGION1_DDR"),
+    ("A1: SRAM placement", A, "(REGION1_SRAM if placement in (1, 2) else REGION1_DDR)", "REGION1_DDR"),
     ("A1: header derivation", A, 'from_header = min(3 + h["n_in"] + h["n_out"], 8)', 'from_header = min(3 + h["n_in"] + h["n_out"], 8) if False else man.get("n_base", 0)'),
     ("A1: derivations must agree", A, 'agree = man.get("n_base") == from_header and man.get("placement") == h["placement"]', "agree = True"),
     ("A1: K.identity regioncfg dropped only", A, 'checks = {n: v for n, v in k["checks"].items() if n != "regioncfg"}', "checks = {}"),

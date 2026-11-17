@@ -26,7 +26,8 @@ def setUpModule():
 class Select(unittest.TestCase):
     def test_table(self):
         ddr = {-2: 3, -1: 3, 0: 3, 1: 3, 2: 1, 3: 1, 4: 1, 5: 1, 6: 1, 7: 1, 8: 3}   # out of range: region 0's value
-        for p, want in ((0, ddr), (1, {**ddr, 1: 0}), (2, ddr)):                 # 2: unknown -> never the SRAM port
+        # 2 = PLACEMENT_SRAM_W (Stage 6B-E2E-D; was an unknown mode before): regions 0 and 1 on the SRAM port, QCONFIG 3
+        for p, want in ((0, ddr), (1, {**ddr, 1: 0}), (2, {**ddr, 0: 0, 1: 0})):
             for i, v in want.items():
                 self.assertEqual(OUT[f"select_{p}_{i}"], [v], (p, i))
 
@@ -41,6 +42,35 @@ class Select(unittest.TestCase):
         for n in range(10):
             a, b = OUT[f"regioncfg_0_{n}"][0], OUT[f"regioncfg_1_{n}"][0]
             self.assertEqual(a ^ b, 0xC if n >= 2 else 0, n)                       # only region 1's two bits differ
+
+
+class SramW(unittest.TestCase):
+    def test_regioncfg(self):
+        self.assertEqual(OUT["regioncfg_2_5"], [0x150])
+        self.assertEqual(OUT["regioncfg_2_6"], [0x550])                          # E2E-D B3w (A2, 6 bases)
+        for n in range(10):
+            a, b = OUT[f"regioncfg_1_{n}"][0], OUT[f"regioncfg_2_{n}"][0]
+            self.assertEqual(a ^ b, 0x3 if n >= 1 else 0, n)                       # only region 0's two bits differ
+
+    def test_copy_address(self):
+        self.assertEqual(OUT["wdst_0"], [0x31280420])                            # E2E-C: 0x31280420-0x312964B0
+        self.assertEqual(OUT["wdst_1"], [0x31280420])                            # ends exactly at 0x31400000
+        self.assertEqual(OUT["wdst_3"], [0x31270420])                            # arena end already aligned
+        for k in (2, 4, 5, 6):                                                   # too long, no source, empty, wraps
+            self.assertEqual(OUT[f"wdst_{k}"], [0], k)
+
+    def test_copy_state(self):
+        self.assertEqual(OUT["eff_nocopy"], [1])                                 # SRAM_W without a copy -> SRAM
+        self.assertEqual(OUT["prep_off"], [0x10420])                             # arena end aligned + src low bits
+        self.assertEqual(OUT["prep_same"], [1])                                  # byte for byte
+        self.assertEqual(OUT["prep_weights"], [1, 1])                            # recorded, D-cache synced once
+        self.assertEqual(OUT["eff_copy"], [2])
+        self.assertEqual(OUT["prep_again"], [1, 1])                              # no second copy, no second sync
+        self.assertEqual(OUT["prep_other"], [1])                                 # another source -> new copy
+        self.assertEqual(OUT["reset"], [0, 1])                                   # a load drops the copy
+        self.assertEqual(OUT["prep_toolong"], [0, 1])
+        self.assertEqual(OUT["eff_mode1"], [1])
+        self.assertEqual(OUT["prep_corrupt"], [0, 1])                            # compare fails -> no remap
 
 
 class SramArena(unittest.TestCase):

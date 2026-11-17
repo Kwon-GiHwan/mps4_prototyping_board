@@ -258,6 +258,11 @@ static uint32_t place_and_load(void)
     if ((r = drwl_parse(P->staging, total_len, &wl)) != 0U) { return LOAD_BAD_DRWL + r; }
     if ((arena_base = arena_of(&r)) == 0U) { return r; }
     if ((r = placement_mem_check(arena_base, P->arena_len, P->dcache_sync, &bad)) != 0U) { return LOAD_MEM_CHECK + r; }
+    {
+        uintptr_t free_base, limit;
+        P->sram_window(&free_base, &limit);
+        placement_weights_reset(arena_base, P->arena_len, limit);     /* PLACEMENT_SRAM_W: no copy until the first RUN */
+    }
     P->place_model(P->model_base, wl.model.ptr, wl.model.len);
     if ((r = P->model_load(P->model_base, wl.model.len, arena_base, P->arena_len)) != 0U) { return LOAD_MODEL_INIT + r; }
     P->model_counts(&n_in, &n_out);

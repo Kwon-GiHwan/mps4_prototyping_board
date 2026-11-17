@@ -171,9 +171,9 @@ static uint32_t invoke(void)
     probe.base[0] = 0x70000010u; probe.base[1] = 0x70100000u; probe.base[2] = 0x31000000u;
     probe.base_size[0] = 100u; probe.base_size[1] = 200u; probe.base_size[2] = 300u;
     /* the driver: QCONFIG and REGIONCFG from ethosu_config_select (hooks.c on target) for QBASE and the 3 bases */
-    REG(0x1Cu) = placement_config_select(-1, placement_get());
+    REG(0x1Cu) = placement_config_select(-1, placement_effective());
     REG(0x3Cu) = 0u;
-    for (int i = 0; i < 3; i++) { REG(0x3Cu) |= placement_config_select(i, placement_get()) << (2 * i); }
+    for (int i = 0; i < 3; i++) { REG(0x3Cu) |= placement_config_select(i, placement_effective()) << (2 * i); }
     probe.power_requests = 2u;
     probe.pmcr_at_arm = pmu_session_arm(&cnten);
     probe.cnten_at_arm = cnten;

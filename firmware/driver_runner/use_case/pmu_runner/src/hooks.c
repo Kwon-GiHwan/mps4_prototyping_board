@@ -8,6 +8,11 @@
  *                         default), spins without it (WAIT_BUSY) or spins sampling QREAD (WAIT_TRACE, trace.c)
  *   ethosu_config_select  MLEK Dedicated_Sram's QCONFIG/REGIONCFG values (the driver's weak default as MLEK builds it);
  *                         region 1 on the SRAM port only for a PLACEMENT_SRAM workload (placement.h)
+ *   PLACEMENT_SRAM_W      (Stage 6B-E2E-D) on the QBASE call, before the PMU is armed, region 0 (weights, scale/bias)
+ *                         is copied once per load to on-chip SRAM, cleaned out of the D-cache and compared byte for
+ *                         byte (placement_weights_prepare); the index-0 call then returns the copy, region 0 goes to the
+ *                         SRAM port, and probe.base[0] records the address written to BASEP0. QBASE is never remapped.
+ *                         Without a valid copy nothing is remapped and the workload runs as PLACEMENT_SRAM.
  * Nothing else of the driver or of MLEK is replaced. */
 #include "ethosu_driver.h"
 #include "placement.h"
@@ -25,6 +30,13 @@ void hooks_install(void)
     probe_begin(WAIT_WFE);
 }
 
+static void weights_sync(void)
+{
+    if ((SCB->CCR & SCB_CCR_DC_Msk) != 0U) {
+        SCB_CleanInvalidateDCache();
+    }
+}
+
 static uint32_t npu_word(uint32_t off)
 {
     return *(volatile uint32_t *)((uintptr_t)ethosu_drv.dev.reg + off);
@@ -35,10 +47,16 @@ uint64_t ethosu_address_remap(uint64_t address, int index)
     if (index == -1) {
         struct ethosu_job *j = &ethosu_drv.job;
         uint32_t cnten;
+        if (placement_get() == PLACEMENT_SRAM_W && j->num_base_addr > 0) {
+            (void)placement_weights_prepare((uintptr_t)j->base_addr[0], (uint32_t)j->base_addr_size[0], weights_sync);
+        }
         probe.n_base = (uint32_t)((j->num_base_addr < (int)PROBE_BASES) ? j->num_base_addr : (int)PROBE_BASES);
         for (uint32_t i = 0; i < probe.n_base; i++) {
             probe.base[i] = (uint32_t)j->base_addr[i];
             probe.base_size[i] = (uint32_t)j->base_addr_size[i];
+        }
+        if (probe.n_base > 0U && placement_weights() != 0U) {
+            probe.base[0] = (uint32_t)placement_weights();     /* the address written to BASEP0 */
         }
         probe.power_requests = ethosu_drv.power_request_counter;
         probe.pmcr_at_arm = pmu_session_arm(&cnten);
@@ -46,13 +64,16 @@ uint64_t ethosu_address_remap(uint64_t address, int index)
         probe.arm_count++;
         probe.dwt_arm = read_timestamp();
     }
+    if (index == 0 && placement_weights() != 0U) {
+        return placement_weights();
+    }
     return address;
 }
 
 unsigned int ethosu_config_select(uint64_t address, int index)
 {
     (void)address;
-    return placement_config_select(index, placement_get());
+    return placement_config_select(index, placement_effective());
 }
 
 void ethosu_irq_handler(struct ethosu_driver *drv)

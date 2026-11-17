@@ -221,7 +221,7 @@ def reproduce(now: dict, ref: dict) -> dict:
 
 
 REGIONCFG_DDR, QCONFIG = 0x15F, 3          # region 1 on the EXT port (DDR placement), as the placement A run
-REGIONCFG_N5 = {0: REGIONCFG_DDR, 1: 0x153}  # n_base 5 by placement: region 1 on the EXT (0) or SRAM (1) port
+REGIONCFG_N5 = {0: REGIONCFG_DDR, 1: 0x153, 2: 0x150}  # n_base 5 by placement: region 1 on EXT (0) / SRAM (1, 2); 2 also region 0
 CAPS_REF = "evidence/stage4_placement/raw/evsweep_s4p_run_a/conds/s4p_conv_base_ddr/capabilities.json"
 
 

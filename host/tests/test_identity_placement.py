@@ -98,6 +98,20 @@ class Defaults(unittest.TestCase):
         self.assertFalse(AOE.identity_a1(DRAM, WL, "e2d_w0p0", CAPS, 1)["checks"]["placement"])
 
 
+class SramWeights(unittest.TestCase):
+    """Stage 6B-E2E-D placement 2 (graph IO and region 0 on the SRAM port): firmware placement_regioncfg values."""
+    def test_tables(self):
+        self.assertEqual([AOE.placement_regioncfg(n, 2) for n in (5, 6)], [0x150, 0x550])
+        self.assertEqual([AOE.placement_regioncfg(n, 1) for n in (5, 6)], [0x153, 0x553])
+        self.assertEqual([AOE.placement_regioncfg(n, 0) for n in (5, 6)], [0x15F, 0x55F])
+        self.assertEqual(K.REGIONCFG_N5, {0: 0x15F, 1: 0x153, 2: 0x150})
+
+    def test_sram_records_under_placement_2(self):    # placement-1 records are not placement-2 records
+        r = k(SRAM, "e2d_w0p1", 2)
+        self.assertFalse(r["checks"]["placement"])
+        self.assertFalse(r["checks"]["regioncfg"])
+
+
 class ManifestDriven(unittest.TestCase):
     """identity_of takes the expectation from the frozen manifest, never from a RUN."""
     def man(self, name, key):

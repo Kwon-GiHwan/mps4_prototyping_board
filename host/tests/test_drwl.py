@@ -68,19 +68,22 @@ class Placement(unittest.TestCase):
         s = D.pack(b"M" * 20, [b"i" * 3], [b"g" * 7], placement=1)
         self.assertEqual(D.parse(s)["placement"], 1)
         self.assertEqual([i for i in range(len(b)) if b[i] != s[i]], [28])
+        w = D.pack(b"M" * 20, [b"i" * 3], [b"g" * 7], placement=2)                # PLACEMENT_SRAM_W (E2E-D)
+        self.assertEqual(D.parse(w)["placement"], 2)
+        self.assertEqual([i for i in range(len(b)) if b[i] != w[i]], [28])
         with self.assertRaises(ValueError):
-            D.pack(b"M", [b"i"], [b"g"], placement=2)
+            D.pack(b"M", [b"i"], [b"g"], placement=3)
 
     def test_unknown_placement_refused(self):
         b = bytearray(D.pack(b"M" * 20, [b"i" * 3], [b"g" * 7]))
-        for v in (2, 0xFFFFFFFF):
+        for v in (3, 0xFFFFFFFF):
             struct.pack_into("<I", b, 28, v)
             with self.assertRaises(ValueError, msg=v):
                 D.parse(bytes(b))
             with self.assertRaises(ValueError, msg=v):
                 D.with_placement(bytes(b), 0)                                      # refuses what parse refuses
         with self.assertRaises(ValueError):
-            D.with_placement(D.pack(b"M", [b"i"], [b"g"]), 2)
+            D.with_placement(D.pack(b"M", [b"i"], [b"g"]), 3)
 
     def test_stage4_blob_a_unchanged_b_one_word(self):
         a = self.S4.read_bytes()
