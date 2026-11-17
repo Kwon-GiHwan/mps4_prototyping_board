@@ -1,0 +1,585 @@
+{
+ "contract": "evidence/stage6b/stage6be2ec/contract.md",
+ "driver_source": {
+  "basep_remap_line": 158,
+  "config_select_weak_line": 60,
+  "file": "/opt/arm/ml-embedded-evaluation-kit/dependencies/core-driver/src/ethosu_device_u85.c",
+  "qbase_remap_line": 147,
+  "qconfig_line": 154,
+  "regioncfg_line": 163,
+  "remap_weak_line": 54
+ },
+ "final": {
+  "selected": "B",
+  "verdict": "READY_FOR_TARGETED_BOARD_REVIEW"
+ },
+ "hypotheses": {
+  "H-R1 weight/scale supply": {
+   "not_separable": "weight decode vs scale/bias fetch (both region 0); its pipeline consequences (H-R3)",
+   "observable": "method B: LE(B3w) <= 0.25 LE(B3), EXT read ~39 beats"
+  },
+  "H-R2 command fetch": {
+   "not_separable": "command fetch latency vs kernel-start dependency (H-R3)",
+   "observable": "method B: LE(B3w) >= 0.75 LE(B3) while EXT read falls to ~39 beats (command stream only)"
+  },
+  "H-R3 pipeline dependency": {
+   "not_separable": "DMA / WD / AO / MAC overlap; no public counter attributes cycles to it",
+   "observable": "no direct observable here; mediates either H-R1 or H-R2"
+  }
+ },
+ "methods": {
+  "A": {
+   "board_checks": 2,
+   "budget": [
+    4,
+    40
+   ],
+   "controlled_variable": "PMCAXI_CHAN channel (measurement only)",
+   "discriminating": false,
+   "gate": {
+    "criteria": {
+     "1 controlled variable": true,
+     "2 different predictions": false,
+     "3 verifiable instrumentation": true,
+     "4 not answerable from existing data": true,
+     "5 small budget": true
+    },
+    "passed": false
+   },
+   "instrumentation": [
+    "FI101 read-side filter"
+   ],
+   "needs_new_data": true,
+   "predictions": {
+    "H-R1": "channel bytes = static (weights 174,752 / scale 5,760 / cmd 628)",
+    "H-R2": "channel bytes = static (weights 174,752 / scale 5,760 / cmd 628)"
+   },
+   "prereqs": {
+    "8 counters": "VERIFIED_SOURCE",
+    "FI101 read-side filter": "VERIFIED_BOARD",
+    "TRM fields": "VERIFIED_SOURCE",
+    "driver runner set/readback": "BOARD_CHECK_REQUIRED",
+    "rd_cmd / rd_scale_bias filter": "BOARD_CHECK_REQUIRED"
+   },
+   "status": "AVAILABLE"
+  },
+  "B": {
+   "board_checks": 2,
+   "budget": [
+    5,
+    50
+   ],
+   "controlled_variable": "region 0 (weights + scale/bias) memory: EXT (B3) vs on-chip SRAM (B3w)",
+   "discriminating": true,
+   "gate": {
+    "criteria": {
+     "1 controlled variable": true,
+     "2 different predictions": true,
+     "3 verifiable instrumentation": true,
+     "4 not answerable from existing data": true,
+     "5 small budget": true
+    },
+    "passed": true
+   },
+   "instrumentation": [
+    "EXT read beats and REGIONCFG read-back"
+   ],
+   "needs_new_data": true,
+   "predictions": {
+    "H-R1": "LE(B3w) <= 0.25 LE(B3); EXT read ~39 beats",
+    "H-R2": "LE(B3w) >= 0.75 LE(B3); EXT read ~39 beats",
+    "between": "MIXED"
+   },
+   "prereqs": {
+    "EXT read beats and REGIONCFG read-back": "VERIFIED_BOARD",
+    "SRAM capacity": "VERIFIED_SOURCE",
+    "command stream outside region 0 (QBASE, QCONFIG unchanged)": "VERIFIED_SOURCE",
+    "copy outside the measured window, cache clean": "BOARD_CHECK_REQUIRED",
+    "driver remap hook per base index": "VERIFIED_SOURCE",
+    "new image reproduces E2E-B B3 (control arm)": "BOARD_CHECK_REQUIRED",
+    "region 0 holds only WEIGHT and SCALE": "VERIFIED_SOURCE",
+    "runner already overrides remap / config_select": "VERIFIED_SOURCE",
+    "same DRWL / command stream": "VERIFIED_SOURCE"
+   },
+   "sram_copy": {
+    "copy_base": 824706080,
+    "copy_end": 824796336,
+    "fits": true
+   },
+   "status": "AVAILABLE"
+  }
+ },
+ "phase0": {
+  "checks": {
+   "B0_ext": true,
+   "B0_le": true,
+   "B0_mac": true,
+   "B0_npu": true,
+   "B3_ext": true,
+   "B3_le": true,
+   "B3_mac": true,
+   "B3_npu": true,
+   "ao_wd_invariant": true,
+   "command_stream_identical": true,
+   "conservation": true,
+   "outputs_valid": true,
+   "removed": true,
+   "summary_bytes": true,
+   "verdicts": true
+  },
+  "label": "POSTHOC_DIAGNOSTIC",
+  "ok": true
+ },
+ "pmu": {
+  "channels": {
+   "rd_cmd": "UNVERIFIED",
+   "rd_ifm": "READ_FILTER_VERIFIED",
+   "rd_ifm_stream": "UNVERIFIED",
+   "rd_mem2mem": "READ_FILTER_VERIFIED",
+   "rd_mem2mem_idx": "UNVERIFIED",
+   "rd_scale_bias": "UNVERIFIED",
+   "rd_weights": "READ_FILTER_VERIFIED",
+   "wr_mem2mem": "UNVERIFIED",
+   "wr_ofm": "WRITE_NOT_INTERPRETABLE"
+  },
+  "driver_runner_pmcaxi": false,
+  "events": {
+   "53": {
+    "name": "reserved_53",
+    "status": "RESERVED"
+   },
+   "55": {
+    "name": "reserved_55",
+    "status": "RESERVED"
+   },
+   "160": {
+    "name": "axi_latency_any",
+    "status": "TRM_ONLY_UNVERIFIED"
+   },
+   "161": {
+    "name": "axi_latency_32",
+    "status": "TRM_ONLY_UNVERIFIED"
+   },
+   "164": {
+    "name": "axi_latency_256",
+    "status": "TRM_ONLY_UNVERIFIED"
+   },
+   "166": {
+    "name": "axi_latency_1024",
+    "status": "TRM_ONLY_UNVERIFIED"
+   },
+   "384": {
+    "name": "ext_rd_trans_accepted",
+    "status": "VERIFIED_ON_FI101"
+   },
+   "385": {
+    "name": "ext_rd_trans_completed",
+    "status": "TRM_ONLY_UNVERIFIED"
+   },
+   "386": {
+    "name": "ext_rd_data_beat_received",
+    "status": "VERIFIED_ON_FI101"
+   },
+   "387": {
+    "name": "ext_rd_tran_req_stalled",
+    "status": "VERIFIED_ON_FI101"
+   },
+   "398": {
+    "name": "ext_rd_stall_limit",
+    "status": "INCONSISTENT_ON_FI101"
+   },
+   "640": {
+    "name": "ext0_rd_trans_accepted",
+    "status": "VERIFIED_ON_FI101"
+   },
+   "642": {
+    "name": "ext0_rd_data_beat_received",
+    "status": "VERIFIED_ON_FI101"
+   },
+   "643": {
+    "name": "ext0_rd_tran_req_stalled",
+    "status": "TRM_ONLY_UNVERIFIED"
+   },
+   "656": {
+    "name": "ext1_rd_trans_accepted",
+    "status": "VERIFIED_ON_FI101"
+   },
+   "658": {
+    "name": "ext1_rd_data_beat_received",
+    "status": "VERIFIED_ON_FI101"
+   },
+   "659": {
+    "name": "ext1_rd_tran_req_stalled",
+    "status": "TRM_ONLY_UNVERIFIED"
+   }
+  },
+  "items": {
+   "1 PMCAXI_CHAN interface": {
+    "evidence": "TRM PMCAXI_CHAN @ PMU+0x2C (abs 0x11AC): CH_SEL[3:0], AXI_SEL[8], BW_CH_SEL_EN[10]; docs/reference/ETHOS_U85_PMU_REFERENCE.md",
+    "status": "VERIFIED_SOURCE"
+   },
+   "2 CH_SEL vs AXI_SEL": {
+    "evidence": "Stage 3 used AXI_SEL = 0 (SRAM) and both SRAM_* and EXT_* read beats/transactions were filtered: BW filter does not depend on AXI_SEL; AXI_SEL selects the port for axi_latency events (TRM)",
+    "status": "VERIFIED_BOARD"
+   },
+   "3 BW_CH_SEL_EN scope": {
+    "evidence": "read beats and read transactions filtered (SRAM and EXT); write beats read 0 and write transactions unfiltered (not interpretable); npu_active unchanged",
+    "status": "VERIFIED_BOARD"
+   },
+   "4 one filter for all counters": {
+    "evidence": "one PMCAXI_CHAN register: every bw event of a pass sees the same channel; one channel per pass",
+    "status": "VERIFIED_SOURCE"
+   },
+   "5 per-channel beats and transactions": {
+    "evidence": "Stage 3 tables report both per channel",
+    "status": "VERIFIED_BOARD"
+   },
+   "6 filter does not change execution": {
+    "evidence": "CHANNEL_FILTER_WORKS rule includes npu_active and mac_active unchanged",
+    "status": "VERIFIED_BOARD"
+   },
+   "7 sum vs unfiltered total": {
+    "evidence": "Stage 3: three channels cover 83.6-96 % of unfiltered read beats; rd_cmd / rd_scale_bias never measured",
+    "status": "VERIFIED_BOARD"
+   },
+   "8 eight counters": {
+    "evidence": "PMCR.num_event_cnt = 8; NPU_ACTIVE anchor takes one",
+    "status": "VERIFIED_SOURCE"
+   },
+   "9 driver runner set/readback": {
+    "evidence": "firmware/driver_runner has no PMCAXI_CHAN write; legacy runner writes and reads it back: True",
+    "status": "NOT_IMPLEMENTED"
+   }
+  },
+  "legacy_readback": true
+ },
+ "residual": {
+  "board_beats": 11322.0,
+  "channel_beats": {
+   "rd_cmd": 39.25,
+   "rd_ifm": 0.0,
+   "rd_mem2mem": 0.0,
+   "rd_scale_bias": 360.0,
+   "rd_weights": 10922.0
+  },
+  "channel_bytes": {
+   "rd_cmd": 628,
+   "rd_ifm": 0,
+   "rd_mem2mem": 0,
+   "rd_scale_bias": 5760,
+   "rd_weights": 174752
+  },
+  "difference_bytes": 12.0,
+  "expected_beats": 11321.25,
+  "ext_regions_b3": [
+   0
+  ],
+  "note": "difference not apportioned to channels; WEIGHT_AND_COMMAND_EXT_PATH_CONFIRMED kept",
+  "region0_tensors": [
+   "SCALE",
+   "WEIGHT"
+  ]
+ },
+ "ta": "TA profile 1 (all board data reused)",
+ "transactions": {
+  "label": "POSTHOC_DIAGNOSTIC",
+  "pairs": {
+   "B0->B3": {
+    "delta_le": 47872.0,
+    "delta_le_per_removed_trans": 4.974231088944306,
+    "label": "DESCRIPTIVE: not a per-transaction service time",
+    "le_from": 60078.5,
+    "le_to": 12206.5,
+    "removed_beats": 15744.0,
+    "removed_beats_per_trans": 1.6359102244389028,
+    "removed_trans": 9624.0,
+    "residual_le_per_trans": 15.39281210592686,
+    "same_traffic_both_latencies": true
+   },
+   "W0-P0->W0-P1": {
+    "delta_le": 33604.0,
+    "delta_le_per_removed_trans": 6.412977099236641,
+    "label": "DESCRIPTIVE: not a per-transaction service time",
+    "le_from": 47149.0,
+    "le_to": 13545.0,
+    "removed_beats": 18560.0,
+    "removed_beats_per_trans": 3.5419847328244276,
+    "removed_trans": 5240.0,
+    "residual_le_per_trans": 17.189086294416242,
+    "same_traffic_both_latencies": true
+   }
+  },
+  "rows": {
+   "B0": {
+    "500": {
+     "cell": "B0",
+     "ext_beats_per_trans": 2.598252855908611,
+     "ext_rd_beats": 27066.0,
+     "ext_rd_trans": 10417.0,
+     "ext_trans_per_knpu": 105.17547756552644,
+     "ext_wr_beats": 7872.0,
+     "latency": 500,
+     "mac_active": 20736.0,
+     "npu_active": 99044.0,
+     "sram_beats_per_trans": 16.0,
+     "sram_rd_beats": 25088.0,
+     "sram_rd_trans": 1568.0
+    },
+    "1000": {
+     "cell": "B0",
+     "ext_beats_per_trans": 2.598252855908611,
+     "ext_rd_beats": 27066.0,
+     "ext_rd_trans": 10417.0,
+     "ext_trans_per_knpu": 65.46528617888734,
+     "ext_wr_beats": 7872.0,
+     "latency": 1000,
+     "mac_active": 20736.0,
+     "npu_active": 159122.5,
+     "sram_beats_per_trans": 16.0,
+     "sram_rd_beats": 25088.0,
+     "sram_rd_trans": 1568.0
+    }
+   },
+   "B3": {
+    "500": {
+     "cell": "B3",
+     "ext_beats_per_trans": 14.277427490542244,
+     "ext_rd_beats": 11322.0,
+     "ext_rd_trans": 793.0,
+     "ext_trans_per_knpu": 13.14655172413793,
+     "ext_wr_beats": 0.0,
+     "latency": 500,
+     "mac_active": 20736.0,
+     "npu_active": 60320.0,
+     "sram_beats_per_trans": 3.6483202287348107,
+     "sram_rd_beats": 40832.0,
+     "sram_rd_trans": 11192.0
+    },
+    "1000": {
+     "cell": "B3",
+     "ext_beats_per_trans": 14.277427490542244,
+     "ext_rd_beats": 11322.0,
+     "ext_rd_trans": 793.0,
+     "ext_trans_per_knpu": 10.933934492909488,
+     "ext_wr_beats": 0.0,
+     "latency": 1000,
+     "mac_active": 20736.0,
+     "npu_active": 72526.5,
+     "sram_beats_per_trans": 3.6483202287348107,
+     "sram_rd_beats": 40832.0,
+     "sram_rd_trans": 11192.0
+    }
+   },
+   "W0-P0": {
+    "500": {
+     "cell": "W0-P0",
+     "ext_beats_per_trans": 4.954213669542137,
+     "ext_rd_beats": 29864.0,
+     "ext_rd_trans": 6028.0,
+     "ext_trans_per_knpu": 108.67821117250953,
+     "ext_wr_beats": 7872.0,
+     "latency": 500,
+     "mac_active": 20736.0,
+     "npu_active": 55466.5,
+     "sram_beats_per_trans": null,
+     "sram_rd_beats": 0.0,
+     "sram_rd_trans": 0.0
+    },
+    "1000": {
+     "cell": "W0-P0",
+     "ext_beats_per_trans": 4.954213669542137,
+     "ext_rd_beats": 29864.0,
+     "ext_rd_trans": 6028.0,
+     "ext_trans_per_knpu": 58.74356213242639,
+     "ext_wr_beats": 7872.0,
+     "latency": 1000,
+     "mac_active": 20736.0,
+     "npu_active": 102615.5,
+     "sram_beats_per_trans": null,
+     "sram_rd_beats": 0.0,
+     "sram_rd_trans": 0.0
+    }
+   },
+   "W0-P1": {
+    "500": {
+     "cell": "W0-P1",
+     "ext_beats_per_trans": 14.345177664974619,
+     "ext_rd_beats": 11304.0,
+     "ext_rd_trans": 788.0,
+     "ext_trans_per_knpu": 29.091446081145936,
+     "ext_wr_beats": 0.0,
+     "latency": 500,
+     "mac_active": 20736.0,
+     "npu_active": 27087.0,
+     "sram_beats_per_trans": 3.5419847328244276,
+     "sram_rd_beats": 18560.0,
+     "sram_rd_trans": 5240.0
+    },
+    "1000": {
+     "cell": "W0-P1",
+     "ext_beats_per_trans": 14.345177664974619,
+     "ext_rd_beats": 11304.0,
+     "ext_rd_trans": 788.0,
+     "ext_trans_per_knpu": 19.39358141366411,
+     "ext_wr_beats": 0.0,
+     "latency": 1000,
+     "mac_active": 20736.0,
+     "npu_active": 40632.0,
+     "sram_beats_per_trans": 3.5419847328244276,
+     "sram_rd_beats": 18560.0,
+     "sram_rd_trans": 5240.0
+    }
+   },
+   "W1-P0": {
+    "500": {
+     "cell": "W1-P0",
+     "ext_beats_per_trans": 4.157273814268633,
+     "ext_rd_beats": 52153.0,
+     "ext_rd_trans": 12545.0,
+     "ext_trans_per_knpu": 103.89664168288542,
+     "ext_wr_beats": 17088.0,
+     "latency": 500,
+     "mac_active": 20736.0,
+     "npu_active": 120745.0,
+     "sram_beats_per_trans": null,
+     "sram_rd_beats": 0.0,
+     "sram_rd_trans": 0.0
+    },
+    "1000": {
+     "cell": "W1-P0",
+     "ext_beats_per_trans": 4.157273814268633,
+     "ext_rd_beats": 52153.0,
+     "ext_rd_trans": 12545.0,
+     "ext_trans_per_knpu": 55.32488208457276,
+     "ext_wr_beats": 17088.0,
+     "latency": 1000,
+     "mac_active": 20736.0,
+     "npu_active": 226751.5,
+     "sram_beats_per_trans": null,
+     "sram_rd_beats": 0.0,
+     "sram_rd_trans": 0.0
+    }
+   },
+   "W1-P1": {
+    "500": {
+     "cell": "W1-P1",
+     "ext_beats_per_trans": 2.598252855908611,
+     "ext_rd_beats": 27066.0,
+     "ext_rd_trans": 10417.0,
+     "ext_trans_per_knpu": 104.97463054311297,
+     "ext_wr_beats": 7872.0,
+     "latency": 500,
+     "mac_active": 20736.0,
+     "npu_active": 99233.5,
+     "sram_beats_per_trans": 16.0,
+     "sram_rd_beats": 25088.0,
+     "sram_rd_trans": 1568.0
+    },
+    "1000": {
+     "cell": "W1-P1",
+     "ext_beats_per_trans": 2.598252855908611,
+     "ext_rd_beats": 27066.0,
+     "ext_rd_trans": 10417.0,
+     "ext_trans_per_knpu": 65.72032427999116,
+     "ext_wr_beats": 7872.0,
+     "latency": 1000,
+     "mac_active": 20736.0,
+     "npu_active": 158505.0,
+     "sram_beats_per_trans": 16.0,
+     "sram_rd_beats": 25088.0,
+     "sram_rd_trans": 1568.0
+    }
+   }
+  },
+  "weight_path_only": {
+   "B3": {
+    "ext_rd_beats": 11322.0,
+    "ext_rd_trans": 793.0,
+    "le": 12206.5
+   },
+   "W0-P1": {
+    "ext_rd_beats": 11304.0,
+    "ext_rd_trans": 788.0,
+    "le": 13545.0
+   }
+  }
+ },
+ "vela_model": [
+  [
+   "read bytes",
+   "element bytes inflated by burst efficiency (EstimateMemoryTransfer); NHWC read burst = block depth x 8 bit"
+  ],
+  [
+   "burst length",
+   "enters ChannelBW: burst x min(RB/(burst/16), outstanding x ports x 0.8) / latency x 0.8"
+  ],
+  [
+   "read latency",
+   "only through ChannelBW (a throughput limit, Little's law); no per-request or dependency stall"
+  ],
+  [
+   "outstanding",
+   "max_reads x ports x 0.8 in ChannelBW; assumed fully used by full-size bursts"
+  ],
+  [
+   "port bandwidth",
+   "clock_scale x 16 B x ports_used"
+  ],
+  [
+   "small requests",
+   "not costed: transfer size per request is the configured burst; request count does not appear"
+  ],
+  [
+   "per-operation MAX",
+   "op = max(npu, SRAM access, DRAM access); graph = sum of ops; no overlap or dependency between ops"
+  ]
+ ],
+ "vela_ops": {
+  "L1000": [
+   {
+    "dram": 43124,
+    "npu": 4608,
+    "op": 43124,
+    "operator": "Add",
+    "sram": 3600
+   },
+   {
+    "dram": 32818,
+    "npu": 25540,
+    "op": 32818,
+    "operator": "Conv2D",
+    "sram": 18000
+   },
+   {
+    "dram": 6738,
+    "npu": 4416,
+    "op": 7200,
+    "operator": "Add",
+    "sram": 7200
+   }
+  ],
+  "L500": [
+   {
+    "dram": 21562,
+    "npu": 4608,
+    "op": 21562,
+    "operator": "Add",
+    "sram": 3600
+   },
+   {
+    "dram": 16409,
+    "npu": 24290,
+    "op": 24290,
+    "operator": "Conv2D",
+    "sram": 18000
+   },
+   {
+    "dram": 6738,
+    "npu": 4416,
+    "op": 7200,
+    "operator": "Add",
+    "sram": 7200
+   }
+  ]
+ }
+}
