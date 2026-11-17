@@ -1,0 +1,2 @@
+# Stage 6B-E2D boot 8/9: W0-P1, TA profile 1 with EXT RLATENCY 1000, image L1000 (bram fd478e2d)
+447 e2d_w0p1 @/home/gihwan/evsweep_s6be2d_l1000/conditions.txt

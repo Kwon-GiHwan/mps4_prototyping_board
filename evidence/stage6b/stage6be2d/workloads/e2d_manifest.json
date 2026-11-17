@@ -1,0 +1,173 @@
+{
+ "REF": {
+  "boot": 440,
+  "caps_ref": "caps_l500.json",
+  "cell": "REF",
+  "cin": 48,
+  "config": "s4c2_conv_cin48",
+  "drwl_sha256": "6eb390be2874088b53970ab4f859962d5bb0b16b4e060e2e460d86840f4339d7",
+  "image": {
+   "boot_sha256": "718c456283bfd44863d5fb697360b680ff4dc6b297cc0dc74d7ed78a6ca7ef59",
+   "bram_sha256": "c80e77df9fe14b908966a5cebc5045cca93c5fd98bcea50fb1a7aef35f9fe99c",
+   "ddr_sha256": "374708fff7719dd5979ec875d56cd2286f6d3cf7ec317a3b25632aab28ec37bb",
+   "images_txt_sha256": "af688281435a73dda3b2247845149817ecc7a9bbdff5a3ccd2e4dfa52875423f"
+  },
+  "internal_conv": "CONV_OUTPUT_OBSERVED",
+  "kind": "reference",
+  "latency": 500,
+  "n_mac": 2654208,
+  "ta_ext_rlatency": 500
+ },
+ "W0-P0-L1000": {
+  "boot": 448,
+  "caps_ref": "caps_l1000.json",
+  "cell": "W0-P0",
+  "cin": 276,
+  "config": "e2d_w0p0",
+  "drwl_sha256": "ab2d487fa49590d497a3c2828ce4fbbfa14dcd0eaee7624cd5b39d93b7c45d18",
+  "image": {
+   "boot_sha256": "718c456283bfd44863d5fb697360b680ff4dc6b297cc0dc74d7ed78a6ca7ef59",
+   "bram_sha256": "fd478e2d6e41376398383fd72291590f27a411ac05ff20f85652473e25a45842",
+   "ddr_sha256": "374708fff7719dd5979ec875d56cd2286f6d3cf7ec317a3b25632aab28ec37bb",
+   "images_txt_sha256": "af688281435a73dda3b2247845149817ecc7a9bbdff5a3ccd2e4dfa52875423f"
+  },
+  "internal_conv": "INTERNAL_CONV_NOT_OBSERVED",
+  "kind": "A0",
+  "latency": 1000,
+  "n_mac": 19501056,
+  "ta_ext_rlatency": 1000
+ },
+ "W0-P0-L500": {
+  "boot": 441,
+  "caps_ref": "caps_l500.json",
+  "cell": "W0-P0",
+  "cin": 276,
+  "config": "e2d_w0p0",
+  "drwl_sha256": "ab2d487fa49590d497a3c2828ce4fbbfa14dcd0eaee7624cd5b39d93b7c45d18",
+  "image": {
+   "boot_sha256": "718c456283bfd44863d5fb697360b680ff4dc6b297cc0dc74d7ed78a6ca7ef59",
+   "bram_sha256": "c80e77df9fe14b908966a5cebc5045cca93c5fd98bcea50fb1a7aef35f9fe99c",
+   "ddr_sha256": "374708fff7719dd5979ec875d56cd2286f6d3cf7ec317a3b25632aab28ec37bb",
+   "images_txt_sha256": "af688281435a73dda3b2247845149817ecc7a9bbdff5a3ccd2e4dfa52875423f"
+  },
+  "internal_conv": "INTERNAL_CONV_NOT_OBSERVED",
+  "kind": "A0",
+  "latency": 500,
+  "n_mac": 19501056,
+  "ta_ext_rlatency": 500
+ },
+ "W0-P1-L1000": {
+  "boot": 447,
+  "caps_ref": "caps_l1000.json",
+  "cell": "W0-P1",
+  "cin": 276,
+  "config": "e2d_w0p1",
+  "drwl_sha256": "0137db73dec5662dad3c1702190e0abc2aef8b3ea070521f846407bdf005924c",
+  "image": {
+   "boot_sha256": "718c456283bfd44863d5fb697360b680ff4dc6b297cc0dc74d7ed78a6ca7ef59",
+   "bram_sha256": "fd478e2d6e41376398383fd72291590f27a411ac05ff20f85652473e25a45842",
+   "ddr_sha256": "374708fff7719dd5979ec875d56cd2286f6d3cf7ec317a3b25632aab28ec37bb",
+   "images_txt_sha256": "af688281435a73dda3b2247845149817ecc7a9bbdff5a3ccd2e4dfa52875423f"
+  },
+  "internal_conv": "INTERNAL_CONV_NOT_OBSERVED",
+  "kind": "A0",
+  "latency": 1000,
+  "n_mac": 19501056,
+  "ta_ext_rlatency": 1000
+ },
+ "W0-P1-L500": {
+  "boot": 442,
+  "caps_ref": "caps_l500.json",
+  "cell": "W0-P1",
+  "cin": 276,
+  "config": "e2d_w0p1",
+  "drwl_sha256": "0137db73dec5662dad3c1702190e0abc2aef8b3ea070521f846407bdf005924c",
+  "image": {
+   "boot_sha256": "718c456283bfd44863d5fb697360b680ff4dc6b297cc0dc74d7ed78a6ca7ef59",
+   "bram_sha256": "c80e77df9fe14b908966a5cebc5045cca93c5fd98bcea50fb1a7aef35f9fe99c",
+   "ddr_sha256": "374708fff7719dd5979ec875d56cd2286f6d3cf7ec317a3b25632aab28ec37bb",
+   "images_txt_sha256": "af688281435a73dda3b2247845149817ecc7a9bbdff5a3ccd2e4dfa52875423f"
+  },
+  "internal_conv": "INTERNAL_CONV_NOT_OBSERVED",
+  "kind": "A0",
+  "latency": 500,
+  "n_mac": 19501056,
+  "ta_ext_rlatency": 500
+ },
+ "W1-P0-L1000": {
+  "boot": 446,
+  "caps_ref": "caps_l1000.json",
+  "cell": "W1-P0",
+  "cin": 276,
+  "config": "e2d_w1p0",
+  "drwl_sha256": "b291c5ade000a9363feee5422cfa73afe04725de151b6fede1427a51ab0f5871",
+  "image": {
+   "boot_sha256": "718c456283bfd44863d5fb697360b680ff4dc6b297cc0dc74d7ed78a6ca7ef59",
+   "bram_sha256": "fd478e2d6e41376398383fd72291590f27a411ac05ff20f85652473e25a45842",
+   "ddr_sha256": "374708fff7719dd5979ec875d56cd2286f6d3cf7ec317a3b25632aab28ec37bb",
+   "images_txt_sha256": "af688281435a73dda3b2247845149817ecc7a9bbdff5a3ccd2e4dfa52875423f"
+  },
+  "internal_conv": "INTERNAL_CONV_NOT_OBSERVED",
+  "kind": "A2",
+  "latency": 1000,
+  "n_mac": 19501056,
+  "ta_ext_rlatency": 1000
+ },
+ "W1-P0-L500": {
+  "boot": 443,
+  "caps_ref": "caps_l500.json",
+  "cell": "W1-P0",
+  "cin": 276,
+  "config": "e2d_w1p0",
+  "drwl_sha256": "b291c5ade000a9363feee5422cfa73afe04725de151b6fede1427a51ab0f5871",
+  "image": {
+   "boot_sha256": "718c456283bfd44863d5fb697360b680ff4dc6b297cc0dc74d7ed78a6ca7ef59",
+   "bram_sha256": "c80e77df9fe14b908966a5cebc5045cca93c5fd98bcea50fb1a7aef35f9fe99c",
+   "ddr_sha256": "374708fff7719dd5979ec875d56cd2286f6d3cf7ec317a3b25632aab28ec37bb",
+   "images_txt_sha256": "af688281435a73dda3b2247845149817ecc7a9bbdff5a3ccd2e4dfa52875423f"
+  },
+  "internal_conv": "INTERNAL_CONV_NOT_OBSERVED",
+  "kind": "A2",
+  "latency": 500,
+  "n_mac": 19501056,
+  "ta_ext_rlatency": 500
+ },
+ "W1-P1-L1000": {
+  "boot": 445,
+  "caps_ref": "caps_l1000.json",
+  "cell": "W1-P1",
+  "cin": 276,
+  "config": "e2d_w1p1",
+  "drwl_sha256": "928296b1c235f1b22ce69d29900561d937818ffa655e1ec335e90ee3b1992c5f",
+  "image": {
+   "boot_sha256": "718c456283bfd44863d5fb697360b680ff4dc6b297cc0dc74d7ed78a6ca7ef59",
+   "bram_sha256": "fd478e2d6e41376398383fd72291590f27a411ac05ff20f85652473e25a45842",
+   "ddr_sha256": "374708fff7719dd5979ec875d56cd2286f6d3cf7ec317a3b25632aab28ec37bb",
+   "images_txt_sha256": "af688281435a73dda3b2247845149817ecc7a9bbdff5a3ccd2e4dfa52875423f"
+  },
+  "internal_conv": "INTERNAL_CONV_NOT_OBSERVED",
+  "kind": "A2",
+  "latency": 1000,
+  "n_mac": 19501056,
+  "ta_ext_rlatency": 1000
+ },
+ "W1-P1-L500": {
+  "boot": 444,
+  "caps_ref": "caps_l500.json",
+  "cell": "W1-P1",
+  "cin": 276,
+  "config": "e2d_w1p1",
+  "drwl_sha256": "928296b1c235f1b22ce69d29900561d937818ffa655e1ec335e90ee3b1992c5f",
+  "image": {
+   "boot_sha256": "718c456283bfd44863d5fb697360b680ff4dc6b297cc0dc74d7ed78a6ca7ef59",
+   "bram_sha256": "c80e77df9fe14b908966a5cebc5045cca93c5fd98bcea50fb1a7aef35f9fe99c",
+   "ddr_sha256": "374708fff7719dd5979ec875d56cd2286f6d3cf7ec317a3b25632aab28ec37bb",
+   "images_txt_sha256": "af688281435a73dda3b2247845149817ecc7a9bbdff5a3ccd2e4dfa52875423f"
+  },
+  "internal_conv": "INTERNAL_CONV_NOT_OBSERVED",
+  "kind": "A2",
+  "latency": 500,
+  "n_mac": 19501056,
+  "ta_ext_rlatency": 500
+ }
+}

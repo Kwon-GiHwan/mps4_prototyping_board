@@ -1,0 +1,37 @@
+{
+ "e2d_w0p0": {
+  "custom_op_inputs": 5,
+  "custom_op_outputs": 1,
+  "drwl_sha256": "ab2d487fa49590d497a3c2828ce4fbbfa14dcd0eaee7624cd5b39d93b7c45d18",
+  "n_base": 5,
+  "placement": 0
+ },
+ "e2d_w0p1": {
+  "custom_op_inputs": 5,
+  "custom_op_outputs": 1,
+  "drwl_sha256": "0137db73dec5662dad3c1702190e0abc2aef8b3ea070521f846407bdf005924c",
+  "n_base": 5,
+  "placement": 1
+ },
+ "e2d_w1p0": {
+  "custom_op_inputs": 6,
+  "custom_op_outputs": 1,
+  "drwl_sha256": "b291c5ade000a9363feee5422cfa73afe04725de151b6fede1427a51ab0f5871",
+  "n_base": 6,
+  "placement": 0
+ },
+ "e2d_w1p1": {
+  "custom_op_inputs": 6,
+  "custom_op_outputs": 1,
+  "drwl_sha256": "928296b1c235f1b22ce69d29900561d937818ffa655e1ec335e90ee3b1992c5f",
+  "n_base": 6,
+  "placement": 0
+ },
+ "s4c2_conv_cin48": {
+  "custom_op_inputs": 5,
+  "custom_op_outputs": 1,
+  "drwl_sha256": "6eb390be2874088b53970ab4f859962d5bb0b16b4e060e2e460d86840f4339d7",
+  "n_base": 5,
+  "placement": 0
+ }
+}
