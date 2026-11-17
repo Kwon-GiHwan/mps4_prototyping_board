@@ -1,0 +1,549 @@
+{
+ "contract": "evidence/stage6d/contract.md",
+ "exact_ops": {
+  "kws_micronet_m:0": 26090.0,
+  "wav2letter_pruned_int8:17": 2386944.0,
+  "yolo-fastest_192_face_v4:3": 10368.0,
+  "yolo-fastest_192_face_v4:9": 18432.0
+ },
+ "models": {
+  "ad_medium_int8": {
+   "axi": {
+    "bytes_per_mac": "0.04016532064557687",
+    "ext_bytes": "705360.0",
+    "ext_rd_burst": "13.274314965371875",
+    "ext_rd_port_imbalance": "0.0008166228109971872",
+    "ext_rd_req_stall": "0.1312468964086746",
+    "sram_bytes": "1798816.0",
+    "sram_rd_burst": "14.189901428284047",
+    "sram_rd_req_stall": "0.000215319643330709",
+    "vela_dram_bytes": "761904.0",
+    "vela_sram_bytes": "2233280.0"
+   },
+   "compute_verdict": "NOT_EXPLAINED",
+   "coverage": {
+    "P": 60480.0,
+    "P_ext": 112824.0,
+    "any_evidence": true,
+    "c": 0.9213528474312682,
+    "count_share": {
+     "AO_ELEMENTWISE": 0.07692307692307693,
+     "CLASS_SUPPORTED": 0.0,
+     "CONFIGURATION_MATCHED": 0.0,
+     "EXACT_VALIDATED": 0.3076923076923077,
+     "EXTRAPOLATED": 0.5384615384615384,
+     "INVALID_OR_UNSTABLE": 0.07692307692307693,
+     "UNSUPPORTED": 0.0
+    },
+    "n_model": 62346720,
+    "share": {
+     "CLASS_SUPPORTED": 0.0,
+     "CONFIGURATION_MATCHED": 0.0,
+     "EXACT_VALIDATED": 0.9213528474312682,
+     "EXTRAPOLATED": 0.05909815303836353,
+     "INVALID_OR_UNSTABLE": 0.019548999530368236,
+     "UNSUPPORTED": 0.0
+    }
+   },
+   "mac_active": 93672.0,
+   "npu_active": 145949.5,
+   "p_ext_over_m": 1.20445810914681,
+   "p_over_m": 0.6456571867794004,
+   "runtime_reason": "no validated model-level NPU_ACTIVE predictor (isolated graph IO in DDR, overlap unmeasured)",
+   "runtime_verdict": "NOT_EXPLAINED",
+   "stage6m": {
+    "evidence_supported": 0.9213528474312682,
+    "static_structural": 0.9409372618158581
+   },
+   "unit": {
+    "ao_over_npu": 0.28436890842380413,
+    "eff_tflite": 0.6499857881757622,
+    "legacy_dpu_over_mac": "1.0",
+    "legacy_wd_stalled_ratio": "0.7979710849799828",
+    "mac_over_npu": 0.6418110373793675,
+    "wd_over_npu": 0.14607107252851156
+   },
+   "vela": {
+    "board_over_vela": 1.0404378479722263,
+    "cls": "ESTIMATE_AGREEMENT",
+    "mixed_share": 0.9693184180338597,
+    "over_share": 0.03068158196614032,
+    "under_share": 0.0,
+    "verdict": "NO_CANCELLATION_INDICATED"
+   }
+  },
+  "kws_micronet_m": {
+   "axi": {
+    "bytes_per_mac": "0.05784389553540573",
+    "ext_bytes": "253056.0",
+    "ext_rd_burst": "9.829086389061528",
+    "ext_rd_port_imbalance": "0.027252608283275373",
+    "ext_rd_req_stall": "0.09872807782188037",
+    "sram_bytes": "646784.0",
+    "sram_rd_burst": "6.791729097992208",
+    "sram_rd_req_stall": "0.004283761099629634",
+    "vela_dram_bytes": "319792.0",
+    "vela_sram_bytes": "1007632.0"
+   },
+   "compute_verdict": "PARTIALLY_EXPLAINED",
+   "coverage": {
+    "P": 42571.25,
+    "P_ext": 50806.875,
+    "any_evidence": true,
+    "c": 0.6873398082018201,
+    "count_share": {
+     "AO_ELEMENTWISE": 0.07692307692307693,
+     "CLASS_SUPPORTED": 0.3076923076923077,
+     "CONFIGURATION_MATCHED": 0.07692307692307693,
+     "EXACT_VALIDATED": 0.23076923076923078,
+     "EXTRAPOLATED": 0.3076923076923077,
+     "INVALID_OR_UNSTABLE": 0.0,
+     "UNSUPPORTED": 0.0
+    },
+    "n_model": 15556352,
+    "share": {
+     "CLASS_SUPPORTED": 0.03847303018085474,
+     "CONFIGURATION_MATCHED": 0.17639096878239835,
+     "EXACT_VALIDATED": 0.47247580923856697,
+     "EXTRAPOLATED": 0.31266019179817994,
+     "INVALID_OR_UNSTABLE": 0.0,
+     "UNSUPPORTED": 0.0
+    }
+   },
+   "mac_active": 56450.0,
+   "npu_active": 91824.5,
+   "p_ext_over_m": 0.900033215234721,
+   "p_over_m": 0.754140832595217,
+   "runtime_reason": "no validated model-level NPU_ACTIVE predictor (isolated graph IO in DDR, overlap unmeasured)",
+   "runtime_verdict": "NOT_EXPLAINED",
+   "stage6m": {
+    "evidence_supported": 0.47247580923856697,
+    "static_structural": 0.7750115194102062
+   },
+   "unit": {
+    "ao_over_npu": 0.19412030558293267,
+    "eff_tflite": 0.269118689105403,
+    "legacy_dpu_over_mac": "0.8767936226749335",
+    "legacy_wd_stalled_ratio": "0.7070583996319995",
+    "mac_over_npu": 0.6147596774281374,
+    "wd_over_npu": 0.12431322795114594
+   },
+   "vela": {
+    "board_over_vela": 1.0637192437792502,
+    "cls": "ESTIMATE_AGREEMENT",
+    "mixed_share": 0.7750115194102062,
+    "over_share": 0.04859751180739546,
+    "under_share": 0.17639096878239835,
+    "verdict": "NO_CANCELLATION_INDICATED"
+   }
+  },
+  "mobilenet_v2_1.0_224_INT8": {
+   "axi": {
+    "bytes_per_mac": "0.07572397373573767",
+    "ext_bytes": "5585664.0",
+    "ext_rd_burst": "12.887391434561247",
+    "ext_rd_port_imbalance": "9.627610659424933e-05",
+    "ext_rd_req_stall": "0.09722277746995595",
+    "sram_bytes": "17190256.0",
+    "sram_rd_burst": "10.963100532720786",
+    "sram_rd_req_stall": "0.00023578661849853183",
+    "vela_dram_bytes": "6869120.0",
+    "vela_sram_bytes": "19443134.0"
+   },
+   "compute_verdict": "QUALITATIVE_SUPPORT_ONLY",
+   "coverage": {
+    "P": 103992.0,
+    "P_ext": 462731.0,
+    "any_evidence": true,
+    "c": 0.1646533824664047,
+    "count_share": {
+     "AO_ELEMENTWISE": 0.018518518518518517,
+     "CLASS_SUPPORTED": 0.037037037037037035,
+     "CONFIGURATION_MATCHED": 0.0,
+     "EXACT_VALIDATED": 0.12962962962962962,
+     "EXTRAPOLATED": 0.8148148148148148,
+     "INVALID_OR_UNSTABLE": 0.0,
+     "UNSUPPORTED": 0.0
+    },
+    "n_model": 300775552,
+    "share": {
+     "CLASS_SUPPORTED": 0.025523776613333254,
+     "CONFIGURATION_MATCHED": 0.0,
+     "EXACT_VALIDATED": 0.13912960585307146,
+     "EXTRAPOLATED": 0.8353466175335953,
+     "INVALID_OR_UNSTABLE": 0.0,
+     "UNSUPPORTED": 0.0
+    }
+   },
+   "mac_active": 574795.0,
+   "npu_active": 1450096.0,
+   "p_ext_over_m": 0.8050365782583356,
+   "p_over_m": 0.18092015414191145,
+   "runtime_reason": "no validated model-level NPU_ACTIVE predictor (isolated graph IO in DDR, overlap unmeasured)",
+   "runtime_verdict": "NOT_EXPLAINED",
+   "stage6m": {
+    "evidence_supported": 0.13912960585307146,
+    "static_structural": 0.6895649816644672
+   },
+   "unit": {
+    "ao_over_npu": 0.30410710739151064,
+    "eff_tflite": 0.5110102297340791,
+    "legacy_dpu_over_mac": "0.8636539983820318",
+    "legacy_wd_stalled_ratio": "0.8358732384272207",
+    "mac_over_npu": 0.3963841014663857,
+    "wd_over_npu": 0.11678054418466088
+   },
+   "vela": {
+    "board_over_vela": 0.834355206952423,
+    "cls": "OVERESTIMATION",
+    "mixed_share": 0.7255985486479964,
+    "over_share": 0.06887666189039195,
+    "under_share": 0.20552478946161157,
+    "verdict": "NO_CANCELLATION_INDICATED"
+   }
+  },
+  "rnnoise_INT8": {
+   "axi": {
+    "bytes_per_mac": "1.5000460023921245",
+    "ext_bytes": "125984.0",
+    "ext_rd_burst": "9.7975",
+    "ext_rd_port_imbalance": "0.009441183975503956",
+    "ext_rd_req_stall": "0.1155172251528237",
+    "sram_bytes": "4448.0",
+    "sram_rd_burst": "1.4444444444444444",
+    "sram_rd_req_stall": "0.0001774168652809753",
+    "vela_dram_bytes": "116500.0",
+    "vela_sram_bytes": "4196.0"
+   },
+   "compute_verdict": "QUALITATIVE_SUPPORT_ONLY",
+   "coverage": {
+    "P": 108.0,
+    "P_ext": 229.0,
+    "any_evidence": true,
+    "c": 0.3179685343637869,
+    "count_share": {
+     "AO_ELEMENTWISE": 0.7272727272727273,
+     "CLASS_SUPPORTED": 0.030303030303030304,
+     "CONFIGURATION_MATCHED": 0.0,
+     "EXACT_VALIDATED": 0.0,
+     "EXTRAPOLATED": 0.21212121212121213,
+     "INVALID_OR_UNSTABLE": 0.030303030303030304,
+     "UNSUPPORTED": 0.0
+    },
+    "n_model": 86952,
+    "share": {
+     "CLASS_SUPPORTED": 0.3179685343637869,
+     "CONFIGURATION_MATCHED": 0.0,
+     "EXACT_VALIDATED": 0.0,
+     "EXTRAPOLATED": 0.30444383107921613,
+     "INVALID_OR_UNSTABLE": 0.37758763455699695,
+     "UNSUPPORTED": 0.0
+    }
+   },
+   "mac_active": 548.0,
+   "npu_active": 50508.0,
+   "p_ext_over_m": 0.41788321167883213,
+   "p_over_m": 0.19708029197080293,
+   "runtime_reason": "no validated model-level NPU_ACTIVE predictor (isolated graph IO in DDR, overlap unmeasured)",
+   "runtime_verdict": "NOT_EXPLAINED",
+   "stage6m": {
+    "evidence_supported": 0.0,
+    "static_structural": 0.0
+   },
+   "unit": {
+    "ao_over_npu": 0.005939653124257543,
+    "eff_tflite": 0.15495266879562045,
+    "legacy_dpu_over_mac": "0.781021897810219",
+    "legacy_wd_stalled_ratio": "0.2232999584081794",
+    "mac_over_npu": 0.01084976637364378,
+    "wd_over_npu": 0.05573374514928328
+   },
+   "vela": {
+    "board_over_vela": 1.6119231505712643,
+    "cls": "UNDERESTIMATION",
+    "mixed_share": 0.0,
+    "over_share": 0.0,
+    "under_share": 1.0,
+    "verdict": "NO_CANCELLATION_INDICATED"
+   }
+  },
+  "vww4_128_128_INT8": {
+   "axi": {
+    "bytes_per_mac": "0.13012661454792657",
+    "ext_bytes": "380192.0",
+    "ext_rd_burst": "7.543174603174603",
+    "ext_rd_port_imbalance": "0.003998148226084761",
+    "ext_rd_req_stall": "0.09928264994231678",
+    "sram_bytes": "2069936.0",
+    "sram_rd_burst": "9.318010752688172",
+    "sram_rd_req_stall": "0.006298963800472851",
+    "vela_dram_bytes": "615832.0",
+    "vela_sram_bytes": "2496880.0"
+   },
+   "compute_verdict": "QUALITATIVE_SUPPORT_ONLY",
+   "coverage": {
+    "P": 6660.0,
+    "P_ext": 31024.0,
+    "any_evidence": true,
+    "c": 0.0991162474507138,
+    "count_share": {
+     "AO_ELEMENTWISE": 0.14754098360655737,
+     "CLASS_SUPPORTED": 0.09836065573770492,
+     "CONFIGURATION_MATCHED": 0.0,
+     "EXACT_VALIDATED": 0.01639344262295082,
+     "EXTRAPOLATED": 0.6721311475409836,
+     "INVALID_OR_UNSTABLE": 0.06557377049180328,
+     "UNSUPPORTED": 0.0
+    },
+    "n_model": 18828800,
+    "share": {
+     "CLASS_SUPPORTED": 0.03254928619986404,
+     "CONFIGURATION_MATCHED": 0.0,
+     "EXACT_VALIDATED": 0.06656696125084977,
+     "EXTRAPOLATED": 0.7264174031271244,
+     "INVALID_OR_UNSTABLE": 0.1596736913664174,
+     "UNSUPPORTED": 0.0
+    }
+   },
+   "mac_active": 56512.0,
+   "npu_active": 234669.0,
+   "p_ext_over_m": 0.5489807474518686,
+   "p_over_m": 0.1178510758776897,
+   "runtime_reason": "no validated model-level NPU_ACTIVE predictor (isolated graph IO in DDR, overlap unmeasured)",
+   "runtime_verdict": "NOT_EXPLAINED",
+   "stage6m": {
+    "evidence_supported": 0.06656696125084977,
+    "static_structural": 0.6499116247450714
+   },
+   "unit": {
+    "ao_over_npu": 0.27508959427960233,
+    "eff_tflite": 0.3253733720271801,
+    "legacy_dpu_over_mac": "0.7717298980747452",
+    "legacy_wd_stalled_ratio": "0.5703213145577141",
+    "mac_over_npu": 0.24081578734302359,
+    "wd_over_npu": 0.05715710213108677
+   },
+   "vela": {
+    "board_over_vela": 1.0547964293098644,
+    "cls": "ESTIMATE_AGREEMENT",
+    "mixed_share": 0.6655744391570361,
+    "over_share": 0.08773623385452073,
+    "under_share": 0.23189666893269884,
+    "verdict": "NO_CANCELLATION_INDICATED"
+   }
+  },
+  "wav2letter_pruned_int8": {
+   "axi": {
+    "bytes_per_mac": "0.010815907201688409",
+    "ext_bytes": "29694832.0",
+    "ext_rd_burst": "15.250794968657894",
+    "ext_rd_port_imbalance": "1.1976817237035367e-05",
+    "ext_rd_req_stall": "0.18241577554160066",
+    "sram_bytes": "8064560.0",
+    "sram_rd_burst": "13.333093400898306",
+    "sram_rd_req_stall": "2.7844857654747096e-06",
+    "vela_dram_bytes": "33403744.0",
+    "vela_sram_bytes": "12143796.0"
+   },
+   "compute_verdict": "PARTIALLY_EXPLAINED",
+   "coverage": {
+    "P": 2386944.0,
+    "P_ext": 2983680.0,
+    "any_evidence": true,
+    "c": 0.6782966275939547,
+    "count_share": {
+     "AO_ELEMENTWISE": 0.0,
+     "CLASS_SUPPORTED": 0.0,
+     "CONFIGURATION_MATCHED": 0.09090909090909091,
+     "EXACT_VALIDATED": 0.0,
+     "EXTRAPOLATED": 0.9090909090909091,
+     "INVALID_OR_UNSTABLE": 0.0,
+     "UNSUPPORTED": 0.0
+    },
+    "n_model": 3491098000,
+    "share": {
+     "CLASS_SUPPORTED": 0.0,
+     "CONFIGURATION_MATCHED": 0.6782966275939547,
+     "EXACT_VALIDATED": 0.0,
+     "EXTRAPOLATED": 0.3217033724060453,
+     "INVALID_OR_UNSTABLE": 0.0,
+     "UNSUPPORTED": 0.0
+    }
+   },
+   "mac_active": 3521802.0,
+   "npu_active": 4133297.5,
+   "p_ext_over_m": 0.8472026536415165,
+   "p_over_m": 0.6777621229132131,
+   "runtime_reason": "no validated model-level NPU_ACTIVE predictor (isolated graph IO in DDR, overlap unmeasured)",
+   "runtime_verdict": "NOT_EXPLAINED",
+   "stage6m": {
+    "evidence_supported": 0.0,
+    "static_structural": 0.17203298217351676
+   },
+   "unit": {
+    "ao_over_npu": 0.014458673734469876,
+    "eff_tflite": 0.96804857019929,
+    "legacy_dpu_over_mac": "0.9677080085706125",
+    "legacy_wd_stalled_ratio": "0.7213006164897162",
+    "mac_over_npu": 0.8520562577457829,
+    "wd_over_npu": 0.2742481033605735
+   },
+   "vela": {
+    "board_over_vela": 0.7897701271318007,
+    "cls": "OVERESTIMATION",
+    "mixed_share": 0.17203298217351676,
+    "over_share": 0.8279670178264833,
+    "under_share": 0.0,
+    "verdict": "NO_CANCELLATION_INDICATED"
+   }
+  },
+  "yolo-fastest_192_face_v4": {
+   "axi": {
+    "bytes_per_mac": "0.18692239695754959",
+    "ext_bytes": "477824.0",
+    "ext_rd_burst": "7.323933117045171",
+    "ext_rd_port_imbalance": "0.0013970763621494531",
+    "ext_rd_req_stall": "0.05951852445735101",
+    "sram_bytes": "6796448.0",
+    "sram_rd_burst": "10.373511447027289",
+    "sram_rd_req_stall": "0.0009517940834824468",
+    "vela_dram_bytes": "792224.0",
+    "vela_sram_bytes": "7525472.0"
+   },
+   "compute_verdict": "QUALITATIVE_SUPPORT_ONLY",
+   "coverage": {
+    "P": 76752.0,
+    "P_ext": 129199.5,
+    "any_evidence": true,
+    "c": 0.17938945420906569,
+    "count_share": {
+     "AO_ELEMENTWISE": 0.045454545454545456,
+     "CLASS_SUPPORTED": 0.1590909090909091,
+     "CONFIGURATION_MATCHED": 0.022727272727272728,
+     "EXACT_VALIDATED": 0.0,
+     "EXTRAPOLATED": 0.7727272727272727,
+     "INVALID_OR_UNSTABLE": 0.0,
+     "UNSUPPORTED": 0.0
+    },
+    "n_model": 38916000,
+    "share": {
+     "CLASS_SUPPORTED": 0.1396040703052729,
+     "CONFIGURATION_MATCHED": 0.039785383903792784,
+     "EXACT_VALIDATED": 0.0,
+     "EXTRAPOLATED": 0.8206105457909343,
+     "INVALID_OR_UNSTABLE": 0.0,
+     "UNSUPPORTED": 0.0
+    }
+   },
+   "mac_active": 171576.0,
+   "npu_active": 447601.5,
+   "p_ext_over_m": 0.753016156105749,
+   "p_over_m": 0.4473352916491817,
+   "runtime_reason": "no validated model-level NPU_ACTIVE predictor (isolated graph IO in DDR, overlap unmeasured)",
+   "runtime_verdict": "NOT_EXPLAINED",
+   "stage6m": {
+    "evidence_supported": 0.0,
+    "static_structural": 0.4262719703977798
+   },
+   "unit": {
+    "ao_over_npu": 0.46231971966135055,
+    "eff_tflite": 0.2214989640159463,
+    "legacy_dpu_over_mac": "0.7488634774094279",
+    "legacy_wd_stalled_ratio": "0.7212317281853191",
+    "mac_over_npu": 0.38332311218796183,
+    "wd_over_npu": 0.060916909349052674
+   },
+   "vela": {
+    "board_over_vela": 0.9353364148901047,
+    "cls": "ESTIMATE_AGREEMENT",
+    "mixed_share": 0.44332284921369103,
+    "over_share": 0.2140018501387604,
+    "under_share": 0.3426753006475486,
+    "verdict": "CANCELLATION_POSSIBLE"
+   }
+  }
+ },
+ "recommendation": {
+  "recommendation": "G_DF_EXT",
+  "table": [
+   {
+    "controllable": true,
+    "cost": 6,
+    "discriminating": true,
+    "families": [
+     "PK1x1"
+    ],
+    "gap": "G_PK1X1",
+    "impact": 0.319940795559667
+   },
+   {
+    "controllable": true,
+    "cost": 9,
+    "discriminating": true,
+    "families": [
+     "DF1x1"
+    ],
+    "gap": "G_DF_EXT",
+    "impact": 0.5833446634942216
+   },
+   {
+    "controllable": true,
+    "cost": 4,
+    "discriminating": false,
+    "families": [
+     "FC"
+    ],
+    "gap": "G_FC",
+    "impact": 0.6820314656362131
+   },
+   {
+    "controllable": true,
+    "cost": 6,
+    "discriminating": true,
+    "families": [
+     "DW"
+    ],
+    "gap": "G_DW_VELA",
+    "impact": 0.05734690101757632
+   },
+   {
+    "controllable": true,
+    "cost": 3,
+    "discriminating": true,
+    "families": [
+     "PK1D"
+    ],
+    "gap": "G_PK1D",
+    "impact": 0.14967039023252857
+   },
+   {
+    "controllable": true,
+    "cost": 4,
+    "discriminating": true,
+    "families": [
+     "FIRST_CONV",
+     "PK3x3"
+    ],
+    "gap": "G_FIRST",
+    "impact": 0.0360335669835293
+   },
+   {
+    "controllable": true,
+    "cost": 4,
+    "discriminating": true,
+    "families": [],
+    "gap": "G_AO1",
+    "impact": 0.0
+   },
+   {
+    "controllable": true,
+    "cost": 4,
+    "discriminating": true,
+    "families": [],
+    "gap": "G_WD",
+    "impact": 0.0
+   }
+  ]
+ },
+ "stage6m_verdict": "COVERAGE_EXPANDED_NOT_EXPLAINED"
+}
