@@ -1,0 +1,396 @@
+{
+ "contract": "evidence/stage6b/stage6be2ea/contract.md (Track A)",
+ "experiments": [
+  {
+   "experiment": "evidence/driver_m7",
+   "judge": "no stage4k.identity path",
+   "uses_identity": false,
+   "files": 9,
+   "runs": 720,
+   "placements": [],
+   "placement_field": false,
+   "cls": "UNAFFECTED"
+  },
+  {
+   "experiment": "evidence/driver_p3",
+   "judge": "no stage4k.identity path",
+   "uses_identity": false,
+   "files": 2,
+   "runs": 60,
+   "placements": [],
+   "placement_field": false,
+   "cls": "UNAFFECTED"
+  },
+  {
+   "experiment": "evidence/fi101_s013",
+   "judge": "no stage4k.identity path",
+   "uses_identity": false,
+   "files": 35,
+   "runs": 770,
+   "placements": [],
+   "placement_field": false,
+   "cls": "UNAFFECTED"
+  },
+  {
+   "experiment": "evidence/mlek_baseline",
+   "judge": "no stage4k.identity path",
+   "uses_identity": false,
+   "files": 3,
+   "runs": 105,
+   "placements": [],
+   "placement_field": false,
+   "cls": "UNAFFECTED"
+  },
+  {
+   "experiment": "evidence/mlek_baseline_a1",
+   "judge": "no stage4k.identity path",
+   "uses_identity": false,
+   "files": 1,
+   "runs": 35,
+   "placements": [],
+   "placement_field": false,
+   "cls": "UNAFFECTED"
+  },
+  {
+   "experiment": "evidence/mobilenet_ofm",
+   "judge": "no stage4k.identity path",
+   "uses_identity": false,
+   "files": 2,
+   "runs": 70,
+   "placements": [],
+   "placement_field": false,
+   "cls": "UNAFFECTED"
+  },
+  {
+   "experiment": "evidence/qread_op_pilot",
+   "judge": "no stage4k.identity path",
+   "uses_identity": false,
+   "files": 4,
+   "runs": 40,
+   "placements": [],
+   "placement_field": false,
+   "cls": "UNAFFECTED"
+  },
+  {
+   "experiment": "evidence/qread_pilot",
+   "judge": "no stage4k.identity path",
+   "uses_identity": false,
+   "files": 12,
+   "runs": 80,
+   "placements": [],
+   "placement_field": false,
+   "cls": "UNAFFECTED"
+  },
+  {
+   "experiment": "evidence/s0_3_clk",
+   "judge": "no stage4k.identity path",
+   "uses_identity": false,
+   "files": 21,
+   "runs": 210,
+   "placements": [],
+   "placement_field": false,
+   "cls": "UNAFFECTED"
+  },
+  {
+   "experiment": "evidence/s0_3_ta",
+   "judge": "no stage4k.identity path",
+   "uses_identity": false,
+   "files": 8,
+   "runs": 160,
+   "placements": [],
+   "placement_field": false,
+   "cls": "UNAFFECTED"
+  },
+  {
+   "experiment": "evidence/s2_groups",
+   "judge": "no stage4k.identity path",
+   "uses_identity": false,
+   "files": 32,
+   "runs": 960,
+   "placements": [],
+   "placement_field": false,
+   "cls": "UNAFFECTED"
+  },
+  {
+   "experiment": "evidence/s2_mask",
+   "judge": "no stage4k.identity path",
+   "uses_identity": false,
+   "files": 35,
+   "runs": 700,
+   "placements": [],
+   "placement_field": false,
+   "cls": "UNAFFECTED"
+  },
+  {
+   "experiment": "evidence/s2_probe",
+   "judge": "no stage4k.identity path",
+   "uses_identity": false,
+   "files": 18,
+   "runs": 580,
+   "placements": [],
+   "placement_field": false,
+   "cls": "UNAFFECTED"
+  },
+  {
+   "experiment": "evidence/s2b3_pilot",
+   "judge": "no stage4k.identity path",
+   "uses_identity": false,
+   "files": 30,
+   "runs": 900,
+   "placements": [],
+   "placement_field": false,
+   "cls": "UNAFFECTED"
+  },
+  {
+   "experiment": "evidence/stage1",
+   "judge": "no stage4k.identity path",
+   "uses_identity": false,
+   "files": 10,
+   "runs": 350,
+   "placements": [],
+   "placement_field": false,
+   "cls": "UNAFFECTED"
+  },
+  {
+   "experiment": "evidence/stage2a",
+   "judge": "no stage4k.identity path",
+   "uses_identity": false,
+   "files": 3,
+   "runs": 105,
+   "placements": [],
+   "placement_field": false,
+   "cls": "UNAFFECTED"
+  },
+  {
+   "experiment": "evidence/stage4",
+   "judge": "no stage4k.identity path",
+   "uses_identity": false,
+   "files": 8,
+   "runs": 80,
+   "placements": [],
+   "placement_field": false,
+   "cls": "UNAFFECTED"
+  },
+  {
+   "experiment": "evidence/stage4_placement",
+   "judge": "stage4p (own placement check)",
+   "uses_identity": false,
+   "files": 2,
+   "runs": 20,
+   "placements": [
+    0,
+    1
+   ],
+   "placement_field": true,
+   "cls": "UNAFFECTED"
+  },
+  {
+   "experiment": "evidence/stage4ao",
+   "judge": "stage4ao (K.identity)",
+   "uses_identity": true,
+   "files": 7,
+   "runs": 61,
+   "placements": [
+    0
+   ],
+   "placement_field": true,
+   "cls": "UNAFFECTED"
+  },
+  {
+   "experiment": "evidence/stage4aoe",
+   "judge": "stage4aoe.identity_a1 -> K.identity",
+   "uses_identity": true,
+   "files": 12,
+   "runs": 120,
+   "placements": [
+    0
+   ],
+   "placement_field": true,
+   "cls": "UNAFFECTED"
+  },
+  {
+   "experiment": "evidence/stage4c1",
+   "judge": "no stage4k.identity path",
+   "uses_identity": false,
+   "files": 6,
+   "runs": 60,
+   "placements": [],
+   "placement_field": false,
+   "cls": "UNAFFECTED"
+  },
+  {
+   "experiment": "evidence/stage4c2",
+   "judge": "no stage4k.identity path",
+   "uses_identity": false,
+   "files": 4,
+   "runs": 40,
+   "placements": [],
+   "placement_field": false,
+   "cls": "UNAFFECTED"
+  },
+  {
+   "experiment": "evidence/stage4c2b",
+   "judge": "no stage4k.identity path",
+   "uses_identity": false,
+   "files": 3,
+   "runs": 30,
+   "placements": [],
+   "placement_field": false,
+   "cls": "UNAFFECTED"
+  },
+  {
+   "experiment": "evidence/stage4k",
+   "judge": "stage4k.config_result",
+   "uses_identity": true,
+   "files": 10,
+   "runs": 100,
+   "placements": [
+    0
+   ],
+   "placement_field": true,
+   "cls": "UNAFFECTED"
+  },
+  {
+   "experiment": "evidence/stage4wd",
+   "judge": "stage4wd -> stage4aoe.config_result -> identity_a1",
+   "uses_identity": true,
+   "files": 9,
+   "runs": 90,
+   "placements": [
+    0
+   ],
+   "placement_field": true,
+   "cls": "UNAFFECTED"
+  },
+  {
+   "experiment": "evidence/stage5",
+   "judge": "no stage4k.identity path",
+   "uses_identity": false,
+   "files": 10,
+   "runs": 100,
+   "placements": [],
+   "placement_field": false,
+   "cls": "UNAFFECTED"
+  },
+  {
+   "experiment": "evidence/stage5_2",
+   "judge": "no stage4k.identity path",
+   "uses_identity": false,
+   "files": 6,
+   "runs": 60,
+   "placements": [],
+   "placement_field": false,
+   "cls": "UNAFFECTED"
+  },
+  {
+   "experiment": "evidence/stage6b/stage6bb",
+   "judge": "stage6bb.identity_of",
+   "uses_identity": true,
+   "files": 11,
+   "runs": 110,
+   "placements": [
+    0
+   ],
+   "placement_field": true,
+   "cls": "UNAFFECTED"
+  },
+  {
+   "experiment": "evidence/stage6b/stage6be1",
+   "judge": "stage6be1 -> stage6bb.identity_of",
+   "uses_identity": true,
+   "files": 7,
+   "runs": 70,
+   "placements": [
+    0
+   ],
+   "placement_field": true,
+   "cls": "UNAFFECTED"
+  },
+  {
+   "experiment": "evidence/stage6b/stage6be1r",
+   "judge": "stage6be1r -> stage6bb.identity_of",
+   "uses_identity": true,
+   "files": 8,
+   "runs": 80,
+   "placements": [
+    0
+   ],
+   "placement_field": true,
+   "cls": "UNAFFECTED"
+  },
+  {
+   "experiment": "evidence/stage6b/stage6be2b",
+   "judge": "stage6be2b -> stage6bb.identity_of",
+   "uses_identity": true,
+   "files": 5,
+   "runs": 50,
+   "placements": [
+    0
+   ],
+   "placement_field": true,
+   "cls": "UNAFFECTED"
+  },
+  {
+   "experiment": "evidence/stage6b/stage6be2d/raw",
+   "judge": "stage6be2d (3ca60a7, original) -> stage6bb.identity_of",
+   "uses_identity": true,
+   "files": 3,
+   "runs": 30,
+   "placements": [
+    0,
+    1
+   ],
+   "placement_field": true,
+   "cls": "JUDGE_FALSE_REJECTION"
+  },
+  {
+   "experiment": "evidence/stage6b/stage6be2d/raw_a",
+   "judge": "stage6be2d Amendment A (placement_identity replaces the term)",
+   "uses_identity": false,
+   "files": 9,
+   "runs": 90,
+   "placements": [
+    0,
+    1
+   ],
+   "placement_field": true,
+   "cls": "UNAFFECTED"
+  },
+  {
+   "experiment": "evidence/w2l_stall",
+   "judge": "no stage4k.identity path",
+   "uses_identity": false,
+   "files": 3,
+   "runs": 20,
+   "placements": [],
+   "placement_field": false,
+   "cls": "UNAFFECTED"
+  },
+  {
+   "experiment": "evidence/x1_mlek_models",
+   "judge": "no stage4k.identity path",
+   "uses_identity": false,
+   "files": 11,
+   "runs": 90,
+   "placements": [],
+   "placement_field": false,
+   "cls": "UNAFFECTED"
+  }
+ ],
+ "e2d_original_rejudge": {
+  "judge": "stage6be2d Amendment A (347712c) placement_identity",
+  "boots": [
+   440,
+   441,
+   442
+  ],
+  "status": {
+   "REF": "VALID",
+   "W0-P0-L500": "VALID",
+   "W0-P1-L500": "VALID"
+  },
+  "reference_gate": "PASS",
+  "original_verdict_kept": "MEASUREMENT_INVALID"
+ },
+ "verdict": "NO_HISTORICAL_IMPACT"
+}

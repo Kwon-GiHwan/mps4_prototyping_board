@@ -1,0 +1,145 @@
+{
+ "contract": "evidence/stage6b/stage6be2ea/contract.md (Track B)",
+ "i1_e2d_recompute_identical": true,
+ "b2": {
+  "b0": "e2d_w1p1 (928296b1), placement 0",
+  "b3": "same DRWL, header word 7 = 1",
+  "same_command_stream": true,
+  "io_placement_only": true,
+  "n_base": 6,
+  "regions_on_ext_placement0": [
+   0,
+   1
+  ],
+  "regions_on_ext_placement1": [
+   0
+  ],
+  "tensor_regions": {
+   "IFM": [
+    1,
+    2
+   ],
+   "IFM2": [
+    1,
+    2
+   ],
+   "OFM": [
+    1,
+    2
+   ],
+   "WEIGHT": [
+    0
+   ],
+   "SCALE": [
+    0
+   ]
+  },
+  "tensors_on_ext_b3": {
+   "WEIGHT": [
+    0
+   ],
+   "SCALE": [
+    0
+   ]
+  },
+  "weight_only_ext_path": true,
+  "sram_arena": "0x31076770",
+  "sram_fits": true,
+  "reference": "b9341e6f (BUILTIN_REF, same golden as B0)",
+  "b3_vela": {
+   "source": "A2 --memory-mode Shared_Sram",
+   "usable": false,
+   "diff": {},
+   "n_conv": [
+    1,
+    3
+   ],
+   "totals": null,
+   "label": "NO_COMPARABLE_VELA_ESTIMATE"
+  },
+  "b1_b2": {
+   "status": "UNAVAILABLE",
+   "why": "vela: error: Driver actions format 'COP2' is required for --separate-io-regions"
+  },
+  "w0p1_board_evidence": {
+   "board_bytes": {
+    "500": 180864.0,
+    "1000": 180864.0
+   },
+   "vela_weights_scales_actual": 180512.0,
+   "note": "W0-P1 EXT write 0: graph IO on SRAM; EXT read = weights + scales + command stream"
+  }
+ },
+ "b3": {
+  "vela": {
+   "fm_read_inflated": 706560.0,
+   "weights_read": 174752.0,
+   "scales_read": 5760.0,
+   "read_efficiency": 0.601746,
+   "inflated_total": 887072.0,
+   "actual_total": 533792.027712,
+   "fm_actual": 353280.027712,
+   "ifm_block_depth": 64,
+   "assumed_burst": 64,
+   "channel_bw": {
+    "500": 6.5536,
+    "1000": 3.2768
+   },
+   "fm_ac": 107812
+  },
+  "board": {
+   "ext_read_bytes": {
+    "500": 477824.0,
+    "1000": 477824.0
+   },
+   "npu": {
+    "500": 55466.5,
+    "1000": 102615.5
+   },
+   "mean_burst": {
+    "500": 79.26741871267419,
+    "1000": 79.26741871267419
+   },
+   "rate": {
+    "500": 8.614641269955738,
+    "1000": 4.656450536225035
+   }
+  },
+  "C1": "SUPPORTED",
+  "C2": "SUPPORTED",
+  "C3": "SUPPORTED",
+  "C4": {
+   "total": 107812,
+   "npu": 24521,
+   "dram_ac": 107812,
+   "dram_dominates": true
+  },
+  "overprediction_cause": "SUPPORTED",
+  "post_hoc_descriptive": {
+   "500": {
+    "fm_actual_over_bw": 53906.25422851562,
+    "board": 55466.5,
+    "ratio": 1.0289436874035116,
+    "board_ifm_rate_if_weights_as_vela": 5.360208414087783,
+    "vela_bw": 6.5536
+   },
+   "1000": {
+    "fm_actual_over_bw": 107812.50845703125,
+    "board": 102615.5,
+    "ratio": 0.9517958673681866,
+    "board_ifm_rate_if_weights_as_vela": 2.8973400704571923,
+    "vela_bw": 3.2768
+   }
+  },
+  "w0p1_ext_reads": {
+   "board_bytes": {
+    "500": 180864.0,
+    "1000": 180864.0
+   },
+   "vela_weights_scales_actual": 180512.0,
+   "note": "W0-P1 EXT write 0: graph IO on SRAM; EXT read = weights + scales + command stream"
+  }
+ },
+ "verdict": "READY_FOR_BOARD_REVIEW",
+ "overprediction_cause": "SUPPORTED"
+}
