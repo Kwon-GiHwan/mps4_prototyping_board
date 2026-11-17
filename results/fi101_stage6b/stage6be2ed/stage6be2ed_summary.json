@@ -1,0 +1,520 @@
+{
+ "contract": "evidence/stage6b/stage6be2ed/contract.md",
+ "ta": "TA profile 1; EXT RLATENCY 500 / 1000; new runner images (14077be): L500 bram ec0e8c3b, L1000 bram ca7d2e49",
+ "scope": "NPU-internal execution time (NPU_ACTIVE); CPU staging and the weight copy are outside the measured window",
+ "reference_gate": {
+  "verdict": "PASS",
+  "same_binary": true,
+  "reproduce": {
+   "ok": true,
+   "checks": {
+    "mac": true,
+    "dpu": true,
+    "output": true,
+    "constant_counters": true,
+    "npu_active": true
+   },
+   "differing_constant_counters": {},
+   "npu_active": [
+    22251.0,
+    22347.5
+   ],
+   "tolerance": 939,
+   "compared": 10
+  }
+ },
+ "results": {
+  "B3-L1000": {
+   "key": "B3-L1000",
+   "config": "e2eb_b3",
+   "metrics": {
+    "n_mac": 19501056,
+    "npu_active": 72412.5,
+    "npu_active_range": 900,
+    "npu_active_pass_b": 73004.0,
+    "mac_active": 20736.0,
+    "mac_dpu_active": 20736.0,
+    "ao_active": 14920.5,
+    "wd_active": 3579.0,
+    "wd_stalled": 34641.5,
+    "reserved_53": 15437.0,
+    "reserved_55": 1328.5,
+    "pass_b": {
+     "128": 11192.0,
+     "130": 40832.0,
+     "132": 5388.0,
+     "135": 17088.0,
+     "384": 793.0,
+     "386": 11322.0,
+     "391": 0.0
+    },
+    "mac_activity": 0.28635939927498705,
+    "macs_per_mac_active": 940.4444444444445,
+    "eff_1024": 0.9184027777777778,
+    "dpu_over_mac": 1.0,
+    "macs_per_1024_npu_active": 0.2629932677369239,
+    "stage4k_nearest": 768,
+    "rate_over_640": 1.4694444444444446,
+    "rate_over_768": 1.224537037037037,
+    "c16_rate_768": 736.0,
+    "rate_over_c16_768": 1.277777777777778
+   },
+   "traffic": {
+    "sram_rd_beats": 40832.0,
+    "sram_rd_trans": 11192.0,
+    "sram_wr_beats": 17088.0,
+    "sram_wr_trans": 5388.0,
+    "ext_rd_beats": 11322.0,
+    "ext_rd_trans": 793.0,
+    "ext_wr_beats": 0.0
+   },
+   "layout": {
+    "ok": true,
+    "checks": {
+     "arena_where": true,
+     "arena_inside": true,
+     "fast_inside": true,
+     "fast_disjoint": true,
+     "io_in_arena": true,
+     "weights_ddr": true
+    }
+   },
+   "base0": 1879049248,
+   "output_sha256": "b9341e6f7af83862c58793b496c2a79d01d5c032e124cfb000d74b353ecf8e92",
+   "status": "VALID",
+   "reasons": []
+  },
+  "B3-L500": {
+   "key": "B3-L500",
+   "config": "e2eb_b3",
+   "metrics": {
+    "n_mac": 19501056,
+    "npu_active": 60224.5,
+    "npu_active_range": 300,
+    "npu_active_pass_b": 60383.0,
+    "mac_active": 20736.0,
+    "mac_dpu_active": 20736.0,
+    "ao_active": 14918.5,
+    "wd_active": 5912.0,
+    "wd_stalled": 21146.5,
+    "reserved_53": 3144.5,
+    "reserved_55": 2108.0,
+    "pass_b": {
+     "128": 11192.0,
+     "130": 40832.0,
+     "132": 5388.0,
+     "135": 17088.0,
+     "384": 793.0,
+     "386": 11322.0,
+     "391": 0.0
+    },
+    "mac_activity": 0.34431170038771597,
+    "macs_per_mac_active": 940.4444444444445,
+    "eff_1024": 0.9184027777777778,
+    "dpu_over_mac": 1.0,
+    "macs_per_1024_npu_active": 0.3162168220574683,
+    "stage4k_nearest": 768,
+    "rate_over_640": 1.4694444444444446,
+    "rate_over_768": 1.224537037037037,
+    "c16_rate_768": 736.0,
+    "rate_over_c16_768": 1.277777777777778
+   },
+   "traffic": {
+    "sram_rd_beats": 40832.0,
+    "sram_rd_trans": 11192.0,
+    "sram_wr_beats": 17088.0,
+    "sram_wr_trans": 5388.0,
+    "ext_rd_beats": 11322.0,
+    "ext_rd_trans": 793.0,
+    "ext_wr_beats": 0.0
+   },
+   "layout": {
+    "ok": true,
+    "checks": {
+     "arena_where": true,
+     "arena_inside": true,
+     "fast_inside": true,
+     "fast_disjoint": true,
+     "io_in_arena": true,
+     "weights_ddr": true
+    }
+   },
+   "base0": 1879049248,
+   "output_sha256": "b9341e6f7af83862c58793b496c2a79d01d5c032e124cfb000d74b353ecf8e92",
+   "status": "VALID",
+   "reasons": []
+  },
+  "B3w-L1000": {
+   "key": "B3w-L1000",
+   "config": "e2ed_b3w",
+   "metrics": {
+    "n_mac": 19501056,
+    "npu_active": 64843.0,
+    "npu_active_range": 793,
+    "npu_active_pass_b": 64718.0,
+    "mac_active": 20736.0,
+    "mac_dpu_active": 20736.0,
+    "ao_active": 14927.0,
+    "wd_active": 6286.0,
+    "wd_stalled": 24344.0,
+    "reserved_53": 0.0,
+    "reserved_55": 8375.0,
+    "pass_b": {
+     "128": 11974.0,
+     "130": 52114.0,
+     "132": 5388.0,
+     "135": 17088.0,
+     "384": 11.0,
+     "386": 40.0,
+     "391": 0.0
+    },
+    "mac_activity": 0.31978779513594374,
+    "macs_per_mac_active": 940.4444444444445,
+    "eff_1024": 0.9184027777777778,
+    "dpu_over_mac": 1.0,
+    "macs_per_1024_npu_active": 0.2936939993522817,
+    "stage4k_nearest": 768,
+    "rate_over_640": 1.4694444444444446,
+    "rate_over_768": 1.224537037037037,
+    "c16_rate_768": 736.0,
+    "rate_over_c16_768": 1.277777777777778
+   },
+   "traffic": {
+    "sram_rd_beats": 52114.0,
+    "sram_rd_trans": 11974.0,
+    "sram_wr_beats": 17088.0,
+    "sram_wr_trans": 5388.0,
+    "ext_rd_beats": 40.0,
+    "ext_rd_trans": 11.0,
+    "ext_wr_beats": 0.0
+   },
+   "layout": {
+    "ok": true,
+    "checks": {
+     "arena_where": true,
+     "arena_inside": true,
+     "fast_inside": true,
+     "fast_disjoint": true,
+     "io_in_arena": true,
+     "weights_where": true,
+     "weights_inside": true,
+     "weights_disjoint": true
+    }
+   },
+   "base0": 824706080,
+   "output_sha256": "b9341e6f7af83862c58793b496c2a79d01d5c032e124cfb000d74b353ecf8e92",
+   "status": "VALID",
+   "reasons": []
+  },
+  "B3w-L500": {
+   "key": "B3w-L500",
+   "config": "e2ed_b3w",
+   "metrics": {
+    "n_mac": 19501056,
+    "npu_active": 64064.5,
+    "npu_active_range": 822,
+    "npu_active_pass_b": 63718.5,
+    "mac_active": 20736.0,
+    "mac_dpu_active": 20736.0,
+    "ao_active": 14927.0,
+    "wd_active": 6286.0,
+    "wd_stalled": 24344.0,
+    "reserved_53": 0.0,
+    "reserved_55": 8375.0,
+    "pass_b": {
+     "128": 11974.0,
+     "130": 52114.0,
+     "132": 5388.0,
+     "135": 17088.0,
+     "384": 11.0,
+     "386": 40.0,
+     "391": 0.0
+    },
+    "mac_activity": 0.3236737975009561,
+    "macs_per_mac_active": 940.4444444444445,
+    "eff_1024": 0.9184027777777778,
+    "dpu_over_mac": 1.0,
+    "macs_per_1024_npu_active": 0.29726291471876,
+    "stage4k_nearest": 768,
+    "rate_over_640": 1.4694444444444446,
+    "rate_over_768": 1.224537037037037,
+    "c16_rate_768": 736.0,
+    "rate_over_c16_768": 1.277777777777778
+   },
+   "traffic": {
+    "sram_rd_beats": 52114.0,
+    "sram_rd_trans": 11974.0,
+    "sram_wr_beats": 17088.0,
+    "sram_wr_trans": 5388.0,
+    "ext_rd_beats": 40.0,
+    "ext_rd_trans": 11.0,
+    "ext_wr_beats": 0.0
+   },
+   "layout": {
+    "ok": true,
+    "checks": {
+     "arena_where": true,
+     "arena_inside": true,
+     "fast_inside": true,
+     "fast_disjoint": true,
+     "io_in_arena": true,
+     "weights_where": true,
+     "weights_inside": true,
+     "weights_disjoint": true
+    }
+   },
+   "base0": 824706080,
+   "output_sha256": "b9341e6f7af83862c58793b496c2a79d01d5c032e124cfb000d74b353ecf8e92",
+   "status": "VALID",
+   "reasons": []
+  },
+  "REF": {
+   "key": "REF",
+   "config": "s4c2_conv_cin48",
+   "metrics": {
+    "n_mac": 2654208,
+    "npu_active": 22347.5,
+    "npu_active_range": 939,
+    "npu_active_pass_b": 22652.0,
+    "mac_active": 3456.0,
+    "mac_dpu_active": 3456.0,
+    "ao_active": 3529.5,
+    "wd_active": 1780.5,
+    "wd_stalled": 9433.5,
+    "reserved_53": 0.0,
+    "reserved_55": 7735.0,
+    "pass_b": {
+     "128": 400.0,
+     "130": 3520.0,
+     "132": 29.0,
+     "135": 440.0,
+     "384": 327.0,
+     "386": 3929.0,
+     "391": 3456.0
+    },
+    "mac_activity": 0.15464817093634634,
+    "macs_per_mac_active": 768.0,
+    "eff_1024": 0.75,
+    "dpu_over_mac": 1.0,
+    "macs_per_1024_npu_active": 0.11598612820225976,
+    "stage4k_nearest": 768,
+    "rate_over_640": 1.2,
+    "rate_over_768": 1.0,
+    "c16_rate_768": 768.0,
+    "rate_over_c16_768": 1.0
+   },
+   "traffic": {
+    "sram_rd_beats": 3520.0,
+    "sram_rd_trans": 400.0,
+    "sram_wr_beats": 440.0,
+    "sram_wr_trans": 29.0,
+    "ext_rd_beats": 3929.0,
+    "ext_rd_trans": 327.0,
+    "ext_wr_beats": 3456.0
+   },
+   "layout": {
+    "ok": true,
+    "checks": {
+     "arena_where": true,
+     "arena_inside": true,
+     "fast_inside": true,
+     "fast_disjoint": true,
+     "io_in_arena": true,
+     "weights_ddr": true
+    }
+   },
+   "base0": 1879049136,
+   "output_sha256": "86d13e7c6cae01b38808007412a92bade84299f9c56149d5555ab709edf52ddc",
+   "status": "VALID",
+   "reasons": []
+  }
+ },
+ "mac_equals_h1uc": {
+  "B3-L1000": true,
+  "B3-L500": true,
+  "B3w-L1000": true,
+  "B3w-L500": true
+ },
+ "b3_equivalence": {
+  "per_latency": {
+   "500": {
+    "ok": true,
+    "checks": {
+     "npu": true,
+     "traffic": true
+    }
+   },
+   "1000": {
+    "ok": true,
+    "checks": {
+     "npu": true,
+     "traffic": true
+    }
+   }
+  },
+  "verdict": "B3_REPRODUCED"
+ },
+ "remap": {
+  "per_latency": {
+   "500": {
+    "ok": true,
+    "checks": {
+     "ext_rd": true,
+     "ext_wr": true,
+     "sram_shift": true,
+     "read_total": true
+    }
+   },
+   "1000": {
+    "ok": true,
+    "checks": {
+     "ext_rd": true,
+     "ext_wr": true,
+     "sram_shift": true,
+     "read_total": true
+    }
+   }
+  },
+  "verdict": "WEIGHT_SCALE_REMAP_CONFIRMED"
+ },
+ "effects": {
+  "usable": true,
+  "le": {
+   "B3": 12188.0,
+   "B3w": 778.5
+  },
+  "tol_le": {
+   "B3": 1200,
+   "B3w": 1615
+  },
+  "weight_placement_effect": {
+   "500": -3840.0,
+   "1000": 7569.5
+  },
+  "tol_wpe": {
+   "500": 1122,
+   "1000": 1693
+  },
+  "weight_path_removal_effect": 11409.5,
+  "command_path_response": "RESIDUAL_RESPONSE_NOT_OBSERVED"
+ },
+ "residual": {
+  "verdict": "WEIGHT_PATH_DOMINANT_RESPONSE",
+  "ratio": 0.06387430259271415,
+  "low": -0.06248132656109949,
+  "high": 0.21782854022570075,
+  "removal_significant": true,
+  "remaining_significant": false
+ },
+ "activity": {
+  "500": {
+   "B3": {
+    "npu_active": 60224.5,
+    "mac_active": 20736.0,
+    "mac_dpu_active": 20736.0,
+    "ao_active": 14918.5,
+    "wd_active": 5912.0,
+    "wd_stalled": 21146.5,
+    "sram_rd_beats": 40832.0,
+    "sram_rd_trans": 11192.0,
+    "sram_wr_beats": 17088.0,
+    "sram_wr_trans": 5388.0,
+    "ext_rd_beats": 11322.0,
+    "ext_rd_trans": 793.0,
+    "ext_wr_beats": 0.0
+   },
+   "B3w": {
+    "npu_active": 64064.5,
+    "mac_active": 20736.0,
+    "mac_dpu_active": 20736.0,
+    "ao_active": 14927.0,
+    "wd_active": 6286.0,
+    "wd_stalled": 24344.0,
+    "sram_rd_beats": 52114.0,
+    "sram_rd_trans": 11974.0,
+    "sram_wr_beats": 17088.0,
+    "sram_wr_trans": 5388.0,
+    "ext_rd_beats": 40.0,
+    "ext_rd_trans": 11.0,
+    "ext_wr_beats": 0.0
+   },
+   "delta": {
+    "npu_active": 3840.0,
+    "mac_active": 0.0,
+    "mac_dpu_active": 0.0,
+    "ao_active": 8.5,
+    "wd_active": 374.0,
+    "wd_stalled": 3197.5,
+    "sram_rd_beats": 11282.0,
+    "sram_rd_trans": 782.0,
+    "sram_wr_beats": 0.0,
+    "sram_wr_trans": 0.0,
+    "ext_rd_beats": -11282.0,
+    "ext_rd_trans": -782.0,
+    "ext_wr_beats": 0.0
+   }
+  },
+  "1000": {
+   "B3": {
+    "npu_active": 72412.5,
+    "mac_active": 20736.0,
+    "mac_dpu_active": 20736.0,
+    "ao_active": 14920.5,
+    "wd_active": 3579.0,
+    "wd_stalled": 34641.5,
+    "sram_rd_beats": 40832.0,
+    "sram_rd_trans": 11192.0,
+    "sram_wr_beats": 17088.0,
+    "sram_wr_trans": 5388.0,
+    "ext_rd_beats": 11322.0,
+    "ext_rd_trans": 793.0,
+    "ext_wr_beats": 0.0
+   },
+   "B3w": {
+    "npu_active": 64843.0,
+    "mac_active": 20736.0,
+    "mac_dpu_active": 20736.0,
+    "ao_active": 14927.0,
+    "wd_active": 6286.0,
+    "wd_stalled": 24344.0,
+    "sram_rd_beats": 52114.0,
+    "sram_rd_trans": 11974.0,
+    "sram_wr_beats": 17088.0,
+    "sram_wr_trans": 5388.0,
+    "ext_rd_beats": 40.0,
+    "ext_rd_trans": 11.0,
+    "ext_wr_beats": 0.0
+   },
+   "delta": {
+    "npu_active": -7569.5,
+    "mac_active": 0.0,
+    "mac_dpu_active": 0.0,
+    "ao_active": 6.5,
+    "wd_active": 2707.0,
+    "wd_stalled": -10297.5,
+    "sram_rd_beats": 11282.0,
+    "sram_rd_trans": 782.0,
+    "sram_wr_beats": 0.0,
+    "sram_wr_trans": 0.0,
+    "ext_rd_beats": -11282.0,
+    "ext_rd_trans": -782.0,
+    "ext_wr_beats": 0.0
+   }
+  }
+ },
+ "b3w_vela": "NO_COMPARABLE_VELA_ESTIMATE",
+ "verdicts": {
+  "measurement_validity": "VALID",
+  "remap_validity": "WEIGHT_SCALE_REMAP_CONFIRMED",
+  "b3_equivalence": "B3_REPRODUCED",
+  "residual_latency": "WEIGHT_PATH_DOMINANT_RESPONSE",
+  "pipeline_mechanism": "MECHANISM_UNRESOLVED"
+ },
+ "limits": [
+  "one boot per condition",
+  "weights and scale/bias move together (region 0)",
+  "B3w reads region 0 through the SRAM port and TA_SRAM: port, TA and memory change together",
+  "the residual ratio is a change of latency sensitivity, not a WD stall share",
+  "drift checked once by REF"
+ ]
+}
