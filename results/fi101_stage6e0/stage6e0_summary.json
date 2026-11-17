@@ -1,0 +1,262 @@
+{
+ "ad_residual": {
+  "R_c": 33192.0,
+  "candidate_ops": [
+   0,
+   1,
+   3,
+   5,
+   7,
+   9,
+   10,
+   12
+  ],
+  "candidate_p_ext_sum": 52344.0,
+  "candidate_without_p_ext": [
+   10
+  ]
+ },
+ "candidates": [
+  {
+   "boots": 9,
+   "criteria": {
+    "c1": false,
+    "c10": true,
+    "c2": true,
+    "c3": true,
+    "c4": true,
+    "c5": true,
+    "c6": true,
+    "c7": true,
+    "c8": false,
+    "c9": true
+   },
+   "met": 8,
+   "name": "X1_G_DF_EXT",
+   "vela_condition_match": false
+  },
+  {
+   "boots": 10,
+   "criteria": {
+    "c1": true,
+    "c10": true,
+    "c2": true,
+    "c3": true,
+    "c4": true,
+    "c5": true,
+    "c6": true,
+    "c7": true,
+    "c8": false,
+    "c9": true
+   },
+   "met": 9,
+   "name": "X2_PREFIX_STOP",
+   "vela_condition_match": false
+  },
+  {
+   "boots": 10,
+   "criteria": {
+    "c1": true,
+    "c10": true,
+    "c2": true,
+    "c3": true,
+    "c4": true,
+    "c5": true,
+    "c6": true,
+    "c7": true,
+    "c8": true,
+    "c9": true
+   },
+   "met": 10,
+   "name": "X3_SERIAL_MASK",
+   "vela_condition_match": true
+  },
+  {
+   "boots": 4,
+   "criteria": {
+    "c1": true,
+    "c10": true,
+    "c2": true,
+    "c3": false,
+    "c4": false,
+    "c5": true,
+    "c6": false,
+    "c7": false,
+    "c8": true,
+    "c9": true
+   },
+   "met": 6,
+   "name": "X4_QREAD_FINE",
+   "vela_condition_match": false
+  },
+  {
+   "boots": 4,
+   "criteria": {
+    "c1": false,
+    "c10": true,
+    "c2": true,
+    "c3": true,
+    "c4": true,
+    "c5": true,
+    "c6": true,
+    "c7": true,
+    "c8": false,
+    "c9": false
+   },
+   "met": 7,
+   "name": "X5_AD_REST_ISOLATED",
+   "vela_condition_match": false
+  }
+ ],
+ "contract": "evidence/stage6e0/contract.md",
+ "implementation": [
+  {
+   "item": "cms insert / PMU_MASK",
+   "state": "EXISTS"
+  },
+  {
+   "item": "KERNEL_WAIT encoding",
+   "state": "NEW_BOUNDED"
+  },
+  {
+   "item": "COP1 extract",
+   "state": "EXISTS"
+  },
+  {
+   "item": "COP1 replace + tflite reserialize",
+   "state": "NEW_BOUNDED"
+  },
+  {
+   "item": "DRWL pack, identity",
+   "state": "EXISTS"
+  },
+  {
+   "item": "runner firmware unchanged",
+   "state": "EXISTS"
+  },
+  {
+   "item": "PMU_MASK / KERNEL_WAIT(0) on driver runner",
+   "state": "NEEDS_BOARD_PRECHECK"
+  },
+  {
+   "item": "judge and contract",
+   "state": "NEW_BOUNDED"
+  }
+ ],
+ "instruments": [
+  {
+   "name": "NPU_OP_PMU_MASK (2B-0b)",
+   "per_op_time": false,
+   "source": "fi101_stage2_mask"
+  },
+  {
+   "name": "group mask windows (2B-2)",
+   "per_op_time": false,
+   "source": "fi101_stage2_groups"
+  },
+  {
+   "name": "3a window pilot (2B-3)",
+   "per_op_time": false,
+   "source": "fi101_stage2b3/pilot"
+  },
+  {
+   "name": "QREAD trace",
+   "per_op_time": false,
+   "source": "qread_pilot, qread_op_pilot"
+  },
+  {
+   "name": "PMCLUT overlap (2A-F2)",
+   "per_op_time": false,
+   "source": "fi101_stage2_probe"
+  }
+ ],
+ "models": {
+  "ad_medium_int8": {
+   "compute_attribution": "PARTIALLY_EXPLAINED",
+   "vela_terms": {
+    "n_ops": 13,
+    "non_mac_bound_share": 0.39405911223774337,
+    "sum_mac_cycles": 123031.0,
+    "sum_op_cycles": 148328.0
+   }
+  },
+  "kws_micronet_m": {
+   "compute_attribution": "PARTIALLY_EXPLAINED",
+   "vela_terms": {
+    "n_ops": 13,
+    "non_mac_bound_share": 1.0,
+    "sum_mac_cycles": 69011.0,
+    "sum_op_cycles": 102248.0
+   }
+  },
+  "mobilenet_v2_1.0_224_INT8": {
+   "compute_attribution": "NOT_IDENTIFIABLE",
+   "vela_terms": {
+    "n_ops": 54,
+    "non_mac_bound_share": 0.9637155904749423,
+    "sum_mac_cycles": 1269030.0,
+    "sum_op_cycles": 2342411.0
+   }
+  },
+  "rnnoise_INT8": {
+   "compute_attribution": "NOT_IDENTIFIABLE",
+   "vela_terms": {
+    "n_ops": 33,
+    "non_mac_bound_share": 0.38880549002787906,
+    "sum_mac_cycles": 28843.0,
+    "sum_op_cycles": 32641.0
+   }
+  },
+  "vww4_128_128_INT8": {
+   "compute_attribution": "NOT_IDENTIFIABLE",
+   "vela_terms": {
+    "n_ops": 61,
+    "non_mac_bound_share": 0.7344123025918685,
+    "sum_mac_cycles": 151038.0,
+    "sum_op_cycles": 222002.0
+   }
+  },
+  "wav2letter_pruned_int8": {
+   "compute_attribution": "PARTIALLY_EXPLAINED",
+   "vela_terms": {
+    "n_ops": 11,
+    "non_mac_bound_share": 1.0,
+    "sum_mac_cycles": 5158420.0,
+    "sum_op_cycles": 5750003.0
+   }
+  },
+  "yolo-fastest_192_face_v4": {
+   "compute_attribution": "NOT_IDENTIFIABLE",
+   "vela_terms": {
+    "n_ops": 88,
+    "non_mac_bound_share": 0.840754159933917,
+    "sum_mac_cycles": 362346.0,
+    "sum_op_cycles": 579877.0
+   }
+  }
+ },
+ "selected": {
+  "boots": 10,
+  "criteria": {
+   "c1": true,
+   "c10": true,
+   "c2": true,
+   "c3": true,
+   "c4": true,
+   "c5": true,
+   "c6": true,
+   "c7": true,
+   "c8": true,
+   "c9": true
+  },
+  "eligible": true,
+  "name": "X3_SERIAL_MASK",
+  "vela_condition_match": true
+ },
+ "stage6d": "evidence/stage6d/contract.md",
+ "verdicts": {
+  "execution_cost": "REQUIRES_CONTROLLED_EXPERIMENT",
+  "next_experiment": "READY_FOR_BOARD_REVIEW",
+  "vela_fidelity": "TESTABLE_MECHANISM_IDENTIFIED"
+ }
+}
