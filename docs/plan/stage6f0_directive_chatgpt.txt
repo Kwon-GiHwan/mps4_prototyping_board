@@ -1,0 +1,691 @@
+Stage 6F-0 공식 지시
+Seven-Model Compute Reconstruction, Runtime Explainability & Vela Fidelity Reassessment
+0. 공식 결정
+
+Stage 6E-X3 Amendment C 결과를 수용한다.
+
+계약: 9081e77
+
+Preflight: 532a9e3
+
+결과: 65c9b0e
+
+X3 누적 실행: 12 boot / 180 RUN
+
+최종 측정: VALID
+
+PMU_MASK: FUNCTIONAL
+
+Group Attribution: VALIDATED
+
+Compute: RESIDUAL_REDUCED
+
+Serialization: SCHEDULE_EFFECT_OBSERVED
+
+Vela Fidelity: INSUFFICIENT_EVIDENCE
+
+Stage 6E-X3는 공식 종료한다. 추가 X3 Amendment 및 재측정은 수행하지 않는다.
+
+다음 작업을 Stage 6F-0으로 확정한다.
+
+이번 단계는 보드 없는 정적 분석이다.
+
+목표는 X3에서 검증한 그룹 계측 결과를 반영하여 7개 MLEK 모델의 Compute Characterization 설명력을 재평가하고, 남은 연구 공백을 NPU_ACTIVE 및 Vela 비용 모델 중심으로 식별하는 것이다.
+
+신규 보드 측정, 펌웨어 수정, 신규 형상 컴파일 및 TA 변경은 승인하지 않는다.
+
+기존 연구는 계속 진행하며, Stage 6F-0을 연구 전체의 최종 종료 단계로 간주하지 않는다.
+
+1. 이번 단계의 핵심 연구 질문
+
+RQ-F1 — Compute Reconstruction
+
+현재 Hardware Characterization으로 실제 모델의 MAC_ACTIVE를 얼마나 설명할 수 있는가?
+
+RQ-F2 — Generalization
+
+독립 연산의 MAC 처리율과 비용 규칙이 실제 모델 내부에서도 유지되는 조건은 무엇인가?
+
+RQ-F3 — Execution Cost
+
+MAC_ACTIVE를 설명하더라도 NPU_ACTIVE가 설명되지 않는 이유는 무엇이며, 어떤 추가 하드웨어 정보가 필요한가?
+
+RQ-F4 — Vela Fidelity
+
+Vela의 Compute/SRAM/DRAM 비용 추정은 실제 실행 특성과 어디에서 불일치하며, 기존 반례들의 원인은 어느 수준까지 식별되었는가?
+
+이번 단계의 최종 목적은 특정 모델 하나의 잔차를 제거하는 것이 아니라, 하드웨어 처리 특성에서 모델 전체 실행시간과 Vela 예측까지 이어지는 설명 체계를 평가하는 것이다.
+
+2. Phase 0 — 기존 결과 및 비교 기준 확정
+
+다음 결과를 사용한다.
+
+Stage 1/3 모델별 PMU 및 AXI
+
+Stage 4 계열 Compute/Unit Characterization
+
+Stage 5 Memory Budget
+
+Stage 6B H1-UC
+
+Stage 6-M
+
+Stage 6C 및 6C-0
+
+Stage 6D
+
+Stage 6E-0
+
+Stage 6E-X3 Amendment A/B/C
+
+E2 계열 Vela 및 Memory/Placement 실험
+
+실제 7개 모델의 Vela 컴파일 산출물
+
+모든 자료에 다음 정보를 유지한다.
+
+Runner 종류
+
+이미지
+
+TA Profile 및 실제 지연 설정
+
+Placement
+
+Measurement window
+
+PMU Pass
+
+Vela 버전
+
+원시 자료 출처
+
+측정 유효성 및 안정성
+
+기존 Stage 6D의 모델 수준 판정은 원본 그대로 보존한다.
+
+새 분석은 별도 Stage 6F-0 결과로 생성한다.
+
+계약, 계산 규칙, Coverage 분류, 판정 기준을 결과 생성 전에 동결한다.
+
+3. Phase 1 — X3 검증 결과의 정확한 반영
+
+X3에서 검증한 다음 결과를 사용한다.
+
+KWS
+그룹	MAC_ACTIVE	NPU_ACTIVE
+G_V	11,700	26,117
+G_0	26,090	31,070
+G_R	18,660	47,805
+
+G_V는 H1-UC 예측과 정확히 일치
+
+G_0는 Stage 6C F5 독립 측정과 정확히 일치
+
+MAC_ACTIVE 그룹 합은 직렬 전체와 정확히 일치
+
+AD
+그룹	MAC_ACTIVE	NPU_ACTIVE
+G_V	60,480	79,780
+G_0	16,128	20,753
+G_R	17,064	64,766.5
+
+G_V는 H1-UC 예측과 정확히 일치
+
+기존 Compute Residual 33,192는 G_0 + G_R 실측 합과 일치
+
+AD op0에 적용했던 단순 16채널 패딩 기반 외삽값 36,864는 실제 그룹 MAC_ACTIVE 16,128을 크게 과대예측
+
+검증 범위를 엄격히 제한한다.
+
+MAC/DPU 그룹 귀속은 검증되었다.
+
+그룹의 NPU_ACTIVE는 직렬화된 실행의 비용이다.
+
+그룹별 SRAM/EXT/AXI 활동은 mem2mem DMA가 완료 경계를 넘을 수 있으므로 정확한 시간 귀속 근거가 아니다.
+
+KWS·AD에서 확인한 MAC 스케줄 불변성을 나머지 5개 모델에 자동 적용하지 않는다.
+
+AD 잔차가 그룹 수준에서 위치 확인되었다는 사실과, 개별 연산의 비용을 전향적으로 예측할 수 있다는 주장은 구분한다.
+
+KWS·AD의 Compute 설명력과 실제 원본 NPU_ACTIVE 설명력은 각각 별도로 판정한다.
+
+4. Phase 2 — 모델별 Compute Coverage 재평가
+
+기존 Stage 6-M 및 Stage 6D의 372개 NPU MAC 연산 분류를 사용한다.
+
+다음 일곱 모델 모두를 평가한다.
+
+KWS
+
+AD
+
+RNNoise
+
+VWW4
+
+YOLO
+
+MobileNetV2
+
+Wav2Letter
+
+연산군은 다음을 포함한다.
+
+1×1 DepthFirst
+
+PartKernel
+
+Depthwise
+
+FC
+
+1D Conv
+
+첫 Conv 및 Cin이 작은 특수 형상
+
+나머지 Conv
+
+기존 Characterization의 적용 수준을 재검토한다.
+
+직접 검증
+
+실제 모델 그룹 또는 동일 실행 조건의 독립 측정으로 확인된 비용.
+
+구성 일치
+
+Kernel, Traversal, Block, ublock 등이 일치하지만 메모리 조건 등의 차이가 남아 있는 경우.
+
+연산군 수준 근거
+
+일부 연산 특성만 유효하게 측정된 경우.
+
+외삽
+
+검증되지 않은 Shape 또는 Channel 조건에 기존 규칙을 적용한 경우.
+
+미지원·불안정
+
+유효한 계측 근거가 없거나 기존 결과가 UNSTABLE인 경우.
+
+Stage 6D의 Coverage 값을 보존하고 새 Coverage를 별도로 계산한다.
+
+중요하게 다음을 구분한다.
+
+N_MAC Coverage
+
+MAC_ACTIVE 예측 Coverage
+
+실제 검증된 MAC_ACTIVE 비중
+
+외삽 의존도
+
+NPU_ACTIVE 설명력
+
+Coverage가 높다는 이유만으로 모델 실행시간이 설명되었다고 판정하지 않는다.
+
+5. Phase 3 — 기존 외삽 규칙 감사
+
+다음 사항을 중점적으로 검토한다.
+
+Cin이 작은 첫 Conv
+
+KWS F5 및 AD G_0 결과를 이용하여 기존 패딩 가정의 적용 가능 범위를 재평가한다.
+
+Cin=1이라는 이유만으로 다른 Shape, Kernel 또는 Traversal에 동일한 처리율을 적용하지 않는다.
+
+Depthwise
+
+Stage 6C의 C8/C16 처리율과 기존 DW 계측을 비교한다.
+
+Stride, Channel alignment, OFM Shape 및 Kernel mapping의 차이를 명시한다.
+
+PartKernel
+
+F1·F4와 Stage 4의 처리율 차이를 정리한다.
+
+1×1 PartKernel 및 1×32 PartKernel을 단일 처리율로 일반화하지 않는다.
+
+FC
+
+기존 Stage 4의 유효 측정과 Stage 6C F3의 UNSTABLE 결과를 구분한다.
+
+불안정한 결과를 정량 검증값으로 승격하지 않는다.
+
+H1-UC
+
+기존 전향적 검증 범위를 유지한다.
+
+X3에서 확인한 KWS·AD의 정확 일치는 모델 내부 적용 가능성을 지지하는 근거로 추가한다.
+
+이를 근거로 나머지 모든 모델의 외삽 영역까지 검증 완료로 분류하지 않는다.
+
+이번 감사에서 외삽 규칙의 적용 범위를 조정하는 경우, 기존 규칙과 신규 규칙을 병렬 보존한다.
+
+실험 결과를 사후적으로 맞히기 위한 보정 계수는 만들지 않는다.
+
+6. Phase 4 — Compute Residual 재계산
+
+각 모델에서 다음 값을 분리한다.
+
+M_MAC = 실제 모델 MAC_ACTIVE
+
+P_MAC = 기존 Characterization 기반 MAC_ACTIVE 예측
+
+R_MAC = M_MAC - P_MAC
+
+다음 세 경우를 구분한다.
+
+독립적으로 검증된 예측
+
+기존 Characterization의 외삽 예측
+
+X3에서 측정한 직렬 그룹 실측
+
+직렬 그룹 실측값으로 기존 예측을 대체해 차이가 사라진 경우, 이를 측정을 통한 잔차 분해로 기록한다.
+
+해당 수치를 새로운 전향적 예측 성공으로 판정하지 않는다.
+
+특히 AD에 대해 다음을 분리한다.
+
+G_V의 H1-UC 예측 성공
+
+G_0의 기존 외삽 실패
+
+G_R의 그룹 수준 실측 비용
+
+나머지 개별 연산 비용의 미분리 여부
+
+원본 비직렬 실행에서 MAC_ACTIVE 스케줄 불변성의 검증 범위
+
+결과적으로 Compute Characterization이 설명한 범위를 모델별로 다시 판정한다.
+
+7. Phase 5 — NPU_ACTIVE 설명력 평가
+
+Compute Activity를 설명하는 것과 전체 실행시간을 설명하는 것은 별개다.
+
+KWS·AD의 원본과 직렬 실행을 비교한다.
+
+모델	원본 NPU_ACTIVE	직렬 NPU_ACTIVE
+KWS	91,444.5	105,074.5
+AD	146,136.5	164,292.5
+
+직렬 실행에서는 KERNEL_WAIT가 삽입되었으므로 원본과 다른 스케줄이다.
+
+다음을 구분하여 분석한다.
+
+원본 NPU_ACTIVE
+
+직렬 NPU_ACTIVE
+
+직렬 그룹 NPU_ACTIVE 합
+
+MAC/DPU/AO/WD 활동
+
+SRAM/EXT 트래픽
+
+AXI 요청 및 포트 활동
+
+직렬화 명령 및 완료 장벽의 잠재적 비용
+
+비율은 반드시 분모와 계산식을 명시한다.
+
+그룹별 NPU_ACTIVE 중앙값의 합이 직렬 전체 NPU_ACTIVE 중앙값과 정확히 같아야 한다고 가정하지 않는다. 반복 RUN의 변동, 측정창 및 경계 비용을 구분한다.
+
+원본과 직렬 실행시간의 차이를 순수한 Kernel overlap 이득으로 해석하지 않는다.
+
+다음 질문에 답한다.
+
+MAC_ACTIVE가 같은데 NPU_ACTIVE가 달라지는 조건은 무엇인가?
+
+AO/WD 및 메모리 전송량은 함께 변화하는가?
+
+차이를 설명하는 데 필요한 추가 하드웨어 정보는 무엇인가?
+
+기존 PMU만으로 검증할 수 있는 범위는 어디까지인가?
+
+현재 확보한 데이터에서 실제 실행시간 예측기를 만들 수 있는가?
+
+유효한 예측식을 도출할 근거가 부족하면 새로운 모델을 억지로 적합하지 않는다.
+
+NPU_ACTIVE에 대한 설명 가능 하한, 관측적 연관성, 미해결 비용을 구분한다.
+
+8. Phase 6 — Vela Fidelity 정정 및 재평가
+
+이번 단계에서는 기존 Vela 비용 항목 혼용 문제를 정리한다.
+
+cycles_npu
+
+기존 Stage 6-M, 6D, 6E-0에서 모델 비교에 사용된 Vela 비용 항목.
+
+cycles_total
+
+Vela의 연산별 비용 추정 합계로, X3에서 공식 비교 기준으로 사용한 항목.
+
+두 값을 혼용하지 않는다.
+
+기존 결과와 판정은 수정하지 않는다.
+
+새 분석에서는 각 모델에 대해 가능하면 다음 항목을 별도로 제시한다.
+
+Board NPU_ACTIVE
+
+Vela cycles_npu
+
+Vela cycles_total
+
+Board/cycles_npu
+
+Board/cycles_total
+
+절대 예측 오차
+
+상대 예측 오차
+
+원본 모델의 실행 조건과 Vela 산출물의 대응 관계를 확인한다.
+
+공식 Compiler Fidelity 비교에는 검증된 cycles_total을 사용하고, 기존 cycles_npu 비율은 역사적 비교값으로 보존한다.
+
+다음 현상을 분석한다.
+
+연산 비용
+
+Compute/SRAM/DRAM 중 어떤 항이 Vela 예상 비용을 결정하는가?
+
+메모리 비용
+
+Vela의 SRAM/DRAM 접근 비용은 실제 트래픽 및 요청 구조와 어느 수준에서 일치하는가?
+
+실행 스케줄
+
+Vela의 비용 합산 방식과 실제 하드웨어 실행 사이에 어떤 차이가 있는가?
+
+오차 방향
+
+어떤 연산군에서 과대예측 또는 과소예측이 발생하는가?
+
+모델 전체
+
+서로 다른 연산군의 오차가 상쇄될 가능성이 있는가?
+
+특히 X3에서 확인한 다음 결과를 유지한다.
+
+KWS는 직렬화 후 Vela cycles_total과의 일치도가 개선됨
+
+AD는 직렬화 후 일치도가 악화됨
+
+직렬화가 Vela 예측 정확도를 일관되게 개선한다는 가설은 성립하지 않음
+
+연산별 비교에서는 기존 F2 Depthwise의 예측 방향 반대 사례를 중요한 반례로 보존한다.
+
+다만 F2 한 사례만으로 Vela 전체 비용 모델의 원인을 확정하지 않는다.
+
+9. Phase 7 — 7개 모델의 설명력 판정
+
+모델별로 다음 네 축을 독립 평가한다.
+
+Compute Coverage
+
+해당 모델의 연산 구성에 대해 어느 정도의 유효한 Characterization 근거가 있는가?
+
+Compute Explanation
+
+실제 모델 MAC_ACTIVE를 얼마나 정확하게 예측하거나 검증된 그룹 계측으로 설명할 수 있는가?
+
+Runtime Explanation
+
+실제 NPU_ACTIVE를 정량적으로 설명할 수 있는가?
+
+Compiler Fidelity
+
+Vela 예상 비용의 오차 방향과 원인을 어느 수준까지 설명할 수 있는가?
+
+KWS·AD의 X3 검증 결과는 다른 모델과 구별하여 판정한다.
+
+RNNoise·VWW4·YOLO·MobileNetV2·Wav2Letter에 동일한 그룹 귀속 검증이 수행되었다고 가정하지 않는다.
+
+모델별로 기존 Stage 6D 결과와의 변화를 명시한다.
+
+특히 다음을 식별한다.
+
+Coverage가 증가했지만 설명력은 증가하지 않은 경우
+
+Compute 비용을 설명했지만 Runtime은 설명하지 못한 경우
+
+Vela 오차 방향을 정성적으로만 설명하는 경우
+
+직접 검증된 모델 내부 실행 특성이 존재하는 경우
+
+추가 하드웨어 계측이 반드시 필요한 경우
+
+최종 모델별 판정에는 근거 수준과 사용한 측정 조건을 명시한다.
+
+10. Phase 8 — 후속 연구의 단일 우선순위 결정
+
+Stage 6F-0 완료 후 연구의 남은 공백을 다시 평가한다.
+
+평가 대상은 실제 연구에서 확인된 미해결 현상 전반이다.
+
+다음 기준을 사용한다.
+
+새로운 Hardware Characterization 결과를 얻을 수 있는가?
+
+기존 7개 모델의 설명력에 얼마나 기여하는가?
+
+Vela 비용 모델의 오차 원인을 실제로 구분할 수 있는가?
+
+이미 측정한 현상을 반복하는 실험은 아닌가?
+
+독립 변수를 통제할 수 있는가?
+
+실제 FI101 보드에서 필요한 지표를 측정할 수 있는가?
+
+기존 X3의 그룹 귀속 검증 성과를 재사용할 수 있는가?
+
+특정 모델·연산군에만 지나치게 한정되지 않는가?
+
+보드 비용 대비 새로운 정보가 충분한가?
+
+실험 종료 후 전체 연구에 재적용할 수 있는가?
+
+후속 연구 항목을 하나만 선정하여 권고한다.
+
+단순히 미검증 MAC Coverage가 가장 크다는 이유만으로 다음 실험을 선정하지 않는다.
+
+마찬가지로 Vela의 예측 오차가 가장 크다는 이유만으로 특정 사례를 자동 선정하지 않는다.
+
+새로운 하드웨어 처리 특성, 원인 식별력, 실제 모델 설명력 및 연구의 균형을 함께 고려한다.
+
+후속 실험을 권고할 때는 다음 사항을 제시한다.
+
+연구 질문
+
+필요한 이유
+
+기존 실험과의 차별점
+
+통제 변수
+
+주요 PMU 및 AXI 지표
+
+Vela 예측 비교 방법
+
+예상 보드 예산
+
+실패·성공 판정 기준
+
+종료 조건
+
+모델 수준 적용 범위
+
+이번 단계에서는 해당 후속 실험을 실행하지 않는다.
+
+11. 결과 검증 및 산출물
+
+다음 산출물을 생성한다.
+
+Stage 6F-0 분석 계약과 판정 규칙
+
+X3 그룹 계측 검증 결과 반영표
+
+모델별 Compute Characterization Coverage
+
+모델별 실제·예측 MAC_ACTIVE 비교
+
+외삽 규칙의 적용 가능 범위 및 반례
+
+KWS·AD의 그룹별 Compute Residual 분석
+
+7개 모델의 Unit 활동 비교
+
+모델별 SRAM/EXT 및 AXI 분석
+
+원본·직렬 실행의 NPU_ACTIVE 비교
+
+Vela cycles_npu/cycles_total 구분 및 정정 비교표
+
+모델별 Hardware–Compiler 설명력 판정
+
+기존 Stage 6D 대비 변경 사항
+
+미해결 Hardware/Compiler 연구 공백
+
+후속 단일 실험 권고
+
+연구 방향 및 사용자 결정 이력
+
+모든 수치는 원시 자료 또는 기존 동결 결과와 연결한다.
+
+계약·분류·판정은 결과 계산 전에 동결한다.
+
+기존 결과는 불변으로 유지한다.
+
+분석 재현성을 확인한다.
+
+테스트와 Mutation을 수행한다.
+
+로컬 커밋하되 push하지 않는다.
+
+12. Research Direction & Guardrails
+
+본 연구의 장기 목표는 Ethos-U85 Hardware–Compiler Performance Analysis다.
+
+다음 네 축을 균형 있게 유지한다.
+
+Compute / Unit
+
+MAC·DPU·AO·WD, PartKernel·Depthwise·FC, Tensor shape와 컴파일 Mapping의 관계.
+
+Memory / Pipeline / AXI
+
+입력·가중치·출력 데이터 공급, 재사용, 요청·Burst·포트, 실행 중첩과 NPU_ACTIVE의 관계.
+
+Vela Compiler Fidelity
+
+Compute/SRAM/DRAM 비용 모델의 정확성, 과대·과소예측, 성능 변화의 방향과 크기.
+
+End-to-end Model Explainability
+
+7개 MLEK 모델의 실제 실행시간과 효율 차이를 설명하는 능력.
+
+이번 Stage 6F-0은 X3를 확장하는 단계가 아니다.
+
+이미 확보한 그룹 귀속 결과와 연산 Characterization을 전체 모델 및 Vela Fidelity 관점에서 재평가하는 단계다.
+
+다음 원칙을 유지한다.
+
+H1-UC, SRAM 배치, PMU_MASK 또는 AD 잔차 한 가지에 연구를 집중하지 않는다.
+
+이미 검증한 결과를 반복 측정하지 않는다.
+
+예측 가능한 성능 변화만 확인하는 실험을 우선하지 않는다.
+
+새로운 하드웨어 처리 특성과 Vela 모델의 불일치를 규명하는 실험은 계속한다.
+
+검증된 결과, 사후 관측, 외삽 가설을 구분한다.
+
+실제 모델의 실행시간 설명력 개선 여부를 지속적으로 평가한다.
+
+각 실험의 종료 기준과 전체 연구로 복귀하는 경로를 명시한다.
+
+한 가지 현상의 세부 분석 때문에 다른 연구 축을 장기간 중단하지 않는다.
+
+Stage 6F-0은 연구의 종결이 아니라, 다음 실험의 연구적 가치를 판단하기 위한 통합 분석 단계다.
+
+13. User Request & Decision Log
+
+docs/plan/research_direction_and_decision_log.md를 갱신한다.
+
+이번 결정을 누적한다.
+
+Stage 6E-X3 Amendment C 결과 수용
+
+X3 공식 종료
+
+X3 추가 Amendment 및 재측정 금지
+
+PMU_MASK 기능 검증 성공
+
+Kernel Unit 그룹 귀속 VALIDATED
+
+Mem2mem DMA 및 AXI 그룹 시간 귀속 한계 유지
+
+KWS·AD MAC_ACTIVE 그룹 분해 성공
+
+직렬 그룹 비용과 원본 실행 비용 구분
+
+AD 잔차 33,192의 그룹 수준 위치 확인
+
+Vela Fidelity는 여전히 부분적·미해결
+
+cycles_npu와 cycles_total 구분 유지
+
+Stage 6F-0 정적 분석 확정
+
+실제 7개 모델의 Compute/Runtime 설명력 재평가
+
+Hardware Characterization과 Compiler Fidelity 연구 지속
+
+후속 실험은 하나의 결정으로 권고
+
+사용자에게 선택지 또는 A/B 결정을 요구하지 않음
+
+기존 결정 이력은 삭제하거나 덮어쓰지 않는다.
+
+14. 최종 보고
+
+다음 순서로 보고한다.
+
+계약·결과·결정 로그 커밋
+
+기존 데이터 및 X3 근거의 검증 수준
+
+7개 모델의 Compute Coverage 변화
+
+기존 외삽 규칙의 유효 범위와 반례
+
+KWS·AD의 MAC_ACTIVE 설명력
+
+모델별 MAC/DPU/AO/WD 활동
+
+SRAM/EXT 및 AXI 관측
+
+원본·직렬 NPU_ACTIVE와 남은 설명 공백
+
+Vela cycles_npu/cycles_total 정정 비교
+
+Vela 오차의 검증된 원인 및 미해결 현상
+
+Stage 6D 대비 모델별 설명력 변화
+
+후속 Hardware Characterization 필요성
+
+다음 단일 실험 권고 및 보드 예산
+
+테스트·Mutation·원본 불변성
+
+Research Direction 및 User Decision Log
+
+최종 판정
+
+최종 지시: Stage 6F-0을 보드 없이 수행하라. X3에서 검증된 Kernel Unit 그룹 귀속 결과를 반영해 7개 모델의 Compute 설명력을 재평가하고, NPU_ACTIVE 및 Vela cycles_total 예측에서 남은 설명 공백을 정리하라. 그 결과를 바탕으로 다음 Hardware–Compiler 실험 하나를 선정해 보고하되, 승인 전까지 보드는 실행하지 않는다.
