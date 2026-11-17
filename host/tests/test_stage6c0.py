@@ -206,6 +206,8 @@ class Loaders(unittest.TestCase):
         self.assertEqual(by["e2eb:B0:L1000"]["npu_active"], 159122.5)
         self.assertEqual(by["e2d:W1-P1"]["npu_active"], 99233.5)
         self.assertEqual(len(by), len(rows))                              # keys unique
+        self.assertEqual(sum(1 for x in rows if x["stage"] == "stage4wd"), 8)       # erratum 2: 4WD's own boots
+        self.assertIsNotNone(by["stage4wd:s4wd_w_sparse90"]["wd_active"])
 
     def test_pairs_resolve(self):
         cmp = C.compare(C.integrate())

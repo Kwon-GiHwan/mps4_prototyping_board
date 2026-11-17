@@ -1,0 +1,24 @@
+{
+ "boots": 9,
+ "contract": "evidence/stage6c0/contract.md",
+ "pairs": 21,
+ "rows": 95,
+ "selected": [
+  "F1",
+  "F2",
+  "F3",
+  "F4",
+  "F5"
+ ],
+ "shapes": [
+  "s6c_f1_rep",
+  "s6c_f1_cin16",
+  "s6c_f2_rep",
+  "s6c_f2_c16",
+  "s6c_f3_rep",
+  "s6c_f3_cin16",
+  "s6c_f4_rep",
+  "s6c_f5_rep"
+ ],
+ "vela_rows": 57
+}

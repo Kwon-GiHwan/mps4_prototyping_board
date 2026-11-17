@@ -21,7 +21,7 @@ SOURCES = dict(
     stage4=R / "fi101_stage4/stage4_summary.csv", stage4c2=R / "fi101_stage4c2/stage4c2_table.csv",
     stage4k=R / "fi101_stage4k/stage4k_table.csv", stage4k_static=R / "fi101_stage4k/stage4k_static.csv",
     stage4ao=R / "fi101_stage4ao/summary.json", stage4aoe=R / "fi101_stage4aoe/summary.json",
-    stage4wd=R / "fi101_stage4wd/wd_inventory.csv", placement=R / "stage4_placement/stage4p_summary.json",
+    stage4wd=R / "fi101_stage4wd/summary.json", placement=R / "stage4_placement/stage4p_summary.json",
     e2a=R / "fi101_stage6b/stage6be2a/vela_board_table.csv", e2d=R / "fi101_stage6b/stage6be2ea/trackB/e2d_table.csv",
     e2eb=R / "fi101_stage6b/stage6be2eb/stage6be2eb_summary.json", e2ed=R / "fi101_stage6b/stage6be2ed/stage6be2ed_summary.json",
     families=R / "fi101_stage6m/mac_family_breakdown.csv", ops=R / "fi101_stage6m/operator_mapping.csv",
@@ -165,16 +165,10 @@ def load_operators() -> list[dict]:
         out.append(passes_row(r.get("metrics") or {}, source="fi101_stage4aoe/summary.json", stage="stage4aoe", item=c,
                               level="operator", family="elementwise", runner="driver", image="70090f1", ta=1, latency=500,
                               placement="ddr", status=r.get("verdict")))
-    for r in _csv(SOURCES["stage4wd"]):
-        if r["stage"] != "stage4wd":
-            continue
-        out.append(row(source="fi101_stage4wd/wd_inventory.csv", stage="stage4wd", item=r["config"], level="operator",
-                       family="conv1x1 PartKernel", runner="driver", image="70090f1", ta=1, latency=500, placement=r["placement"],
-                       n_mac=_f(r["n_mac"]), npu_active=_f(r["npu_active"]), mac_active=_f(r["mac_active"]), ao_active=_f(r["ao_active"]),
-                       wd_active=_f(r["wd_active"]), wd_stalled=_f(r["wd_stalled"]), sram_rd_bytes=beats(r["sram_rd"]),
-                       sram_wr_bytes=beats(r["sram_wr"]), ext_rd_bytes=beats(r["ext_rd"]), ext_wr_bytes=beats(r["ext_wr"]),
-                       traversal=r["traversal"], ofm_block=r["ofm_block"], kernels=r["n_kernels"],
-                       status="VALID" if r["all_valid"] == "True" else "INVALID"))
+    for c, r in json.loads(SOURCES["stage4wd"].read_text())["configs"].items():   # erratum: 4WD's own boots 402-409
+        out.append(passes_row(r.get("metrics") or {}, source="fi101_stage4wd/summary.json", stage="stage4wd", item=c,
+                              level="operator", family="conv1x1 PartKernel", runner="driver", image="70090f1", ta=1, latency=500,
+                              placement="ddr", status=r.get("verdict")))
     return out
 
 

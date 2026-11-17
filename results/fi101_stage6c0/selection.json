@@ -1,0 +1,273 @@
+{
+ "boots": 9,
+ "dropped_for_budget": [],
+ "families": {
+  "F1": {
+   "c1_low_evidence": true,
+   "c2_importance": true,
+   "c3_new": true,
+   "c4_controllable": true,
+   "c5_analyzable": true,
+   "control": "cin16",
+   "control_check": {
+    "c5": {
+     "arena_size": true,
+     "fast_size": true,
+     "model_region": true,
+     "no_cpu": true,
+     "packed": true,
+     "single_npu_op": true,
+     "vela_values": true
+    },
+    "c5_ok": true,
+    "mapping": null,
+    "mapping_vs_rep": "MAPPING_SAME",
+    "traversal_same": true
+   },
+   "max_share": 0.3426753006475486,
+   "rep": {
+    "cin": "4",
+    "cout": "24",
+    "kernel": "1x1",
+    "model": "yolo-fastest_192_face_v4",
+    "n_mac_tflite": "884736",
+    "npu_ofm_hwc": "96x96x24",
+    "ofm_block": "8x32x32",
+    "ofm_ublock": "2x2x32",
+    "stride": "1x1",
+    "tflite_op_index": "9",
+    "traversal": "PartKernel"
+   },
+   "rep_check": {
+    "c5": {
+     "arena_size": true,
+     "fast_size": true,
+     "model_region": true,
+     "no_cpu": true,
+     "packed": true,
+     "single_npu_op": true,
+     "vela_values": true
+    },
+    "c5_ok": true,
+    "mapping": "MAPPING_SAME"
+   },
+   "selected": true,
+   "shares": {
+    "mobilenet_v2_1.0_224_INT8": 0.20552478946161157,
+    "vww4_128_128_INT8": 0.23189666893269884,
+    "yolo-fastest_192_face_v4": 0.3426753006475486
+   }
+  },
+  "F2": {
+   "c1_low_evidence": true,
+   "c2_importance": true,
+   "c3_new": true,
+   "c4_controllable": true,
+   "c5_analyzable": true,
+   "control": "c16",
+   "control_check": {
+    "c5": {
+     "arena_size": true,
+     "fast_size": true,
+     "model_region": true,
+     "no_cpu": true,
+     "packed": true,
+     "single_npu_op": true,
+     "vela_values": true
+    },
+    "c5_ok": true,
+    "mapping": null,
+    "mapping_vs_rep": "MAPPING_SAME",
+    "traversal_same": true
+   },
+   "max_share": 0.2140018501387604,
+   "rep": {
+    "cin": "8",
+    "cout": "8",
+    "kernel": "3x3",
+    "model": "yolo-fastest_192_face_v4",
+    "n_mac_tflite": "663552",
+    "npu_ofm_hwc": "96x96x8",
+    "ofm_block": "30x24x16",
+    "ofm_ublock": "2x4x16",
+    "stride": "1x1",
+    "tflite_op_index": "3",
+    "traversal": "Depthwise"
+   },
+   "rep_check": {
+    "c5": {
+     "arena_size": true,
+     "fast_size": true,
+     "model_region": true,
+     "no_cpu": true,
+     "packed": true,
+     "single_npu_op": true,
+     "vela_values": true
+    },
+    "c5_ok": true,
+    "mapping": "MAPPING_SAME"
+   },
+   "selected": true,
+   "shares": {
+    "ad_medium_int8": 0.03068158196614032,
+    "kws_micronet_m": 0.04859751180739546,
+    "mobilenet_v2_1.0_224_INT8": 0.06887666189039195,
+    "vww4_128_128_INT8": 0.08773623385452073,
+    "yolo-fastest_192_face_v4": 0.2140018501387604
+   }
+  },
+  "F3": {
+   "c1_low_evidence": true,
+   "c2_importance": true,
+   "c3_new": true,
+   "c4_controllable": true,
+   "c5_analyzable": true,
+   "control": "cin16",
+   "control_check": {
+    "c5": {
+     "arena_size": true,
+     "fast_size": true,
+     "model_region": true,
+     "no_cpu": true,
+     "packed": true,
+     "single_npu_op": true,
+     "vela_values": true
+    },
+    "c5_ok": true,
+    "mapping": null,
+    "mapping_vs_rep": "MAPPING_SAME",
+    "traversal_same": true
+   },
+   "max_share": 1.0,
+   "rep": {
+    "cin": "114",
+    "cout": "288",
+    "kernel": "1x1",
+    "model": "rnnoise_INT8",
+    "n_mac_tflite": "32832",
+    "npu_ofm_hwc": "1x1x288",
+    "ofm_block": "2x2x288",
+    "ofm_ublock": "2x2x32",
+    "stride": "1x1",
+    "tflite_op_index": "46",
+    "traversal": "DepthFirst"
+   },
+   "rep_check": {
+    "c5": {
+     "arena_size": true,
+     "fast_size": true,
+     "model_region": true,
+     "no_cpu": true,
+     "packed": true,
+     "single_npu_op": true,
+     "vela_values": true
+    },
+    "c5_ok": true,
+    "mapping": "MAPPING_SAME"
+   },
+   "selected": true,
+   "shares": {
+    "rnnoise_INT8": 1.0
+   }
+  },
+  "F4": {
+   "c1_low_evidence": true,
+   "c2_importance": true,
+   "c3_new": true,
+   "c4_controllable": true,
+   "c5_analyzable": true,
+   "control": null,
+   "max_share": 0.8279670178264833,
+   "rep": {
+    "cin": "250",
+    "cout": "2000",
+    "kernel": "1x32",
+    "model": "wav2letter_pruned_int8",
+    "n_mac_tflite": "2368000000",
+    "npu_ofm_hwc": "1x148x2000",
+    "ofm_block": "1x84x96",
+    "ofm_ublock": "1x4x32",
+    "stride": "1x1",
+    "tflite_op_index": "17",
+    "traversal": "PartKernel"
+   },
+   "rep_check": {
+    "c5": {
+     "arena_size": true,
+     "fast_size": true,
+     "model_region": true,
+     "no_cpu": true,
+     "packed": true,
+     "single_npu_op": true,
+     "vela_values": true
+    },
+    "c5_ok": true,
+    "mapping": "MAPPING_SAME"
+   },
+   "selected": true,
+   "shares": {
+    "wav2letter_pruned_int8": 0.8279670178264833
+   }
+  },
+  "F5": {
+   "c1_low_evidence": true,
+   "c2_importance": true,
+   "c3_new": true,
+   "c4_controllable": true,
+   "c5_analyzable": true,
+   "control": null,
+   "max_share": 0.17639096878239835,
+   "rep": {
+    "cin": "1",
+    "cout": "140",
+    "kernel": "10x4",
+    "model": "kws_micronet_m",
+    "n_mac_tflite": "2744000",
+    "npu_ofm_hwc": "49x10x140",
+    "ofm_block": "24x10x32",
+    "ofm_ublock": "2x2x32",
+    "stride": "1x1",
+    "tflite_op_index": "0",
+    "traversal": "PartKernel"
+   },
+   "rep_check": {
+    "c5": {
+     "arena_size": true,
+     "fast_size": true,
+     "model_region": true,
+     "no_cpu": true,
+     "packed": true,
+     "single_npu_op": true,
+     "vela_values": true
+    },
+    "c5_ok": true,
+    "mapping": "MAPPING_SAME"
+   },
+   "selected": true,
+   "shares": {
+    "ad_medium_int8": 0.028381156218001524,
+    "kws_micronet_m": 0.17639096878239835,
+    "mobilenet_v2_1.0_224_INT8": 0.0360335669835293,
+    "vww4_128_128_INT8": 0.01566281441196465,
+    "yolo-fastest_192_face_v4": 0.017050878815911195
+   }
+  }
+ },
+ "selected": [
+  "F1",
+  "F2",
+  "F3",
+  "F4",
+  "F5"
+ ],
+ "shapes": [
+  "s6c_f1_rep",
+  "s6c_f1_cin16",
+  "s6c_f2_rep",
+  "s6c_f2_c16",
+  "s6c_f3_rep",
+  "s6c_f3_cin16",
+  "s6c_f4_rep",
+  "s6c_f5_rep"
+ ]
+}
