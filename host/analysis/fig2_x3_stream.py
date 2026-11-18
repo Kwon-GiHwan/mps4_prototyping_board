@@ -77,7 +77,7 @@ def x_positions(cmds: list[dict]) -> list[float]:
 
 
 GNAME = {"G_V": "1×1 Conv (예측 검증 대상)", "G_0": "첫 Conv", "G_R": "나머지 연산"}
-SEQ_ROWS = [("B0", "① 원본 실행\n전체 계수"), ("B1", "② 직렬 실행\n전체 계수"), ("B2", "③ 직렬 실행\n1×1 Conv만 계수"),
+SEQ_ROWS = [("B0", "① 원본 실행\n(완료 대기 없음)\n전체 계수"), ("B1", "② 직렬 실행\n(커널마다 완료 대기)\n전체 계수"), ("B2", "③ 직렬 실행\n1×1 Conv만 계수"),
             ("B3", "④ 직렬 실행\n첫 Conv만 계수"), ("B4", "⑤ 직렬 실행\n나머지 연산만 계수")]
 OPS6D = REPO / "results/fi101_stage6d/operator_levels.csv"
 
@@ -120,7 +120,9 @@ def draw(model: str, tag: str, out: pathlib.Path) -> list[dict]:
         split.setdefault(ktf[k], []).append(k)
     n = len(order)
     bw, gap = 1.0, 0.28
-    fig, ax = plt.subplots(figsize=(13.5, 6.3))
+    x3 = __import__("json").loads((REPO / "results/fi101_stage6ex3/stage6ex3_summary.json").read_text())["results"]
+    npu = {c: x3[f"x3_{tag}_{c}"]["stats"]["1"]["35"] for c, _ in SEQ_ROWS}      # (median, range), pass A
+    fig, (ax, bx) = plt.subplots(1, 2, figsize=(15.5, 6.6), gridspec_kw=dict(width_ratios=[4.8, 1.1]))
     ax.grid(False)
     log = []
     for r, (cond, desc) in enumerate(SEQ_ROWS):
@@ -153,6 +155,26 @@ def draw(model: str, tag: str, out: pathlib.Path) -> list[dict]:
                 color=F1.INK)
     total = n * bw + (n + 1) * gap
     ax.set_xlim(-0.1, total + 0.1)
+    # measured NPU_ACTIVE per run (right panel, same rows)
+    vmax = max(v[0] for v in npu.values())
+    for r, (cond, _) in enumerate(SEQ_ROWS):
+        y = r * 1.45
+        v, rg = npu[cond]
+        bx.barh(y, v, height=0.62, color="#8d8c86" if cond in ("B0", "B1") else "#c9c8c2", edgecolor=F1.SURF)
+        txt = f"{v:,.1f}" if v % 1 else f"{v:,.0f}"
+        if cond == "B1":
+            d = v - npu["B0"][0]
+            txt += f"\n(①보다 +{d:,.0f}, +{d / npu['B0'][0]:.1%})"
+        bx.text(v + vmax * 0.03, y, txt, va="center", ha="left", fontsize=7.5, color=F1.INK)
+    bx.set_ylim(len(SEQ_ROWS) * 1.45 - 0.75, -0.75)
+    bx.set_xlim(0, vmax * 2.45)
+    bx.set_yticks([])
+    bx.set_xticks([])
+    bx.grid(False)
+    for sp in ("left", "bottom"):
+        bx.spines[sp].set_visible(False)
+    bx.text(0, -0.68, "측정 NPU_ACTIVE (cycles)\n③–⑤는 직렬 조건의 그룹 구간 값", ha="left", va="bottom", fontsize=7.5,
+            color=F1.INK2)
     ax.set_ylim(len(SEQ_ROWS) * 1.45 - 0.75, -0.75)
     ax.set_xticks([])
     ax.set_yticks([])
@@ -172,11 +194,12 @@ def draw(model: str, tag: str, out: pathlib.Path) -> list[dict]:
              ha="left", va="top", fontsize=11, color=F1.INK)
     fig.text(0.01, 0.015,
              "각 행은 같은 모델을 따로 실행한 별도 측정이다(동시에 도는 병렬 경로가 아니다). ③–⑤는 ②와 같은 명령 스트림이며 PMU를 켜는 커널만 다르다. "
-             "①은 완료 대기가 없어 하드웨어가 앞뒤 커널을 겹쳐 실행할 수 있으나, 그림은 발행 순서만 표시한다.\n"
+             "①은 완료 대기가 없어 하드웨어가 다음 커널의 준비를 앞 커널 실행과 겹칠 수 있다. 겹침 자체는 측정하지 않았고, "
+             "①·② 차이는 오른쪽의 총 NPU_ACTIVE로만 보인다(이 증가에는 완료 대기 자체의 비용도 섞여 있다).\n"
              "각주: 완료 대기는 커널 연산의 완료만 보장하며 메모리 간 DMA 전송의 완료는 보장하지 않는다. 따라서 그룹별 메모리 트래픽은 "
              "시간 귀속에 쓰지 않는다. 조건: TA profile 1 (EXT RLATENCY 500), placement 0.",
              fontsize=7, color=F1.INK2)
-    fig.subplots_adjust(left=0.125, right=0.995, top=0.85, bottom=0.11)
+    fig.subplots_adjust(left=0.11, right=0.995, top=0.85, bottom=0.12, wspace=0.02)
     fig.savefig(out / f"fig2{'a' if tag == 'kws' else 'b'}_{tag}_command_stream.png", dpi=200)
     plt.close(fig)
     return log
