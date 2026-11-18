@@ -6,7 +6,7 @@ Inputs: results/fi101_stage6f0/stage6f0_summary.json (groups), results/fi101_sta
 prediction and level), results/fi101_stage6m/h1uc_operators.csv (isolated reference shape of each H1-UC operator),
 results/fi101_stage6c/stage6c_summary.json (F5), results/fi101_stage6ex3/stage6ex3_summary.json (group boots).
 
-  python3 fig2_inmodel_check.py <out dir>        (needs matplotlib)
+  python3 fig_add_prediction_check.py <out dir>        (needs matplotlib)
 """
 from __future__ import annotations
 
@@ -94,11 +94,11 @@ def figure(s6f, out: pathlib.Path) -> None:
     ax.set_ylabel("MAC_ACTIVE (cycles)")
     ax.yaxis.set_major_formatter(F1.matplotlib.ticker.StrMethodFormatter("{x:,.0f}"))
     ax.legend(frameon=False, loc="upper left", fontsize=9)
-    ax.set_title("그림 2. 기존 예측과 모델 내부 그룹 MAC_ACTIVE (X3)", loc="left", fontsize=11, color=F1.INK)
+    ax.set_title("추가 그림. 기존 예측과 모델 내부 그룹 MAC_ACTIVE (X3)", loc="left", fontsize=11, color=F1.INK)
     fig.text(0.01, 0.01, "실측: " + X3_COND + ".\n예측값은 X3 측정 전에 고정된 값(H1-UC: 6B 단독 형상 검증, F5: 6C 단독 측정). 빗금 = 검증 범위 밖 외삽(반례).",
              fontsize=7, color=F1.INK2)
     fig.tight_layout(rect=(0, 0.07, 1, 1))
-    fig.savefig(out / "fig2_prediction_vs_inmodel.png", dpi=200)
+    fig.savefig(out / "add_prediction_vs_inmodel.png", dpi=200)
     plt.close(fig)
 
 
@@ -110,7 +110,7 @@ def main(argv: list[str]) -> int:
     out.mkdir(parents=True, exist_ok=True)
     s6f, ops, h1, f5 = load()
     rows = raw_rows(s6f, ops, h1, f5)
-    with (out / "fig2_raw_data.csv").open("w", newline="") as f:
+    with (out / "add_prediction_raw_data.csv").open("w", newline="") as f:
         wr = csv.DictWriter(f, fieldnames=list(rows[0]), lineterminator="\n")
         wr.writeheader()
         wr.writerows(rows)
