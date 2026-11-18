@@ -1,0 +1,88 @@
+{
+ "mlek_ini_sha256": "a48fd60467db94e574978f6f891c08771e927bdea632ef0cc78435eefb6e68dd",
+ "models": {
+  "ad_medium_int8": {
+   "L1000": {
+    "cms_sha256": "093dcda969be5b125e45b1dd04166c7eabe7bb1b70dd78f37934d1261bb163d1",
+    "const_sha256": "9cc4410e512ba602b36f890f588f45546a2f09153a58010d42b7f5d6d3a891bf",
+    "per_layer": "ad_medium_int8_per-layer.csv",
+    "summary": "ad_medium_int8_summary_XLAT_Dram_read_latency_1000.csv",
+    "system_config": "XLAT_Dram_read_latency_1000",
+    "vela_sha256": "b83f28f2e5adc7fad13a41441578c95020c9c178e43d52dbf6b2bac2d789bb54"
+   },
+   "L250": {
+    "cms_sha256": "093dcda969be5b125e45b1dd04166c7eabe7bb1b70dd78f37934d1261bb163d1",
+    "const_sha256": "9cc4410e512ba602b36f890f588f45546a2f09153a58010d42b7f5d6d3a891bf",
+    "per_layer": "ad_medium_int8_per-layer.csv",
+    "summary": "ad_medium_int8_summary_XLAT_Dram_read_latency_250.csv",
+    "system_config": "XLAT_Dram_read_latency_250",
+    "vela_sha256": "b83f28f2e5adc7fad13a41441578c95020c9c178e43d52dbf6b2bac2d789bb54"
+   },
+   "L500": {
+    "cms_sha256": "093dcda969be5b125e45b1dd04166c7eabe7bb1b70dd78f37934d1261bb163d1",
+    "const_sha256": "9cc4410e512ba602b36f890f588f45546a2f09153a58010d42b7f5d6d3a891bf",
+    "per_layer": "ad_medium_int8_per-layer.csv",
+    "summary": "ad_medium_int8_summary_XLAT_Dram_read_latency_500.csv",
+    "system_config": "XLAT_Dram_read_latency_500",
+    "vela_sha256": "b83f28f2e5adc7fad13a41441578c95020c9c178e43d52dbf6b2bac2d789bb54"
+   },
+   "base": {
+    "cms_sha256": "093dcda969be5b125e45b1dd04166c7eabe7bb1b70dd78f37934d1261bb163d1",
+    "const_sha256": "9cc4410e512ba602b36f890f588f45546a2f09153a58010d42b7f5d6d3a891bf",
+    "per_layer": "ad_medium_int8_per-layer.csv",
+    "summary": "ad_medium_int8_summary_Ethos_U85_SYS_DRAM_Mid_1024.csv",
+    "vela_sha256": "b83f28f2e5adc7fad13a41441578c95020c9c178e43d52dbf6b2bac2d789bb54"
+   },
+   "tflite": "/opt/arm/ml-embedded-evaluation-kit/resources_downloaded/ad/ad_medium_int8.tflite",
+   "tflite_sha256": "a8b1c9037c2a80e6ff770f0a550777cf744a52850bed6545b2bfc9bacf604c98"
+  },
+  "kws_micronet_m": {
+   "L1000": {
+    "cms_sha256": "af4a80d3a529767388775dfb116c4f703b194b9dece226ebdeb7eda9e82962cc",
+    "const_sha256": "651880fe95ef59d678c0416cede8c9246727464a3ba0d0c2100c3bf8455e379f",
+    "per_layer": "kws_micronet_m_per-layer.csv",
+    "summary": "kws_micronet_m_summary_XLAT_Dram_read_latency_1000.csv",
+    "system_config": "XLAT_Dram_read_latency_1000",
+    "vela_sha256": "9b1ba9750f94c493aa4e5a202fef5a5b8356b394ac01833a2bb8355e9f65b479"
+   },
+   "L250": {
+    "cms_sha256": "21564a54560c60a4053d495f26f162a88afbeb62242fb2b8da5deb3ddc5e38ea",
+    "const_sha256": "25161045fe3604a62f87ca5e9b18000e6f8a218c365982541f77f31c729f30db",
+    "per_layer": "kws_micronet_m_per-layer.csv",
+    "summary": "kws_micronet_m_summary_XLAT_Dram_read_latency_250.csv",
+    "system_config": "XLAT_Dram_read_latency_250",
+    "vela_sha256": "f9575c36651efe0dc3798135f4bc8f9e3fd3614a75f7ad16377994616d18a069"
+   },
+   "L500": {
+    "cms_sha256": "21564a54560c60a4053d495f26f162a88afbeb62242fb2b8da5deb3ddc5e38ea",
+    "const_sha256": "25161045fe3604a62f87ca5e9b18000e6f8a218c365982541f77f31c729f30db",
+    "per_layer": "kws_micronet_m_per-layer.csv",
+    "summary": "kws_micronet_m_summary_XLAT_Dram_read_latency_500.csv",
+    "system_config": "XLAT_Dram_read_latency_500",
+    "vela_sha256": "f9575c36651efe0dc3798135f4bc8f9e3fd3614a75f7ad16377994616d18a069"
+   },
+   "base": {
+    "cms_sha256": "21564a54560c60a4053d495f26f162a88afbeb62242fb2b8da5deb3ddc5e38ea",
+    "const_sha256": "25161045fe3604a62f87ca5e9b18000e6f8a218c365982541f77f31c729f30db",
+    "per_layer": "kws_micronet_m_per-layer.csv",
+    "summary": "kws_micronet_m_summary_Ethos_U85_SYS_DRAM_Mid_1024.csv",
+    "vela_sha256": "f9575c36651efe0dc3798135f4bc8f9e3fd3614a75f7ad16377994616d18a069"
+   },
+   "tflite": "/opt/arm/ml-embedded-evaluation-kit/resources_downloaded/kws/kws_micronet_m.tflite",
+   "tflite_sha256": "c1feed3af5dac44de7477fb4161670ba18a3fc06039e4a14da41b1c4dd454cb4"
+  }
+ },
+ "vela_options": [
+  "--accelerator-config",
+  "ethos-u85-1024",
+  "--optimise",
+  "Performance",
+  "--config",
+  "/opt/arm/ml-embedded-evaluation-kit/scripts/vela/default_vela.ini",
+  "--memory-mode",
+  "Dedicated_Sram",
+  "--system-config",
+  "Ethos_U85_SYS_DRAM_Mid_1024"
+ ],
+ "vela_version": "5.0.0"
+}

@@ -1,0 +1,346 @@
+{
+ "ad_medium_int8:G_0": {
+  "L1000": {
+   "bound": [
+    "DRAM AC"
+   ],
+   "dram": 43749.0,
+   "dram_bound_share": 1.0,
+   "npu": 33397.0,
+   "op_cycles": 43749.0,
+   "sram": 9751.0
+  },
+  "L250": {
+   "bound": [
+    "NPU"
+   ],
+   "dram": 10937.0,
+   "dram_bound_share": 0.0,
+   "npu": 19605.0,
+   "op_cycles": 19605.0,
+   "sram": 9751.0
+  },
+  "L500": {
+   "bound": [
+    "DRAM AC"
+   ],
+   "dram": 21874.0,
+   "dram_bound_share": 1.0,
+   "npu": 20313.0,
+   "op_cycles": 21874.0,
+   "sram": 9751.0
+  },
+  "comparable": {
+   "250": true,
+   "1000": true
+  },
+  "delta_V": {
+   "250_1000": 24144.0,
+   "250_500": 2269.0,
+   "500_1000": 21875.0
+  },
+  "ops": [
+   0
+  ]
+ },
+ "ad_medium_int8:G_R": {
+  "L1000": {
+   "bound": [
+    "DRAM AC",
+    "DRAM AC",
+    "DRAM AC",
+    "DRAM AC",
+    "DRAM AC",
+    "NPU",
+    "NPU",
+    "DRAM AC"
+   ],
+   "dram": 92963.0,
+   "dram_bound_share": 0.8102530453280276,
+   "npu": 82120.0,
+   "op_cycles": 94489.0,
+   "sram": 26257.0
+  },
+  "L250": {
+   "bound": [
+    "SRAM AC",
+    "NPU",
+    "NPU",
+    "NPU",
+    "NPU",
+    "NPU",
+    "NPU",
+    "NPU"
+   ],
+   "dram": 23237.0,
+   "dram_bound_share": 0.0,
+   "npu": 38419.0,
+   "op_cycles": 45443.0,
+   "sram": 26257.0
+  },
+  "L500": {
+   "bound": [
+    "SRAM AC",
+    "NPU",
+    "NPU",
+    "DRAM AC",
+    "DRAM AC",
+    "NPU",
+    "NPU",
+    "NPU"
+   ],
+   "dram": 46481.0,
+   "dram_bound_share": 0.257559939190798,
+   "npu": 48675.0,
+   "op_cycles": 54597.0,
+   "sram": 26257.0
+  },
+  "comparable": {
+   "250": true,
+   "1000": true
+  },
+  "delta_V": {
+   "250_1000": 49046.0,
+   "250_500": 9154.0,
+   "500_1000": 39892.0
+  },
+  "ops": [
+   1,
+   3,
+   5,
+   7,
+   9,
+   10,
+   11,
+   12
+  ]
+ },
+ "ad_medium_int8:G_V": {
+  "L1000": {
+   "bound": [
+    "DRAM AC",
+    "DRAM AC",
+    "DRAM AC",
+    "DRAM AC"
+   ],
+   "dram": 110154.0,
+   "dram_bound_share": 1.0,
+   "npu": 88286.0,
+   "op_cycles": 110154.0,
+   "sram": 50700.0
+  },
+  "L250": {
+   "bound": [
+    "NPU",
+    "NPU",
+    "NPU",
+    "NPU"
+   ],
+   "dram": 27537.0,
+   "dram_bound_share": 0.0,
+   "npu": 69165.0,
+   "op_cycles": 69165.0,
+   "sram": 50700.0
+  },
+  "L500": {
+   "bound": [
+    "NPU",
+    "NPU",
+    "NPU",
+    "DRAM AC"
+   ],
+   "dram": 55077.0,
+   "dram_bound_share": 0.11415728460692764,
+   "npu": 71289.0,
+   "op_cycles": 71857.0,
+   "sram": 50700.0
+  },
+  "comparable": {
+   "250": true,
+   "1000": true
+  },
+  "delta_V": {
+   "250_1000": 40989.0,
+   "250_500": 2692.0,
+   "500_1000": 38297.0
+  },
+  "ops": [
+   2,
+   4,
+   6,
+   8
+  ]
+ },
+ "kws_micronet_m:G_0": {
+  "L1000": {
+   "bound": [
+    "NPU"
+   ],
+   "dram": 23437.0,
+   "dram_bound_share": 0.0,
+   "npu": 25753.0,
+   "op_cycles": 25753.0,
+   "sram": 3919.0
+  },
+  "L250": {
+   "bound": [
+    "NPU"
+   ],
+   "dram": 5859.0,
+   "dram_bound_share": 0.0,
+   "npu": 22056.0,
+   "op_cycles": 22056.0,
+   "sram": 3919.0
+  },
+  "L500": {
+   "bound": [
+    "NPU"
+   ],
+   "dram": 11718.0,
+   "dram_bound_share": 0.0,
+   "npu": 23261.0,
+   "op_cycles": 23261.0,
+   "sram": 3919.0
+  },
+  "comparable": {
+   "250": true,
+   "1000": false
+  },
+  "delta_V": {
+   "250_1000": 3697.0,
+   "250_500": 1205.0,
+   "500_1000": 2492.0
+  },
+  "ops": [
+   0
+  ]
+ },
+ "kws_micronet_m:G_R": {
+  "L1000": {
+   "bound": [
+    "DRAM AC",
+    "DRAM AC",
+    "DRAM AC",
+    "DRAM AC",
+    "DRAM AC",
+    "DRAM AC",
+    "DRAM AC",
+    "NPU",
+    "DRAM AC"
+   ],
+   "dram": 96871.0,
+   "dram_bound_share": 0.9322497136972987,
+   "npu": 69548.0,
+   "op_cycles": 103911.0,
+   "sram": 27117.0
+  },
+  "L250": {
+   "bound": [
+    "SRAM AC",
+    "NPU",
+    "NPU",
+    "NPU",
+    "NPU",
+    "NPU",
+    "DRAM AC",
+    "NPU",
+    "NPU"
+   ],
+   "dram": 24214.0,
+   "dram_bound_share": 0.12432076029374986,
+   "npu": 33647.0,
+   "op_cycles": 43983.0,
+   "sram": 27031.0
+  },
+  "L500": {
+   "bound": [
+    "DRAM AC",
+    "DRAM AC",
+    "DRAM AC",
+    "DRAM AC",
+    "DRAM AC",
+    "NPU",
+    "DRAM AC",
+    "NPU",
+    "DRAM AC"
+   ],
+   "dram": 48434.0,
+   "dram_bound_share": 0.822667458731616,
+   "npu": 41118.0,
+   "op_cycles": 55551.0,
+   "sram": 27031.0
+  },
+  "comparable": {
+   "250": true,
+   "1000": false
+  },
+  "delta_V": {
+   "250_1000": 59928.0,
+   "250_500": 11568.0,
+   "500_1000": 48360.0
+  },
+  "ops": [
+   1,
+   3,
+   5,
+   7,
+   8,
+   9,
+   10,
+   11,
+   12
+  ]
+ },
+ "kws_micronet_m:G_V": {
+  "L1000": {
+   "bound": [
+    "DRAM AC",
+    "DRAM AC",
+    "DRAM AC"
+   ],
+   "dram": 46872.0,
+   "dram_bound_share": 1.0,
+   "npu": 39357.0,
+   "op_cycles": 46872.0,
+   "sram": 5904.0
+  },
+  "L250": {
+   "bound": [
+    "NPU",
+    "NPU",
+    "NPU"
+   ],
+   "dram": 11718.0,
+   "dram_bound_share": 0.0,
+   "npu": 16851.0,
+   "op_cycles": 16851.0,
+   "sram": 5904.0
+  },
+  "L500": {
+   "bound": [
+    "DRAM AC",
+    "DRAM AC",
+    "DRAM AC"
+   ],
+   "dram": 23436.0,
+   "dram_bound_share": 1.0,
+   "npu": 21945.0,
+   "op_cycles": 23436.0,
+   "sram": 5904.0
+  },
+  "comparable": {
+   "250": true,
+   "1000": false
+  },
+  "delta_V": {
+   "250_1000": 30021.0,
+   "250_500": 6585.0,
+   "500_1000": 23436.0
+  },
+  "ops": [
+   2,
+   4,
+   6
+  ]
+ }
+}
