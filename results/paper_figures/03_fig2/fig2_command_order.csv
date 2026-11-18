@@ -1,12 +1,6 @@
 model,cond,boot,cmd,kernel,kind,tflite_op,group,counted
-kws_micronet_m,B0,487,DMA_WAIT,,,,,
-kws_micronet_m,B0,487,DMA_START,,,,,
 kws_micronet_m,B0,487,KERNEL,0,CONV,0,G_0,1
-kws_micronet_m,B0,487,DMA_WAIT,,,,,
-kws_micronet_m,B0,487,DMA_START,,,,,
 kws_micronet_m,B0,487,KERNEL,1,CONV,0,G_0,1
-kws_micronet_m,B0,487,DMA_WAIT,,,,,
-kws_micronet_m,B0,487,DMA_START,,,,,
 kws_micronet_m,B0,487,KERNEL,2,DW,1,G_R,1
 kws_micronet_m,B0,487,KERNEL,3,CONV,2,G_V,1
 kws_micronet_m,B0,487,KERNEL,4,DW,3,G_R,1
@@ -14,234 +8,69 @@ kws_micronet_m,B0,487,KERNEL,5,CONV,4,G_V,1
 kws_micronet_m,B0,487,KERNEL,6,DW,5,G_R,1
 kws_micronet_m,B0,487,KERNEL,7,CONV,6,G_V,1
 kws_micronet_m,B0,487,KERNEL,8,DW,7,G_R,1
-kws_micronet_m,B0,487,DMA_WAIT,,,,,
-kws_micronet_m,B0,487,DMA_START,,,,,
 kws_micronet_m,B0,487,KERNEL,9,CONV,8,G_R,1
 kws_micronet_m,B0,487,KERNEL,10,DW,9,G_R,1
 kws_micronet_m,B0,487,KERNEL,11,CONV,10,G_R,1
 kws_micronet_m,B0,487,KERNEL,12,POOL,11,G_R,1
 kws_micronet_m,B0,487,KERNEL,13,CONV,12,G_R,1
-kws_micronet_m,B0,487,STOP,,,,,
-kws_micronet_m,B1,488,KERNEL_WAIT n=0,,,,,
-kws_micronet_m,B1,488,PMU_MASK 1,,,,,
-kws_micronet_m,B1,488,DMA_START,,,,,
-kws_micronet_m,B1,488,DMA_WAIT,,,,,
 kws_micronet_m,B1,488,KERNEL,0,CONV,0,G_0,1
-kws_micronet_m,B1,488,KERNEL_WAIT n=0,,,,,
-kws_micronet_m,B1,488,PMU_MASK 1,,,,,
-kws_micronet_m,B1,488,DMA_START,,,,,
-kws_micronet_m,B1,488,DMA_WAIT,,,,,
 kws_micronet_m,B1,488,KERNEL,1,CONV,0,G_0,1
-kws_micronet_m,B1,488,KERNEL_WAIT n=0,,,,,
-kws_micronet_m,B1,488,PMU_MASK 1,,,,,
-kws_micronet_m,B1,488,DMA_START,,,,,
-kws_micronet_m,B1,488,DMA_WAIT,,,,,
 kws_micronet_m,B1,488,KERNEL,2,DW,1,G_R,1
-kws_micronet_m,B1,488,KERNEL_WAIT n=0,,,,,
-kws_micronet_m,B1,488,PMU_MASK 1,,,,,
 kws_micronet_m,B1,488,KERNEL,3,CONV,2,G_V,1
-kws_micronet_m,B1,488,KERNEL_WAIT n=0,,,,,
-kws_micronet_m,B1,488,PMU_MASK 1,,,,,
 kws_micronet_m,B1,488,KERNEL,4,DW,3,G_R,1
-kws_micronet_m,B1,488,KERNEL_WAIT n=0,,,,,
-kws_micronet_m,B1,488,PMU_MASK 1,,,,,
 kws_micronet_m,B1,488,KERNEL,5,CONV,4,G_V,1
-kws_micronet_m,B1,488,KERNEL_WAIT n=0,,,,,
-kws_micronet_m,B1,488,PMU_MASK 1,,,,,
 kws_micronet_m,B1,488,KERNEL,6,DW,5,G_R,1
-kws_micronet_m,B1,488,KERNEL_WAIT n=0,,,,,
-kws_micronet_m,B1,488,PMU_MASK 1,,,,,
 kws_micronet_m,B1,488,KERNEL,7,CONV,6,G_V,1
-kws_micronet_m,B1,488,KERNEL_WAIT n=0,,,,,
-kws_micronet_m,B1,488,PMU_MASK 1,,,,,
 kws_micronet_m,B1,488,KERNEL,8,DW,7,G_R,1
-kws_micronet_m,B1,488,KERNEL_WAIT n=0,,,,,
-kws_micronet_m,B1,488,PMU_MASK 1,,,,,
-kws_micronet_m,B1,488,DMA_START,,,,,
-kws_micronet_m,B1,488,DMA_WAIT,,,,,
 kws_micronet_m,B1,488,KERNEL,9,CONV,8,G_R,1
-kws_micronet_m,B1,488,KERNEL_WAIT n=0,,,,,
-kws_micronet_m,B1,488,PMU_MASK 1,,,,,
 kws_micronet_m,B1,488,KERNEL,10,DW,9,G_R,1
-kws_micronet_m,B1,488,KERNEL_WAIT n=0,,,,,
-kws_micronet_m,B1,488,PMU_MASK 1,,,,,
 kws_micronet_m,B1,488,KERNEL,11,CONV,10,G_R,1
-kws_micronet_m,B1,488,KERNEL_WAIT n=0,,,,,
-kws_micronet_m,B1,488,PMU_MASK 1,,,,,
 kws_micronet_m,B1,488,KERNEL,12,POOL,11,G_R,1
-kws_micronet_m,B1,488,KERNEL_WAIT n=0,,,,,
-kws_micronet_m,B1,488,PMU_MASK 1,,,,,
 kws_micronet_m,B1,488,KERNEL,13,CONV,12,G_R,1
-kws_micronet_m,B1,488,KERNEL_WAIT n=0,,,,,
-kws_micronet_m,B1,488,PMU_MASK 0,,,,,
-kws_micronet_m,B1,488,STOP,,,,,
-kws_micronet_m,B2,497,KERNEL_WAIT n=0,,,,,
-kws_micronet_m,B2,497,PMU_MASK 0,,,,,
-kws_micronet_m,B2,497,DMA_START,,,,,
-kws_micronet_m,B2,497,DMA_WAIT,,,,,
 kws_micronet_m,B2,497,KERNEL,0,CONV,0,G_0,0
-kws_micronet_m,B2,497,KERNEL_WAIT n=0,,,,,
-kws_micronet_m,B2,497,PMU_MASK 0,,,,,
-kws_micronet_m,B2,497,DMA_START,,,,,
-kws_micronet_m,B2,497,DMA_WAIT,,,,,
 kws_micronet_m,B2,497,KERNEL,1,CONV,0,G_0,0
-kws_micronet_m,B2,497,KERNEL_WAIT n=0,,,,,
-kws_micronet_m,B2,497,PMU_MASK 0,,,,,
-kws_micronet_m,B2,497,DMA_START,,,,,
-kws_micronet_m,B2,497,DMA_WAIT,,,,,
 kws_micronet_m,B2,497,KERNEL,2,DW,1,G_R,0
-kws_micronet_m,B2,497,KERNEL_WAIT n=0,,,,,
-kws_micronet_m,B2,497,PMU_MASK 1,,,,,
 kws_micronet_m,B2,497,KERNEL,3,CONV,2,G_V,1
-kws_micronet_m,B2,497,KERNEL_WAIT n=0,,,,,
-kws_micronet_m,B2,497,PMU_MASK 0,,,,,
 kws_micronet_m,B2,497,KERNEL,4,DW,3,G_R,0
-kws_micronet_m,B2,497,KERNEL_WAIT n=0,,,,,
-kws_micronet_m,B2,497,PMU_MASK 1,,,,,
 kws_micronet_m,B2,497,KERNEL,5,CONV,4,G_V,1
-kws_micronet_m,B2,497,KERNEL_WAIT n=0,,,,,
-kws_micronet_m,B2,497,PMU_MASK 0,,,,,
 kws_micronet_m,B2,497,KERNEL,6,DW,5,G_R,0
-kws_micronet_m,B2,497,KERNEL_WAIT n=0,,,,,
-kws_micronet_m,B2,497,PMU_MASK 1,,,,,
 kws_micronet_m,B2,497,KERNEL,7,CONV,6,G_V,1
-kws_micronet_m,B2,497,KERNEL_WAIT n=0,,,,,
-kws_micronet_m,B2,497,PMU_MASK 0,,,,,
 kws_micronet_m,B2,497,KERNEL,8,DW,7,G_R,0
-kws_micronet_m,B2,497,KERNEL_WAIT n=0,,,,,
-kws_micronet_m,B2,497,PMU_MASK 0,,,,,
-kws_micronet_m,B2,497,DMA_START,,,,,
-kws_micronet_m,B2,497,DMA_WAIT,,,,,
 kws_micronet_m,B2,497,KERNEL,9,CONV,8,G_R,0
-kws_micronet_m,B2,497,KERNEL_WAIT n=0,,,,,
-kws_micronet_m,B2,497,PMU_MASK 0,,,,,
 kws_micronet_m,B2,497,KERNEL,10,DW,9,G_R,0
-kws_micronet_m,B2,497,KERNEL_WAIT n=0,,,,,
-kws_micronet_m,B2,497,PMU_MASK 0,,,,,
 kws_micronet_m,B2,497,KERNEL,11,CONV,10,G_R,0
-kws_micronet_m,B2,497,KERNEL_WAIT n=0,,,,,
-kws_micronet_m,B2,497,PMU_MASK 0,,,,,
 kws_micronet_m,B2,497,KERNEL,12,POOL,11,G_R,0
-kws_micronet_m,B2,497,KERNEL_WAIT n=0,,,,,
-kws_micronet_m,B2,497,PMU_MASK 0,,,,,
 kws_micronet_m,B2,497,KERNEL,13,CONV,12,G_R,0
-kws_micronet_m,B2,497,KERNEL_WAIT n=0,,,,,
-kws_micronet_m,B2,497,PMU_MASK 0,,,,,
-kws_micronet_m,B2,497,STOP,,,,,
-kws_micronet_m,B3,498,KERNEL_WAIT n=0,,,,,
-kws_micronet_m,B3,498,PMU_MASK 1,,,,,
-kws_micronet_m,B3,498,DMA_START,,,,,
-kws_micronet_m,B3,498,DMA_WAIT,,,,,
 kws_micronet_m,B3,498,KERNEL,0,CONV,0,G_0,1
-kws_micronet_m,B3,498,KERNEL_WAIT n=0,,,,,
-kws_micronet_m,B3,498,PMU_MASK 1,,,,,
-kws_micronet_m,B3,498,DMA_START,,,,,
-kws_micronet_m,B3,498,DMA_WAIT,,,,,
 kws_micronet_m,B3,498,KERNEL,1,CONV,0,G_0,1
-kws_micronet_m,B3,498,KERNEL_WAIT n=0,,,,,
-kws_micronet_m,B3,498,PMU_MASK 0,,,,,
-kws_micronet_m,B3,498,DMA_START,,,,,
-kws_micronet_m,B3,498,DMA_WAIT,,,,,
 kws_micronet_m,B3,498,KERNEL,2,DW,1,G_R,0
-kws_micronet_m,B3,498,KERNEL_WAIT n=0,,,,,
-kws_micronet_m,B3,498,PMU_MASK 0,,,,,
 kws_micronet_m,B3,498,KERNEL,3,CONV,2,G_V,0
-kws_micronet_m,B3,498,KERNEL_WAIT n=0,,,,,
-kws_micronet_m,B3,498,PMU_MASK 0,,,,,
 kws_micronet_m,B3,498,KERNEL,4,DW,3,G_R,0
-kws_micronet_m,B3,498,KERNEL_WAIT n=0,,,,,
-kws_micronet_m,B3,498,PMU_MASK 0,,,,,
 kws_micronet_m,B3,498,KERNEL,5,CONV,4,G_V,0
-kws_micronet_m,B3,498,KERNEL_WAIT n=0,,,,,
-kws_micronet_m,B3,498,PMU_MASK 0,,,,,
 kws_micronet_m,B3,498,KERNEL,6,DW,5,G_R,0
-kws_micronet_m,B3,498,KERNEL_WAIT n=0,,,,,
-kws_micronet_m,B3,498,PMU_MASK 0,,,,,
 kws_micronet_m,B3,498,KERNEL,7,CONV,6,G_V,0
-kws_micronet_m,B3,498,KERNEL_WAIT n=0,,,,,
-kws_micronet_m,B3,498,PMU_MASK 0,,,,,
 kws_micronet_m,B3,498,KERNEL,8,DW,7,G_R,0
-kws_micronet_m,B3,498,KERNEL_WAIT n=0,,,,,
-kws_micronet_m,B3,498,PMU_MASK 0,,,,,
-kws_micronet_m,B3,498,DMA_START,,,,,
-kws_micronet_m,B3,498,DMA_WAIT,,,,,
 kws_micronet_m,B3,498,KERNEL,9,CONV,8,G_R,0
-kws_micronet_m,B3,498,KERNEL_WAIT n=0,,,,,
-kws_micronet_m,B3,498,PMU_MASK 0,,,,,
 kws_micronet_m,B3,498,KERNEL,10,DW,9,G_R,0
-kws_micronet_m,B3,498,KERNEL_WAIT n=0,,,,,
-kws_micronet_m,B3,498,PMU_MASK 0,,,,,
 kws_micronet_m,B3,498,KERNEL,11,CONV,10,G_R,0
-kws_micronet_m,B3,498,KERNEL_WAIT n=0,,,,,
-kws_micronet_m,B3,498,PMU_MASK 0,,,,,
 kws_micronet_m,B3,498,KERNEL,12,POOL,11,G_R,0
-kws_micronet_m,B3,498,KERNEL_WAIT n=0,,,,,
-kws_micronet_m,B3,498,PMU_MASK 0,,,,,
 kws_micronet_m,B3,498,KERNEL,13,CONV,12,G_R,0
-kws_micronet_m,B3,498,KERNEL_WAIT n=0,,,,,
-kws_micronet_m,B3,498,PMU_MASK 0,,,,,
-kws_micronet_m,B3,498,STOP,,,,,
-kws_micronet_m,B4,499,KERNEL_WAIT n=0,,,,,
-kws_micronet_m,B4,499,PMU_MASK 0,,,,,
-kws_micronet_m,B4,499,DMA_START,,,,,
-kws_micronet_m,B4,499,DMA_WAIT,,,,,
 kws_micronet_m,B4,499,KERNEL,0,CONV,0,G_0,0
-kws_micronet_m,B4,499,KERNEL_WAIT n=0,,,,,
-kws_micronet_m,B4,499,PMU_MASK 0,,,,,
-kws_micronet_m,B4,499,DMA_START,,,,,
-kws_micronet_m,B4,499,DMA_WAIT,,,,,
 kws_micronet_m,B4,499,KERNEL,1,CONV,0,G_0,0
-kws_micronet_m,B4,499,KERNEL_WAIT n=0,,,,,
-kws_micronet_m,B4,499,PMU_MASK 1,,,,,
-kws_micronet_m,B4,499,DMA_START,,,,,
-kws_micronet_m,B4,499,DMA_WAIT,,,,,
 kws_micronet_m,B4,499,KERNEL,2,DW,1,G_R,1
-kws_micronet_m,B4,499,KERNEL_WAIT n=0,,,,,
-kws_micronet_m,B4,499,PMU_MASK 0,,,,,
 kws_micronet_m,B4,499,KERNEL,3,CONV,2,G_V,0
-kws_micronet_m,B4,499,KERNEL_WAIT n=0,,,,,
-kws_micronet_m,B4,499,PMU_MASK 1,,,,,
 kws_micronet_m,B4,499,KERNEL,4,DW,3,G_R,1
-kws_micronet_m,B4,499,KERNEL_WAIT n=0,,,,,
-kws_micronet_m,B4,499,PMU_MASK 0,,,,,
 kws_micronet_m,B4,499,KERNEL,5,CONV,4,G_V,0
-kws_micronet_m,B4,499,KERNEL_WAIT n=0,,,,,
-kws_micronet_m,B4,499,PMU_MASK 1,,,,,
 kws_micronet_m,B4,499,KERNEL,6,DW,5,G_R,1
-kws_micronet_m,B4,499,KERNEL_WAIT n=0,,,,,
-kws_micronet_m,B4,499,PMU_MASK 0,,,,,
 kws_micronet_m,B4,499,KERNEL,7,CONV,6,G_V,0
-kws_micronet_m,B4,499,KERNEL_WAIT n=0,,,,,
-kws_micronet_m,B4,499,PMU_MASK 1,,,,,
 kws_micronet_m,B4,499,KERNEL,8,DW,7,G_R,1
-kws_micronet_m,B4,499,KERNEL_WAIT n=0,,,,,
-kws_micronet_m,B4,499,PMU_MASK 1,,,,,
-kws_micronet_m,B4,499,DMA_START,,,,,
-kws_micronet_m,B4,499,DMA_WAIT,,,,,
 kws_micronet_m,B4,499,KERNEL,9,CONV,8,G_R,1
-kws_micronet_m,B4,499,KERNEL_WAIT n=0,,,,,
-kws_micronet_m,B4,499,PMU_MASK 1,,,,,
 kws_micronet_m,B4,499,KERNEL,10,DW,9,G_R,1
-kws_micronet_m,B4,499,KERNEL_WAIT n=0,,,,,
-kws_micronet_m,B4,499,PMU_MASK 1,,,,,
 kws_micronet_m,B4,499,KERNEL,11,CONV,10,G_R,1
-kws_micronet_m,B4,499,KERNEL_WAIT n=0,,,,,
-kws_micronet_m,B4,499,PMU_MASK 1,,,,,
 kws_micronet_m,B4,499,KERNEL,12,POOL,11,G_R,1
-kws_micronet_m,B4,499,KERNEL_WAIT n=0,,,,,
-kws_micronet_m,B4,499,PMU_MASK 1,,,,,
 kws_micronet_m,B4,499,KERNEL,13,CONV,12,G_R,1
-kws_micronet_m,B4,499,KERNEL_WAIT n=0,,,,,
-kws_micronet_m,B4,499,PMU_MASK 0,,,,,
-kws_micronet_m,B4,499,STOP,,,,,
-ad_medium_int8,B0,500,DMA_WAIT,,,,,
-ad_medium_int8,B0,500,DMA_START,,,,,
 ad_medium_int8,B0,500,KERNEL,0,CONV,0,G_0,1
-ad_medium_int8,B0,500,DMA_WAIT,,,,,
-ad_medium_int8,B0,500,DMA_START,,,,,
 ad_medium_int8,B0,500,KERNEL,1,CONV,0,G_0,1
-ad_medium_int8,B0,500,DMA_WAIT,,,,,
-ad_medium_int8,B0,500,DMA_START,,,,,
 ad_medium_int8,B0,500,KERNEL,2,DW,1,G_R,1
 ad_medium_int8,B0,500,KERNEL,3,CONV,2,G_V,1
 ad_medium_int8,B0,500,KERNEL,4,DW,3,G_R,1
@@ -254,208 +83,59 @@ ad_medium_int8,B0,500,KERNEL,10,DW,9,G_R,1
 ad_medium_int8,B0,500,KERNEL,11,CONV,10,G_R,1
 ad_medium_int8,B0,500,KERNEL,12,POOL,11,G_R,1
 ad_medium_int8,B0,500,KERNEL,13,CONV,12,G_R,1
-ad_medium_int8,B0,500,STOP,,,,,
-ad_medium_int8,B1,501,KERNEL_WAIT n=0,,,,,
-ad_medium_int8,B1,501,PMU_MASK 1,,,,,
-ad_medium_int8,B1,501,DMA_START,,,,,
-ad_medium_int8,B1,501,DMA_WAIT,,,,,
 ad_medium_int8,B1,501,KERNEL,0,CONV,0,G_0,1
-ad_medium_int8,B1,501,KERNEL_WAIT n=0,,,,,
-ad_medium_int8,B1,501,PMU_MASK 1,,,,,
-ad_medium_int8,B1,501,DMA_START,,,,,
-ad_medium_int8,B1,501,DMA_WAIT,,,,,
 ad_medium_int8,B1,501,KERNEL,1,CONV,0,G_0,1
-ad_medium_int8,B1,501,KERNEL_WAIT n=0,,,,,
-ad_medium_int8,B1,501,PMU_MASK 1,,,,,
-ad_medium_int8,B1,501,DMA_START,,,,,
-ad_medium_int8,B1,501,DMA_WAIT,,,,,
 ad_medium_int8,B1,501,KERNEL,2,DW,1,G_R,1
-ad_medium_int8,B1,501,KERNEL_WAIT n=0,,,,,
-ad_medium_int8,B1,501,PMU_MASK 1,,,,,
 ad_medium_int8,B1,501,KERNEL,3,CONV,2,G_V,1
-ad_medium_int8,B1,501,KERNEL_WAIT n=0,,,,,
-ad_medium_int8,B1,501,PMU_MASK 1,,,,,
 ad_medium_int8,B1,501,KERNEL,4,DW,3,G_R,1
-ad_medium_int8,B1,501,KERNEL_WAIT n=0,,,,,
-ad_medium_int8,B1,501,PMU_MASK 1,,,,,
 ad_medium_int8,B1,501,KERNEL,5,CONV,4,G_V,1
-ad_medium_int8,B1,501,KERNEL_WAIT n=0,,,,,
-ad_medium_int8,B1,501,PMU_MASK 1,,,,,
 ad_medium_int8,B1,501,KERNEL,6,DW,5,G_R,1
-ad_medium_int8,B1,501,KERNEL_WAIT n=0,,,,,
-ad_medium_int8,B1,501,PMU_MASK 1,,,,,
 ad_medium_int8,B1,501,KERNEL,7,CONV,6,G_V,1
-ad_medium_int8,B1,501,KERNEL_WAIT n=0,,,,,
-ad_medium_int8,B1,501,PMU_MASK 1,,,,,
 ad_medium_int8,B1,501,KERNEL,8,DW,7,G_R,1
-ad_medium_int8,B1,501,KERNEL_WAIT n=0,,,,,
-ad_medium_int8,B1,501,PMU_MASK 1,,,,,
 ad_medium_int8,B1,501,KERNEL,9,CONV,8,G_V,1
-ad_medium_int8,B1,501,KERNEL_WAIT n=0,,,,,
-ad_medium_int8,B1,501,PMU_MASK 1,,,,,
 ad_medium_int8,B1,501,KERNEL,10,DW,9,G_R,1
-ad_medium_int8,B1,501,KERNEL_WAIT n=0,,,,,
-ad_medium_int8,B1,501,PMU_MASK 1,,,,,
 ad_medium_int8,B1,501,KERNEL,11,CONV,10,G_R,1
-ad_medium_int8,B1,501,KERNEL_WAIT n=0,,,,,
-ad_medium_int8,B1,501,PMU_MASK 1,,,,,
 ad_medium_int8,B1,501,KERNEL,12,POOL,11,G_R,1
-ad_medium_int8,B1,501,KERNEL_WAIT n=0,,,,,
-ad_medium_int8,B1,501,PMU_MASK 1,,,,,
 ad_medium_int8,B1,501,KERNEL,13,CONV,12,G_R,1
-ad_medium_int8,B1,501,KERNEL_WAIT n=0,,,,,
-ad_medium_int8,B1,501,PMU_MASK 0,,,,,
-ad_medium_int8,B1,501,STOP,,,,,
-ad_medium_int8,B2,502,KERNEL_WAIT n=0,,,,,
-ad_medium_int8,B2,502,PMU_MASK 0,,,,,
-ad_medium_int8,B2,502,DMA_START,,,,,
-ad_medium_int8,B2,502,DMA_WAIT,,,,,
 ad_medium_int8,B2,502,KERNEL,0,CONV,0,G_0,0
-ad_medium_int8,B2,502,KERNEL_WAIT n=0,,,,,
-ad_medium_int8,B2,502,PMU_MASK 0,,,,,
-ad_medium_int8,B2,502,DMA_START,,,,,
-ad_medium_int8,B2,502,DMA_WAIT,,,,,
 ad_medium_int8,B2,502,KERNEL,1,CONV,0,G_0,0
-ad_medium_int8,B2,502,KERNEL_WAIT n=0,,,,,
-ad_medium_int8,B2,502,PMU_MASK 0,,,,,
-ad_medium_int8,B2,502,DMA_START,,,,,
-ad_medium_int8,B2,502,DMA_WAIT,,,,,
 ad_medium_int8,B2,502,KERNEL,2,DW,1,G_R,0
-ad_medium_int8,B2,502,KERNEL_WAIT n=0,,,,,
-ad_medium_int8,B2,502,PMU_MASK 1,,,,,
 ad_medium_int8,B2,502,KERNEL,3,CONV,2,G_V,1
-ad_medium_int8,B2,502,KERNEL_WAIT n=0,,,,,
-ad_medium_int8,B2,502,PMU_MASK 0,,,,,
 ad_medium_int8,B2,502,KERNEL,4,DW,3,G_R,0
-ad_medium_int8,B2,502,KERNEL_WAIT n=0,,,,,
-ad_medium_int8,B2,502,PMU_MASK 1,,,,,
 ad_medium_int8,B2,502,KERNEL,5,CONV,4,G_V,1
-ad_medium_int8,B2,502,KERNEL_WAIT n=0,,,,,
-ad_medium_int8,B2,502,PMU_MASK 0,,,,,
 ad_medium_int8,B2,502,KERNEL,6,DW,5,G_R,0
-ad_medium_int8,B2,502,KERNEL_WAIT n=0,,,,,
-ad_medium_int8,B2,502,PMU_MASK 1,,,,,
 ad_medium_int8,B2,502,KERNEL,7,CONV,6,G_V,1
-ad_medium_int8,B2,502,KERNEL_WAIT n=0,,,,,
-ad_medium_int8,B2,502,PMU_MASK 0,,,,,
 ad_medium_int8,B2,502,KERNEL,8,DW,7,G_R,0
-ad_medium_int8,B2,502,KERNEL_WAIT n=0,,,,,
-ad_medium_int8,B2,502,PMU_MASK 1,,,,,
 ad_medium_int8,B2,502,KERNEL,9,CONV,8,G_V,1
-ad_medium_int8,B2,502,KERNEL_WAIT n=0,,,,,
-ad_medium_int8,B2,502,PMU_MASK 0,,,,,
 ad_medium_int8,B2,502,KERNEL,10,DW,9,G_R,0
-ad_medium_int8,B2,502,KERNEL_WAIT n=0,,,,,
-ad_medium_int8,B2,502,PMU_MASK 0,,,,,
 ad_medium_int8,B2,502,KERNEL,11,CONV,10,G_R,0
-ad_medium_int8,B2,502,KERNEL_WAIT n=0,,,,,
-ad_medium_int8,B2,502,PMU_MASK 0,,,,,
 ad_medium_int8,B2,502,KERNEL,12,POOL,11,G_R,0
-ad_medium_int8,B2,502,KERNEL_WAIT n=0,,,,,
-ad_medium_int8,B2,502,PMU_MASK 0,,,,,
 ad_medium_int8,B2,502,KERNEL,13,CONV,12,G_R,0
-ad_medium_int8,B2,502,KERNEL_WAIT n=0,,,,,
-ad_medium_int8,B2,502,PMU_MASK 0,,,,,
-ad_medium_int8,B2,502,STOP,,,,,
-ad_medium_int8,B3,503,KERNEL_WAIT n=0,,,,,
-ad_medium_int8,B3,503,PMU_MASK 1,,,,,
-ad_medium_int8,B3,503,DMA_START,,,,,
-ad_medium_int8,B3,503,DMA_WAIT,,,,,
 ad_medium_int8,B3,503,KERNEL,0,CONV,0,G_0,1
-ad_medium_int8,B3,503,KERNEL_WAIT n=0,,,,,
-ad_medium_int8,B3,503,PMU_MASK 1,,,,,
-ad_medium_int8,B3,503,DMA_START,,,,,
-ad_medium_int8,B3,503,DMA_WAIT,,,,,
 ad_medium_int8,B3,503,KERNEL,1,CONV,0,G_0,1
-ad_medium_int8,B3,503,KERNEL_WAIT n=0,,,,,
-ad_medium_int8,B3,503,PMU_MASK 0,,,,,
-ad_medium_int8,B3,503,DMA_START,,,,,
-ad_medium_int8,B3,503,DMA_WAIT,,,,,
 ad_medium_int8,B3,503,KERNEL,2,DW,1,G_R,0
-ad_medium_int8,B3,503,KERNEL_WAIT n=0,,,,,
-ad_medium_int8,B3,503,PMU_MASK 0,,,,,
 ad_medium_int8,B3,503,KERNEL,3,CONV,2,G_V,0
-ad_medium_int8,B3,503,KERNEL_WAIT n=0,,,,,
-ad_medium_int8,B3,503,PMU_MASK 0,,,,,
 ad_medium_int8,B3,503,KERNEL,4,DW,3,G_R,0
-ad_medium_int8,B3,503,KERNEL_WAIT n=0,,,,,
-ad_medium_int8,B3,503,PMU_MASK 0,,,,,
 ad_medium_int8,B3,503,KERNEL,5,CONV,4,G_V,0
-ad_medium_int8,B3,503,KERNEL_WAIT n=0,,,,,
-ad_medium_int8,B3,503,PMU_MASK 0,,,,,
 ad_medium_int8,B3,503,KERNEL,6,DW,5,G_R,0
-ad_medium_int8,B3,503,KERNEL_WAIT n=0,,,,,
-ad_medium_int8,B3,503,PMU_MASK 0,,,,,
 ad_medium_int8,B3,503,KERNEL,7,CONV,6,G_V,0
-ad_medium_int8,B3,503,KERNEL_WAIT n=0,,,,,
-ad_medium_int8,B3,503,PMU_MASK 0,,,,,
 ad_medium_int8,B3,503,KERNEL,8,DW,7,G_R,0
-ad_medium_int8,B3,503,KERNEL_WAIT n=0,,,,,
-ad_medium_int8,B3,503,PMU_MASK 0,,,,,
 ad_medium_int8,B3,503,KERNEL,9,CONV,8,G_V,0
-ad_medium_int8,B3,503,KERNEL_WAIT n=0,,,,,
-ad_medium_int8,B3,503,PMU_MASK 0,,,,,
 ad_medium_int8,B3,503,KERNEL,10,DW,9,G_R,0
-ad_medium_int8,B3,503,KERNEL_WAIT n=0,,,,,
-ad_medium_int8,B3,503,PMU_MASK 0,,,,,
 ad_medium_int8,B3,503,KERNEL,11,CONV,10,G_R,0
-ad_medium_int8,B3,503,KERNEL_WAIT n=0,,,,,
-ad_medium_int8,B3,503,PMU_MASK 0,,,,,
 ad_medium_int8,B3,503,KERNEL,12,POOL,11,G_R,0
-ad_medium_int8,B3,503,KERNEL_WAIT n=0,,,,,
-ad_medium_int8,B3,503,PMU_MASK 0,,,,,
 ad_medium_int8,B3,503,KERNEL,13,CONV,12,G_R,0
-ad_medium_int8,B3,503,KERNEL_WAIT n=0,,,,,
-ad_medium_int8,B3,503,PMU_MASK 0,,,,,
-ad_medium_int8,B3,503,STOP,,,,,
-ad_medium_int8,B4,504,KERNEL_WAIT n=0,,,,,
-ad_medium_int8,B4,504,PMU_MASK 0,,,,,
-ad_medium_int8,B4,504,DMA_START,,,,,
-ad_medium_int8,B4,504,DMA_WAIT,,,,,
 ad_medium_int8,B4,504,KERNEL,0,CONV,0,G_0,0
-ad_medium_int8,B4,504,KERNEL_WAIT n=0,,,,,
-ad_medium_int8,B4,504,PMU_MASK 0,,,,,
-ad_medium_int8,B4,504,DMA_START,,,,,
-ad_medium_int8,B4,504,DMA_WAIT,,,,,
 ad_medium_int8,B4,504,KERNEL,1,CONV,0,G_0,0
-ad_medium_int8,B4,504,KERNEL_WAIT n=0,,,,,
-ad_medium_int8,B4,504,PMU_MASK 1,,,,,
-ad_medium_int8,B4,504,DMA_START,,,,,
-ad_medium_int8,B4,504,DMA_WAIT,,,,,
 ad_medium_int8,B4,504,KERNEL,2,DW,1,G_R,1
-ad_medium_int8,B4,504,KERNEL_WAIT n=0,,,,,
-ad_medium_int8,B4,504,PMU_MASK 0,,,,,
 ad_medium_int8,B4,504,KERNEL,3,CONV,2,G_V,0
-ad_medium_int8,B4,504,KERNEL_WAIT n=0,,,,,
-ad_medium_int8,B4,504,PMU_MASK 1,,,,,
 ad_medium_int8,B4,504,KERNEL,4,DW,3,G_R,1
-ad_medium_int8,B4,504,KERNEL_WAIT n=0,,,,,
-ad_medium_int8,B4,504,PMU_MASK 0,,,,,
 ad_medium_int8,B4,504,KERNEL,5,CONV,4,G_V,0
-ad_medium_int8,B4,504,KERNEL_WAIT n=0,,,,,
-ad_medium_int8,B4,504,PMU_MASK 1,,,,,
 ad_medium_int8,B4,504,KERNEL,6,DW,5,G_R,1
-ad_medium_int8,B4,504,KERNEL_WAIT n=0,,,,,
-ad_medium_int8,B4,504,PMU_MASK 0,,,,,
 ad_medium_int8,B4,504,KERNEL,7,CONV,6,G_V,0
-ad_medium_int8,B4,504,KERNEL_WAIT n=0,,,,,
-ad_medium_int8,B4,504,PMU_MASK 1,,,,,
 ad_medium_int8,B4,504,KERNEL,8,DW,7,G_R,1
-ad_medium_int8,B4,504,KERNEL_WAIT n=0,,,,,
-ad_medium_int8,B4,504,PMU_MASK 0,,,,,
 ad_medium_int8,B4,504,KERNEL,9,CONV,8,G_V,0
-ad_medium_int8,B4,504,KERNEL_WAIT n=0,,,,,
-ad_medium_int8,B4,504,PMU_MASK 1,,,,,
 ad_medium_int8,B4,504,KERNEL,10,DW,9,G_R,1
-ad_medium_int8,B4,504,KERNEL_WAIT n=0,,,,,
-ad_medium_int8,B4,504,PMU_MASK 1,,,,,
 ad_medium_int8,B4,504,KERNEL,11,CONV,10,G_R,1
-ad_medium_int8,B4,504,KERNEL_WAIT n=0,,,,,
-ad_medium_int8,B4,504,PMU_MASK 1,,,,,
 ad_medium_int8,B4,504,KERNEL,12,POOL,11,G_R,1
-ad_medium_int8,B4,504,KERNEL_WAIT n=0,,,,,
-ad_medium_int8,B4,504,PMU_MASK 1,,,,,
 ad_medium_int8,B4,504,KERNEL,13,CONV,12,G_R,1
-ad_medium_int8,B4,504,KERNEL_WAIT n=0,,,,,
-ad_medium_int8,B4,504,PMU_MASK 0,,,,,
-ad_medium_int8,B4,504,STOP,,,,,

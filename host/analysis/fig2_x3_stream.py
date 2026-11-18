@@ -76,98 +76,110 @@ def x_positions(cmds: list[dict]) -> list[float]:
     return xs
 
 
+GNAME = {"G_V": "1×1 Conv (예측 검증 대상)", "G_0": "첫 Conv", "G_R": "나머지 연산"}
+SEQ_ROWS = [("B0", "원본 실행"), ("B1", "직렬 실행\n(커널마다 완료 대기)"), ("B2", "측정 구간:\n1×1 Conv"),
+            ("B3", "측정 구간:\n첫 Conv"), ("B4", "측정 구간:\n나머지 연산")]
+OPS6D = REPO / "results/fi101_stage6d/operator_levels.csv"
+
+
+def op_labels(model: str) -> dict[int, str]:
+    out = {}
+    for r in csv.DictReader(open(OPS6D)):
+        if r["model"] != model or not r["kernel"]:
+            continue
+        t = {"CONV_2D": "Conv", "DEPTHWISE_CONV_2D": "DW", "AVERAGE_POOL_2D": "Pool"}.get(r["tflite_op"], r["tflite_op"])
+        k = r["kernel"].replace("x", "×")
+        st = "" if r["stride"] == "1x1" else " s2"
+        out[int(r["op"])] = f"{t}\n{k}{st}" if t != "Pool" else "Pool"
+    return out
+
+
+def counted(cmds: list[dict]) -> dict[int, int]:
+    """kernel -> 1 if the PMU window is on when it runs (last PMU_MASK before it)."""
+    on, out = 1, {}
+    for c in cmds:
+        if c["t"] == "MASK":
+            on = c["on"]
+        elif c["t"] == "K":
+            out[c["k"]] = on
+    return out
+
+
 def draw(model: str, tag: str, out: pathlib.Path) -> list[dict]:
     man = __import__("json").loads((WL / W_MAN).read_text())
-    groups = man[f"x3_{tag}_B2"]["groups"]
-    g_of = {k: g for g, ks in groups.items() for k in ks}
+    g_of = {k: g for g, ks in man[f"x3_{tag}_B2"]["groups"].items() for k in ks}
     ktf = kernel_tflite(model)
-    rows = {c: commands(f"x3_{tag}_{c}") for c, _ in ROWS}
-    ser = rows["B1"]
-    for c in ("B2", "B3", "B4"):                                  # same stream as B1 but the mask bits
-        assert [(a["t"], a.get("k")) for a in rows[c]] == [(a["t"], a.get("k")) for a in ser], c
-    xs = x_positions(ser)
-    kx = {c["k"]: x for c, x in zip(ser, xs) if c["t"] == "K"}
-    # B0: same kernel columns; its DMA commands are placed in their own order between the kernels
-    b0 = rows["B0"]
-    b0x, last = [], -1.0
-    pend = []
-    for c in b0:
-        if c["t"] == "K":
-            base = kx[c["k"]]
-            for i, p in enumerate(reversed(pend)):
-                b0x.append((p, base - (i + 1) * (WIDTH["DMA_START"] + 0.12)))
-            pend = []
-            b0x.append((c, base))
-        elif c["t"] == "STOP":
-            b0x.append((c, xs[-1]))
-        else:
-            pend.append(c)
-    total = xs[-1] + WIDTH["STOP"]
-    fig, ax = plt.subplots(figsize=(max(14, total * 0.33), 5.2))
+    lab = op_labels(model)
+    rows = {c: commands(f"x3_{tag}_{c}") for c, _ in SEQ_ROWS}
+    order = [c["k"] for c in rows["B1"] if c["t"] == "K"]
+    assert order == [c["k"] for c in rows["B0"] if c["t"] == "K"], "kernel order differs B0/B1"
+    for c in ("B2", "B3", "B4"):
+        assert [x["k"] for x in rows[c] if x["t"] == "K"] == order, c
+    split = {}                                     # an operator executed as several kernels -> "(i/n)"
+    for k in order:
+        split.setdefault(ktf[k], []).append(k)
+    n = len(order)
+    bw, gap = 1.0, 0.28
+    fig, ax = plt.subplots(figsize=(13.5, 5.6))
     ax.grid(False)
-    ax.set_xlim(-0.5, total + 0.5)
-    ax.set_ylim(-0.6, len(ROWS) - 0.2)
-    ax.invert_yaxis()
     log = []
-    for r, (cond, desc) in enumerate(ROWS):
-        y = r
-        items = b0x if cond == "B0" else list(zip(rows[cond], xs))
-        mask_on = 1 if cond == "B0" else 0
-        for c, x in items:
-            t = c["t"]
-            if t == "K":
-                g = g_of[c["k"]]
-                on = mask_on == 1
-                fc = GCOL[g] if on else F1.SURF
-                ax.add_patch(Rectangle((x, y - 0.32), WIDTH["K"], 0.64, facecolor=fc, edgecolor=GCOL[g], linewidth=1.4))
-                ax.text(x + WIDTH["K"] / 2, y, f"k{c['k']} {c['kind']}\nop{ktf[c['k']]} {g}", ha="center", va="center",
-                        fontsize=6.2, color=F1.SURF if on else F1.INK)
-                log.append(dict(model=model, cond=cond, boot=BOOTS[model][cond], cmd="KERNEL", kernel=c["k"],
-                                kind=c["kind"], tflite_op=ktf[c["k"]], group=g, counted=int(on)))
-            elif t in ("DMA_START", "DMA_WAIT"):
-                ax.add_patch(Rectangle((x, y - 0.2), WIDTH[t], 0.4, facecolor="#e9e8e4", edgecolor=F1.INK2, linewidth=0.6))
-                ax.text(x + WIDTH[t] / 2, y, "DMA\nstart" if t == "DMA_START" else "DMA\nwait", ha="center",
-                        va="center", fontsize=5.2, color=F1.INK2)
-                log.append(dict(model=model, cond=cond, boot=BOOTS[model][cond], cmd=t))
-            elif t == "KW":
-                ax.plot([x + 0.2, x + 0.2], [y - 0.42, y + 0.42], color=F1.INK, linewidth=1.6)
-                log.append(dict(model=model, cond=cond, boot=BOOTS[model][cond], cmd=f"KERNEL_WAIT n={c['n']}"))
-            elif t == "MASK":
-                mask_on = c["on"]
-                ax.text(x + 0.27, y - 0.36, "ON" if c["on"] else "off", ha="center", va="bottom", fontsize=5.6,
-                        color=F1.INK if c["on"] else F1.INK2, fontweight="bold" if c["on"] else "normal")
-                ax.plot([x + 0.27], [y], marker="v" if c["on"] else "x", color=F1.INK if c["on"] else F1.INK2,
-                        markersize=5)
-                log.append(dict(model=model, cond=cond, boot=BOOTS[model][cond], cmd=f"PMU_MASK {c['on']}"))
-            elif t == "STOP":
-                ax.text(x + 0.35, y, "STOP", ha="center", va="center", fontsize=6.5, color=F1.INK2)
-                log.append(dict(model=model, cond=cond, boot=BOOTS[model][cond], cmd="STOP"))
-        ax.text(-0.7, y, f"{cond} (boot {BOOTS[model][cond]})\n{desc}", ha="right", va="center", fontsize=8,
-                color=F1.INK)
-    ax.set_yticks([])
+    for r, (cond, desc) in enumerate(SEQ_ROWS):
+        y = r * 1.25
+        serial = cond != "B0"
+        cnt = counted(rows[cond]) if serial else {k: 1 for k in order}
+        x = 0.0
+        if serial:                                   # the serial stream also waits before the first kernel
+            ax.plot([gap / 2] * 2, [y - 0.5, y + 0.5], color=F1.INK, linewidth=1.1)
+            x = gap
+        for i, k in enumerate(order):
+            g = g_of[k]
+            on = cnt[k] == 1
+            fc = GCOL[g] if on else "#ecebe7"
+            ec = GCOL[g] if on else "#c9c8c2"
+            ax.add_patch(Rectangle((x, y - 0.4), bw, 0.8, facecolor=fc, edgecolor=ec, linewidth=1.0))
+            parts = split[ktf[k]]
+            text = lab[ktf[k]] + (f"\n({parts.index(k) + 1}/{len(parts)})" if len(parts) > 1 else "")
+            ax.text(x + bw / 2, y, text, ha="center", va="center", fontsize=6.6,
+                    color=F1.SURF if on else F1.INK2)
+            log.append(dict(model=model, cond=cond, boot=BOOTS[model][cond], cmd="KERNEL", kernel=k,
+                            kind=c_kind(rows[cond], k), tflite_op=ktf[k], group=g, counted=int(on)))
+            x += bw
+            if serial:
+                ax.plot([x + gap / 2] * 2, [y - 0.5, y + 0.5], color=F1.INK, linewidth=1.1)
+                x += gap
+        ax.text(-0.25, y, desc, ha="right", va="center", fontsize=8.5, color=F1.INK)
+    total = n * bw + (n + 1) * gap
+    ax.set_xlim(-0.1, total + 0.1)
+    ax.set_ylim(len(SEQ_ROWS) * 1.25 - 0.55, -0.75)
     ax.set_xticks([])
-    for s in ("left", "bottom"):
-        ax.spines[s].set_visible(False)
-    leg = [Rectangle((0, 0), 1, 1, facecolor=GCOL[g], edgecolor=GCOL[g]) for g in GCOL]
-    leg += [Rectangle((0, 0), 1, 1, facecolor=F1.SURF, edgecolor=F1.INK2),
-            plt.Line2D([0], [0], color=F1.INK, linewidth=1.6),
-            plt.Line2D([0], [0], marker="v", color=F1.INK, linestyle="none")]
-    ax.legend(leg, ["G_V 커널 (계수 ON)", "G_0 커널 (계수 ON)", "G_R 커널 (계수 ON)", "계수 off인 커널 (테두리 = 그룹)",
-                    "KERNEL_WAIT n=0 (완료 장벽)", "PMU_MASK (ON/off)"], frameon=False, ncol=6, fontsize=7.5,
-              loc="upper left", bbox_to_anchor=(0, 1.13))
-    name = {"kws_micronet_m": "KWS", "ad_medium_int8": "AD"}[model]
-    ax.set_title(f"그림 2-{'A' if tag == 'kws' else 'B'}. {name}: 원본(B0)·직렬(B1) 명령 흐름과 그룹 PMU 측정창(B2–B4)",
-                 loc="left", fontsize=11, color=F1.INK, pad=34)
+    ax.set_yticks([])
+    for sp in ("left", "bottom"):
+        ax.spines[sp].set_visible(False)
+    ax.annotate("", xy=(total, -0.62), xytext=(0, -0.62),
+                arrowprops=dict(arrowstyle="->", color=F1.INK2, linewidth=0.9))
+    ax.text(total / 2, -0.68, "실행 순서 (시간 축 아님, 상자 폭은 실행시간과 무관)", ha="center", va="bottom", fontsize=7.5,
+            color=F1.INK2)
+    leg = [Rectangle((0, 0), 1, 1, facecolor=GCOL[g], edgecolor=GCOL[g]) for g in ("G_0", "G_V", "G_R")]
+    leg += [Rectangle((0, 0), 1, 1, facecolor="#ecebe7", edgecolor="#c9c8c2"),
+            plt.Line2D([0], [0], color=F1.INK, linewidth=1.1)]
+    ax.legend(leg, [GNAME["G_0"], GNAME["G_V"], GNAME["G_R"], "측정에서 제외된 커널", "완료 대기 (앞 커널이 끝난 뒤 시작)"],
+              frameon=False, ncol=5, fontsize=8, loc="upper left", bbox_to_anchor=(0, 1.16))
+    name = {"kws_micronet_m": "KWS (micronet-m)", "ad_medium_int8": "AD (medium)"}[model]
+    ax.set_title(f"그림 2-{'A' if tag == 'kws' else 'B'}. {name}: 원본·직렬 실행의 커널 순서와 그룹별 PMU 측정 구간",
+                 loc="left", fontsize=11, color=F1.INK, pad=40)
     fig.text(0.01, 0.015,
-             "가로축은 실제 DRWL 명령 순서(레지스터 설정 명령 생략)이며 시간이 아니다. 커널 상자 = k(스트림 커널 번호) 종류 / TFLite op·그룹. "
-             "B0의 DMA는 B0 스트림의 순서대로 각 커널 앞에 둔다.\n"
-             "각주: KERNEL_WAIT n=0은 앞선 커널 연산의 완료만 기다리며 mem2mem DMA의 완료는 보장하지 않는다. 따라서 그룹 창의 SRAM/EXT/AXI 계수는 "
-             "시간 귀속 근거로 쓰지 않는다. 조건: image f0baf8c, TA profile 1 (EXT RLATENCY 500), placement 0.",
-             fontsize=6.8, color=F1.INK2)
-    fig.subplots_adjust(left=0.13, right=0.995, top=0.8, bottom=0.12)
+             "측정 구간: 해당 그룹의 커널이 실행될 때만 PMU 계수를 켠다. 직렬 실행에서는 각 커널 앞에서 이전 커널의 완료를 기다린다.\n"
+             "각주: 완료 대기는 커널 연산의 완료만 보장하며 메모리 간 DMA 전송의 완료는 보장하지 않는다. 따라서 그룹별 메모리 트래픽은 "
+             "시간 귀속에 쓰지 않는다. 조건: TA profile 1 (EXT RLATENCY 500), placement 0.",
+             fontsize=7, color=F1.INK2)
+    fig.subplots_adjust(left=0.11, right=0.995, top=0.82, bottom=0.12)
     fig.savefig(out / f"fig2{'a' if tag == 'kws' else 'b'}_{tag}_command_stream.png", dpi=200)
     plt.close(fig)
     return log
+
+
+def c_kind(cmds: list[dict], k: int) -> str:
+    return next(c["kind"] for c in cmds if c["t"] == "K" and c["k"] == k)
 
 
 W_MAN = "x3_manifest.json"
