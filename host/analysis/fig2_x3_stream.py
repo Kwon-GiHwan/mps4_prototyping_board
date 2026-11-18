@@ -119,9 +119,14 @@ def draw(model: str, tag: str, out: pathlib.Path) -> list[dict]:
     for k in order:
         split.setdefault(ktf[k], []).append(k)
     n = len(order)
-    bw, gap = 1.0, 0.28
+    bw, gap = 1.0, 0.1
     x3 = __import__("json").loads((REPO / "results/fi101_stage6ex3/stage6ex3_summary.json").read_text())["results"]
     npu = {c: x3[f"x3_{tag}_{c}"]["stats"]["1"]["35"] for c, _ in SEQ_ROWS}      # (median, range), pass A
+    # schematic row 1: only its total length relative to row 2 is measured (NPU_ACTIVE B0 / B1)
+    l2 = n * bw + (n + 1) * gap
+    ratio = npu["B0"][0] / npu["B1"][0]
+    step = (ratio * l2 - bw) / (n - 1)
+    assert step < bw, "row 1 would not overlap"
     fig, (ax, bx) = plt.subplots(1, 2, figsize=(15.5, 6.6), gridspec_kw=dict(width_ratios=[4.8, 1.1]))
     ax.grid(False)
     log = []
@@ -131,6 +136,27 @@ def draw(model: str, tag: str, out: pathlib.Path) -> list[dict]:
             ax.plot([-3.2, 99], [y - 0.72] * 2, color=F1.GRID, linewidth=0.8, clip_on=False)
         serial = cond != "B0"
         cnt = counted(rows[cond]) if serial else {k: 1 for k in order}
+        if not serial:                               # stacked on two lanes, each kernel starts before the previous ends
+            x0 = gap
+            for i, k in enumerate(order):
+                g = g_of[k]
+                yy = y - 0.07 if i % 2 == 0 else y + 0.07       # small offset so the overlapped edge stays visible
+                ax.add_patch(Rectangle((x0 + i * step, yy - 0.36), bw, 0.72, facecolor=GCOL[g], edgecolor=F1.INK,
+                                       linewidth=0.8, zorder=2 + i))
+                parts = split[ktf[k]]
+                text = lab[ktf[k]] + (f"\n({parts.index(k) + 1}/{len(parts)})" if len(parts) > 1 else "")
+                ax.text(x0 + i * step + bw / 2 + (bw - step) / 2, yy, text, ha="center", va="center", fontsize=6.4,
+                        color=F1.SURF, zorder=40)
+                log.append(dict(model=model, cond=cond, boot=BOOTS[model][cond], cmd="KERNEL", kernel=k,
+                                kind=c_kind(rows[cond], k), tflite_op=ktf[k], group=g, counted=1))
+            end = x0 + (n - 1) * step + bw
+            ax.annotate("", xy=(end, y + 0.56), xytext=(x0, y + 0.56),
+                        arrowprops=dict(arrowstyle="<->", color=F1.INK2, linewidth=0.8))
+            ax.text(x0, y + 0.6, f"전체 길이 = ②의 {ratio:.3f}배 (측정 NPU_ACTIVE 비). 커널끼리 살짝 겹쳐 그림 — 개념도",
+                    ha="left", va="top", fontsize=7, color=F1.INK2)
+            ax.text(-0.25, y, f"{desc}\n(별도 실행, boot {BOOTS[model][cond]})", ha="right", va="center", fontsize=8,
+                    color=F1.INK)
+            continue
         x = 0.0
         if serial:                                   # the serial stream also waits before the first kernel
             ax.plot([gap / 2] * 2, [y - 0.5, y + 0.5], color=F1.INK, linewidth=1.1)
@@ -182,7 +208,7 @@ def draw(model: str, tag: str, out: pathlib.Path) -> list[dict]:
         ax.spines[sp].set_visible(False)
     ax.annotate("", xy=(total, -0.62), xytext=(0, -0.62),
                 arrowprops=dict(arrowstyle="->", color=F1.INK2, linewidth=0.9))
-    ax.text(total / 2, -0.68, "한 실행 안의 커널 발행 순서 (시간 축 아님, 상자 폭은 실행시간과 무관)", ha="center", va="bottom", fontsize=7.5,
+    ax.text(total / 2, -0.68, "한 실행 안의 커널 발행 순서 (시간 축 아님. 상자 폭은 실행시간과 무관하며, ①의 전체 길이만 측정 시간 비를 반영)", ha="center", va="bottom", fontsize=7.5,
             color=F1.INK2)
     leg = [Rectangle((0, 0), 1, 1, facecolor=GCOL[g], edgecolor=GCOL[g]) for g in ("G_0", "G_V", "G_R")]
     leg += [Rectangle((0, 0), 1, 1, facecolor="#ecebe7", edgecolor="#c9c8c2"),
@@ -194,8 +220,8 @@ def draw(model: str, tag: str, out: pathlib.Path) -> list[dict]:
              ha="left", va="top", fontsize=11, color=F1.INK)
     fig.text(0.01, 0.015,
              "각 행은 같은 모델을 따로 실행한 별도 측정이다(동시에 도는 병렬 경로가 아니다). ③–⑤는 ②와 같은 명령 스트림이며 PMU를 켜는 커널만 다르다. "
-             "①은 완료 대기가 없어 하드웨어가 다음 커널의 준비를 앞 커널 실행과 겹칠 수 있다. 겹침 자체는 측정하지 않았고, "
-             "①·② 차이는 오른쪽의 총 NPU_ACTIVE로만 보인다(이 증가에는 완료 대기 자체의 비용도 섞여 있다).\n"
+             "①은 개념도다: 완료 대기가 없어 다음 커널이 앞 커널과 겹칠 수 있음을 상자를 겹쳐 표현했고, 전체 길이만 ②와의 측정 NPU_ACTIVE 비에 맞췄다. "
+             "개별 커널 길이·겹침 위치는 측정값이 아니다.\n①·② 차이(오른쪽)에는 겹침 손실과 완료 대기 자체의 비용이 섞여 있다. "
              "각주: 완료 대기는 커널 연산의 완료만 보장하며 메모리 간 DMA 전송의 완료는 보장하지 않는다. 따라서 그룹별 메모리 트래픽은 "
              "시간 귀속에 쓰지 않는다. 조건: TA profile 1 (EXT RLATENCY 500), placement 0.",
              fontsize=7, color=F1.INK2)
