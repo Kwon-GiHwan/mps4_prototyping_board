@@ -1,0 +1,2 @@
+# Stage 6G-X_LAT boot 12/12: x3_ad_B4, EXT RLATENCY 250 (TA profile 1 otherwise), runner image f0baf8c+L250, passes A B C
+516 x3_ad_B4 @/home/gihwan/evsweep_xl250_img/conditions.txt
