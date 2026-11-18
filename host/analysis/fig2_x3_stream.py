@@ -77,8 +77,8 @@ def x_positions(cmds: list[dict]) -> list[float]:
 
 
 GNAME = {"G_V": "1×1 Conv (예측 검증 대상)", "G_0": "첫 Conv", "G_R": "나머지 연산"}
-SEQ_ROWS = [("B0", "원본 실행"), ("B1", "직렬 실행\n(커널마다 완료 대기)"), ("B2", "측정 구간:\n1×1 Conv"),
-            ("B3", "측정 구간:\n첫 Conv"), ("B4", "측정 구간:\n나머지 연산")]
+SEQ_ROWS = [("B0", "① 원본 실행\n전체 계수"), ("B1", "② 직렬 실행\n전체 계수"), ("B2", "③ 직렬 실행\n1×1 Conv만 계수"),
+            ("B3", "④ 직렬 실행\n첫 Conv만 계수"), ("B4", "⑤ 직렬 실행\n나머지 연산만 계수")]
 OPS6D = REPO / "results/fi101_stage6d/operator_levels.csv"
 
 
@@ -120,11 +120,13 @@ def draw(model: str, tag: str, out: pathlib.Path) -> list[dict]:
         split.setdefault(ktf[k], []).append(k)
     n = len(order)
     bw, gap = 1.0, 0.28
-    fig, ax = plt.subplots(figsize=(13.5, 5.6))
+    fig, ax = plt.subplots(figsize=(13.5, 6.3))
     ax.grid(False)
     log = []
     for r, (cond, desc) in enumerate(SEQ_ROWS):
-        y = r * 1.25
+        y = r * 1.45
+        if r:                                        # each row is a separate board run
+            ax.plot([-3.2, 99], [y - 0.72] * 2, color=F1.GRID, linewidth=0.8, clip_on=False)
         serial = cond != "B0"
         cnt = counted(rows[cond]) if serial else {k: 1 for k in order}
         x = 0.0
@@ -147,32 +149,34 @@ def draw(model: str, tag: str, out: pathlib.Path) -> list[dict]:
             if serial:
                 ax.plot([x + gap / 2] * 2, [y - 0.5, y + 0.5], color=F1.INK, linewidth=1.1)
                 x += gap
-        ax.text(-0.25, y, desc, ha="right", va="center", fontsize=8.5, color=F1.INK)
+        ax.text(-0.25, y, f"{desc}\n(별도 실행, boot {BOOTS[model][cond]})", ha="right", va="center", fontsize=8,
+                color=F1.INK)
     total = n * bw + (n + 1) * gap
     ax.set_xlim(-0.1, total + 0.1)
-    ax.set_ylim(len(SEQ_ROWS) * 1.25 - 0.55, -0.75)
+    ax.set_ylim(len(SEQ_ROWS) * 1.45 - 0.75, -0.75)
     ax.set_xticks([])
     ax.set_yticks([])
     for sp in ("left", "bottom"):
         ax.spines[sp].set_visible(False)
     ax.annotate("", xy=(total, -0.62), xytext=(0, -0.62),
                 arrowprops=dict(arrowstyle="->", color=F1.INK2, linewidth=0.9))
-    ax.text(total / 2, -0.68, "실행 순서 (시간 축 아님, 상자 폭은 실행시간과 무관)", ha="center", va="bottom", fontsize=7.5,
+    ax.text(total / 2, -0.68, "한 실행 안의 커널 발행 순서 (시간 축 아님, 상자 폭은 실행시간과 무관)", ha="center", va="bottom", fontsize=7.5,
             color=F1.INK2)
     leg = [Rectangle((0, 0), 1, 1, facecolor=GCOL[g], edgecolor=GCOL[g]) for g in ("G_0", "G_V", "G_R")]
     leg += [Rectangle((0, 0), 1, 1, facecolor="#ecebe7", edgecolor="#c9c8c2"),
             plt.Line2D([0], [0], color=F1.INK, linewidth=1.1)]
-    ax.legend(leg, [GNAME["G_0"], GNAME["G_V"], GNAME["G_R"], "측정에서 제외된 커널", "완료 대기 (앞 커널이 끝난 뒤 시작)"],
-              frameon=False, ncol=5, fontsize=8, loc="upper left", bbox_to_anchor=(0, 1.16))
+    fig.legend(leg, [GNAME["G_0"], GNAME["G_V"], GNAME["G_R"], "측정에서 제외된 커널", "완료 대기 (앞 커널이 끝난 뒤 시작)"],
+              frameon=False, ncol=5, fontsize=8, loc="upper left", bbox_to_anchor=(0.01, 0.935))
     name = {"kws_micronet_m": "KWS (micronet-m)", "ad_medium_int8": "AD (medium)"}[model]
-    ax.set_title(f"그림 2-{'A' if tag == 'kws' else 'B'}. {name}: 원본·직렬 실행의 커널 순서와 그룹별 PMU 측정 구간",
-                 loc="left", fontsize=11, color=F1.INK, pad=40)
+    fig.text(0.01, 0.975, f"그림 2-{'A' if tag == 'kws' else 'B'}. {name}: 원본·직렬 실행의 커널 순서와 그룹별 PMU 측정 구간",
+             ha="left", va="top", fontsize=11, color=F1.INK)
     fig.text(0.01, 0.015,
-             "측정 구간: 해당 그룹의 커널이 실행될 때만 PMU 계수를 켠다. 직렬 실행에서는 각 커널 앞에서 이전 커널의 완료를 기다린다.\n"
+             "각 행은 같은 모델을 따로 실행한 별도 측정이다(동시에 도는 병렬 경로가 아니다). ③–⑤는 ②와 같은 명령 스트림이며 PMU를 켜는 커널만 다르다. "
+             "①은 완료 대기가 없어 하드웨어가 앞뒤 커널을 겹쳐 실행할 수 있으나, 그림은 발행 순서만 표시한다.\n"
              "각주: 완료 대기는 커널 연산의 완료만 보장하며 메모리 간 DMA 전송의 완료는 보장하지 않는다. 따라서 그룹별 메모리 트래픽은 "
              "시간 귀속에 쓰지 않는다. 조건: TA profile 1 (EXT RLATENCY 500), placement 0.",
              fontsize=7, color=F1.INK2)
-    fig.subplots_adjust(left=0.11, right=0.995, top=0.82, bottom=0.12)
+    fig.subplots_adjust(left=0.125, right=0.995, top=0.85, bottom=0.11)
     fig.savefig(out / f"fig2{'a' if tag == 'kws' else 'b'}_{tag}_command_stream.png", dpi=200)
     plt.close(fig)
     return log
